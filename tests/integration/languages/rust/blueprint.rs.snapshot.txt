@@ -1,719 +1,719 @@
 file/
-  ├─ comment[leading]
+  ├─ comment[leading] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n\n//! by tractor's snapshot tests to catch design-principle regressions."
   ├─ attribute[inner]/
-  │   ├─ name
-  │   ├─ name
-  │   ├─ name
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "allow"
+  │   ├─ name = "dead_code"
+  │   ├─ name = "unused_variables"
+  │   ├─ name = "unused_imports"
+  │   └─ name = "unused_mut"
   ├─ use/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   ├─ name
-  │   ├─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "collections"
+  │   ├─ name = "HashMap"
+  │   ├─ name = "HashSet"
+  │   └─ name = "Set"
   ├─ use/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   ├─ self
-  │   ├─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "fmt"
+  │   ├─ self = "self"
+  │   ├─ name = "Debug"
+  │   └─ name = "Display"
   ├─ use/path/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "rc"
+  │   └─ name = "Rc"
   ├─ use/path/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "sync"
+  │   └─ name = "Arc"
   ├─ use/path/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "cell"
+  │   └─ name = "RefCell"
   ├─ use/
   │   ├─ path/
-  │   │   ├─ name
-  │   │   └─ name
-  │   ├─ name
-  │   ├─ name
-  │   ├─ name
-  │   └─ name
+  │   │   ├─ name = "std"
+  │   │   └─ name = "io"
+  │   ├─ name = "Read"
+  │   ├─ name = "IoRead"
+  │   ├─ name = "Write"
+  │   └─ name = "IoWrite"
   ├─ use/path/
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "std"
+  │   └─ name = "vec"
   ├─ mod[pub]/
-  │   ├─ name
+  │   ├─ name = "outer"
   │   └─ body/mod/
   │       ├─ pub[crate]
-  │       ├─ name
+  │       ├─ name = "inner"
   │       └─ body/
   │           ├─ const/
   │           │   ├─ pub[super]
-  │           │   ├─ name
-  │           │   ├─ type/name
-  │           │   └─ value/expression/int
+  │           │   ├─ name = "INNER_CONST"
+  │           │   ├─ type/name = "u32"
+  │           │   └─ value/expression/int = "7"
   │           └─ function/
-  │               ├─ pub/in
-  │               ├─ name
-  │               └─ body
-  ├─ comment[leading]
+  │               ├─ pub/in = "crate::outer"
+  │               ├─ name = "path_vis"
+  │               └─ body = "{}"
+  ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
   ├─ attribute/
-  │   ├─ name
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "derive"
+  │   ├─ name = "Debug"
+  │   └─ name = "Clone"
   ├─ struct[pub]/
-  │   ├─ name
-  │   ├─ lifetime/name
-  │   ├─ generic/name
+  │   ├─ name = "Point"
+  │   ├─ lifetime/name = "'a"
+  │   ├─ generic/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/expression/type/name
+  │   │   ├─ left/expression/type/name = "T"
   │   │   └─ bounds/
-  │   │       ├─ type/name
-  │   │       ├─ type/name
-  │   │       └─ lifetime/name
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
   │   └─ body/
   │       ├─ field[pub]/
-  │       │   ├─ name
-  │       │   └─ type/name
+  │       │   ├─ name = "x"
+  │       │   └─ type/name = "T"
   │       ├─ field/
   │       │   ├─ pub[crate]
-  │       │   ├─ name
-  │       │   └─ type/name
+  │       │   ├─ name = "y"
+  │       │   └─ type/name = "T"
   │       └─ field/
-  │           ├─ name
+  │           ├─ name = "label"
   │           └─ type[borrowed]/
-  │               ├─ lifetime/name
-  │               └─ type/name
-  ├─ comment[leading]
+  │               ├─ lifetime/name = "a"
+  │               └─ type/name = "str"
+  ├─ comment[leading] = "/// A tuple struct."
   ├─ struct[pub]/
-  │   ├─ name
-  │   ├─ generic/name
+  │   ├─ name = "Pair"
+  │   ├─ generic/name = "T"
   │   └─ body[pub]/
-  │       ├─ type/name
-  │       └─ type/name
-  ├─ comment[leading]
-  ├─ struct[pub]/name
-  ├─ comment[leading]
+  │       ├─ type/name = "T"
+  │       └─ type/name = "T"
+  ├─ comment[leading] = "/// A unit struct."
+  ├─ struct[pub]/name = "Marker"
+  ├─ comment[leading] = "/// An enum with every variant flavor and explicit discriminants."
   ├─ attribute/
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "derive"
+  │   └─ name = "Debug"
   ├─ enum[pub]/
-  │   ├─ name
-  │   ├─ lifetime/name
+  │   ├─ name = "Shape"
+  │   ├─ lifetime/name = "'a"
   │   └─ body/
-  │       ├─ variant/name
+  │       ├─ variant/name = "Nothing"
   │       ├─ variant/
-  │       │   ├─ name
+  │       │   ├─ name = "Dot"
   │       │   └─ body/
-  │       │       ├─ type/name
-  │       │       └─ type/name
+  │       │       ├─ type/name = "i32"
+  │       │       └─ type/name = "i32"
   │       ├─ variant/
-  │       │   ├─ name
+  │       │   ├─ name = "Rect"
   │       │   └─ body/
   │       │       ├─ field/
-  │       │       │   ├─ name
-  │       │       │   └─ type/name
+  │       │       │   ├─ name = "w"
+  │       │       │   └─ type/name = "u32"
   │       │       └─ field/
-  │       │           ├─ name
-  │       │           └─ type/name
+  │       │           ├─ name = "h"
+  │       │           └─ type/name = "u32"
   │       └─ variant/
-  │           ├─ name
+  │           ├─ name = "Labeled"
   │           ├─ body/type[borrowed]/
-  │           │   ├─ lifetime/name
-  │           │   └─ type/name
-  │           └─ value/expression/int
+  │           │   ├─ lifetime/name = "a"
+  │           │   └─ type/name = "str"
+  │           └─ value/expression/int = "10"
   ├─ trait[pub]/
-  │   ├─ name
-  │   ├─ bounds/type/name
+  │   ├─ name = "Drawable"
+  │   ├─ bounds/type/name = "Debug"
   │   └─ body/
-  │       ├─ type[associated]/name
+  │       ├─ type[associated]/name = "Canvas"
   │       ├─ const[private]/
-  │       │   ├─ name
-  │       │   ├─ type/name
-  │       │   └─ value/expression/int
+  │       │   ├─ name = "MAX"
+  │       │   ├─ type/name = "usize"
+  │       │   └─ value/expression/int = "64"
   │       ├─ signature/
-  │       │   ├─ name
-  │       │   ├─ self/self
+  │       │   ├─ name = "draw"
+  │       │   ├─ self/self = "self"
   │       │   └─ parameter/
-  │       │       ├─ name
+  │       │       ├─ name = "c"
   │       │       └─ type[borrowed and mut]/path/
-  │       │           ├─ name
-  │       │           └─ name
+  │       │           ├─ name = "Self"
+  │       │           └─ name = "Canvas"
   │       └─ function[private]/
-  │           ├─ name
-  │           ├─ self/self
-  │           ├─ returns/type/name
+  │           ├─ name = "name"
+  │           ├─ self/self = "self"
+  │           ├─ returns/type/name = "String"
   │           └─ body/call/
   │               ├─ path/
-  │               │   ├─ name
-  │               │   └─ name
-  │               └─ string
+  │               │   ├─ name = "String"
+  │               │   └─ name = "from"
+  │               └─ string = "\"drawable\""
   ├─ impl/
-  │   ├─ lifetime/name
+  │   ├─ lifetime/name = "'a"
   │   ├─ generic/
-  │   │   ├─ name
+  │   │   ├─ name = "T"
   │   │   └─ bounds/
-  │   │       ├─ type/name
-  │   │       ├─ type/name
-  │   │       └─ lifetime/name
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
   │   ├─ type[generic]/
-  │   │   ├─ name
-  │   │   ├─ lifetime/name
-  │   │   └─ type/name
+  │   │   ├─ name = "Point"
+  │   │   ├─ lifetime/name = "a"
+  │   │   └─ type/name = "T"
   │   └─ body/
   │       ├─ const[pub]/
-  │       │   ├─ name
+  │       │   ├─ name = "ORIGIN_LABEL"
   │       │   ├─ type[borrowed]/
-  │       │   │   ├─ lifetime/name
-  │       │   │   └─ type/name
-  │       │   └─ value/expression/string
+  │       │   │   ├─ lifetime/name = "static"
+  │       │   │   └─ type/name = "str"
+  │       │   └─ value/expression/string = "\"origin\""
   │       ├─ function[pub]/
-  │       │   ├─ name
+  │       │   ├─ name = "new"
   │       │   ├─ parameter/
-  │       │   │   ├─ name
-  │       │   │   └─ type/name
+  │       │   │   ├─ name = "x"
+  │       │   │   └─ type/name = "T"
   │       │   ├─ parameter/
-  │       │   │   ├─ name
-  │       │   │   └─ type/name
+  │       │   │   ├─ name = "y"
+  │       │   │   └─ type/name = "T"
   │       │   ├─ parameter/
-  │       │   │   ├─ name
+  │       │   │   ├─ name = "label"
   │       │   │   └─ type[borrowed]/
-  │       │   │       ├─ lifetime/name
-  │       │   │       └─ type/name
-  │       │   ├─ returns/type/name
+  │       │   │       ├─ lifetime/name = "a"
+  │       │   │       └─ type/name = "str"
+  │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/literal/
-  │       │       ├─ name
+  │       │       ├─ name = "Self"
   │       │       └─ body/
-  │       │           ├─ field/name
-  │       │           ├─ field/name
-  │       │           └─ field/name
+  │       │           ├─ field/name = "x"
+  │       │           ├─ field/name = "y"
+  │       │           └─ field/name = "label"
   │       ├─ function[pub]/
-  │       │   ├─ modifiers
-  │       │   ├─ name
-  │       │   ├─ self/self
-  │       │   ├─ returns/type/name
+  │       │   ├─ modifiers = "async"
+  │       │   ├─ name = "async_clone"
+  │       │   ├─ self/self = "self"
+  │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/call/field/
-  │       │       ├─ value/expression/self
-  │       │       └─ name
+  │       │       ├─ value/expression/self = "self"
+  │       │       └─ name = "clone"
   │       ├─ function[pub]/
-  │       │   ├─ modifiers
-  │       │   ├─ name
-  │       │   ├─ returns/type/name
-  │       │   └─ body/int
+  │       │   ├─ modifiers = "const"
+  │       │   ├─ name = "const_fn"
+  │       │   ├─ returns/type/name = "u32"
+  │       │   └─ body/int = "42"
   │       └─ function[pub]/
-  │           ├─ modifiers
-  │           ├─ name
+  │           ├─ modifiers = "unsafe"
+  │           ├─ name = "unsafe_read"
   │           ├─ parameter/
-  │           │   ├─ name
-  │           │   └─ type[pointer]/type/name
-  │           ├─ returns/type/name
+  │           │   ├─ name = "ptr"
+  │           │   └─ type[pointer]/type/name = "T"
+  │           ├─ returns/type/name = "T"
   │           └─ body/call/field/
   │               ├─ value/expression/unary/
-  │               │   ├─ op[multiply]
-  │               │   └─ name
-  │               └─ name
+  │               │   ├─ op[multiply] = "*"
+  │               │   └─ name = "ptr"
+  │               └─ name = "clone"
   ├─ impl/
-  │   ├─ lifetime/name
-  │   ├─ generic/name
-  │   ├─ type/name
+  │   ├─ lifetime/name = "'a"
+  │   ├─ generic/name = "T"
+  │   ├─ type/name = "Drawable"
   │   ├─ type[generic]/
-  │   │   ├─ name
-  │   │   ├─ lifetime/name
-  │   │   └─ type/name
+  │   │   ├─ name = "Point"
+  │   │   ├─ lifetime/name = "a"
+  │   │   └─ type/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/expression/type/name
+  │   │   ├─ left/expression/type/name = "T"
   │   │   └─ bounds/
-  │   │       ├─ type/name
-  │   │       ├─ type/name
-  │   │       ├─ type/name
-  │   │       └─ lifetime/name
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       ├─ type/name = "Debug"
+  │   │       └─ lifetime/name = "static"
   │   └─ body/
   │       ├─ alias[private]/
-  │       │   ├─ name
+  │       │   ├─ name = "Canvas"
   │       │   └─ type[generic]/
-  │       │       ├─ name
-  │       │       └─ type/name
+  │       │       ├─ name = "Vec"
+  │       │       └─ type/name = "u8"
   │       └─ function[private]/
-  │           ├─ name
-  │           ├─ self/self
+  │           ├─ name = "draw"
+  │           ├─ self/self = "self"
   │           ├─ parameter/
-  │           │   ├─ name
+  │           │   ├─ name = "_c"
   │           │   └─ type[borrowed and mut]/path/
-  │           │       ├─ name
-  │           │       └─ name
-  │           └─ body
+  │           │       ├─ name = "Self"
+  │           │       └─ name = "Canvas"
+  │           └─ body = "{}"
   ├─ alias[pub]/
-  │   ├─ name
-  │   ├─ lifetime/name
+  │   ├─ name = "BoxedDraw"
+  │   ├─ lifetime/name = "'a"
   │   └─ type[generic]/
-  │       ├─ name
+  │       ├─ name = "Box"
   │       └─ type[bounded]/
   │           ├─ type[dynamic]/type[generic]/
-  │           │   ├─ name
-  │           │   ├─ name
+  │           │   ├─ name = "Drawable"
+  │           │   ├─ name = "Canvas"
   │           │   └─ type[generic]/
-  │           │       ├─ name
-  │           │       └─ type/name
-  │           └─ lifetime/name
+  │           │       ├─ name = "Vec"
+  │           │       └─ type/name = "u8"
+  │           └─ lifetime/name = "a"
   ├─ alias[pub]/
-  │   ├─ name
+  │   ├─ name = "Callback"
   │   └─ type[function]/
-  │       ├─ type/name
-  │       └─ returns/type/name
+  │       ├─ type/name = "i32"
+  │       └─ returns/type/name = "i32"
   ├─ const[pub]/
-  │   ├─ name
-  │   ├─ type/name
-  │   └─ value/expression/float
+  │   ├─ name = "PI"
+  │   ├─ type/name = "f64"
+  │   └─ value/expression/float = "3.141_592_653_589f64"
   ├─ static[pub]/
-  │   ├─ name
-  │   ├─ type[borrowed]/type/name
-  │   └─ value/expression/string
+  │   ├─ name = "GREETING"
+  │   ├─ type[borrowed]/type/name = "str"
+  │   └─ value/expression/string = "\"hello\""
   ├─ static[private]/
-  │   ├─ name
-  │   ├─ type/name
-  │   └─ value/expression/int
+  │   ├─ name = "COUNTER"
+  │   ├─ type/name = "u32"
+  │   └─ value/expression/int = "0"
   ├─ function[private]/
-  │   ├─ name
+  │   ├─ name = "numeric_zoo"
   │   ├─ returns/type[tuple]/
-  │   │   ├─ type/name
-  │   │   ├─ type/name
-  │   │   ├─ type/name
-  │   │   ├─ type/name
-  │   │   └─ type/name
+  │   │   ├─ type/name = "u32"
+  │   │   ├─ type/name = "f64"
+  │   │   ├─ type/name = "i32"
+  │   │   ├─ type/name = "i32"
+  │   │   └─ type/name = "i32"
   │   └─ body/tuple/
-  │       ├─ int
-  │       ├─ float
-  │       ├─ int
-  │       ├─ int
-  │       └─ int
+  │       ├─ int = "1u32"
+  │       ├─ float = "1.0f64"
+  │       ├─ int = "0x1F"
+  │       ├─ int = "0b101"
+  │       └─ int = "1_000"
   ├─ function[private]/
-  │   ├─ name
+  │   ├─ name = "strings_zoo"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/string
+  │       │   ├─ name = "plain"
+  │       │   └─ value/expression/string = "\"hello\""
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/string[raw]
+  │       │   ├─ name = "raw"
+  │       │   └─ value/expression/string[raw] = "r\"C:\\path\""
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/string[raw]
+  │       │   ├─ name = "raw_hash"
+  │       │   └─ value/expression/string[raw] = "r#\"she said \"hi\"\"#"
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/string
+  │       │   ├─ name = "bytes"
+  │       │   └─ value/expression/string = "b\"raw bytes\""
   │       └─ let/
-  │           ├─ name
-  │           └─ value/expression/char
+  │           ├─ name = "chr"
+  │           └─ value/expression/char = "'z'"
   ├─ function[private]/
-  │   ├─ name
+  │   ├─ name = "closures_and_refs"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "id"
   │       │   └─ value/expression/closure/
-  │       │       ├─ name
-  │       │       └─ body/name
+  │       │       ├─ name = "x"
+  │       │       └─ body/name = "x"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "add"
   │       │   ├─ type[function]/
-  │       │   │   ├─ type/name
-  │       │   │   ├─ type/name
-  │       │   │   └─ returns/type/name
+  │       │   │   ├─ type/name = "i32"
+  │       │   │   ├─ type/name = "i32"
+  │       │   │   └─ returns/type/name = "i32"
   │       │   └─ value/expression/closure/
-  │       │       ├─ name
-  │       │       ├─ name
+  │       │       ├─ name = "a"
+  │       │       ├─ name = "b"
   │       │       └─ body/binary/
-  │       │           ├─ left/expression/name
-  │       │           ├─ op[plus]
-  │       │           └─ right/expression/name
+  │       │           ├─ left/expression/name = "a"
+  │       │           ├─ op[plus] = "+"
+  │       │           └─ right/expression/name = "b"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "s"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
-  │       │       └─ string
+  │       │       │   ├─ name = "String"
+  │       │       │   └─ name = "from"
+  │       │       └─ string = "\"owned\""
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "moved"
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/
-  │       │       │   ├─ name
-  │       │       │   └─ type/name
-  │       │       ├─ returns/type/name
+  │       │       │   ├─ name = "x"
+  │       │       │   └─ type/name = "i32"
+  │       │       ├─ returns/type/name = "String"
   │       │       └─ body/macro/
-  │       │           ├─ name
-  │       │           ├─ string
-  │       │           ├─ name
-  │       │           └─ name
+  │       │           ├─ name = "format"
+  │       │           ├─ string = "\"{}-{}\""
+  │       │           ├─ name = "s"
+  │       │           └─ name = "x"
   │       └─ let/
-  │           ├─ name
-  │           ├─ type[borrowed]/type/name
-  │           └─ value/expression/ref/value/expression/int
+  │           ├─ name = "r"
+  │           ├─ type[borrowed]/type/name = "i32"
+  │           └─ value/expression/ref/value/expression/int = "5"
   ├─ function[pub]/
-  │   ├─ name
+  │   ├─ name = "smart_pointers"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "b"
   │       │   ├─ type[generic]/
-  │       │   │   ├─ name
-  │       │   │   └─ type/name
+  │       │   │   ├─ name = "Box"
+  │       │   │   └─ type/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
-  │       │       └─ int
+  │       │       │   ├─ name = "Box"
+  │       │       │   └─ name = "new"
+  │       │       └─ int = "1"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "rc"
   │       │   ├─ type[generic]/
-  │       │   │   ├─ name
-  │       │   │   └─ type/name
+  │       │   │   ├─ name = "Rc"
+  │       │   │   └─ type/name = "String"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
+  │       │       │   ├─ name = "Rc"
+  │       │       │   └─ name = "new"
   │       │       └─ call/
   │       │           ├─ path/
-  │       │           │   ├─ name
-  │       │           │   └─ name
-  │       │           └─ string
+  │       │           │   ├─ name = "String"
+  │       │           │   └─ name = "from"
+  │       │           └─ string = "\"rc\""
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "arc"
   │       │   ├─ type[generic]/
-  │       │   │   ├─ name
-  │       │   │   └─ type/name
+  │       │   │   ├─ name = "Arc"
+  │       │   │   └─ type/name = "u32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
-  │       │       └─ int
+  │       │       │   ├─ name = "Arc"
+  │       │       │   └─ name = "new"
+  │       │       └─ int = "9"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "cell"
   │       │   ├─ type[generic]/
-  │       │   │   ├─ name
+  │       │   │   ├─ name = "RefCell"
   │       │   │   └─ type[generic]/
-  │       │   │       ├─ name
-  │       │   │       └─ type/name
+  │       │   │       ├─ name = "Vec"
+  │       │   │       └─ type/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
+  │       │       │   ├─ name = "RefCell"
+  │       │       │   └─ name = "new"
   │       │       └─ macro/
-  │       │           ├─ name
-  │       │           ├─ int
-  │       │           ├─ int
-  │       │           └─ int
+  │       │           ├─ name = "vec"
+  │       │           ├─ int = "1"
+  │       │           ├─ int = "2"
+  │       │           └─ int = "3"
   │       └─ let/
-  │           ├─ name
+  │           ├─ name = "parsed"
   │           └─ value/expression/call/
   │               ├─ field/
   │               │   ├─ value/expression/call/call[generic]/
   │               │   │   ├─ field/
-  │               │   │   │   ├─ value/expression/string
-  │               │   │   │   └─ name
-  │               │   │   └─ type/name
-  │               │   └─ name
-  │               └─ int
+  │               │   │   │   ├─ value/expression/string = "\"42\""
+  │               │   │   │   └─ name = "parse"
+  │               │   │   └─ type/name = "i32"
+  │               │   └─ name = "unwrap_or"
+  │               └─ int = "0"
   ├─ function[pub]/
-  │   ├─ name
+  │   ├─ name = "patterns"
   │   ├─ parameter/
-  │   │   ├─ name
-  │   │   └─ type/name
-  │   ├─ returns/type/name
+  │   │   ├─ name = "s"
+  │   │   └─ type/name = "Shape"
+  │   ├─ returns/type/name = "i32"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "p"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name
-  │       │       │   └─ name
-  │       │       ├─ int
-  │       │       ├─ int
-  │       │       └─ string
+  │       │       │   ├─ name = "Point"
+  │       │       │   └─ name = "new"
+  │       │       ├─ int = "1"
+  │       │       ├─ int = "2"
+  │       │       └─ string = "\"p\""
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "q"
   │       │   └─ value/expression/literal/
-  │       │       ├─ name
+  │       │       ├─ name = "Point"
   │       │       └─ body/
   │       │           ├─ field/
-  │       │           │   ├─ name
-  │       │           │   └─ value/expression/int
+  │       │           │   ├─ name = "x"
+  │       │           │   └─ value/expression/int = "10"
   │       │           ├─ field/
-  │       │           │   ├─ name
-  │       │           │   └─ value/expression/int
+  │       │           │   ├─ name = "y"
+  │       │           │   └─ value/expression/int = "20"
   │       │           └─ field[base]/call/field/
-  │       │               ├─ value/expression/name
-  │       │               └─ name
+  │       │               ├─ value/expression/name = "p"
+  │       │               └─ name = "clone"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "result"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/name
+  │       │       ├─ value/expression/name = "s"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/path/
-  │       │           │   │   ├─ name
-  │       │           │   │   └─ name
-  │       │           │   └─ value/expression/int
+  │       │           │   │   ├─ name = "Shape"
+  │       │           │   │   └─ name = "Nothing"
+  │       │           │   └─ value/expression/int = "0"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[or]/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name
-  │       │           │   │   │   └─ name
-  │       │           │   │   ├─ int
-  │       │           │   │   ├─ name
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ int = "0"
+  │       │           │   │   ├─ name = "y"
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name
-  │       │           │   │   │   └─ name
-  │       │           │   │   ├─ name
-  │       │           │   │   └─ int
-  │       │           │   └─ value/expression/name
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ name = "y"
+  │       │           │   │   └─ int = "0"
+  │       │           │   └─ value/expression/name = "y"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name
-  │       │           │   │   │   └─ name
-  │       │           │   │   ├─ name
-  │       │           │   │   ├─ name
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   ├─ name = "x"
+  │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ condition/expression/binary/
-  │       │           │   │       ├─ left/expression/name
-  │       │           │   │       ├─ op[equals]
-  │       │           │   │       └─ right/expression/name
+  │       │           │   │       ├─ left/expression/name = "x"
+  │       │           │   │       ├─ op[equals] = "=="
+  │       │           │   │       └─ right/expression/name = "y"
   │       │           │   └─ value/expression/binary/
-  │       │           │       ├─ left/expression/name
-  │       │           │       ├─ op[plus]
-  │       │           │       └─ right/expression/name
+  │       │           │       ├─ left/expression/name = "x"
+  │       │           │       ├─ op[plus] = "+"
+  │       │           │       └─ right/expression/name = "y"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ pattern[struct]/
   │       │           │   │   │   ├─ path/
-  │       │           │   │   │   │   ├─ name
-  │       │           │   │   │   │   └─ name
-  │       │           │   │   │   ├─ pattern[field]/name
-  │       │           │   │   │   └─ pattern[field]/name
+  │       │           │   │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   │   └─ name = "Rect"
+  │       │           │   │   │   ├─ pattern[field]/name = "w"
+  │       │           │   │   │   └─ pattern[field]/name = "h"
   │       │           │   │   └─ condition/expression/binary/
-  │       │           │   │       ├─ left/expression/name
+  │       │           │   │       ├─ left/expression/name = "w"
   │       │           │   │       ├─ op/compare[greater]
-  │       │           │   │       └─ right/expression/int
+  │       │           │   │       └─ right/expression/int = "0"
   │       │           │   └─ value/expression/cast/
   │       │           │       ├─ value/expression/binary/
-  │       │           │       │   ├─ left/expression/name
-  │       │           │       │   ├─ op[multiply]
-  │       │           │       │   └─ right/expression/name
-  │       │           │       └─ type/name
+  │       │           │       │   ├─ left/expression/name = "w"
+  │       │           │       │   ├─ op[multiply] = "*"
+  │       │           │       │   └─ right/expression/name = "h"
+  │       │           │       └─ type/name = "i32"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name
-  │       │           │   │   │   └─ name
-  │       │           │   │   └─ pattern[ref]/name
+  │       │           │   │   │   ├─ name = "Shape"
+  │       │           │   │   │   └─ name = "Labeled"
+  │       │           │   │   └─ pattern[ref]/name = "name"
   │       │           │   └─ value/expression/cast/
   │       │           │       ├─ value/expression/call/field/
-  │       │           │       │   ├─ value/expression/name
-  │       │           │       │   └─ name
-  │       │           │       └─ type/name
+  │       │           │       │   ├─ value/expression/name = "name"
+  │       │           │       │   └─ name = "len"
+  │       │           │       └─ type/name = "i32"
   │       │           └─ arm/
-  │       │               ├─ pattern
+  │       │               ├─ pattern = "_"
   │       │               └─ value/expression/unary/
-  │       │                   ├─ op[minus]
-  │       │                   └─ int
+  │       │                   ├─ op[minus] = "-"
+  │       │                   └─ int = "99"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "bucket"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/int
+  │       │       ├─ value/expression/int = "5"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/expression/int
-  │       │           │   │   └─ right/expression/int
-  │       │           │   └─ value/expression/string
+  │       │           │   │   ├─ left/expression/int = "0"
+  │       │           │   │   └─ right/expression/int = "9"
+  │       │           │   └─ value/expression/string = "\"single\""
   │       │           ├─ arm/
   │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/expression/int
-  │       │           │   │   └─ right/expression/int
-  │       │           │   └─ value/expression/string
+  │       │           │   │   ├─ left/expression/int = "10"
+  │       │           │   │   └─ right/expression/int = "99"
+  │       │           │   └─ value/expression/string = "\"double\""
   │       │           └─ arm/
-  │       │               ├─ pattern
-  │       │               └─ value/expression/string
+  │       │               ├─ pattern = "_"
+  │       │               └─ value/expression/string = "\"many\""
   │       ├─ if/
   │       │   ├─ condition/
-  │       │   │   ├─ expression/name
-  │       │   │   ├─ expression/name
+  │       │   │   ├─ expression/name = "Some"
+  │       │   │   ├─ expression/name = "v"
   │       │   │   └─ expression/value/expression/call/
-  │       │   │       ├─ name
-  │       │   │       └─ int
-  │       │   └─ then/let/value/expression/name
+  │       │   │       ├─ name = "Some"
+  │       │   │       └─ int = "10"
+  │       │   └─ then/let/value/expression/name = "v"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "it"
   │       │   └─ value/expression/call/field/
   │       │       ├─ value/expression/macro/
-  │       │       │   ├─ name
-  │       │       │   ├─ int
-  │       │       │   ├─ int
-  │       │       │   └─ int
-  │       │       └─ name
+  │       │       │   ├─ name = "vec"
+  │       │       │   ├─ int = "1"
+  │       │       │   ├─ int = "2"
+  │       │       │   └─ int = "3"
+  │       │       └─ name = "into_iter"
   │       ├─ while/
   │       │   ├─ condition/
-  │       │   │   ├─ expression/name
-  │       │   │   ├─ expression/name
+  │       │   │   ├─ expression/name = "Some"
+  │       │   │   ├─ expression/name = "x"
   │       │   │   └─ expression/value/expression/call/field/
-  │       │   │       ├─ value/expression/name
-  │       │   │       └─ name
+  │       │   │       ├─ value/expression/name = "it"
+  │       │   │       └─ name = "next"
   │       │   └─ body/
   │       │       ├─ let/
-  │       │       │   ├─ name
-  │       │       │   └─ value/expression/name
+  │       │       │   ├─ name = "_shadow"
+  │       │       │   └─ value/expression/name = "x"
   │       │       └─ let/
-  │       │           ├─ name
+  │       │           ├─ name = "_shadow"
   │       │           └─ value/expression/cast/
-  │       │               ├─ value/expression/name
-  │       │               └─ type/name
-  │       └─ name
+  │       │               ├─ value/expression/name = "x"
+  │       │               └─ type/name = "f64"
+  │       └─ name = "result"
   ├─ function[pub]/
-  │   ├─ name
-  │   ├─ returns/type/name
+  │   ├─ name = "loops_and_flow"
+  │   ├─ returns/type/name = "i32"
   │   └─ body/
   │       ├─ for/
-  │       │   ├─ label/name
-  │       │   ├─ name
+  │       │   ├─ label/name = "outer"
+  │       │   ├─ name = "i"
   │       │   ├─ value/expression/range/
-  │       │   │   ├─ int
-  │       │   │   └─ int
+  │       │   │   ├─ int = "0"
+  │       │   │   └─ int = "10"
   │       │   └─ body/for/
-  │       │       ├─ name
+  │       │       ├─ name = "j"
   │       │       ├─ value/expression/range/
-  │       │       │   ├─ int
-  │       │       │   └─ int
+  │       │       │   ├─ int = "0"
+  │       │       │   └─ int = "10"
   │       │       └─ body/if/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/binary/
-  │       │           │   │   ├─ left/expression/name
-  │       │           │   │   ├─ op[multiply]
-  │       │           │   │   └─ right/expression/name
+  │       │           │   │   ├─ left/expression/name = "i"
+  │       │           │   │   ├─ op[multiply] = "*"
+  │       │           │   │   └─ right/expression/name = "j"
   │       │           │   ├─ op/compare[greater]
-  │       │           │   └─ right/expression/int
-  │       │           └─ then/break/label/name
+  │       │           │   └─ right/expression/int = "20"
+  │       │           └─ then/break/label/name = "outer"
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/int
+  │       │   ├─ name = "n"
+  │       │   └─ value/expression/int = "0"
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
-  │       │   │   ├─ left/expression/name
+  │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op/compare[less]
-  │       │   │   └─ right/expression/int
+  │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/expression/assign/
-  │       │       ├─ left/expression/name
-  │       │       └─ right/expression/int
+  │       │       ├─ left/expression/name = "n"
+  │       │       └─ right/expression/int = "1"
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/loop/body/break/int
-  │       └─ name
+  │       │   ├─ name = "found"
+  │       │   └─ value/expression/loop/body/break/int = "42"
+  │       └─ name = "found"
   ├─ function[pub]/
-  │   ├─ name
+  │   ├─ name = "try_and_cast"
   │   ├─ returns/type[generic]/
-  │   │   ├─ name
-  │   │   ├─ type/name
+  │   │   ├─ name = "Result"
+  │   │   ├─ type/name = "i32"
   │   │   └─ path/
   │   │       ├─ path/
-  │   │       │   ├─ name
-  │   │       │   └─ name
-  │   │       └─ name
+  │   │       │   ├─ name = "std"
+  │   │       │   └─ name = "num"
+  │   │       └─ name = "ParseIntError"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
-  │       │   ├─ type/name
+  │       │   ├─ name = "parsed"
+  │       │   ├─ type/name = "i32"
   │       │   └─ value/expression[try]/call/field/
-  │       │       ├─ value/expression/string
-  │       │       └─ name
+  │       │       ├─ value/expression/string = "\"10\""
+  │       │       └─ name = "parse"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "casted"
   │       │   └─ value/expression/cast/
   │       │       ├─ value/expression/cast/
-  │       │       │   ├─ value/expression/name
-  │       │       │   └─ type/name
-  │       │       └─ type/name
+  │       │       │   ├─ value/expression/name = "parsed"
+  │       │       │   └─ type/name = "u8"
+  │       │       └─ type/name = "i32"
   │       └─ call/
-  │           ├─ name
-  │           └─ name
+  │           ├─ name = "Ok"
+  │           └─ name = "casted"
   ├─ function[pub]/
-  │   ├─ name
-  │   ├─ lifetime/name
+  │   ├─ name = "trait_object_and_impl"
+  │   ├─ lifetime/name = "'a"
   │   ├─ parameter/
-  │   │   ├─ name
+  │   │   ├─ name = "d"
   │   │   └─ type[borrowed]/
-  │   │       ├─ lifetime/name
+  │   │       ├─ lifetime/name = "a"
   │   │       └─ type[dynamic]/type[generic]/
-  │   │           ├─ name
-  │   │           ├─ name
+  │   │           ├─ name = "Drawable"
+  │   │           ├─ name = "Canvas"
   │   │           └─ type[generic]/
-  │   │               ├─ name
-  │   │               └─ type/name
+  │   │               ├─ name = "Vec"
+  │   │               └─ type/name = "u8"
   │   ├─ returns/type[bounded]/
-  │   │   ├─ type[abstract]/type/name
-  │   │   └─ lifetime/name
+  │   │   ├─ type[abstract]/type/name = "Display"
+  │   │   └─ lifetime/name = "a"
   │   └─ body/macro/
-  │       ├─ name
-  │       ├─ string
-  │       ├─ name
-  │       └─ name
+  │       ├─ name = "format"
+  │       ├─ string = "\"name={}\""
+  │       ├─ name = "d"
+  │       └─ name = "name"
   ├─ function[pub]/
-  │   ├─ name
-  │   ├─ returns/type[never]
+  │   ├─ name = "diverges"
+  │   ├─ returns/type[never] = "!"
   │   └─ body/expression/macro/
-  │       ├─ name
-  │       └─ string
+  │       ├─ name = "panic"
+  │       └─ string = "\"never returns\""
   ├─ function[pub]/
-  │   ├─ modifiers
-  │   ├─ name
-  │   ├─ returns/type/name
+  │   ├─ modifiers = "async"
+  │   ├─ name = "async_demo"
+  │   ├─ returns/type/name = "u32"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "block"
   │       │   └─ value/expression/block[async]/binary/
-  │       │       ├─ left/expression/int
-  │       │       ├─ op[plus]
-  │       │       └─ right/expression/int
-  │       └─ expression[await]/name
+  │       │       ├─ left/expression/int = "1u32"
+  │       │       ├─ op[plus] = "+"
+  │       │       └─ right/expression/int = "2"
+  │       └─ expression[await]/name = "block"
   ├─ function[pub]/
-  │   ├─ name
+  │   ├─ name = "unsafe_block"
   │   └─ body/
   │       ├─ let/
-  │       │   ├─ name
-  │       │   └─ value/expression/int
+  │       │   ├─ name = "x"
+  │       │   └─ value/expression/int = "5"
   │       ├─ let/
-  │       │   ├─ name
+  │       │   ├─ name = "r"
   │       │   └─ value/expression/cast/
-  │       │       ├─ value/expression/ref/value/expression/name
-  │       │       └─ type[pointer]/type/name
+  │       │       ├─ value/expression/ref/value/expression/name = "x"
+  │       │       └─ type[pointer]/type/name = "i32"
   │       └─ unsafe/
   │           ├─ let/value/expression/unary/
-  │           │   ├─ op[multiply]
-  │           │   └─ name
+  │           │   ├─ op[multiply] = "*"
+  │           │   └─ name = "r"
   │           └─ expression/assign/
-  │               ├─ left/expression/name
-  │               └─ right/expression/int
+  │               ├─ left/expression/name = "COUNTER"
+  │               └─ right/expression/int = "1"
   └─ function[private]/
-      ├─ name
+      ├─ name = "main"
       └─ body/
           ├─ expression/macro/
-          │   ├─ name
-          │   ├─ string
-          │   └─ name
+          │   ├─ name = "println"
+          │   ├─ string = "\"hello, {}\""
+          │   └─ name = "GREETING"
           ├─ let/
-          │   ├─ name
+          │   ├─ name = "v"
           │   └─ value/expression/macro/
-          │       ├─ name
-          │       ├─ int
-          │       ├─ int
-          │       └─ int
+          │       ├─ name = "vec"
+          │       ├─ int = "1"
+          │       ├─ int = "2"
+          │       └─ int = "3"
           ├─ let/value/expression/call/
-          │   ├─ name
+          │   ├─ name = "patterns"
           │   └─ call/
           │       ├─ path/
-          │       │   ├─ name
-          │       │   └─ name
-          │       ├─ int
-          │       └─ int
-          └─ let/value/expression/call/name
+          │       │   ├─ name = "Shape"
+          │       │   └─ name = "Dot"
+          │       ├─ int = "1"
+          │       └─ int = "1"
+          └─ let/value/expression/call/name = "loops_and_flow"

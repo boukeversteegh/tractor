@@ -174,17 +174,21 @@ fn project_tree_xml_single_stays_bare() {
 }
 
 #[test]
-fn project_shape_strips_text_but_keeps_structure() {
-    // `-p shape` keeps element names and queryable predicates but
-    // drops source-text leaves. The `<item>one</item>` payload must
-    // *not* appear; the element shape `item` *must*.
+fn project_shape_keeps_leaf_values_but_drops_dangling_text() {
+    // `-p shape` keeps element names + queryable predicates + leaf
+    // property values (`item = "one"`), but drops dangling tokens
+    // (parens, semicolons, keyword duplicates from marker lifts).
+    // `<item>one</item>` is a leaf shape — its text *is* the property
+    // value, so it stays. (Pre-Phase-3 the shape mode aggressively
+    // dropped all text including leaf values, leaving snapshots
+    // largely meaningless.)
     let shape = cli_case!({
         tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "shape";
     })
     .run();
     assert!(
-        !shape.stdout.contains("\"one\"") && !shape.stdout.contains("\"two\""),
-        "shape projection must strip text content, got: {}",
+        shape.stdout.contains("\"one\"") && shape.stdout.contains("\"two\""),
+        "shape projection must keep leaf property values, got: {}",
         shape.stdout
     );
     assert!(

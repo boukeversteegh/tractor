@@ -1,335 +1,335 @@
 program/
-  ├─ tag[open]
-  ├─ comment
-  ├─ declare/int
+  ├─ tag[open] = "<?php"
+  ├─ comment = "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented."
+  ├─ declare/int = "1"
   ├─ namespace/
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "App"
+  │   └─ name = "Blueprint"
   ├─ use/
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "App"
+  │   └─ name = "Base"
   ├─ use/
-  │   ├─ name
-  │   ├─ name
-  │   └─ name
+  │   ├─ name = "App"
+  │   ├─ name = "Logger"
+  │   └─ name = "Log"
   ├─ use/
-  │   ├─ name
+  │   ├─ name = "App"
   │   └─ body/
-  │       ├─ name
-  │       └─ name
-  ├─ comment[leading]
+  │       ├─ name = "First"
+  │       └─ name = "Second"
+  ├─ comment[leading] = "/**\n * Demo class with various PHP features.\n */"
   ├─ class[abstract]/
   │   ├─ attribute/
-  │   │   ├─ name
+  │   │   ├─ name = "Attribute"
   │   │   └─ argument/member[constant]/
-  │   │       ├─ name
-  │   │       └─ name
-  │   ├─ name
-  │   ├─ extends/name
+  │   │       ├─ name = "Attribute"
+  │   │       └─ name = "TARGET_CLASS"
+  │   ├─ name = "Demo"
+  │   ├─ extends/name = "Base"
   │   ├─ implements/
-  │   │   ├─ name
-  │   │   └─ name
+  │   │   ├─ name = "Speaker"
+  │   │   └─ name = "Countable"
   │   └─ body/
-  │       ├─ use/name
+  │       ├─ use/name = "Loggable"
   │       ├─ const[public]/constant/
-  │       │   ├─ name
-  │       │   └─ int
+  │       │   ├─ name = "MAX"
+  │       │   └─ int = "100"
   │       ├─ const[private]/constant/
-  │       │   ├─ name
-  │       │   └─ string
+  │       │   ├─ name = "DEFAULT_NAME"
+  │       │   └─ string = "\"anonymous\""
   │       ├─ field[private]/
-  │       │   ├─ type[primitive]
-  │       │   └─ name
+  │       │   ├─ type[primitive] = "string"
+  │       │   └─ name = "$name"
   │       ├─ field[public and readonly]/
-  │       │   ├─ type[primitive]
-  │       │   └─ name
+  │       │   ├─ type[primitive] = "int"
+  │       │   └─ name = "$count"
   │       ├─ field[protected]/
-  │       │   ├─ type[optional]/type[primitive]
-  │       │   ├─ name
-  │       │   └─ null
+  │       │   ├─ type[optional]/type[primitive] = "string"
+  │       │   ├─ name = "$label"
+  │       │   └─ null = "null"
   │       ├─ field[public and static]/
-  │       │   ├─ type[primitive]
-  │       │   ├─ name
-  │       │   └─ int
+  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ name = "$registry"
+  │       │   └─ int = "0"
   │       ├─ method[public]/
-  │       │   ├─ name
+  │       │   ├─ name = "__construct"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
+  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   └─ name = "$name"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   ├─ name
-  │       │   │   └─ int
+  │       │   │   ├─ type[primitive] = "int"
+  │       │   │   ├─ name = "$count"
+  │       │   │   └─ int = "0"
   │       │   └─ body/
   │       │       ├─ assign/
   │       │       │   ├─ left/member[instance]/
-  │       │       │   │   ├─ variable/name
-  │       │       │   │   └─ name
-  │       │       │   ├─ op
-  │       │       │   └─ right/variable/name
+  │       │       │   │   ├─ variable/name = "this"
+  │       │       │   │   └─ name = "name"
+  │       │       │   ├─ op = "="
+  │       │       │   └─ right/variable/name = "name"
   │       │       └─ assign/
   │       │           ├─ left/member[instance]/
-  │       │           │   ├─ variable/name
-  │       │           │   └─ name
-  │       │           ├─ op
-  │       │           └─ right/variable/name
+  │       │           │   ├─ variable/name = "this"
+  │       │           │   └─ name = "count"
+  │       │           ├─ op = "="
+  │       │           └─ right/variable/name = "count"
   │       ├─ method[abstract and public]/
-  │       │   ├─ name
-  │       │   └─ type[primitive]
+  │       │   ├─ name = "render"
+  │       │   └─ type[primitive] = "string"
   │       ├─ method[final and public and static]/
-  │       │   ├─ name
+  │       │   ├─ name = "create"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
-  │       │   ├─ type/name
+  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   └─ name = "$name"
+  │       │   ├─ type/name = "static"
   │       │   └─ body/return/new/
-  │       │       ├─ name
-  │       │       └─ argument/variable/name
+  │       │       ├─ name = "static"
+  │       │       └─ argument/variable/name = "name"
   │       ├─ method[public]/
-  │       │   ├─ name
+  │       │   ├─ name = "greet"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[optional]/type[primitive]
-  │       │   │   ├─ name
-  │       │   │   └─ null
+  │       │   │   ├─ type[optional]/type[primitive] = "string"
+  │       │   │   ├─ name = "$who"
+  │       │   │   └─ null = "null"
   │       │   ├─ parameter[variadic]/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
-  │       │   ├─ type[primitive]
+  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   └─ name = "$extras"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
   │       │       ├─ assign/
-  │       │       │   ├─ left/variable/name
-  │       │       │   ├─ op
+  │       │       │   ├─ left/variable/name = "target"
+  │       │       │   ├─ op = "="
   │       │       │   └─ right/binary/
-  │       │       │       ├─ left/variable/name
-  │       │       │       ├─ op[nullish-coalescing]
+  │       │       │       ├─ left/variable/name = "who"
+  │       │       │       ├─ op[nullish-coalescing] = "??"
   │       │       │       └─ right/member[instance]/
-  │       │       │           ├─ variable/name
-  │       │       │           └─ name
+  │       │       │           ├─ variable/name = "this"
+  │       │       │           └─ name = "name"
   │       │       └─ if/
   │       │           ├─ condition/binary/
   │       │           │   ├─ left/member[instance]/
-  │       │           │   │   ├─ variable/name
-  │       │           │   │   └─ name
+  │       │           │   │   ├─ variable/name = "this"
+  │       │           │   │   └─ name = "count"
   │       │           │   ├─ op/compare[greater]
-  │       │           │   └─ right/int
-  │       │           ├─ body/return/string/interpolation/variable/name
+  │       │           │   └─ right/int = "10"
+  │       │           ├─ body/return/string/interpolation/variable/name = "target"
   │       │           ├─ else_if/
   │       │           │   ├─ condition/binary/
   │       │           │   │   ├─ left/member[instance]/
-  │       │           │   │   │   ├─ variable/name
-  │       │           │   │   │   └─ name
+  │       │           │   │   │   ├─ variable/name = "this"
+  │       │           │   │   │   └─ name = "count"
   │       │           │   │   ├─ op/compare[greater]
-  │       │           │   │   └─ right/int
-  │       │           │   └─ body/return/string/interpolation/variable/name
-  │       │           └─ else/body/return/string/interpolation/variable/name
+  │       │           │   │   └─ right/int = "0"
+  │       │           │   └─ body/return/string/interpolation/variable/name = "target"
+  │       │           └─ else/body/return/string/interpolation/variable/name = "target"
   │       ├─ method[public]/
-  │       │   ├─ name
+  │       │   ├─ name = "describe"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
-  │       │   ├─ type[primitive]
+  │       │   │   ├─ type[primitive] = "int"
+  │       │   │   └─ name = "$n"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/return/ternary/
   │       │       ├─ condition/binary/
-  │       │       │   ├─ left/variable/name
+  │       │       │   ├─ left/variable/name = "n"
   │       │       │   ├─ op/compare[greater]
-  │       │       │   └─ right/int
-  │       │       ├─ body/string
+  │       │       │   └─ right/int = "0"
+  │       │       ├─ body/string = "\"positive\""
   │       │       └─ ternary/
   │       │           ├─ condition/binary/
-  │       │           │   ├─ left/variable/name
+  │       │           │   ├─ left/variable/name = "n"
   │       │           │   ├─ op/compare[less]
-  │       │           │   └─ right/int
-  │       │           ├─ body/string
-  │       │           └─ string
+  │       │           │   └─ right/int = "0"
+  │       │           ├─ body/string = "\"negative\""
+  │       │           └─ string = "\"zero\""
   │       ├─ method[public]/
-  │       │   ├─ name
+  │       │   ├─ name = "categorize"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
-  │       │   ├─ type[primitive]
+  │       │   │   ├─ type[primitive] = "mixed"
+  │       │   │   └─ name = "$value"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/return/match/
-  │       │       ├─ condition/bool
+  │       │       ├─ condition/bool = "true"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ call/
-  │       │           │   │   ├─ name
-  │       │           │   │   └─ argument/variable/name
-  │       │           │   └─ string
+  │       │           │   │   ├─ name = "is_int"
+  │       │           │   │   └─ argument/variable/name = "value"
+  │       │           │   └─ string = "\"int\""
   │       │           ├─ arm/
   │       │           │   ├─ binary/
   │       │           │   │   ├─ left/call/
-  │       │           │   │   │   ├─ name
-  │       │           │   │   │   └─ argument/variable/name
+  │       │           │   │   │   ├─ name = "is_string"
+  │       │           │   │   │   └─ argument/variable/name = "value"
   │       │           │   │   ├─ op/logical[and]
   │       │           │   │   └─ right/binary/
   │       │           │   │       ├─ left/call/
-  │       │           │   │       │   ├─ name
-  │       │           │   │       │   └─ argument/variable/name
+  │       │           │   │       │   ├─ name = "strlen"
+  │       │           │   │       │   └─ argument/variable/name = "value"
   │       │           │   │       ├─ op/compare[greater]
-  │       │           │   │       └─ right/int
-  │       │           │   └─ string
+  │       │           │   │       └─ right/int = "0"
+  │       │           │   └─ string = "\"non-empty string\""
   │       │           ├─ arm/
   │       │           │   ├─ call/
-  │       │           │   │   ├─ name
-  │       │           │   │   └─ argument/variable/name
-  │       │           │   └─ string
-  │       │           └─ arm[default]/string
+  │       │           │   │   ├─ name = "is_array"
+  │       │           │   │   └─ argument/variable/name = "value"
+  │       │           │   └─ string = "\"array\""
+  │       │           └─ arm[default]/string = "\"other\""
   │       ├─ method[public]/
-  │       │   ├─ name
+  │       │   ├─ name = "process"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive]
-  │       │   │   └─ name
-  │       │   ├─ type[primitive]
+  │       │   │   ├─ type[primitive] = "iterable"
+  │       │   │   └─ name = "$items"
+  │       │   ├─ type[primitive] = "array"
   │       │   └─ body/
   │       │       ├─ assign/
-  │       │       │   ├─ left/variable/name
-  │       │       │   ├─ op
-  │       │       │   └─ right/array
+  │       │       │   ├─ left/variable/name = "results"
+  │       │       │   ├─ op = "="
+  │       │       │   └─ right/array = "[]"
   │       │       ├─ foreach/
-  │       │       │   ├─ variable/name
+  │       │       │   ├─ variable/name = "items"
   │       │       │   ├─ pair/
-  │       │       │   │   ├─ variable/name
-  │       │       │   │   └─ variable/name
+  │       │       │   │   ├─ variable/name = "key"
+  │       │       │   │   └─ variable/name = "item"
   │       │       │   └─ body/
   │       │       │       ├─ if/
   │       │       │       │   ├─ condition/binary/
-  │       │       │       │   │   ├─ left/variable/name
+  │       │       │       │   │   ├─ left/variable/name = "item"
   │       │       │       │   │   ├─ op/equals[strict]
-  │       │       │       │   │   └─ right/null
-  │       │       │       │   └─ body/continue
+  │       │       │       │   │   └─ right/null = "null"
+  │       │       │       │   └─ body/continue = "continue;"
   │       │       │       └─ try/
   │       │       │           ├─ body/assign/
   │       │       │           │   ├─ left/index/
-  │       │       │           │   │   ├─ variable/name
-  │       │       │           │   │   └─ variable/name
-  │       │       │           │   ├─ op
+  │       │       │           │   │   ├─ variable/name = "results"
+  │       │       │           │   │   └─ variable/name = "key"
+  │       │       │           │   ├─ op = "="
   │       │       │           │   └─ right/call[instance]/
-  │       │       │           │       ├─ variable/name
-  │       │       │           │       ├─ name
-  │       │       │           │       └─ argument/variable/name
+  │       │       │           │       ├─ variable/name = "this"
+  │       │       │           │       ├─ name = "transform"
+  │       │       │           │       └─ argument/variable/name = "item"
   │       │       │           └─ catch/
-  │       │       │               ├─ types/type/name
-  │       │       │               ├─ name
-  │       │       │               └─ body/continue
-  │       │       └─ return/variable/name
+  │       │       │               ├─ types/type/name = "Throwable"
+  │       │       │               ├─ name = "$e"
+  │       │       │               └─ body/continue = "continue;"
+  │       │       └─ return/variable/name = "results"
   │       └─ method[private]/
-  │           ├─ name
+  │           ├─ name = "transform"
   │           ├─ parameter/
-  │           │   ├─ type[primitive]
-  │           │   └─ name
-  │           ├─ type[primitive]
-  │           └─ body/return/variable/name
+  │           │   ├─ type[primitive] = "mixed"
+  │           │   └─ name = "$item"
+  │           ├─ type[primitive] = "mixed"
+  │           └─ body/return/variable/name = "item"
   ├─ interface/
-  │   ├─ name
+  │   ├─ name = "Speaker"
   │   └─ body/method[public]/
-  │       ├─ name
+  │       ├─ name = "greet"
   │       ├─ parameter/
-  │       │   ├─ type[optional]/type[primitive]
-  │       │   └─ name
-  │       └─ type[primitive]
+  │       │   ├─ type[optional]/type[primitive] = "string"
+  │       │   └─ name = "$who"
+  │       └─ type[primitive] = "string"
   ├─ interface/
-  │   ├─ name
+  │   ├─ name = "Countable"
   │   └─ body/method[public]/
-  │       ├─ name
-  │       └─ type[primitive]
+  │       ├─ name = "count"
+  │       └─ type[primitive] = "int"
   ├─ trait/
-  │   ├─ name
+  │   ├─ name = "Loggable"
   │   └─ body/method[protected]/
-  │       ├─ name
+  │       ├─ name = "log"
   │       ├─ parameter/
-  │       │   ├─ type[primitive]
-  │       │   └─ name
-  │       ├─ type[primitive]
-  │       └─ body/echo/string/interpolation/variable/name
+  │       │   ├─ type[primitive] = "string"
+  │       │   └─ name = "$msg"
+  │       ├─ type[primitive] = "void"
+  │       └─ body/echo/string/interpolation/variable/name = "msg"
   ├─ enum/
-  │   ├─ name
-  │   ├─ type[primitive]
+  │   ├─ name = "Status"
+  │   ├─ type[primitive] = "string"
   │   └─ body/
   │       ├─ constant/
-  │       │   ├─ name
-  │       │   └─ value/string
+  │       │   ├─ name = "Active"
+  │       │   └─ value/string = "\"active\""
   │       ├─ constant/
-  │       │   ├─ name
-  │       │   └─ value/string
+  │       │   ├─ name = "Inactive"
+  │       │   └─ value/string = "\"inactive\""
   │       ├─ constant/
-  │       │   ├─ name
-  │       │   └─ value/string
+  │       │   ├─ name = "Pending"
+  │       │   └─ value/string = "\"pending\""
   │       └─ method[public]/
-  │           ├─ name
-  │           ├─ type[primitive]
+  │           ├─ name = "label"
+  │           ├─ type[primitive] = "string"
   │           └─ body/return/match/
-  │               ├─ condition/variable/name
+  │               ├─ condition/variable/name = "this"
   │               └─ body/
   │                   ├─ arm/
   │                   │   ├─ member[constant]/
-  │                   │   │   ├─ name
-  │                   │   │   └─ name
-  │                   │   └─ string
+  │                   │   │   ├─ name = "Status"
+  │                   │   │   └─ name = "Active"
+  │                   │   └─ string = "\"✓\""
   │                   ├─ arm/
   │                   │   ├─ member[constant]/
-  │                   │   │   ├─ name
-  │                   │   │   └─ name
-  │                   │   └─ string
+  │                   │   │   ├─ name = "Status"
+  │                   │   │   └─ name = "Inactive"
+  │                   │   └─ string = "\"×\""
   │                   └─ arm/
   │                       ├─ member[constant]/
-  │                       │   ├─ name
-  │                       │   └─ name
-  │                       └─ string
+  │                       │   ├─ name = "Status"
+  │                       │   └─ name = "Pending"
+  │                       └─ string = "\"…\""
   ├─ function/
-  │   ├─ name
+  │   ├─ name = "factory"
   │   ├─ parameter/
-  │   │   ├─ type[primitive]
-  │   │   └─ name
+  │   │   ├─ type[primitive] = "callable"
+  │   │   └─ name = "$fn"
   │   ├─ parameter[variadic]/
-  │   │   ├─ type[primitive]
-  │   │   └─ name
-  │   ├─ type[primitive]
+  │   │   ├─ type[primitive] = "mixed"
+  │   │   └─ name = "$args"
+  │   ├─ type[primitive] = "mixed"
   │   └─ body/return/call/
-  │       ├─ variable/name
-  │       └─ argument/spread/variable/name
+  │       ├─ variable/name = "fn"
+  │       └─ argument/spread/variable/name = "args"
   ├─ assign/
-  │   ├─ left/variable/name
-  │   ├─ op
+  │   ├─ left/variable/name = "pipeline"
+  │   ├─ op = "="
   │   └─ right/function[arrow]/
   │       ├─ parameter/
-  │       │   ├─ type[primitive]
-  │       │   └─ name
-  │       ├─ type[primitive]
+  │       │   ├─ type[primitive] = "int"
+  │       │   └─ name = "$x"
+  │       ├─ type[primitive] = "int"
   │       └─ body/binary/
-  │           ├─ left/variable/name
-  │           ├─ op[multiply]
-  │           └─ right/int
+  │           ├─ left/variable/name = "x"
+  │           ├─ op[multiply] = "*"
+  │           └─ right/int = "2"
   ├─ assign/
-  │   ├─ left/variable/name
-  │   ├─ op
+  │   ├─ left/variable/name = "doubled"
+  │   ├─ op = "="
   │   └─ right/call/
-  │       ├─ name
-  │       ├─ argument/variable/name
+  │       ├─ name = "array_map"
+  │       ├─ argument/variable/name = "pipeline"
   │       └─ argument/array/
-  │           ├─ int
-  │           ├─ int
-  │           └─ int
+  │           ├─ int = "1"
+  │           ├─ int = "2"
+  │           └─ int = "3"
   ├─ assign/
-  │   ├─ left/variable/name
-  │   ├─ op
+  │   ├─ left/variable/name = "closure"
+  │   ├─ op = "="
   │   └─ right/function[anonymous]/
   │       ├─ parameter/
-  │       │   ├─ type[primitive]
-  │       │   └─ name
-  │       ├─ variable/name
-  │       ├─ type[primitive]
+  │       │   ├─ type[primitive] = "int"
+  │       │   └─ name = "$x"
+  │       ├─ variable/name = "pipeline"
+  │       ├─ type[primitive] = "int"
   │       └─ body/return/binary/
   │           ├─ left/call/
-  │           │   ├─ variable/name
-  │           │   └─ argument/variable/name
-  │           ├─ op[plus]
-  │           └─ right/int
+  │           │   ├─ variable/name = "pipeline"
+  │           │   └─ argument/variable/name = "x"
+  │           ├─ op[plus] = "+"
+  │           └─ right/int = "1"
   └─ echo/binary/
       ├─ left/binary/
-      │   ├─ left/string
-      │   ├─ op
+      │   ├─ left/string = "\"result: \""
+      │   ├─ op = "."
       │   └─ right/call/
-      │       ├─ variable/name
-      │       └─ argument/int
-      ├─ op
-      └─ right/string
+      │       ├─ variable/name = "closure"
+      │       └─ argument/int = "5"
+      ├─ op = "."
+      └─ right/string = "\"\\n\""

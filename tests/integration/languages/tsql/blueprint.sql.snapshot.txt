@@ -1,358 +1,358 @@
 file/
-  ├─ comment
+  ├─ comment = "-- Simple T-SQL example"
   ├─ statement/
   │   ├─ select/
   │   │   ├─ column/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ name
+  │   │   │   ├─ ref/name = "u"
+  │   │   │   └─ name = "Name"
   │   │   └─ column/
-  │   │       ├─ ref/name
-  │   │       └─ name
+  │   │       ├─ ref/name = "u"
+  │   │       └─ name = "Age"
   │   └─ from/
   │       ├─ relation/
-  │       │   ├─ ref/name
-  │       │   └─ alias
+  │       │   ├─ ref/name = "Users"
+  │       │   └─ alias = "u"
   │       ├─ where/compare/
   │       │   ├─ column/
-  │       │   │   ├─ ref/name
-  │       │   │   └─ name
+  │       │   │   ├─ ref/name = "u"
+  │       │   │   └─ name = "Age"
   │       │   ├─ op/compare[greater]
-  │       │   └─ literal
+  │       │   └─ literal = "18"
   │       └─ order/target/column/
-  │           ├─ ref/name
-  │           └─ name
+  │           ├─ ref/name = "u"
+  │           └─ name = "Name"
   ├─ statement/insert/
-  │   ├─ ref/name
+  │   ├─ ref/name = "AuditLog"
   │   ├─ list/
-  │   │   ├─ col/name
-  │   │   └─ col/name
+  │   │   ├─ col/name = "Action"
+  │   │   └─ col/name = "Timestamp"
   │   └─ list/
-  │       ├─ literal
-  │       └─ call/ref/name
+  │       ├─ literal = "'UserQuery'"
+  │       └─ call/ref/name = "GETDATE"
   ├─ statement[delete]/from/
-  │   ├─ ref/name
+  │   ├─ ref/name = "OldRecords"
   │   └─ where/compare/
-  │       ├─ column/name
+  │       ├─ column/name = "CreatedAt"
   │       ├─ op/compare[less]
-  │       └─ literal
-  ├─ comment
+  │       └─ literal = "'2020-01-01'"
+  ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
   │   ├─ select/
   │   │   ├─ column/
   │   │   │   ├─ ref/
-  │   │   │   │   ├─ schema
-  │   │   │   │   └─ name
-  │   │   │   └─ name
-  │   │   ├─ alias
-  │   │   └─ column/var
+  │   │   │   │   ├─ schema = "dbo"
+  │   │   │   │   └─ name = "Users"
+  │   │   │   └─ name = "Name"
+  │   │   ├─ alias = "UserName"
+  │   │   └─ column/var = "StartDate"
   │   └─ from/
   │       ├─ relation/ref/
-  │       │   ├─ schema
-  │       │   └─ name
+  │       │   ├─ schema = "dbo"
+  │       │   └─ name = "Users"
   │       └─ where/between/
-  │           ├─ column/name
-  │           ├─ literal
-  │           └─ literal
-  ├─ comment
+  │           ├─ column/name = "Age"
+  │           ├─ literal = "18"
+  │           └─ literal = "65"
+  ├─ comment = "-- UPDATE with variables and schema-qualified table"
   ├─ statement/update/
   │   ├─ relation/ref/
-  │   │   ├─ schema
-  │   │   └─ name
+  │   │   ├─ schema = "dbo"
+  │   │   └─ name = "Config"
   │   ├─ assign/
-  │   │   ├─ column/name
-  │   │   ├─ op
-  │   │   └─ column/var
+  │   │   ├─ column/name = "Value"
+  │   │   ├─ op = "="
+  │   │   └─ column/var = "NewValue"
   │   └─ where/compare/
-  │       ├─ column/name
-  │       ├─ op
-  │       └─ column/var
-  ├─ comment
+  │       ├─ column/name = "Key"
+  │       ├─ op = "="
+  │       └─ column/var = "KeyName"
+  ├─ comment = "-- JOINs"
   ├─ statement/
   │   ├─ select/
   │   │   ├─ column/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ name
+  │   │   │   ├─ ref/name = "o"
+  │   │   │   └─ name = "ID"
   │   │   ├─ column/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ name
+  │   │   │   ├─ ref/name = "u"
+  │   │   │   └─ name = "Name"
   │   │   └─ column/
-  │   │       ├─ ref/name
-  │   │       └─ name
+  │   │       ├─ ref/name = "a"
+  │   │       └─ name = "City"
   │   └─ from/
   │       ├─ relation/
-  │       │   ├─ ref/name
-  │       │   └─ alias
+  │       │   ├─ ref/name = "Orders"
+  │       │   └─ alias = "o"
   │       ├─ join/
   │       │   ├─ relation/
-  │       │   │   ├─ ref/name
-  │       │   │   └─ alias
+  │       │   │   ├─ ref/name = "Users"
+  │       │   │   └─ alias = "u"
   │       │   └─ compare/
   │       │       ├─ column/
-  │       │       │   ├─ ref/name
-  │       │       │   └─ name
-  │       │       ├─ op
+  │       │       │   ├─ ref/name = "o"
+  │       │       │   └─ name = "UserID"
+  │       │       ├─ op = "="
   │       │       └─ column/
-  │       │           ├─ ref/name
-  │       │           └─ name
+  │       │           ├─ ref/name = "u"
+  │       │           └─ name = "ID"
   │       ├─ join/
   │       │   ├─ relation/
-  │       │   │   ├─ ref/name
-  │       │   │   └─ alias
+  │       │   │   ├─ ref/name = "Addresses"
+  │       │   │   └─ alias = "a"
   │       │   └─ compare/
   │       │       ├─ column/
-  │       │       │   ├─ ref/name
-  │       │       │   └─ name
-  │       │       ├─ op
+  │       │       │   ├─ ref/name = "u"
+  │       │       │   └─ name = "ID"
+  │       │       ├─ op = "="
   │       │       └─ column/
-  │       │           ├─ ref/name
-  │       │           └─ name
+  │       │           ├─ ref/name = "a"
+  │       │           └─ name = "UserID"
   │       └─ where/compare/
   │           ├─ column/
-  │           │   ├─ ref/name
-  │           │   └─ name
+  │           │   ├─ ref/name = "o"
+  │           │   └─ name = "Total"
   │           ├─ op/compare[greater]
-  │           └─ literal
-  ├─ comment
+  │           └─ literal = "100"
+  ├─ comment = "-- Subquery with IN"
   ├─ statement/
-  │   ├─ select/column/name
+  │   ├─ select/column/name = "Name"
   │   └─ from/
-  │       ├─ relation/ref/name
+  │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ column/name
+  │           ├─ column/name = "ID"
   │           └─ subquery/
-  │               ├─ select/column/name
+  │               ├─ select/column/name = "UserID"
   │               └─ from/
-  │                   ├─ relation/ref/name
+  │                   ├─ relation/ref/name = "Orders"
   │                   └─ where/compare/
-  │                       ├─ column/name
+  │                       ├─ column/name = "Total"
   │                       ├─ op/compare[greater]
-  │                       └─ literal
-  ├─ comment
+  │                       └─ literal = "50"
+  ├─ comment = "-- EXISTS"
   ├─ statement/
   │   ├─ select/column/
-  │   │   ├─ ref/name
-  │   │   └─ name
+  │   │   ├─ ref/name = "u"
+  │   │   └─ name = "Name"
   │   └─ from/
   │       ├─ relation/
-  │       │   ├─ ref/name
-  │       │   └─ alias
+  │       │   ├─ ref/name = "Users"
+  │       │   └─ alias = "u"
   │       └─ where/exists/subquery/
-  │           ├─ select/literal
+  │           ├─ select/literal = "1"
   │           └─ from/
   │               ├─ relation/
-  │               │   ├─ ref/name
-  │               │   └─ alias
+  │               │   ├─ ref/name = "Orders"
+  │               │   └─ alias = "o"
   │               └─ where/compare/
   │                   ├─ column/
-  │                   │   ├─ ref/name
-  │                   │   └─ name
-  │                   ├─ op
+  │                   │   ├─ ref/name = "o"
+  │                   │   └─ name = "UserID"
+  │                   ├─ op = "="
   │                   └─ column/
-  │                       ├─ ref/name
-  │                       └─ name
-  ├─ comment
+  │                       ├─ ref/name = "u"
+  │                       └─ name = "ID"
+  ├─ comment = "-- GROUP BY, HAVING, aggregate functions"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ column/name
+  │   │   ├─ column/name = "Department"
   │   │   ├─ call/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ star
-  │   │   ├─ alias
+  │   │   │   ├─ ref/name = "COUNT"
+  │   │   │   └─ star = "*"
+  │   │   ├─ alias = "HeadCount"
   │   │   ├─ call/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ column/name
-  │   │   └─ alias
+  │   │   │   ├─ ref/name = "AVG"
+  │   │   │   └─ column/name = "Salary"
+  │   │   └─ alias = "AvgSalary"
   │   └─ from/
-  │       ├─ relation/ref/name
-  │       ├─ group/column/name
+  │       ├─ relation/ref/name = "Employees"
+  │       ├─ group/column/name = "Department"
   │       └─ having/compare/
   │           ├─ call/
-  │           │   ├─ ref/name
-  │           │   └─ star
+  │           │   ├─ ref/name = "COUNT"
+  │           │   └─ star = "*"
   │           ├─ op/compare[greater]
-  │           └─ literal
-  ├─ comment
+  │           └─ literal = "5"
+  ├─ comment = "-- CASE WHEN"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ column/name
+  │   │   ├─ column/name = "Name"
   │   │   ├─ case/
   │   │   │   ├─ compare/
-  │   │   │   │   ├─ column/name
+  │   │   │   │   ├─ column/name = "Age"
   │   │   │   │   ├─ op/compare[greater and or-equal]
-  │   │   │   │   └─ literal
-  │   │   │   ├─ literal
-  │   │   │   └─ literal
-  │   │   └─ alias
-  │   └─ from/relation/ref/name
-  ├─ comment
+  │   │   │   │   └─ literal = "18"
+  │   │   │   ├─ literal = "'Adult'"
+  │   │   │   └─ literal = "'Minor'"
+  │   │   └─ alias = "Category"
+  │   └─ from/relation/ref/name = "Users"
+  ├─ comment = "-- CTE (Common Table Expression)"
   ├─ statement/
   │   ├─ cte/
-  │   │   ├─ name
+  │   │   ├─ name = "ActiveUsers"
   │   │   └─ statement/
   │   │       ├─ select/
-  │   │       │   ├─ column/name
-  │   │       │   └─ column/name
+  │   │       │   ├─ column/name = "ID"
+  │   │       │   └─ column/name = "Name"
   │   │       └─ from/
-  │   │           ├─ relation/ref/name
+  │   │           ├─ relation/ref/name = "Users"
   │   │           └─ where/compare/
-  │   │               ├─ column/name
-  │   │               ├─ op
-  │   │               └─ literal
-  │   ├─ select/column/name
-  │   └─ from/relation/ref/name
-  ├─ comment
+  │   │               ├─ column/name = "Active"
+  │   │               ├─ op = "="
+  │   │               └─ literal = "1"
+  │   ├─ select/column/name = "Name"
+  │   └─ from/relation/ref/name = "ActiveUsers"
+  ├─ comment = "-- UNION ALL"
   ├─ statement/union/
   │   ├─ select/
-  │   │   ├─ column/name
-  │   │   ├─ literal
-  │   │   └─ alias
-  │   ├─ from/relation/ref/name
+  │   │   ├─ column/name = "Name"
+  │   │   ├─ literal = "'User'"
+  │   │   └─ alias = "Source"
+  │   ├─ from/relation/ref/name = "Users"
   │   ├─ select/
-  │   │   ├─ column/name
-  │   │   ├─ literal
-  │   │   └─ alias
-  │   └─ from/relation/ref/name
-  ├─ comment
+  │   │   ├─ column/name = "Name"
+  │   │   ├─ literal = "'Admin'"
+  │   │   └─ alias = "Source"
+  │   └─ from/relation/ref/name = "Admins"
+  ├─ comment = "-- Window function with PARTITION BY"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ column/name
+  │   │   ├─ column/name = "Name"
   │   │   ├─ window/
-  │   │   │   ├─ call/ref/name
+  │   │   │   ├─ call/ref/name = "ROW_NUMBER"
   │   │   │   └─ over/
-  │   │   │       ├─ partition/column/name
-  │   │   │       └─ order/target[direction]/column/name
-  │   │   └─ alias
-  │   └─ from/relation/ref/name
-  ├─ comment
+  │   │   │       ├─ partition/column/name = "Department"
+  │   │   │       └─ order/target[direction]/column/name = "Salary"
+  │   │   └─ alias = "Rank"
+  │   └─ from/relation/ref/name = "Employees"
+  ├─ comment = "-- COALESCE, CAST, LIKE, IS NULL, IN list"
   ├─ statement/
   │   ├─ select/
   │   │   ├─ call/
-  │   │   │   ├─ ref/name
-  │   │   │   ├─ column/name
-  │   │   │   └─ column/name
-  │   │   ├─ alias
+  │   │   │   ├─ ref/name = "COALESCE"
+  │   │   │   ├─ column/name = "Nickname"
+  │   │   │   └─ column/name = "Name"
+  │   │   ├─ alias = "DisplayName"
   │   │   ├─ cast[name]/
-  │   │   │   ├─ column/name
-  │   │   │   └─ varchar/literal
-  │   │   └─ alias
+  │   │   │   ├─ column/name = "Age"
+  │   │   │   └─ varchar/literal = "10"
+  │   │   └─ alias = "AgeText"
   │   └─ from/
-  │       ├─ relation/ref/name
+  │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
   │           ├─ compare/
   │           │   ├─ compare/
-  │           │   │   ├─ column/name
-  │           │   │   └─ literal
-  │           │   └─ compare[literal]/column/name
+  │           │   │   ├─ column/name = "Email"
+  │           │   │   └─ literal = "'%@gmail.com'"
+  │           │   └─ compare[literal]/column/name = "DeletedAt"
   │           └─ compare/
-  │               ├─ column/name
+  │               ├─ column/name = "Role"
   │               └─ list/
-  │                   ├─ literal
-  │                   └─ literal
-  ├─ comment
+  │                   ├─ literal = "'admin'"
+  │                   └─ literal = "'moderator'"
+  ├─ comment = "-- DISTINCT with ORDER BY DESC"
   ├─ statement/
-  │   ├─ select/column/name
+  │   ├─ select/column/name = "Department"
   │   └─ from/
-  │       ├─ relation/ref/name
-  │       └─ order/target[direction]/column/name
-  ├─ comment
+  │       ├─ relation/ref/name = "Employees"
+  │       └─ order/target[direction]/column/name = "Department"
+  ├─ comment = "-- CREATE TABLE"
   ├─ statement/create/
-  │   ├─ ref/name
+  │   ├─ ref/name = "Audit"
   │   └─ columns/
-  │       ├─ definition[int]/name
+  │       ├─ definition[int]/name = "ID"
   │       ├─ definition/
-  │       │   ├─ name
-  │       │   └─ nvarchar/literal
+  │       │   ├─ name = "Action"
+  │       │   └─ nvarchar/literal = "100"
   │       └─ definition/
-  │           ├─ name
-  │           └─ call/ref/name
-  ├─ comment
+  │           ├─ name = "CreatedAt"
+  │           └─ call/ref/name = "GETDATE"
+  ├─ comment = "-- MERGE statement"
   ├─ statement/
-  │   ├─ ref/name
-  │   ├─ alias
-  │   ├─ ref/name
-  │   ├─ alias
+  │   ├─ ref/name = "Target"
+  │   ├─ alias = "t"
+  │   ├─ ref/name = "Source"
+  │   ├─ alias = "s"
   │   ├─ compare/
   │   │   ├─ column/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ name
-  │   │   ├─ op
+  │   │   │   ├─ ref/name = "t"
+  │   │   │   └─ name = "ID"
+  │   │   ├─ op = "="
   │   │   └─ column/
-  │   │       ├─ ref/name
-  │   │       └─ name
+  │   │       ├─ ref/name = "s"
+  │   │       └─ name = "ID"
   │   ├─ when/assign/
   │   │   ├─ column/
-  │   │   │   ├─ ref/name
-  │   │   │   └─ name
-  │   │   ├─ op
+  │   │   │   ├─ ref/name = "t"
+  │   │   │   └─ name = "Name"
+  │   │   ├─ op = "="
   │   │   └─ column/
-  │   │       ├─ ref/name
-  │   │       └─ name
+  │   │       ├─ ref/name = "s"
+  │   │       └─ name = "Name"
   │   └─ when/
   │       ├─ list/
-  │       │   ├─ col/name
-  │       │   └─ col/name
+  │       │   ├─ col/name = "ID"
+  │       │   └─ col/name = "Name"
   │       └─ list/
   │           ├─ column/
-  │           │   ├─ ref/name
-  │           │   └─ name
+  │           │   ├─ ref/name = "s"
+  │           │   └─ name = "ID"
   │           └─ column/
-  │               ├─ ref/name
-  │               └─ name
-  ├─ comment
+  │               ├─ ref/name = "s"
+  │               └─ name = "Name"
+  ├─ comment = "-- SELECT INTO temp table"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ column/name
-  │   │   └─ column/name
-  │   ├─ temp
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/name = "Age"
+  │   ├─ temp = "#TempUsers"
   │   └─ from/
-  │       ├─ relation/ref/name
+  │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ column/name
-  │           ├─ op
-  │           └─ literal
-  ├─ comment
+  │           ├─ column/name = "Active"
+  │           ├─ op = "="
+  │           └─ literal = "1"
+  ├─ comment = "-- Transaction"
   ├─ transaction/
   │   ├─ statement/update/
-  │   │   ├─ relation/ref/name
+  │   │   ├─ relation/ref/name = "Accounts"
   │   │   ├─ assign/
-  │   │   │   ├─ column/name
-  │   │   │   ├─ op
+  │   │   │   ├─ column/name = "Balance"
+  │   │   │   ├─ op = "="
   │   │   │   └─ compare/
-  │   │   │       ├─ column/name
-  │   │   │       ├─ op[minus]
-  │   │   │       └─ literal
+  │   │   │       ├─ column/name = "Balance"
+  │   │   │       ├─ op[minus] = "-"
+  │   │   │       └─ literal = "100"
   │   │   └─ where/compare/
-  │   │       ├─ column/name
-  │   │       ├─ op
-  │   │       └─ literal
+  │   │       ├─ column/name = "ID"
+  │   │       ├─ op = "="
+  │   │       └─ literal = "1"
   │   └─ statement/update/
-  │       ├─ relation/ref/name
+  │       ├─ relation/ref/name = "Accounts"
   │       ├─ assign/
-  │       │   ├─ column/name
-  │       │   ├─ op
+  │       │   ├─ column/name = "Balance"
+  │       │   ├─ op = "="
   │       │   └─ compare/
-  │       │       ├─ column/name
-  │       │       ├─ op[plus]
-  │       │       └─ literal
+  │       │       ├─ column/name = "Balance"
+  │       │       ├─ op[plus] = "+"
+  │       │       └─ literal = "100"
   │       └─ where/compare/
-  │           ├─ column/name
-  │           ├─ op
-  │           └─ literal
-  ├─ comment
+  │           ├─ column/name = "ID"
+  │           ├─ op = "="
+  │           └─ literal = "2"
+  ├─ comment = "-- SET variable"
   ├─ statement/set/
-  │   ├─ ref/var
-  │   └─ literal
-  ├─ comment
+  │   ├─ ref/var = "Threshold"
+  │   └─ literal = "42"
+  ├─ comment = "-- Scalar function"
   ├─ statement/function[int]/
   │   ├─ ref/
-  │   │   ├─ schema
-  │   │   └─ name
-  │   ├─ arg/arg/var
+  │   │   ├─ schema = "dbo"
+  │   │   └─ name = "GetAge"
+  │   ├─ arg/arg/var = "BirthDate"
   │   └─ body/call/
-  │       ├─ ref/name
-  │       ├─ column/name
-  │       ├─ column/var
-  │       └─ call/ref/name
-  ├─ go
-  ├─ comment
-  └─ statement/exec/ref/name
+  │       ├─ ref/name = "DATEDIFF"
+  │       ├─ column/name = "YEAR"
+  │       ├─ column/var = "BirthDate"
+  │       └─ call/ref/name = "GETDATE"
+  ├─ go = "GO"
+  ├─ comment = "-- EXEC stored procedure"
+  └─ statement/exec/ref/name = "sp_helpdb"
