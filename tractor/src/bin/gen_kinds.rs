@@ -69,6 +69,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types_sources: &[tree_sitter_ruby::NODE_TYPES],
         output_path: "tractor/src/languages/ruby/input.rs",
     },
+    LangCodegen {
+        enum_name: "TsqlKind",
+        node_types_sources: &[tree_sitter_sequel_tsql::NODE_TYPES],
+        output_path: "tractor/src/languages/tsql/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
