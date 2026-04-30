@@ -315,9 +315,9 @@ fn go() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [variable[short][left/name='i']]
-                [condition/binary]
-                [assign[left/name='i']]
+                [variable[short][left/expression/name='i']]
+                [condition/expression/binary]
+                [assign[left/expression/name='i']]
                 [body]
         "#),
         1);
@@ -331,8 +331,8 @@ fn go() {
         &mut tree,
         &multi_xpath(r#"
             //for/range
-                [left[name='k'][name='v']]
-                [right/name='items']
+                [left[expression/name='k'][expression/name='v']]
+                [right/expression/name='items']
         "#),
         1);
 }

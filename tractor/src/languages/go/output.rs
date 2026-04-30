@@ -35,7 +35,7 @@ pub enum TractorNode {
     Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
     Break, Continue, Goto, Labeled, Label, Send, Receive, Assign,
     // Expressions
-    Call, Member, Index, Binary, Unary, Assert, Closure, Literal,
+    Call, Member, Index, Binary, Unary, Assert, Closure, Literal, Expression,
     // Literals / atoms
     String, Int, Float, Char, True, False, Nil, Iota,
     // Identifiers / comments / op

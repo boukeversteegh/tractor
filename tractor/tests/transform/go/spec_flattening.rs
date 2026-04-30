@@ -18,7 +18,7 @@ fn go() {
         &multi_xpath(r#"
             //const
                 [name='x']
-                [value/int='1']
+                [value/expression/int='1']
         "#),
         1);
 
@@ -31,7 +31,7 @@ fn go() {
         &multi_xpath(r#"
             //var
                 [name='y']
-                [value/int='2']
+                [value/expression/int='2']
         "#),
         1);
 }

@@ -87,9 +87,9 @@ fn go_binary() {
         &mut parse_src("go", "package m\nvar x = 1 + 2\n"),
         &multi_xpath(r#"
             //binary
-                [left/int='1']
+                [left/expression/int='1']
                 [op[plus]]
-                [right/int='2']
+                [right/expression/int='2']
         "#),
         1);
 }

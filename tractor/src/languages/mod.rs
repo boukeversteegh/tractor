@@ -138,7 +138,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["go"],
         transform: go::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(go_post_transform),
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
         node_spec: Some(go::output::spec),
@@ -499,6 +499,18 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
 /// Java post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// Go post-transform: collapse conditionals + wrap expression
+/// positions in `<expression>` hosts (Principle #15).
+fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

@@ -14,17 +14,17 @@ file/
   │   └─ string = "\"net/http/pprof\""
   ├─ const/
   │   ├─ name = "Pi"
-  │   └─ value/float = "3.14159"
+  │   └─ value/expression/float = "3.14159"
   ├─ const/
   │   ├─ name = "StatusIdle"
-  │   ├─ value/iota = "iota"
+  │   ├─ value/expression/iota = "iota"
   │   ├─ name = "StatusRunning"
   │   ├─ name = "StatusDone"
   │   ├─ name = "_"
   │   └─ name = "StatusError"
   ├─ var/
   │   ├─ name = "ErrNotFound"
-  │   ├─ value/call/
+  │   ├─ value/expression/call/
   │   │   ├─ member/
   │   │   │   ├─ name = "errors"
   │   │   │   └─ name = "New"
@@ -34,8 +34,8 @@ file/
   │   ├─ name = "name"
   │   ├─ name = "age"
   │   └─ value/
-  │       ├─ string = "\"alice\""
-  │       └─ int = "30"
+  │       ├─ expression/string = "\"alice\""
+  │       └─ expression/int = "30"
   ├─ interface[exported]/
   │   ├─ name = "Number"
   │   ├─ type[negated]/type/name = "int"
@@ -119,10 +119,10 @@ file/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
   │   └─ body/assign/
-  │       ├─ left/member/
+  │       ├─ left/expression/member/
   │       │   ├─ name = "c"
   │       │   └─ name = "items"
-  │       └─ right/call/
+  │       └─ right/expression/call/
   │           ├─ name = "append"
   │           ├─ member/
   │           │   ├─ name = "c"
@@ -134,7 +134,7 @@ file/
   │   │   └─ type/name = "Point"
   │   ├─ name = "String"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/call/
+  │   └─ body/return/expression/call/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Sprintf"
@@ -156,22 +156,22 @@ file/
   │   │   └─ type/name = "int"
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ left/member/
+  │       │   ├─ left/expression/member/
   │       │   │   ├─ name = "p"
   │       │   │   └─ name = "X"
-  │       │   └─ right/name = "dx"
+  │       │   └─ right/expression/name = "dx"
   │       └─ assign/
-  │           ├─ left/member/
+  │           ├─ left/expression/member/
   │           │   ├─ name = "p"
   │           │   └─ name = "Y"
-  │           └─ right/name = "dy"
+  │           └─ right/expression/name = "dy"
   ├─ method[exported]/
   │   ├─ parameter/
   │   │   ├─ name = "e"
   │   │   └─ pointer/type/name = "MyErr"
   │   ├─ name = "Error"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/member/
+  │   └─ body/return/expression/member/
   │       ├─ name = "e"
   │       └─ name = "msg"
   ├─ function[unexported]/
@@ -180,7 +180,7 @@ file/
   │   │   ├─ name = "err"
   │   │   └─ type/name = "error"
   │   ├─ returns/type/name = "error"
-  │   └─ body/return/call/
+  │   └─ body/return/expression/call/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Errorf"
@@ -189,15 +189,15 @@ file/
   ├─ function[unexported]/
   │   ├─ name = "doThing"
   │   ├─ returns/type/name = "error"
-  │   └─ body/return/nil = "nil"
+  │   └─ body/return/expression/nil = "nil"
   ├─ function[unexported]/
   │   ├─ name = "risky"
   │   ├─ returns/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
   │   └─ body/return/
-  │       ├─ int = "0"
-  │       └─ name = "ErrNotFound"
+  │       ├─ expression/int = "0"
+  │       └─ expression/name = "ErrNotFound"
   ├─ function[exported]/
   │   ├─ name = "Map"
   │   ├─ name = "T"
@@ -214,8 +214,8 @@ file/
   │   ├─ returns/slice/type/name = "U"
   │   └─ body/
   │       ├─ variable[short]/
-  │       │   ├─ left/name = "out"
-  │       │   └─ right/call/
+  │       │   ├─ left/expression/name = "out"
+  │       │   └─ right/expression/call/
   │       │       ├─ name = "make"
   │       │       ├─ slice/type/name = "U"
   │       │       ├─ int = "0"
@@ -225,18 +225,18 @@ file/
   │       ├─ for/
   │       │   ├─ range/
   │       │   │   ├─ left/
-  │       │   │   │   ├─ name = "_"
-  │       │   │   │   └─ name = "x"
-  │       │   │   └─ right/name = "xs"
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
   │       │   └─ body/assign/
-  │       │       ├─ left/name = "out"
-  │       │       └─ right/call/
+  │       │       ├─ left/expression/name = "out"
+  │       │       └─ right/expression/call/
   │       │           ├─ name = "append"
   │       │           ├─ name = "out"
   │       │           └─ call/
   │       │               ├─ name = "f"
   │       │               └─ name = "x"
-  │       └─ return/name = "out"
+  │       └─ return/expression/name = "out"
   ├─ function[exported]/
   │   ├─ name = "Sum"
   │   ├─ name = "T"
@@ -249,12 +249,12 @@ file/
   │       ├─ for/
   │       │   ├─ range/
   │       │   │   ├─ left/
-  │       │   │   │   ├─ name = "_"
-  │       │   │   │   └─ name = "x"
-  │       │   │   └─ right/name = "xs"
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
   │       │   └─ body/assign/
-  │       │       ├─ left/name = "total"
-  │       │       └─ right/name = "x"
+  │       │       ├─ left/expression/name = "total"
+  │       │       └─ right/expression/name = "x"
   │       └─ return = "return"
   ├─ function[exported]/
   │   ├─ name = "Uniq"
@@ -266,40 +266,40 @@ file/
   │   ├─ returns/slice/type/name = "T"
   │   └─ body/
   │       ├─ variable[short]/
-  │       │   ├─ left/name = "seen"
-  │       │   └─ right/literal/
+  │       │   ├─ left/expression/name = "seen"
+  │       │   └─ right/expression/literal/
   │       │       ├─ map/
   │       │       │   ├─ type/name = "T"
-  │       │       │   └─ value/struct = "struct{}"
+  │       │       │   └─ value/expression/struct = "struct{}"
   │       │       └─ body = "{}"
   │       ├─ for/
   │       │   ├─ range/
   │       │   │   ├─ left/
-  │       │   │   │   ├─ name = "_"
-  │       │   │   │   └─ name = "x"
-  │       │   │   └─ right/name = "xs"
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
   │       │   └─ body/if/
   │       │       ├─ variable[short]/
   │       │       │   ├─ left/
-  │       │       │   │   ├─ name = "_"
-  │       │       │   │   └─ name = "ok"
-  │       │       │   └─ right/index/
+  │       │       │   │   ├─ expression/name = "_"
+  │       │       │   │   └─ expression/name = "ok"
+  │       │       │   └─ right/expression/index/
   │       │       │       ├─ name = "seen"
   │       │       │       └─ name = "x"
-  │       │       ├─ condition/unary/
+  │       │       ├─ condition/expression/unary/
   │       │       │   ├─ op/logical[not]
   │       │       │   └─ name = "ok"
   │       │       └─ then/
   │       │           ├─ assign/
-  │       │           │   ├─ left/index/
+  │       │           │   ├─ left/expression/index/
   │       │           │   │   ├─ name = "seen"
   │       │           │   │   └─ name = "x"
-  │       │           │   └─ right/literal/
+  │       │           │   └─ right/expression/literal/
   │       │           │       ├─ struct = "struct{}"
   │       │           │       └─ body = "{}"
   │       │           └─ assign/
-  │       │               ├─ left/name = "out"
-  │       │               └─ right/call/
+  │       │               ├─ left/expression/name = "out"
+  │       │               └─ right/expression/call/
   │       │                   ├─ name = "append"
   │       │                   ├─ name = "out"
   │       │                   └─ name = "x"
@@ -317,22 +317,22 @@ file/
   │   │   └─ type/name = "error"
   │   └─ body/
   │       ├─ defer/call/closure/body/assign/
-  │       │   ├─ left/name = "_"
-  │       │   └─ right/call/name = "recover"
+  │       │   ├─ left/expression/name = "_"
+  │       │   └─ right/expression/call/name = "recover"
   │       ├─ assign/
-  │       │   ├─ left/name = "_"
-  │       │   └─ right/call/
+  │       │   ├─ left/expression/name = "_"
+  │       │   └─ right/expression/call/
   │       │       ├─ name = "ToUpper"
   │       │       └─ name = "prefix"
   │       ├─ for/
   │       │   ├─ range/
   │       │   │   ├─ left/
-  │       │   │   │   ├─ name = "_"
-  │       │   │   │   └─ name = "v"
-  │       │   │   └─ right/name = "vals"
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "v"
+  │       │   │   └─ right/expression/name = "vals"
   │       │   └─ body/assign/
-  │       │       ├─ left/name = "sum"
-  │       │       └─ right/name = "v"
+  │       │       ├─ left/expression/name = "sum"
+  │       │       └─ right/expression/name = "v"
   │       └─ return = "return"
   ├─ function[unexported]/
   │   ├─ name = "classify"
@@ -342,23 +342,23 @@ file/
   │   ├─ returns/type/name = "string"
   │   └─ body/switch[type]/
   │       ├─ name = "v"
-  │       ├─ value/name = "x"
+  │       ├─ value/expression/name = "x"
   │       ├─ type/name = "nil"
-  │       ├─ return/string = "\"nil\""
+  │       ├─ return/expression/string = "\"nil\""
   │       ├─ type/name = "int"
   │       ├─ type/name = "int32"
   │       ├─ type/name = "int64"
-  │       ├─ return/string = "\"int-ish\""
+  │       ├─ return/expression/string = "\"int-ish\""
   │       ├─ type/name = "string"
-  │       ├─ return/binary/
-  │       │   ├─ left/string = "\"string:\""
+  │       ├─ return/expression/binary/
+  │       │   ├─ left/expression/string = "\"string:\""
   │       │   ├─ op[plus] = "+"
-  │       │   └─ right/name = "v"
+  │       │   └─ right/expression/name = "v"
   │       ├─ type/name = "Stringer"
-  │       ├─ return/call/member/
+  │       ├─ return/expression/call/member/
   │       │   ├─ name = "v"
   │       │   └─ name = "String"
-  │       └─ default/return/call/
+  │       └─ default/return/expression/call/
   │           ├─ member/
   │           │   ├─ name = "fmt"
   │           │   └─ name = "Sprintf"
@@ -372,90 +372,90 @@ file/
       │   └─ name = "Context"
       ├─ parameter/
       │   ├─ name = "in"
-      │   └─ chan/value/type/name = "int"
+      │   └─ chan/value/expression/type/name = "int"
       ├─ parameter/
       │   ├─ name = "out"
-      │   └─ chan/value/type/name = "int"
+      │   └─ chan/value/expression/type/name = "int"
       ├─ returns/type/name = "error"
       └─ body/
           ├─ variable[short]/
           │   ├─ left/
-          │   │   ├─ name = "raw"
-          │   │   └─ name = "ch"
+          │   │   ├─ expression/name = "raw"
+          │   │   └─ expression/name = "ch"
           │   └─ right/
-          │       ├─ string[raw] = "`no \"escapes\" here`"
-          │       └─ char = "'A'"
+          │       ├─ expression/string[raw] = "`no \"escapes\" here`"
+          │       └─ expression/char = "'A'"
           ├─ if/
           │   ├─ variable[short]/
           │   │   ├─ left/
-          │   │   │   ├─ name = "x"
-          │   │   │   └─ name = "err"
-          │   │   └─ right/call/member/
+          │   │   │   ├─ expression/name = "x"
+          │   │   │   └─ expression/name = "err"
+          │   │   └─ right/expression/call/member/
           │   │       ├─ name = "io"
           │   │       └─ name = "Pipe"
-          │   ├─ condition/binary/
-          │   │   ├─ left/name = "err"
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left/expression/name = "err"
           │   │   ├─ op[not-equals] = "!="
-          │   │   └─ right/nil = "nil"
-          │   ├─ then/return/call/
+          │   │   └─ right/expression/nil = "nil"
+          │   ├─ then/return/expression/call/
           │   │   ├─ name = "wrap"
           │   │   └─ name = "err"
           │   └─ else/assign/
-          │       ├─ left/name = "_"
-          │       └─ right/name = "x"
+          │       ├─ left/expression/name = "_"
+          │       └─ right/expression/name = "x"
           ├─ for/
           │   ├─ variable[short]/
-          │   │   ├─ left/name = "i"
-          │   │   └─ right/int = "0"
-          │   ├─ condition/binary/
-          │   │   ├─ left/name = "i"
+          │   │   ├─ left/expression/name = "i"
+          │   │   └─ right/expression/int = "0"
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left/expression/name = "i"
           │   │   ├─ op/compare[less]
-          │   │   └─ right/int = "10"
+          │   │   └─ right/expression/int = "10"
           │   ├─ unary/name = "i"
           │   └─ body/if/
-          │       ├─ condition/binary/
-          │       │   ├─ left/name = "i"
+          │       ├─ condition/expression/binary/
+          │       │   ├─ left/expression/name = "i"
           │       │   ├─ op[equals] = "=="
-          │       │   └─ right/int = "5"
+          │       │   └─ right/expression/int = "5"
           │       └─ then/continue = "continue"
           ├─ for/
           │   ├─ range/
-          │   │   ├─ left/name = "i"
-          │   │   └─ right/int = "5"
+          │   │   ├─ left/expression/name = "i"
+          │   │   └─ right/expression/int = "5"
           │   └─ body/assign/
-          │       ├─ left/name = "_"
-          │       └─ right/name = "i"
+          │       ├─ left/expression/name = "_"
+          │       └─ right/expression/name = "i"
           ├─ for/
           │   ├─ range/
           │   │   ├─ left/
-          │   │   │   ├─ name = "k"
-          │   │   │   └─ name = "v"
-          │   │   └─ right/literal/
+          │   │   │   ├─ expression/name = "k"
+          │   │   │   └─ expression/name = "v"
+          │   │   └─ right/expression/literal/
           │   │       ├─ map/
           │   │       │   ├─ type/name = "string"
-          │   │       │   └─ value/type/name = "int"
+          │   │       │   └─ value/expression/type/name = "int"
           │   │       └─ body/
           │   │           ├─ string = "\"a\""
-          │   │           ├─ value/int = "1"
+          │   │           ├─ value/expression/int = "1"
           │   │           ├─ string = "\"b\""
-          │   │           └─ value/int = "2"
+          │   │           └─ value/expression/int = "2"
           │   └─ body/assign/
           │       ├─ left/
-          │       │   ├─ name = "_"
-          │       │   └─ name = "_"
+          │       │   ├─ expression/name = "_"
+          │       │   └─ expression/name = "_"
           │       └─ right/
-          │           ├─ name = "k"
-          │           └─ name = "v"
+          │           ├─ expression/name = "k"
+          │           └─ expression/name = "v"
           ├─ variable[short]/
-          │   ├─ left/name = "n"
-          │   └─ right/int = "0"
+          │   ├─ left/expression/name = "n"
+          │   └─ right/expression/int = "0"
           ├─ for/
           │   ├─ binary/
-          │   │   ├─ left/name = "n"
+          │   │   ├─ left/expression/name = "n"
           │   │   ├─ op/compare[less]
-          │   │   └─ right/int = "3"
+          │   │   └─ right/expression/int = "3"
           │   └─ body/unary/name = "n"
-          ├─ go/call/closure/body/call/
+          ├─ go/call/closure/body/expression/call/
           │   ├─ member/
           │   │   ├─ name = "fmt"
           │   │   └─ name = "Println"
@@ -466,26 +466,26 @@ file/
           │       ├─ case/
           │       │   ├─ receive/
           │       │   │   ├─ left/
-          │       │   │   │   ├─ name = "v"
-          │       │   │   │   └─ name = "ok"
-          │       │   │   └─ right/unary/
+          │       │   │   │   ├─ expression/name = "v"
+          │       │   │   │   └─ expression/name = "ok"
+          │       │   │   └─ right/expression/unary/
           │       │   │       ├─ op = "<-"
           │       │   │       └─ name = "in"
           │       │   ├─ if/
-          │       │   │   ├─ condition/unary/
+          │       │   │   ├─ condition/expression/unary/
           │       │   │   │   ├─ op/logical[not]
           │       │   │   │   └─ name = "ok"
           │       │   │   └─ then/break/label = "Outer"
           │       │   └─ send/
           │       │       ├─ name = "out"
-          │       │       └─ value/name = "v"
+          │       │       └─ value/expression/name = "v"
           │       ├─ case/
           │       │   ├─ send/
           │       │   │   ├─ name = "out"
-          │       │   │   └─ value/int = "42"
+          │       │   │   └─ value/expression/int = "42"
           │       │   └─ continue/label = "Outer"
           │       └─ case/
-          │           ├─ receive/right/unary/
+          │           ├─ receive/right/expression/unary/
           │           │   ├─ op = "<-"
           │           │   └─ call/member/
           │           │       ├─ name = "ctx"
@@ -494,80 +494,80 @@ file/
           ├─ labeled/
           │   ├─ label = "cleanup"
           │   └─ variable[short]/
-          │       ├─ left/name = "buffered"
-          │       └─ right/call/
+          │       ├─ left/expression/name = "buffered"
+          │       └─ right/expression/call/
           │           ├─ name = "make"
-          │           ├─ chan/value/type/name = "int"
+          │           ├─ chan/value/expression/type/name = "int"
           │           └─ int = "4"
           ├─ send/
           │   ├─ name = "buffered"
-          │   └─ value/int = "1"
-          ├─ call/
+          │   └─ value/expression/int = "1"
+          ├─ expression/call/
           │   ├─ name = "close"
           │   └─ name = "buffered"
           ├─ variable[short]/
           │   ├─ left/
-          │   │   ├─ name = "pt"
-          │   │   └─ name = "pts"
+          │   │   ├─ expression/name = "pt"
+          │   │   └─ expression/name = "pts"
           │   └─ right/
-          │       ├─ unary/
+          │       ├─ expression/unary/
           │       │   ├─ op/bitwise[and]
           │       │   └─ literal/
           │       │       ├─ type/name = "Point"
           │       │       └─ body/
           │       │           ├─ name = "X"
-          │       │           ├─ value/int = "1"
+          │       │           ├─ value/expression/int = "1"
           │       │           ├─ name = "Y"
-          │       │           └─ value/int = "2"
-          │       └─ literal/
+          │       │           └─ value/expression/int = "2"
+          │       └─ expression/literal/
           │           ├─ slice/type/name = "Point"
           │           └─ body/
           │               ├─ name = "X"
-          │               ├─ value/int = "0"
+          │               ├─ value/expression/int = "0"
           │               ├─ name = "X"
-          │               ├─ value/int = "1"
+          │               ├─ value/expression/int = "1"
           │               ├─ name = "Y"
-          │               └─ value/int = "1"
+          │               └─ value/expression/int = "1"
           ├─ variable[short]/
-          │   ├─ left/name = "m"
-          │   └─ right/literal/
+          │   ├─ left/expression/name = "m"
+          │   └─ right/expression/literal/
           │       ├─ map/
           │       │   ├─ type/name = "string"
-          │       │   └─ value/type/name = "Point"
+          │       │   └─ value/expression/type/name = "Point"
           │       └─ body/
           │           ├─ string = "\"a\""
           │           └─ value/
-          │               ├─ name = "X"
-          │               └─ value/int = "1"
+          │               ├─ expression/name = "X"
+          │               └─ expression/value/expression/int = "1"
           ├─ var/
           │   ├─ name = "r"
           │   ├─ name = "io"
           │   ├─ name = "Reader"
-          │   └─ value/call/
+          │   └─ value/expression/call/
           │       ├─ name = "new"
           │       ├─ name = "myio"
           │       └─ name = "PipeReader"
           ├─ if/
           │   ├─ variable[short]/
           │   │   ├─ left/
-          │   │   │   ├─ name = "s"
-          │   │   │   └─ name = "ok"
-          │   │   └─ right/assert/
+          │   │   │   ├─ expression/name = "s"
+          │   │   │   └─ expression/name = "ok"
+          │   │   └─ right/expression/assert/
           │   │       ├─ name = "r"
           │   │       └─ type/name = "Stringer"
-          │   ├─ condition/name = "ok"
+          │   ├─ condition/expression/name = "ok"
           │   └─ then/assign/
-          │       ├─ left/name = "_"
-          │       └─ right/name = "s"
+          │       ├─ left/expression/name = "_"
+          │       └─ right/expression/name = "s"
           ├─ var/
           │   ├─ name = "target"
           │   └─ pointer/type/name = "MyErr"
           ├─ if/
           │   ├─ variable[short]/
-          │   │   ├─ left/name = "err"
-          │   │   └─ right/call/name = "doThing"
-          │   ├─ condition/binary/
-          │   │   ├─ left/call/
+          │   │   ├─ left/expression/name = "err"
+          │   │   └─ right/expression/call/name = "doThing"
+          │   ├─ condition/expression/binary/
+          │   │   ├─ left/expression/call/
           │   │   │   ├─ member/
           │   │   │   │   ├─ name = "errors"
           │   │   │   │   └─ name = "As"
@@ -576,28 +576,28 @@ file/
           │   │   │       ├─ op/bitwise[and]
           │   │   │       └─ name = "target"
           │   │   ├─ op/logical[or]
-          │   │   └─ right/call/
+          │   │   └─ right/expression/call/
           │   │       ├─ member/
           │   │       │   ├─ name = "errors"
           │   │       │   └─ name = "Is"
           │   │       ├─ name = "err"
           │   │       └─ name = "ErrNotFound"
-          │   └─ then/return/name = "err"
+          │   └─ then/return/expression/name = "err"
           ├─ assign/
           │   ├─ left/
-          │   │   ├─ name = "_"
-          │   │   ├─ name = "_"
-          │   │   ├─ name = "_"
-          │   │   ├─ name = "_"
-          │   │   ├─ name = "_"
-          │   │   └─ name = "_"
+          │   │   ├─ expression/name = "_"
+          │   │   ├─ expression/name = "_"
+          │   │   ├─ expression/name = "_"
+          │   │   ├─ expression/name = "_"
+          │   │   ├─ expression/name = "_"
+          │   │   └─ expression/name = "_"
           │   └─ right/
-          │       ├─ name = "raw"
-          │       ├─ name = "ch"
-          │       ├─ name = "pt"
-          │       ├─ name = "pts"
-          │       ├─ name = "m"
-          │       └─ call/
+          │       ├─ expression/name = "raw"
+          │       ├─ expression/name = "ch"
+          │       ├─ expression/name = "pt"
+          │       ├─ expression/name = "pts"
+          │       ├─ expression/name = "m"
+          │       └─ expression/call/
           │           ├─ name = "UserID"
           │           └─ int = "42"
-          └─ return/nil = "nil"
+          └─ return/expression/nil = "nil"

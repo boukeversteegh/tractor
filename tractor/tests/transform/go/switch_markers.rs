@@ -18,7 +18,7 @@ fn go() {
         &multi_xpath(r#"
             //switch
                 [type]
-                [value/name='x']
+                [value/expression/name='x']
                 [type/name='int']
         "#),
         1);
@@ -34,8 +34,8 @@ fn go() {
         &multi_xpath(r#"
             //switch
                 [not(type)]
-                [value/name='x']
-                [case/value/int='1']
+                [value/expression/name='x']
+                [case/value/expression/int='1']
         "#),
         1);
 }

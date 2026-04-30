@@ -28,8 +28,9 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
 /// expression. Skip its subtree so the inner expression's transform
 /// drives the output (matches the previous behavior of returning
 /// `TransformAction::Skip` directly).
-pub fn expression_statement(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Skip)
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, super::output::TractorNode::Expression);
+    Ok(TransformAction::Continue)
 }
 
 /// `parameter_list` does double duty in Go: formal parameters AND
