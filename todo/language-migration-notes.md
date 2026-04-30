@@ -322,15 +322,77 @@ Commits (chronological):
   all "variable references" → `<name>`. The leading sigil
   (`@`, `@@`, `$`) survives as text.
 
-## Final state
+### tsql — COMPLETE (final language)
 
-All 8 programming languages migrated:
-  Go, C#, Java, PHP, Python, Rust, TypeScript, Ruby.
+The "data-only" excluded-from-the-sweep label turned out to be wrong
+— tsql's transform structure is identical to the programming
+languages (kind-driven match, KINDS catalogue, rename targets). It
+fits the paradigm cleanly. Migrated as the final language to enable
+the cleanup of `KindEntry` / `KindHandling`.
 
-Only tsql (data-only) remains on the catalogue path. The plan's
-final cleanup step — removing KindEntry/KindHandling from
-`languages/mod.rs` — is pending tsql migration.
+Commits (chronological):
 
-Total commits in this session: ~50, accumulated across the seven
-languages migrated after Go and C#. 790+ tests pass throughout;
+- `1e194a9` — Step 1: generate TsqlKind enum (552 kinds — by far
+  the largest grammar; SQL exposes every keyword variant).
+- `bb8fbdd` — Step 2: validate catalogue, drop 2 dead entries
+  (datetime, merge).
+- `def5fcc` — Step 3: rules.rs + transformations.rs. **Promotes
+  `Rule::Detach`** — a new shared variant for "remove this node
+  entirely + stop recursion" used by 370 keyword_* leaves +
+  op_unary_other in tsql. Distinct from Flatten (children promoted)
+  and Skip (children promoted before recursion).
+- `2bacdc8` — Step 4: swap dispatcher (deletes 255 lines).
+- `0ab754e` — Step 5: drop KINDS / rename_target. Major cleanup
+  of `tractor/tests/kind_catalogue.rs` — the LANGUAGES array
+  becomes empty, dead helpers removed, every language gets a
+  dedicated `<lang>_catalogue_covers_blueprint` + `<lang>_node_metadata_is_well_formed`
+  test using the typed enum directly.
+- `8c4bd77` — Step 6: rename semantic.rs → output.rs.
+- `8139317` — **Final cleanup**: remove KindEntry / KindHandling
+  from `languages/mod.rs` — no remaining users.
+
+#### tsql-specific notes
+
+- **Largest grammar by far**: 552 kinds. By comparison: TypeScript
+  192, C# 220. SQL grammars expose every keyword variant
+  (KEYWORD_SELECT, KEYWORD_FROM, …) as a distinct kind.
+- **`Rule::Detach` promotion**: 370 keyword_* leaves use it. The
+  prior dispatcher had a runtime guard
+  `k if k.starts_with("keyword_")`; the new typed dispatcher
+  enumerates all 370 variants in a single match arm with
+  compile-time exhaustiveness. Adding a primitive variant for an
+  action that's been ad-hoc in the codebase since the start is a
+  net win — and a new variant only when there's a clear primitive
+  to capture (matching the plan's "wait for second user" rule
+  loosely; the *action* is universally useful even if only tsql
+  currently leans on it heavily).
+- **No `Rule::DefaultAccessThenRename` use** — SQL doesn't have
+  implicit access modifiers.
+- **Builder-inserted field wrappers** beyond `<name>`: tsql's
+  orchestrator also dispatches `<value>` / `<left>` / `<right>` →
+  `Skip`. These are field wrappers tsql doesn't need around
+  expressions; skipping them lets the inner expression bubble up.
+
+## Final state — initiative complete
+
+All 9 languages migrated to the typed-enum + rule()-driven
+dispatcher: Go, C#, Java, PHP, Python, Rust, TypeScript, Ruby, T-SQL.
+
+Each language now has the same 5-file structure:
+- `input.rs` — generated `<Lang>Kind` enum
+- `output.rs` — semantic-name constants + `NODES`
+- `rules.rs` — exhaustive `rule(<Lang>Kind) -> Rule` table
+- `transformations.rs` — named functions for `Rule::Custom`
+- `transform.rs` — thin orchestrator (~50 lines)
+
+The shared `Rule` enum (in `tractor/src/languages/rule.rs`) has
+6 variants: `Rename`, `RenameWithMarker`, `Flatten`,
+`ExtractOpThenRename`, `DefaultAccessThenRename`, `Detach`, `Custom`.
+
+`KindEntry` / `KindHandling` are gone. The old runtime catch-all
+patterns (catalogue lookup with falls-through) are replaced by
+compile-time exhaustive matches.
+
+Total commits in the initiative: ~60, all on branch
+`claude/simplify-node-names-SmonS`. 790+ tests pass throughout;
 140 snapshot fixtures byte-identical at every commit.
