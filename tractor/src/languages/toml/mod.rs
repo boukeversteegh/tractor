@@ -19,6 +19,8 @@
 //! ```
 //! Queryable as: `//database/host[.='localhost']`
 
+pub mod input;
+
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::data_keys::*;

@@ -1,5 +1,7 @@
 //! Markdown transform logic
 
+pub mod input;
+
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;

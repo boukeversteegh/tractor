@@ -84,6 +84,32 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types_sources: &[tree_sitter_yaml::NODE_TYPES],
         output_path: "tractor/src/languages/yaml/input.rs",
     },
+    LangCodegen {
+        enum_name: "TomlKind",
+        node_types_sources: &[tree_sitter_toml_ng::NODE_TYPES],
+        output_path: "tractor/src/languages/toml/input.rs",
+    },
+    LangCodegen {
+        enum_name: "IniKind",
+        node_types_sources: &[tree_sitter_ini::NODE_TYPES],
+        output_path: "tractor/src/languages/ini/input.rs",
+    },
+    LangCodegen {
+        enum_name: "MdKind",
+        // Markdown ships two grammars: block and inline. Both produce
+        // kinds the env's transform can see, so union them — same
+        // pattern as TypeScript+TSX.
+        node_types_sources: &[
+            tree_sitter_md::NODE_TYPES_BLOCK,
+            tree_sitter_md::NODE_TYPES_INLINE,
+        ],
+        output_path: "tractor/src/languages/markdown/input.rs",
+    },
+    // env: no codegen entry. .env files are parsed by tree-sitter-bash
+    // but the env transform only cares about a tiny subset (program,
+    // variable_assignment, declaration_command, comment, …). A
+    // hand-curated `EnvKind` lives in `languages/env/input.rs` —
+    // listing every bash kind would be 59 arms of passthrough noise.
 ];
 
 fn main() -> Result<()> {
