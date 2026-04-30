@@ -163,35 +163,29 @@ fn render_enum(enum_name: &str, kinds: &[String]) -> String {
     let mut out = String::new();
     out.push_str("// DO NOT EDIT — regenerate via `task gen:kinds`.\n");
     out.push_str("// Source: this grammar's node-types.json (named, non-supertype kinds only).\n\n");
-    out.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n");
+    out.push_str("use strum_macros::{EnumString, IntoStaticStr};\n\n");
+    out.push_str(
+        "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr)]\n",
+    );
+    out.push_str("#[strum(serialize_all = \"snake_case\")]\n");
     out.push_str(&format!("pub enum {} {{\n", enum_name));
     for k in kinds {
-        out.push_str(&format!("    {},\n", snake_to_pascal(k)));
+        let variant = snake_to_pascal(k);
+        // Variants whose Pascal-cased form had to be munged (e.g. `Self` →
+        // `Self_`) won't round-trip through strum's default snake_case rule,
+        // so pin the wire string explicitly.
+        if variant.ends_with('_') {
+            out.push_str(&format!("    #[strum(serialize = {:?})]\n", k));
+        }
+        out.push_str(&format!("    {},\n", variant));
     }
     out.push_str("}\n\n");
     out.push_str(&format!("impl {} {{\n", enum_name));
     out.push_str("    pub fn from_str(s: &str) -> Option<Self> {\n");
-    out.push_str("        match s {\n");
-    for k in kinds {
-        out.push_str(&format!(
-            "            {:?} => Some(Self::{}),\n",
-            k,
-            snake_to_pascal(k)
-        ));
-    }
-    out.push_str("            _ => None,\n");
-    out.push_str("        }\n");
+    out.push_str("        <Self as std::str::FromStr>::from_str(s).ok()\n");
     out.push_str("    }\n\n");
     out.push_str("    pub fn as_str(&self) -> &'static str {\n");
-    out.push_str("        match *self {\n");
-    for k in kinds {
-        out.push_str(&format!(
-            "            Self::{} => {:?},\n",
-            snake_to_pascal(k),
-            k
-        ));
-    }
-    out.push_str("        }\n");
+    out.push_str("        (*self).into()\n");
     out.push_str("    }\n");
     out.push_str("}\n");
     out
