@@ -455,7 +455,11 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         // `then`/`else` are block bodies (statement sequences) and
         // must not be wrapped — their children carry their own
         // statement-level hosts via `expression_statement`.
-        &["value", "condition", "left", "right"],
+        // `return` holds the optional return value as its first
+        // element child; wrap so `<return>/<expression>/...` is the
+        // uniform shape (no value -> no host, the wrap pass is a
+        // no-op for empty returns).
+        &["value", "condition", "left", "right", "return"],
     )?;
     Ok(())
 }
