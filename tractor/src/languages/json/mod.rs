@@ -1,12 +1,29 @@
-//! JSON transform logic
+//! JSON transform logic.
 //!
-//! Provides two transforms for dual-branch output:
-//! - `syntax`: Normalizes TreeSitter JSON nodes into a unified syntax vocabulary
-//!   (object/array/property/key/value/string/number/bool/null)
-//! - `data`: Projects into query-friendly data view where object keys
-//!   become element names and scalar values become text content.
+//! Per-language pipeline ownership:
+//!
+//! ```text
+//! input → rules → output
+//!         ↑
+//!         transformations (Custom handlers)
+//! ```
+//!
+//! - [`input`]    — generated `JsonKind` enum (the input vocabulary).
+//!                  Regenerate via `task gen:kinds`; do not hand-edit.
+//! - [`output`]   — output element-name constants for the syntax
+//!                  branch. Data-branch names are user-data driven.
+//! - [`rules`]    — `syntax_rule` and `data_rule`, the input → action
+//!                  tables. JSON is dual-transform.
+//! - [`transformations`] — `Rule::Custom` handlers used by both
+//!                         tables.
+//! - [`syntax`] / [`data`] — thin orchestrators that look up the
+//!                          kind and dispatch via the shared rule
+//!                          executor.
 
 pub mod input;
+pub mod output;
+pub mod rules;
+pub mod transformations;
 pub mod syntax;
 pub mod data;
 
