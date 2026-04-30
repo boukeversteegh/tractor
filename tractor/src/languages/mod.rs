@@ -162,7 +162,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["java"],
         transform: java::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(java_post_transform),
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(java::output::spec),
@@ -488,6 +488,18 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
 /// hosts (Principle #15). Python doesn't run `collapse_conditionals`
 /// because tree-sitter-python emits an explicit `elif_clause`.
 fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// Java post-transform: collapse conditionals + wrap expression
+/// positions in `<expression>` hosts (Principle #15).
+fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
         root,

@@ -19,10 +19,10 @@ fn java() {
             //method[name='f']/body/variable
                 [type/name='int']
                 [declarator[name='x']
-                    [value/int='1']
+                    [value/expression/int='1']
                 ]
                 [declarator[name='y']
-                    [value/int='2']
+                    [value/expression/int='2']
                 ]
                 [count(declarator)=2]
         "#),

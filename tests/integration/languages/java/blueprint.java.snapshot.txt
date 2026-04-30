@@ -51,7 +51,7 @@ program/
   │       │   ├─ type/name = "int"
   │       │   └─ declarator/
   │       │       ├─ name = "MAX"
-  │       │       └─ value/int = "100"
+  │       │       └─ value/expression/int = "100"
   │       ├─ field[private]/
   │       │   ├─ type/name = "String"
   │       │   └─ declarator/name = "name"
@@ -80,12 +80,12 @@ program/
   │       │   │   └─ name = "name"
   │       │   └─ body/
   │       │       ├─ call[super] = "super();"
-  │       │       └─ assign/
-  │       │           ├─ left/member/
+  │       │       └─ expression/assign/
+  │       │           ├─ left/expression/member/
   │       │           │   ├─ this = "this"
   │       │           │   └─ name = "name"
   │       │           ├─ op = "="
-  │       │           └─ right/name = "name"
+  │       │           └─ right/expression/name = "name"
   │       ├─ method[public and static]/
   │       │   ├─ generic/name = "R"
   │       │   ├─ returns/type/name = "R"
@@ -96,7 +96,7 @@ program/
   │       │   │   │   ├─ type/name = "String"
   │       │   │   │   └─ type/name = "R"
   │       │   │   └─ name = "mapper"
-  │       │   └─ body/return/call/
+  │       │   └─ body/return/expression/call/
   │       │       ├─ name = "mapper"
   │       │       ├─ name = "apply"
   │       │       └─ string = "\"hello\""
@@ -109,36 +109,36 @@ program/
   │       │   │   └─ name = "input"
   │       │   ├─ throws/type/name = "IllegalArgumentException"
   │       │   └─ body/if/
-  │       │       ├─ condition/binary/
-  │       │       │   ├─ left/name = "input"
+  │       │       ├─ condition/expression/binary/
+  │       │       │   ├─ left/expression/name = "input"
   │       │       │   ├─ op[equals] = "=="
-  │       │       │   └─ right/null = "null"
+  │       │       │   └─ right/expression/null = "null"
   │       │       ├─ then/throw/new/
   │       │       │   ├─ type/name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
   │       │       ├─ else_if/
-  │       │       │   ├─ condition/unary/
+  │       │       │   ├─ condition/expression/unary/
   │       │       │   │   ├─ op/logical[not]
   │       │       │   │   └─ name = "ready"
-  │       │       │   └─ then/return/null = "null"
-  │       │       └─ else/return/name = "input"
+  │       │       │   └─ then/return/expression/null = "null"
+  │       │       └─ else/return/expression/name = "input"
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "describe"
   │       │   ├─ parameter/
   │       │   │   ├─ type/name = "int"
   │       │   │   └─ name = "n"
-  │       │   └─ body/return/ternary/
-  │       │       ├─ condition/binary/
-  │       │       │   ├─ left/name = "n"
+  │       │   └─ body/return/expression/ternary/
+  │       │       ├─ condition/expression/binary/
+  │       │       │   ├─ left/expression/name = "n"
   │       │       │   ├─ op/compare[greater]
-  │       │       │   └─ right/int = "0"
+  │       │       │   └─ right/expression/int = "0"
   │       │       ├─ then/string = "\"positive\""
   │       │       └─ else/ternary/
-  │       │           ├─ condition/binary/
-  │       │           │   ├─ left/name = "n"
+  │       │           ├─ condition/expression/binary/
+  │       │           │   ├─ left/expression/name = "n"
   │       │           │   ├─ op/compare[less]
-  │       │           │   └─ right/int = "0"
+  │       │           │   └─ right/expression/int = "0"
   │       │           ├─ then/string = "\"negative\""
   │       │           └─ else/string = "\"zero\""
   │       ├─ method[public]/
@@ -152,50 +152,50 @@ program/
   │       │       │   ├─ type/name = "int"
   │       │       │   └─ declarator/
   │       │       │       ├─ name = "total"
-  │       │       │       └─ value/int = "0"
+  │       │       │       └─ value/expression/int = "0"
   │       │       ├─ foreach/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "x"
-  │       │       │   ├─ value/name = "xs"
-  │       │       │   └─ body/assign/
-  │       │       │       ├─ left/name = "total"
+  │       │       │   ├─ value/expression/name = "xs"
+  │       │       │   └─ body/expression/assign/
+  │       │       │       ├─ left/expression/name = "total"
   │       │       │       ├─ op/assign[plus]
-  │       │       │       └─ right/name = "x"
+  │       │       │       └─ right/expression/name = "x"
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
   │       │       │   └─ declarator/
   │       │       │       ├─ name = "i"
-  │       │       │       └─ value/int = "0"
+  │       │       │       └─ value/expression/int = "0"
   │       │       ├─ while/
-  │       │       │   ├─ condition/binary/
-  │       │       │   │   ├─ left/name = "i"
+  │       │       │   ├─ condition/expression/binary/
+  │       │       │   │   ├─ left/expression/name = "i"
   │       │       │   │   ├─ op/compare[less]
-  │       │       │   │   └─ right/int = "3"
-  │       │       │   └─ body/assign/
-  │       │       │       ├─ left/name = "i"
+  │       │       │   │   └─ right/expression/int = "3"
+  │       │       │   └─ body/expression/assign/
+  │       │       │       ├─ left/expression/name = "i"
   │       │       │       ├─ op = "="
-  │       │       │       └─ right/binary/
-  │       │       │           ├─ left/name = "i"
+  │       │       │       └─ right/expression/binary/
+  │       │       │           ├─ left/expression/name = "i"
   │       │       │           ├─ op[plus] = "+"
-  │       │       │           └─ right/int = "1"
-  │       │       └─ return/name = "total"
+  │       │       │           └─ right/expression/int = "1"
+  │       │       └─ return/expression/name = "total"
   │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "match"
   │       │   ├─ parameter/
   │       │   │   ├─ type/name = "Object"
   │       │   │   └─ name = "o"
-  │       │   └─ body/return/switch/
-  │       │       ├─ condition/name = "o"
+  │       │   └─ body/return/expression/switch/
+  │       │       ├─ condition/expression/name = "o"
   │       │       └─ body/body/
   │       │           ├─ arm/
   │       │           │   ├─ label/pattern/pattern[type]/
   │       │           │   │   ├─ type/name = "Integer"
   │       │           │   │   └─ name = "i"
-  │       │           │   └─ binary/
-  │       │           │       ├─ left/string = "\"int \""
+  │       │           │   └─ expression/binary/
+  │       │           │       ├─ left/expression/string = "\"int \""
   │       │           │       ├─ op[plus] = "+"
-  │       │           │       └─ right/name = "i"
+  │       │           │       └─ right/expression/name = "i"
   │       │           ├─ arm/
   │       │           │   ├─ label/
   │       │           │   │   ├─ pattern/pattern[type]/
@@ -206,13 +206,13 @@ program/
   │       │           │   │       └─ call/
   │       │           │   │           ├─ name = "s"
   │       │           │   │           └─ name = "isEmpty"
-  │       │           │   └─ binary/
-  │       │           │       ├─ left/string = "\"non-empty: \""
+  │       │           │   └─ expression/binary/
+  │       │           │       ├─ left/expression/string = "\"non-empty: \""
   │       │           │       ├─ op[plus] = "+"
-  │       │           │       └─ right/name = "s"
+  │       │           │       └─ right/expression/name = "s"
   │       │           └─ arm/
   │       │               ├─ label = "default"
-  │       │               └─ string = "\"other\""
+  │       │               └─ expression/string = "\"other\""
   │       ├─ interface[private]/
   │       │   ├─ name = "Handler"
   │       │   ├─ generic/name = "U"
@@ -232,18 +232,18 @@ program/
   │       │       └─ method[public]/
   │       │           ├─ returns/type/name = "int"
   │       │           ├─ name = "rgb"
-  │       │           └─ body/return/switch/
-  │       │               ├─ condition/this = "this"
+  │       │           └─ body/return/expression/switch/
+  │       │               ├─ condition/expression/this = "this"
   │       │               └─ body/body/
   │       │                   ├─ arm/
   │       │                   │   ├─ label/name = "RED"
-  │       │                   │   └─ int = "0xFF0000"
+  │       │                   │   └─ expression/int = "0xFF0000"
   │       │                   ├─ arm/
   │       │                   │   ├─ label/name = "GREEN"
-  │       │                   │   └─ int = "0x00FF00"
+  │       │                   │   └─ expression/int = "0x00FF00"
   │       │                   └─ arm/
   │       │                       ├─ label/name = "BLUE"
-  │       │                       └─ int = "0x0000FF"
+  │       │                       └─ expression/int = "0x0000FF"
   │       └─ record[public]/
   │           ├─ name = "Point"
   │           ├─ parameter/
@@ -255,23 +255,23 @@ program/
   │           └─ body/constructor[compact and public]/
   │               ├─ name = "Point"
   │               └─ body/if/
-  │                   ├─ condition/binary/
-  │                   │   ├─ left/binary/
-  │                   │   │   ├─ left/name = "x"
+  │                   ├─ condition/expression/binary/
+  │                   │   ├─ left/expression/binary/
+  │                   │   │   ├─ left/expression/name = "x"
   │                   │   │   ├─ op/compare[less]
-  │                   │   │   └─ right/int = "0"
+  │                   │   │   └─ right/expression/int = "0"
   │                   │   ├─ op/logical[or]
-  │                   │   └─ right/binary/
-  │                   │       ├─ left/name = "y"
+  │                   │   └─ right/expression/binary/
+  │                   │       ├─ left/expression/name = "y"
   │                   │       ├─ op/compare[less]
-  │                   │       └─ right/int = "0"
+  │                   │       └─ right/expression/int = "0"
   │                   └─ then/throw/new/type/name = "IllegalArgumentException"
   └─ class[package]/
       ├─ name = "Base"
       └─ body/method[package]/
           ├─ returns/type/name = "String"
           ├─ name = "greet"
-          └─ body/return/call/
+          └─ body/return/expression/call/
               ├─ name = "String"
               ├─ name = "format"
               ├─ string = "\"hello from %s\""

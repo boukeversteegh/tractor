@@ -76,7 +76,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::BlockComment                 => Custom(transformations::comment),
         JavaKind::BooleanType                  => Custom(transformations::primitive_type),
         JavaKind::ExplicitConstructorInvocation => Custom(transformations::explicit_constructor_invocation),
-        JavaKind::ExpressionStatement          => Custom(transformations::skip),
+        JavaKind::ExpressionStatement          => Custom(transformations::expression_statement),
         JavaKind::FloatingPointType            => Custom(transformations::primitive_type),
         JavaKind::GenericType                  => Custom(transformations::generic_type),
         JavaKind::Identifier                   => Custom(transformations::identifier),

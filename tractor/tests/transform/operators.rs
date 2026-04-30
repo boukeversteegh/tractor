@@ -48,9 +48,9 @@ fn java_binary() {
         &mut parse_src("java", "class X { void f() { int y = 1 + 2; } }"),
         &multi_xpath(r#"
             //binary
-                [left/int='1']
+                [left/expression/int='1']
                 [op[plus]]
-                [right/int='2']
+                [right/expression/int='2']
         "#),
         1);
 }

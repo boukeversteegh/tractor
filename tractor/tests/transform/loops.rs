@@ -65,7 +65,7 @@ fn java() {
         &multi_xpath(r#"
             //for
                 [variable[type/name='int'][declarator/name='i']]
-                [condition/binary]
+                [condition/expression/binary]
                 [update_expression]
                 [body]
         "#),
@@ -73,12 +73,12 @@ fn java() {
 
     claim("Java while loop holds the condition under <condition> and the loop body under <body>",
         &mut tree,
-        "//while[condition/name='running'][body]",
+        "//while[condition/expression/name='running'][body]",
         1);
 
     claim("Java do-while leaks <do_statement>; body precedes the condition",
         &mut tree,
-        "//do_statement[body][condition/name='running']",
+        "//do_statement[body][condition/expression/name='running']",
         1);
 
     claim("Java foreach uses <name> + <value> (no <left>/<right>) for the binding and iterable",
@@ -87,7 +87,7 @@ fn java() {
             //foreach
                 [type/name='Item']
                 [name='item']
-                [value/name='items']
+                [value/expression/name='items']
                 [body]
         "#),
         1);

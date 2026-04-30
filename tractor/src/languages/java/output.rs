@@ -23,7 +23,7 @@ pub enum TractorNode {
     Return, If, Else, ElseIf, For, Foreach, While, Try, Catch, Finally, Throw, Throws,
     Switch, Arm, Label, Case, Pattern, Guard, Body,
     // Expressions
-    Call, New, Member, Index, Assign, Binary, Unary, Lambda, Ternary, Annotation,
+    Call, New, Member, Index, Assign, Binary, Unary, Lambda, Ternary, Annotation, Expression,
     // Imports (Package dual-use)
     Import, Package,
     // Literals

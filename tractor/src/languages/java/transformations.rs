@@ -16,8 +16,8 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::JavaKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Call, Comment as CommentName, Else, Generic, Generics, If, Leading, Method, Name, Package,
-    Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
+    Call, Comment as CommentName, Else, Expression, Generic, Generics, If, Leading, Method, Name,
+    Package, Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
     Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Void,
 };
 
@@ -28,12 +28,22 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
-/// `expression_statement` and `parenthesized_expression` — the wrapper
-/// carries no semantic, so detach it before children are visited
-/// (children's parent context becomes the enclosing block / class body
-/// rather than the wrapper).
+/// `parenthesized_expression` — pure grammar grouping; drop the
+/// wrapper before children are visited (children's parent context
+/// becomes the enclosing block / class body).
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `expression_statement` — wrap value-producing statements in an
+/// `<expression>` host (Principle #15). Java's
+/// `expression_statement` only wraps expressions in statement
+/// position; control-flow forms have their own statement kinds
+/// (`if_statement`, etc.), so there's no inner-kind dispatch needed
+/// — every Java `expression_statement` produces a value.
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression);
+    Ok(TransformAction::Continue)
 }
 
 /// `<name>` field wrapper inserted by the builder for nodes with a
