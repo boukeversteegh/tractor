@@ -22,8 +22,8 @@ program/
   │   ├─ name
   │   ├─ generics/generic/name
   │   └─ type[conditional]/
-  │       ├─ left/type/name
-  │       ├─ right/type[generic]/
+  │       ├─ left/expression/type/name
+  │       ├─ right/expression/type[generic]/
   │       │   ├─ name
   │       │   └─ type[infer]/type/name
   │       ├─ then/type/name
@@ -33,7 +33,7 @@ program/
   │   ├─ name
   │   ├─ generics/generic/
   │   │   ├─ name
-  │   │   └─ value/type[default]/type/name
+  │   │   └─ value/expression/type[default]/type/name
   │   └─ body/
   │       ├─ property/
   │       │   ├─ name
@@ -98,13 +98,13 @@ program/
   │   └─ body/
   │       ├─ constant/
   │       │   ├─ name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       ├─ constant/
   │       │   ├─ name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       └─ constant/
   │           ├─ name
-  │           └─ value/string
+  │           └─ value/expression/string
   ├─ comment[leading]
   ├─ export/class[abstract]/
   │   ├─ name
@@ -115,11 +115,11 @@ program/
   │       ├─ field[public]/
   │       │   ├─ name
   │       │   ├─ type/name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       ├─ field[protected]/
   │       │   ├─ name
   │       │   ├─ type/name
-  │       │   └─ value/call/callee/member/
+  │       │   └─ value/expression/call/callee/member/
   │       │       ├─ object/name
   │       │       └─ property/name
   │       ├─ field[private]/
@@ -128,7 +128,7 @@ program/
   │       │   │   ├─ name
   │       │   │   ├─ type/name
   │       │   │   └─ type/name
-  │       │   └─ value/new/name
+  │       │   └─ value/expression/new/name
   │       ├─ method[public]/
   │       │   ├─ name
   │       │   ├─ parameter[required and public]/
@@ -144,7 +144,7 @@ program/
   │       ├─ method[public and get]/
   │       │   ├─ name
   │       │   ├─ returns/type/name
-  │       │   └─ body/block/return/member/
+  │       │   └─ body/block/return/expression/member/
   │       │       ├─ object/member/
   │       │       │   ├─ object/this
   │       │       │   └─ property/name
@@ -154,7 +154,7 @@ program/
   │       │   ├─ parameter[required]/
   │       │   │   ├─ name
   │       │   │   └─ type/name
-  │       │   └─ body/block/call/
+  │       │   └─ body/block/expression/call/
   │       │       ├─ callee/member/
   │       │       │   ├─ object/member/
   │       │       │   │   ├─ object/this
@@ -171,7 +171,7 @@ program/
   │           │   ├─ name
   │           │   └─ type/name
   │           ├─ returns/type/name
-  │           └─ body/block/call/
+  │           └─ body/block/expression/call/
   │               ├─ callee/member/
   │               │   ├─ object/member/
   │               │   │   ├─ object/this
@@ -184,7 +184,7 @@ program/
   │   ├─ generics/generic/
   │   │   ├─ name
   │   │   ├─ constraint/type/name
-  │   │   └─ value/type[default]/type[generic]/
+  │   │   └─ value/expression/type[default]/type[generic]/
   │   │       ├─ name
   │   │       └─ type/name
   │   ├─ extends/
@@ -193,7 +193,7 @@ program/
   │   └─ body/
   │       ├─ field[private and public]/
   │       │   ├─ name
-  │       │   └─ value/number
+  │       │   └─ value/expression/number
   │       ├─ method[public]/
   │       │   ├─ name
   │       │   ├─ parameter[required]/
@@ -202,12 +202,12 @@ program/
   │       │   ├─ parameter[required and private]/
   │       │   │   ├─ name
   │       │   │   ├─ type[array]/type/name
-  │       │   │   └─ value/array
+  │       │   │   └─ value/expression/array
   │       │   └─ body/block/
-  │       │       ├─ call/
+  │       │       ├─ expression/call/
   │       │       │   ├─ callee/super
   │       │       │   └─ name
-  │       │       └─ unary/
+  │       │       └─ expression/unary/
   │       │           ├─ member/
   │       │           │   ├─ object/name
   │       │           │   └─ property/name
@@ -218,8 +218,8 @@ program/
   │       │   └─ body/block/
   │       │       ├─ variable[const]/
   │       │       │   ├─ name
-  │       │       │   └─ value/binary/
-  │       │       │       ├─ left/member/
+  │       │       │   └─ value/expression/binary/
+  │       │       │       ├─ left/expression/member/
   │       │       │       │   ├─ object/index/
   │       │       │       │   │   ├─ object/member/
   │       │       │       │   │   │   ├─ object/this
@@ -228,8 +228,8 @@ program/
   │       │       │       │   ├─ member[optional]
   │       │       │       │   └─ property/name
   │       │       │       ├─ op[nullish-coalescing]
-  │       │       │       └─ right/string
-  │       │       └─ return/template/interpolation/unary/name
+  │       │       │       └─ right/expression/string
+  │       │       └─ return/expression/template/interpolation/expression[non_null]/name
   │       ├─ method[public and generator]/
   │       │   ├─ name
   │       │   ├─ returns/type[generic]/
@@ -240,11 +240,11 @@ program/
   │       │   └─ body/block/for/
   │       │       ├─ variable[let]/
   │       │       │   ├─ name
-  │       │       │   └─ value/number
-  │       │       ├─ condition/binary/
-  │       │       │   ├─ left/name
+  │       │       │   └─ value/expression/number
+  │       │       ├─ condition/expression/binary/
+  │       │       │   ├─ left/expression/name
   │       │       │   ├─ op/compare[less]
-  │       │       │   └─ right/member/
+  │       │       │   └─ right/expression/member/
   │       │       │       ├─ object/member/
   │       │       │       │   ├─ object/this
   │       │       │       │   └─ property/name
@@ -252,7 +252,7 @@ program/
   │       │       ├─ unary/
   │       │       │   ├─ name
   │       │       │   └─ op[increment]
-  │       │       └─ body/yield/array/
+  │       │       └─ body/expression/yield/array/
   │       │           ├─ name
   │       │           └─ index/
   │       │               ├─ object/member/
@@ -274,16 +274,16 @@ program/
   │               ├─ body/block/
   │               │   ├─ variable[const]/
   │               │   │   ├─ name
-  │               │   │   └─ value/array/
+  │               │   │   └─ value/expression/array/
   │               │   │       ├─ spread/name
   │               │   │       └─ spread/name
   │               │   ├─ for/
-  │               │   │   ├─ left/name
-  │               │   │   ├─ right/name
-  │               │   │   └─ body/block/await/call/
+  │               │   │   ├─ left/expression/name
+  │               │   │   ├─ right/expression/name
+  │               │   │   └─ body/block/expression/expression[await]/call/
   │               │   │       ├─ callee/name
   │               │   │       └─ name
-  │               │   └─ return/member/
+  │               │   └─ return/expression/member/
   │               │       ├─ object/this
   │               │       └─ property/name
   │               ├─ catch/
@@ -291,7 +291,7 @@ program/
   │               │   └─ body/block/throw/as/
   │               │       ├─ name
   │               │       └─ type/name
-  │               └─ finally/body/block/member/
+  │               └─ finally/body/block/expression/member/
   │                   ├─ object/member/
   │                   │   ├─ object/this
   │                   │   └─ property/name
@@ -304,27 +304,27 @@ program/
   │   ├─ returns/predicate/predicate/
   │   │   ├─ name
   │   │   └─ type/name
-  │   └─ body/block/return/binary/
-  │       ├─ left/binary/
-  │       │   ├─ left/binary/
-  │       │   │   ├─ left/unary/
+  │   └─ body/block/return/expression/binary/
+  │       ├─ left/expression/binary/
+  │       │   ├─ left/expression/binary/
+  │       │   │   ├─ left/expression/unary/
   │       │   │   │   ├─ op
   │       │   │   │   └─ name
   │       │   │   ├─ op/equals[strict]
-  │       │   │   └─ right/string
+  │       │   │   └─ right/expression/string
   │       │   ├─ op/logical[and]
-  │       │   └─ right/binary/
-  │       │       ├─ left/name
+  │       │   └─ right/expression/binary/
+  │       │       ├─ left/expression/name
   │       │       ├─ op/not-equals[strict]
-  │       │       └─ right/null
+  │       │       └─ right/expression/null
   │       ├─ op/logical[and]
-  │       └─ right/binary/
-  │           ├─ left/string
+  │       └─ right/expression/binary/
+  │           ├─ left/expression/string
   │           ├─ op[contains]
-  │           └─ right/name
+  │           └─ right/expression/name
   ├─ variable[const]/
   │   ├─ name
-  │   └─ value/arrow/
+  │   └─ value/expression/arrow/
   │       ├─ parameter[required]/
   │       │   ├─ name
   │       │   └─ type/name
@@ -341,17 +341,17 @@ program/
   │           │   ├─ parameter[required]/name
   │           │   ├─ parameter[required]/name
   │           │   └─ body/binary/
-  │           │       ├─ left/binary/
-  │           │       │   ├─ left/name
+  │           │       ├─ left/expression/binary/
+  │           │       │   ├─ left/expression/name
   │           │       │   ├─ op[plus]
-  │           │       │   └─ right/name
+  │           │       │   └─ right/expression/name
   │           │       ├─ op[plus]
-  │           │       └─ right/binary/
-  │           │           ├─ left/index/
+  │           │       └─ right/expression/binary/
+  │           │           ├─ left/expression/index/
   │           │           │   ├─ object/name
   │           │           │   └─ name
   │           │           ├─ op[nullish-coalescing]
-  │           │           └─ right/string
+  │           │           └─ right/expression/string
   │           └─ string
   ├─ function[async]/
   │   ├─ name
@@ -366,8 +366,8 @@ program/
   │   ├─ parameter[required]/
   │   │   ├─ pattern[object]/
   │   │   │   ├─ pattern[default]/
-  │   │   │   │   ├─ left/name
-  │   │   │   │   └─ right/number
+  │   │   │   │   ├─ left/expression/name
+  │   │   │   │   └─ right/expression/number
   │   │   │   └─ name
   │   │   ├─ type[object]/
   │   │   │   ├─ property/
@@ -376,7 +376,7 @@ program/
   │   │   │   └─ property/
   │   │   │       ├─ name
   │   │   │       └─ type/name
-  │   │   └─ value/object
+  │   │   └─ value/expression/object
   │   ├─ returns/type[generic]/
   │   │   ├─ name
   │   │   └─ type/name
@@ -385,7 +385,7 @@ program/
   │       │   ├─ pattern[array]/
   │       │   │   ├─ name
   │       │   │   └─ rest/name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ callee/member/
   │       │       │   ├─ object/call/
   │       │       │   │   ├─ callee/name
@@ -395,26 +395,26 @@ program/
   │       ├─ comment[trailing]
   │       ├─ variable[const]/
   │       │   ├─ name
-  │       │   └─ value/object/
+  │       │   └─ value/expression/object/
   │       │       ├─ spread/object/name
   │       │       ├─ name
   │       │       ├─ name
   │       │       └─ name
   │       ├─ variable[const]/
   │       │   ├─ name
-  │       │   └─ value/as/
+  │       │   └─ value/expression/as/
   │       │       ├─ call/
   │       │       │   ├─ callee/name
   │       │       │   └─ template/
   │       │       │       ├─ interpolation/binary/
-  │       │       │       │   ├─ left/name
+  │       │       │       │   ├─ left/expression/name
   │       │       │       │   ├─ op[nullish-coalescing]
-  │       │       │       │   └─ right/string
+  │       │       │       │   └─ right/expression/string
   │       │       │       └─ interpolation/member/
   │       │       │           ├─ object/name
   │       │       │           └─ property/name
   │       │       └─ type/name
-  │       └─ return/satisfies/
+  │       └─ return/expression/satisfies/
   │           ├─ name
   │           └─ type/name
   ├─ comment[leading]
@@ -428,46 +428,46 @@ program/
   │       ├─ variable[let]/
   │       │   ├─ name
   │       │   ├─ type/name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       ├─ if/
-  │       │   ├─ condition/binary/
-  │       │   │   ├─ left/name
+  │       │   ├─ condition/expression/binary/
+  │       │   │   ├─ left/expression/name
   │       │   │   ├─ op/compare[less]
-  │       │   │   └─ right/number
-  │       │   ├─ then/assign/
-  │       │   │   ├─ left/name
+  │       │   │   └─ right/expression/number
+  │       │   ├─ then/expression/assign/
+  │       │   │   ├─ left/expression/name
   │       │   │   ├─ op
-  │       │   │   └─ right/string
+  │       │   │   └─ right/expression/string
   │       │   ├─ else_if/
-  │       │   │   ├─ condition/binary/
-  │       │   │   │   ├─ left/name
+  │       │   │   ├─ condition/expression/binary/
+  │       │   │   │   ├─ left/expression/name
   │       │   │   │   ├─ op/equals[strict]
-  │       │   │   │   └─ right/number
-  │       │   │   └─ then/assign/
-  │       │   │       ├─ left/name
+  │       │   │   │   └─ right/expression/number
+  │       │   │   └─ then/expression/assign/
+  │       │   │       ├─ left/expression/name
   │       │   │       ├─ op
-  │       │   │       └─ right/string
+  │       │   │       └─ right/expression/string
   │       │   ├─ else_if/
-  │       │   │   ├─ condition/binary/
-  │       │   │   │   ├─ left/name
+  │       │   │   ├─ condition/expression/binary/
+  │       │   │   │   ├─ left/expression/name
   │       │   │   │   ├─ op/compare[less]
-  │       │   │   │   └─ right/number
-  │       │   │   └─ then/assign/
-  │       │   │       ├─ left/name
+  │       │   │   │   └─ right/expression/number
+  │       │   │   └─ then/expression/assign/
+  │       │   │       ├─ left/expression/name
   │       │   │       ├─ op
-  │       │   │       └─ right/string
-  │       │   └─ else/assign/
-  │       │       ├─ left/name
+  │       │   │       └─ right/expression/string
+  │       │   └─ else/expression/assign/
+  │       │       ├─ left/expression/name
   │       │       ├─ op
-  │       │       └─ right/string
+  │       │       └─ right/expression/string
   │       ├─ switch/
-  │       │   ├─ value/name
+  │       │   ├─ value/expression/name
   │       │   └─ body/body/
   │       │       ├─ case/
-  │       │       │   ├─ value/string
+  │       │       │   ├─ value/expression/string
   │       │       │   └─ body/break
   │       │       ├─ case/
-  │       │       │   ├─ value/string
+  │       │       │   ├─ value/expression/string
   │       │       │   └─ body/throw/new/
   │       │       │       ├─ name
   │       │       │       └─ string
@@ -480,45 +480,45 @@ program/
   │       │   │   ├─ name
   │       │   │   ├─ type/name
   │       │   │   └─ type/name
-  │       │   └─ value/object/
+  │       │   └─ value/expression/object/
   │       │       ├─ pair/
   │       │       │   ├─ name
-  │       │       │   └─ value/number
+  │       │       │   └─ value/expression/number
   │       │       └─ pair/
   │       │           ├─ name
-  │       │           └─ value/number
+  │       │           └─ value/expression/number
   │       ├─ for/
-  │       │   ├─ left/name
-  │       │   ├─ right/name
-  │       │   └─ body/block/assign/
-  │       │       ├─ left/unary/index/
+  │       │   ├─ left/expression/name
+  │       │   ├─ right/expression/name
+  │       │   └─ body/block/expression/assign/
+  │       │       ├─ left/expression[non_null]/index/
   │       │       │   ├─ object/name
   │       │       │   └─ name
   │       │       ├─ op/assign[plus]
-  │       │       └─ right/number
+  │       │       └─ right/expression/number
   │       ├─ for/
-  │       │   ├─ left/pattern[array]/name
-  │       │   ├─ right/call/
+  │       │   ├─ left/expression/pattern[array]/name
+  │       │   ├─ right/expression/call/
   │       │   │   ├─ callee/member/
   │       │   │   │   ├─ object/name
   │       │   │   │   └─ property/name
   │       │   │   └─ name
-  │       │   └─ body/block/unary/
+  │       │   └─ body/block/expression/unary/
   │       │       ├─ op
   │       │       └─ name
   │       ├─ while/
-  │       │   ├─ condition/bool
+  │       │   ├─ condition/expression/bool
   │       │   └─ body/block/comment
-  │       └─ return/ternary/
-  │           ├─ condition/binary/
-  │           │   ├─ left/name
+  │       └─ return/expression/ternary/
+  │           ├─ condition/expression/binary/
+  │           │   ├─ left/expression/name
   │           │   ├─ op/compare[greater]
-  │           │   └─ right/number
+  │           │   └─ right/expression/number
   │           ├─ then/name
   │           └─ else/string
   ├─ variable[const]/
   │   ├─ name
-  │   └─ value/arrow/
+  │   └─ value/expression/arrow/
   │       ├─ generics/generic/name
   │       ├─ parameter[required]/
   │       │   ├─ name
@@ -532,7 +532,7 @@ program/
   ├─ variable[const]/
   │   ├─ name
   │   ├─ type[array]/type/name
-  │   └─ value/call/
+  │   └─ value/expression/call/
   │       ├─ callee/member/
   │       │   ├─ object/array/
   │       │   │   ├─ number
@@ -543,46 +543,46 @@ program/
   │           ├─ parameter[required]/name
   │           ├─ returns/type/name
   │           └─ body/binary/
-  │               ├─ left/name
+  │               ├─ left/expression/name
   │               ├─ op[multiply]
-  │               └─ right/number
+  │               └─ right/expression/number
   ├─ variable[const]/
   │   ├─ name
   │   ├─ type[union]/
   │   │   ├─ type/name
   │   │   └─ type[literal]/null
-  │   └─ value/null
+  │   └─ value/expression/null
   ├─ variable[const]/
   │   ├─ name
-  │   └─ value/binary/
-  │       ├─ left/name
+  │   └─ value/expression/binary/
+  │       ├─ left/expression/name
   │       ├─ op[nullish-coalescing]
-  │       └─ right/string
+  │       └─ right/expression/string
   ├─ variable[const]/
   │   ├─ name
-  │   └─ value/unary/as/
+  │   └─ value/expression[non_null]/as/
   │       ├─ name
   │       └─ type[union]/
   │           ├─ type/name
   │           └─ type[literal]/null
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  ├─ unary/
+  ├─ expression/unary/
   │   ├─ op
   │   └─ name
-  └─ unary/
+  └─ expression/unary/
       ├─ op
       └─ name

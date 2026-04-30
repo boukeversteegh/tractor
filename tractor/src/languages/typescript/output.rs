@@ -25,7 +25,7 @@ pub enum TractorNode {
     Break, Continue, Body,
     // Expressions
     Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Pattern,
-    Spread, Rest,
+    Spread, Rest, Expression, NonNull,
     // Imports / exports (Export dual-use)
     Import, Export, Imports, Spec, Clause, Namespace,
     // Templates (Template dual-use)
@@ -82,7 +82,9 @@ impl TractorNode {
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async
-            | Self::Let | Self::Const | Self::Var                                  => (true, false, Keyword),
+            | Self::Let | Self::Const | Self::Var
+            | Self::Await                                                          => (true, false, Keyword),
+            Self::NonNull                                                          => (true, false, Operator),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Export | Self::Default                          => (true, true, Keyword),
@@ -93,7 +95,7 @@ impl TractorNode {
             | Self::Alias | Self::Variable | Self::Parameter
             | Self::Return | Self::If | Self::Else | Self::For | Self::While
             | Self::Try | Self::Catch | Self::Throw | Self::Finally | Self::Switch
-            | Self::Case | Self::Break | Self::Continue | Self::New | Self::Await
+            | Self::Case | Self::Break | Self::Continue | Self::New
             | Self::Yield | Self::Import
             | Self::Bool | Self::Null | Self::Undefined
             | Self::This | Self::Super                                             => (false, true, Keyword),

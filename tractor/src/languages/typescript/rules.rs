@@ -69,7 +69,9 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::AccessibilityModifier    => Custom(transformations::modifier),
         TsKind::ArrowFunction            => Custom(transformations::arrow_function),
         TsKind::Comment                  => Custom(transformations::comment),
-        TsKind::ExpressionStatement      => Custom(transformations::skip),
+        TsKind::AwaitExpression          => Custom(transformations::await_expression),
+        TsKind::ExpressionStatement      => Custom(transformations::expression_statement),
+        TsKind::NonNullExpression        => Custom(transformations::non_null_expression),
         TsKind::ExtendsClause            => Custom(transformations::extends_clause),
         TsKind::FormalParameters         => Custom(transformations::formal_parameters),
         TsKind::FunctionDeclaration      => Custom(transformations::function_declaration),
@@ -92,7 +94,6 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
 
         // ---- Pure Rename -----------------------------------------------
         TsKind::AsExpression              => Rename(As),
-        TsKind::AwaitExpression           => Rename(Await),
         TsKind::BreakStatement            => Rename(Break),
         TsKind::CallExpression            => Rename(Call),
         TsKind::CatchClause               => Rename(Catch),
@@ -127,7 +128,6 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::NamedImports              => Rename(Imports),
         TsKind::NamespaceImport           => Rename(Namespace),
         TsKind::NewExpression             => Rename(New),
-        TsKind::NonNullExpression         => Rename(Unary),
         TsKind::Null                      => Rename(Null),
         TsKind::Number                    => Rename(Number),
         TsKind::OptingTypeAnnotation      => Rename(Annotation),

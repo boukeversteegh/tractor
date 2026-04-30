@@ -177,7 +177,7 @@ fn typescript() {
         &multi_xpath(r#"
             //for
                 [variable[let][name='i']]
-                [condition/binary]
+                [condition/expression/binary]
                 [unary[op[increment]]]
                 [body/block]
         "#),
@@ -187,25 +187,25 @@ fn typescript() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [left/name='item']
-                [right/name='items']
+                [left/expression/name='item']
+                [right/expression/name='items']
                 [body/block]
         "#),
         1);
 
-    claim("TypeScript for-in uses <left> + <right>, mirroring for-of",
+    claim("TypeScript for-in uses <left> + <right>/<expression>, mirroring for-of",
         &mut tree,
         &multi_xpath(r#"
             //for
-                [left/name='key']
-                [right/name='record']
+                [left/expression/name='key']
+                [right/expression/name='record']
                 [body/block]
         "#),
         1);
 
     claim("TypeScript do-while leaks <do_statement>; body precedes the condition",
         &mut tree,
-        "//do_statement[body/block][condition/bool or condition/name]",
+        "//do_statement[body/block][condition/expression/bool or condition/expression/name]",
         1);
 }
 

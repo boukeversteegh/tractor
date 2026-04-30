@@ -22,9 +22,9 @@ fn typescript_binary() {
         &mut parse_src("typescript", "let x = 1 + 2;"),
         &multi_xpath(r#"
             //binary
-                [left/number='1']
+                [left/expression/number='1']
                 [op[plus]]
-                [right/number='2']
+                [right/expression/number='2']
         "#),
         1);
 }

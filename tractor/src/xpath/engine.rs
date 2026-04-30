@@ -867,7 +867,7 @@ mod tests {
 
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//value/number", result.source_lines.clone(), "test.ts"
+            "//value/expression/number", result.source_lines.clone(), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }

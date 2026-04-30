@@ -102,7 +102,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["typescript", "ts", "tsx", "javascript", "js", "jsx"],
         transform: typescript::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(typescript_post_transform),
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -467,6 +467,18 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         // element child; wrap so `<return>/<expression>/...` is the
         // uniform shape (no value -> no host, the wrap pass is a
         // no-op for empty returns).
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// TypeScript post-transform: collapse conditionals + wrap expression
+/// positions in `<expression>` hosts (Principle #15).
+fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
         &["value", "condition", "left", "right", "return"],
     )?;
     Ok(())

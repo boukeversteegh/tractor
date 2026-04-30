@@ -12,9 +12,10 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::TsKind;
 use super::output::TractorNode::{
-    self, Abstract, Alias, Arrow, Async, Comment as CommentName, Const, Default, Else, Export,
-    Extends, Field, Function, Generator, Get, Leading, Let, Method, Name, Optional, Parameter,
-    Private, Protected, Public, Required, Set, Ternary, Trailing, Type, Var, Variable,
+    self, Abstract, Alias, Arrow, Async, Await, Comment as CommentName, Const, Default, Else,
+    Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method, Name,
+    NonNull, Optional, Parameter, Private, Protected, Public, Required, Set, Ternary, Trailing,
+    Type, Var, Variable,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -24,10 +25,55 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
-/// `expression_statement` — drop the wrapper before children are
-/// visited so children's parent context becomes the enclosing block.
+/// `expression_statement` — wrap value-producing statements in an
+/// `<expression>` host (Principle #15). Control-flow constructs used
+/// as statement-context expressions (`if`, `for`, `while`, `return`,
+/// `break`, `continue`, `throw`, `try`) drop the wrapper — they sit
+/// directly in the body. (TypeScript's `if`/`for`/etc. are normally
+/// statements, but a `function*()` body or comma operator can put them
+/// in an expression slot; defensively skipping by inner kind matches
+/// the conservative carve-out used elsewhere.)
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let inner_kind = xot.children(node)
+        .find(|&c| xot.element(c).is_some())
+        .and_then(|c| get_kind(xot, c));
+    let is_control_flow = matches!(
+        inner_kind.as_deref(),
+        Some(
+            "if_statement" | "for_statement" | "for_in_statement" | "while_statement"
+            | "do_statement" | "return_statement" | "break_statement" | "continue_statement"
+            | "throw_statement" | "try_statement" | "switch_statement" | "labeled_statement"
+            | "block_statement"
+        )
+    );
+    if is_control_flow {
+        Ok(TransformAction::Skip)
+    } else {
+        xot.with_renamed(node, Expression);
+        Ok(TransformAction::Continue)
+    }
+}
+
+/// Legacy skip used by other kinds that are pure grammar-level
+/// wrappers; retained while the migration proceeds.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `await_expression` — `await foo()`. Prefix marker.
+pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_prepended_empty_element(node, Await)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `non_null_expression` — `foo!`. Postfix marker. Replaces the prior
+/// (incorrect) `Rename(Unary)` that classified `foo!` as a unary `!`
+/// not-operator and extracted the `!` into `<op>`.
+pub fn non_null_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_appended_empty_element(node, NonNull)?;
+    Ok(TransformAction::Continue)
 }
 
 /// `<name>` field wrapper inserted by the builder. TypeScript-specific:
