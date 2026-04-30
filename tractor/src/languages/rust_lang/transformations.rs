@@ -146,8 +146,8 @@ pub fn visibility_modifier(
     let source = descendant_text(xot, node);
     let trimmed = source.trim().to_string();
 
-    xot.with_detached_children(node)?;
-    xot.with_renamed(node, Pub);
+    xot.with_detached_children(node)?
+        .with_renamed(node, Pub);
 
     if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
         let inner = trimmed[lp + 1..rp].trim();

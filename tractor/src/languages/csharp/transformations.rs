@@ -162,8 +162,8 @@ pub fn nullable_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
             Some(CsKind::Identifier | CsKind::PredefinedType)
         ) {
             if let Some(type_text) = get_text_content(xot, child) {
-                xot.with_renamed(node, Type);
-                xot.with_only_text(node, &type_text)?;
+                xot.with_renamed(node, Type)
+                    .with_only_text(node, &type_text)?;
                 let nullable_name = get_name(xot, Nullable);
                 let nullable_el = xot.new_element(nullable_name);
                 xot.append(node, nullable_el)?;

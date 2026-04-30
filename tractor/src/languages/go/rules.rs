@@ -146,10 +146,10 @@ pub fn rule(k: GoKind) -> Rule<GoName> {
         GoKind::ArrayType
         | GoKind::ImplicitLengthArrayType => Custom(transformations::passthrough),
 
-        // TODO: `dot` (the `.` in `import . "pkg"`) is a name placeholder.
-        // Likely should be `Rename(NAME)` like other identifier-like
-        // leaves (`blank_identifier`, `field_identifier`).
-        GoKind::Dot => Custom(transformations::passthrough),
+        // `dot` — the `.` placeholder in `import . "pkg"`. Treated as
+        // an identifier-like leaf, same as `blank_identifier` and
+        // `field_identifier`.
+        GoKind::Dot => Rename(Name),
 
         // TODO: `expression_case` should be `Rename(CASE)` for
         // consistency — its sibling kinds already do this:
@@ -162,16 +162,14 @@ pub fn rule(k: GoKind) -> Rule<GoName> {
         // exercise expression switches).
         GoKind::ExpressionCase => Custom(transformations::passthrough),
 
-        // TODO: `parenthesized_expression` and `parenthesized_type`
-        // should be `Flatten { distribute_field: None }` — parens are
-        // pure grammar grouping with no semantic content. Other
-        // languages already flatten this kind (csharp, typescript, etc.).
+        // Parens are pure grouping with no semantic content; flatten
+        // so the inner expression / type bubbles up. Matches the
+        // treatment in csharp, typescript, etc.
         GoKind::ParenthesizedExpression
-        | GoKind::ParenthesizedType => Custom(transformations::passthrough),
+        | GoKind::ParenthesizedType => Flatten { distribute_field: None },
 
-        // TODO: `empty_statement` (a bare `;`) carries no semantic
-        // content; either `Flatten` or skip it entirely.
-        GoKind::EmptyStatement => Custom(transformations::passthrough),
+        // `empty_statement` (a bare `;`) carries no semantic content.
+        GoKind::EmptyStatement => Flatten { distribute_field: None },
 
         // TODO: `fallthrough_statement` is a real Go control-flow
         // construct. Likely wants its own semantic name (FALLTHROUGH)
@@ -179,10 +177,9 @@ pub fn rule(k: GoKind) -> Rule<GoName> {
         // NodeSpec entry.
         GoKind::FallthroughStatement => Custom(transformations::passthrough),
 
-        // TODO: `imaginary_literal` (`1i`) is a number-shaped literal.
-        // Likely `Rename(FLOAT)` (or a new IMAG semantic) — currently
-        // `<imaginary_literal>` survives as raw kind.
-        GoKind::ImaginaryLiteral => Custom(transformations::passthrough),
+        // `imaginary_literal` (`1i`) is a number-shaped literal,
+        // grouped with floats.
+        GoKind::ImaginaryLiteral => Rename(Float),
 
         // TODO: `slice_expression` (`s[i:j]`) is structurally similar
         // to `index_expression` (`s[i]`). Either reuse `Rename(INDEX)`

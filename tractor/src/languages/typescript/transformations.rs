@@ -247,8 +247,8 @@ pub fn abstract_method_signature(
     if !has_visibility_marker(xot, node) {
         xot.with_prepended_empty_element(node, Public)?;
     }
-    xot.with_renamed(node, Method);
-    xot.with_prepended_empty_element(node, Abstract)?;
+    xot.with_renamed(node, Method)
+        .with_prepended_empty_element(node, Abstract)?;
     Ok(TransformAction::Continue)
 }
 

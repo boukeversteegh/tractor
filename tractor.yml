@@ -20,7 +20,7 @@ operations:
                 }
 
         - id: chain-fluent-xot-with
-          xpath: "//call[.//field[value/name='xot' and starts-with(name,'with_')] and following-sibling::call[1][.//field[value/name='xot' and starts-with(name,'with_')]]]"
+          xpath: "//*[(self::call or self::try) and .//field[value/name='xot' and starts-with(name,'with_')] and following-sibling::*[1][self::call or self::try][.//field[value/name='xot' and starts-with(name,'with_')]]]"
           reason: "consecutive xot.with_* calls — chain them instead"
           severity: error
           message: "xot.with_* call is followed by another xot.with_* statement; chain them as xot.with_a(...).with_b(...) instead of writing separate statements"
@@ -30,6 +30,12 @@ operations:
                     xot.with_a();
                     xot.with_b();
                 }
+            - invalid: |
+                fn t() -> Result<(), Error> {
+                    xot.with_a(node)?;
+                    xot.with_b(node);
+                    Ok(())
+                }
             - valid: |
                 fn t() {
                     xot.with_a().with_b();
@@ -38,6 +44,12 @@ operations:
                 fn t() {
                     xot.with_a();
                     other_call();
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a();
+                    let x = 1;
+                    xot.with_b();
                 }
 
   - check:
