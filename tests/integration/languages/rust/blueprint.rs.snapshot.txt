@@ -540,8 +540,8 @@ file/
   │       ├─ if/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name
-  │       │   │   ├─ name
-  │       │   │   └─ value/expression/call/
+  │       │   │   ├─ expression/name
+  │       │   │   └─ expression/value/expression/call/
   │       │   │       ├─ name
   │       │   │       └─ int
   │       │   └─ then/let/value/expression/name
@@ -557,8 +557,8 @@ file/
   │       ├─ while/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name
-  │       │   │   ├─ name
-  │       │   │   └─ value/expression/call/field/
+  │       │   │   ├─ expression/name
+  │       │   │   └─ expression/value/expression/call/field/
   │       │   │       ├─ value/expression/name
   │       │   │       └─ name
   │       │   └─ body/

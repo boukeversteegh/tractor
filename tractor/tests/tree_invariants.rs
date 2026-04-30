@@ -68,6 +68,9 @@ fn lang_from_ext(ext: &str) -> Option<&'static str> {
 /// `parenthesized_expression`).
 const ALLOWED_UNDERSCORE_NAMES: &[&str] = &[
     "else_if",
+    // `<non_null/>` marker for TypeScript's `foo!` non-null assertion.
+    // Underscore separates the multi-word concept; not a grammar leak.
+    "non_null",
 ];
 
 /// Grammar-kind suffixes that indicate tree-sitter bleed-through.

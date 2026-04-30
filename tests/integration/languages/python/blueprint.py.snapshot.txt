@@ -1,5 +1,5 @@
 module/
-  ├─ string
+  ├─ expression/string
   ├─ import/name
   ├─ import/import/
   │   ├─ name
@@ -22,43 +22,43 @@ module/
   │       ├─ name
   │       └─ name
   ├─ assign/
-  │   ├─ left/name
+  │   ├─ left/expression/name
   │   ├─ type/name
-  │   └─ right/true
+  │   └─ right/expression/true
   ├─ assign/
-  │   ├─ left/name
+  │   ├─ left/expression/name
   │   ├─ type/name
-  │   └─ right/float
+  │   └─ right/expression/float
   ├─ assign/
   │   ├─ left/
-  │   │   ├─ name
-  │   │   └─ name
+  │   │   ├─ expression/name
+  │   │   └─ expression/name
   │   └─ right/
-  │       ├─ string
-  │       └─ string
+  │       ├─ expression/string
+  │       └─ expression/string
   ├─ assign/
-  │   ├─ left/name
-  │   └─ right/string
+  │   ├─ left/expression/name
+  │   └─ right/expression/string
   ├─ function/
   │   ├─ name
   │   ├─ name
   │   ├─ parameter/
   │   │   ├─ name
-  │   │   └─ value/int
+  │   │   └─ value/expression/int
   │   ├─ spread[list]/name
   │   ├─ parameter/
   │   │   ├─ name
-  │   │   └─ value/int
+  │   │   └─ value/expression/int
   │   ├─ spread[dict]/name
   │   └─ body/
-  │       ├─ string
-  │       └─ return/binary/
-  │           ├─ left/binary/
-  │           │   ├─ left/name
+  │       ├─ expression/string
+  │       └─ return/expression/binary/
+  │           ├─ left/expression/binary/
+  │           │   ├─ left/expression/name
   │           │   ├─ op[plus]
-  │           │   └─ right/name
+  │           │   └─ right/expression/name
   │           ├─ op[plus]
-  │           └─ right/name
+  │           └─ right/expression/name
   ├─ function/
   │   ├─ name
   │   ├─ name
@@ -70,10 +70,10 @@ module/
   │   ├─ name
   │   ├─ parameter/
   │   │   ├─ name
-  │   │   └─ value/int
+  │   │   └─ value/expression/int
   │   └─ body/
-  │       ├─ string
-  │       └─ return/tuple/
+  │       ├─ expression/string
+  │       └─ return/expression/tuple/
   │           ├─ name
   │           ├─ name
   │           ├─ name
@@ -90,7 +90,7 @@ module/
   │   │   ├─ type[generic]/
   │   │   │   ├─ name
   │   │   │   └─ type/name
-  │   │   └─ value/none
+  │   │   └─ value/expression/none
   │   ├─ parameter/
   │   │   ├─ name
   │   │   ├─ type/type[union]/
@@ -98,7 +98,7 @@ module/
   │   │   │   │   ├─ name
   │   │   │   │   └─ type/name
   │   │   │   └─ type/none
-  │   │   └─ value/none
+  │   │   └─ value/expression/none
   │   ├─ type[generic]/
   │   │   ├─ name
   │   │   ├─ type/name
@@ -111,20 +111,20 @@ module/
   │       │   │   └─ int
   │       │   └─ string
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ type/name
-  │       │   └─ right/name
+  │       │   └─ right/expression/name
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ op/assign[plus]
-  │       │   └─ right/int
+  │       │   └─ right/expression/int
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ op
-  │       │   └─ right/int
+  │       │   └─ right/expression/int
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/list[literal]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/list[literal]/
   │       │       ├─ list[literal]/
   │       │       │   ├─ int
   │       │       │   └─ int
@@ -132,10 +132,10 @@ module/
   │       │           ├─ int
   │       │           └─ int
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ op
-  │       │   └─ right/name
-  │       └─ return/ternary/
+  │       │   └─ right/expression/name
+  │       └─ return/expression/ternary/
   │           ├─ name
   │           ├─ name
   │           └─ none
@@ -146,29 +146,29 @@ module/
   │   │   └─ type/name
   │   ├─ type/name
   │   └─ body/with/
-  │       ├─ value/as/
+  │       ├─ value/expression/as/
   │       │   ├─ call/
   │       │   │   ├─ name
   │       │   │   └─ name
   │       │   └─ name
   │       └─ body/
   │           ├─ for/
-  │           │   ├─ left/name
-  │           │   ├─ right/name
+  │           │   ├─ left/expression/name
+  │           │   ├─ right/expression/name
   │           │   └─ body/yield/name
   │           ├─ assign/
-  │           │   ├─ left/name
-  │           │   └─ right/await/call/member/
+  │           │   ├─ left/expression/name
+  │           │   └─ right/expression[await]/call/member/
   │           │       ├─ name
   │           │       └─ name
-  │           └─ return/name
+  │           └─ return/expression/name
   ├─ function/
   │   ├─ name
   │   ├─ name
   │   └─ body/
   │       ├─ for/
-  │       │   ├─ left/name
-  │       │   ├─ right/call/
+  │       │   ├─ left/expression/name
+  │       │   ├─ right/expression/call/
   │       │   │   ├─ name
   │       │   │   └─ name
   │       │   └─ body/yield/name
@@ -176,9 +176,9 @@ module/
   │           ├─ name
   │           ├─ name
   │           └─ binary/
-  │               ├─ left/name
+  │               ├─ left/expression/name
   │               ├─ op[multiply]
-  │               └─ right/int
+  │               └─ right/expression/int
   ├─ function/
   │   ├─ name
   │   ├─ name
@@ -192,16 +192,16 @@ module/
   │       │       │   ├─ spread[list]/name
   │       │       │   ├─ spread[dict]/name
   │       │       │   └─ body/for/
-  │       │       │       ├─ left/name
-  │       │       │       ├─ right/call/
+  │       │       │       ├─ left/expression/name
+  │       │       │       ├─ right/expression/call/
   │       │       │       │   ├─ name
   │       │       │       │   └─ name
-  │       │       │       └─ body/call/
+  │       │       │       └─ body/expression/call/
   │       │       │           ├─ name
   │       │       │           ├─ spread[list]/name
   │       │       │           └─ spread[dict]/name
-  │       │       └─ return/name
-  │       └─ return/name
+  │       │       └─ return/expression/name
+  │       └─ return/expression/name
   ├─ function/
   │   ├─ decorator/name
   │   ├─ decorator/call/
@@ -213,25 +213,25 @@ module/
   │   ├─ decorator/name
   │   ├─ name
   │   └─ body/
-  │       ├─ string
+  │       ├─ expression/string
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ type/name
-  │       │   └─ right/int
+  │       │   └─ right/expression/int
   │       ├─ assign/
-  │       │   ├─ left/name
+  │       │   ├─ left/expression/name
   │       │   ├─ type/name
-  │       │   └─ right/int
+  │       │   └─ right/expression/int
   │       └─ assign/
-  │           ├─ left/name
+  │           ├─ left/expression/name
   │           ├─ type[generic]/
   │           │   ├─ name
   │           │   └─ type/name
-  │           └─ right/call/
+  │           └─ right/expression/call/
   │               ├─ name
   │               └─ argument/
   │                   ├─ name
-  │                   └─ value/name
+  │                   └─ value/expression/name
   ├─ class/
   │   ├─ name
   │   └─ body/pass
@@ -244,14 +244,14 @@ module/
   │   ├─ name
   │   ├─ argument/
   │   │   ├─ name
-  │   │   └─ value/name
+  │   │   └─ value/expression/name
   │   └─ body/
-  │       ├─ string
+  │       ├─ expression/string
   │       ├─ class/
   │       │   ├─ name
   │       │   └─ body/assign/
-  │       │       ├─ left/name
-  │       │       └─ right/int
+  │       │       ├─ left/expression/name
+  │       │       └─ right/expression/int
   │       ├─ function[public]/
   │       │   ├─ name
   │       │   ├─ name
@@ -259,21 +259,21 @@ module/
   │       │   │   ├─ name
   │       │   │   └─ type/name
   │       │   └─ body/assign/
-  │       │       ├─ left/member/
+  │       │       ├─ left/expression/member/
   │       │       │   ├─ name
   │       │       │   └─ name
-  │       │       └─ right/name
+  │       │       └─ right/expression/name
   │       └─ function[public]/
   │           ├─ name
   │           ├─ name
   │           ├─ name
-  │           └─ body/return/logical/
-  │               ├─ left/call/
+  │           └─ body/return/expression/logical/
+  │               ├─ left/expression/call/
   │               │   ├─ name
   │               │   ├─ name
   │               │   └─ name
   │               ├─ op/logical[and]
-  │               └─ right/compare/
+  │               └─ right/expression/compare/
   │                   ├─ member/
   │                   │   ├─ name
   │                   │   └─ name
@@ -286,52 +286,52 @@ module/
   │   ├─ name
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/int
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/int
   │       ├─ for/
   │       │   ├─ left/
-  │       │   │   ├─ name
-  │       │   │   └─ name
-  │       │   ├─ right/call/
+  │       │   │   ├─ expression/name
+  │       │   │   └─ expression/name
+  │       │   ├─ right/expression/call/
   │       │   │   ├─ name
   │       │   │   └─ name
   │       │   ├─ body/if/
-  │       │   │   ├─ condition/compare/
+  │       │   │   ├─ condition/expression/compare/
   │       │   │   │   ├─ name
   │       │   │   │   ├─ op/compare[less]
   │       │   │   │   └─ int
   │       │   │   ├─ then/continue
   │       │   │   ├─ else_if/
-  │       │   │   │   ├─ condition/compare/
+  │       │   │   │   ├─ condition/expression/compare/
   │       │   │   │   │   ├─ name
   │       │   │   │   │   ├─ op[equals]
   │       │   │   │   │   └─ int
   │       │   │   │   └─ then/break
   │       │   │   └─ else/body/assign/
-  │       │   │       ├─ left/name
+  │       │   │       ├─ left/expression/name
   │       │   │       ├─ op/assign[plus]
-  │       │   │       └─ right/name
+  │       │   │       └─ right/expression/name
   │       │   └─ else/body/assign/
-  │       │       ├─ left/name
+  │       │       ├─ left/expression/name
   │       │       ├─ op/assign[plus]
-  │       │       └─ right/int
+  │       │       └─ right/expression/int
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/int
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/int
   │       ├─ while/
-  │       │   ├─ condition/compare/
+  │       │   ├─ condition/expression/compare/
   │       │   │   ├─ name
   │       │   │   ├─ op/compare[less]
   │       │   │   └─ int
   │       │   ├─ body/assign/
-  │       │   │   ├─ left/name
+  │       │   │   ├─ left/expression/name
   │       │   │   ├─ op/assign[plus]
-  │       │   │   └─ right/int
+  │       │   │   └─ right/expression/int
   │       │   └─ else/body/pass
   │       ├─ try/
-  │       │   ├─ body/call/name
+  │       │   ├─ body/expression/call/name
   │       │   ├─ except/
-  │       │   │   ├─ value/as/
+  │       │   │   ├─ value/expression/as/
   │       │   │   │   ├─ tuple/
   │       │   │   │   │   ├─ name
   │       │   │   │   │   └─ name
@@ -342,32 +342,32 @@ module/
   │       │   │       │   └─ string
   │       │   │       └─ name
   │       │   ├─ except/
-  │       │   │   ├─ value/name
+  │       │   │   ├─ value/expression/name
   │       │   │   └─ pass
   │       │   ├─ else/body/assign/
-  │       │   │   ├─ left/name
+  │       │   │   ├─ left/expression/name
   │       │   │   ├─ op/assign[plus]
-  │       │   │   └─ right/int
-  │       │   └─ finally/call/name
+  │       │   │   └─ right/expression/int
+  │       │   └─ finally/expression/call/name
   │       ├─ with/
-  │       │   ├─ value/as/
+  │       │   ├─ value/expression/as/
   │       │   │   ├─ call/
   │       │   │   │   ├─ name
   │       │   │   │   └─ string
   │       │   │   └─ name
-  │       │   ├─ value/as/
+  │       │   ├─ value/expression/as/
   │       │   │   ├─ call/
   │       │   │   │   ├─ name
   │       │   │   │   └─ string
   │       │   │   └─ name
   │       │   └─ body/
-  │       │       ├─ call/member/
+  │       │       ├─ expression/call/member/
   │       │       │   ├─ name
   │       │       │   └─ name
-  │       │       └─ call/member/
+  │       │       └─ expression/call/member/
   │       │           ├─ name
   │       │           └─ name
-  │       └─ return/name
+  │       └─ return/expression/name
   ├─ function/
   │   ├─ name
   │   ├─ name
@@ -377,20 +377,20 @@ module/
   │           ├─ arm/
   │           │   ├─ pattern/pattern[dict]/
   │           │   │   ├─ string
-  │           │   │   ├─ value/pattern/string
+  │           │   │   ├─ value/expression/pattern/string
   │           │   │   ├─ string
-  │           │   │   └─ value/pattern/name
+  │           │   │   └─ value/expression/pattern/name
   │           │   ├─ compare/
   │           │   │   ├─ name
   │           │   │   ├─ op/compare[greater]
   │           │   │   └─ int
-  │           │   └─ then/return/name
+  │           │   └─ then/return/expression/name
   │           ├─ arm/
   │           │   ├─ pattern/pattern[list]/
   │           │   │   ├─ pattern/int
   │           │   │   ├─ pattern/int
   │           │   │   └─ pattern/pattern[splat]/name
-  │           │   └─ then/return/name
+  │           │   └─ then/return/expression/name
   │           ├─ arm/
   │           │   ├─ pattern/pattern[class]/
   │           │   │   ├─ name
@@ -400,75 +400,75 @@ module/
   │           │   │   └─ pattern/pattern/
   │           │   │       ├─ name
   │           │   │       └─ name
-  │           │   └─ then/return/name
+  │           │   └─ then/return/expression/name
   │           ├─ arm/
   │           │   ├─ pattern/pattern[union]/
   │           │   │   ├─ string
   │           │   │   ├─ string
   │           │   │   └─ string
-  │           │   └─ then/return/true
+  │           │   └─ then/return/expression/true
   │           └─ arm/
   │               ├─ pattern
-  │               └─ then/return/none
+  │               └─ then/return/expression/none
   ├─ function/
   │   ├─ name
   │   ├─ name
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/list[comprehension]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/list[comprehension]/
   │       │       ├─ body/binary/
-  │       │       │   ├─ left/name
+  │       │       │   ├─ left/expression/name
   │       │       │   ├─ op[multiply]
-  │       │       │   └─ right/name
-  │       │       ├─ left/name
-  │       │       ├─ right/name
+  │       │       │   └─ right/expression/name
+  │       │       ├─ left/expression/name
+  │       │       ├─ right/expression/name
   │       │       └─ compare/
   │       │           ├─ name
   │       │           ├─ op/compare[greater]
   │       │           └─ int
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/dict[comprehension]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/dict[comprehension]/
   │       │       ├─ body/pair/
   │       │       │   ├─ name
-  │       │       │   └─ value/name
+  │       │       │   └─ value/expression/name
   │       │       ├─ left/
-  │       │       │   ├─ name
-  │       │       │   └─ name
-  │       │       ├─ right/call/member/
+  │       │       │   ├─ expression/name
+  │       │       │   └─ expression/name
+  │       │       ├─ right/expression/call/member/
   │       │       │   ├─ name
   │       │       │   └─ name
   │       │       └─ name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/set[comprehension]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/set[comprehension]/
   │       │       ├─ body/name
-  │       │       ├─ left/name
-  │       │       └─ right/name
+  │       │       ├─ left/expression/name
+  │       │       └─ right/expression/name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/generator/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/generator/
   │       │       ├─ body/name
-  │       │       ├─ left/name
-  │       │       ├─ right/name
-  │       │       ├─ left/name
-  │       │       ├─ right/call/
+  │       │       ├─ left/expression/name
+  │       │       ├─ right/expression/name
+  │       │       ├─ left/expression/name
+  │       │       ├─ right/expression/call/
   │       │       │   ├─ name
   │       │       │   └─ int
   │       │       └─ name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/list[comprehension]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/list[comprehension]/
   │       │       ├─ body/tuple/
   │       │       │   ├─ name
   │       │       │   └─ name
-  │       │       ├─ left/name
-  │       │       ├─ right/call/
+  │       │       ├─ left/expression/name
+  │       │       ├─ right/expression/call/
   │       │       │   ├─ name
   │       │       │   └─ int
-  │       │       ├─ left/name
-  │       │       ├─ right/call/
+  │       │       ├─ left/expression/name
+  │       │       ├─ right/expression/call/
   │       │       │   ├─ name
   │       │       │   └─ int
   │       │       └─ compare/
@@ -476,41 +476,41 @@ module/
   │       │           ├─ op[not-equals]
   │       │           └─ name
   │       └─ return/
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           └─ name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           └─ expression/name
   ├─ function/
   │   ├─ name
   │   ├─ name
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/ternary/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/ternary/
   │       │       ├─ subscript/
-  │       │       │   ├─ value/name
+  │       │       │   ├─ value/expression/name
   │       │       │   └─ int
   │       │       ├─ name
   │       │       └─ none
   │       ├─ if/
-  │       │   ├─ condition/compare/
+  │       │   ├─ condition/expression/compare/
   │       │   │   ├─ assign/
   │       │   │   │   ├─ name
-  │       │   │   │   └─ value/call/
+  │       │   │   │   └─ value/expression/call/
   │       │   │   │       ├─ name
   │       │   │   │       └─ name
   │       │   │   ├─ op/compare[greater]
   │       │   │   └─ int
-  │       │   └─ then/call/
+  │       │   └─ then/expression/call/
   │       │       ├─ name
   │       │       └─ string/interpolation/name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/string
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/string
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/string/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/string/
   │       │       ├─ interpolation/
   │       │       │   ├─ name
   │       │       │   └─ cast
@@ -519,65 +519,65 @@ module/
   │       │       │   └─ format
   │       │       └─ interpolation/string/interpolation/name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/call/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/call/
   │       │       ├─ name
   │       │       └─ call/
   │       │           ├─ name
   │       │           ├─ lambda/
   │       │           │   ├─ name
   │       │           │   └─ body/binary/
-  │       │           │       ├─ left/name
+  │       │           │       ├─ left/expression/name
   │       │           │       ├─ op[multiply]
-  │       │           │       └─ right/int
+  │       │           │       └─ right/expression/int
   │       │           └─ name
   │       ├─ assign/
   │       │   ├─ left/
-  │       │   │   ├─ name
-  │       │   │   ├─ spread[list]/name
-  │       │   │   └─ name
-  │       │   └─ right/name
+  │       │   │   ├─ expression/name
+  │       │   │   ├─ expression/spread[list]/name
+  │       │   │   └─ expression/name
+  │       │   └─ right/expression/name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/dict[literal]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/dict[literal]/
   │       │       ├─ spread[dict]/dict[literal]/pair/
   │       │       │   ├─ string
-  │       │       │   └─ value/int
+  │       │       │   └─ value/expression/int
   │       │       └─ spread[dict]/dict[literal]/pair/
   │       │           ├─ string
-  │       │           └─ value/int
+  │       │           └─ value/expression/int
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/list[literal]/
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/list[literal]/
   │       │       ├─ spread[list]/name
   │       │       └─ spread[list]/name
   │       ├─ global/name
   │       ├─ assign/
-  │       │   ├─ left/name
-  │       │   └─ right/false
+  │       │   ├─ left/expression/name
+  │       │   └─ right/expression/false
   │       └─ return/
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           ├─ name
-  │           └─ name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           ├─ expression/name
+  │           └─ expression/name
   └─ function/
       ├─ name
       └─ body/
           ├─ assign/
-          │   ├─ left/name
-          │   └─ right/int
+          │   ├─ left/expression/name
+          │   └─ right/expression/int
           ├─ function/
           │   ├─ name
           │   └─ body/
           │       ├─ nonlocal/name
           │       ├─ assign/
-          │       │   ├─ left/name
+          │       │   ├─ left/expression/name
           │       │   ├─ op/assign[plus]
-          │       │   └─ right/int
-          │       └─ return/name
+          │       │   └─ right/expression/int
+          │       └─ return/expression/name
           ├─ delete/name
-          └─ return/name
+          └─ return/expression/name

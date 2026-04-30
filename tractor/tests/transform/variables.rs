@@ -36,7 +36,7 @@ fn java() {
 fn python() {
     claim("plain assignment has no op child",
         &mut parse_src("python", "x = 0\n"),
-        "//assign[left/name='x'][right/int='0'][not(op)]",
+        "//assign[left/expression/name='x'][right/expression/int='0'][not(op)]",
         1);
 
     claim("arithmetic augmented assignment keeps assign shape with operator marker",

@@ -209,12 +209,17 @@ fn collect_expression_position_targets(
         .as_deref()
         .map_or(false, |n| slot_names.contains(&n));
     if is_slot {
-        if let Some(child) = xot
-            .children(node)
-            .find(|&c| xot.element(c).is_some())
-        {
-            // Skip if the slot's first element child is already an
-            // <expression> host — idempotent under repeat application.
+        // Wrap *every* element child of the slot. Most slots
+        // (`value`, `condition`, `left`, `right`) hold a single
+        // expression, but some — Python's `return 1, 2` after
+        // expression_list flattening — hold a list of sibling
+        // expressions, and each is its own expression position.
+        for child in xot.children(node) {
+            if xot.element(child).is_none() {
+                continue;
+            }
+            // Skip if the child is already an <expression> host —
+            // idempotent under repeat application.
             let child_name = get_element_name(xot, child);
             if child_name.as_deref() != Some("expression") {
                 out.push(child);

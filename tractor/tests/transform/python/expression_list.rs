@@ -15,8 +15,8 @@ def pair():
 "#),
         &multi_xpath(r#"
             //return
-                [int='1']
-                [int='2']
+                [expression/int='1']
+                [expression/int='2']
         "#),
         1);
 
@@ -25,15 +25,15 @@ def pair():
 def triple():
     return "a", "b", "c"
 "#),
-        "//return[count(string)=3]",
+        "//return[count(expression/string)=3]",
         1);
 
     claim("Python assignment target expression list flattens directly under left",
         &mut parse_src("python", "a, b = pair()\n"),
         &multi_xpath(r#"
             //assign/left
-                [name='a']
-                [name='b']
+                [expression/name='a']
+                [expression/name='b']
         "#),
         1);
 }

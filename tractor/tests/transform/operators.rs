@@ -74,9 +74,9 @@ fn python_binary() {
         &mut parse_src("python", "z = x + y\n"),
         &multi_xpath(r#"
             //binary
-                [left/name='x']
+                [left/expression/name='x']
                 [op[plus]]
-                [right/name='y']
+                [right/expression/name='y']
         "#),
         1);
 }
@@ -212,9 +212,9 @@ fn python_logical() {
         &mut parse_src("python", "z = a and b\n"),
         &multi_xpath(r#"
             //logical
-                [left/name='a']
+                [left/expression/name='a']
                 [op/logical[and]]
-                [right/name='b']
+                [right/expression/name='b']
         "#),
         1);
 }

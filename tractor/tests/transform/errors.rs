@@ -117,7 +117,7 @@ fn python() {
     claim("Python except with `as` binding exposes both the type and the binding name",
         &mut tree,
         &multi_xpath(r#"
-            //try/except/value/as
+            //try/except/value/expression/as
                 [name='ValueError']
                 [name='err']
         "#),
@@ -127,8 +127,8 @@ fn python() {
         &mut tree,
         &multi_xpath(r#"
             //try/except
-                [value/name='Exception']
-                [not(value/as)]
+                [value/expression/name='Exception']
+                [not(value/expression/as)]
         "#),
         1);
 

@@ -25,7 +25,7 @@ pub enum TractorNode {
     Import, From, Assert, Delete, Global, Nonlocal,
     // Expressions
     Call, Member, Subscript, Assign, Binary, Unary, Compare, Logical, Await, Yield, Generator,
-    Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation,
+    Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation, Expression,
     // Function-signature separators
     Keyword, Positional,
     // Collection containers (dual-use marker/container)
@@ -62,7 +62,8 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Union | Self::Splat                                          => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
-            | Self::Async | Self::Literal | Self::Comprehension                  => (true, false, Keyword),
+            | Self::Async | Self::Literal | Self::Comprehension
+            | Self::Await                                                        => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::List | Self::Dict | Self::Set                                  => (true, true, Default),
@@ -74,7 +75,7 @@ impl TractorNode {
             | Self::While | Self::Try | Self::Except | Self::Finally | Self::With
             | Self::Raise | Self::Pass | Self::Break | Self::Continue
             | Self::Import | Self::From
-            | Self::Await | Self::Yield | Self::Generator
+            | Self::Yield | Self::Generator
             | Self::True | Self::False | Self::None                              => (false, true, Keyword),
             Self::Type                                                           => (false, true, Type),
             Self::Lambda | Self::Call                                            => (false, true, Function),

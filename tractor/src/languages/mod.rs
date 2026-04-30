@@ -126,7 +126,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["python", "py"],
         transform: python::transform,
-        post_transform: None,
+        post_transform: Some(python_post_transform),
         syntax_category: python::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(python::output::spec),
@@ -476,6 +476,18 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 /// positions in `<expression>` hosts (Principle #15).
 fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// Python post-transform: wrap expression positions in `<expression>`
+/// hosts (Principle #15). Python doesn't run `collapse_conditionals`
+/// because tree-sitter-python emits an explicit `elif_clause`.
+fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::wrap_expression_positions(
         xot,
         root,

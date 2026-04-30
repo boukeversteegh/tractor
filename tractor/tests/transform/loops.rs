@@ -232,15 +232,15 @@ fn python() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [left/name='item']
-                [right/name='items']
+                [left/expression/name='item']
+                [right/expression/name='items']
                 [body//call/name='handle']
         "#),
         1);
 
     claim("Python while loop holds the condition under <condition>",
         &mut tree,
-        "//while[condition/name='running'][body//call/name='tick']",
+        "//while[condition/expression/name='running'][body//call/name='tick']",
         1);
 }
 

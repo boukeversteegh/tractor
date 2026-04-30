@@ -15,8 +15,8 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::PyKind;
 use super::output::TractorNode::{
-    self, Async, Comment as CommentName, Comprehension, Dict, Else, Function, Leading, List,
-    Literal, Private, Protected, Public, Set, Ternary, Trailing,
+    self, Async, Await, Comment as CommentName, Comprehension, Dict, Else, Expression, Function,
+    Leading, List, Literal, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -25,11 +25,40 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
-/// `expression_statement` — drop the wrapper before children are
-/// visited so children's parent context becomes the enclosing block
-/// rather than the statement wrapper.
+/// `expression_statement` — wrap value-producing statements in an
+/// `<expression>` host (Principle #15). Python's `expression_statement`
+/// is also used for plain `assignment`s in tree-sitter's grammar; let
+/// `assignment` (renamed `<assign>`) live directly under the body so
+/// it stays a peer of other declaration-like statements.
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let inner_kind = xot.children(node)
+        .find(|&c| xot.element(c).is_some())
+        .and_then(|c| get_kind(xot, c));
+    let is_control_flow_or_decl = matches!(
+        inner_kind.as_deref(),
+        Some(
+            "assignment" | "augmented_assignment"
+            | "yield" | "raise_statement"
+        )
+    );
+    if is_control_flow_or_decl {
+        Ok(TransformAction::Skip)
+    } else {
+        xot.with_renamed(node, Expression);
+        Ok(TransformAction::Continue)
+    }
+}
+
+/// Legacy skip used by other kinds; retained while migration proceeds.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `await` — Python's `await foo()`. Prefix marker.
+pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_prepended_empty_element(node, Await)?;
+    Ok(TransformAction::Continue)
 }
 
 /// `<name>` field wrapper inserted by the builder for nodes with a
