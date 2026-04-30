@@ -10,9 +10,10 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
+use super::input::RustKind;
 use super::output::RustName::{
     self, Async, Borrowed, Comment as CommentName, Const, Crate, Generic, Generics, In as InName,
-    Inner, Leading, Let, Literal, Mut, Name, Path, Pattern, Private, Pub, Raw, String as RustString,
+    Inner, Leading, Let, Literal, Mut, Name, Pattern, Private, Pub, Raw, String as RustString,
     Super, Trailing, Type, Unsafe,
 };
 
@@ -40,16 +41,12 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         .collect();
     if element_children.len() == 1 {
         let child = element_children[0];
-        if get_kind(xot, child).as_deref() == Some("lifetime") {
+        if get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
+            == Some(RustKind::Lifetime) {
             let text = descendant_text(xot, child);
             let trimmed = text.trim().to_string();
             if !trimmed.is_empty() {
-                let all_children: Vec<_> = xot.children(node).collect();
-                for c in all_children {
-                    xot.detach(c)?;
-                }
-                let text_node = xot.new_text(&trimmed);
-                xot.append(node, text_node)?;
+                xot.with_only_text(node, &trimmed)?;
                 return Ok(TransformAction::Done);
             }
         }
@@ -64,24 +61,24 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// line-comment grouping). Doc comments group naturally because they
 /// share the `//` prefix family.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }
 
 /// `identifier` / `field_identifier` / `shorthand_field_identifier` —
 /// always names. Tree-sitter Rust uses distinct kinds for type
 /// positions, so bare identifiers never need a heuristic.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Name);
+    xot.with_renamed(node, Name);
     Ok(TransformAction::Continue)
 }
 
 /// `type_identifier` / `primitive_type` — type references. Render as
 /// `<type><name>i32</name></type>` for the unified vocabulary.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type);
+    xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -90,7 +87,7 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// is the uniform shape. The specific pattern form (identifier /
 /// literal / tuple / struct / `_`) is exposed via child structure.
 pub fn match_pattern(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Pattern);
+    xot.with_renamed(node, Pattern);
     Ok(TransformAction::Continue)
 }
 
@@ -106,7 +103,7 @@ pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// child so siblings like trait_bounds remain intact.
 pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-    rename(xot, node, Generic);
+    xot.with_renamed(node, Generic);
     Ok(TransformAction::Continue)
 }
 
@@ -116,7 +113,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// flatten is preserved for parity).
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     distribute_field_to_children(xot, node, "generics");
-    rename(xot, node, Generics);
+    xot.with_renamed(node, Generics);
     Ok(TransformAction::Flatten)
 }
 
@@ -129,8 +126,9 @@ pub fn inner_attribute_item(
 ) -> Result<TransformAction, xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        if get_kind(xot, child).as_deref() == Some("attribute") {
-            prepend_empty_element(xot, child, Inner)?;
+        if get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
+            == Some(RustKind::Attribute) {
+            xot.with_prepended_empty_element(child, Inner)?;
             break;
         }
     }
@@ -148,27 +146,23 @@ pub fn visibility_modifier(
     let source = descendant_text(xot, node);
     let trimmed = source.trim().to_string();
 
-    let existing: Vec<_> = xot.children(node).collect();
-    for child in existing {
-        xot.detach(child)?;
-    }
-
-    rename(xot, node, Pub);
+    xot.with_detached_children(node)?;
+    xot.with_renamed(node, Pub);
 
     if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
         let inner = trimmed[lp + 1..rp].trim();
         match inner {
-            "crate" => { prepend_empty_element(xot, node, Crate)?; }
-            "super" => { prepend_empty_element(xot, node, Super)?; }
+            "crate" => { xot.with_prepended_empty_element(node, Crate)?; }
+            "super" => { xot.with_prepended_empty_element(node, Super)?; }
             _ if inner.starts_with("in ") => {
                 let path = inner[3..].trim();
-                prepend_element_with_text(xot, node, InName.as_str(), path)?;
+                xot.with_prepended_element_with_text(node, InName, path)?;
             }
             _ => {}
         }
     }
 
-    insert_text_after(xot, node, &trimmed)?;
+    xot.with_inserted_text_after(node, &trimmed)?;
     Ok(TransformAction::Done)
 }
 
@@ -177,8 +171,8 @@ pub fn raw_string_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Raw)?;
-    rename(xot, node, RustString);
+    xot.with_prepended_empty_element(node, Raw)?
+        .with_renamed(node, RustString);
     Ok(TransformAction::Continue)
 }
 
@@ -194,7 +188,8 @@ pub fn reference_type(
     let children: Vec<_> = xot.children(node).collect();
     let mut has_mut = false;
     for child in &children {
-        if get_kind(xot, *child).as_deref() == Some("mutable_specifier") {
+        if get_kind(xot, *child).and_then(|kind| kind.parse::<RustKind>().ok())
+            == Some(RustKind::MutableSpecifier) {
             has_mut = true;
             let text = get_text_content(xot, *child).unwrap_or_default();
             let text_node = xot.new_text(&text);
@@ -203,10 +198,10 @@ pub fn reference_type(
         }
     }
     if has_mut {
-        prepend_empty_element(xot, node, Mut)?;
+        xot.with_prepended_empty_element(node, Mut)?;
     }
-    prepend_empty_element(xot, node, Borrowed)?;
-    rename(xot, node, Type);
+    xot.with_prepended_empty_element(node, Borrowed)?
+        .with_renamed(node, Type);
     Ok(TransformAction::Continue)
 }
 
@@ -223,7 +218,7 @@ pub fn struct_expression(
         node,
         &["type_identifier", "scoped_type_identifier"],
     )?;
-    rename(xot, node, Literal);
+    xot.with_renamed(node, Literal);
     Ok(TransformAction::Continue)
 }
 
@@ -234,7 +229,7 @@ pub fn let_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     extract_modifiers(xot, node)?;
-    rename(xot, node, Let);
+    xot.with_renamed(node, Let);
     Ok(TransformAction::Continue)
 }
 
@@ -251,14 +246,15 @@ pub fn let_declaration(
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<&'static str> {
+) -> Option<RustName> {
     let has_vis = xot.children(node).any(|child| {
-        get_kind(xot, child).as_deref() == Some("visibility_modifier")
+        get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
+            == Some(RustKind::VisibilityModifier)
     });
     if has_vis {
         None
     } else {
-        Some(Private.as_str())
+        Some(Private)
     }
 }
 
@@ -269,17 +265,12 @@ pub fn default_access_for_declaration(
 fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     let found: Vec<RustName> = texts.iter()
-        .filter_map(|t| match t.as_str() {
-            "mut" => Some(Mut),
-            "async" => Some(Async),
-            "unsafe" => Some(Unsafe),
-            "const" => Some(Const),
-            _ => None,
-        })
+        .filter_map(|t| t.parse().ok())
+        .filter(|name| matches!(name, Mut | Async | Unsafe | Const))
         .collect();
 
     for modifier in found.into_iter().rev() {
-        prepend_empty_element(xot, node, modifier)?;
+        xot.with_prepended_empty_element(node, modifier)?;
     }
     Ok(())
 }
@@ -287,12 +278,15 @@ fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        let child_name = match get_element_name(xot, child) {
-            Some(n) => n,
-            None => continue,
-        };
-        if !matches!(child_name.as_str(),
-            "identifier" | "type_identifier" | "field_identifier" | "shorthand_field_identifier")
+        if !matches!(
+            get_element_name(xot, child).and_then(|name| name.parse::<RustKind>().ok()),
+            Some(
+                RustKind::Identifier
+                    | RustKind::TypeIdentifier
+                    | RustKind::FieldIdentifier
+                    | RustKind::ShorthandFieldIdentifier
+            )
+        )
         {
             continue;
         }
@@ -300,12 +294,7 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             Some(t) => t,
             None => continue,
         };
-        let all_children: Vec<_> = xot.children(node).collect();
-        for c in all_children {
-            xot.detach(c)?;
-        }
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
         return Ok(());
     }
     Ok(())

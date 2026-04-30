@@ -2,12 +2,43 @@ operations:
   - check:
       files:
         - "tractor/src/**/*.rs"
+      language: rust
       rules:
         - id: no-todo
-          xpath: "//line_comment[contains(.,'TODO')]"
+          xpath: "//comment[contains(.,'TODO')]"
           reason: "TODO comment"
           severity: error
           message: "{value}"
+          expect:
+            - invalid: |
+                fn t() {
+                    // TODO fix this
+                }
+            - valid: |
+                fn t() {
+                    // just a regular comment
+                }
+
+        - id: chain-fluent-xot-with
+          xpath: "//call[.//field[value/name='xot' and starts-with(name,'with_')] and following-sibling::call[1][.//field[value/name='xot' and starts-with(name,'with_')]]]"
+          reason: "consecutive xot.with_* calls — chain them instead"
+          severity: error
+          message: "xot.with_* call is followed by another xot.with_* statement; chain them as xot.with_a(...).with_b(...) instead of writing separate statements"
+          expect:
+            - invalid: |
+                fn t() {
+                    xot.with_a();
+                    xot.with_b();
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a().with_b();
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a();
+                    other_call();
+                }
 
   - check:
       files:

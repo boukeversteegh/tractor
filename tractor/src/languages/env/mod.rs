@@ -38,7 +38,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         // Root program node: rename to "document", remove text children
         "program" => {
-            rename(xot, node, "document");
+            xot.with_renamed(node, "document");
             remove_text_children(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -113,7 +113,7 @@ fn transform_variable_assignment(xot: &mut Xot, node: XotNode) -> Result<Transfo
             get_element_name(xot, c).as_deref() == Some("value")
         });
         if let Some(vc) = value_child {
-            copy_source_location(xot, vc, node);
+            xot.with_source_location_from(node, vc);
         }
 
         // Remove all children and replace with value text
@@ -249,7 +249,7 @@ fn transform_comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
         xot.append(node, text_node)?;
     }
 
-    rename(xot, node, "comment");
+    xot.with_renamed(node, "comment");
     Ok(TransformAction::Done)
 }
 

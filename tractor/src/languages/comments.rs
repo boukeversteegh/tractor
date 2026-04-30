@@ -57,9 +57,11 @@ impl CommentClassifier {
         &self,
         xot: &mut Xot,
         node: XotNode,
-        trailing_name: &'static str,
-        leading_name: &'static str,
+        trailing_name: impl AsRef<str>,
+        leading_name: impl AsRef<str>,
     ) -> Result<TransformAction, xot::Error> {
+        let trailing_name = trailing_name.as_ref();
+        let leading_name = leading_name.as_ref();
         // Skip if already consumed by a preceding comment's grouping
         if xot.parent(node).is_none() {
             return Ok(TransformAction::Done);
@@ -71,7 +73,7 @@ impl CommentClassifier {
 
         // Trailing comments are attached to the previous sibling — no grouping
         if is_inline_node(xot, node) {
-            prepend_empty_element(xot, node, trailing_name)?;
+            xot.with_prepended_empty_element(node, trailing_name)?;
             return Ok(TransformAction::Done);
         }
 
@@ -80,7 +82,7 @@ impl CommentClassifier {
 
         // Classify the (possibly merged) comment
         if is_leading_comment(xot, node) {
-            prepend_empty_element(xot, node, leading_name)?;
+            xot.with_prepended_empty_element(node, leading_name)?;
         }
 
         // Detach consumed siblings (they've been merged into this node)
@@ -208,8 +210,8 @@ impl CommentClassifier {
             // We store the RAW tree-sitter end position so that
             // `content_end_line` continues to normalise correctly on
             // subsequent reads.
-            set_attr(xot, node, "end_line", &raw_end_line);
-            set_attr(xot, node, "end_column", &raw_end_column);
+            xot.with_attr(node, "end_line", &raw_end_line)
+                .with_attr(node, "end_column", &raw_end_column);
         }
 
         Ok(consumed)

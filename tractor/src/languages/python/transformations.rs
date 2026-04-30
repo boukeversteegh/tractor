@@ -15,8 +15,8 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::PyKind;
 use super::output::PyName::{
-    Async, Comment as CommentName, Comprehension, Dict, Else, Function, Leading, List, Literal,
-    Private, Protected, Public, Set, Ternary, Trailing,
+    self, Async, Comment as CommentName, Comprehension, Dict, Else, Function, Leading, List,
+    Literal, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -67,10 +67,10 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// to `<comment>` and run the shared trailing/leading/floating
 /// classifier with `#` line-comment grouping.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["#"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }
 
 /// `generic_type` — rewrite `List[X]` as
@@ -115,14 +115,14 @@ pub fn function_definition(
 ) -> Result<TransformAction, xot::Error> {
     let texts = get_text_children(xot, node);
     if texts.iter().any(|t| t.contains("async")) {
-        prepend_empty_element(xot, node, Async)?;
+        xot.with_prepended_empty_element(node, Async)?;
     }
     if is_inside_class_body(xot, node) {
         if let Some(vis) = python_visibility_from_def(xot, node) {
-            prepend_empty_element(xot, node, vis)?;
+            xot.with_prepended_empty_element(node, vis)?;
         }
     }
-    rename(xot, node, Function);
+    xot.with_renamed(node, Function);
     Ok(TransformAction::Continue)
 }
 
@@ -161,8 +161,8 @@ pub fn conditional_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else)?;
-    rename(xot, node, Ternary);
+    xot.with_wrapped_field_child(node, "alternative", Else)?
+        .with_renamed(node, Ternary);
     Ok(TransformAction::Continue)
 }
 
@@ -171,13 +171,13 @@ pub fn conditional_expression(
 ///   `<list><literal/>...</list>`        — `[1, 2, 3]`
 ///   `<list><comprehension/>...</list>`  — `[x for x in xs]`
 pub fn list_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Literal)?;
+    xot.with_prepended_empty_element(node, Literal)?;
     Ok(TransformAction::Continue)
 }
 
 /// `set` literal — `{1, 2, 3}`. Same shape as `list_literal`.
 pub fn set_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Literal)?;
+    xot.with_prepended_empty_element(node, Literal)?;
     Ok(TransformAction::Continue)
 }
 
@@ -187,8 +187,8 @@ pub fn dictionary_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Literal)?;
-    rename(xot, node, Dict);
+    xot.with_prepended_empty_element(node, Literal)?
+        .with_renamed(node, Dict);
     Ok(TransformAction::Continue)
 }
 
@@ -199,8 +199,8 @@ pub fn list_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Comprehension)?;
-    rename(xot, node, List);
+    xot.with_prepended_empty_element(node, Comprehension)?
+        .with_renamed(node, List);
     Ok(TransformAction::Continue)
 }
 
@@ -210,8 +210,8 @@ pub fn dictionary_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Comprehension)?;
-    rename(xot, node, Dict);
+    xot.with_prepended_empty_element(node, Comprehension)?
+        .with_renamed(node, Dict);
     Ok(TransformAction::Continue)
 }
 
@@ -221,8 +221,8 @@ pub fn set_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Comprehension)?;
-    rename(xot, node, Set);
+    xot.with_prepended_empty_element(node, Comprehension)?
+        .with_renamed(node, Set);
     Ok(TransformAction::Continue)
 }
 
@@ -261,12 +261,7 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         if text.is_empty() {
             continue;
         }
-        let all_children: Vec<_> = xot.children(node).collect();
-        for c in all_children {
-            xot.detach(c)?;
-        }
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
         return Ok(());
     }
     Ok(())
@@ -289,7 +284,7 @@ fn is_inside_class_body(xot: &Xot, node: XotNode) -> bool {
     false
 }
 
-fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<&'static str> {
+fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<PyName> {
     let name_wrapper_node = xot.children(node).find(|&c| {
         xot.element(c).is_some()
             && get_element_name(xot, c).as_deref() == Some("name")
@@ -299,15 +294,15 @@ fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<&'static str> 
     let name = ident_text.trim();
     if name.is_empty() { return None; }
     if name.starts_with("__") && name.ends_with("__") && name.len() > 4 {
-        return Some(Public.as_str());
+        return Some(Public);
     }
     if name.starts_with("__") {
-        return Some(Private.as_str());
+        return Some(Private);
     }
     if name.starts_with('_') {
-        return Some(Protected.as_str());
+        return Some(Protected);
     }
-    Some(Public.as_str())
+    Some(Public)
 }
 
 fn single_identifier_descendant(xot: &Xot, node: XotNode) -> bool {

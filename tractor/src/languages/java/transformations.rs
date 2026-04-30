@@ -14,6 +14,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::JavaKind;
+use super::output::JavaName;
 use super::output::JavaName::{
     Call, Comment as CommentName, Else, Generic, Generics, If, Leading, Method, Name, Package,
     Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
@@ -46,22 +47,15 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in &children {
-        let child_name = get_element_name(xot, *child);
-        if !matches!(
-            child_name.as_deref(),
-            Some("identifier") | Some("type_identifier"),
-        ) {
+        let child_kind = get_kind(xot, *child).and_then(|kind| kind.parse::<JavaKind>().ok());
+        if !matches!(child_kind, Some(JavaKind::Identifier) | Some(JavaKind::TypeIdentifier)) {
             continue;
         }
         let text = match get_text_content(xot, *child) {
             Some(t) => t,
             None => continue,
         };
-        for c in &children {
-            xot.detach(*c)?;
-        }
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
         return Ok(TransformAction::Continue);
     }
     Ok(TransformAction::Continue)
@@ -71,17 +65,17 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// run the shared trailing/leading/floating classifier with `//` line-
 /// comment grouping (Principle #1 / #2).
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }
 
 /// `boolean_type` / `floating_point_type` / `integral_type` — primitive
 /// type keywords. Render as `<type><name>int</name></type>` for uniform
 /// querying.
 pub fn primitive_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type);
+    xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -90,7 +84,7 @@ pub fn primitive_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// separated because tree-sitter uses this kind specifically for type
 /// references.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type);
+    xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -103,9 +97,9 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// replacement for `<name>`: JSON keeps `"name": "void"` and adds
 /// `"void": true` as the shortcut flag.
 pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type);
+    xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
-    prepend_empty_element(xot, node, Void)?;
+    xot.with_prepended_empty_element(node, Void)?;
     Ok(TransformAction::Continue)
 }
 
@@ -113,7 +107,7 @@ pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// grammar kind, so a bare `identifier` is always a name (definition
 /// or reference). Rename to `<name>`.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Name);
+    xot.with_renamed(node, Name);
     Ok(TransformAction::Continue)
 }
 
@@ -132,8 +126,8 @@ pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// shared conditional-shape post-transform can collapse the chain
 /// uniformly.
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else)?;
-    rename(xot, node, If);
+    xot.with_wrapped_field_child(node, "alternative", Else)?
+        .with_renamed(node, If);
     Ok(TransformAction::Continue)
 }
 
@@ -144,8 +138,8 @@ pub fn ternary_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else)?;
-    rename(xot, node, Ternary);
+    xot.with_wrapped_field_child(node, "alternative", Else)?
+        .with_renamed(node, Ternary);
     Ok(TransformAction::Continue)
 }
 
@@ -157,7 +151,7 @@ pub fn ternary_expression(
 /// not the over-wrapped `<generic><type><name>T</name></type>...`.
 pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-    rename(xot, node, Generic);
+    xot.with_renamed(node, Generic);
     Ok(TransformAction::Continue)
 }
 
@@ -166,7 +160,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// the children land directly under the enclosing declaration.
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     distribute_field_to_children(xot, node, "generics");
-    rename(xot, node, Generics);
+    xot.with_renamed(node, Generics);
     Ok(TransformAction::Flatten)
 }
 
@@ -179,24 +173,21 @@ pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// modifier was found (Principle #9 — mutually-exclusive access is
 /// exhaustive).
 pub fn modifiers(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let words: Vec<String> = match get_text_content(xot, node) {
-        Some(text) => text.split_whitespace().map(String::from).collect(),
+    let mut markers: Vec<JavaName> = match get_text_content(xot, node) {
+        Some(text) => text
+            .split_whitespace()
+            .filter_map(parse_modifier)
+            .filter(|marker| is_known_modifier(*marker))
+            .collect(),
         None => Vec::new(),
     };
-    let has_access = words.iter().any(|w| is_access_modifier(w));
-
-    let mut markers: Vec<&str> = Vec::new();
+    let has_access = markers.iter().copied().any(is_access_modifier);
     if !has_access {
-        markers.push(Package.as_str());
-    }
-    for word in &words {
-        if is_known_modifier(word) {
-            markers.push(word.as_str());
-        }
+        markers.insert(0, Package);
     }
 
     for marker in &markers {
-        insert_empty_before(xot, node, marker)?;
+        xot.with_inserted_empty_before(node, marker)?;
     }
 
     Ok(TransformAction::Flatten)
@@ -212,19 +203,18 @@ pub fn explicit_constructor_invocation(
 ) -> Result<TransformAction, xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        let child_kind = get_kind(xot, child);
-        let tag = match child_kind.as_deref() {
-            Some("this") => This,
-            Some("super") => Super,
+        let tag = match get_kind(xot, child).and_then(|kind| kind.parse::<JavaKind>().ok()) {
+            Some(JavaKind::This) => This,
+            Some(JavaKind::Super) => Super,
             _ => continue,
         };
         let text = get_text_content(xot, child).unwrap_or_default();
         xot.detach(child)?;
         let marker = prepend_empty_element(xot, node, tag)?;
-        insert_text_after(xot, marker, &text)?;
+        xot.with_inserted_text_after(marker, &text)?;
         break;
     }
-    rename(xot, node, Call);
+    xot.with_renamed(node, Call);
     Ok(TransformAction::Continue)
 }
 
@@ -238,10 +228,10 @@ pub fn method_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if let Some(marker) = default_access_for_declaration(xot, node) {
-        prepend_empty_element(xot, node, marker)?;
+        xot.with_prepended_empty_element(node, marker)?;
     }
     wrap_method_return_type(xot, node)?;
-    rename(xot, node, Method);
+    xot.with_renamed(node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -265,14 +255,14 @@ pub fn method_declaration(
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<&'static str> {
+) -> Option<JavaName> {
     if has_modifiers_child(xot, node) {
         return None;
     }
     if is_inside_interface(xot, node) {
-        Some(Public.as_str())
+        Some(Public)
     } else {
-        Some(Package.as_str())
+        Some(Package)
     }
 }
 
@@ -280,27 +270,30 @@ pub fn default_access_for_declaration(
 // Local helpers used by handlers above.
 // ---------------------------------------------------------------------
 
-fn is_access_modifier(text: &str) -> bool {
-    matches!(text.parse::<super::output::JavaName>().ok(), Some(Public | Private | Protected))
+fn parse_modifier(text: &str) -> Option<JavaName> {
+    text.parse().ok()
 }
 
-fn is_known_modifier(text: &str) -> bool {
+fn is_access_modifier(name: JavaName) -> bool {
+    matches!(name, Public | Private | Protected)
+}
+
+fn is_known_modifier(name: JavaName) -> bool {
     matches!(
-        text.parse::<super::output::JavaName>().ok(),
-        Some(
-            Public | Private | Protected
+        name,
+        Public | Private | Protected
             | Static | Final | Abstract | Synchronized
             | Volatile | Transient | Native | Strictfp
-        )
     )
 }
 
 fn has_modifiers_child(xot: &Xot, node: XotNode) -> bool {
     for child in xot.children(node) {
-        if let Some(name) = get_element_name(xot, child) {
-            if name == "modifiers" {
-                return true;
-            }
+        if matches!(
+            get_kind(xot, child).and_then(|kind| kind.parse::<JavaKind>().ok()),
+            Some(JavaKind::Modifiers)
+        ) {
+            return true;
         }
     }
     false
@@ -311,16 +304,14 @@ fn has_modifiers_child(xot: &Xot, node: XotNode) -> bool {
 fn is_inside_interface(xot: &Xot, node: XotNode) -> bool {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
-        if let Some(kind) = get_kind(xot, parent) {
-            if let Some(java_kind) = JavaKind::from_str(&kind) {
-                match java_kind {
-                    JavaKind::InterfaceDeclaration => return true,
-                    JavaKind::ClassDeclaration
-                    | JavaKind::EnumDeclaration
-                    | JavaKind::RecordDeclaration => return false,
-                    // class_body / interface_body / etc. are transparent
-                    _ => {}
-                }
+        if let Some(java_kind) = get_kind(xot, parent).and_then(|kind| kind.parse::<JavaKind>().ok()) {
+            match java_kind {
+                JavaKind::InterfaceDeclaration => return true,
+                JavaKind::ClassDeclaration
+                | JavaKind::EnumDeclaration
+                | JavaKind::RecordDeclaration => return false,
+                // class_body / interface_body / etc. are transparent
+                _ => {}
             }
         }
         current = get_parent(xot, parent);
@@ -342,14 +333,12 @@ fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Er
         if get_attr(xot, child, "field").as_deref() != Some("type") {
             continue;
         }
-        let returns_name = xot.add_name(Returns.as_str());
+        let returns_name = get_name(xot, Returns);
         let wrapper = xot.new_element(returns_name);
-        copy_source_location(xot, child, wrapper);
-        set_attr(xot, wrapper, "field", "returns");
-        xot.insert_before(child, wrapper)?;
-        xot.detach(child)?;
-        xot.append(wrapper, child)?;
-        remove_attr(xot, child, "field");
+        xot.with_source_location_from(wrapper, child)
+            .with_attr(wrapper, "field", "returns")
+            .with_wrap_child(child, wrapper)?
+            .with_removed_attr(child, "field");
         break;
     }
     Ok(())

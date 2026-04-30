@@ -219,10 +219,14 @@ pub fn format_message(template: &str, m: &Match) -> String {
 fn truncate(s: &str, max_len: usize) -> String {
     let normalized: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
     if normalized.len() <= max_len {
-        normalized
-    } else {
-        format!("{}...", &normalized[..max_len.saturating_sub(3)])
+        return normalized;
     }
+    let cut = max_len.saturating_sub(3);
+    let mut boundary = cut;
+    while boundary > 0 && !normalized.is_char_boundary(boundary) {
+        boundary -= 1;
+    }
+    format!("{}...", &normalized[..boundary])
 }
 
 #[cfg(test)]

@@ -11,12 +11,12 @@ use crate::languages::rule::Rule;
 
 use super::input::PyKind;
 use super::output::PyName::{
-    self, Argument, Arm, As, Assert, Assign, Async, Await, Binary, Break, Call, Cast, Class,
-    Compare, Comprehension, Continue, Decorator, Delete, Dict, Else, ElseIf, Except, False,
-    Finally, Float, For, Format, From, Function, Generator, Generic, Global, If, Import, Int,
-    Keyword, Lambda, List, Literal, Logical, Match, Member, Module, Name, Nonlocal, Pair,
-    Parameter, Pass, Pattern, Positional, Public, Raise, Return, Set, Splat, Spread, String,
-    Subscript, Ternary, True, Try, Tuple, Type, Unary, Union, While, With, Yield,
+    self, Argument, Arm, As, Assert, Assign, Await, Binary, Break, Call, Cast, Class,
+    Compare, Continue, Decorator, Delete, Dict, Else, ElseIf, Except, False,
+    Finally, Float, For, Format, From, Generator, Global, If, Import, Int,
+    Keyword, Lambda, List, Logical, Match, Member, Module, Name, Nonlocal,
+    Parameter, Pass, Pattern, Positional, Raise, Return, Splat, Spread, String,
+    Subscript, True, Try, Type, Unary, Union, While, With, Yield,
     None as PyNone,
 };
 use super::transformations;

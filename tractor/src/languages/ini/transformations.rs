@@ -62,7 +62,7 @@ pub fn setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
             get_element_name(xot, c).as_deref() == Some("setting_value")
         });
         if let Some(vc) = value_child {
-            copy_source_location(xot, vc, node);
+            xot.with_source_location_from(node, vc);
         }
 
         let children: Vec<XotNode> = xot.children(node).collect();
@@ -103,7 +103,7 @@ pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
         xot.append(node, text_node)?;
     }
 
-    rename(xot, node, COMMENT);
+    xot.with_renamed(node, COMMENT);
     Ok(TransformAction::Done)
 }
 

@@ -120,8 +120,8 @@ pub fn apply_field_wrappings(
     for (element, wrapper_name) in targets {
         let wrapper_id = xot.add_name(&wrapper_name);
         let wrapper = xot.new_element(wrapper_id);
-        copy_source_location(xot, element, wrapper);
-        set_attr(xot, wrapper, "field", &wrapper_name);
+        xot.with_source_location_from(wrapper, element)
+            .with_attr(wrapper, "field", &wrapper_name);
 
         // Rewrite the inner element's `field` to its own local-name so the
         // JSON serializer can treat the inner as a named property of the
@@ -130,12 +130,10 @@ pub fn apply_field_wrappings(
             .element(element)
             .map(|e| xot.local_name_str(e.name()).to_string());
         if let Some(local) = inner_local {
-            set_attr(xot, element, "field", &local);
+            xot.with_attr(element, "field", &local);
         }
 
-        xot.insert_before(element, wrapper)?;
-        xot.detach(element)?;
-        xot.append(wrapper, element)?;
+        xot.with_wrap_child(element, wrapper)?;
     }
     Ok(())
 }
@@ -223,6 +221,141 @@ where
 pub mod helpers {
     use super::*;
 
+    /// Fluent in-place mutation helpers for `Xot`.
+    ///
+    /// These keep transformation code at the semantic level while
+    /// centralizing the low-level `xot` plumbing in one place.
+    pub trait XotWithExt {
+        fn with_attr(&mut self, node: XotNode, name: &str, value: &str) -> &mut Self;
+        fn with_removed_attr(&mut self, node: XotNode, name: &str) -> &mut Self;
+        fn with_source_location_from(&mut self, to: XotNode, from: XotNode) -> &mut Self;
+        fn with_renamed<N: AsRef<str>>(&mut self, node: XotNode, new_name: N) -> &mut Self;
+        fn with_marker<N: AsRef<str>>(&mut self, node: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_detach(&mut self, node: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_insert_before(&mut self, sibling: XotNode, node: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_insert_after(&mut self, sibling: XotNode, node: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_append(&mut self, parent: XotNode, child: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_prepend(&mut self, parent: XotNode, child: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_wrap_child(&mut self, child: XotNode, wrapper: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_wrapped_field_child<N: AsRef<str>>(&mut self, parent: XotNode, field: &str, wrapper: N) -> Result<&mut Self, xot::Error>;
+        fn with_prepended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_inserted_empty_before<N: AsRef<str>>(&mut self, sibling: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_prepended_element_with_text<N: AsRef<str>>(&mut self, parent: XotNode, name: N, text: &str) -> Result<&mut Self, xot::Error>;
+        fn with_inserted_text_after(&mut self, sibling: XotNode, text: &str) -> Result<&mut Self, xot::Error>;
+        fn with_appended_text(&mut self, parent: XotNode, text: &str) -> Result<&mut Self, xot::Error>;
+        fn with_detached_children(&mut self, node: XotNode) -> Result<&mut Self, xot::Error>;
+        fn with_only_text(&mut self, node: XotNode, text: &str) -> Result<&mut Self, xot::Error>;
+    }
+
+    impl XotWithExt for Xot {
+        fn with_attr(&mut self, node: XotNode, name: &str, value: &str) -> &mut Self {
+            set_attr(self, node, name, value);
+            self
+        }
+
+        fn with_removed_attr(&mut self, node: XotNode, name: &str) -> &mut Self {
+            remove_attr(self, node, name);
+            self
+        }
+
+        fn with_source_location_from(&mut self, to: XotNode, from: XotNode) -> &mut Self {
+            copy_source_location(self, from, to);
+            self
+        }
+
+        fn with_renamed<N: AsRef<str>>(&mut self, node: XotNode, new_name: N) -> &mut Self {
+            rename(self, node, new_name);
+            self
+        }
+
+        fn with_marker<N: AsRef<str>>(&mut self, node: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            rename_to_marker(self, node, name)?;
+            Ok(self)
+        }
+
+        fn with_detach(&mut self, node: XotNode) -> Result<&mut Self, xot::Error> {
+            self.detach(node)?;
+            Ok(self)
+        }
+
+        fn with_insert_before(&mut self, sibling: XotNode, node: XotNode) -> Result<&mut Self, xot::Error> {
+            self.insert_before(sibling, node)?;
+            Ok(self)
+        }
+
+        fn with_insert_after(&mut self, sibling: XotNode, node: XotNode) -> Result<&mut Self, xot::Error> {
+            self.insert_after(sibling, node)?;
+            Ok(self)
+        }
+
+        fn with_append(&mut self, parent: XotNode, child: XotNode) -> Result<&mut Self, xot::Error> {
+            self.append(parent, child)?;
+            Ok(self)
+        }
+
+        fn with_prepend(&mut self, parent: XotNode, child: XotNode) -> Result<&mut Self, xot::Error> {
+            self.prepend(parent, child)?;
+            Ok(self)
+        }
+
+        fn with_wrap_child(&mut self, child: XotNode, wrapper: XotNode) -> Result<&mut Self, xot::Error> {
+            self.insert_before(child, wrapper)?;
+            self.detach(child)?;
+            self.append(wrapper, child)?;
+            Ok(self)
+        }
+
+        fn with_wrapped_field_child<N: AsRef<str>>(&mut self, parent: XotNode, field: &str, wrapper: N) -> Result<&mut Self, xot::Error> {
+            wrap_field_child(self, parent, field, wrapper)?;
+            Ok(self)
+        }
+
+        fn with_prepended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            prepend_empty_element(self, parent, name)?;
+            Ok(self)
+        }
+
+        fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            append_empty_element(self, parent, name)?;
+            Ok(self)
+        }
+
+        fn with_inserted_empty_before<N: AsRef<str>>(&mut self, sibling: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            insert_empty_before(self, sibling, name)?;
+            Ok(self)
+        }
+
+        fn with_prepended_element_with_text<N: AsRef<str>>(&mut self, parent: XotNode, name: N, text: &str) -> Result<&mut Self, xot::Error> {
+            prepend_element_with_text(self, parent, name, text)?;
+            Ok(self)
+        }
+
+        fn with_inserted_text_after(&mut self, sibling: XotNode, text: &str) -> Result<&mut Self, xot::Error> {
+            insert_text_after(self, sibling, text)?;
+            Ok(self)
+        }
+
+        fn with_appended_text(&mut self, parent: XotNode, text: &str) -> Result<&mut Self, xot::Error> {
+            let text_node = self.new_text(text);
+            self.append(parent, text_node)?;
+            Ok(self)
+        }
+
+        fn with_detached_children(&mut self, node: XotNode) -> Result<&mut Self, xot::Error> {
+            let children: Vec<XotNode> = self.children(node).collect();
+            for child in children {
+                self.detach(child)?;
+            }
+            Ok(self)
+        }
+
+        fn with_only_text(&mut self, node: XotNode, text: &str) -> Result<&mut Self, xot::Error> {
+            self.with_detached_children(node)?;
+            self.with_appended_text(node, text)
+        }
+    }
+
     /// Get the local name of an element node
     pub fn get_element_name(xot: &Xot, node: XotNode) -> Option<String> {
         xot.element(node).map(|element| {
@@ -237,8 +370,8 @@ pub mod helpers {
     }
 
     /// Get or create a NameId for a name string
-    pub fn get_name(xot: &mut Xot, name: &str) -> NameId {
-        xot.add_name(name)
+    pub fn get_name(xot: &mut Xot, name: impl AsRef<str>) -> NameId {
+        xot.add_name(name.as_ref())
     }
 
     /// Rename an element node.
@@ -391,16 +524,16 @@ pub mod helpers {
     }
 
     /// Insert an empty element before a sibling
-    pub fn insert_empty_before(xot: &mut Xot, sibling: XotNode, name: &str) -> Result<XotNode, xot::Error> {
-        let name_id = xot.add_name(name);
+    pub fn insert_empty_before(xot: &mut Xot, sibling: XotNode, name: impl AsRef<str>) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name.as_ref());
         let element = xot.new_element(name_id);
         xot.insert_before(sibling, element)?;
         Ok(element)
     }
 
     /// Prepend an element with text content as first child
-    pub fn prepend_element_with_text(xot: &mut Xot, parent: XotNode, name: &str, text: &str) -> Result<XotNode, xot::Error> {
-        let name_id = xot.add_name(name);
+    pub fn prepend_element_with_text(xot: &mut Xot, parent: XotNode, name: impl AsRef<str>, text: &str) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name.as_ref());
         let element = xot.new_element(name_id);
         let text_node = xot.new_text(text);
         xot.append(element, text_node)?;
@@ -409,8 +542,8 @@ pub mod helpers {
     }
 
     /// Append an empty element as last child
-    pub fn append_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
-        let name_id = xot.add_name(name);
+    pub fn append_empty_element(xot: &mut Xot, parent: XotNode, name: impl AsRef<str>) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name.as_ref());
         let element = xot.new_element(name_id);
         xot.append(parent, element)?;
         Ok(element)
@@ -490,19 +623,10 @@ pub mod helpers {
         let wrapper_name = get_name(xot, &field_value);
         let wrapper = xot.new_element(wrapper_name);
 
-        // Copy source location to wrapper
-        copy_source_location(xot, node, wrapper);
-
-        // Mark wrapper as field-backed for JSON property lifting
-        set_attr(xot, wrapper, "field", &field_value);
-
-        // Remove field from inner element
-        remove_attr(xot, node, "field");
-
-        // Insert wrapper where node is, then move node inside
-        xot.insert_before(node, wrapper)?;
-        xot.detach(node)?;
-        xot.append(wrapper, node)?;
+        xot.with_source_location_from(wrapper, node)
+            .with_attr(wrapper, "field", &field_value)
+            .with_removed_attr(node, "field")
+            .with_wrap_child(node, wrapper)?;
 
         Ok(Some(wrapper))
     }
@@ -515,7 +639,7 @@ pub mod helpers {
     /// by the caller via `insert_text_after` — this keeps markers
     /// genuinely empty (Principle #7) while the enclosing node's
     /// XPath string-value still includes the keyword for `-v value`.
-    pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: &str) -> Result<(), xot::Error> {
+    pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: impl AsRef<str>) -> Result<(), xot::Error> {
         rename(xot, node, name);
         remove_text_children(xot, node)?;
         Ok(())
@@ -567,8 +691,8 @@ pub mod helpers {
         };
         let name_id = xot.add_name("name");
         let name_el = xot.new_element(name_id);
-        set_attr(xot, name_el, "field", "name");
-        copy_source_location(xot, target, name_el);
+        xot.with_attr(name_el, "field", "name")
+            .with_source_location_from(name_el, target);
         let text_node = xot.new_text(&text);
         xot.append(name_el, text_node)?;
         xot.insert_before(target, name_el)?;
@@ -614,7 +738,7 @@ pub mod helpers {
         // named property (`"name": "TEXT"`) rather than a nested child.
         let name_id = xot.add_name("name");
         let name_el = xot.new_element(name_id);
-        set_attr(xot, name_el, "field", "name");
+        xot.with_attr(name_el, "field", "name");
         let text_node = xot.new_text(&trimmed);
         xot.append(name_el, text_node)?;
         xot.prepend(node, name_el)?;
@@ -633,7 +757,7 @@ pub mod helpers {
             .filter(|&c| xot.element(c).is_some())
             .collect();
         for child in children {
-            set_attr(xot, child, "field", field);
+            xot.with_attr(child, "field", field);
         }
     }
 
@@ -662,18 +786,16 @@ pub mod helpers {
         let wrapper = wrapper.as_ref();
         let wrapper_id = xot.add_name(wrapper);
         let wrapper_node = xot.new_element(wrapper_id);
-        copy_source_location(xot, child, wrapper_node);
-        set_attr(xot, wrapper_node, "field", wrapper);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_attr(wrapper_node, "field", wrapper);
         // Rewrite inner's field to its own local-name for JSON lifting.
         let inner_local = xot
             .element(child)
             .map(|e| xot.local_name_str(e.name()).to_string());
         if let Some(local) = inner_local {
-            set_attr(xot, child, "field", &local);
+            xot.with_attr(child, "field", &local);
         }
-        xot.insert_before(child, wrapper_node)?;
-        xot.detach(child)?;
-        xot.append(wrapper_node, child)?;
+        xot.with_wrap_child(child, wrapper_node)?;
         Ok(())
     }
 

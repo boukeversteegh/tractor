@@ -12,6 +12,7 @@ use crate::transform::data_keys::*;
 
 use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar,
             decode_yaml_double_quote_escapes, decode_yaml_single_quote_escapes};
+use super::input::YamlKind;
 use super::output::*;
 
 // =============================================================================
@@ -43,7 +44,7 @@ pub fn strip_punct_flatten(xot: &mut Xot, node: XotNode) -> Result<TransformActi
 
 /// `block_mapping` / `flow_mapping` → `<object>`.
 pub fn syntax_mapping(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, OBJECT);
+    xot.with_renamed(node, OBJECT);
     remove_text_children(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -51,7 +52,7 @@ pub fn syntax_mapping(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// `block_mapping_pair` / `flow_pair` → `<property>`, with the key
 /// child wrapped in `<key>`.
 pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, PROPERTY);
+    xot.with_renamed(node, PROPERTY);
     remove_text_children(xot, node)?;
 
     let children: Vec<XotNode> = xot.children(node)
@@ -62,15 +63,9 @@ pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
             if field == "key" {
                 let key_name = get_name(xot, KEY);
                 let wrapper = xot.new_element(key_name);
-                for attr in &["line", "column", "end_line", "end_column"] {
-                    if let Some(v) = get_attr(xot, child, attr) {
-                        set_attr(xot, wrapper, attr, &v);
-                    }
-                }
-                xot.insert_before(child, wrapper)?;
-                xot.detach(child)?;
-                xot.append(wrapper, child)?;
-                remove_attr(xot, child, "field");
+                xot.with_source_location_from(wrapper, child)
+                    .with_wrap_child(child, wrapper)?
+                    .with_removed_attr(child, "field");
                 break;
             }
         }
@@ -81,46 +76,46 @@ pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
 
 /// `block_sequence` / `flow_sequence` → `<array>`.
 pub fn syntax_sequence(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, ARRAY);
+    xot.with_renamed(node, ARRAY);
     remove_text_children(xot, node)?;
     Ok(TransformAction::Continue)
 }
 
 /// Quoted scalar → `<string>`, quotes stripped.
 pub fn syntax_quoted_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, STRING);
+    xot.with_renamed(node, STRING);
     strip_quotes_from_node(xot, node)?;
     Ok(TransformAction::Done)
 }
 
 /// Block scalar (`|` / `>`) → `<string>`, indicator stripped.
 pub fn syntax_block_scalar(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, STRING);
+    xot.with_renamed(node, STRING);
     normalize_block_scalar(xot, node)?;
     Ok(TransformAction::Done)
 }
 
 /// `string_scalar` → `<string>`. (Plain scalar typed as string.)
 pub fn syntax_string_scalar(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, STRING);
+    xot.with_renamed(node, STRING);
     Ok(TransformAction::Done)
 }
 
 /// `integer_scalar` / `float_scalar` → `<number>`.
 pub fn syntax_number(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, NUMBER);
+    xot.with_renamed(node, NUMBER);
     Ok(TransformAction::Done)
 }
 
 /// `boolean_scalar` → `<bool>`.
 pub fn syntax_bool(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, BOOL);
+    xot.with_renamed(node, BOOL);
     Ok(TransformAction::Done)
 }
 
 /// `null_scalar` → `<null>`.
 pub fn syntax_null(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, NULL);
+    xot.with_renamed(node, NULL);
     Ok(TransformAction::Done)
 }
 
@@ -134,13 +129,13 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     if let Some(key) = extract_pair_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key);
 
-        set_attr(xot, node, "field", &safe_name);
+        xot.with_attr(node, "field", &safe_name);
 
         // Copy the value child's source span onto the renamed pair.
         let value_child = get_element_children(xot, node).into_iter()
             .find(|&c| get_attr(xot, c, "field").as_deref() != Some("key"));
         if let Some(vc) = value_child {
-            copy_source_location(xot, vc, node);
+            xot.with_source_location_from(node, vc);
         }
 
         // Drop key child + colon text.
@@ -158,21 +153,21 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tag with a normalised scalar kind for the renderer.
         let value_kind = xot.children(node)
             .find(|&c| xot.element(c).is_some())
-            .and_then(|c| get_kind(xot, c));
-        if let Some(ref vk) = value_kind {
-            match vk.as_str() {
-                "string_scalar" | "double_quote_scalar" | "single_quote_scalar"
-                | "block_scalar" => {
-                    set_attr(xot, node, "kind", "string");
+            .and_then(|c| get_kind(xot, c).and_then(|kind| kind.parse::<YamlKind>().ok()));
+        if let Some(vk) = value_kind {
+            match vk {
+                YamlKind::StringScalar | YamlKind::DoubleQuoteScalar | YamlKind::SingleQuoteScalar
+                | YamlKind::BlockScalar => {
+                    xot.with_attr(node, "kind", "string");
                 }
-                "integer_scalar" | "float_scalar" => {
-                    set_attr(xot, node, "kind", "number");
+                YamlKind::IntegerScalar | YamlKind::FloatScalar => {
+                    xot.with_attr(node, "kind", "number");
                 }
-                "boolean_scalar" => {
-                    set_attr(xot, node, "kind", "boolean");
+                YamlKind::BooleanScalar => {
+                    xot.with_attr(node, "kind", "boolean");
                 }
-                "null_scalar" => {
-                    set_attr(xot, node, "kind", "null");
+                YamlKind::NullScalar => {
+                    xot.with_attr(node, "kind", "null");
                 }
                 _ => {}
             }
@@ -190,10 +185,10 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// span copied from the first element child (excludes the `- ` prefix).
 pub fn data_sequence_item(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let wrapper = find_ancestor_key_name(xot, node).unwrap_or_else(|| ITEM.to_string());
-    rename(xot, node, &wrapper);
+    xot.with_renamed(node, &wrapper);
     let first_child = get_element_children(xot, node).into_iter().next();
     if let Some(child) = first_child {
-        copy_source_location(xot, child, node);
+        xot.with_source_location_from(node, child);
     }
     remove_text_children(xot, node)?;
     Ok(TransformAction::Continue)
@@ -211,8 +206,8 @@ pub fn data_flow_sequence(xot: &mut Xot, node: XotNode) -> Result<TransformActio
         .collect();
     for child in children {
         if let Some(name) = get_element_name(xot, child) {
-            if name == "flow_node" {
-                rename(xot, child, &wrapper);
+            if name.parse::<YamlKind>().ok() == Some(YamlKind::FlowNode) {
+                xot.with_renamed(child, &wrapper);
             }
         }
     }
@@ -227,10 +222,7 @@ pub fn data_double_quote(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     if let Some(text) = get_text_content(xot, node) {
         let decoded = decode_yaml_double_quote_escapes(&text);
         if decoded != text {
-            let children: Vec<XotNode> = xot.children(node).collect();
-            for c in children { xot.detach(c)?; }
-            let text_node = xot.new_text(&decoded);
-            xot.append(node, text_node)?;
+            xot.with_only_text(node, &decoded)?;
         }
     }
     Ok(TransformAction::Flatten)
@@ -242,10 +234,7 @@ pub fn data_single_quote(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     if let Some(text) = get_text_content(xot, node) {
         let decoded = decode_yaml_single_quote_escapes(&text);
         if decoded != text {
-            let children: Vec<XotNode> = xot.children(node).collect();
-            for c in children { xot.detach(c)?; }
-            let text_node = xot.new_text(&decoded);
-            xot.append(node, text_node)?;
+            xot.with_only_text(node, &decoded)?;
         }
     }
     Ok(TransformAction::Flatten)

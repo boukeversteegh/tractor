@@ -11,6 +11,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::data_keys::*;
 
 use super::{extract_string_content, extract_decoded_string_content};
+use super::input::JsonKind;
 use super::output::*;
 
 // =============================================================================
@@ -46,7 +47,7 @@ pub fn strip_punct_flatten(xot: &mut Xot, node: XotNode) -> Result<TransformActi
 /// builder already wraps the value child in `<value>` via field
 /// wrappings.
 pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, PROPERTY);
+    xot.with_renamed(node, PROPERTY);
     remove_text_children(xot, node)?;
 
     let children: Vec<XotNode> = xot.children(node)
@@ -57,15 +58,9 @@ pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
             if field == "key" {
                 let key_name = get_name(xot, KEY);
                 let wrapper = xot.new_element(key_name);
-                for attr in &["line", "column", "end_line", "end_column"] {
-                    if let Some(v) = get_attr(xot, child, attr) {
-                        set_attr(xot, wrapper, attr, &v);
-                    }
-                }
-                xot.insert_before(child, wrapper)?;
-                xot.detach(child)?;
-                xot.append(wrapper, child)?;
-                remove_attr(xot, child, "field");
+                xot.with_source_location_from(wrapper, child)
+                    .with_wrap_child(child, wrapper)?
+                    .with_removed_attr(child, "field");
                 break;
             }
         }
@@ -78,13 +73,10 @@ pub fn syntax_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
 /// `string_content` text. Stops recursion (children are gone).
 pub fn syntax_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let content = extract_string_content(xot, node);
-    let all_children: Vec<XotNode> = xot.children(node).collect();
-    for c in all_children {
-        xot.detach(c)?;
-    }
     if let Some(text) = content {
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
+    } else {
+        xot.with_detached_children(node)?;
     }
     Ok(TransformAction::Done)
 }
@@ -110,7 +102,7 @@ pub fn syntax_number(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 
 /// `true` / `false` → `<bool>`. Stops recursion.
 pub fn syntax_bool(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, BOOL);
+    xot.with_renamed(node, BOOL);
     Ok(TransformAction::Done)
 }
 
@@ -129,7 +121,7 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     if let Some(key_text) = extract_pair_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key_text);
 
-        set_attr(xot, node, "field", &safe_name);
+        xot.with_attr(node, "field", &safe_name);
 
         // Drop key child + colon/punctuation text
         let children: Vec<XotNode> = xot.children(node).collect();
@@ -150,7 +142,7 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         for child in children {
             if let Some(name) = get_element_name(xot, child) {
                 if name == "value" {
-                    copy_source_location(xot, child, node);
+                    xot.with_source_location_from(node, child);
                     flatten_node(xot, child)?;
                     break;
                 }
@@ -160,12 +152,14 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tag with scalar kind for the renderer.
         let value_kind = xot.children(node)
             .find(|&c| xot.element(c).is_some())
-            .and_then(|c| get_kind(xot, c));
-        if let Some(ref vk) = value_kind {
-            match vk.as_str() {
-                "string" | "number" | "true" | "false" | "null" => {
-                    set_attr(xot, node, "kind", vk);
-                }
+            .and_then(|c| get_kind(xot, c).and_then(|kind| kind.parse::<JsonKind>().ok()));
+        if let Some(vk) = value_kind {
+            match vk {
+                JsonKind::String => { xot.with_attr(node, "kind", "string"); }
+                JsonKind::Number => { xot.with_attr(node, "kind", "number"); }
+                JsonKind::True => { xot.with_attr(node, "kind", "true"); }
+                JsonKind::False => { xot.with_attr(node, "kind", "false"); }
+                JsonKind::Null => { xot.with_attr(node, "kind", "null"); }
                 _ => {}
             }
         }
@@ -194,10 +188,8 @@ pub fn data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 
     for child in children {
         let item = xot.new_element(wrapper_name);
-        copy_source_location(xot, child, item);
-        xot.insert_before(child, item)?;
-        xot.detach(child)?;
-        xot.append(item, child)?;
+        xot.with_source_location_from(item, child)
+            .with_wrap_child(child, item)?;
     }
 
     Ok(TransformAction::Flatten)
@@ -206,13 +198,10 @@ pub fn data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 /// `string` → decoded text content, then promote text to parent.
 pub fn data_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let content = extract_decoded_string_content(xot, node);
-    let all_children: Vec<XotNode> = xot.children(node).collect();
-    for c in all_children {
-        xot.detach(c)?;
-    }
     if let Some(text) = content {
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
+    } else {
+        xot.with_detached_children(node)?;
     }
     Ok(TransformAction::Flatten)
 }

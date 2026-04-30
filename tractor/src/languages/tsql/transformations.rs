@@ -9,7 +9,8 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::TsqlName::{Alias, Name, Schema, Temp, Var};
+use super::input::TsqlKind;
+use super::output::TsqlName::{self, Alias, Name, Schema, Temp, Var};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (currently just `comment`) or grammar leaves the transform never
@@ -34,21 +35,15 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
         if let Some(child_name) = get_element_name(xot, child) {
-            if child_name == "identifier" {
+            if child_name.parse::<TsqlKind>().ok() == Some(TsqlKind::Identifier) {
                 if let Some(text) = get_text_content(xot, child) {
-                    let all_children: Vec<_> = xot.children(node).collect();
-                    for c in all_children {
-                        xot.detach(c)?;
-                    }
-                    if text.starts_with('@') {
-                        let text_node = xot.new_text(&text[1..]);
-                        xot.append(node, text_node)?;
-                        rename(xot, node, Var);
+                    let replacement = if text.starts_with('@') {
+                        xot.with_renamed(node, Var);
+                        text[1..].to_string()
                     } else {
-                        let clean = strip_brackets(&text);
-                        let text_node = xot.new_text(&clean);
-                        xot.append(node, text_node)?;
-                    }
+                        strip_brackets(&text)
+                    };
+                    xot.with_only_text(node, &replacement)?;
                     return Ok(TransformAction::Done);
                 }
             }
@@ -66,23 +61,23 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     let text = match get_text_content(xot, node) {
         Some(t) => t,
         None => {
-            rename(xot, node, Name);
+            xot.with_renamed(node, Name);
             return Ok(TransformAction::Done);
         }
     };
 
     if let Some(field_val) = get_attr(xot, node, "field") {
-        match field_val.as_str() {
-            "alias" => {
+        match field_val.parse::<TsqlName>().ok() {
+            Some(Alias) => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, Alias);
+                xot.with_renamed(node, Alias);
                 return Ok(TransformAction::Done);
             }
-            "schema" => {
+            Some(Schema) => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, Schema);
+                xot.with_renamed(node, Schema);
                 return Ok(TransformAction::Done);
             }
             _ => {}
@@ -92,11 +87,11 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     if text.starts_with('@') {
         let var_name = &text[1..];
         replace_text(xot, node, var_name);
-        rename(xot, node, Var);
+        xot.with_renamed(node, Var);
     } else {
         let clean = strip_brackets(&text);
         replace_text(xot, node, &clean);
-        rename(xot, node, Name);
+        xot.with_renamed(node, Name);
     }
     Ok(TransformAction::Done)
 }
@@ -112,7 +107,7 @@ pub fn unary_expression(
     let mut is_temp = false;
     for &child in &children {
         if let Some(child_name) = get_element_name(xot, child) {
-            if child_name == "op_unary_other" {
+            if child_name.parse::<TsqlKind>().ok() == Some(TsqlKind::OpUnaryOther) {
                 if let Some(text) = get_text_content(xot, child) {
                     if text.trim() == "#" {
                         is_temp = true;
@@ -133,7 +128,7 @@ pub fn unary_expression(
                         }
                         let text_node = xot.new_text(&format!("#{}", inner_text));
                         xot.append(node, text_node)?;
-                        rename(xot, node, Temp);
+                        xot.with_renamed(node, Temp);
                         return Ok(TransformAction::Done);
                     }
                 }
@@ -169,7 +164,7 @@ fn replace_text(xot: &mut Xot, node: XotNode, new_text: &str) {
 
 fn get_deep_identifier_text(xot: &Xot, node: XotNode) -> Option<String> {
     if let Some(name) = get_element_name(xot, node) {
-        if name == "identifier" {
+        if name.parse::<TsqlKind>().ok() == Some(TsqlKind::Identifier) {
             return get_text_content(xot, node);
         }
     }

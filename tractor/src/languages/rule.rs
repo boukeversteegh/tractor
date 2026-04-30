@@ -30,7 +30,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::TransformAction;
 use crate::transform::helpers::{
-    distribute_field_to_children, prepend_empty_element, rename,
+    distribute_field_to_children, XotWithExt,
 };
 use crate::transform::operators::extract_operator;
 
@@ -66,7 +66,7 @@ pub enum Rule<N> {
     ///   - `None` if the node already has an access modifier
     DefaultAccessThenRename {
         to: N,
-        default_access: fn(&Xot, XotNode) -> Option<&'static str>,
+        default_access: fn(&Xot, XotNode) -> Option<N>,
     },
     /// Detach the node entirely (children gone with it) and stop
     /// recursion. Distinct from `Flatten` (children promoted) and
@@ -91,12 +91,12 @@ where
 {
     match rule {
         Rule::Rename(to) => {
-            rename(xot, node, to);
+            xot.with_renamed(node, to);
             Ok(TransformAction::Continue)
         }
         Rule::RenameWithMarker(to, marker) => {
-            rename(xot, node, to);
-            prepend_empty_element(xot, node, marker)?;
+            xot.with_renamed(node, to)
+                .with_prepended_empty_element(node, marker)?;
             Ok(TransformAction::Continue)
         }
         Rule::Flatten { distribute_field } => {
@@ -107,14 +107,14 @@ where
         }
         Rule::ExtractOpThenRename(to) => {
             extract_operator(xot, node)?;
-            rename(xot, node, to);
+            xot.with_renamed(node, to);
             Ok(TransformAction::Continue)
         }
         Rule::DefaultAccessThenRename { to, default_access } => {
             if let Some(marker) = default_access(xot, node) {
-                prepend_empty_element(xot, node, marker)?;
+                xot.with_prepended_empty_element(node, marker)?;
             }
-            rename(xot, node, to);
+            xot.with_renamed(node, to);
             Ok(TransformAction::Continue)
         }
         Rule::Detach => {

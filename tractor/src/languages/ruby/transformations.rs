@@ -8,7 +8,8 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::RubyName::{Comment as CommentName, Leading, Trailing};
+use super::input::RubyKind;
+use super::output::RubyName::{self, Comment as CommentName, Leading, Name, Trailing};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`block`, `break`, `conditional`, `constant`, `do`, `false`, `in`,
@@ -32,14 +33,16 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         .collect();
     if element_children.len() == 1 {
         let child = element_children[0];
-        let child_name = get_element_name(xot, child).unwrap_or_default();
-        if matches!(child_name.as_str(), "identifier" | "constant" | "name" | "operator") {
+        let child_kind = get_element_name(xot, child)
+            .and_then(|name| name.parse::<RubyKind>().ok());
+        let child_name = get_element_name(xot, child)
+            .and_then(|name| name.parse::<RubyName>().ok());
+        if matches!(
+            child_kind,
+            Some(RubyKind::Identifier | RubyKind::Constant | RubyKind::Operator)
+        ) || child_name == Some(Name) {
             if let Some(text) = get_text_content(xot, child) {
-                for c in children {
-                    xot.detach(c)?;
-                }
-                let text_node = xot.new_text(&text);
-                xot.append(node, text_node)?;
+                xot.with_only_text(node, &text)?;
                 return Ok(TransformAction::Done);
             }
         }
@@ -50,8 +53,8 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// `comment` — Ruby uses `#` for line comments. Rename and run the
 /// shared classifier.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["#"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }

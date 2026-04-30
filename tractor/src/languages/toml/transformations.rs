@@ -8,6 +8,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::data_keys::*;
 
+use super::input::TomlKind;
 use super::output::ITEM;
 use super::{strip_quotes, strip_quotes_from_node};
 
@@ -52,7 +53,7 @@ pub fn pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error>
             if xot.text_str(child).is_some() {
                 xot.detach(child)?;
             } else if let Some(name) = get_element_name(xot, child) {
-                if name == "bare_key" || name == "quoted_key" || name == "dotted_key" {
+                if is_key_kind(&name) {
                     xot.detach(child)?;
                 }
             }
@@ -79,7 +80,7 @@ pub fn table(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error
             if xot.text_str(child).is_some() {
                 xot.detach(child)?;
             } else if let Some(name) = get_element_name(xot, child) {
-                if name == "bare_key" || name == "quoted_key" || name == "dotted_key" {
+                if is_key_kind(&name) {
                     xot.detach(child)?;
                 }
             }
@@ -104,13 +105,13 @@ pub fn table_array_element(xot: &mut Xot, node: XotNode) -> Result<TransformActi
             if xot.text_str(child).is_some() {
                 xot.detach(child)?;
             } else if let Some(name) = get_element_name(xot, child) {
-                if name == "bare_key" || name == "quoted_key" || name == "dotted_key" {
+                if is_key_kind(&name) {
                     xot.detach(child)?;
                 }
             }
         }
 
-        rename(xot, node, ITEM);
+        xot.with_renamed(node, ITEM);
         wrap_in_nested_elements(xot, node, &segments)?;
     }
     Ok(TransformAction::Continue)
@@ -128,9 +129,7 @@ pub fn array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error
     for child in children {
         let item_name = xot.add_name(ITEM);
         let item = xot.new_element(item_name);
-        xot.insert_before(child, item)?;
-        xot.detach(child)?;
-        xot.append(item, child)?;
+        xot.with_wrap_child(child, item)?;
     }
 
     Ok(TransformAction::Flatten)
@@ -151,17 +150,17 @@ struct KeyInfo {
 fn extract_pair_key(xot: &Xot, node: XotNode) -> Option<KeyInfo> {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            match name.as_str() {
-                "bare_key" => {
+            match name.parse::<TomlKind>().ok() {
+                Some(TomlKind::BareKey) => {
                     let text = get_text_content(xot, child)?;
                     return Some(KeyInfo { segments: vec![text.trim().to_string()] });
                 }
-                "quoted_key" => {
+                Some(TomlKind::QuotedKey) => {
                     let text = get_text_content(xot, child)?;
                     let stripped = strip_quotes(text.trim());
                     return Some(KeyInfo { segments: vec![stripped] });
                 }
-                "dotted_key" => {
+                Some(TomlKind::DottedKey) => {
                     return extract_dotted_key_segments(xot, child);
                 }
                 _ => {}
@@ -188,24 +187,31 @@ fn extract_dotted_key_segments(xot: &Xot, node: XotNode) -> Option<KeyInfo> {
 fn collect_key_segments(xot: &Xot, node: XotNode, segments: &mut Vec<String>) {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            match name.as_str() {
-                "bare_key" => {
+            match name.parse::<TomlKind>().ok() {
+                Some(TomlKind::BareKey) => {
                     if let Some(text) = get_text_content(xot, child) {
                         segments.push(text.trim().to_string());
                     }
                 }
-                "quoted_key" => {
+                Some(TomlKind::QuotedKey) => {
                     if let Some(text) = get_text_content(xot, child) {
                         segments.push(strip_quotes(text.trim()));
                     }
                 }
-                "dotted_key" => {
+                Some(TomlKind::DottedKey) => {
                     collect_key_segments(xot, child, segments);
                 }
                 _ => {}
             }
         }
     }
+}
+
+fn is_key_kind(name: &str) -> bool {
+    matches!(
+        name.parse::<TomlKind>().ok(),
+        Some(TomlKind::BareKey | TomlKind::QuotedKey | TomlKind::DottedKey)
+    )
 }
 
 /// Wrap a node in nested elements for dotted-key segments.
@@ -217,9 +223,7 @@ fn wrap_in_nested_elements(xot: &mut Xot, node: XotNode, segments: &[String]) ->
         let safe_name = sanitize_xml_name(segment);
         let wrapper_name = xot.add_name(&safe_name);
         let wrapper = xot.new_element(wrapper_name);
-        xot.insert_before(current, wrapper)?;
-        xot.detach(current)?;
-        xot.append(wrapper, current)?;
+        xot.with_wrap_child(current, wrapper)?;
         current = wrapper;
     }
 

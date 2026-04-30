@@ -12,8 +12,9 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
+use super::input::GoKind;
 use super::output::GoName::{
-    Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
+    self, Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
     Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
 };
 
@@ -57,16 +58,16 @@ pub fn type_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 
 /// `raw_string_literal` — render as `<string>` with a `<raw/>` marker.
 pub fn raw_string_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Raw)?;
-    rename(xot, node, GoString);
+    xot.with_prepended_empty_element(node, Raw)?
+        .with_renamed(node, GoString);
     Ok(TransformAction::Continue)
 }
 
 /// `short_var_declaration` (`x := 42`) — render as `<variable>` with
 /// a `<short/>` marker to distinguish from `var x = 42`.
 pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, Short)?;
-    rename(xot, node, Variable);
+    xot.with_prepended_empty_element(node, Short)?
+        .with_renamed(node, Variable);
     Ok(TransformAction::Continue)
 }
 
@@ -75,8 +76,8 @@ pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAc
 /// `<function>`.
 pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, Function);
+    xot.with_prepended_empty_element(node, marker)?
+        .with_renamed(node, Function);
     Ok(TransformAction::Continue)
 }
 
@@ -84,8 +85,8 @@ pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 /// `<method>`.
 pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, Method);
+    xot.with_prepended_empty_element(node, marker)?
+        .with_renamed(node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -93,8 +94,8 @@ pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformActio
 /// rule applies to struct fields too), rename to `<field>`.
 pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, Field);
+    xot.with_prepended_empty_element(node, marker)?
+        .with_renamed(node, Field);
     Ok(TransformAction::Continue)
 }
 
@@ -107,17 +108,20 @@ pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction
 /// reads "I'm declaring a struct named Hello" (Goal #5).
 pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    prepend_empty_element(xot, node, marker)?;
+    xot.with_prepended_empty_element(node, marker)?;
 
     let inner = xot
         .children(node)
         .filter(|&c| xot.element(c).is_some())
-        .find(|&c| matches!(get_kind(xot, c).as_deref(), Some("struct_type") | Some("interface_type")));
+        .find(|&c| matches!(
+            get_kind(xot, c).and_then(|kind| kind.parse::<GoKind>().ok()),
+            Some(GoKind::StructType | GoKind::InterfaceType)
+        ));
 
     if let Some(inner) = inner {
-        let inner_kind = get_kind(xot, inner).unwrap();
-        let new_name = if inner_kind == "struct_type" { Struct } else { Interface };
-        rename(xot, node, new_name);
+        let inner_kind = get_kind(xot, inner).and_then(|kind| kind.parse::<GoKind>().ok());
+        let new_name = if inner_kind == Some(GoKind::StructType) { Struct } else { Interface };
+        xot.with_renamed(node, new_name);
         let inner_children: Vec<_> = xot.children(inner).collect();
         for c in inner_children {
             xot.detach(c)?;
@@ -125,7 +129,7 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         xot.detach(inner)?;
     } else {
-        rename(xot, node, Type);
+        xot.with_renamed(node, Type);
     }
     Ok(TransformAction::Continue)
 }
@@ -134,8 +138,8 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// Rename to `<alias>` with the export marker.
 pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, Alias);
+    xot.with_prepended_empty_element(node, marker)?
+        .with_renamed(node, Alias);
     Ok(TransformAction::Continue)
 }
 
@@ -145,8 +149,8 @@ pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 /// `<else>` so the shared conditional-shape post-transform can
 /// collapse the chain uniformly.
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else)?;
-    rename(xot, node, If);
+    xot.with_wrapped_field_child(node, "alternative", Else)?
+        .with_renamed(node, If);
     Ok(TransformAction::Continue)
 }
 
@@ -154,7 +158,7 @@ pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// `<name>` so `//type[name='Foo']` matches uniformly across
 /// declaration and reference sites.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type);
+    xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -176,28 +180,32 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        let child_name = match get_element_name(xot, child) {
+        let child_kind = match get_element_name(xot, child) {
             Some(n) => n,
             None => continue,
-        };
+        }
+        .parse::<GoKind>()
+        .ok();
+        let child_name = get_element_name(xot, child)
+            .and_then(|name| name.parse::<GoName>().ok());
         if !matches!(
-            child_name.as_str(),
-            "identifier" | "type_identifier" | "field_identifier"
-                | "package_identifier"
-                | "name" | "dot" | "blank_identifier",
-        ) {
+            child_kind,
+            Some(
+                GoKind::Identifier
+                    | GoKind::TypeIdentifier
+                    | GoKind::FieldIdentifier
+                    | GoKind::PackageIdentifier
+                    | GoKind::Dot
+                    | GoKind::BlankIdentifier
+            ),
+        ) && child_name != Some(Name) {
             continue;
         }
         let text = match get_text_content(xot, child) {
             Some(t) => t,
             None => continue,
         };
-        let all_children: Vec<_> = xot.children(node).collect();
-        for c in all_children {
-            xot.detach(c)?;
-        }
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
+        xot.with_only_text(node, &text)?;
         break;
     }
     Ok(TransformAction::Continue)
@@ -207,10 +215,10 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// trailing/leading/floating classifier with `//` line-comment
 /// grouping.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }
 
 // ---------------------------------------------------------------------
@@ -231,7 +239,10 @@ fn move_type_keyword_into_spec(xot: &mut Xot, decl: XotNode) -> Result<(), xot::
     let spec = xot
         .children(decl)
         .filter(|&c| xot.element(c).is_some())
-        .find(|&c| matches!(get_kind(xot, c).as_deref(), Some("type_spec") | Some("type_alias")));
+        .find(|&c| matches!(
+            get_kind(xot, c).and_then(|kind| kind.parse::<GoKind>().ok()),
+            Some(GoKind::TypeSpec | GoKind::TypeAlias)
+        ));
     let spec = match spec {
         Some(s) => s,
         None => return Ok(()),
@@ -246,23 +257,26 @@ fn move_type_keyword_into_spec(xot: &mut Xot, decl: XotNode) -> Result<(), xot::
 fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::Error> {
     let children: Vec<XotNode> = xot.children(list).filter(|&c| xot.element(c).is_some()).collect();
     for child in children {
-        if get_kind(xot, child).as_deref() != Some("parameter_declaration") {
+        if get_kind(xot, child).and_then(|kind| kind.parse::<GoKind>().ok())
+            != Some(GoKind::ParameterDeclaration) {
             continue;
         }
         let type_child = xot.children(child).find(|&c| {
-            get_element_name(xot, c).as_deref() == Some("type")
+            get_element_name(xot, c)
+                .and_then(|name| name.parse::<GoName>().ok())
+                == Some(Type)
                 || matches!(
-                    get_kind(xot, c).as_deref(),
+                    get_kind(xot, c).and_then(|kind| kind.parse::<GoKind>().ok()),
                     Some(
-                        "type_identifier"
-                            | "pointer_type"
-                            | "slice_type"
-                            | "array_type"
-                            | "map_type"
-                            | "channel_type"
-                            | "interface_type"
-                            | "struct_type"
-                            | "generic_type"
+                        GoKind::TypeIdentifier
+                            | GoKind::PointerType
+                            | GoKind::SliceType
+                            | GoKind::ArrayType
+                            | GoKind::MapType
+                            | GoKind::ChannelType
+                            | GoKind::InterfaceType
+                            | GoKind::StructType
+                            | GoKind::GenericType
                     )
                 )
         });
@@ -277,10 +291,10 @@ fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::E
 
 /// Determine `<exported/>` vs `<unexported/>` from the name child's
 /// first-character capitalisation.
-fn get_export_marker(xot: &Xot, node: XotNode) -> super::output::GoName {
+fn get_export_marker(xot: &Xot, node: XotNode) -> GoName {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            if name == Name.as_str() {
+            if name.parse::<GoName>().ok() == Some(Name) {
                 for grandchild in xot.children(child) {
                     if let Some(text) = get_text_content(xot, grandchild) {
                         if text.starts_with(|c: char| c.is_uppercase()) {
@@ -296,7 +310,7 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> super::output::GoName {
                     return Unexported;
                 }
             }
-            if name == "identifier" || name == "type_identifier" {
+            if matches!(name.parse::<GoKind>().ok(), Some(GoKind::Identifier | GoKind::TypeIdentifier)) {
                 if let Some(field) = get_attr(xot, child, "field") {
                     if field == "name" {
                         if let Some(text) = get_text_content(xot, child) {

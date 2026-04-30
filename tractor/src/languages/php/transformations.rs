@@ -12,8 +12,10 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
+use super::input::PhpKind;
+use super::output::PhpName;
 use super::output::PhpName::{
-    Comment as CommentName, Leading, Public, String as PhpString, Trailing,
+    Comment as CommentName, Leading, Private, Protected, Public, String as PhpString, Trailing,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -51,34 +53,30 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         .collect();
     if element_children.len() == 1 {
         let child = element_children[0];
-        let ts_kind = get_kind(xot, child);
+        let ts_kind = get_kind(xot, child).and_then(|kind| kind.parse::<PhpKind>().ok());
         let el_name = get_element_name(xot, child);
         // Single namespace_name / qualified_name child: that child
         // will flatten into segments + separators. Flattening the
         // outer wrapper now hoists segments to the enclosing
         // namespace/use, where each becomes a direct `<name>` sibling.
         if matches!(
-            ts_kind.as_deref(),
-            Some("namespace_name") | Some("qualified_name"),
+            ts_kind,
+            Some(PhpKind::NamespaceName | PhpKind::QualifiedName),
         ) {
             return Ok(TransformAction::Flatten);
         }
         let inlineable = matches!(
-            ts_kind.as_deref(),
-            Some("name") | Some("variable_name"),
+            ts_kind,
+            Some(PhpKind::Name | PhpKind::VariableName),
         ) || matches!(
-            el_name.as_deref(),
-            Some("name") | Some("variable"),
+            el_name.and_then(|name| name.parse::<PhpName>().ok()),
+            Some(PhpName::Name | PhpName::Variable),
         );
         if inlineable {
             let text = descendant_text(xot, child);
             let trimmed = text.trim().to_string();
             if !trimmed.is_empty() {
-                for c in children {
-                    xot.detach(c)?;
-                }
-                let text_node = xot.new_text(&trimmed);
-                xot.append(node, text_node)?;
+                xot.with_only_text(node, &trimmed)?;
                 return Ok(TransformAction::Done);
             }
         }
@@ -98,10 +96,10 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// of either family (or a mix on adjacent lines) merge into one
 /// `<comment>`.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CommentName);
+    xot.with_renamed(node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//", "#"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
+    CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
 }
 
 /// `visibility_modifier` / `static_modifier` / `final_modifier` /
@@ -114,7 +112,7 @@ pub fn modifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Er
         let text = text.trim().to_string();
         if !text.is_empty() {
             rename_to_marker(xot, node, &text)?;
-            insert_text_after(xot, node, &text)?;
+            xot.with_inserted_text_after(node, &text)?;
             return Ok(TransformAction::Done);
         }
     }
@@ -135,22 +133,19 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
         .filter(|&c| xot.element(c).is_some())
         .collect();
     for child in children {
-        let ts_kind = get_kind(xot, child);
+        let ts_kind = get_kind(xot, child).and_then(|kind| kind.parse::<PhpKind>().ok());
         if matches!(
-            ts_kind.as_deref(),
-            Some("string_content") | Some("string_value") | Some("escape_sequence")
-                | Some("text_interpolation") | None,
+            ts_kind,
+            Some(PhpKind::StringContent | PhpKind::EscapeSequence | PhpKind::TextInterpolation) | None,
         ) {
             continue;
         }
         let interp_name = xot.add_name("interpolation");
         let interp = xot.new_element(interp_name);
-        copy_source_location(xot, child, interp);
-        xot.insert_before(child, interp)?;
-        xot.detach(child)?;
-        xot.append(interp, child)?;
+        xot.with_source_location_from(interp, child)
+            .with_wrap_child(child, interp)?;
     }
-    rename(xot, node, PhpString);
+    xot.with_renamed(node, PhpString);
     Ok(TransformAction::Continue)
 }
 
@@ -169,11 +164,11 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<&'static str> {
+) -> Option<PhpName> {
     if has_visibility_marker(xot, node) {
         None
     } else {
-        Some(Public.as_str())
+        Some(Public)
     }
 }
 
@@ -184,12 +179,12 @@ pub fn default_access_for_declaration(
 fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
     for child in xot.children(node) {
         if xot.element(child).is_none() { continue; }
-        let ts_kind = get_kind(xot, child);
-        if ts_kind.as_deref() == Some("visibility_modifier") {
+        if get_kind(xot, child).and_then(|kind| kind.parse::<PhpKind>().ok())
+            == Some(PhpKind::VisibilityModifier) {
             return true;
         }
         if let Some(name) = get_element_name(xot, child) {
-            if matches!(name.as_str(), "public" | "private" | "protected") {
+            if matches!(name.parse::<PhpName>().ok(), Some(Public | Private | Protected)) {
                 return true;
             }
         }
