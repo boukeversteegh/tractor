@@ -24,11 +24,19 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
-/// `expression_statement` — drop the wrapper before children are
-/// visited so children's parent context becomes the enclosing block
-/// rather than the statement wrapper.
+/// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
+/// the wrapper, promote children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `expression_statement` — wrap value-producing statements in an
+/// `<expression>` host (Principle #15). PHP's `expression_statement`
+/// only wraps value-producing expressions in statement context, so
+/// no inner-kind dispatch needed.
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, super::output::TractorNode::Expression);
+    Ok(TransformAction::Continue)
 }
 
 /// `<name>` field wrapper inserted by the builder for nodes with a

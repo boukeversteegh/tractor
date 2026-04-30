@@ -22,7 +22,7 @@ pub enum TractorNode {
     Return, If, Else, ElseIf, For, Foreach, While, Do, Switch, Case, Try, Catch, Finally, Throw,
     Echo, Continue, Break, Match, Arm, Yield, Require, Print, Exit, Declare, Goto,
     // Expressions
-    Call, Member, Index, New, Cast, Assign, Binary, Unary, Ternary, Array, Spread,
+    Call, Member, Index, New, Cast, Assign, Binary, Unary, Ternary, Array, Spread, Expression,
     // Types / atoms
     Type, String, Int, Float, Bool, Null, Variable,
     // Misc structural

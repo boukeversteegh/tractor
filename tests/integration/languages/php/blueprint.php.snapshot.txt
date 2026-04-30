@@ -61,18 +61,18 @@ program/
   │       │   │   ├─ name = "$count"
   │       │   │   └─ int = "0"
   │       │   └─ body/
-  │       │       ├─ assign/
-  │       │       │   ├─ left/member[instance]/
+  │       │       ├─ expression/assign/
+  │       │       │   ├─ left/expression/member[instance]/
   │       │       │   │   ├─ variable/name = "this"
   │       │       │   │   └─ name = "name"
   │       │       │   ├─ op = "="
-  │       │       │   └─ right/variable/name = "name"
-  │       │       └─ assign/
-  │       │           ├─ left/member[instance]/
+  │       │       │   └─ right/expression/variable/name = "name"
+  │       │       └─ expression/assign/
+  │       │           ├─ left/expression/member[instance]/
   │       │           │   ├─ variable/name = "this"
   │       │           │   └─ name = "count"
   │       │           ├─ op = "="
-  │       │           └─ right/variable/name = "count"
+  │       │           └─ right/expression/variable/name = "count"
   │       ├─ method[abstract and public]/
   │       │   ├─ name = "render"
   │       │   └─ type[primitive] = "string"
@@ -82,7 +82,7 @@ program/
   │       │   │   ├─ type[primitive] = "string"
   │       │   │   └─ name = "$name"
   │       │   ├─ type/name = "static"
-  │       │   └─ body/return/new/
+  │       │   └─ body/return/expression/new/
   │       │       ├─ name = "static"
   │       │       └─ argument/variable/name = "name"
   │       ├─ method[public]/
@@ -96,49 +96,49 @@ program/
   │       │   │   └─ name = "$extras"
   │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
-  │       │       ├─ assign/
-  │       │       │   ├─ left/variable/name = "target"
+  │       │       ├─ expression/assign/
+  │       │       │   ├─ left/expression/variable/name = "target"
   │       │       │   ├─ op = "="
-  │       │       │   └─ right/binary/
-  │       │       │       ├─ left/variable/name = "who"
+  │       │       │   └─ right/expression/binary/
+  │       │       │       ├─ left/expression/variable/name = "who"
   │       │       │       ├─ op[nullish-coalescing] = "??"
-  │       │       │       └─ right/member[instance]/
+  │       │       │       └─ right/expression/member[instance]/
   │       │       │           ├─ variable/name = "this"
   │       │       │           └─ name = "name"
   │       │       └─ if/
-  │       │           ├─ condition/binary/
-  │       │           │   ├─ left/member[instance]/
+  │       │           ├─ condition/expression/binary/
+  │       │           │   ├─ left/expression/member[instance]/
   │       │           │   │   ├─ variable/name = "this"
   │       │           │   │   └─ name = "count"
   │       │           │   ├─ op/compare[greater]
-  │       │           │   └─ right/int = "10"
-  │       │           ├─ body/return/string/interpolation/variable/name = "target"
+  │       │           │   └─ right/expression/int = "10"
+  │       │           ├─ body/return/expression/string/interpolation/variable/name = "target"
   │       │           ├─ else_if/
-  │       │           │   ├─ condition/binary/
-  │       │           │   │   ├─ left/member[instance]/
+  │       │           │   ├─ condition/expression/binary/
+  │       │           │   │   ├─ left/expression/member[instance]/
   │       │           │   │   │   ├─ variable/name = "this"
   │       │           │   │   │   └─ name = "count"
   │       │           │   │   ├─ op/compare[greater]
-  │       │           │   │   └─ right/int = "0"
-  │       │           │   └─ body/return/string/interpolation/variable/name = "target"
-  │       │           └─ else/body/return/string/interpolation/variable/name = "target"
+  │       │           │   │   └─ right/expression/int = "0"
+  │       │           │   └─ body/return/expression/string/interpolation/variable/name = "target"
+  │       │           └─ else/body/return/expression/string/interpolation/variable/name = "target"
   │       ├─ method[public]/
   │       │   ├─ name = "describe"
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "int"
   │       │   │   └─ name = "$n"
   │       │   ├─ type[primitive] = "string"
-  │       │   └─ body/return/ternary/
-  │       │       ├─ condition/binary/
-  │       │       │   ├─ left/variable/name = "n"
+  │       │   └─ body/return/expression/ternary/
+  │       │       ├─ condition/expression/binary/
+  │       │       │   ├─ left/expression/variable/name = "n"
   │       │       │   ├─ op/compare[greater]
-  │       │       │   └─ right/int = "0"
+  │       │       │   └─ right/expression/int = "0"
   │       │       ├─ body/string = "\"positive\""
   │       │       └─ ternary/
-  │       │           ├─ condition/binary/
-  │       │           │   ├─ left/variable/name = "n"
+  │       │           ├─ condition/expression/binary/
+  │       │           │   ├─ left/expression/variable/name = "n"
   │       │           │   ├─ op/compare[less]
-  │       │           │   └─ right/int = "0"
+  │       │           │   └─ right/expression/int = "0"
   │       │           ├─ body/string = "\"negative\""
   │       │           └─ string = "\"zero\""
   │       ├─ method[public]/
@@ -147,8 +147,8 @@ program/
   │       │   │   ├─ type[primitive] = "mixed"
   │       │   │   └─ name = "$value"
   │       │   ├─ type[primitive] = "string"
-  │       │   └─ body/return/match/
-  │       │       ├─ condition/bool = "true"
+  │       │   └─ body/return/expression/match/
+  │       │       ├─ condition/expression/bool = "true"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ call/
@@ -157,16 +157,16 @@ program/
   │       │           │   └─ string = "\"int\""
   │       │           ├─ arm/
   │       │           │   ├─ binary/
-  │       │           │   │   ├─ left/call/
+  │       │           │   │   ├─ left/expression/call/
   │       │           │   │   │   ├─ name = "is_string"
   │       │           │   │   │   └─ argument/variable/name = "value"
   │       │           │   │   ├─ op/logical[and]
-  │       │           │   │   └─ right/binary/
-  │       │           │   │       ├─ left/call/
+  │       │           │   │   └─ right/expression/binary/
+  │       │           │   │       ├─ left/expression/call/
   │       │           │   │       │   ├─ name = "strlen"
   │       │           │   │       │   └─ argument/variable/name = "value"
   │       │           │   │       ├─ op/compare[greater]
-  │       │           │   │       └─ right/int = "0"
+  │       │           │   │       └─ right/expression/int = "0"
   │       │           │   └─ string = "\"non-empty string\""
   │       │           ├─ arm/
   │       │           │   ├─ call/
@@ -181,10 +181,10 @@ program/
   │       │   │   └─ name = "$items"
   │       │   ├─ type[primitive] = "array"
   │       │   └─ body/
-  │       │       ├─ assign/
-  │       │       │   ├─ left/variable/name = "results"
+  │       │       ├─ expression/assign/
+  │       │       │   ├─ left/expression/variable/name = "results"
   │       │       │   ├─ op = "="
-  │       │       │   └─ right/array = "[]"
+  │       │       │   └─ right/expression/array = "[]"
   │       │       ├─ foreach/
   │       │       │   ├─ variable/name = "items"
   │       │       │   ├─ pair/
@@ -192,18 +192,18 @@ program/
   │       │       │   │   └─ variable/name = "item"
   │       │       │   └─ body/
   │       │       │       ├─ if/
-  │       │       │       │   ├─ condition/binary/
-  │       │       │       │   │   ├─ left/variable/name = "item"
+  │       │       │       │   ├─ condition/expression/binary/
+  │       │       │       │   │   ├─ left/expression/variable/name = "item"
   │       │       │       │   │   ├─ op/equals[strict]
-  │       │       │       │   │   └─ right/null = "null"
+  │       │       │       │   │   └─ right/expression/null = "null"
   │       │       │       │   └─ body/continue = "continue;"
   │       │       │       └─ try/
-  │       │       │           ├─ body/assign/
-  │       │       │           │   ├─ left/index/
+  │       │       │           ├─ body/expression/assign/
+  │       │       │           │   ├─ left/expression/index/
   │       │       │           │   │   ├─ variable/name = "results"
   │       │       │           │   │   └─ variable/name = "key"
   │       │       │           │   ├─ op = "="
-  │       │       │           │   └─ right/call[instance]/
+  │       │       │           │   └─ right/expression/call[instance]/
   │       │       │           │       ├─ variable/name = "this"
   │       │       │           │       ├─ name = "transform"
   │       │       │           │       └─ argument/variable/name = "item"
@@ -211,14 +211,14 @@ program/
   │       │       │               ├─ types/type/name = "Throwable"
   │       │       │               ├─ name = "$e"
   │       │       │               └─ body/continue = "continue;"
-  │       │       └─ return/variable/name = "results"
+  │       │       └─ return/expression/variable/name = "results"
   │       └─ method[private]/
   │           ├─ name = "transform"
   │           ├─ parameter/
   │           │   ├─ type[primitive] = "mixed"
   │           │   └─ name = "$item"
   │           ├─ type[primitive] = "mixed"
-  │           └─ body/return/variable/name = "item"
+  │           └─ body/return/expression/variable/name = "item"
   ├─ interface/
   │   ├─ name = "Speaker"
   │   └─ body/method[public]/
@@ -247,18 +247,18 @@ program/
   │   └─ body/
   │       ├─ constant/
   │       │   ├─ name = "Active"
-  │       │   └─ value/string = "\"active\""
+  │       │   └─ value/expression/string = "\"active\""
   │       ├─ constant/
   │       │   ├─ name = "Inactive"
-  │       │   └─ value/string = "\"inactive\""
+  │       │   └─ value/expression/string = "\"inactive\""
   │       ├─ constant/
   │       │   ├─ name = "Pending"
-  │       │   └─ value/string = "\"pending\""
+  │       │   └─ value/expression/string = "\"pending\""
   │       └─ method[public]/
   │           ├─ name = "label"
   │           ├─ type[primitive] = "string"
-  │           └─ body/return/match/
-  │               ├─ condition/variable/name = "this"
+  │           └─ body/return/expression/match/
+  │               ├─ condition/expression/variable/name = "this"
   │               └─ body/
   │                   ├─ arm/
   │                   │   ├─ member[constant]/
@@ -284,52 +284,52 @@ program/
   │   │   ├─ type[primitive] = "mixed"
   │   │   └─ name = "$args"
   │   ├─ type[primitive] = "mixed"
-  │   └─ body/return/call/
+  │   └─ body/return/expression/call/
   │       ├─ variable/name = "fn"
   │       └─ argument/spread/variable/name = "args"
-  ├─ assign/
-  │   ├─ left/variable/name = "pipeline"
+  ├─ expression/assign/
+  │   ├─ left/expression/variable/name = "pipeline"
   │   ├─ op = "="
-  │   └─ right/function[arrow]/
+  │   └─ right/expression/function[arrow]/
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
   │       │   └─ name = "$x"
   │       ├─ type[primitive] = "int"
   │       └─ body/binary/
-  │           ├─ left/variable/name = "x"
+  │           ├─ left/expression/variable/name = "x"
   │           ├─ op[multiply] = "*"
-  │           └─ right/int = "2"
-  ├─ assign/
-  │   ├─ left/variable/name = "doubled"
+  │           └─ right/expression/int = "2"
+  ├─ expression/assign/
+  │   ├─ left/expression/variable/name = "doubled"
   │   ├─ op = "="
-  │   └─ right/call/
+  │   └─ right/expression/call/
   │       ├─ name = "array_map"
   │       ├─ argument/variable/name = "pipeline"
   │       └─ argument/array/
   │           ├─ int = "1"
   │           ├─ int = "2"
   │           └─ int = "3"
-  ├─ assign/
-  │   ├─ left/variable/name = "closure"
+  ├─ expression/assign/
+  │   ├─ left/expression/variable/name = "closure"
   │   ├─ op = "="
-  │   └─ right/function[anonymous]/
+  │   └─ right/expression/function[anonymous]/
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
   │       │   └─ name = "$x"
   │       ├─ variable/name = "pipeline"
   │       ├─ type[primitive] = "int"
-  │       └─ body/return/binary/
-  │           ├─ left/call/
+  │       └─ body/return/expression/binary/
+  │           ├─ left/expression/call/
   │           │   ├─ variable/name = "pipeline"
   │           │   └─ argument/variable/name = "x"
   │           ├─ op[plus] = "+"
-  │           └─ right/int = "1"
+  │           └─ right/expression/int = "1"
   └─ echo/binary/
-      ├─ left/binary/
-      │   ├─ left/string = "\"result: \""
+      ├─ left/expression/binary/
+      │   ├─ left/expression/string = "\"result: \""
       │   ├─ op = "."
-      │   └─ right/call/
+      │   └─ right/expression/call/
       │       ├─ variable/name = "closure"
       │       └─ argument/int = "5"
       ├─ op = "."
-      └─ right/string = "\"\\n\""
+      └─ right/expression/string = "\"\\n\""

@@ -186,7 +186,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["php"],
         transform: php::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(php_post_transform),
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(php::output::spec),
@@ -511,6 +511,18 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 /// Go post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// PHP post-transform: collapse conditionals + wrap expression
+/// positions in `<expression>` hosts (Principle #15).
+fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

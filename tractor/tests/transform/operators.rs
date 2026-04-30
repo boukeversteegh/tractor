@@ -100,9 +100,9 @@ fn php_binary() {
         &mut parse_src("php", "<?php $z = $x + $y;"),
         &multi_xpath(r#"
             //binary
-                [left/variable/name='x']
+                [left/expression/variable/name='x']
                 [op[plus]]
-                [right/variable/name='y']
+                [right/expression/variable/name='y']
         "#),
         1);
 }

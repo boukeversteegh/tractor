@@ -410,8 +410,8 @@ fn php() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [assign[left/variable/name='i']]
-                [condition/binary]
+                [assign[left/expression/variable/name='i']]
+                [condition/expression/binary]
                 [unary[op[increment]]]
                 [body]
         "#),

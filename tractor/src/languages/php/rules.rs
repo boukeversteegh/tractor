@@ -86,7 +86,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::AbstractModifier   => Custom(transformations::modifier),
         PhpKind::Comment            => Custom(transformations::comment),
         PhpKind::EncapsedString     => Custom(transformations::encapsed_string),
-        PhpKind::ExpressionStatement => Custom(transformations::skip),
+        PhpKind::ExpressionStatement => Custom(transformations::expression_statement),
         PhpKind::FinalModifier      => Custom(transformations::modifier),
         PhpKind::ReadonlyModifier   => Custom(transformations::modifier),
         PhpKind::StaticModifier     => Custom(transformations::modifier),
