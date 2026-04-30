@@ -211,7 +211,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
 
         // TODO: increment / decrement — `++x`, `x--`. Same shape as
         // unary_expression (extract op + rename UNARY).
-        JavaKind::UpdateExpression => Custom(transformations::passthrough),
+        JavaKind::UpdateExpression => ExtractOpThenRename(Unary),
 
         // TODO: catch_formal_parameter is the variable inside a catch
         // clause — Rename(PARAMETER); catch_type is the exception type

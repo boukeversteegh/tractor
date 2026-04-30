@@ -59,7 +59,8 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::Array               => Rename(Array),
         RubyKind::Assignment          => Rename(Assign),
         RubyKind::Begin               => Rename(Begin),
-        RubyKind::Binary              => Rename(Binary),
+        RubyKind::Binary              => ExtractOpThenRename(Binary),
+        RubyKind::Unary               => ExtractOpThenRename(Unary),
         RubyKind::Call                => Rename(Call),
         RubyKind::Case                => Rename(Case),
         RubyKind::Class               => Rename(Class),
@@ -118,7 +119,6 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Superclass
         | RubyKind::Then
         | RubyKind::True
-        | RubyKind::Unary
         | RubyKind::When
         | RubyKind::Yield => Custom(transformations::passthrough),
 

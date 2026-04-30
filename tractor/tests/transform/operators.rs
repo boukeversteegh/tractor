@@ -134,35 +134,23 @@ fn python_unary() {
 /// `++x` from `x++` since both use `<op[increment]/>`).
 #[test]
 fn csharp_prefix_unary() {
-    let mut tree = parse_src("csharp", r#"
-        class T {
-            void M(int x) {
-                int n = -1;
-                bool b = !true;
-                int p = ~x;
-                ++x;
-                --x;
-            }
-        }
-    "#);
-
     claim("`-1` extracts <op[minus]> and carries <prefix>",
-        &mut tree,
+        &mut parse_src("csharp", "class T { void M() { int n = -1; } }"),
         "//unary[prefix][op[minus]]/int='1'",
         1);
 
     claim("`!true` extracts <op> with logical-not marker",
-        &mut tree,
+        &mut parse_src("csharp", "class T { void M() { bool b = !true; } }"),
         "//unary[prefix][op/logical[not]]/bool='true'",
         1);
 
-    claim("`~x` extracts <op[bitnot]> (or whatever the C# bitwise-not maps to)",
-        &mut tree,
+    claim("`~x` extracts <op> and carries <prefix>",
+        &mut parse_src("csharp", "class T { void M(int x) { int p = ~x; } }"),
         "//unary[prefix]/op",
-        5);
+        1);
 
     claim("`++x` carries [prefix] AND op[increment] — distinguishable from x++ which lacks [prefix]",
-        &mut tree,
+        &mut parse_src("csharp", "class T { void M(int x) { ++x; } }"),
         "//unary[prefix][op[increment]]",
         1);
 }

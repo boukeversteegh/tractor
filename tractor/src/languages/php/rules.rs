@@ -216,8 +216,13 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::AugmentedAssignmentExpression
         | PhpKind::ByRef
         | PhpKind::ReferenceAssignmentExpression
-        | PhpKind::ReferenceModifier
-        | PhpKind::UpdateExpression => Custom(transformations::passthrough),
+        | PhpKind::ReferenceModifier => Custom(transformations::passthrough),
+
+        // `update_expression` covers `$x++` / `$x--` / `++$x` / `--$x`.
+        // Extract the operator and rename to <unary> so prefix/postfix
+        // increments are queryable through the same shape as regular
+        // unary expressions (Goal #6 broad-to-narrow).
+        PhpKind::UpdateExpression          => ExtractOpThenRename(Unary),
 
         // TODO: special-statement forms — `clone`, `unset`, `empty`
         // (`;`), `goto`-target labels, list-literal destructuring,

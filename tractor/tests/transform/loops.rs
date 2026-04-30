@@ -60,13 +60,13 @@ fn java() {
         "#),
         1);
 
-    claim("Java C-style for embeds variable initialiser, <condition>, update_expression, and body",
+    claim("Java C-style for embeds variable initialiser, <condition>, <unary> update, and body",
         &mut tree,
         &multi_xpath(r#"
             //for
                 [variable[type/name='int'][declarator/name='i']]
                 [condition/expression/binary]
-                [update_expression]
+                [unary[op[increment]]]
                 [body]
         "#),
         1);
@@ -406,13 +406,13 @@ fn php() {
         "#),
         1);
 
-    claim("PHP C-style for has <assign> init, <condition>, <update_expression>, and body",
+    claim("PHP C-style for has <assign> init, <condition>, <unary> update, and body",
         &mut tree,
         &multi_xpath(r#"
             //for
                 [assign[left/variable/name='i']]
                 [condition/binary]
-                [update_expression]
+                [unary[op[increment]]]
                 [body]
         "#),
         1);

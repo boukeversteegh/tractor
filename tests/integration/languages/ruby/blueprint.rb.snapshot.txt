@@ -45,6 +45,7 @@ program/
   │       │       │           ├─ left/name = "@id"
   │       │       │           └─ right/binary/
   │       │       │               ├─ left/name = "id"
+  │       │       │               ├─ op/logical[or]
   │       │       │               └─ right/int = "0"
   │       │       └─ method/
   │       │           ├─ name = "=="
@@ -54,10 +55,12 @@ program/
   │       │               │   ├─ name = "other"
   │       │               │   ├─ name = "is_a?"
   │       │               │   └─ constant = "Base"
+  │       │               ├─ op/logical[and]
   │       │               └─ right/binary/
   │       │                   ├─ left/call/
   │       │                   │   ├─ name = "other"
   │       │                   │   └─ name = "name"
+  │       │                   ├─ op[equals] = "=="
   │       │                   └─ right/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
@@ -172,6 +175,7 @@ program/
   │               │       │       └─ body/string/
   │               │       │           ├─ interpolation/name = "i"
   │               │       │           └─ interpolation/name = "it"
+  │               │       ├─ op[plus] = "+"
   │               │       └─ right/call/
   │               │           ├─ name = "meta"
   │               │           └─ name = "keys"
@@ -268,6 +272,7 @@ program/
   │       │           ├─ else_if/
   │       │           │   ├─ condition/binary/
   │       │           │   │   ├─ left/name = "x"
+  │       │           │   │   ├─ op[equals] = "=="
   │       │           │   │   └─ right = ":stop"
   │       │           │   └─ then/break = "break"
   │       │           └─ else/
@@ -283,6 +288,7 @@ program/
   │       ├─ while/
   │       │   ├─ condition/binary/
   │       │   │   ├─ left/name = "i"
+  │       │   │   ├─ op/compare[less]
   │       │   │   └─ right/int = "3"
   │       │   └─ body/do/assign/
   │       │       ├─ left/name = "i"
@@ -290,6 +296,7 @@ program/
   │       ├─ until/
   │       │   ├─ condition/binary/
   │       │   │   ├─ left/name = "i"
+  │       │   │   ├─ op/compare[greater and or-equal]
   │       │   │   └─ right/int = "6"
   │       │   └─ body/do/assign/
   │       │       ├─ left/name = "i"
@@ -334,7 +341,10 @@ program/
   │       │           │   ├─ name = "items"
   │       │           │   └─ name = "clear"
   │       │           └─ condition/binary/
-  │       │               ├─ left/unary/name = "items"
+  │       │               ├─ left/unary/
+  │       │               │   ├─ op = "defined?"
+  │       │               │   └─ name = "items"
+  │       │               ├─ op/logical[and]
   │       │               └─ right/false = "false"
   │       ├─ assign/
   │       │   ├─ left/name = "adder"
@@ -343,6 +353,7 @@ program/
   │       │       ├─ name = "b"
   │       │       └─ body/block/body/binary/
   │       │           ├─ left/name = "a"
+  │       │           ├─ op[plus] = "+"
   │       │           └─ right/name = "b"
   │       ├─ assign/
   │       │   ├─ left/name = "doubler"
@@ -352,6 +363,7 @@ program/
   │       │           ├─ name = "n"
   │       │           └─ body/binary/
   │       │               ├─ left/name = "n"
+  │       │               ├─ op[multiply] = "*"
   │       │               └─ right/int = "2"
   │       ├─ assign/
   │       │   ├─ left/name = "ternary"
@@ -365,6 +377,7 @@ program/
   │       │   ├─ left/name = "total"
   │       │   └─ right/binary/
   │       │       ├─ left/name = "total"
+  │       │       ├─ op[plus] = "+"
   │       │       └─ right/int = "1"
   │       ├─ assign/
   │       │   ├─ left/left/
@@ -380,19 +393,27 @@ program/
   │       │   ├─ left/assign/
   │       │   │   ├─ left/name = "flag"
   │       │   │   └─ right/true = "true"
+  │       │   ├─ op/logical[and]
   │       │   └─ right/false = "false"
   │       ├─ binary/
   │       │   ├─ left/assign/
   │       │   │   ├─ left/name = "flag"
   │       │   │   └─ right/true = "true"
+  │       │   ├─ op/logical[or]
   │       │   └─ right/false = "false"
   │       ├─ assign/
   │       │   ├─ left/name = "flag"
   │       │   └─ right/binary/
   │       │       ├─ left/binary/
-  │       │       │   ├─ left/unary/name = "flag"
+  │       │       │   ├─ left/unary/
+  │       │       │   │   ├─ op/logical[not]
+  │       │       │   │   └─ name = "flag"
+  │       │       │   ├─ op/logical[and]
   │       │       │   └─ right/name = "flag"
-  │       │       └─ right/unary/name = "flag"
+  │       │       ├─ op/logical[or]
+  │       │       └─ right/unary/
+  │       │           ├─ op/logical[not]
+  │       │           └─ name = "flag"
   │       └─ array/
   │           ├─ name = "result"
   │           ├─ call/
