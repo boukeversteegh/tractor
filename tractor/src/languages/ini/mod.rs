@@ -1,223 +1,46 @@
-//! INI transform logic
+//! INI transform logic.
 //!
-//! Maps the INI data structure to XML elements.
-//! Section headers become named elements, settings become named child elements
-//! with their values as text content.
+//! Per-language pipeline ownership:
 //!
-//! Example:
+//! ```text
+//! input → rules → output
+//!         ↑
+//!         transformations (Custom handlers)
+//! ```
+//!
+//! - [`input`]    — generated `IniKind` enum (the input vocabulary).
+//!                  Regenerate via `task gen:kinds`.
+//! - [`output`]   — output element-name constants. Section/setting
+//!                  names are user-driven (open vocabulary), so only
+//!                  `<comment>` is named here.
+//! - [`rules`]    — `rule(IniKind) -> Rule` exhaustive match.
+//! - [`transformations`] — `Rule::Custom` handlers.
+//! - [`transform`] — thin orchestrator.
+//!
+//! Maps the INI data structure to XML elements:
 //! ```ini
 //! [database]
 //! host = localhost
-//! port = 5432
 //! ```
-//! Becomes:
+//! becomes:
 //! ```xml
 //! <database>
 //!   <host>localhost</host>
-//!   <port>5432</port>
 //! </database>
 //! ```
-//! Queryable as: `//database/host[.='localhost']`
+//! Queryable as: `//database/host[.='localhost']`.
 
 pub mod input;
+pub mod output;
+pub mod rules;
+pub mod transformations;
+pub mod transform;
 
-use xot::{Xot, Node as XotNode};
-use crate::transform::{TransformAction, helpers::*};
-use crate::transform::data_keys::*;
+pub use transform::transform;
+
 use crate::output::syntax_highlight::SyntaxCategory;
 
-/// Transform an INI AST node into a data-structure-oriented XML tree
-pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
-        Some(k) => k,
-        None => return Ok(TransformAction::Continue),
-    };
-
-    match kind.as_str() {
-        // Sections: extract name from section_name child, rename to that
-        "section" => {
-            transform_section(xot, node)
-        }
-
-        // Section name: remove after parent extracts it
-        "section_name" => {
-            // Detached by parent transform; if still here, flatten
-            remove_text_children(xot, node)?;
-            Ok(TransformAction::Flatten)
-        }
-
-        // Settings (key=value pairs): rename to the key text
-        "setting" => {
-            transform_setting(xot, node)
-        }
-
-        // Setting name and value: flatten to promote text
-        "setting_name" | "setting_value" => {
-            Ok(TransformAction::Flatten)
-        }
-
-        // Text nodes inside section_name or comment: flatten
-        "text" => {
-            Ok(TransformAction::Flatten)
-        }
-
-        // Comments: keep as <comment> with text content, strip # or ; prefix
-        "comment" => {
-            transform_comment(xot, node)
-        }
-
-        // Document root: clean up text children
-        "document" => {
-            remove_text_children(xot, node)?;
-            Ok(TransformAction::Continue)
-        }
-
-        _ => Ok(TransformAction::Continue),
-    }
-}
-
-/// Transform a section by extracting the name from its section_name child
-fn transform_section(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    if let Some(name) = extract_section_name(xot, node) {
-        rename_to_key(xot, node, &name);
-
-        // Remove the section_name child (already extracted)
-        let children: Vec<XotNode> = xot.children(node).collect();
-        for child in children {
-            if xot.text_str(child).is_some() {
-                xot.detach(child)?;
-            } else if let Some(child_name) = get_element_name(xot, child) {
-                if child_name == "section_name" {
-                    xot.detach(child)?;
-                }
-            }
-        }
-    }
-    Ok(TransformAction::Continue)
-}
-
-/// Transform a setting by extracting the key name and promoting the value
-fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    if let Some(key) = extract_setting_name(xot, node) {
-        rename_to_key(xot, node, &key);
-
-        // Copy the setting_value child's source span to the node so --set
-        // replaces only the value portion, not the entire `key = value` line.
-        let value_child = xot.children(node).find(|&c| {
-            get_element_name(xot, c).as_deref() == Some("setting_value")
-        });
-        if let Some(vc) = value_child {
-            copy_source_location(xot, vc, node);
-        }
-
-        // Remove setting_name child and `=` text, keep setting_value
-        let children: Vec<XotNode> = xot.children(node).collect();
-        for child in children {
-            if xot.text_str(child).is_some() {
-                // Remove "=" and whitespace text
-                xot.detach(child)?;
-            } else if let Some(child_name) = get_element_name(xot, child) {
-                if child_name == "setting_name" {
-                    xot.detach(child)?;
-                }
-            }
-        }
-
-        // Trim the setting_value text content
-        trim_value_text(xot, node)?;
-    }
-    Ok(TransformAction::Continue)
-}
-
-/// Extract the section name from a section node's section_name child.
-/// The section_name node contains: `[`, `<text>name</text>`, `]`.
-/// We extract the text from the `text` element child.
-fn extract_section_name(xot: &Xot, node: XotNode) -> Option<String> {
-    for child in xot.children(node) {
-        if let Some(name) = get_element_name(xot, child) {
-            if name == "section_name" {
-                // Find the `text` element child inside section_name
-                for grandchild in xot.children(child) {
-                    if let Some(gname) = get_element_name(xot, grandchild) {
-                        if gname == "text" {
-                            if let Some(text) = get_text_content(xot, grandchild) {
-                                let trimmed = text.trim().to_string();
-                                if !trimmed.is_empty() {
-                                    return Some(trimmed);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
-}
-
-/// Extract the setting name from a setting node's setting_name child
-fn extract_setting_name(xot: &Xot, node: XotNode) -> Option<String> {
-    for child in xot.children(node) {
-        if let Some(name) = get_element_name(xot, child) {
-            if name == "setting_name" {
-                return get_text_content(xot, child).map(|s| s.trim().to_string());
-            }
-        }
-    }
-    None
-}
-
-/// Transform a comment by extracting its text content.
-/// The comment node contains: `#` or `;` text, then `<text>comment text</text>`.
-fn transform_comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    // Extract comment text from the `text` element child
-    let mut comment_text = None;
-    for child in xot.children(node) {
-        if let Some(name) = get_element_name(xot, child) {
-            if name == "text" {
-                comment_text = get_text_content(xot, child).map(|s| s.trim().to_string());
-            }
-        }
-    }
-
-    // Remove all children and replace with trimmed text
-    let all_children: Vec<XotNode> = xot.children(node).collect();
-    for c in all_children {
-        xot.detach(c)?;
-    }
-    if let Some(text) = comment_text {
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
-    }
-
-    rename(xot, node, "comment");
-    Ok(TransformAction::Done)
-}
-
-/// Trim whitespace from setting_value text within a node
-fn trim_value_text(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    // Find setting_value children and trim their text
-    let children: Vec<XotNode> = xot.children(node).collect();
-    for child in children {
-        if let Some(name) = get_element_name(xot, child) {
-            if name == "setting_value" {
-                // Get and trim the text content
-                if let Some(text) = get_text_content(xot, child) {
-                    let trimmed = text.trim().to_string();
-                    let all: Vec<XotNode> = xot.children(child).collect();
-                    for c in all {
-                        xot.detach(c)?;
-                    }
-                    let text_node = xot.new_text(&trimmed);
-                    xot.append(child, text_node)?;
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Map a transformed element name to a syntax category for highlighting
+/// Map a transformed element name to a syntax category for highlighting.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
         "comment" => SyntaxCategory::Comment,
