@@ -151,16 +151,9 @@ pub fn rule(k: GoKind) -> Rule<GoName> {
         // `field_identifier`.
         GoKind::Dot => Rename(Name),
 
-        // TODO: `expression_case` should be `Rename(CASE)` for
-        // consistency — its sibling kinds already do this:
-        //   communication_case → CASE
-        //   default_case       → DEFAULT
-        //   expression_case    → ??  ← currently `<expression_case>` (passthrough)
-        // Test impact: `tests/transform/go/switch_markers.rs` queries
-        // `expression_case/value/int='1'` — would update to
-        // `case/value/int='1'`. No snapshot impact (blueprint doesn't
-        // exercise expression switches).
-        GoKind::ExpressionCase => Custom(transformations::passthrough),
+        // `expression_case` joins `communication_case → Case` and
+        // `default_case → Default` under `<case>`.
+        GoKind::ExpressionCase => Rename(Case),
 
         // Parens are pure grouping with no semantic content; flatten
         // so the inner expression / type bubbles up. Matches the

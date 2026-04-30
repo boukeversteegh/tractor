@@ -17,18 +17,20 @@ already exists in the language's `Name` enum. Snapshot impact is
 either none (no fixture exercises) or local (one file's golden
 output shifts in a way the maintainer can eyeball).
 
-- **csharp** `as_expression`, `is_expression` → `Rename(Is)`
-- **csharp** `event_declaration` → `Rename(Event)`
-- **csharp** `conversion_operator_declaration` → `Rename(Operator)`
-- **csharp** `element_access_expression` → `Rename(Index)`
-  (already used by `element_binding_expression`)
-- **csharp** `anonymous_method_expression` → `Rename(Lambda)`
+**Done in this commit cycle (5 csharp + 1 go):**
+- ~~csharp `as_expression`, `is_expression` → `Rename(Is)`~~
+- ~~csharp `event_declaration` → `Rename(Event)`~~
+- ~~csharp `conversion_operator_declaration` → `Rename(Operator)`~~
+- ~~csharp `element_access_expression` → `Rename(Index)`~~
+- ~~csharp `anonymous_method_expression` → `Rename(Lambda)`~~
+- ~~go `expression_case` → `Rename(Case)`~~ (one transform-test xpath
+  updated; no snapshot impact)
+
+**Still pending (need design call on marker availability):**
 - **csharp** pattern combinators (`and_pattern`, `or_pattern`,
-  `not_pattern`, etc.) → `RenameWithMarker(Pattern, And/Or/Not)`
-  if a marker variant already exists in CsName, otherwise bucket B.
-- **go** `expression_case` → `Rename(Case)` (siblings
-  `communication_case` / `default_case` already do this; affects
-  one transform test asserting `expression_case/value/int=…`)
+  `not_pattern`, `relational_pattern`, etc.) → would be
+  `RenameWithMarker(Pattern, And/Or/Not/...)` but the markers
+  aren't in `CsName` yet — moves to bucket B.
 
 ## Bucket B — needs a new Name variant
 

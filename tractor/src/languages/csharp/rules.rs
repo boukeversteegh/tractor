@@ -230,13 +230,12 @@ pub fn rule(k: CsKind) -> Rule<CsName> {
         | CsKind::TypePattern
         | CsKind::ParenthesizedPattern => Custom(transformations::passthrough),
 
-        // TODO: `as_expression` (`x as Foo`) is the conversion sibling
-        // of `is_pattern_expression` (which renames to Is). Either
-        // share the Is rename with a marker, or introduce a new As
-        // semantic. Same applies to `is_expression` (the older `obj
-        // is Foo` form before patterns).
+        // `as_expression` (`x as Foo`) and `is_expression` (`obj is
+        // Foo`) join `is_pattern_expression` under `<is>` — they're
+        // all type-test / type-conversion siblings the developer
+        // groups mentally as "is/as".
         CsKind::AsExpression
-        | CsKind::IsExpression => Custom(transformations::passthrough),
+        | CsKind::IsExpression => Rename(Is),
 
         // TODO: `cast_expression` (`(int)x`) and `default_expression`
         // (`default(T)`) are call-shaped operations. Could each get
@@ -248,18 +247,17 @@ pub fn rule(k: CsKind) -> Rule<CsName> {
         | CsKind::DefaultExpression
         | CsKind::ThrowExpression => Custom(transformations::passthrough),
 
-        // TODO: `element_access_expression` (`x[i]`) is the call-site
-        // counterpart of `indexer_declaration` → Indexer. Probably
-        // `Rename(Index)` (already used by `element_binding_expression`).
-        CsKind::ElementAccessExpression => Custom(transformations::passthrough),
+        // `element_access_expression` (`x[i]`) is the call-site
+        // counterpart of `indexer_declaration` → Indexer. Joins
+        // `element_binding_expression` under `<index>`.
+        CsKind::ElementAccessExpression => Rename(Index),
 
-        // TODO: `anonymous_method_expression` is functionally a lambda
-        // (older `delegate { … }` syntax). Likely `Rename(Lambda)`.
-        // `anonymous_object_creation_expression` (`new { X = 1 }`) is
-        // a literal/object-creation shape — could share `Rename(New)`
-        // with a marker.
-        CsKind::AnonymousMethodExpression
-        | CsKind::AnonymousObjectCreationExpression => Custom(transformations::passthrough),
+        // `anonymous_method_expression` is the older `delegate { … }`
+        // syntax — functionally a lambda. `anonymous_object_creation_expression`
+        // (`new { X = 1 }`) stays as bucket-B work (needs a marker
+        // alongside `Rename(New)`); see todo/36-rule-todo-followups.md.
+        CsKind::AnonymousMethodExpression           => Rename(Lambda),
+        CsKind::AnonymousObjectCreationExpression   => Custom(transformations::passthrough),
 
         // TODO: array creations are siblings of
         // `object_creation_expression` → New. Likely `Rename(New)`
@@ -288,13 +286,12 @@ pub fn rule(k: CsKind) -> Rule<CsName> {
         CsKind::WithExpression
         | CsKind::WithInitializer => Custom(transformations::passthrough),
 
-        // TODO: `event_declaration` is the property-shaped event form
-        // (with accessors); pairs with `event_field_declaration` which
-        // already renames to Event. Should also `Rename(Event)`.
-        // `conversion_operator_declaration` is a sibling of
-        // `operator_declaration` → Operator; likely the same.
-        CsKind::EventDeclaration
-        | CsKind::ConversionOperatorDeclaration => Custom(transformations::passthrough),
+        // `event_declaration` is the property-shaped event form
+        // (with accessors); pairs with `event_field_declaration`
+        // which also renames to Event. `conversion_operator_declaration`
+        // joins `operator_declaration` under `<operator>`.
+        CsKind::EventDeclaration               => Rename(Event),
+        CsKind::ConversionOperatorDeclaration  => Rename(Operator),
 
         // ---- Truly unhandled (preprocessor, lvalue/rvalue wrappers,
         //      C++/CLI ref types, raw structural supertypes, etc.) ---

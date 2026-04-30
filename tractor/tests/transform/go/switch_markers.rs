@@ -35,7 +35,7 @@ fn go() {
             //switch
                 [not(type)]
                 [value/name='x']
-                [expression_case/value/int='1']
+                [case/value/int='1']
         "#),
         1);
 }
