@@ -269,14 +269,14 @@ fn rust() {
         &multi_xpath(r#"
             //for
                 [name='item']
-                [value/name='items']
+                [value/expression/name='items']
                 [body]
         "#),
         1);
 
     claim("Rust while loop holds the condition under <condition>",
         &mut tree,
-        "//while[condition/name='running'][body]",
+        "//while[condition/expression/name='running'][body]",
         1);
 
     claim("Rust loop is unconditional and exposes only its body",

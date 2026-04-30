@@ -35,9 +35,9 @@ fn rust_binary() {
         &mut parse_src("rust", "fn f() { let x = 1 + 2; }"),
         &multi_xpath(r#"
             //binary
-                [left/int='1']
+                [left/expression/int='1']
                 [op[plus]]
-                [right/int='2']
+                [right/expression/int='2']
         "#),
         1);
 }

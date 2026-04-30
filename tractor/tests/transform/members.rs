@@ -127,7 +127,7 @@ fn rust_field_unification() {
         &multi_xpath(r#"
             //literal[name='Point']/body/field
                 [name='x']
-                [value/int='1']
+                [value/expression/int='1']
                 [not(type)]
         "#),
         1);
@@ -136,7 +136,7 @@ fn rust_field_unification() {
         &mut tree,
         &multi_xpath(r#"
             //field
-                [value/name='p']
+                [value/expression/name='p']
                 [name='x']
                 [not(type)]
         "#),

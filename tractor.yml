@@ -20,7 +20,7 @@ operations:
                 }
 
         - id: chain-fluent-xot-with
-          xpath: "//body/expression[.//field[value/name='xot' and starts-with(name,'with_')] and following-sibling::*[1][self::expression][.//field[value/name='xot' and starts-with(name,'with_')]]]"
+          xpath: "//body/expression[.//field[value//name='xot' and starts-with(name,'with_')] and following-sibling::*[1][self::expression][.//field[value//name='xot' and starts-with(name,'with_')]]]"
           reason: "consecutive xot.with_* calls — chain them instead"
           severity: error
           message: "xot.with_* call is followed by another xot.with_* statement; chain them as xot.with_a(...).with_b(...) instead of writing separate statements"

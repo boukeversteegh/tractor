@@ -32,7 +32,7 @@ fn rust_method_call() {
     "#),
         &multi_xpath(r#"
             //call/field
-                [value/name='v']
+                [value/expression/name='v']
                 [name='len']
         "#),
         1);
@@ -45,7 +45,7 @@ fn rust_method_call() {
     "#),
         &multi_xpath(r#"
             //call/field
-                [value/string]
+                [value/expression/string]
                 [name='to_string']
         "#),
         1);
@@ -58,7 +58,7 @@ fn rust_method_call() {
     "#),
         &multi_xpath(r#"
             //call/field
-                [value/name='s']
+                [value/expression/name='s']
                 [name='to_uppercase']
         "#),
         1);

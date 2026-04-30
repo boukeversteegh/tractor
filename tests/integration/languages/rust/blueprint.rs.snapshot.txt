@@ -56,7 +56,7 @@ file/
   │           │   ├─ pub[super]
   │           │   ├─ name
   │           │   ├─ type/name
-  │           │   └─ value/int
+  │           │   └─ value/expression/int
   │           └─ function/
   │               ├─ pub/in
   │               ├─ name
@@ -71,7 +71,7 @@ file/
   │   ├─ lifetime/name
   │   ├─ generic/name
   │   ├─ where/bound/
-  │   │   ├─ left/type/name
+  │   │   ├─ left/expression/type/name
   │   │   └─ bounds/
   │   │       ├─ type/name
   │   │       ├─ type/name
@@ -126,7 +126,7 @@ file/
   │           ├─ body/type[borrowed]/
   │           │   ├─ lifetime/name
   │           │   └─ type/name
-  │           └─ value/int
+  │           └─ value/expression/int
   ├─ trait[pub]/
   │   ├─ name
   │   ├─ bounds/type/name
@@ -135,7 +135,7 @@ file/
   │       ├─ const[private]/
   │       │   ├─ name
   │       │   ├─ type/name
-  │       │   └─ value/int
+  │       │   └─ value/expression/int
   │       ├─ signature/
   │       │   ├─ name
   │       │   ├─ self/self
@@ -171,7 +171,7 @@ file/
   │       │   ├─ type[borrowed]/
   │       │   │   ├─ lifetime/name
   │       │   │   └─ type/name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       ├─ function[pub]/
   │       │   ├─ name
   │       │   ├─ parameter/
@@ -198,7 +198,7 @@ file/
   │       │   ├─ self/self
   │       │   ├─ returns/type/name
   │       │   └─ body/call/field/
-  │       │       ├─ value/self
+  │       │       ├─ value/expression/self
   │       │       └─ name
   │       ├─ function[pub]/
   │       │   ├─ modifiers
@@ -213,7 +213,7 @@ file/
   │           │   └─ type[pointer]/type/name
   │           ├─ returns/type/name
   │           └─ body/call/field/
-  │               ├─ value/unary/
+  │               ├─ value/expression/unary/
   │               │   ├─ op[multiply]
   │               │   └─ name
   │               └─ name
@@ -226,7 +226,7 @@ file/
   │   │   ├─ lifetime/name
   │   │   └─ type/name
   │   ├─ where/bound/
-  │   │   ├─ left/type/name
+  │   │   ├─ left/expression/type/name
   │   │   └─ bounds/
   │   │       ├─ type/name
   │   │       ├─ type/name
@@ -268,15 +268,15 @@ file/
   ├─ const[pub]/
   │   ├─ name
   │   ├─ type/name
-  │   └─ value/float
+  │   └─ value/expression/float
   ├─ static[pub]/
   │   ├─ name
   │   ├─ type[borrowed]/type/name
-  │   └─ value/string
+  │   └─ value/expression/string
   ├─ static[private]/
   │   ├─ name
   │   ├─ type/name
-  │   └─ value/int
+  │   └─ value/expression/int
   ├─ function[private]/
   │   ├─ name
   │   ├─ returns/type[tuple]/
@@ -296,25 +296,25 @@ file/
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/string[raw]
+  │       │   └─ value/expression/string[raw]
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/string[raw]
+  │       │   └─ value/expression/string[raw]
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/string
+  │       │   └─ value/expression/string
   │       └─ let/
   │           ├─ name
-  │           └─ value/char
+  │           └─ value/expression/char
   ├─ function[private]/
   │   ├─ name
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/closure/
+  │       │   └─ value/expression/closure/
   │       │       ├─ name
   │       │       └─ body/name
   │       ├─ let/
@@ -323,23 +323,23 @@ file/
   │       │   │   ├─ type/name
   │       │   │   ├─ type/name
   │       │   │   └─ returns/type/name
-  │       │   └─ value/closure/
+  │       │   └─ value/expression/closure/
   │       │       ├─ name
   │       │       ├─ name
   │       │       └─ body/binary/
-  │       │           ├─ left/name
+  │       │           ├─ left/expression/name
   │       │           ├─ op[plus]
-  │       │           └─ right/name
+  │       │           └─ right/expression/name
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
   │       │       └─ string
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/closure/
+  │       │   └─ value/expression/closure/
   │       │       ├─ parameter/
   │       │       │   ├─ name
   │       │       │   └─ type/name
@@ -352,7 +352,7 @@ file/
   │       └─ let/
   │           ├─ name
   │           ├─ type[borrowed]/type/name
-  │           └─ value/ref/value/int
+  │           └─ value/expression/ref/value/expression/int
   ├─ function[pub]/
   │   ├─ name
   │   └─ body/
@@ -361,7 +361,7 @@ file/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name
   │       │   │   └─ type/name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
@@ -371,7 +371,7 @@ file/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name
   │       │   │   └─ type/name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
@@ -385,7 +385,7 @@ file/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name
   │       │   │   └─ type/name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
@@ -397,7 +397,7 @@ file/
   │       │   │   └─ type[generic]/
   │       │   │       ├─ name
   │       │   │       └─ type/name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
@@ -408,11 +408,11 @@ file/
   │       │           └─ int
   │       └─ let/
   │           ├─ name
-  │           └─ value/call/
+  │           └─ value/expression/call/
   │               ├─ field/
-  │               │   ├─ value/call/call[generic]/
+  │               │   ├─ value/expression/call/call[generic]/
   │               │   │   ├─ field/
-  │               │   │   │   ├─ value/string
+  │               │   │   │   ├─ value/expression/string
   │               │   │   │   └─ name
   │               │   │   └─ type/name
   │               │   └─ name
@@ -426,7 +426,7 @@ file/
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/call/
+  │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name
   │       │       │   └─ name
@@ -435,28 +435,28 @@ file/
   │       │       └─ string
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/literal/
+  │       │   └─ value/expression/literal/
   │       │       ├─ name
   │       │       └─ body/
   │       │           ├─ field/
   │       │           │   ├─ name
-  │       │           │   └─ value/int
+  │       │           │   └─ value/expression/int
   │       │           ├─ field/
   │       │           │   ├─ name
-  │       │           │   └─ value/int
+  │       │           │   └─ value/expression/int
   │       │           └─ field[base]/call/field/
-  │       │               ├─ value/name
+  │       │               ├─ value/expression/name
   │       │               └─ name
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/match/
-  │       │       ├─ value/name
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/name
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/path/
   │       │           │   │   ├─ name
   │       │           │   │   └─ name
-  │       │           │   └─ value/int
+  │       │           │   └─ value/expression/int
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[or]/
   │       │           │   │   ├─ path/
@@ -469,7 +469,7 @@ file/
   │       │           │   │   │   └─ name
   │       │           │   │   ├─ name
   │       │           │   │   └─ int
-  │       │           │   └─ value/name
+  │       │           │   └─ value/expression/name
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
@@ -477,14 +477,14 @@ file/
   │       │           │   │   │   └─ name
   │       │           │   │   ├─ name
   │       │           │   │   ├─ name
-  │       │           │   │   └─ condition/binary/
-  │       │           │   │       ├─ left/name
+  │       │           │   │   └─ condition/expression/binary/
+  │       │           │   │       ├─ left/expression/name
   │       │           │   │       ├─ op[equals]
-  │       │           │   │       └─ right/name
-  │       │           │   └─ value/binary/
-  │       │           │       ├─ left/name
+  │       │           │   │       └─ right/expression/name
+  │       │           │   └─ value/expression/binary/
+  │       │           │       ├─ left/expression/name
   │       │           │       ├─ op[plus]
-  │       │           │       └─ right/name
+  │       │           │       └─ right/expression/name
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ pattern[struct]/
@@ -493,15 +493,15 @@ file/
   │       │           │   │   │   │   └─ name
   │       │           │   │   │   ├─ pattern[field]/name
   │       │           │   │   │   └─ pattern[field]/name
-  │       │           │   │   └─ condition/binary/
-  │       │           │   │       ├─ left/name
+  │       │           │   │   └─ condition/expression/binary/
+  │       │           │   │       ├─ left/expression/name
   │       │           │   │       ├─ op/compare[greater]
-  │       │           │   │       └─ right/int
-  │       │           │   └─ value/cast/
-  │       │           │       ├─ value/binary/
-  │       │           │       │   ├─ left/name
+  │       │           │   │       └─ right/expression/int
+  │       │           │   └─ value/expression/cast/
+  │       │           │       ├─ value/expression/binary/
+  │       │           │       │   ├─ left/expression/name
   │       │           │       │   ├─ op[multiply]
-  │       │           │       │   └─ right/name
+  │       │           │       │   └─ right/expression/name
   │       │           │       └─ type/name
   │       │           ├─ arm/
   │       │           │   ├─ pattern/
@@ -509,46 +509,46 @@ file/
   │       │           │   │   │   ├─ name
   │       │           │   │   │   └─ name
   │       │           │   │   └─ pattern[ref]/name
-  │       │           │   └─ value/cast/
-  │       │           │       ├─ value/call/field/
-  │       │           │       │   ├─ value/name
+  │       │           │   └─ value/expression/cast/
+  │       │           │       ├─ value/expression/call/field/
+  │       │           │       │   ├─ value/expression/name
   │       │           │       │   └─ name
   │       │           │       └─ type/name
   │       │           └─ arm/
   │       │               ├─ pattern
-  │       │               └─ value/unary/
+  │       │               └─ value/expression/unary/
   │       │                   ├─ op[minus]
   │       │                   └─ int
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/match/
-  │       │       ├─ value/int
+  │       │   └─ value/expression/match/
+  │       │       ├─ value/expression/int
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/int
-  │       │           │   │   └─ right/int
-  │       │           │   └─ value/string
+  │       │           │   │   ├─ left/expression/int
+  │       │           │   │   └─ right/expression/int
+  │       │           │   └─ value/expression/string
   │       │           ├─ arm/
   │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/int
-  │       │           │   │   └─ right/int
-  │       │           │   └─ value/string
+  │       │           │   │   ├─ left/expression/int
+  │       │           │   │   └─ right/expression/int
+  │       │           │   └─ value/expression/string
   │       │           └─ arm/
   │       │               ├─ pattern
-  │       │               └─ value/string
+  │       │               └─ value/expression/string
   │       ├─ if/
   │       │   ├─ condition/
+  │       │   │   ├─ expression/name
   │       │   │   ├─ name
-  │       │   │   ├─ name
-  │       │   │   └─ value/call/
+  │       │   │   └─ value/expression/call/
   │       │   │       ├─ name
   │       │   │       └─ int
-  │       │   └─ then/let/value/name
+  │       │   └─ then/let/value/expression/name
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/call/field/
-  │       │       ├─ value/macro/
+  │       │   └─ value/expression/call/field/
+  │       │       ├─ value/expression/macro/
   │       │       │   ├─ name
   │       │       │   ├─ int
   │       │       │   ├─ int
@@ -556,19 +556,19 @@ file/
   │       │       └─ name
   │       ├─ while/
   │       │   ├─ condition/
+  │       │   │   ├─ expression/name
   │       │   │   ├─ name
-  │       │   │   ├─ name
-  │       │   │   └─ value/call/field/
-  │       │   │       ├─ value/name
+  │       │   │   └─ value/expression/call/field/
+  │       │   │       ├─ value/expression/name
   │       │   │       └─ name
   │       │   └─ body/
   │       │       ├─ let/
   │       │       │   ├─ name
-  │       │       │   └─ value/name
+  │       │       │   └─ value/expression/name
   │       │       └─ let/
   │       │           ├─ name
-  │       │           └─ value/cast/
-  │       │               ├─ value/name
+  │       │           └─ value/expression/cast/
+  │       │               ├─ value/expression/name
   │       │               └─ type/name
   │       └─ name
   ├─ function[pub]/
@@ -578,37 +578,37 @@ file/
   │       ├─ for/
   │       │   ├─ label/name
   │       │   ├─ name
-  │       │   ├─ value/range/
+  │       │   ├─ value/expression/range/
   │       │   │   ├─ int
   │       │   │   └─ int
   │       │   └─ body/for/
   │       │       ├─ name
-  │       │       ├─ value/range/
+  │       │       ├─ value/expression/range/
   │       │       │   ├─ int
   │       │       │   └─ int
   │       │       └─ body/if/
-  │       │           ├─ condition/binary/
-  │       │           │   ├─ left/binary/
-  │       │           │   │   ├─ left/name
+  │       │           ├─ condition/expression/binary/
+  │       │           │   ├─ left/expression/binary/
+  │       │           │   │   ├─ left/expression/name
   │       │           │   │   ├─ op[multiply]
-  │       │           │   │   └─ right/name
+  │       │           │   │   └─ right/expression/name
   │       │           │   ├─ op/compare[greater]
-  │       │           │   └─ right/int
+  │       │           │   └─ right/expression/int
   │       │           └─ then/break/label/name
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/int
+  │       │   └─ value/expression/int
   │       ├─ while/
-  │       │   ├─ condition/binary/
-  │       │   │   ├─ left/name
+  │       │   ├─ condition/expression/binary/
+  │       │   │   ├─ left/expression/name
   │       │   │   ├─ op/compare[less]
-  │       │   │   └─ right/int
+  │       │   │   └─ right/expression/int
   │       │   └─ body/expression/assign/
-  │       │       ├─ left/name
-  │       │       └─ right/int
+  │       │       ├─ left/expression/name
+  │       │       └─ right/expression/int
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/loop/body/break/int
+  │       │   └─ value/expression/loop/body/break/int
   │       └─ name
   ├─ function[pub]/
   │   ├─ name
@@ -625,13 +625,13 @@ file/
   │       │   ├─ name
   │       │   ├─ type/name
   │       │   └─ value/expression[try]/call/field/
-  │       │       ├─ value/string
+  │       │       ├─ value/expression/string
   │       │       └─ name
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/cast/
-  │       │       ├─ value/cast/
-  │       │       │   ├─ value/name
+  │       │   └─ value/expression/cast/
+  │       │       ├─ value/expression/cast/
+  │       │       │   ├─ value/expression/name
   │       │       │   └─ type/name
   │       │       └─ type/name
   │       └─ call/
@@ -671,29 +671,29 @@ file/
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/block[async]/binary/
-  │       │       ├─ left/int
+  │       │   └─ value/expression/block[async]/binary/
+  │       │       ├─ left/expression/int
   │       │       ├─ op[plus]
-  │       │       └─ right/int
+  │       │       └─ right/expression/int
   │       └─ expression[await]/name
   ├─ function[pub]/
   │   ├─ name
   │   └─ body/
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/int
+  │       │   └─ value/expression/int
   │       ├─ let/
   │       │   ├─ name
-  │       │   └─ value/cast/
-  │       │       ├─ value/ref/value/name
+  │       │   └─ value/expression/cast/
+  │       │       ├─ value/expression/ref/value/expression/name
   │       │       └─ type[pointer]/type/name
   │       └─ unsafe/
-  │           ├─ let/value/unary/
+  │           ├─ let/value/expression/unary/
   │           │   ├─ op[multiply]
   │           │   └─ name
   │           └─ expression/assign/
-  │               ├─ left/name
-  │               └─ right/int
+  │               ├─ left/expression/name
+  │               └─ right/expression/int
   └─ function[private]/
       ├─ name
       └─ body/
@@ -703,12 +703,12 @@ file/
           │   └─ name
           ├─ let/
           │   ├─ name
-          │   └─ value/macro/
+          │   └─ value/expression/macro/
           │       ├─ name
           │       ├─ int
           │       ├─ int
           │       └─ int
-          ├─ let/value/call/
+          ├─ let/value/expression/call/
           │   ├─ name
           │   └─ call/
           │       ├─ path/
@@ -716,4 +716,4 @@ file/
           │       │   └─ name
           │       ├─ int
           │       └─ int
-          └─ let/value/call/name
+          └─ let/value/expression/call/name

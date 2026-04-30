@@ -23,10 +23,10 @@ fn rust() {
                 [body
                     [field
                         [name='x']
-                        [value/int='1']]
+                        [value/expression/int='1']]
                     [field
                         [name='y']
-                        [value/int='2']]
+                        [value/expression/int='2']]
                     [not(field[base])]]
                 [not(type)]
         "#),
@@ -46,7 +46,7 @@ fn rust() {
                 [body
                     [field
                         [name='x']
-                        [value/int='0']]
+                        [value/expression/int='0']]
                     [field
                         [base]
                         [name='p']]]

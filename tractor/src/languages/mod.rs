@@ -150,7 +150,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["rust", "rs"],
         transform: rust_lang::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(rust_post_transform),
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
         node_spec: Some(rust_lang::output::spec),
@@ -438,6 +438,25 @@ fn append_constraint_to_generic(
             xot.append(generic, marker)?;
         }
     }
+    Ok(())
+}
+
+/// Rust post-transform: collapse conditionals + wrap expression positions
+/// in `<expression>` hosts (Principle #15).
+///
+/// The expression-position pass runs after `collapse_conditionals` so the
+/// `then`/`else` slots produced by the conditional collapse get hosts too.
+fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        // Slot wrappers that contain a single expression operand.
+        // `then`/`else` are block bodies (statement sequences) and
+        // must not be wrapped — their children carry their own
+        // statement-level hosts via `expression_statement`.
+        &["value", "condition", "left", "right"],
+    )?;
     Ok(())
 }
 

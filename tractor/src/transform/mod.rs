@@ -161,6 +161,71 @@ fn collect_wrap_targets(
     }
 }
 
+/// Wrap the first element child of every "expression position" slot
+/// in an `<expression>` host (Principle #15: stable expression hosts).
+///
+/// `slot_names` lists the wrapper element names that mark expression
+/// positions for the language — typically `value`, `condition`,
+/// `left`, `right`, etc. (whichever fields the language's field-wrap
+/// table produced).
+///
+/// Idempotent: if the slot's child is already an `<expression>`, no
+/// double-wrap. Synthesized hosts carry no source location (they're
+/// position markers, not source tokens).
+pub fn wrap_expression_positions(
+    xot: &mut Xot,
+    root: XotNode,
+    slot_names: &[&str],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    if slot_names.is_empty() {
+        return Ok(());
+    }
+    let root = find_content_root(xot, root);
+
+    let mut targets: Vec<XotNode> = Vec::new();
+    collect_expression_position_targets(xot, root, slot_names, &mut targets);
+
+    for child in targets {
+        let host_id = xot.add_name("expression");
+        let host = xot.new_element(host_id);
+        xot.with_wrap_child(child, host)?;
+    }
+    Ok(())
+}
+
+fn collect_expression_position_targets(
+    xot: &Xot,
+    node: XotNode,
+    slot_names: &[&str],
+    out: &mut Vec<XotNode>,
+) {
+    use helpers::*;
+    if xot.element(node).is_none() {
+        return;
+    }
+    let element_name = get_element_name(xot, node);
+    let is_slot = element_name
+        .as_deref()
+        .map_or(false, |n| slot_names.contains(&n));
+    if is_slot {
+        if let Some(child) = xot
+            .children(node)
+            .find(|&c| xot.element(c).is_some())
+        {
+            // Skip if the slot's first element child is already an
+            // <expression> host — idempotent under repeat application.
+            let child_name = get_element_name(xot, child);
+            if child_name.as_deref() != Some("expression") {
+                out.push(child);
+            }
+        }
+    }
+    for child in xot.children(node) {
+        collect_expression_position_targets(xot, child, slot_names, out);
+    }
+}
+
 /// Recursively walk and transform a node
 fn walk_node<F>(xot: &mut Xot, node: XotNode, transform_fn: &mut F) -> Result<(), xot::Error>
 where

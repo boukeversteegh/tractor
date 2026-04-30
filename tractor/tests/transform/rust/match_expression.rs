@@ -20,7 +20,7 @@ fn rust() {
     "#),
         &multi_xpath(r#"
             //match
-                [value/name='n']
+                [value/expression/name='n']
                 [body
                     [count(arm)=4]
                     [arm
