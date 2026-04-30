@@ -62,6 +62,12 @@ pub enum Rule {
         to: &'static str,
         default_access: fn(&Xot, XotNode) -> Option<&'static str>,
     },
+    /// Detach the node entirely (children gone with it) and stop
+    /// recursion. Distinct from `Flatten` (children promoted) and
+    /// `Skip` (children promoted before recursion). Used for
+    /// purely-syntactic leaves the source text already carries
+    /// — e.g. tsql's hundreds of `keyword_*` reserved words.
+    Detach,
     /// Run the given handler. The function owns the renaming, child
     /// reshaping, and `TransformAction` choice.
     Custom(fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>),
@@ -101,6 +107,10 @@ pub fn dispatch(
             }
             rename(xot, node, to);
             Ok(TransformAction::Continue)
+        }
+        Rule::Detach => {
+            xot.detach(node)?;
+            Ok(TransformAction::Done)
         }
         Rule::Custom(f) => f(xot, node),
     }
