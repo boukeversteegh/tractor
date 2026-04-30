@@ -15,7 +15,7 @@ use super::input::TsKind;
 use super::output::*;
 use super::transformations;
 
-pub fn rule(k: TsKind) -> Rule {
+pub fn rule(k: TsKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

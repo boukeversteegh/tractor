@@ -24,14 +24,14 @@ use super::transformations;
 /// Shorthand for the `default-access-then-rename` shape used by the 2
 /// PHP declaration kinds (method, property) where members default to
 /// public when no visibility modifier is written.
-fn da(to: &'static str) -> Rule {
+fn da(to: &'static str) -> Rule<&'static str> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: PhpKind) -> Rule {
+pub fn rule(k: PhpKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

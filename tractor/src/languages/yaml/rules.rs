@@ -12,7 +12,7 @@ use super::transformations::*;
 /// Syntax-branch rule. Produces the JSON-shared
 /// `<object>/<array>/<property>/<string>/<number>/<bool>/<null>`
 /// vocabulary.
-pub fn syntax_rule(kind: YamlKind) -> Rule {
+pub fn syntax_rule(kind: YamlKind) -> Rule<&'static str> {
     match kind {
         // Top-level wrappers
         YamlKind::Stream             => Rule::Custom(strip_punct_flatten),
@@ -68,7 +68,7 @@ pub fn syntax_rule(kind: YamlKind) -> Rule {
 
 /// Data-branch rule. Projects mapping keys into element names; scalars
 /// flatten so their text bubbles up to the renamed parent.
-pub fn data_rule(kind: YamlKind) -> Rule {
+pub fn data_rule(kind: YamlKind) -> Rule<&'static str> {
     match kind {
         // Pairs / items
         YamlKind::BlockMappingPair   => Rule::Custom(data_pair),

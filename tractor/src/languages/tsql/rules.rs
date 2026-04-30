@@ -18,7 +18,7 @@ use super::output::*;
 use super::transformations;
 
 #[allow(clippy::too_many_lines)]
-pub fn rule(k: TsqlKind) -> Rule {
+pub fn rule(k: TsqlKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

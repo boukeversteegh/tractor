@@ -16,14 +16,14 @@ use super::transformations;
 /// Rust declaration kinds (function / struct / enum / trait / const /
 /// static / type / mod). Bakes in Rust's resolver — default access is
 /// always `private` (no `pub` modifier means item-private).
-fn da(to: &'static str) -> Rule {
+fn da(to: &'static str) -> Rule<&'static str> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: RustKind) -> Rule {
+pub fn rule(k: RustKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

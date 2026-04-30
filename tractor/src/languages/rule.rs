@@ -1,10 +1,10 @@
 //! Per-kind transformation rule: declarative table that drives a
 //! language's dispatcher.
 //!
-//! Each language declares a `rule(<Lang>Kind) -> Rule` exhaustive
-//! match. The compiler enforces coverage of every grammar kind; the
-//! shared [`dispatch`] helper executes whichever variant the rule
-//! produced.
+//! Each language declares a `rule(<Lang>Kind) -> Rule<<Lang>Name>`
+//! exhaustive match. The compiler enforces coverage of every grammar
+//! kind; the shared [`dispatch`] helper executes whichever variant the
+//! rule produced.
 //!
 //! Variants split into two roles:
 //!   - **Pure data** (`Rename`, `RenameWithMarker`, `Flatten`): the
@@ -19,6 +19,12 @@
 //!
 //! New shared variants are added when a *second* language wants the
 //! same composition — no speculative variants.
+//!
+//! `N` is the language's output-name enum (e.g. `CsName`) — typically
+//! a `Copy` enum that converts to `&'static str` via strum's
+//! `IntoStaticStr`. Carrying `N` instead of `&'static str` makes typos
+//! a compile error and lets call sites write `Type` (with
+//! `use CsName::*`) instead of stringy constants.
 
 use xot::{Xot, Node as XotNode};
 
@@ -30,12 +36,12 @@ use crate::transform::operators::extract_operator;
 
 /// What to do with a tree-sitter node identified by its `Kind` enum.
 #[derive(Clone, Copy)]
-pub enum Rule {
+pub enum Rule<N> {
     /// Rename the node to `to`. No marker, no structural change.
-    Rename(&'static str),
+    Rename(N),
     /// Rename to `to` and prepend an empty `marker` element as the
     /// first child.
-    RenameWithMarker(&'static str, &'static str),
+    RenameWithMarker(N, N),
     /// Drop the wrapper, promote children to siblings. If
     /// `distribute_field` is `Some`, set `field=<name>` on every child
     /// before flattening (so the children are still grouped under a
@@ -47,7 +53,7 @@ pub enum Rule {
     /// child via [`extract_operator`], then rename the node to `to`.
     /// Used by binary / unary / assignment expressions across several
     /// languages.
-    ExtractOpThenRename(&'static str),
+    ExtractOpThenRename(N),
     /// If the node lacks an explicit access modifier (per the language-
     /// specific `default_access` resolver), prepend a default-access
     /// marker. Then rename to `to`. Used for declaration kinds (class,
@@ -59,7 +65,7 @@ pub enum Rule {
     ///     and should get the given default marker
     ///   - `None` if the node already has an access modifier
     DefaultAccessThenRename {
-        to: &'static str,
+        to: N,
         default_access: fn(&Xot, XotNode) -> Option<&'static str>,
     },
     /// Detach the node entirely (children gone with it) and stop
@@ -75,19 +81,22 @@ pub enum Rule {
 
 /// Execute a [`Rule`] on a node. Shared dispatcher used by every
 /// language that opts into the rule-driven shape.
-pub fn dispatch(
+pub fn dispatch<N>(
     xot: &mut Xot,
     node: XotNode,
-    rule: Rule,
-) -> Result<TransformAction, xot::Error> {
+    rule: Rule<N>,
+) -> Result<TransformAction, xot::Error>
+where
+    N: Copy + Into<&'static str>,
+{
     match rule {
         Rule::Rename(to) => {
-            rename(xot, node, to);
+            rename(xot, node, to.into());
             Ok(TransformAction::Continue)
         }
         Rule::RenameWithMarker(to, marker) => {
-            rename(xot, node, to);
-            prepend_empty_element(xot, node, marker)?;
+            rename(xot, node, to.into());
+            prepend_empty_element(xot, node, marker.into())?;
             Ok(TransformAction::Continue)
         }
         Rule::Flatten { distribute_field } => {
@@ -98,14 +107,14 @@ pub fn dispatch(
         }
         Rule::ExtractOpThenRename(to) => {
             extract_operator(xot, node)?;
-            rename(xot, node, to);
+            rename(xot, node, to.into());
             Ok(TransformAction::Continue)
         }
         Rule::DefaultAccessThenRename { to, default_access } => {
             if let Some(marker) = default_access(xot, node) {
                 prepend_empty_element(xot, node, marker)?;
             }
-            rename(xot, node, to);
+            rename(xot, node, to.into());
             Ok(TransformAction::Continue)
         }
         Rule::Detach => {

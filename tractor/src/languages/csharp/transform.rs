@@ -13,7 +13,11 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::input::CsKind;
-use super::output::*;
+use super::output::{self, CsName};
+use CsName::{
+    Abstract, Async, Const, Extern, Internal, New, Override, Partial, Private, Protected, Public,
+    Readonly, Sealed, Static, Unsafe, Virtual,
+};
 
 /// Transform a C# AST node.
 ///
@@ -51,17 +55,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
 /// C# access modifiers in canonical declaration order. Public so that
 /// `transformations.rs` and the renderer can share the list.
-pub const ACCESS_MODIFIERS: &[&str] = &[PUBLIC, PRIVATE, PROTECTED, INTERNAL];
+pub const ACCESS_MODIFIERS: &[CsName] = &[Public, Private, Protected, Internal];
 
 /// C# non-access modifiers in canonical declaration order.
-pub const OTHER_MODIFIERS: &[&str] = &[
-    STATIC, ABSTRACT, VIRTUAL, OVERRIDE, SEALED,
-    READONLY, CONST, PARTIAL, ASYNC, EXTERN, UNSAFE, NEW,
+pub const OTHER_MODIFIERS: &[CsName] = &[
+    Static, Abstract, Virtual, Override, Sealed,
+    Readonly, Const, Partial, Async, Extern, Unsafe, New,
 ];
 
 /// Map a transformed element name to a syntax category for highlighting.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    super::output::spec(element)
+    output::spec(element)
         .map(|spec| spec.syntax)
         .unwrap_or(SyntaxCategory::Default)
 }

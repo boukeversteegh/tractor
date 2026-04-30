@@ -21,7 +21,7 @@ use super::input::GoKind;
 use super::output::*;
 use super::transformations;
 
-pub fn rule(k: GoKind) -> Rule {
+pub fn rule(k: GoKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

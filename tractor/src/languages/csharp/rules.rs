@@ -1,9 +1,10 @@
-//! Per-kind transformation rules for C#: the `CsKind` → `Rule` table.
+//! Per-kind transformation rules for C#: the `CsKind` → `Rule<CsName>`
+//! table.
 //!
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::output`] for
-//! the output vocabulary (semantic names + NodeSpec metadata).
+//! the output vocabulary (`CsName` enum + per-name metadata).
 //!
 //! Exhaustive over `CsKind` — the compiler enforces coverage. When
 //! the grammar ships a new kind, regenerating `input.rs` adds a
@@ -18,42 +19,42 @@
 use crate::languages::rule::Rule;
 
 use super::input::CsKind;
-use super::output::*;
+use super::output::CsName::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by all 9
 /// C# declaration kinds. Bakes in C#'s default-access resolver so the
 /// rule arms read as data.
-fn da(to: &'static str) -> Rule {
+fn da(to: CsName) -> Rule<CsName> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: CsKind) -> Rule {
+pub fn rule(k: CsKind) -> Rule<CsName> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
-        CsKind::BinaryExpression     => ExtractOpThenRename(BINARY),
-        CsKind::UnaryExpression      => ExtractOpThenRename(UNARY),
-        CsKind::AssignmentExpression => ExtractOpThenRename(ASSIGN),
+        CsKind::BinaryExpression     => ExtractOpThenRename(Binary),
+        CsKind::UnaryExpression      => ExtractOpThenRename(Unary),
+        CsKind::AssignmentExpression => ExtractOpThenRename(Assign),
 
         // ---- RenameWithMarker ------------------------------------------
-        CsKind::ArrayType                   => RenameWithMarker(TYPE, ARRAY),
-        CsKind::ConditionalAccessExpression => RenameWithMarker(MEMBER, CONDITIONAL),
-        CsKind::ConstantPattern             => RenameWithMarker(PATTERN, CONSTANT),
-        CsKind::DeclarationPattern          => RenameWithMarker(PATTERN, DECLARATION),
-        CsKind::FunctionPointerType         => RenameWithMarker(TYPE, FUNCTION),
-        CsKind::MemberAccessExpression      => RenameWithMarker(MEMBER, INSTANCE),
-        CsKind::MemberBindingExpression     => RenameWithMarker(MEMBER, CONDITIONAL),
-        CsKind::PointerType                 => RenameWithMarker(TYPE, POINTER),
-        CsKind::PrefixUnaryExpression       => RenameWithMarker(UNARY, PREFIX),
-        CsKind::RecursivePattern            => RenameWithMarker(PATTERN, RECURSIVE),
-        CsKind::RefType                     => RenameWithMarker(TYPE, REF),
-        CsKind::RelationalPattern           => RenameWithMarker(PATTERN, RELATIONAL),
-        CsKind::TuplePattern                => RenameWithMarker(PATTERN, TUPLE),
-        CsKind::TupleType                   => RenameWithMarker(TYPE, TUPLE),
+        CsKind::ArrayType                   => RenameWithMarker(Type, Array),
+        CsKind::ConditionalAccessExpression => RenameWithMarker(Member, Conditional),
+        CsKind::ConstantPattern             => RenameWithMarker(Pattern, Constant),
+        CsKind::DeclarationPattern          => RenameWithMarker(Pattern, Declaration),
+        CsKind::FunctionPointerType         => RenameWithMarker(Type, Function),
+        CsKind::MemberAccessExpression      => RenameWithMarker(Member, Instance),
+        CsKind::MemberBindingExpression     => RenameWithMarker(Member, Conditional),
+        CsKind::PointerType                 => RenameWithMarker(Type, Pointer),
+        CsKind::PrefixUnaryExpression       => RenameWithMarker(Unary, Prefix),
+        CsKind::RecursivePattern            => RenameWithMarker(Pattern, Recursive),
+        CsKind::RefType                     => RenameWithMarker(Type, Ref),
+        CsKind::RelationalPattern           => RenameWithMarker(Pattern, Relational),
+        CsKind::TuplePattern                => RenameWithMarker(Pattern, Tuple),
+        CsKind::TupleType                   => RenameWithMarker(Type, Tuple),
 
         // ---- Flatten with field distribution ---------------------------
         CsKind::AccessorList          => Flatten { distribute_field: Some("accessors") },
@@ -83,15 +84,15 @@ pub fn rule(k: CsKind) -> Rule {
 
         // ---- DefaultAccessThenRename — declarations with implicit
         //      access modifier (see `transformations::default_access_for_declaration`).
-        CsKind::ClassDeclaration       => da(CLASS),
-        CsKind::ConstructorDeclaration => da(CONSTRUCTOR),
-        CsKind::EnumDeclaration        => da(ENUM),
-        CsKind::FieldDeclaration       => da(FIELD),
-        CsKind::InterfaceDeclaration   => da(INTERFACE),
-        CsKind::MethodDeclaration      => da(METHOD),
-        CsKind::PropertyDeclaration    => da(PROPERTY),
-        CsKind::RecordDeclaration      => da(RECORD),
-        CsKind::StructDeclaration      => da(STRUCT),
+        CsKind::ClassDeclaration       => da(Class),
+        CsKind::ConstructorDeclaration => da(Constructor),
+        CsKind::EnumDeclaration        => da(Enum),
+        CsKind::FieldDeclaration       => da(Field),
+        CsKind::InterfaceDeclaration   => da(Interface),
+        CsKind::MethodDeclaration      => da(Method),
+        CsKind::PropertyDeclaration    => da(Property),
+        CsKind::RecordDeclaration      => da(Record),
+        CsKind::StructDeclaration      => da(Struct),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         CsKind::AccessorDeclaration           => Custom(transformations::accessor_declaration),
@@ -117,75 +118,75 @@ pub fn rule(k: CsKind) -> Rule {
         CsKind::TypeParameterConstraintsClause   => Custom(transformations::passthrough),
 
         // ---- Pure Rename -----------------------------------------------
-        CsKind::Argument                       => Rename(ARGUMENT),
-        CsKind::Attribute                      => Rename(ATTRIBUTE),
-        CsKind::AttributeArgument              => Rename(ARGUMENT),
-        CsKind::AwaitExpression                => Rename(AWAIT),
-        CsKind::BaseList                       => Rename(EXTENDS),
-        CsKind::Block                          => Rename(BLOCK),
-        CsKind::BooleanLiteral                 => Rename(BOOL),
-        CsKind::BreakStatement                 => Rename(BREAK),
-        CsKind::CatchClause                    => Rename(CATCH),
-        CsKind::CatchDeclaration               => Rename(DECLARATION),
-        CsKind::CatchFilterClause              => Rename(FILTER),
-        CsKind::CompilationUnit                => Rename(UNIT),
-        CsKind::ConstructorInitializer         => Rename(CHAIN),
-        CsKind::ContinueStatement              => Rename(CONTINUE),
-        CsKind::DelegateDeclaration            => Rename(DELEGATE),
-        CsKind::DestructorDeclaration          => Rename(DESTRUCTOR),
-        CsKind::DoStatement                    => Rename(DO),
-        CsKind::ElementBindingExpression       => Rename(INDEX),
-        CsKind::EnumMemberDeclaration          => Rename(CONSTANT),
-        CsKind::EventFieldDeclaration          => Rename(EVENT),
-        CsKind::ExpressionStatement            => Rename(EXPRESSION),
-        CsKind::FileScopedNamespaceDeclaration => Rename(NAMESPACE),
-        CsKind::FinallyClause                  => Rename(FINALLY),
-        CsKind::ForStatement                   => Rename(FOR),
-        CsKind::ForeachStatement               => Rename(FOREACH),
-        CsKind::FromClause                     => Rename(FROM),
-        CsKind::GroupClause                    => Rename(GROUP),
-        CsKind::ImplicitObjectCreationExpression => Rename(NEW),
-        CsKind::ImplicitParameter              => Rename(PARAMETER),
-        CsKind::IndexerDeclaration             => Rename(INDEXER),
-        CsKind::InitializerExpression          => Rename(LITERAL),
-        CsKind::IntegerLiteral                 => Rename(INT),
-        CsKind::InvocationExpression           => Rename(CALL),
-        CsKind::IsPatternExpression            => Rename(IS),
-        CsKind::JoinClause                     => Rename(JOIN),
-        CsKind::LambdaExpression               => Rename(LAMBDA),
-        CsKind::LetClause                      => Rename(LET),
-        CsKind::LocalFunctionStatement         => Rename(METHOD),
-        CsKind::NamespaceDeclaration           => Rename(NAMESPACE),
-        CsKind::NullLiteral                    => Rename(NULL),
-        CsKind::ObjectCreationExpression       => Rename(NEW),
-        CsKind::OperatorDeclaration            => Rename(OPERATOR),
-        CsKind::OrderByClause                  => Rename(ORDER),
-        CsKind::Parameter                      => Rename(PARAMETER),
-        CsKind::PropertyPatternClause          => Rename(PROPERTIES),
-        CsKind::QueryExpression                => Rename(QUERY),
-        CsKind::RangeExpression                => Rename(RANGE),
-        CsKind::RawStringLiteral               => Rename(STRING),
-        CsKind::RealLiteral                    => Rename(FLOAT),
-        CsKind::ReturnStatement                => Rename(RETURN),
-        CsKind::SelectClause                   => Rename(SELECT),
-        CsKind::StringLiteral                  => Rename(STRING),
-        CsKind::SwitchBody                     => Rename(BODY),
-        CsKind::SwitchExpression               => Rename(SWITCH),
-        CsKind::SwitchExpressionArm            => Rename(ARM),
-        CsKind::SwitchSection                  => Rename(SECTION),
-        CsKind::SwitchStatement                => Rename(SWITCH),
-        CsKind::ThrowStatement                 => Rename(THROW),
-        CsKind::TryStatement                   => Rename(TRY),
-        CsKind::TupleElement                   => Rename(ELEMENT),
-        CsKind::TupleExpression                => Rename(TUPLE),
-        CsKind::TypeParameter                  => Rename(GENERIC),
-        CsKind::UsingDirective                 => Rename(IMPORT),
-        CsKind::UsingStatement                 => Rename(USING),
-        CsKind::VariableDeclarator             => Rename(DECLARATOR),
-        CsKind::VerbatimStringLiteral          => Rename(STRING),
-        CsKind::WhenClause                     => Rename(WHEN),
-        CsKind::WhereClause                    => Rename(WHERE),
-        CsKind::WhileStatement                 => Rename(WHILE),
+        CsKind::Argument                       => Rename(Argument),
+        CsKind::Attribute                      => Rename(Attribute),
+        CsKind::AttributeArgument              => Rename(Argument),
+        CsKind::AwaitExpression                => Rename(Await),
+        CsKind::BaseList                       => Rename(Extends),
+        CsKind::Block                          => Rename(Block),
+        CsKind::BooleanLiteral                 => Rename(Bool),
+        CsKind::BreakStatement                 => Rename(Break),
+        CsKind::CatchClause                    => Rename(Catch),
+        CsKind::CatchDeclaration               => Rename(Declaration),
+        CsKind::CatchFilterClause              => Rename(Filter),
+        CsKind::CompilationUnit                => Rename(Unit),
+        CsKind::ConstructorInitializer         => Rename(Chain),
+        CsKind::ContinueStatement              => Rename(Continue),
+        CsKind::DelegateDeclaration            => Rename(Delegate),
+        CsKind::DestructorDeclaration          => Rename(Destructor),
+        CsKind::DoStatement                    => Rename(Do),
+        CsKind::ElementBindingExpression       => Rename(Index),
+        CsKind::EnumMemberDeclaration          => Rename(Constant),
+        CsKind::EventFieldDeclaration          => Rename(Event),
+        CsKind::ExpressionStatement            => Rename(Expression),
+        CsKind::FileScopedNamespaceDeclaration => Rename(Namespace),
+        CsKind::FinallyClause                  => Rename(Finally),
+        CsKind::ForStatement                   => Rename(For),
+        CsKind::ForeachStatement               => Rename(Foreach),
+        CsKind::FromClause                     => Rename(From),
+        CsKind::GroupClause                    => Rename(Group),
+        CsKind::ImplicitObjectCreationExpression => Rename(New),
+        CsKind::ImplicitParameter              => Rename(Parameter),
+        CsKind::IndexerDeclaration             => Rename(Indexer),
+        CsKind::InitializerExpression          => Rename(Literal),
+        CsKind::IntegerLiteral                 => Rename(Int),
+        CsKind::InvocationExpression           => Rename(Call),
+        CsKind::IsPatternExpression            => Rename(Is),
+        CsKind::JoinClause                     => Rename(Join),
+        CsKind::LambdaExpression               => Rename(Lambda),
+        CsKind::LetClause                      => Rename(Let),
+        CsKind::LocalFunctionStatement         => Rename(Method),
+        CsKind::NamespaceDeclaration           => Rename(Namespace),
+        CsKind::NullLiteral                    => Rename(Null),
+        CsKind::ObjectCreationExpression       => Rename(New),
+        CsKind::OperatorDeclaration            => Rename(Operator),
+        CsKind::OrderByClause                  => Rename(Order),
+        CsKind::Parameter                      => Rename(Parameter),
+        CsKind::PropertyPatternClause          => Rename(Properties),
+        CsKind::QueryExpression                => Rename(Query),
+        CsKind::RangeExpression                => Rename(Range),
+        CsKind::RawStringLiteral               => Rename(String),
+        CsKind::RealLiteral                    => Rename(Float),
+        CsKind::ReturnStatement                => Rename(Return),
+        CsKind::SelectClause                   => Rename(Select),
+        CsKind::StringLiteral                  => Rename(String),
+        CsKind::SwitchBody                     => Rename(Body),
+        CsKind::SwitchExpression               => Rename(Switch),
+        CsKind::SwitchExpressionArm            => Rename(Arm),
+        CsKind::SwitchSection                  => Rename(Section),
+        CsKind::SwitchStatement                => Rename(Switch),
+        CsKind::ThrowStatement                 => Rename(Throw),
+        CsKind::TryStatement                   => Rename(Try),
+        CsKind::TupleElement                   => Rename(Element),
+        CsKind::TupleExpression                => Rename(Tuple),
+        CsKind::TypeParameter                  => Rename(Generic),
+        CsKind::UsingDirective                 => Rename(Import),
+        CsKind::UsingStatement                 => Rename(Using),
+        CsKind::VariableDeclarator             => Rename(Declarator),
+        CsKind::VerbatimStringLiteral          => Rename(String),
+        CsKind::WhenClause                     => Rename(When),
+        CsKind::WhereClause                    => Rename(Where),
+        CsKind::WhileStatement                 => Rename(While),
 
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and the dispatcher leaves it as
@@ -208,16 +209,16 @@ pub fn rule(k: CsKind) -> Rule {
         // TODO: pattern combinators sit alongside pattern variants
         // already in the rule table. Each should rename to PATTERN
         // with a marker — sibling shapes:
-        //   constant_pattern    → RenameWithMarker(PATTERN, CONSTANT)
-        //   declaration_pattern → RenameWithMarker(PATTERN, DECLARATION)
-        //   recursive_pattern   → RenameWithMarker(PATTERN, RECURSIVE)
+        //   constant_pattern    → RenameWithMarker(Pattern, Constant)
+        //   declaration_pattern => RenameWithMarker(Pattern, Declaration)
+        //   recursive_pattern   => RenameWithMarker(Pattern, Recursive)
         // Likely targets:
-        //   and_pattern      → RenameWithMarker(PATTERN, AND)        (new marker)
-        //   or_pattern       → RenameWithMarker(PATTERN, OR)         (new marker)
-        //   negated_pattern  → RenameWithMarker(PATTERN, NEGATED)    (new marker)
-        //   list_pattern     → RenameWithMarker(PATTERN, LIST)       (new marker)
-        //   var_pattern      → RenameWithMarker(PATTERN, VAR)        (new marker)
-        //   type_pattern     → RenameWithMarker(PATTERN, TYPE)       (TYPE exists)
+        //   and_pattern      → RenameWithMarker(Pattern, And)        (new marker)
+        //   or_pattern       → RenameWithMarker(Pattern, Or)         (new marker)
+        //   negated_pattern  → RenameWithMarker(Pattern, Negated)    (new marker)
+        //   list_pattern     → RenameWithMarker(Pattern, List)       (new marker)
+        //   var_pattern      → RenameWithMarker(Pattern, Var)        (new marker)
+        //   type_pattern     → RenameWithMarker(Pattern, Type)       (Type exists)
         //   parenthesized_pattern → Flatten { distribute_field: None }
         // Test impact: none in current snapshots; would change new
         // pattern fixtures.
@@ -230,8 +231,8 @@ pub fn rule(k: CsKind) -> Rule {
         | CsKind::ParenthesizedPattern => Custom(transformations::passthrough),
 
         // TODO: `as_expression` (`x as Foo`) is the conversion sibling
-        // of `is_pattern_expression` (which renames to IS). Either
-        // share the IS rename with a marker, or introduce a new AS
+        // of `is_pattern_expression` (which renames to Is). Either
+        // share the Is rename with a marker, or introduce a new As
         // semantic. Same applies to `is_expression` (the older `obj
         // is Foo` form before patterns).
         CsKind::AsExpression
@@ -239,30 +240,30 @@ pub fn rule(k: CsKind) -> Rule {
 
         // TODO: `cast_expression` (`(int)x`) and `default_expression`
         // (`default(T)`) are call-shaped operations. Could each get
-        // their own semantic (CAST / DEFAULT) or share `Rename(CALL)`
+        // their own semantic (Cast / Default) or share `Rename(Call)`
         // with a marker. `throw_expression` (the expression form of
-        // `throw e`) is the sibling of `throw_statement` → THROW; pick
+        // `throw e`) is the sibling of `throw_statement` → Throw; pick
         // one shared shape.
         CsKind::CastExpression
         | CsKind::DefaultExpression
         | CsKind::ThrowExpression => Custom(transformations::passthrough),
 
         // TODO: `element_access_expression` (`x[i]`) is the call-site
-        // counterpart of `indexer_declaration` → INDEXER. Probably
-        // `Rename(INDEX)` (already used by `element_binding_expression`).
+        // counterpart of `indexer_declaration` → Indexer. Probably
+        // `Rename(Index)` (already used by `element_binding_expression`).
         CsKind::ElementAccessExpression => Custom(transformations::passthrough),
 
         // TODO: `anonymous_method_expression` is functionally a lambda
-        // (older `delegate { … }` syntax). Likely `Rename(LAMBDA)`.
+        // (older `delegate { … }` syntax). Likely `Rename(Lambda)`.
         // `anonymous_object_creation_expression` (`new { X = 1 }`) is
-        // a literal/object-creation shape — could share `Rename(NEW)`
+        // a literal/object-creation shape — could share `Rename(New)`
         // with a marker.
         CsKind::AnonymousMethodExpression
         | CsKind::AnonymousObjectCreationExpression => Custom(transformations::passthrough),
 
         // TODO: array creations are siblings of
-        // `object_creation_expression` → NEW. Likely `Rename(NEW)`
-        // with an ARRAY marker.
+        // `object_creation_expression` → New. Likely `Rename(New)`
+        // with an Array marker.
         CsKind::ArrayCreationExpression
         | CsKind::ImplicitArrayCreationExpression
         | CsKind::ImplicitStackallocExpression => Custom(transformations::passthrough),
@@ -283,15 +284,15 @@ pub fn rule(k: CsKind) -> Rule {
 
         // TODO: `with_expression` (`record with { X = 1 }`) and
         // `with_initializer` are record-update shapes. Either get a
-        // dedicated WITH semantic or share Rename(NEW) with a marker.
+        // dedicated With semantic or share Rename(New) with a marker.
         CsKind::WithExpression
         | CsKind::WithInitializer => Custom(transformations::passthrough),
 
         // TODO: `event_declaration` is the property-shaped event form
         // (with accessors); pairs with `event_field_declaration` which
-        // already renames to EVENT. Should also `Rename(EVENT)`.
+        // already renames to Event. Should also `Rename(Event)`.
         // `conversion_operator_declaration` is a sibling of
-        // `operator_declaration` → OPERATOR; likely the same.
+        // `operator_declaration` → Operator; likely the same.
         CsKind::EventDeclaration
         | CsKind::ConversionOperatorDeclaration => Custom(transformations::passthrough),
 

@@ -12,7 +12,7 @@ use super::transformations::*;
 /// Syntax-branch rule. Produces the unified
 /// `<object>/<array>/<property>/<string>/<number>/<bool>/<null>`
 /// vocabulary.
-pub fn syntax_rule(kind: JsonKind) -> Rule {
+pub fn syntax_rule(kind: JsonKind) -> Rule<&'static str> {
     match kind {
         JsonKind::Document      => Rule::Custom(strip_punct_flatten),
         JsonKind::Object        => Rule::Custom(strip_punct_continue),
@@ -33,7 +33,7 @@ pub fn syntax_rule(kind: JsonKind) -> Rule {
 
 /// Data-branch rule. Projects keys into element names; scalars
 /// flatten so their text bubbles up to the renamed parent.
-pub fn data_rule(kind: JsonKind) -> Rule {
+pub fn data_rule(kind: JsonKind) -> Rule<&'static str> {
     match kind {
         JsonKind::Document => Rule::Custom(strip_punct_flatten),
         JsonKind::Object   => Rule::Custom(strip_punct_flatten),

@@ -12,7 +12,7 @@ use super::input::RubyKind;
 use super::output::*;
 use super::transformations;
 
-pub fn rule(k: RubyKind) -> Rule {
+pub fn rule(k: RubyKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- RenameWithMarker ------------------------------------------

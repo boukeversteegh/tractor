@@ -82,8 +82,8 @@ fn csharp_catalogue_covers_blueprint() {
 
 #[test]
 fn csharp_node_metadata_is_well_formed() {
-    use tractor::languages::csharp::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/csharp/output.rs");
+    use tractor::languages::csharp::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/csharp/output.rs");
 }
 
 #[test]

@@ -13,7 +13,7 @@ use super::input::PyKind;
 use super::output::*;
 use super::transformations;
 
-pub fn rule(k: PyKind) -> Rule {
+pub fn rule(k: PyKind) -> Rule<&'static str> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
