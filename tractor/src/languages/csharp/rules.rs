@@ -121,7 +121,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::Argument                       => Rename(Argument),
         CsKind::Attribute                      => Rename(Attribute),
         CsKind::AttributeArgument              => Rename(Argument),
-        CsKind::AwaitExpression                => Rename(Await),
+        CsKind::AwaitExpression                => Custom(transformations::await_expression),
         CsKind::BaseList                       => Rename(Extends),
         CsKind::Block                          => Rename(Block),
         CsKind::BooleanLiteral                 => Rename(Bool),

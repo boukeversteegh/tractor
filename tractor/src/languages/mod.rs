@@ -314,7 +314,15 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
 /// the shared conditional collapse runs.
 fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_where_clause_constraints(xot, root)?;
-    collapse_conditionals(xot, root)
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        // C# slot wrappers that contain a single expression operand.
+        // `then`/`else` are block bodies (statement sequences), not
+        // single-expression slots.
+        &["value", "condition", "left", "right", "return"],
+    )
 }
 
 /// For each `<type_parameter_constraints_clause>` in the tree, move its

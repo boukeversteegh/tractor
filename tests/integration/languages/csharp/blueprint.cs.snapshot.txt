@@ -39,16 +39,16 @@ unit/
   │       │   └─ body/
   │       │       ├─ constant/
   │       │       │   ├─ name
-  │       │       │   └─ value/int
+  │       │       │   └─ value/expression/int
   │       │       ├─ constant/
   │       │       │   ├─ name
-  │       │       │   └─ value/int
+  │       │       │   └─ value/expression/int
   │       │       ├─ constant/
   │       │       │   ├─ name
-  │       │       │   └─ value/int
+  │       │       │   └─ value/expression/int
   │       │       └─ constant/
   │       │           ├─ name
-  │       │           └─ value/int
+  │       │           └─ value/expression/int
   │       ├─ interface[public]/
   │       │   ├─ name
   │       │   ├─ generic[class and new]/name
@@ -84,12 +84,12 @@ unit/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
   │       │       │   ├─ get
-  │       │       │   └─ value/name
+  │       │       │   └─ value/expression/name
   │       │       ├─ property[public]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
   │       │       │   ├─ get
-  │       │       │   └─ value/name
+  │       │       │   └─ value/expression/name
   │       │       ├─ operator[public and static]/
   │       │       │   ├─ type/name
   │       │       │   ├─ parameter/
@@ -100,19 +100,19 @@ unit/
   │       │       │   │   └─ name
   │       │       │   └─ body/new/
   │       │       │       ├─ argument/binary/
-  │       │       │       │   ├─ left/member[instance]/
+  │       │       │       │   ├─ left/expression/member[instance]/
   │       │       │       │   │   ├─ name
   │       │       │       │   │   └─ name
   │       │       │       │   ├─ op[plus]
-  │       │       │       │   └─ right/member[instance]/
+  │       │       │       │   └─ right/expression/member[instance]/
   │       │       │       │       ├─ name
   │       │       │       │       └─ name
   │       │       │       └─ argument/binary/
-  │       │       │           ├─ left/member[instance]/
+  │       │       │           ├─ left/expression/member[instance]/
   │       │       │           │   ├─ name
   │       │       │           │   └─ name
   │       │       │           ├─ op[plus]
-  │       │       │           └─ right/member[instance]/
+  │       │       │           └─ right/expression/member[instance]/
   │       │       │               ├─ name
   │       │       │               └─ name
   │       │       ├─ operator[public and static]/
@@ -124,21 +124,21 @@ unit/
   │       │       │   │   ├─ type/name
   │       │       │   │   └─ name
   │       │       │   └─ body/binary/
-  │       │       │       ├─ left/binary/
-  │       │       │       │   ├─ left/member[instance]/
+  │       │       │       ├─ left/expression/binary/
+  │       │       │       │   ├─ left/expression/member[instance]/
   │       │       │       │   │   ├─ name
   │       │       │       │   │   └─ name
   │       │       │       │   ├─ op[equals]
-  │       │       │       │   └─ right/member[instance]/
+  │       │       │       │   └─ right/expression/member[instance]/
   │       │       │       │       ├─ name
   │       │       │       │       └─ name
   │       │       │       ├─ op/logical[and]
-  │       │       │       └─ right/binary/
-  │       │       │           ├─ left/member[instance]/
+  │       │       │       └─ right/expression/binary/
+  │       │       │           ├─ left/expression/member[instance]/
   │       │       │           │   ├─ name
   │       │       │           │   └─ name
   │       │       │           ├─ op[equals]
-  │       │       │           └─ right/member[instance]/
+  │       │       │           └─ right/expression/member[instance]/
   │       │       │               ├─ name
   │       │       │               └─ name
   │       │       ├─ operator[public and static]/
@@ -150,9 +150,9 @@ unit/
   │       │       │   │   ├─ type/name
   │       │       │   │   └─ name
   │       │       │   └─ body/unary[prefix]/binary/
-  │       │       │       ├─ left/name
+  │       │       │       ├─ left/expression/name
   │       │       │       ├─ op[equals]
-  │       │       │       └─ right/name
+  │       │       │       └─ right/expression/name
   │       │       ├─ method[public and override]/
   │       │       │   ├─ returns/type/name
   │       │       │   ├─ name
@@ -160,14 +160,14 @@ unit/
   │       │       │   │   ├─ type[nullable]
   │       │       │   │   └─ name
   │       │       │   └─ body/binary/
-  │       │       │       ├─ left/is/
+  │       │       │       ├─ left/expression/is/
   │       │       │       │   ├─ name
   │       │       │       │   └─ pattern[declaration]/
   │       │       │       │       ├─ type/name
   │       │       │       │       └─ name
   │       │       │       ├─ op/logical[and]
-  │       │       │       └─ right/binary/
-  │       │       │           ├─ left/name
+  │       │       │       └─ right/expression/binary/
+  │       │       │           ├─ left/expression/name
   │       │       │           └─ op
   │       │       └─ method[public and override]/
   │       │           ├─ returns/type/name
@@ -220,13 +220,13 @@ unit/
   │       │       │   ├─ name
   │       │       │   ├─ get
   │       │       │   ├─ set
-  │       │       │   └─ value/string
+  │       │       │   └─ value/expression/string
   │       │       ├─ property[public and virtual]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
   │       │       │   ├─ get
   │       │       │   ├─ set[protected]
-  │       │       │   └─ value/member[instance]/
+  │       │       │   └─ value/expression/member[instance]/
   │       │       │       ├─ name
   │       │       │       └─ name
   │       │       ├─ indexer[public]/
@@ -234,7 +234,7 @@ unit/
   │       │       │   ├─ parameter/
   │       │       │   │   ├─ type/name
   │       │       │   │   └─ name
-  │       │       │   └─ value/member[instance]/
+  │       │       │   └─ value/expression/member[instance]/
   │       │       │       ├─ name
   │       │       │       └─ name
   │       │       ├─ event[public]/variable/
@@ -252,9 +252,9 @@ unit/
   │       │       │   │   ├─ type/name
   │       │       │   │   └─ name
   │       │       │   └─ body/block/expression/assign/
-  │       │       │       ├─ left/name
+  │       │       │       ├─ left/expression/name
   │       │       │       ├─ op
-  │       │       │       └─ right/name
+  │       │       │       └─ right/expression/name
   │       │       ├─ destructor/
   │       │       │   ├─ name
   │       │       │   └─ body/block/comment
@@ -266,7 +266,7 @@ unit/
   │       │           ├─ name
   │       │           └─ body/call/
   │       │               ├─ member[conditional]/
-  │       │               │   ├─ condition/name
+  │       │               │   ├─ condition/expression/name
   │       │               │   └─ member[conditional]/name
   │       │               └─ argument
   │       ├─ class[public and sealed and partial]/
@@ -296,17 +296,17 @@ unit/
   │       │       │   │   └─ name
   │       │       │   ├─ chain/argument/name
   │       │       │   └─ body/block/expression/assign/
-  │       │       │       ├─ left/name
+  │       │       │       ├─ left/expression/name
   │       │       │       ├─ op
-  │       │       │       └─ right/name
+  │       │       │       └─ right/expression/name
   │       │       ├─ property[public and override]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
   │       │       │   ├─ get/body/member[instance]/name
   │       │       │   └─ set[protected]/body/assign/
-  │       │       │       ├─ left/member[instance]/name
+  │       │       │       ├─ left/expression/member[instance]/name
   │       │       │       ├─ op
-  │       │       │       └─ right/name
+  │       │       │       └─ right/expression/name
   │       │       ├─ method[public and override]/
   │       │       │   ├─ returns/type/name
   │       │       │   ├─ name
@@ -322,10 +322,10 @@ unit/
   │       │       │   │   ├─ type/name
   │       │       │   │   └─ name
   │       │       │   └─ body/ternary/
-  │       │       │       ├─ condition/binary/
-  │       │       │       │   ├─ left/name
+  │       │       │       ├─ condition/expression/binary/
+  │       │       │       │   ├─ left/expression/name
   │       │       │       │   ├─ op[equals]
-  │       │       │       │   └─ right/name
+  │       │       │       │   └─ right/expression/name
   │       │       │       └─ else/null
   │       │       ├─ method[public and async]/
   │       │       │   ├─ returns/type[generic]/
@@ -335,12 +335,12 @@ unit/
   │       │       │   │       └─ type/name
   │       │       │   ├─ name
   │       │       │   └─ body/block/
-  │       │       │       ├─ expression/await/call/
+  │       │       │       ├─ expression/expression[await]/call/
   │       │       │       │   ├─ member[instance]/
   │       │       │       │   │   ├─ name
   │       │       │       │   │   └─ name
   │       │       │       │   └─ argument/int
-  │       │       │       └─ return/index/argument
+  │       │       │       └─ return/expression/index/argument
   │       │       └─ method[public and static]/
   │       │           ├─ returns/name
   │       │           ├─ name
@@ -367,13 +367,13 @@ unit/
   │       │       │   ├─ type/name
   │       │       │   └─ name
   │       │       └─ body/binary/
-  │       │           ├─ left/call/member[instance]/
+  │       │           ├─ left/expression/call/member[instance]/
   │       │           │   ├─ member[instance]/
   │       │           │   │   ├─ name
   │       │           │   │   └─ name
   │       │           │   └─ name
   │       │           ├─ op[plus]
-  │       │           └─ right/string
+  │       │           └─ right/expression/string
   │       └─ class[internal and static]/
   │           ├─ name
   │           └─ body/method[public and static and async]/
@@ -395,9 +395,9 @@ unit/
   │                   │   └─ declarator/
   │                   │       ├─ name
   │                   │       └─ binary/
-  │                   │           ├─ left/name
+  │                   │           ├─ left/expression/name
   │                   │           ├─ op[nullish-coalescing]
-  │                   │           └─ right/new/
+  │                   │           └─ right/expression/new/
   │                   │               ├─ type/name
   │                   │               ├─ argument/int
   │                   │               └─ argument/string
@@ -406,17 +406,17 @@ unit/
   │                   │   └─ declarator/
   │                   │       ├─ name
   │                   │       └─ binary/
-  │                   │           ├─ left/call/member[conditional]/
-  │                   │           │   ├─ condition/name
+  │                   │           ├─ left/expression/call/member[conditional]/
+  │                   │           │   ├─ condition/expression/name
   │                   │           │   └─ member[conditional]/name
   │                   │           ├─ op[nullish-coalescing]
-  │                   │           └─ right/string
+  │                   │           └─ right/expression/string
   │                   ├─ variable/
   │                   │   ├─ type/name
   │                   │   └─ declarator/
   │                   │       ├─ name
   │                   │       └─ ternary/
-  │                   │           ├─ condition/is/
+  │                   │           ├─ condition/expression/is/
   │                   │           │   ├─ name
   │                   │           │   └─ pattern[recursive]/properties/subpattern/
   │                   │           │       ├─ member[instance]/
@@ -444,11 +444,11 @@ unit/
   │                   │           │   │   ├─ type/name
   │                   │           │   │   └─ name
   │                   │           │   ├─ when/binary/
-  │                   │           │   │   ├─ left/member[instance]/
+  │                   │           │   │   ├─ left/expression/member[instance]/
   │                   │           │   │   │   ├─ name
   │                   │           │   │   │   └─ name
   │                   │           │   │   ├─ op/compare[greater]
-  │                   │           │   │   └─ right/int
+  │                   │           │   │   └─ right/expression/int
   │                   │           │   └─ string
   │                   │           └─ arm/
   │                   │               ├─ discard
@@ -462,7 +462,7 @@ unit/
   │                   │           ├─ name
   │                   │           └─ op/logical[not]
   │                   ├─ switch/
-  │                   │   ├─ value/name
+  │                   │   ├─ value/expression/name
   │                   │   └─ body/body/
   │                   │       ├─ section/
   │                   │       │   ├─ pattern[declaration]/
@@ -481,7 +481,7 @@ unit/
   │                   │       │   └─ throw/new/type/name
   │                   │       └─ section/break
   │                   ├─ if/
-  │                   │   ├─ condition/is/
+  │                   │   ├─ condition/expression/is/
   │                   │   │   ├─ name
   │                   │   │   └─ pattern[declaration]/
   │                   │   │       ├─ type/name
@@ -503,17 +503,17 @@ unit/
   │                   │           │   ├─ name
   │                   │           │   └─ name
   │                   │           ├─ where/binary/
-  │                   │           │   ├─ left/binary/
-  │                   │           │   │   ├─ left/name
+  │                   │           │   ├─ left/expression/binary/
+  │                   │           │   │   ├─ left/expression/name
   │                   │           │   │   ├─ op[modulo]
-  │                   │           │   │   └─ right/int
+  │                   │           │   │   └─ right/expression/int
   │                   │           │   ├─ op[equals]
-  │                   │           │   └─ right/int
+  │                   │           │   └─ right/expression/int
   │                   │           ├─ order/name
   │                   │           └─ select/binary/
-  │                   │               ├─ left/name
+  │                   │               ├─ left/expression/name
   │                   │               ├─ op[multiply]
-  │                   │               └─ right/name
+  │                   │               └─ right/expression/name
   │                   ├─ variable/
   │                   │   ├─ type/name
   │                   │   └─ declarator/
@@ -528,19 +528,19 @@ unit/
   │                   │           │   │   │   └─ argument/lambda/
   │                   │           │   │   │       ├─ parameter
   │                   │           │   │   │       └─ body/binary/
-  │                   │           │   │   │           ├─ left/binary/
-  │                   │           │   │   │           │   ├─ left/name
+  │                   │           │   │   │           ├─ left/expression/binary/
+  │                   │           │   │   │           │   ├─ left/expression/name
   │                   │           │   │   │           │   ├─ op[modulo]
-  │                   │           │   │   │           │   └─ right/int
+  │                   │           │   │   │           │   └─ right/expression/int
   │                   │           │   │   │           ├─ op[not-equals]
-  │                   │           │   │   │           └─ right/int
+  │                   │           │   │   │           └─ right/expression/int
   │                   │           │   │   └─ name
   │                   │           │   └─ argument/lambda/
   │                   │           │       ├─ parameter
   │                   │           │       └─ body/binary/
-  │                   │           │           ├─ left/name
+  │                   │           │           ├─ left/expression/name
   │                   │           │           ├─ op[plus]
-  │                   │           │           └─ right/int
+  │                   │           │           └─ right/expression/int
   │                   │           └─ name
   │                   ├─ comment[leading]
   │                   ├─ method/
@@ -550,9 +550,9 @@ unit/
   │                   │   │   ├─ type/name
   │                   │   │   └─ name
   │                   │   └─ body/binary/
-  │                   │       ├─ left/name
+  │                   │       ├─ left/expression/name
   │                   │       ├─ op[multiply]
-  │                   │       └─ right/name
+  │                   │       └─ right/expression/name
   │                   ├─ variable/
   │                   │   ├─ type[generic]/
   │                   │   │   ├─ name
@@ -563,12 +563,12 @@ unit/
   │                   │       └─ lambda/
   │                   │           ├─ parameter
   │                   │           └─ body/binary/
-  │                   │               ├─ left/binary/
-  │                   │               │   ├─ left/name
+  │                   │               ├─ left/expression/binary/
+  │                   │               │   ├─ left/expression/name
   │                   │               │   ├─ op[multiply]
-  │                   │               │   └─ right/name
+  │                   │               │   └─ right/expression/name
   │                   │               ├─ op[multiply]
-  │                   │               └─ right/name
+  │                   │               └─ right/expression/name
   │                   ├─ variable/
   │                   │   ├─ type[generic]/
   │                   │   │   ├─ name
@@ -601,10 +601,10 @@ unit/
   │                   │   │   └─ declarator/
   │                   │   │       ├─ name
   │                   │   │       └─ int
-  │                   │   ├─ condition/binary/
-  │                   │   │   ├─ left/name
+  │                   │   ├─ condition/expression/binary/
+  │                   │   │   ├─ left/expression/name
   │                   │   │   ├─ op/compare[less]
-  │                   │   │   └─ right/int
+  │                   │   │   └─ right/expression/int
   │                   │   ├─ unary/
   │                   │   │   ├─ name
   │                   │   │   └─ op[increment]
@@ -615,12 +615,12 @@ unit/
   │                   │       ├─ name
   │                   │       └─ int
   │                   ├─ while/
-  │                   │   ├─ condition/binary/
-  │                   │   │   ├─ left/unary/
+  │                   │   ├─ condition/expression/binary/
+  │                   │   │   ├─ left/expression/unary/
   │                   │   │   │   ├─ name
   │                   │   │   │   └─ op[increment]
   │                   │   │   ├─ op/compare[less]
-  │                   │   │   └─ right/int
+  │                   │   │   └─ right/expression/int
   │                   │   └─ body/block
   │                   ├─ variable/
   │                   │   ├─ type/name
@@ -631,14 +631,14 @@ unit/
   │                   │   ├─ body/block/expression/unary/
   │                   │   │   ├─ name
   │                   │   │   └─ op[increment]
-  │                   │   └─ condition/binary/
-  │                   │       ├─ left/name
+  │                   │   └─ condition/expression/binary/
+  │                   │       ├─ left/expression/name
   │                   │       ├─ op/compare[less]
-  │                   │       └─ right/int
+  │                   │       └─ right/expression/int
   │                   ├─ foreach/
   │                   │   ├─ type/name
-  │                   │   ├─ left/name
-  │                   │   ├─ right/name
+  │                   │   ├─ left/expression/name
+  │                   │   ├─ right/expression/name
   │                   │   └─ body/expression/call/
   │                   │       ├─ name
   │                   │       └─ argument/call/member[instance]/
@@ -677,13 +677,13 @@ unit/
   │                   │   │   │   ├─ type/name
   │                   │   │   │   └─ name
   │                   │   │   ├─ filter/binary/
-  │                   │   │   │   ├─ left/member[instance]/
+  │                   │   │   │   ├─ left/expression/member[instance]/
   │                   │   │   │   │   ├─ member[instance]/
   │                   │   │   │   │   │   ├─ name
   │                   │   │   │   │   │   └─ name
   │                   │   │   │   │   └─ name
   │                   │   │   │   ├─ op/compare[greater]
-  │                   │   │   │   └─ right/int
+  │                   │   │   │   └─ right/expression/int
   │                   │   │   └─ body/block/expression/call/
   │                   │   │       ├─ name
   │                   │   │       └─ argument/member[instance]/
@@ -738,13 +738,13 @@ unit/
   │                   │       ├─ name
   │                   │       └─ new/literal/
   │                   │           ├─ assign/
-  │                   │           │   ├─ left/index/argument/string
+  │                   │           │   ├─ left/expression/index/argument/string
   │                   │           │   ├─ op
-  │                   │           │   └─ right/int
+  │                   │           │   └─ right/expression/int
   │                   │           └─ assign/
-  │                   │               ├─ left/index/argument/string
+  │                   │               ├─ left/expression/index/argument/string
   │                   │               ├─ op
-  │                   │               └─ right/int
+  │                   │               └─ right/expression/int
   │                   ├─ comment[leading]
   │                   ├─ variable/
   │                   │   ├─ type/name
@@ -768,46 +768,46 @@ unit/
   │                   │   └─ declarator/
   │                   │       ├─ name
   │                   │       └─ string
-  │                   └─ return/binary/
-  │                       ├─ left/binary/
-  │                       │   ├─ left/binary/
-  │                       │   │   ├─ left/binary/
-  │                       │   │   │   ├─ left/binary/
-  │                       │   │   │   │   ├─ left/binary/
-  │                       │   │   │   │   │   ├─ left/binary/
-  │                       │   │   │   │   │   │   ├─ left/member[instance]/
+  │                   └─ return/expression/binary/
+  │                       ├─ left/expression/binary/
+  │                       │   ├─ left/expression/binary/
+  │                       │   │   ├─ left/expression/binary/
+  │                       │   │   │   ├─ left/expression/binary/
+  │                       │   │   │   │   ├─ left/expression/binary/
+  │                       │   │   │   │   │   ├─ left/expression/binary/
+  │                       │   │   │   │   │   │   ├─ left/expression/member[instance]/
   │                       │   │   │   │   │   │   │   ├─ name
   │                       │   │   │   │   │   │   │   └─ name
   │                       │   │   │   │   │   │   ├─ op[plus]
-  │                       │   │   │   │   │   │   └─ right/member[instance]/
+  │                       │   │   │   │   │   │   └─ right/expression/member[instance]/
   │                       │   │   │   │   │   │       ├─ name
   │                       │   │   │   │   │   │       └─ name
   │                       │   │   │   │   │   ├─ op[plus]
-  │                       │   │   │   │   │   └─ right/member[instance]/
+  │                       │   │   │   │   │   └─ right/expression/member[instance]/
   │                       │   │   │   │   │       ├─ name
   │                       │   │   │   │   │       └─ name
   │                       │   │   │   │   ├─ op[plus]
-  │                       │   │   │   │   └─ right/member[instance]/
+  │                       │   │   │   │   └─ right/expression/member[instance]/
   │                       │   │   │   │       ├─ name
   │                       │   │   │   │       └─ name
   │                       │   │   │   ├─ op[plus]
-  │                       │   │   │   └─ right/member[instance]/
+  │                       │   │   │   └─ right/expression/member[instance]/
   │                       │   │   │       ├─ name
   │                       │   │   │       └─ name
   │                       │   │   ├─ op[plus]
-  │                       │   │   └─ right/member[instance]/
+  │                       │   │   └─ right/expression/member[instance]/
   │                       │   │       ├─ name
   │                       │   │       └─ name
   │                       │   ├─ op[plus]
-  │                       │   └─ right/ternary/
-  │                       │       ├─ condition/binary/
-  │                       │       │   ├─ left/name
+  │                       │   └─ right/expression/ternary/
+  │                       │       ├─ condition/expression/binary/
+  │                       │       │   ├─ left/expression/name
   │                       │       │   ├─ op[equals]
-  │                       │       │   └─ right/name
+  │                       │       │   └─ right/expression/name
   │                       │       ├─ then/int
   │                       │       └─ else/int
   │                       ├─ op[plus]
-  │                       └─ right/member[instance]/
+  │                       └─ right/expression/member[instance]/
   │                           ├─ name
   │                           └─ name
   ├─ namespace/name
@@ -818,7 +818,7 @@ unit/
   │   └─ body/property[public and static]/
   │       ├─ type/name
   │       ├─ name
-  │       └─ value/int
+  │       └─ value/expression/int
   └─ class[public and static]/
       ├─ name
       └─ body/method[public and static]/

@@ -38,18 +38,33 @@
                     "$type": "return",
                     "children": [
                       {
-                        "$type": "binary",
-                        "left": {
-                          "name": "a"
-                        },
-                        "right": {
-                          "name": "b"
-                        },
+                        "$type": "expression",
                         "children": [
                           {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
+                            "$type": "binary",
+                            "left": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "a"
+                                }
+                              ]
+                            },
+                            "right": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "b"
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "plus": true,
+                                "text": "+"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -89,18 +104,33 @@
                     "$type": "return",
                     "children": [
                       {
-                        "$type": "binary",
-                        "left": {
-                          "name": "a"
-                        },
-                        "right": {
-                          "name": "b"
-                        },
+                        "$type": "expression",
                         "children": [
                           {
-                            "$type": "op",
-                            "minus": true,
-                            "text": "-"
+                            "$type": "binary",
+                            "left": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "a"
+                                }
+                              ]
+                            },
+                            "right": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "b"
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "minus": true,
+                                "text": "-"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -140,18 +170,33 @@
                     "$type": "return",
                     "children": [
                       {
-                        "$type": "binary",
-                        "left": {
-                          "name": "a"
-                        },
-                        "right": {
-                          "name": "b"
-                        },
+                        "$type": "expression",
                         "children": [
                           {
-                            "$type": "op",
-                            "multiply": true,
-                            "text": "*"
+                            "$type": "binary",
+                            "left": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "a"
+                                }
+                              ]
+                            },
+                            "right": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "b"
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "multiply": true,
+                                "text": "*"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -197,18 +242,33 @@
                     "$type": "return",
                     "children": [
                       {
-                        "$type": "binary",
-                        "left": {
-                          "string": "\"Hello, \""
-                        },
-                        "right": {
-                          "name": "name"
-                        },
+                        "$type": "expression",
                         "children": [
                           {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
+                            "$type": "binary",
+                            "left": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "string": "\"Hello, \""
+                                }
+                              ]
+                            },
+                            "right": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "name"
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "plus": true,
+                                "text": "+"
+                              }
+                            ]
                           }
                         ]
                       }
@@ -240,18 +300,33 @@
                     "$type": "return",
                     "children": [
                       {
-                        "$type": "binary",
-                        "left": {
-                          "string": "\"Goodbye, \""
-                        },
-                        "right": {
-                          "name": "name"
-                        },
+                        "$type": "expression",
                         "children": [
                           {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
+                            "$type": "binary",
+                            "left": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "string": "\"Goodbye, \""
+                                }
+                              ]
+                            },
+                            "right": {
+                              "children": [
+                                {
+                                  "$type": "expression",
+                                  "name": "name"
+                                }
+                              ]
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "plus": true,
+                                "text": "+"
+                              }
+                            ]
                           }
                         ]
                       }

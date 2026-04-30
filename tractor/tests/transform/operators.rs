@@ -61,9 +61,9 @@ fn csharp_binary() {
         &mut parse_src("csharp", "class X { void f() { int y = 1 + 2; } }"),
         &multi_xpath(r#"
             //binary
-                [left/int='1']
+                [left/expression/int='1']
                 [op[plus]]
-                [right/int='2']
+                [right/expression/int='2']
         "#),
         1);
 }
@@ -175,8 +175,8 @@ fn csharp_null_forgiving_postfix_unary() {
             //variable[declarator/name='combined']
                 /declarator/binary
                     [op[plus]]
-                    [left/member[unary/name='first'][name='Length']]
-                    [right/member[unary/name='second'][name='Length']]
+                    [left/expression/member[unary/name='first'][name='Length']]
+                    [right/expression/member[unary/name='second'][name='Length']]
         "#),
         1);
 }

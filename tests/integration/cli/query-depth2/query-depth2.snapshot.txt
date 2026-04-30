@@ -5,11 +5,11 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (26 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (26 children)
       ├─ method[public]/
-      │   └─ ... (23 children)
+      │   └─ ... (26 children)
       └─ "}"
 
 tests/integration/sample.cs:9
@@ -19,9 +19,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (19 children)
+      │   └─ ... (22 children)
       ├─ method[public]/
-      │   └─ ... (19 children)
+      │   └─ ... (22 children)
       ├─ method[public]/
       │   └─ ... (7 children)
       └─ "}"

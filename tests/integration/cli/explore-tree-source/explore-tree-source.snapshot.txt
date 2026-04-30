@@ -4,7 +4,7 @@ unit/                                                                           
   │   ├─ "public class"                                                                      ┤  2 ├ public class Calculator
   │   ├─ name = "Calculator"                                                                 ┤    │ 
   │   └─ body/                                                                               ┤    │ 
-  │       └─ ... (72 children)                                                               ┤    │ 
+  │       └─ ... (81 children)                                                               ┤    │ 
   └─ class[public]/                                                                          ┤    │ 
       │                                                                                      │  3 ├ {
       │                                                                                      │  4 ├     public int Add(int a, int b) { return a + b; }
@@ -15,7 +15,7 @@ unit/                                                                           
       ├─ "public class"                                                                      ┤  9 ├ public class Greeter
       ├─ name = "Greeter"                                                                    ┤    │ 
       └─ body/                                                                               ┤    │ 
-          └─ ... (48 children)                                                               ┤    │ 
+          └─ ... (54 children)                                                               ┤    │ 
                                                                                              │ 10 ├ {
                                                                                              │ 11 ├     public string Hello(string name) { return "Hello, " + name; }
                                                                                              │ 12 ├     public string Goodbye(string name) { return "Goodbye, " + name; }

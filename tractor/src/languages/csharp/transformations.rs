@@ -15,8 +15,8 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Else, Generic, If, Internal, Leading, Name, Nullable, Private, Public,
-    Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
+    self, Accessor, Await, Else, Expression, Generic, If, Internal, Leading, Name, Nullable,
+    Private, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -25,6 +25,16 @@ use super::output::TractorNode::{
 /// pipeline consumes (`type_parameter_constraint`, etc.) and for
 /// kinds the grammar emits but the C# transform never rewrites.
 pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
+    Ok(TransformAction::Continue)
+}
+
+/// `await_expression` — `await foo()`. C#'s `await` is prefix, so the
+/// marker leads the operand. Promote to `<expression>` host with a
+/// leading `<await/>` marker. See [Principle #15: Stable Expression
+/// Hosts].
+pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_prepended_empty_element(node, Await)?;
     Ok(TransformAction::Continue)
 }
 

@@ -2,4 +2,4 @@ $type: class
 public: true
 name: Calculator
 body:
-  $truncated: 72
+  $truncated: 81

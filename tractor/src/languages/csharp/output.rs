@@ -81,7 +81,7 @@ impl TractorNode {
             Self::Public | Self::Private | Self::Protected | Self::Internal
             | Self::Static | Self::Abstract | Self::Virtual | Self::Override | Self::Sealed
             | Self::Readonly | Self::Partial | Self::Async | Self::Extern | Self::Unsafe
-            | Self::This                                                        => (true, false, Keyword),
+            | Self::This | Self::Await                                          => (true, false, Keyword),
             // Type-shape / member-access / pattern markers
             Self::Nullable | Self::Array                                        => (true, false, Type),
             Self::Trailing | Self::Leading
@@ -100,7 +100,7 @@ impl TractorNode {
             | Self::Class | Self::Struct | Self::Interface | Self::Enum | Self::Record
             | Self::Return | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
             | Self::Do | Self::Try | Self::Catch | Self::Finally | Self::Throw
-            | Self::Using | Self::Break | Self::Continue | Self::Await
+            | Self::Using | Self::Break | Self::Continue
             | Self::Bool | Self::Null
             | Self::Get | Self::Set | Self::Init | Self::Add | Self::Remove     => (false, true, Keyword),
             Self::Comment                                                       => (false, true, Comment),

@@ -122,7 +122,7 @@ fn csharp() {
         &multi_xpath(r#"
             //for
                 [variable[type/name='int'][declarator/name='i']]
-                [condition/binary]
+                [condition/expression/binary]
                 [unary[op[increment]]]
                 [body/block]
         "#),
@@ -130,21 +130,21 @@ fn csharp() {
 
     claim("C# while loop wraps the body in <block>",
         &mut tree,
-        "//while[condition/bool='running' or condition/name='running'][body/block]",
+        "//while[condition/expression/bool='running' or condition/expression/name='running'][body/block]",
         1);
 
     claim("C# do-while renames to <do>; body precedes the condition",
         &mut tree,
-        "//do[body/block][condition/name='running']",
+        "//do[body/block][condition/expression/name='running']",
         1);
 
-    claim("C# foreach uses <left> + <right> for the binding and iterable",
+    claim("C# foreach uses <left> for the binding and <right>/<expression> for the iterable",
         &mut tree,
         &multi_xpath(r#"
             //foreach
                 [type/name='var']
-                [left/name='item']
-                [right/name='items']
+                [left/expression/name='item']
+                [right/expression/name='items']
                 [body/block]
         "#),
         1);
