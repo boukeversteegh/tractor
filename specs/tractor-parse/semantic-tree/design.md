@@ -407,81 +407,122 @@ concepts — one element per namespace regardless of context),
 Principle #11 (specific names — `<type>` and `<name>` are concrete
 concepts, not abstract supertypes).
 
-### 15. Annotational Wrappers as Markers on the Operand
+### 15. `<expression>` Host for Expression Modifiers
 
-When a grammar wraps a single expression in a node whose only role is
-to **annotate** that expression with a property — error propagation
-`?`, asynchrony `await`, non-null assertion `!`, casting, dereference
-— attach the annotation as an empty marker on the inner expression
-rather than keeping the wrapper element.
-
-The criterion is **syntactic head vs. conceptual dependent**: the
-grammar promotes the modifier to a head-node (`try_expression`,
-`await_expression`), but conceptually the inner expression carries
-the identity — `await foo()` is still "a call to foo, with async
-behavior", not a different kind of expression. The semantic tree
-should reflect the conceptual structure, not the grammar's syntactic
-shape.
+Every expression position is uniformly wrapped in an `<expression>`
+host element, and **closed-set expression modifiers** —
+`<await/>`, `<try/>` (Rust `?`), `<non_null/>` (TS `foo!`),
+`<conditional/>` (`?.` chaining), `<deref/>`, `<ref/>`, etc. —
+attach as empty markers on the host rather than as their own wrapper
+elements. The operand keeps its specific named element
+(`<call>`, `<member>`, `<name>`, …) inside the host.
 
 ```xml
-<!-- WRONG: wrapper steals identity from the call -->
-<try><call>...</call>?</try>            <!-- Rust foo()? -->
-<await>await<call>...</call></await>    <!-- JS await foo() -->
+<!-- WRONG: per-modifier wrapper steals identity from the operand -->
+<try><call>foo()</call>?</try>             <!-- Rust foo()? -->
+<await>await<call>foo()</call></await>     <!-- JS await foo() -->
 
-<!-- RIGHT: marker preserves call identity -->
-<call>...<try/></call>                  <!-- foo()? -->
-<call><await/>...</call>                <!-- await foo() -->
+<!-- RIGHT: uniform host, modifier as marker, operand keeps its name -->
+<expression><call>foo()</call><try/></expression>
+<expression><await/><call>foo()</call></expression>
 ```
 
-**Position-agnostic.** Applies whether the syntax is **prefix**
-(`await foo()`, `(int)x`), **postfix** (`foo()?`, `foo!`,
-`foo().await`), or **mixfix** (`foo as Bar`). The marker's position
-within the operand follows source order (Principle #8): prefix
-modifiers come before the operand's other children, postfix after.
+The host appears at every expression position, even when no
+modifier is present. This is the price of uniform shape — bare
+expressions like `return y` become `<return><expression><name>y</name></expression></return>`.
+The benefit is that every modifier-bearing expression has the same
+parent shape as its bare counterpart, so queries about expression
+position are always agnostic to which modifiers happen to be
+present.
 
-The convention is already established for **type-level** annotations:
-`Foo?` becomes `<type>Foo<nullable/></type>` (C#),
-`x?: number` becomes `<param><optional/>...</param>` (TypeScript).
-Expression-level annotations follow the same shape, parallel to
-declaration-level annotations (Principle #7).
+**Why uniform host (not "host only when modifiers present"):**
 
-**Distinguishing from genuine constructs.** This principle covers
-*annotational* wrappers only — those whose role is to tag a child
-with a property. Control-flow and structural constructs (`if`,
-`while`, `for`, statement-form `try { } catch { }`, function
-definitions, blocks) stay as their own elements: they introduce
-new structure, not just annotations on a child.
+- The original motivation: queries that target consecutive
+  statements (e.g., "two adjacent xot.with_* calls in the same body")
+  must work regardless of whether `?`, `!`, `await` etc. appear on
+  any of them. With a uniform host, both are siblings of `<body>`
+  with the same element name; without it, a `?`-suffixed call has
+  parent `<expression>` while its plain neighbour has parent
+  `<body>` and they're never siblings.
+- Closes off the "leaf vs. complex operand" tension entirely.
+  `<expression>` is always available to host markers, so leaves
+  (`<name>`, simple `<type>`) never need to grow markers themselves
+  (preserving Principle #13's leaf shape) and never need invented
+  per-leaf wrappers either.
+- Stacked modifiers compose flat. `await foo()?` produces one host
+  with two markers: `<expression><await/><call>foo()</call><try/></expression>`,
+  not `<await><try>...</try></await>`. Marker order matches source
+  order so renderability (Principle #8) is preserved.
 
-The litmus test: would a developer reading the source describe the
-construct as *"the same expression, but with [property]"*? If yes,
-it's annotational and should be a marker. If they'd describe it as
-*"a different kind of construct entirely"*, it's structural and
-keeps its own element.
+**Why marker, not per-modifier wrapper element:**
 
-**Why marker, not wrapper:**
+- `//expression[await]` / `//expression[try]` parallel
+  `//method[public]` / `//method[static]` — one query syntax for
+  both declaration-level and expression-level modifiers
+  (Principle #7).
+- Specific-named operands stay queryable: `//call` still finds every
+  call, `//member` every member access, etc., independent of
+  modifier presence.
+- Adding a new modifier = adding a marker. No new wrapper element,
+  no rule rewrites for unaffected queries.
 
-- `//call` reliably finds every call regardless of annotation.
-  Wrappers force every rule to spell out
-  `//call | //try/call | //await/call`.
-- The operand keeps its semantic identity.
-- Predicate composability mirrors declaration modifiers:
-  `//call[try]` / `//call[not(await)]` parallels `//method[public]`
-  / `//method[not(static)]`.
+**Relationship to Principle #11 (Specific Names Over Type
+Hierarchies).** `<expression>` is *not* a hierarchy supertype like
+the rejected `<expression><binary/>`. It's a marker host that does
+real work — without it, modifier markers have no home that respects
+#13. The operand inside still uses its specific name (`<call>`,
+`<binary>`, `<member>`, …), so #11's intuitive-query goal is
+preserved: developers query `//call`, not `//expression[call]`.
 
-**Audit candidates** (annotational wrappers still surviving as their
-own elements):
-- Rust: `try_expression` (`?`), `await_expression` (`.await`)
-- JS/TS/Python/C#: `await_expression` (prefix `await`)
-- TypeScript: `non_null_expression` (`foo!`), type assertions
-- C-family: cast expressions (`(int)x`)
+**What stays as named wrapper elements:**
 
-**Cites:** Goal #1 (intuitive queries), Goal #4 (minimal query
-complexity), Goal #5 (developer's mental model — a call is a call
-regardless of annotation), Principle #7 (modifiers as empty
-elements — extending the convention from declarations to
-expressions), Principle #11 (`<try><call/></try>` is structurally
-`<expression><call/></expression>` with `try` as the kind label,
-which Principle #11 explicitly rejects).
+- Open-set operators with semantics in the operator: `<binary>`,
+  `<unary>`, `<assign>`, `<ternary>`. Their identity *is* the
+  operator; reducing them to `<expression><binary/>` would lose
+  the structural grouping of left/right/op without gain.
+- Control-flow and structural constructs: `<if>`, `<while>`,
+  `<for>`, `<return>`, `<function>`, `<class>`, statement-form
+  `<try>` (Java/C#/Python — distinct from Rust's expression-level
+  `?`). These introduce new structure, not annotations.
+- Multi-discriminator kinds that *already* use markers:
+  `<type>` with `<nullable/>`, `<generic/>`, `<array/>`. The
+  marker-as-discriminator pattern works there because the
+  discriminators are orthogonal and there is no single "primary"
+  type kind. The same shape applies inside `<expression>` for
+  modifiers.
+
+**Audit candidates** (currently per-modifier wrappers, to migrate):
+
+- Rust: `try_expression` → `<try/>` marker;
+  `await_expression` → `<await/>` marker;
+  `reference_type` (`<ref>` for `&T`) — borderline,
+  see follow-up.
+- JS/TS/Python/C#: `await_expression` → `<await/>` marker.
+- TypeScript: `non_null_expression` → `<non_null/>` marker.
+- C#: `<conditional/>` chaining (`?.`) is already a marker on
+  `<member>`; align surrounding shape.
+- C-family: cast expressions — borderline because the cast carries
+  a target type as data, not a closed-set keyword. May stay as
+  `<cast>` with a `<type>` child (constructs, not annotations).
+
+**Cross-language consistency.** C# already preserves
+`expression_statement` as `<expression>`; TypeScript and Rust drop
+it. Migration unifies the existing precedent across all languages.
+
+**Cites:** Goal #1 (intuitive queries — modifier-agnostic),
+Goal #4 (minimal query complexity — no `(self::call or self::try)`
+disjunctions), Goal #5 (developer's mental model — a call is still
+a call), Principle #7 (modifiers as empty elements — extends the
+declaration pattern to expressions), Principle #8 (renderability
+via source-order marker placement), Principle #13 (markers stay
+off text-only leaves — uniform host removes the temptation).
+
+**Deferred / open question:** the more radical "kind as marker"
+shape — `<expression><call/><callee>foo</callee>...</expression>`
+without a named `<call>` element — works for multi-discriminator
+elements (already used by `<type>`) but flattens structural grouping
+for primary-kind elements like calls and members. Tracked as a
+separate experiment; not part of this principle.
 
 ---
 
