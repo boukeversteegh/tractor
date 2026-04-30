@@ -135,22 +135,22 @@ fn python_unary() {
 #[test]
 fn csharp_prefix_unary() {
     claim("`-1` extracts <op[minus]> and carries <prefix>",
-        &mut parse_src("csharp", "class T { void M() { int n = -1; } }"),
+        &mut parse_src("csharp", "int n = -1;"),
         "//unary[prefix][op[minus]]/int='1'",
         1);
 
     claim("`!true` extracts <op> with logical-not marker",
-        &mut parse_src("csharp", "class T { void M() { bool b = !true; } }"),
+        &mut parse_src("csharp", "bool b = !true;"),
         "//unary[prefix][op/logical[not]]/bool='true'",
         1);
 
     claim("`~x` extracts <op> and carries <prefix>",
-        &mut parse_src("csharp", "class T { void M(int x) { int p = ~x; } }"),
+        &mut parse_src("csharp", "int x = 0; int p = ~x;"),
         "//unary[prefix]/op",
         1);
 
     claim("`++x` carries [prefix] AND op[increment] — distinguishable from x++ which lacks [prefix]",
-        &mut parse_src("csharp", "class T { void M(int x) { ++x; } }"),
+        &mut parse_src("csharp", "int x = 0; ++x;"),
         "//unary[prefix][op[increment]]",
         1);
 }
