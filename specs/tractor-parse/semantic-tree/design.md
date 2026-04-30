@@ -43,6 +43,13 @@ already in the developer's head, so it's what the tree surfaces by
 default — no translation layer between source and query.
 
 Onboarding is the primary optimisation. Common cases must be easy.
+Primary nodes are concrete *developer concepts*, not raw grammar
+variants. `<variable>` is concrete (developers say "variable") even
+though `const` / `let` / `var` are surface variants under it. `<call>`
+is concrete even though Rust's `?` and JavaScript's `await` are surface
+modifiers around it. Variants narrow a stable concept; they do not
+replace it.
+
 Concrete is simpler than abstract; abstractions build on top of concrete
 things; therefore concrete is primary and abstractions are layered on.
 
@@ -74,6 +81,74 @@ by taxing the baseline:
   saved queries.
 
 Neither direction reshapes the tree that every consumer reads.
+
+### 6. Broad-to-Narrow Query Refinement
+
+A simple query should match the broadest concept a developer is likely
+to mean. More specific variants should be expressed by adding
+predicates or markers, not by reaching for a different element name.
+
+Rule authoring is iterative: write a broad query, inspect the matches
+in the current codebase, and narrow until the result set captures the
+intended pattern. False positives are visible during authoring and can
+be refined away. False negatives caused by an unintentionally narrow
+tree shape are silent — they only appear later when a real-world case
+drifts past the rule, undermining the whole point of writing a rule
+once.
+
+Good:
+
+```xpath
+//variable
+//variable[const]
+//variable[const][name='foo']
+```
+
+Bad:
+
+```xpath
+//const
+```
+
+The `//const` shape silently excludes `let` and `var` declarations
+unless the user already knows to search for each separately. The same
+pattern applies to expressions: `//call` should keep matching whether
+the call is awaited, try-propagated, null-forgiven, or
+optional-chained.
+
+This goal interacts directly with Goal #5: the broadest natural
+concept must be a *concrete developer concept* (`variable`, `call`,
+`member`), not an abstract supertype (`expression`, `declaration`).
+Surface variants narrow a stable concept; they do not replace it.
+
+### 7. Source Reversibility
+
+The semantic tree's text, when concatenated in document order and the
+element tags stripped, should reproduce the original source. This is a
+goal — not always achievable, because:
+
+- Whitespace between tokens is often dropped during parsing.
+- Modifiers, keywords, and punctuation that got lifted into markers
+  have to survive as dangling text siblings to satisfy the goal.
+
+Practical consequences:
+
+- Markers that replace a source keyword (e.g. `<public/>`,
+  `<static/>`, `<get/>`) keep the keyword text as a sibling in the
+  parent. The parent's XPath string-value then contains the original
+  token.
+- Marker order follows source order. `public abstract static class`
+  renders as `class[public and abstract and static]/ "public abstract static class" …`
+  — a reader comparing tree to source shouldn't see shuffled
+  keywords.
+- Wrappers that get flattened (e.g. `<modifiers>`,
+  `parenthesized_expression`) preserve their text content by lifting
+  it into the parent, not dropping it.
+
+This is closely related to Principle #8 (Renderability): renderability
+is about reconstructing valid syntax, source reversibility is about
+the textual content matching what the user wrote. Both push the
+transform toward keeping source tokens reachable.
 
 ---
 
@@ -407,122 +482,121 @@ concepts — one element per namespace regardless of context),
 Principle #11 (specific names — `<type>` and `<name>` are concrete
 concepts, not abstract supertypes).
 
-### 15. `<expression>` Host for Expression Modifiers
+### 15. Markers Live in Stable, Predictable Locations
 
-Every expression position is uniformly wrapped in an `<expression>`
-host element, and **closed-set expression modifiers** —
-`<await/>`, `<try/>` (Rust `?`), `<non_null/>` (TS `foo!`),
-`<conditional/>` (`?.` chaining), `<deref/>`, `<ref/>`, etc. —
-attach as empty markers on the host rather than as their own wrapper
-elements. The operand keeps its specific named element
-(`<call>`, `<member>`, `<name>`, …) inside the host.
+Markers (`<public/>`, `<async/>`, `<const/>`, `<await/>`, `<try/>`,
+`<nullable/>`, `<generic/>`, …) carry meaning by their presence on a
+parent. For that to work, the parent has to be a stable, predictable
+location — the same parent shape whether or not the marker is
+present, and across all surface variants of the same concept.
+
+Concrete consequence: **when a developer concept has variations,
+that concept must have its own node** so the variations can attach
+as markers without disturbing the concept's identity in the tree.
 
 ```xml
-<!-- WRONG: per-modifier wrapper steals identity from the operand -->
-<try><call>foo()</call>?</try>             <!-- Rust foo()? -->
-<await>await<call>foo()</call></await>     <!-- JS await foo() -->
+<!-- WRONG: surface variant becomes the parent.
+     Now //variable misses const, and //const misses let/var. -->
+<const><name>x</name></const>
+<let><name>y</name></let>
 
-<!-- RIGHT: uniform host, modifier as marker, operand keeps its name -->
+<!-- RIGHT: stable concept node, variant as marker.
+     //variable matches both, //variable[const] narrows. -->
+<variable><const/><name>x</name></variable>
+<variable><let/><name>y</name></variable>
+```
+
+```xml
+<!-- WRONG: modifier wrapper steals the call's parent slot. -->
+<try><call>foo()</call></try>      <!-- Rust foo()? -->
+<await><call>foo()</call></await>  <!-- JS await foo() -->
+
+<!-- RIGHT: stable host for the expression position, modifier on the host. -->
 <expression><call>foo()</call><try/></expression>
 <expression><await/><call>foo()</call></expression>
 ```
 
-The host appears at every expression position, even when no
-modifier is present. This is the price of uniform shape — bare
-expressions like `return y` become `<return><expression><name>y</name></expression></return>`.
-The benefit is that every modifier-bearing expression has the same
-parent shape as its bare counterpart, so queries about expression
-position are always agnostic to which modifiers happen to be
-present.
+Two failure modes this rules out:
 
-**Why uniform host (not "host only when modifiers present"):**
+1. **Variant-as-parent.** Promoting a surface variant
+   (`<const>`, `<try>`, `<await>`) to the parent name fragments the
+   concept across multiple element names. Broad queries
+   (`//variable`, `//call`) silently miss whichever variant the
+   author didn't think to enumerate — the dangerous failure mode
+   identified in Goal #6.
 
-- The original motivation: queries that target consecutive
-  statements (e.g., "two adjacent xot.with_* calls in the same body")
-  must work regardless of whether `?`, `!`, `await` etc. appear on
-  any of them. With a uniform host, both are siblings of `<body>`
-  with the same element name; without it, a `?`-suffixed call has
-  parent `<expression>` while its plain neighbour has parent
-  `<body>` and they're never siblings.
-- Closes off the "leaf vs. complex operand" tension entirely.
-  `<expression>` is always available to host markers, so leaves
-  (`<name>`, simple `<type>`) never need to grow markers themselves
-  (preserving Principle #13's leaf shape) and never need invented
-  per-leaf wrappers either.
-- Stacked modifiers compose flat. `await foo()?` produces one host
-  with two markers: `<expression><await/><call>foo()</call><try/></expression>`,
-  not `<await><try>...</try></await>`. Marker order matches source
-  order so renderability (Principle #8) is preserved.
+2. **Markers on text-only leaves.** Adding `<try/>` directly under
+   `<name>foo</name>` regresses the leaf's JSON shape from `"foo"`
+   to `{try: true, text: "foo"}` (Principle #13). A stable parent
+   one level up gives the marker somewhere safe to live.
 
-**Why marker, not per-modifier wrapper element:**
+Companion principles:
 
-- `//expression[await]` / `//expression[try]` parallel
-  `//method[public]` / `//method[static]` — one query syntax for
-  both declaration-level and expression-level modifiers
-  (Principle #7).
-- Specific-named operands stay queryable: `//call` still finds every
-  call, `//member` every member access, etc., independent of
-  modifier presence.
-- Adding a new modifier = adding a marker. No new wrapper element,
-  no rule rewrites for unaffected queries.
+- **Principle #7** (modifiers as empty elements) defines the marker
+  shape; this principle says where the markers may *attach*.
+- **Principle #11** (specific names over type hierarchies) keeps
+  the operand inside the stable parent specifically named —
+  `<variable><const/>`, `<expression><call>` — so concept queries
+  (`//variable`, `//call`) stay broad without re-introducing an
+  abstract hierarchy wrapper.
+- **Principle #13** (annotation follows node shape) explains *why*
+  markers can't just go on any node; this principle explains *where
+  they go instead*.
 
-**Relationship to Principle #11 (Specific Names Over Type
-Hierarchies).** `<expression>` is *not* a hierarchy supertype like
-the rejected `<expression><binary/>`. It's a marker host that does
-real work — without it, modifier markers have no home that respects
-#13. The operand inside still uses its specific name (`<call>`,
-`<binary>`, `<member>`, …), so #11's intuitive-query goal is
-preserved: developers query `//call`, not `//expression[call]`.
+Concrete realizations of this principle (each in [Decisions](#decisions)):
+the `<variable>` declaration shape (Principle #9 spelled out for
+declaration-kind variants); the `<expression>` host for expression
+modifiers; multi-discriminator `<type>` with `<nullable/>`,
+`<generic/>`, `<array/>` markers.
 
-**What stays as named wrapper elements:**
+### 16. Optimize for Repeated Patterns
 
-- Open-set operators with semantics in the operator: `<binary>`,
-  `<unary>`, `<assign>`, `<ternary>`. Their identity *is* the
-  operator; reducing them to `<expression><binary/>` would lose
-  the structural grouping of left/right/op without gain.
-- Control-flow and structural constructs: `<if>`, `<while>`,
-  `<for>`, `<return>`, `<function>`, `<class>`, statement-form
-  `<try>` (Java/C#/Python — distinct from Rust's expression-level
-  `?`). These introduce new structure, not annotations.
-- Multi-discriminator kinds that *already* use markers:
-  `<type>` with `<nullable/>`, `<generic/>`, `<array/>`. The
-  marker-as-discriminator pattern works there because the
-  discriminators are orthogonal and there is no single "primary"
-  type kind. The same shape applies inside `<expression>` for
-  modifiers.
+Tractor rules are written for repeating codebase patterns, not for
+one-off expressions. The tree shape should optimize for that case.
 
-**Audit candidates** (currently per-modifier wrappers, to migrate):
+A team's rule typically targets shapes like:
 
-- Rust: `try_expression` → `<try/>` marker;
-  `await_expression` → `<await/>` marker;
-  `reference_type` (`<ref>` for `&T`) — borderline,
-  see follow-up.
-- JS/TS/Python/C#: `await_expression` → `<await/>` marker.
-- TypeScript: `non_null_expression` → `<non_null/>` marker.
-- C#: `<conditional/>` chaining (`?.`) is already a marker on
-  `<member>`; align surrounding shape.
-- C-family: cast expressions — borderline because the cast carries
-  a target type as data, not a closed-set keyword. May stay as
-  `<cast>` with a `<type>` child (constructs, not annotations).
+- "every public controller method must have an authorization
+  attribute"
+- "no constructor parameter named `httpClient` without dependency
+  injection"
+- "consecutive `xot.with_*` calls in the same body should be chained"
 
-**Cross-language consistency.** C# already preserves
-`expression_statement` as `<expression>`; TypeScript and Rust drop
-it. Migration unifies the existing precedent across all languages.
+These rules are valuable because they catch the same mistake many
+times across the codebase. They are not written for a deeply nested
+one-off expression that happens to appear once.
 
-**Cites:** Goal #1 (intuitive queries — modifier-agnostic),
-Goal #4 (minimal query complexity — no `(self::call or self::try)`
-disjunctions), Goal #5 (developer's mental model — a call is still
-a call), Principle #7 (modifiers as empty elements — extends the
-declaration pattern to expressions), Principle #8 (renderability
-via source-order marker placement), Principle #13 (markers stay
-off text-only leaves — uniform host removes the temptation).
+When designing tree shape, prefer **stable repeated query surfaces
+over compact rendering of rare deep expression trees.** A more
+verbose tree with predictable shape is worth more than a compact
+tree whose shape shifts under surface variations, because the
+verbosity cost is paid once during inspection while the shape cost
+is paid every time a rule under-scopes silently.
 
-**Deferred / open question:** the more radical "kind as marker"
-shape — `<expression><call/><callee>foo</callee>...</expression>`
-without a named `<call>` element — works for multi-discriminator
-elements (already used by `<type>`) but flattens structural grouping
-for primary-kind elements like calls and members. Tracked as a
-separate experiment; not part of this principle.
+This is why uniform expression hosts are acceptable even though they
+make deeply nested expression trees more verbose — those trees are
+rarely the direct target of durable rules.
+
+#### Exception: fluent DSLs
+
+Some complex expressions *are* rule-worthy because they are repeated
+DSL shapes — LINQ, query builders, validation builders, routing
+DSLs, dependency-injection registration chains, test setup builders.
+A rule like "queries with more than 3 `Include` calls where each
+include path is two or more levels deep must call `.AsSplitQuery()`"
+targets a complex expression, but the expression is a *recurring*
+shape, not a one-off.
+
+Even here, the design preference is the same: consistency matters
+more than compactness. DSL chains are queryable precisely *because*
+their repeated shape is predictable. A stable expression host shape
+across calls, members, arguments, lambdas, and modifiers is what
+makes the rule expressible at all.
+
+**Cites:** Goal #5 (mental model — rule authors think in terms of
+"this pattern, repeated"), Goal #6 (broad-to-narrow refinement
+depends on stable broad shapes), Principle #15 (stable marker
+locations are what make the repeated query surface stable).
 
 ---
 
@@ -607,31 +681,170 @@ built-in.
 as Empty Elements — markers must stay empty, which is why we can't
 put the keyword text inside the marker).
 
-### Source-reversibility goal
+### Expression positions get an `<expression>` host
 
-The semantic tree's text, when concatenated in document order and
-the element tags stripped, should reproduce the original source.
-This is a goal — not always achievable, because:
+Concrete realization of Principle #15 for expression positions.
 
-- Whitespace between tokens is often dropped during parsing.
-- Modifiers, keywords, and punctuation that got lifted into markers
-  have to survive as dangling text siblings to satisfy the goal.
+Every expression position is wrapped in an `<expression>` host
+element. Closed-set expression modifiers — `<await/>`, `<try/>`
+(Rust `?`), `<non_null/>` (TS `foo!`), `<conditional/>` (`?.`),
+`<deref/>`, `<ref/>`, etc. — attach as empty markers on the host.
+The operand keeps its specific named element (`<call>`, `<member>`,
+`<binary>`, `<name>`, …) inside the host.
 
-Practical consequences:
+```xml
+<!-- WRONG: per-modifier wrapper steals identity from the operand -->
+<try><call>foo()</call></try>            <!-- Rust foo()? -->
+<await><call>foo()</call></await>        <!-- JS await foo() -->
 
-- Markers that replace a source keyword (e.g. `<public/>`,
-  `<static/>`, `<get/>`) keep the keyword text as a sibling in the
-  parent. The parent's XPath string-value then contains the original
-  token.
-- Marker order follows source order. `public abstract static class`
-  renders as `class[public and abstract and static]/ "public abstract static class" …`
-  — a reader comparing tree to source shouldn't see shuffled
-  keywords.
-- Wrappers we flatten (e.g. `<modifiers>`, `parenthesized_expression`)
-  preserve their text content by lifting it into the parent, not
-  dropping it.
+<!-- RIGHT: uniform host, modifier as marker, operand keeps its name -->
+<expression><call>foo()</call><try/></expression>
+<expression><await/><call>foo()</call></expression>
+```
 
-**Cites:** Principle #8 (Renderability), Goal #5 (developer's mental
-model — a dev expects the tree to mirror what they wrote).
+The host appears at *every* expression position, even when no
+modifier is present. Bare expressions like `return y` become
+`<return><expression><name>y</name></expression></return>`. This
+verbosity is the price of uniform shape; the benefit is that two
+identities are preserved at once:
+
+- **Operand identity.** `//call` finds every call regardless of
+  whether it is awaited, try-propagated, null-forgiven, or
+  conditionally-accessed. The call element name doesn't change
+  under surface variation.
+- **Position identity.** A modified expression and an unmodified
+  expression have the same parent shape. Two adjacent expression
+  statements are siblings under `<body>` whether or not either has
+  a `?` or `await`.
+
+#### The motivating example
+
+Two consecutive fluent calls should be expressible as siblings:
+
+```rust
+xot.with_a(node)?;
+xot.with_b();
+```
+
+A rule that targets "two adjacent `xot.with_*` calls in the same
+body" must keep working when one of them gains a `?`. With the
+expression host, both statements are `<expression>` siblings of
+`<body>`, and the rule reads naturally:
+
+```xpath
+//body/expression[
+  call/callee/member[object/expression/name='xot' and starts-with(name, 'with_')]
+]
+/following-sibling::expression[1][
+  call/callee/member[object/expression/name='xot' and starts-with(name, 'with_')]
+]
+```
+
+Without the host, the `?`-suffixed call would have a different
+parent (`<try>`) than its plain neighbour (`<body>`), and they would
+never appear as siblings — the rule would silently miss every mixed
+case.
+
+#### Rejected alternatives
+
+- **Keep modifier-specific wrappers** (`<try>`, `<await>`,
+  `<non_null>` as parents). Closest to tree-sitter, minimal
+  transform work, but each new modifier becomes a special case in
+  every position-sensitive query. Forces defensive disjunctions like
+  `self::call or self::try or self::await`. Rejected: violates
+  Principle #15.
+- **Markers directly on the operand** (`<call><try/>...</call>`).
+  Works for complex operands, but breaks for text-only leaves
+  (`<name>foo</name>` would have to grow children, regressing JSON
+  shape — Principle #13). Also ambiguous in chained expressions
+  about which operand owns the modifier. Rejected as the general
+  model.
+- **Host only when a modifier is present.** Modified and unmodified
+  expressions still have different parent shapes — the sibling
+  problem from the motivating example is unsolved. Rejected: only a
+  partial fix.
+- **Reuse role nodes as hosts** (`<argument>`, `<return>` host the
+  marker directly). Avoids one wrapper, but expression modifiers end
+  up scattered across many host types and there is no single
+  expression-level query surface. Rejected as the primary design;
+  remains viable as a localized optimization.
+- **Virtual-node / transparent XPath** (keep `<try><call>` in the
+  tree, make the engine treat it as transparent). Breaks the
+  promise that the displayed tree is the queried tree. Rejected for
+  the core model; could be revisited as optional query sugar.
+
+#### What stays as a named wrapper element
+
+Not every node inside an expression position becomes a marker.
+Named wrappers stay where the wrapper *introduces structure or
+carries data*, not just where it annotates:
+
+- **Open-set operators with structural grouping**: `<binary>`,
+  `<unary>`, `<assign>`, `<ternary>`. Their identity *is* the
+  operator and they carry left/right/op children. Reducing them to
+  `<expression><binary/>` would lose structural grouping.
+- **Control-flow and structural constructs**: `<if>`, `<while>`,
+  `<for>`, `<return>`, `<function>`, `<class>`, statement-form
+  `<try>` (distinct from Rust's expression-level `?`). These
+  introduce new structure, not annotations.
+- **Constructs that carry a target as data**: `<cast>` keeps a
+  `<type>` child; the cast is a construct, not a closed-set
+  keyword.
+
+#### Use concrete nodes vs. expression hosts
+
+Two complementary query surfaces; users learn the distinction by use:
+
+```xpath
+//call          // "where do calls occur, anywhere?"     — concept query
+//member        // "where do member accesses occur?"     — concept query
+//binary        // "where do binary expressions occur?"  — concept query
+```
+
+```xpath
+//body/expression[call]       // "what occupies expression-statement position
+                              //  where the operand is a call?"  — position query
+//argument/expression[call]   // "which arguments are calls?"
+//return/expression[call]     // "which returns return a call?"
+```
+
+Modifiers attach as predicates on the host:
+
+```xpath
+//expression[await]
+//expression[try]
+//body/expression[call][try]
+```
+
+#### Audit candidates
+
+Currently per-modifier wrappers, to migrate to host + marker:
+
+- Rust: `try_expression` → `<try/>`; `await_expression` → `<await/>`;
+  `reference_type` (`<ref>` for `&T`) — borderline, see follow-up.
+- JS / TS / Python / C#: `await_expression` → `<await/>`.
+- TypeScript: `non_null_expression` → `<non_null/>`.
+- C#: `<conditional/>` (`?.`) is already a marker on `<member>`;
+  align surrounding shape.
+- C-family `cast` expressions stay as `<cast>` with a `<type>`
+  child (constructs, not annotations).
+
+C# already preserves `expression_statement` as `<expression>`;
+TypeScript and Rust currently drop it. Migration unifies the
+existing precedent across all languages.
+
+**Cites:** Principle #15 (stable marker locations), Principle #11
+(operand keeps its specific name inside the host), Principle #13
+(host removes the temptation to put markers on text-only leaves),
+Principle #7 (modifier markers extend the declaration pattern to
+expressions), Goal #6 (broad-to-narrow — `//call` stays broad),
+Principle #16 (verbosity in deep one-off expressions is acceptable).
+
+**Deferred / open question:** the more radical "kind as marker"
+shape — `<expression><call/><callee>foo</callee>...</expression>`
+without a named `<call>` element — works for multi-discriminator
+elements (already used by `<type>`) but flattens structural grouping
+for primary-kind elements like calls and members. Tracked as a
+separate experiment; not part of this decision.
 
 *See child specs for language-specific and feature-specific decisions.*
