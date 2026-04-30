@@ -49,7 +49,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::MemberAccessExpression      => RenameWithMarker(Member, Instance),
         CsKind::MemberBindingExpression     => RenameWithMarker(Member, Conditional),
         CsKind::PointerType                 => RenameWithMarker(Type, Pointer),
-        CsKind::PrefixUnaryExpression       => RenameWithMarker(Unary, Prefix),
+        CsKind::PrefixUnaryExpression       => Custom(transformations::prefix_unary_expression),
         CsKind::RecursivePattern            => RenameWithMarker(Pattern, Recursive),
         CsKind::RefType                     => RenameWithMarker(Type, Ref),
         CsKind::RelationalPattern           => RenameWithMarker(Pattern, Relational),

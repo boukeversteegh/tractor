@@ -149,10 +149,12 @@ unit/
   │       │       │   ├─ parameter/
   │       │       │   │   ├─ type/name = "Point"
   │       │       │   │   └─ name = "b"
-  │       │       │   └─ body/unary[prefix]/binary/
-  │       │       │       ├─ left/expression/name = "a"
-  │       │       │       ├─ op[equals] = "=="
-  │       │       │       └─ right/expression/name = "b"
+  │       │       │   └─ body/unary[prefix]/
+  │       │       │       ├─ op/logical[not]
+  │       │       │       └─ binary/
+  │       │       │           ├─ left/expression/name = "a"
+  │       │       │           ├─ op[equals] = "=="
+  │       │       │           └─ right/expression/name = "b"
   │       │       ├─ method[public and override]/
   │       │       │   ├─ returns/type/name = "bool"
   │       │       │   ├─ name = "Equals"

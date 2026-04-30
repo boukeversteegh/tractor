@@ -124,6 +124,49 @@ fn python_unary() {
         1);
 }
 
+/// C#'s `prefix_unary_expression` is a separate kind from
+/// `unary_expression`, so it doesn't get the standard
+/// `ExtractOpThenRename` treatment. Its prior shape
+/// `<unary[prefix]>"-"<int>1</int></unary>` left the operator as bare
+/// text, making `//unary[op[minus]]` and similar broad-narrow queries
+/// silently miss every prefix unary site. The fix extracts the
+/// operator AND keeps the `[prefix]` marker (needed to distinguish
+/// `++x` from `x++` since both use `<op[increment]/>`).
+#[test]
+fn csharp_prefix_unary() {
+    let mut tree = parse_src("csharp", r#"
+        class T {
+            void M(int x) {
+                int n = -1;
+                bool b = !true;
+                int p = ~x;
+                ++x;
+                --x;
+            }
+        }
+    "#);
+
+    claim("`-1` extracts <op[minus]> and carries <prefix>",
+        &mut tree,
+        "//unary[prefix][op[minus]]/int='1'",
+        1);
+
+    claim("`!true` extracts <op> with logical-not marker",
+        &mut tree,
+        "//unary[prefix][op/logical[not]]/bool='true'",
+        1);
+
+    claim("`~x` extracts <op[bitnot]> (or whatever the C# bitwise-not maps to)",
+        &mut tree,
+        "//unary[prefix]/op",
+        5);
+
+    claim("`++x` carries [prefix] AND op[increment] — distinguishable from x++ which lacks [prefix]",
+        &mut tree,
+        "//unary[prefix][op[increment]]",
+        1);
+}
+
 /// C#'s null-forgiving operator (`name!`) is a postfix non-null
 /// assertion — it doesn't change the value at runtime, just suppresses
 /// a nullable warning. Per Principle #15 it surfaces as

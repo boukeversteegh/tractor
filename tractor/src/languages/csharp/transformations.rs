@@ -281,6 +281,23 @@ pub fn variable_declaration(
 /// as a Custom rather than `ExtractOpThenRename` because postfix
 /// operators sit *after* the operand and we want a stable arm name
 /// in case future C# additions need to differentiate.
+/// `prefix_unary_expression` — `-x`, `!x`, `~x`, `++x`, `--x`. Extract
+/// the operator into `<op>` (matching the binary / regular-unary
+/// shape across languages) AND prepend a `<prefix/>` marker so
+/// callers can distinguish prefix from postfix increment / decrement
+/// (`++x` vs. `x++`). Equivalent to combining
+/// `ExtractOpThenRename(Unary)` with `RenameWithMarker(Unary, Prefix)`;
+/// no shared rule variant exists for this composition yet.
+pub fn prefix_unary_expression(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    extract_operator(xot, node)?;
+    xot.with_renamed(node, Unary)
+        .with_prepended_empty_element(node, super::output::TractorNode::Prefix)?;
+    Ok(TransformAction::Continue)
+}
+
 /// `postfix_unary_expression` — C#'s tree-sitter conflates two
 /// semantically distinct constructs under one kind:
 ///
