@@ -14,7 +14,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::TsqlKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 #[allow(clippy::too_many_lines)]

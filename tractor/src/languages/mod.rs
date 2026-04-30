@@ -241,7 +241,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: None,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
-        node_spec: Some(tsql::semantic::spec),
+        node_spec: Some(tsql::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,

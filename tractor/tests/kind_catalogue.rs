@@ -299,8 +299,8 @@ fn tsql_catalogue_covers_blueprint() {
 
 #[test]
 fn tsql_node_metadata_is_well_formed() {
-    use tractor::languages::tsql::semantic::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/tsql/semantic.rs");
+    use tractor::languages::tsql::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/tsql/output.rs");
 }
 
 /// Shared NODES well-formedness check: names are unique, every node
