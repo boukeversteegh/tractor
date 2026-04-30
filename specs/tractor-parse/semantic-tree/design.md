@@ -407,6 +407,82 @@ concepts — one element per namespace regardless of context),
 Principle #11 (specific names — `<type>` and `<name>` are concrete
 concepts, not abstract supertypes).
 
+### 15. Annotational Wrappers as Markers on the Operand
+
+When a grammar wraps a single expression in a node whose only role is
+to **annotate** that expression with a property — error propagation
+`?`, asynchrony `await`, non-null assertion `!`, casting, dereference
+— attach the annotation as an empty marker on the inner expression
+rather than keeping the wrapper element.
+
+The criterion is **syntactic head vs. conceptual dependent**: the
+grammar promotes the modifier to a head-node (`try_expression`,
+`await_expression`), but conceptually the inner expression carries
+the identity — `await foo()` is still "a call to foo, with async
+behavior", not a different kind of expression. The semantic tree
+should reflect the conceptual structure, not the grammar's syntactic
+shape.
+
+```xml
+<!-- WRONG: wrapper steals identity from the call -->
+<try><call>...</call>?</try>            <!-- Rust foo()? -->
+<await>await<call>...</call></await>    <!-- JS await foo() -->
+
+<!-- RIGHT: marker preserves call identity -->
+<call>...<try/></call>                  <!-- foo()? -->
+<call><await/>...</call>                <!-- await foo() -->
+```
+
+**Position-agnostic.** Applies whether the syntax is **prefix**
+(`await foo()`, `(int)x`), **postfix** (`foo()?`, `foo!`,
+`foo().await`), or **mixfix** (`foo as Bar`). The marker's position
+within the operand follows source order (Principle #8): prefix
+modifiers come before the operand's other children, postfix after.
+
+The convention is already established for **type-level** annotations:
+`Foo?` becomes `<type>Foo<nullable/></type>` (C#),
+`x?: number` becomes `<param><optional/>...</param>` (TypeScript).
+Expression-level annotations follow the same shape, parallel to
+declaration-level annotations (Principle #7).
+
+**Distinguishing from genuine constructs.** This principle covers
+*annotational* wrappers only — those whose role is to tag a child
+with a property. Control-flow and structural constructs (`if`,
+`while`, `for`, statement-form `try { } catch { }`, function
+definitions, blocks) stay as their own elements: they introduce
+new structure, not just annotations on a child.
+
+The litmus test: would a developer reading the source describe the
+construct as *"the same expression, but with [property]"*? If yes,
+it's annotational and should be a marker. If they'd describe it as
+*"a different kind of construct entirely"*, it's structural and
+keeps its own element.
+
+**Why marker, not wrapper:**
+
+- `//call` reliably finds every call regardless of annotation.
+  Wrappers force every rule to spell out
+  `//call | //try/call | //await/call`.
+- The operand keeps its semantic identity.
+- Predicate composability mirrors declaration modifiers:
+  `//call[try]` / `//call[not(await)]` parallels `//method[public]`
+  / `//method[not(static)]`.
+
+**Audit candidates** (annotational wrappers still surviving as their
+own elements):
+- Rust: `try_expression` (`?`), `await_expression` (`.await`)
+- JS/TS/Python/C#: `await_expression` (prefix `await`)
+- TypeScript: `non_null_expression` (`foo!`), type assertions
+- C-family: cast expressions (`(int)x`)
+
+**Cites:** Goal #1 (intuitive queries), Goal #4 (minimal query
+complexity), Goal #5 (developer's mental model — a call is a call
+regardless of annotation), Principle #7 (modifiers as empty
+elements — extending the convention from declarations to
+expressions), Principle #11 (`<try><call/></try>` is structurally
+`<expression><call/></expression>` with `try` as the kind label,
+which Principle #11 explicitly rejects).
+
 ---
 
 ## Decisions
