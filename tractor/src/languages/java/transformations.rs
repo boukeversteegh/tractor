@@ -14,8 +14,8 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::JavaKind;
-use super::output::JavaName;
-use super::output::JavaName::{
+use super::output::TractorNode;
+use super::output::TractorNode::{
     Call, Comment as CommentName, Else, Generic, Generics, If, Leading, Method, Name, Package,
     Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
     Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Void,
@@ -173,7 +173,7 @@ pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// modifier was found (Principle #9 — mutually-exclusive access is
 /// exhaustive).
 pub fn modifiers(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let mut markers: Vec<JavaName> = match get_text_content(xot, node) {
+    let mut markers: Vec<TractorNode> = match get_text_content(xot, node) {
         Some(text) => text
             .split_whitespace()
             .filter_map(parse_modifier)
@@ -255,7 +255,7 @@ pub fn method_declaration(
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<JavaName> {
+) -> Option<TractorNode> {
     if has_modifiers_child(xot, node) {
         return None;
     }
@@ -270,15 +270,15 @@ pub fn default_access_for_declaration(
 // Local helpers used by handlers above.
 // ---------------------------------------------------------------------
 
-fn parse_modifier(text: &str) -> Option<JavaName> {
+fn parse_modifier(text: &str) -> Option<TractorNode> {
     text.parse().ok()
 }
 
-fn is_access_modifier(name: JavaName) -> bool {
+fn is_access_modifier(name: TractorNode) -> bool {
     matches!(name, Public | Private | Protected)
 }
 
-fn is_known_modifier(name: JavaName) -> bool {
+fn is_known_modifier(name: TractorNode) -> bool {
     matches!(
         name,
         Public | Private | Protected

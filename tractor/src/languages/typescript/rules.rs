@@ -12,10 +12,10 @@
 use crate::languages::rule::Rule;
 
 use super::input::TsKind;
-use super::output::TsName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
-pub fn rule(k: TsKind) -> Rule<TsName> {
+pub fn rule(k: TsKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

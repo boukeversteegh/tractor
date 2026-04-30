@@ -10,7 +10,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::TsqlKind;
-use super::output::TsqlName::{self, Alias, Name, Schema, Temp, Var};
+use super::output::TractorNode::{self, Alias, Name, Schema, Temp, Var};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (currently just `comment`) or grammar leaves the transform never
@@ -67,7 +67,7 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     };
 
     if let Some(field_val) = get_attr(xot, node, "field") {
-        match field_val.parse::<TsqlName>().ok() {
+        match field_val.parse::<TractorNode>().ok() {
             Some(Alias) => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);

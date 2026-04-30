@@ -4,14 +4,14 @@ use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, EnumIter, EnumString, IntoStaticStr};
 
-use crate::languages::NodeSpec;
+use crate::languages::TractorNodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr, AsRefStr, EnumIter,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum JavaName {
+pub enum TractorNode {
     // Top-level / declarations (Record dual-use)
     Program, Class, Interface, Enum, Record, Method, Constructor, Field, Variable,
     Declarator, Constant,
@@ -40,7 +40,7 @@ pub enum JavaName {
     Void, This, Super, Array, Variadic, Compact,
 }
 
-impl JavaName {
+impl TractorNode {
     pub fn as_str(self) -> &'static str {
         <&'static str>::from(self)
     }
@@ -54,7 +54,7 @@ impl JavaName {
     ///   - Record  — structural (record_declaration) + marker (record_pattern).
     ///   - Type    — structural (type references) + marker (type_pattern).
     ///   - This    — marker on `<call[this]>` + structural for bare `this`.
-    pub fn spec(self) -> NodeSpec {
+    pub fn spec(self) -> TractorNodeSpec {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading                                          => (true, false, Default),
@@ -88,25 +88,25 @@ impl JavaName {
             // ---- Default: container with Default syntax ----------------------
             _                                                                       => (false, true, Default),
         };
-        NodeSpec { name: self.as_str(), marker, container, syntax }
+        TractorNodeSpec { name: self.as_str(), marker, container, syntax }
     }
 }
 
-static NODES_TABLE: Lazy<Vec<NodeSpec>> =
-    Lazy::new(|| JavaName::iter().map(|n| n.spec()).collect());
+static NODES_TABLE: Lazy<Vec<TractorNodeSpec>> =
+    Lazy::new(|| TractorNode::iter().map(|n| n.spec()).collect());
 
-pub fn nodes() -> &'static [NodeSpec] {
+pub fn nodes() -> &'static [TractorNodeSpec] {
     NODES_TABLE.as_slice()
 }
 
-pub fn spec(name: &str) -> Option<&'static NodeSpec> {
-    let parsed: JavaName = name.parse().ok()?;
+pub fn spec(name: &str) -> Option<&'static TractorNodeSpec> {
+    let parsed: TractorNode = name.parse().ok()?;
     let target = parsed.as_str();
     NODES_TABLE.iter().find(|s| s.name == target)
 }
 
 pub fn all_names() -> impl Iterator<Item = &'static str> {
-    JavaName::iter().map(JavaName::as_str)
+    TractorNode::iter().map(TractorNode::as_str)
 }
 
 pub fn is_marker_only(name: &str) -> bool {

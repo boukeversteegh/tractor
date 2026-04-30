@@ -13,8 +13,8 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::PhpKind;
-use super::output::PhpName;
-use super::output::PhpName::{
+use super::output::TractorNode;
+use super::output::TractorNode::{
     Comment as CommentName, Leading, Private, Protected, Public, String as PhpString, Trailing,
 };
 
@@ -69,8 +69,8 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
             ts_kind,
             Some(PhpKind::Name | PhpKind::VariableName),
         ) || matches!(
-            el_name.and_then(|name| name.parse::<PhpName>().ok()),
-            Some(PhpName::Name | PhpName::Variable),
+            el_name.and_then(|name| name.parse::<TractorNode>().ok()),
+            Some(TractorNode::Name | TractorNode::Variable),
         );
         if inlineable {
             let text = descendant_text(xot, child);
@@ -164,7 +164,7 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<PhpName> {
+) -> Option<TractorNode> {
     if has_visibility_marker(xot, node) {
         None
     } else {
@@ -184,7 +184,7 @@ fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
             return true;
         }
         if let Some(name) = get_element_name(xot, child) {
-            if matches!(name.parse::<PhpName>().ok(), Some(Public | Private | Protected)) {
+            if matches!(name.parse::<TractorNode>().ok(), Some(Public | Private | Protected)) {
                 return true;
             }
         }

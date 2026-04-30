@@ -14,11 +14,11 @@
 use crate::languages::rule::Rule;
 
 use super::input::TsqlKind;
-use super::output::TsqlName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
 #[allow(clippy::too_many_lines)]
-pub fn rule(k: TsqlKind) -> Rule<TsqlName> {
+pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

@@ -14,7 +14,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
-use super::output::CsName::{
+use super::output::TractorNode::{
     self, Accessor, Else, Generic, If, Internal, Leading, Name, Nullable, Private, Public,
     Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
@@ -296,7 +296,7 @@ pub fn postfix_unary_expression(
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<CsName> {
+) -> Option<TractorNode> {
     if has_access_modifier_child(xot, node) {
         None
     } else {
@@ -327,7 +327,7 @@ fn is_named_declaration(kind: &str) -> bool {
     ))
 }
 
-fn classify_identifier(xot: &Xot, node: XotNode) -> CsName {
+fn classify_identifier(xot: &Xot, node: XotNode) -> TractorNode {
     if let Some(field) = get_attr(xot, node, "field") {
         if field == "type" {
             return Type;
@@ -420,13 +420,13 @@ fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
     false
 }
 
-fn parse_access_modifier(text: &str) -> Option<CsName> {
+fn parse_access_modifier(text: &str) -> Option<TractorNode> {
     text.parse()
         .ok()
         .filter(|name| matches!(name, Public | Private | Protected | Internal))
 }
 
-fn parse_known_modifier(text: &str) -> Option<CsName> {
+fn parse_known_modifier(text: &str) -> Option<TractorNode> {
     text.parse().ok().filter(|name| {
         super::transform::ACCESS_MODIFIERS.contains(name)
             || super::transform::OTHER_MODIFIERS.contains(name)
@@ -434,7 +434,7 @@ fn parse_known_modifier(text: &str) -> Option<CsName> {
     })
 }
 
-fn default_access_modifier(xot: &Xot, node: XotNode) -> CsName {
+fn default_access_modifier(xot: &Xot, node: XotNode) -> TractorNode {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).and_then(|kind| kind.parse::<CsKind>().ok()) {

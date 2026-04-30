@@ -3,7 +3,7 @@
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::output`] for
-//! the output vocabulary (semantic names + NodeSpec metadata).
+//! the output vocabulary (semantic names + TractorNodeSpec metadata).
 //!
 //! Exhaustive over `GoKind` — the compiler enforces coverage. When
 //! the grammar ships a new kind, regenerating `input.rs` adds a
@@ -18,10 +18,10 @@
 use crate::languages::rule::Rule;
 
 use super::input::GoKind;
-use super::output::GoName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
-pub fn rule(k: GoKind) -> Rule<GoName> {
+pub fn rule(k: GoKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
@@ -167,7 +167,7 @@ pub fn rule(k: GoKind) -> Rule<GoName> {
         // TODO: `fallthrough_statement` is a real Go control-flow
         // construct. Likely wants its own semantic name (FALLTHROUGH)
         // alongside BREAK / CONTINUE / GOTO, with a corresponding
-        // NodeSpec entry.
+        // TractorNodeSpec entry.
         GoKind::FallthroughStatement => Custom(transformations::passthrough),
 
         // `imaginary_literal` (`1i`) is a number-shaped literal,

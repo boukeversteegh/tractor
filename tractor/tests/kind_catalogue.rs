@@ -305,7 +305,7 @@ fn tsql_node_metadata_is_well_formed() {
 
 /// Shared NODES well-formedness check: names are unique, every node
 /// is at least one of marker / container.
-fn check_node_metadata(nodes: &[tractor::languages::NodeSpec], path: &str) {
+fn check_node_metadata(nodes: &[tractor::languages::TractorNodeSpec], path: &str) {
     let mut names: Vec<&str> = nodes.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();

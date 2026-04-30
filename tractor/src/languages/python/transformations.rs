@@ -14,7 +14,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::PyKind;
-use super::output::PyName::{
+use super::output::TractorNode::{
     self, Async, Comment as CommentName, Comprehension, Dict, Else, Function, Leading, List,
     Literal, Private, Protected, Public, Set, Ternary, Trailing,
 };
@@ -284,7 +284,7 @@ fn is_inside_class_body(xot: &Xot, node: XotNode) -> bool {
     false
 }
 
-fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<PyName> {
+fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<TractorNode> {
     let name_wrapper_node = xot.children(node).find(|&c| {
         xot.element(c).is_some()
             && get_element_name(xot, c).as_deref() == Some("name")

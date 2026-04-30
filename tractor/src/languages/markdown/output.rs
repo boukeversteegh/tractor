@@ -5,7 +5,7 @@
 //! markdown's element names are not user-data driven — they're
 //! structural (`<heading>`, `<list>`, `<link>`, …).
 //!
-//! No `NodeSpec` table yet (markdown doesn't currently declare a
+//! No `TractorNodeSpec` table yet (markdown doesn't currently declare a
 //! semantic-vocabulary spec); these constants exist so `rules.rs`
 //! and `transformations.rs` can reference output names symbolically.
 

@@ -11,7 +11,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::TsKind;
-use super::output::TsName::{
+use super::output::TractorNode::{
     self, Abstract, Alias, Arrow, Async, Comment as CommentName, Const, Default, Else, Export,
     Extends, Field, Function, Generator, Get, Leading, Let, Method, Name, Optional, Parameter,
     Private, Protected, Public, Required, Set, Ternary, Trailing, Type, Var, Variable,
@@ -196,7 +196,7 @@ pub fn required_parameter(
 fn function_with_markers(
     xot: &mut Xot,
     node: XotNode,
-    to: TsName,
+    to: TractorNode,
 ) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     xot.with_renamed(node, to);
@@ -272,10 +272,10 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
     let texts = get_text_children(xot, node);
     let mut has_async = false;
     let mut has_star = false;
-    let mut accessor_kind: Option<TsName> = None;
+    let mut accessor_kind: Option<TractorNode> = None;
     for t in &texts {
         for tok in t.split_whitespace() {
-            let marker = tok.parse::<TsName>().ok();
+            let marker = tok.parse::<TractorNode>().ok();
             if marker == Some(Async) {
                 has_async = true;
             }
@@ -303,7 +303,7 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
 
 fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
-    let found: Vec<TsName> = texts.iter()
+    let found: Vec<TractorNode> = texts.iter()
         .filter_map(|t| t.parse().ok())
         .filter(|name| matches!(name, Let | Const | Var | Async | Export | Default))
         .collect();
@@ -350,7 +350,7 @@ fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
             return true;
         }
         if let Some(name) = get_element_name(xot, child) {
-            if matches!(name.parse::<TsName>().ok(), Some(Public | Private | Protected)) {
+            if matches!(name.parse::<TractorNode>().ok(), Some(Public | Private | Protected)) {
                 return true;
             }
         }
@@ -389,7 +389,7 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             if let Some(parent) = get_parent(xot, node) {
                 let already = xot.children(parent).any(|c| {
                     get_element_name(xot, c)
-                        .and_then(|name| name.parse::<TsName>().ok())
+                        .and_then(|name| name.parse::<TractorNode>().ok())
                         == Some(Private)
                 });
                 if !already {

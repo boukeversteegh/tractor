@@ -9,10 +9,10 @@
 use crate::languages::rule::Rule;
 
 use super::input::RubyKind;
-use super::output::RubyName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
-pub fn rule(k: RubyKind) -> Rule<RubyName> {
+pub fn rule(k: RubyKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- RenameWithMarker ------------------------------------------

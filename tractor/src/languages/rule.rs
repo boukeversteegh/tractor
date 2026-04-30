@@ -20,11 +20,11 @@
 //! New shared variants are added when a *second* language wants the
 //! same composition — no speculative variants.
 //!
-//! `N` is the language's output-name enum (e.g. `CsName`) — typically
+//! `N` is the language's output-name enum (e.g. `TractorNode`) — typically
 //! a `Copy` enum that converts to `&'static str` via strum's
 //! `IntoStaticStr`. Carrying `N` instead of `&'static str` makes typos
 //! a compile error and lets call sites write `Type` (with
-//! `use CsName::*`) instead of stringy constants.
+//! `use TractorNode::*`) instead of stringy constants.
 
 use xot::{Xot, Node as XotNode};
 

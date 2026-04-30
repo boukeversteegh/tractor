@@ -6,7 +6,7 @@
 use super::{
     get_child, get_child_text, get_children, has_marker, text_content, RenderError, RenderOptions,
 };
-use crate::languages::csharp::output::CsName::{
+use crate::languages::csharp::output::TractorNode::{
     self, Accessor, Accessors, Add, Argument, Arguments, Attribute, Attributes, Body, Class, Comment,
     Declarator, Field, Generic, Get, Import, Init, Name, Namespace, Nullable, Property, Remove, Set,
     Struct, Type, Unit, Variable,
@@ -17,7 +17,7 @@ use crate::xpath::XmlNode;
 /// Render a single XML node to C# source code
 pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
     match node {
-        XmlNode::Element { name, .. } => match name.parse::<CsName>().ok() {
+        XmlNode::Element { name, .. } => match name.parse::<TractorNode>().ok() {
             Some(Class) => render_class(node, opts),
             Some(Struct) => render_struct(node, opts),
             Some(Property) => render_property(node, opts),
@@ -209,7 +209,7 @@ fn render_accessors(node: &XmlNode) -> Result<String, RenderError> {
                 matches!(
                     child,
                     XmlNode::Element { name, .. }
-                        if matches!(name.parse::<CsName>().ok(), Some(Get | Set | Init | Add | Remove))
+                        if matches!(name.parse::<TractorNode>().ok(), Some(Get | Set | Init | Add | Remove))
                 )
             })
             .collect::<Vec<_>>(),
@@ -391,7 +391,7 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
 
     for child in body_children {
         if let XmlNode::Element { name, .. } = child {
-            if matches!(name.parse::<CsName>().ok(),
+            if matches!(name.parse::<TractorNode>().ok(),
                         Some(Property | Field | Class | Struct | Comment))
             {
                 members.push(render_node(child, opts)?);
@@ -448,7 +448,7 @@ fn collect_namespace_members(
     let mut members = Vec::new();
     for child in children {
         if let XmlNode::Element { name, .. } = child {
-            if matches!(name.parse::<CsName>().ok(),
+            if matches!(name.parse::<TractorNode>().ok(),
                         Some(Class | Struct | Import | Comment))
             {
                 members.push(render_node(child, opts)?);
@@ -494,7 +494,7 @@ fn render_unit(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
     let mut parts = Vec::new();
     for child in children {
         if let XmlNode::Element { name, .. } = child {
-            if matches!(name.parse::<CsName>().ok(),
+            if matches!(name.parse::<TractorNode>().ok(),
                         Some(Import | Namespace | Class | Struct | Comment))
             {
                 parts.push(render_node(child, opts)?);

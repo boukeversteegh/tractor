@@ -11,7 +11,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::RustKind;
-use super::output::RustName::{
+use super::output::TractorNode::{
     self, Async, Borrowed, Comment as CommentName, Const, Crate, Generic, Generics, In as InName,
     Inner, Leading, Let, Literal, Mut, Name, Pattern, Private, Pub, Raw, String as RustString,
     Super, Trailing, Type, Unsafe,
@@ -246,7 +246,7 @@ pub fn let_declaration(
 pub fn default_access_for_declaration(
     xot: &Xot,
     node: XotNode,
-) -> Option<RustName> {
+) -> Option<TractorNode> {
     let has_vis = xot.children(node).any(|child| {
         get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
             == Some(RustKind::VisibilityModifier)
@@ -264,7 +264,7 @@ pub fn default_access_for_declaration(
 
 fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
-    let found: Vec<RustName> = texts.iter()
+    let found: Vec<TractorNode> = texts.iter()
         .filter_map(|t| t.parse().ok())
         .filter(|name| matches!(name, Mut | Async | Unsafe | Const))
         .collect();

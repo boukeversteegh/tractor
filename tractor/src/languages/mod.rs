@@ -39,7 +39,7 @@ use crate::output::syntax_highlight::SyntaxCategory;
 /// vs "ALL_NAMES" duplication and the comment-documented dual-use
 /// notes.
 #[derive(Debug, Clone, Copy)]
-pub struct NodeSpec {
+pub struct TractorNodeSpec {
     pub name: &'static str,
     pub marker: bool,
     pub container: bool,
@@ -62,8 +62,8 @@ pub type PostTransformFn = fn(&mut Xot, XotNode) -> Result<(), xot::Error>;
 /// Maps a transformed element name to a syntax category for highlighting
 pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
 
-/// Type alias for per-language NodeSpec lookup.
-pub type NodeSpecLookupFn = fn(&str) -> Option<&'static NodeSpec>;
+/// Type alias for per-language TractorNodeSpec lookup.
+pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 
 /// Declarative per-language operations table.
 ///
@@ -82,7 +82,7 @@ pub struct LanguageOps {
     pub post_transform: Option<PostTransformFn>,
     pub syntax_category: SyntaxCategoryFn,
     pub field_wrappings: &'static [(&'static str, &'static str)],
-    pub node_spec: Option<NodeSpecLookupFn>,
+    pub node_spec: Option<TractorNodeSpecLookupFn>,
     /// Structured/"programming" language (as opposed to data/config).
     pub is_programming: bool,
     /// Has a `/data` branch projection (JSON/YAML).

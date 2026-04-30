@@ -9,21 +9,21 @@
 use crate::languages::rule::Rule;
 
 use super::input::RustKind;
-use super::output::RustName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by all 8
 /// Rust declaration kinds (function / struct / enum / trait / const /
 /// static / type / mod). Bakes in Rust's resolver — default access is
 /// always `private` (no `pub` modifier means item-private).
-fn da(to: RustName) -> Rule<RustName> {
+fn da(to: TractorNode) -> Rule<TractorNode> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: RustKind) -> Rule<RustName> {
+pub fn rule(k: RustKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

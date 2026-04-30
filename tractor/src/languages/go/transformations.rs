@@ -13,7 +13,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::GoKind;
-use super::output::GoName::{
+use super::output::TractorNode::{
     self, Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
     Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
 };
@@ -187,7 +187,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         .parse::<GoKind>()
         .ok();
         let child_name = get_element_name(xot, child)
-            .and_then(|name| name.parse::<GoName>().ok());
+            .and_then(|name| name.parse::<TractorNode>().ok());
         if !matches!(
             child_kind,
             Some(
@@ -263,7 +263,7 @@ fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::E
         }
         let type_child = xot.children(child).find(|&c| {
             get_element_name(xot, c)
-                .and_then(|name| name.parse::<GoName>().ok())
+                .and_then(|name| name.parse::<TractorNode>().ok())
                 == Some(Type)
                 || matches!(
                     get_kind(xot, c).and_then(|kind| kind.parse::<GoKind>().ok()),
@@ -291,10 +291,10 @@ fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::E
 
 /// Determine `<exported/>` vs `<unexported/>` from the name child's
 /// first-character capitalisation.
-fn get_export_marker(xot: &Xot, node: XotNode) -> GoName {
+fn get_export_marker(xot: &Xot, node: XotNode) -> TractorNode {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            if name.parse::<GoName>().ok() == Some(Name) {
+            if name.parse::<TractorNode>().ok() == Some(Name) {
                 for grandchild in xot.children(child) {
                     if let Some(text) = get_text_content(xot, grandchild) {
                         if text.starts_with(|c: char| c.is_uppercase()) {

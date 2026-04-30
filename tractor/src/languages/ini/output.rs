@@ -4,7 +4,7 @@
 //! (e.g. `<database>`, `<host>`), so the output vocabulary is open.
 //! Only `<comment>` is a closed structural name.
 //!
-//! No `NodeSpec` table: data-language convention shared with JSON,
+//! No `TractorNodeSpec` table: data-language convention shared with JSON,
 //! YAML, and TOML — `node_spec` stays `None` in the language registry.
 
 pub const COMMENT: &str = "comment";

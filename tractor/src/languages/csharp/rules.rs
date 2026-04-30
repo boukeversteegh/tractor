@@ -1,10 +1,10 @@
-//! Per-kind transformation rules for C#: the `CsKind` → `Rule<CsName>`
+//! Per-kind transformation rules for C#: the `CsKind` → `Rule<TractorNode>`
 //! table.
 //!
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::output`] for
-//! the output vocabulary (`CsName` enum + per-name metadata).
+//! the output vocabulary (`TractorNode` enum + per-name metadata).
 //!
 //! Exhaustive over `CsKind` — the compiler enforces coverage. When
 //! the grammar ships a new kind, regenerating `input.rs` adds a
@@ -19,20 +19,20 @@
 use crate::languages::rule::Rule;
 
 use super::input::CsKind;
-use super::output::CsName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by all 9
 /// C# declaration kinds. Bakes in C#'s default-access resolver so the
 /// rule arms read as data.
-fn da(to: CsName) -> Rule<CsName> {
+fn da(to: TractorNode) -> Rule<TractorNode> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: CsKind) -> Rule<CsName> {
+pub fn rule(k: CsKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

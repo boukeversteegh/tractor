@@ -3,7 +3,7 @@
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::output`] for
-//! the output vocabulary (semantic names + NodeSpec metadata).
+//! the output vocabulary (semantic names + TractorNodeSpec metadata).
 //!
 //! Exhaustive over `JavaKind` — the compiler enforces coverage. When
 //! the grammar ships a new kind, regenerating `input.rs` adds a
@@ -18,7 +18,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::JavaKind;
-use super::output::JavaName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by 5 of
@@ -26,14 +26,14 @@ use super::transformations;
 /// / field). Bakes in Java's default-access resolver so the rule arms
 /// read as data. The 6th declaration kind (method) needs an extra
 /// return-type wrapping step and stays a `Custom` handler.
-fn da(to: JavaName) -> Rule<JavaName> {
+fn da(to: TractorNode) -> Rule<TractorNode> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: JavaKind) -> Rule<JavaName> {
+pub fn rule(k: JavaKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

@@ -13,8 +13,8 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::input::CsKind;
-use super::output::{self, CsName};
-use CsName::{
+use super::output::{self, TractorNode};
+use TractorNode::{
     Abstract, Async, Const, Extern, Internal, New, Override, Partial, Private, Protected, Public,
     Readonly, Sealed, Static, Unsafe, Virtual,
 };
@@ -55,10 +55,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
 /// C# access modifiers in canonical declaration order. Public so that
 /// `transformations.rs` and the renderer can share the list.
-pub const ACCESS_MODIFIERS: &[CsName] = &[Public, Private, Protected, Internal];
+pub const ACCESS_MODIFIERS: &[TractorNode] = &[Public, Private, Protected, Internal];
 
 /// C# non-access modifiers in canonical declaration order.
-pub const OTHER_MODIFIERS: &[CsName] = &[
+pub const OTHER_MODIFIERS: &[TractorNode] = &[
     Static, Abstract, Virtual, Override, Sealed,
     Readonly, Const, Partial, Async, Extern, Unsafe, New,
 ];

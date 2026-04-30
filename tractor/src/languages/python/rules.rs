@@ -3,14 +3,14 @@
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::semantic`] for
-//! the output vocabulary (semantic names + NodeSpec metadata).
+//! the output vocabulary (semantic names + TractorNodeSpec metadata).
 //!
 //! Exhaustive over `PyKind` — the compiler enforces coverage.
 
 use crate::languages::rule::Rule;
 
 use super::input::PyKind;
-use super::output::PyName::{
+use super::output::TractorNode::{
     self, Argument, Arm, As, Assert, Assign, Await, Binary, Break, Call, Cast, Class,
     Compare, Continue, Decorator, Delete, Dict, Else, ElseIf, Except, False,
     Finally, Float, For, Format, From, Generator, Global, If, Import, Int,
@@ -21,7 +21,7 @@ use super::output::PyName::{
 };
 use super::transformations;
 
-pub fn rule(k: PyKind) -> Rule<PyName> {
+pub fn rule(k: PyKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

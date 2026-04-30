@@ -3,7 +3,7 @@
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
 //! handler the rule references by name. Read [`super::semantic`] for
-//! the output vocabulary (semantic names + NodeSpec metadata).
+//! the output vocabulary (semantic names + TractorNodeSpec metadata).
 //!
 //! Exhaustive over `PhpKind` — the compiler enforces coverage. When
 //! the grammar ships a new kind, regenerating `input.rs` adds a
@@ -18,20 +18,20 @@
 use crate::languages::rule::Rule;
 
 use super::input::PhpKind;
-use super::output::PhpName::{self, *};
+use super::output::TractorNode::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by the 2
 /// PHP declaration kinds (method, property) where members default to
 /// public when no visibility modifier is written.
-fn da(to: PhpName) -> Rule<PhpName> {
+fn da(to: TractorNode) -> Rule<TractorNode> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: PhpKind) -> Rule<PhpName> {
+pub fn rule(k: PhpKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------

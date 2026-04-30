@@ -7,7 +7,7 @@
 //!     user-data driven, so no constants beyond the structural
 //!     wrappers `item` and `field`.
 //!
-//! No `NodeSpec` table: data-branch names are not a closed set, so
+//! No `TractorNodeSpec` table: data-branch names are not a closed set, so
 //! `node_spec` stays `None` in the language registry. The constants
 //! below let `rules.rs` and `transformations.rs` reference output
 //! names symbolically rather than via stringly-typed literals.

@@ -9,7 +9,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
-use super::output::RubyName::{self, Comment as CommentName, Leading, Name, Trailing};
+use super::output::TractorNode::{self, Comment as CommentName, Leading, Name, Trailing};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`block`, `break`, `conditional`, `constant`, `do`, `false`, `in`,
@@ -36,7 +36,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         let child_kind = get_element_name(xot, child)
             .and_then(|name| name.parse::<RubyKind>().ok());
         let child_name = get_element_name(xot, child)
-            .and_then(|name| name.parse::<RubyName>().ok());
+            .and_then(|name| name.parse::<TractorNode>().ok());
         if matches!(
             child_kind,
             Some(RubyKind::Identifier | RubyKind::Constant | RubyKind::Operator)

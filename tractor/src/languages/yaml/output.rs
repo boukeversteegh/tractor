@@ -5,7 +5,7 @@
 //!   - `/data` — open vocabulary derived from mapping keys; only the
 //!     structural wrapper `item` is named here.
 //!
-//! No `NodeSpec` table: data-branch names are not a closed set, so
+//! No `TractorNodeSpec` table: data-branch names are not a closed set, so
 //! `node_spec` stays `None` in the language registry.
 
 // Syntax branch — closed vocabulary

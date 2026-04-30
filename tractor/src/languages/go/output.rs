@@ -4,10 +4,10 @@
 //! [`super::input::GoKind`] enum. The kind→output table lives in
 //! [`super::rules::rule`].
 //!
-//! Each variant of [`GoName`] is one element name the Go transform can
+//! Each variant of [`TractorNode`] is one element name the Go transform can
 //! emit. The wire string is the variant's snake_case form (via strum).
 //! Per-name metadata (marker / container role, syntax-highlight
-//! category) is computed in [`GoName::spec`] using a default-valued
+//! category) is computed in [`TractorNode::spec`] using a default-valued
 //! match — most names are containers with `Default` syntax, and only
 //! the exceptions need explicit arms.
 
@@ -15,14 +15,14 @@ use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, EnumIter, EnumString, IntoStaticStr};
 
-use crate::languages::NodeSpec;
+use crate::languages::TractorNodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr, AsRefStr, EnumIter,
 )]
 #[strum(serialize_all = "snake_case")]
-pub enum GoName {
+pub enum TractorNode {
     // Top-level / structural
     File, Package, Import,
     // Declarations (Function, Type are dual-use marker/container)
@@ -46,7 +46,7 @@ pub enum GoName {
     Raw, Short, Exported, Unexported, Negated, Generic,
 }
 
-impl GoName {
+impl TractorNode {
     pub fn as_str(self) -> &'static str {
         <&'static str>::from(self)
     }
@@ -59,7 +59,7 @@ impl GoName {
     ///                (marker on `<type>`).
     ///   - Type     — type wrapper (container) vs type_switch_statement
     ///                emits `<switch><type/>…>` (marker).
-    pub fn spec(self) -> NodeSpec {
+    pub fn spec(self) -> TractorNodeSpec {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
@@ -89,27 +89,27 @@ impl GoName {
             // ---- Default: container with Default syntax ----------------------
             _                                                                       => (false, true, Default),
         };
-        NodeSpec { name: self.as_str(), marker, container, syntax }
+        TractorNodeSpec { name: self.as_str(), marker, container, syntax }
     }
 }
 
-static NODES_TABLE: Lazy<Vec<NodeSpec>> =
-    Lazy::new(|| GoName::iter().map(|n| n.spec()).collect());
+static NODES_TABLE: Lazy<Vec<TractorNodeSpec>> =
+    Lazy::new(|| TractorNode::iter().map(|n| n.spec()).collect());
 
-/// Snapshot slice over every declared name's `NodeSpec`. Kept for the
+/// Snapshot slice over every declared name's `TractorNodeSpec`. Kept for the
 /// `go_node_metadata_is_well_formed` invariant test.
-pub fn nodes() -> &'static [NodeSpec] {
+pub fn nodes() -> &'static [TractorNodeSpec] {
     NODES_TABLE.as_slice()
 }
 
-pub fn spec(name: &str) -> Option<&'static NodeSpec> {
-    let parsed: GoName = name.parse().ok()?;
+pub fn spec(name: &str) -> Option<&'static TractorNodeSpec> {
+    let parsed: TractorNode = name.parse().ok()?;
     let target = parsed.as_str();
     NODES_TABLE.iter().find(|s| s.name == target)
 }
 
 pub fn all_names() -> impl Iterator<Item = &'static str> {
-    GoName::iter().map(GoName::as_str)
+    TractorNode::iter().map(TractorNode::as_str)
 }
 
 pub fn is_marker_only(name: &str) -> bool {
