@@ -13,12 +13,14 @@
 
 use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, EnumString, IntoStaticStr};
+use strum_macros::{AsRefStr, EnumIter, EnumString, IntoStaticStr};
 
 use crate::languages::NodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr, EnumIter)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr, AsRefStr, EnumIter,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum CsName {
     // Top-level / structural
@@ -67,7 +69,7 @@ pub enum CsName {
 impl CsName {
     /// Wire string for this name (snake_case via strum).
     pub fn as_str(self) -> &'static str {
-        self.into()
+        <&'static str>::from(self)
     }
 
     /// Per-name metadata — `marker`/`container` role + syntax category.
@@ -112,7 +114,7 @@ impl CsName {
             // ---- Default: container with Default syntax ----------------------
             _                                                                   => (false, true, Default),
         };
-        NodeSpec { name: self.into(), marker, container, syntax }
+        NodeSpec { name: self.as_str(), marker, container, syntax }
     }
 }
 

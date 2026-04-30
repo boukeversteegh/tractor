@@ -8,7 +8,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::*;
+use super::output::RubyName::{Comment as CommentName, Leading, Trailing};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`block`, `break`, `conditional`, `constant`, `do`, `false`, `in`,
@@ -50,8 +50,8 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// `comment` — Ruby uses `#` for line comments. Rename and run the
 /// shared classifier.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["#"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }

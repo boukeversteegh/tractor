@@ -87,16 +87,16 @@ pub fn dispatch<N>(
     rule: Rule<N>,
 ) -> Result<TransformAction, xot::Error>
 where
-    N: Copy + Into<&'static str>,
+    N: Copy + AsRef<str>,
 {
     match rule {
         Rule::Rename(to) => {
-            rename(xot, node, to.into());
+            rename(xot, node, to);
             Ok(TransformAction::Continue)
         }
         Rule::RenameWithMarker(to, marker) => {
-            rename(xot, node, to.into());
-            prepend_empty_element(xot, node, marker.into())?;
+            rename(xot, node, to);
+            prepend_empty_element(xot, node, marker)?;
             Ok(TransformAction::Continue)
         }
         Rule::Flatten { distribute_field } => {
@@ -107,14 +107,14 @@ where
         }
         Rule::ExtractOpThenRename(to) => {
             extract_operator(xot, node)?;
-            rename(xot, node, to.into());
+            rename(xot, node, to);
             Ok(TransformAction::Continue)
         }
         Rule::DefaultAccessThenRename { to, default_access } => {
             if let Some(marker) = default_access(xot, node) {
                 prepend_empty_element(xot, node, marker)?;
             }
-            rename(xot, node, to.into());
+            rename(xot, node, to);
             Ok(TransformAction::Continue)
         }
         Rule::Detach => {

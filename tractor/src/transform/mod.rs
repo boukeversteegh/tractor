@@ -247,7 +247,8 @@ pub mod helpers {
     /// singleton signal that the JSON serializer relies on for property lifting.
     /// If `field` matches the old element name, it is updated to the new name
     /// so that it stays in sync after the rename.
-    pub fn rename(xot: &mut Xot, node: XotNode, new_name: &str) {
+    pub fn rename(xot: &mut Xot, node: XotNode, new_name: impl AsRef<str>) {
+        let new_name = new_name.as_ref();
         let old_name = get_element_name(xot, node);
         let name_id = xot.add_name(new_name);
         if let Some(element) = xot.element_mut(node) {
@@ -382,8 +383,8 @@ pub mod helpers {
     }
 
     /// Prepend an empty element as first child
-    pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
-        let name_id = xot.add_name(name);
+    pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: impl AsRef<str>) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name.as_ref());
         let element = xot.new_element(name_id);
         xot.prepend(parent, element)?;
         Ok(element)
@@ -626,7 +627,8 @@ pub mod helpers {
     /// (Flat Lists): a purely-grouping wrapper is replaced by its children,
     /// which inherit a `field="<plural>"` attribute so non-XML serializers
     /// (JSON/YAML) can collect same-field siblings into an array.
-    pub fn distribute_field_to_children(xot: &mut Xot, node: XotNode, field: &str) {
+    pub fn distribute_field_to_children(xot: &mut Xot, node: XotNode, field: impl AsRef<str>) {
+        let field = field.as_ref();
         let children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .collect();
@@ -647,7 +649,7 @@ pub mod helpers {
         xot: &mut Xot,
         parent: XotNode,
         field: &str,
-        wrapper: &str,
+        wrapper: impl AsRef<str>,
     ) -> Result<(), xot::Error> {
         let child = xot
             .children(parent)
@@ -657,6 +659,7 @@ pub mod helpers {
             Some(c) => c,
             None => return Ok(()),
         };
+        let wrapper = wrapper.as_ref();
         let wrapper_id = xot.add_name(wrapper);
         let wrapper_node = xot.new_element(wrapper_id);
         copy_source_location(xot, child, wrapper_node);

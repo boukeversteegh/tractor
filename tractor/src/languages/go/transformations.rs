@@ -12,7 +12,10 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::*;
+use super::output::GoName::{
+    Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
+    Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
+};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`iota`, `dot`, `array_type`, …) — leave them unchanged.
@@ -54,16 +57,16 @@ pub fn type_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 
 /// `raw_string_literal` — render as `<string>` with a `<raw/>` marker.
 pub fn raw_string_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, RAW)?;
-    rename(xot, node, STRING);
+    prepend_empty_element(xot, node, Raw)?;
+    rename(xot, node, GoString);
     Ok(TransformAction::Continue)
 }
 
 /// `short_var_declaration` (`x := 42`) — render as `<variable>` with
 /// a `<short/>` marker to distinguish from `var x = 42`.
 pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, SHORT)?;
-    rename(xot, node, VARIABLE);
+    prepend_empty_element(xot, node, Short)?;
+    rename(xot, node, Variable);
     Ok(TransformAction::Continue)
 }
 
@@ -73,7 +76,7 @@ pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAc
 pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
     prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, FUNCTION);
+    rename(xot, node, Function);
     Ok(TransformAction::Continue)
 }
 
@@ -82,7 +85,7 @@ pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
     prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, METHOD);
+    rename(xot, node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -91,7 +94,7 @@ pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformActio
 pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
     prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, FIELD);
+    rename(xot, node, Field);
     Ok(TransformAction::Continue)
 }
 
@@ -113,7 +116,7 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     if let Some(inner) = inner {
         let inner_kind = get_kind(xot, inner).unwrap();
-        let new_name = if inner_kind == "struct_type" { STRUCT } else { INTERFACE };
+        let new_name = if inner_kind == "struct_type" { Struct } else { Interface };
         rename(xot, node, new_name);
         let inner_children: Vec<_> = xot.children(inner).collect();
         for c in inner_children {
@@ -122,7 +125,7 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         xot.detach(inner)?;
     } else {
-        rename(xot, node, TYPE);
+        rename(xot, node, Type);
     }
     Ok(TransformAction::Continue)
 }
@@ -132,7 +135,7 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
     prepend_empty_element(xot, node, marker)?;
-    rename(xot, node, ALIAS);
+    rename(xot, node, Alias);
     Ok(TransformAction::Continue)
 }
 
@@ -142,8 +145,8 @@ pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 /// `<else>` so the shared conditional-shape post-transform can
 /// collapse the chain uniformly.
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", ELSE)?;
-    rename(xot, node, IF);
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, If);
     Ok(TransformAction::Continue)
 }
 
@@ -151,7 +154,7 @@ pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// `<name>` so `//type[name='Foo']` matches uniformly across
 /// declaration and reference sites.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -204,10 +207,10 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// trailing/leading/floating classifier with `//` line-comment
 /// grouping.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 // ---------------------------------------------------------------------
@@ -274,23 +277,23 @@ fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::E
 
 /// Determine `<exported/>` vs `<unexported/>` from the name child's
 /// first-character capitalisation.
-fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
+fn get_export_marker(xot: &Xot, node: XotNode) -> super::output::GoName {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            if name == NAME {
+            if name == Name.as_str() {
                 for grandchild in xot.children(child) {
                     if let Some(text) = get_text_content(xot, grandchild) {
                         if text.starts_with(|c: char| c.is_uppercase()) {
-                            return EXPORTED;
+                            return Exported;
                         }
-                        return UNEXPORTED;
+                        return Unexported;
                     }
                 }
                 if let Some(text) = get_text_content(xot, child) {
                     if text.starts_with(|c: char| c.is_uppercase()) {
-                        return EXPORTED;
+                        return Exported;
                     }
-                    return UNEXPORTED;
+                    return Unexported;
                 }
             }
             if name == "identifier" || name == "type_identifier" {
@@ -298,14 +301,14 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
                     if field == "name" {
                         if let Some(text) = get_text_content(xot, child) {
                             if text.starts_with(|c: char| c.is_uppercase()) {
-                                return EXPORTED;
+                                return Exported;
                             }
-                            return UNEXPORTED;
+                            return Unexported;
                         }
                     }
                 }
             }
         }
     }
-    UNEXPORTED
+    Unexported
 }

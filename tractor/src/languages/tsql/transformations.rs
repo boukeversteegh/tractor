@@ -9,7 +9,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::*;
+use super::output::TsqlName::{Alias, Name, Schema, Temp, Var};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (currently just `comment`) or grammar leaves the transform never
@@ -43,7 +43,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
                     if text.starts_with('@') {
                         let text_node = xot.new_text(&text[1..]);
                         xot.append(node, text_node)?;
-                        rename(xot, node, VAR);
+                        rename(xot, node, Var);
                     } else {
                         let clean = strip_brackets(&text);
                         let text_node = xot.new_text(&clean);
@@ -66,7 +66,7 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     let text = match get_text_content(xot, node) {
         Some(t) => t,
         None => {
-            rename(xot, node, NAME);
+            rename(xot, node, Name);
             return Ok(TransformAction::Done);
         }
     };
@@ -76,13 +76,13 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
             "alias" => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, ALIAS);
+                rename(xot, node, Alias);
                 return Ok(TransformAction::Done);
             }
             "schema" => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, SCHEMA);
+                rename(xot, node, Schema);
                 return Ok(TransformAction::Done);
             }
             _ => {}
@@ -92,11 +92,11 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     if text.starts_with('@') {
         let var_name = &text[1..];
         replace_text(xot, node, var_name);
-        rename(xot, node, VAR);
+        rename(xot, node, Var);
     } else {
         let clean = strip_brackets(&text);
         replace_text(xot, node, &clean);
-        rename(xot, node, NAME);
+        rename(xot, node, Name);
     }
     Ok(TransformAction::Done)
 }
@@ -133,7 +133,7 @@ pub fn unary_expression(
                         }
                         let text_node = xot.new_text(&format!("#{}", inner_text));
                         xot.append(node, text_node)?;
-                        rename(xot, node, TEMP);
+                        rename(xot, node, Temp);
                         return Ok(TransformAction::Done);
                     }
                 }

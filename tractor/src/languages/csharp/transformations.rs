@@ -89,7 +89,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, Trailing.into(), Leading.into())
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 /// `interpolated_string_expression` — rename to the shared `<string>`
@@ -100,14 +100,14 @@ pub fn interpolated_string_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, CsString.into());
+    rename(xot, node, CsString);
     Ok(TransformAction::Continue)
 }
 
 /// `implicit_type` — C#'s `var` keyword in a type position. Render as
 /// `<type><name>var</name></type>` for uniform querying.
 pub fn implicit_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type.into());
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -115,7 +115,7 @@ pub fn implicit_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 /// `predefined_type` — keywords like `int`, `string`. Same shape as
 /// `implicit_type`.
 pub fn predefined_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, Type.into());
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -138,7 +138,7 @@ pub fn accessor_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAct
             return Ok(TransformAction::Continue);
         }
     }
-    rename(xot, node, Accessor.into());
+    rename(xot, node, Accessor);
     Ok(TransformAction::Continue)
 }
 
@@ -174,10 +174,10 @@ pub fn nullable_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
                     for c in all_children {
                         xot.detach(c)?;
                     }
-                    rename(xot, node, Type.into());
+                    rename(xot, node, Type);
                     let text_node = xot.new_text(&type_text);
                     xot.append(node, text_node)?;
-                    let nullable_name = xot.add_name(Nullable.into());
+                    let nullable_name = xot.add_name(Nullable.as_str());
                     let nullable_el = xot.new_element(nullable_name);
                     xot.append(node, nullable_el)?;
                     return Ok(TransformAction::Done);
@@ -185,7 +185,7 @@ pub fn nullable_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
             }
         }
     }
-    rename(xot, node, Type.into());
+    rename(xot, node, Type);
     Ok(TransformAction::Continue)
 }
 
@@ -196,7 +196,7 @@ pub fn nullable_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 /// matches uniformly across declaration and reference sites.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let classification = classify_identifier(xot, node);
-    rename(xot, node, classification.into());
+    rename(xot, node, classification);
     if classification == Type {
         wrap_text_in_name(xot, node)?;
     }
@@ -220,14 +220,14 @@ pub fn generic_name(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         }
     }
 
-    rename(xot, node, Type.into());
+    rename(xot, node, Type);
 
-    let generic_name_id = xot.add_name(Generic.into());
+    let generic_name_id = xot.add_name(Generic.as_str());
     let generic_el = xot.new_element(generic_name_id);
     xot.prepend(node, generic_el)?;
 
     if !type_name.is_empty() {
-        let name_id = xot.add_name(Name.into());
+        let name_id = xot.add_name(Name.as_str());
         let name_el = xot.new_element(name_id);
         let text_node = xot.new_text(&type_name);
         xot.append(name_el, text_node)?;
@@ -245,8 +245,8 @@ pub fn conditional_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else.into())?;
-    rename(xot, node, Ternary.into());
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, Ternary);
     Ok(TransformAction::Continue)
 }
 
@@ -257,8 +257,8 @@ pub fn conditional_expression(
 /// shared conditional-shape post-transform can collapse the chain
 /// uniformly.
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", Else.into())?;
-    rename(xot, node, If.into());
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, If);
     Ok(TransformAction::Continue)
 }
 
@@ -274,7 +274,7 @@ pub fn variable_declaration(
     if parent_kind.as_deref() == Some("field_declaration") {
         Ok(TransformAction::Flatten)
     } else {
-        rename(xot, node, Variable.into());
+        rename(xot, node, Variable);
         Ok(TransformAction::Continue)
     }
 }
@@ -289,7 +289,7 @@ pub fn postfix_unary_expression(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     extract_operator(xot, node)?;
-    rename(xot, node, Unary.into());
+    rename(xot, node, Unary);
     Ok(TransformAction::Continue)
 }
 
@@ -448,13 +448,13 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "interface_declaration" => return Public.into(),
-                "class_declaration" | "struct_declaration" | "record_declaration" => return Private.into(),
+                "interface_declaration" => return Public.as_str(),
+                "class_declaration" | "struct_declaration" | "record_declaration" => return Private.as_str(),
                 "declaration_list" => {}
                 _ => break,
             }
         }
         current = get_parent(xot, parent);
     }
-    Internal.into()
+    Internal.as_str()
 }

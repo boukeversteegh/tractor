@@ -18,7 +18,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::JavaKind;
-use super::output::*;
+use super::output::JavaName::{self, *};
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by 5 of
@@ -26,27 +26,27 @@ use super::transformations;
 /// / field). Bakes in Java's default-access resolver so the rule arms
 /// read as data. The 6th declaration kind (method) needs an extra
 /// return-type wrapping step and stays a `Custom` handler.
-fn da(to: &'static str) -> Rule<&'static str> {
+fn da(to: JavaName) -> Rule<JavaName> {
     Rule::DefaultAccessThenRename {
         to,
         default_access: transformations::default_access_for_declaration,
     }
 }
 
-pub fn rule(k: JavaKind) -> Rule<&'static str> {
+pub fn rule(k: JavaKind) -> Rule<JavaName> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
-        JavaKind::AssignmentExpression => ExtractOpThenRename(ASSIGN),
-        JavaKind::BinaryExpression     => ExtractOpThenRename(BINARY),
-        JavaKind::UnaryExpression      => ExtractOpThenRename(UNARY),
+        JavaKind::AssignmentExpression => ExtractOpThenRename(Assign),
+        JavaKind::BinaryExpression     => ExtractOpThenRename(Binary),
+        JavaKind::UnaryExpression      => ExtractOpThenRename(Unary),
 
         // ---- RenameWithMarker ------------------------------------------
-        JavaKind::ArrayType                     => RenameWithMarker(TYPE, ARRAY),
-        JavaKind::CompactConstructorDeclaration => RenameWithMarker(CONSTRUCTOR, COMPACT),
-        JavaKind::RecordPattern                 => RenameWithMarker(PATTERN, RECORD),
-        JavaKind::SpreadParameter               => RenameWithMarker(PARAMETER, VARIADIC),
-        JavaKind::TypePattern                   => RenameWithMarker(PATTERN, TYPE),
+        JavaKind::ArrayType                     => RenameWithMarker(Type, Array),
+        JavaKind::CompactConstructorDeclaration => RenameWithMarker(Constructor, Compact),
+        JavaKind::RecordPattern                 => RenameWithMarker(Pattern, Record),
+        JavaKind::SpreadParameter               => RenameWithMarker(Parameter, Variadic),
+        JavaKind::TypePattern                   => RenameWithMarker(Pattern, Type),
 
         // ---- Flatten with field distribution ---------------------------
         JavaKind::ArgumentList     => Flatten { distribute_field: Some("arguments") },
@@ -66,11 +66,11 @@ pub fn rule(k: JavaKind) -> Rule<&'static str> {
 
         // ---- DefaultAccessThenRename — 5 of 6 declaration kinds.
         //      method_declaration is Custom (extra return-type wrapping).
-        JavaKind::ClassDeclaration       => da(CLASS),
-        JavaKind::ConstructorDeclaration => da(CONSTRUCTOR),
-        JavaKind::EnumDeclaration        => da(ENUM),
-        JavaKind::FieldDeclaration       => da(FIELD),
-        JavaKind::InterfaceDeclaration   => da(INTERFACE),
+        JavaKind::ClassDeclaration       => da(Class),
+        JavaKind::ConstructorDeclaration => da(Constructor),
+        JavaKind::EnumDeclaration        => da(Enum),
+        JavaKind::FieldDeclaration       => da(Field),
+        JavaKind::InterfaceDeclaration   => da(Interface),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         JavaKind::BlockComment                 => Custom(transformations::comment),
@@ -93,48 +93,48 @@ pub fn rule(k: JavaKind) -> Rule<&'static str> {
         JavaKind::VoidType                     => Custom(transformations::void_type),
 
         // ---- Pure Rename -----------------------------------------------
-        JavaKind::Annotation                  => Rename(ANNOTATION),
-        JavaKind::ArrayAccess                 => Rename(INDEX),
-        JavaKind::BinaryIntegerLiteral        => Rename(INT),
-        JavaKind::CatchClause                 => Rename(CATCH),
-        JavaKind::DecimalFloatingPointLiteral => Rename(FLOAT),
-        JavaKind::DecimalIntegerLiteral       => Rename(INT),
-        JavaKind::EnhancedForStatement        => Rename(FOREACH),
-        JavaKind::EnumConstant                => Rename(CONSTANT),
-        JavaKind::False                       => Rename(FALSE),
-        JavaKind::FieldAccess                 => Rename(MEMBER),
-        JavaKind::FinallyClause               => Rename(FINALLY),
-        JavaKind::ForStatement                => Rename(FOR),
-        JavaKind::FormalParameter             => Rename(PARAMETER),
-        JavaKind::HexIntegerLiteral           => Rename(INT),
-        JavaKind::ImportDeclaration           => Rename(IMPORT),
-        JavaKind::LambdaExpression            => Rename(LAMBDA),
-        JavaKind::LocalVariableDeclaration    => Rename(VARIABLE),
-        JavaKind::MarkerAnnotation            => Rename(ANNOTATION),
-        JavaKind::MethodInvocation            => Rename(CALL),
-        JavaKind::NullLiteral                 => Rename(NULL),
-        JavaKind::ObjectCreationExpression    => Rename(NEW),
-        JavaKind::OctalIntegerLiteral         => Rename(INT),
-        JavaKind::PackageDeclaration          => Rename(PACKAGE),
-        JavaKind::Program                     => Rename(PROGRAM),
-        JavaKind::RecordDeclaration           => Rename(RECORD),
-        JavaKind::ReturnStatement             => Rename(RETURN),
-        JavaKind::ScopedIdentifier            => Rename(PATH),
-        JavaKind::ScopedTypeIdentifier        => Rename(PATH),
-        JavaKind::StringLiteral               => Rename(STRING),
-        JavaKind::SuperInterfaces             => Rename(IMPLEMENTS),
-        JavaKind::Superclass                  => Rename(EXTENDS),
-        JavaKind::SwitchBlock                 => Rename(BODY),
-        JavaKind::SwitchBlockStatementGroup   => Rename(CASE),
-        JavaKind::SwitchExpression            => Rename(SWITCH),
-        JavaKind::SwitchLabel                 => Rename(LABEL),
-        JavaKind::SwitchRule                  => Rename(ARM),
-        JavaKind::ThrowStatement              => Rename(THROW),
-        JavaKind::True                        => Rename(TRUE),
-        JavaKind::TryStatement                => Rename(TRY),
-        JavaKind::TypeBound                   => Rename(EXTENDS),
-        JavaKind::VariableDeclarator          => Rename(DECLARATOR),
-        JavaKind::WhileStatement              => Rename(WHILE),
+        JavaKind::Annotation                  => Rename(Annotation),
+        JavaKind::ArrayAccess                 => Rename(Index),
+        JavaKind::BinaryIntegerLiteral        => Rename(Int),
+        JavaKind::CatchClause                 => Rename(Catch),
+        JavaKind::DecimalFloatingPointLiteral => Rename(Float),
+        JavaKind::DecimalIntegerLiteral       => Rename(Int),
+        JavaKind::EnhancedForStatement        => Rename(Foreach),
+        JavaKind::EnumConstant                => Rename(Constant),
+        JavaKind::False                       => Rename(False),
+        JavaKind::FieldAccess                 => Rename(Member),
+        JavaKind::FinallyClause               => Rename(Finally),
+        JavaKind::ForStatement                => Rename(For),
+        JavaKind::FormalParameter             => Rename(Parameter),
+        JavaKind::HexIntegerLiteral           => Rename(Int),
+        JavaKind::ImportDeclaration           => Rename(Import),
+        JavaKind::LambdaExpression            => Rename(Lambda),
+        JavaKind::LocalVariableDeclaration    => Rename(Variable),
+        JavaKind::MarkerAnnotation            => Rename(Annotation),
+        JavaKind::MethodInvocation            => Rename(Call),
+        JavaKind::NullLiteral                 => Rename(Null),
+        JavaKind::ObjectCreationExpression    => Rename(New),
+        JavaKind::OctalIntegerLiteral         => Rename(Int),
+        JavaKind::PackageDeclaration          => Rename(Package),
+        JavaKind::Program                     => Rename(Program),
+        JavaKind::RecordDeclaration           => Rename(Record),
+        JavaKind::ReturnStatement             => Rename(Return),
+        JavaKind::ScopedIdentifier            => Rename(Path),
+        JavaKind::ScopedTypeIdentifier        => Rename(Path),
+        JavaKind::StringLiteral               => Rename(String),
+        JavaKind::SuperInterfaces             => Rename(Implements),
+        JavaKind::Superclass                  => Rename(Extends),
+        JavaKind::SwitchBlock                 => Rename(Body),
+        JavaKind::SwitchBlockStatementGroup   => Rename(Case),
+        JavaKind::SwitchExpression            => Rename(Switch),
+        JavaKind::SwitchLabel                 => Rename(Label),
+        JavaKind::SwitchRule                  => Rename(Arm),
+        JavaKind::ThrowStatement              => Rename(Throw),
+        JavaKind::True                        => Rename(True),
+        JavaKind::TryStatement                => Rename(Try),
+        JavaKind::TypeBound                   => Rename(Extends),
+        JavaKind::VariableDeclarator          => Rename(Declarator),
+        JavaKind::WhileStatement              => Rename(While),
 
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and the dispatcher leaves it as

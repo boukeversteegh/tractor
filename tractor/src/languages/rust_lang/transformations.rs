@@ -10,7 +10,11 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
-use super::output::*;
+use super::output::RustName::{
+    self, Async, Borrowed, Comment as CommentName, Const, Crate, Generic, Generics, In as InName,
+    Inner, Leading, Let, Literal, Mut, Name, Path, Pattern, Private, Pub, Raw, String as RustString,
+    Super, Trailing, Type, Unsafe,
+};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`crate`, `label`, `self`, `super`, `attribute`) or grammar
@@ -60,24 +64,24 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// line-comment grouping). Doc comments group naturally because they
 /// share the `//` prefix family.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 /// `identifier` / `field_identifier` / `shorthand_field_identifier` —
 /// always names. Tree-sitter Rust uses distinct kinds for type
 /// positions, so bare identifiers never need a heuristic.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, NAME);
+    rename(xot, node, Name);
     Ok(TransformAction::Continue)
 }
 
 /// `type_identifier` / `primitive_type` — type references. Render as
 /// `<type><name>i32</name></type>` for the unified vocabulary.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -86,7 +90,7 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// is the uniform shape. The specific pattern form (identifier /
 /// literal / tuple / struct / `_`) is exposed via child structure.
 pub fn match_pattern(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, PATTERN);
+    rename(xot, node, Pattern);
     Ok(TransformAction::Continue)
 }
 
@@ -102,7 +106,7 @@ pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// child so siblings like trait_bounds remain intact.
 pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-    rename(xot, node, GENERIC);
+    rename(xot, node, Generic);
     Ok(TransformAction::Continue)
 }
 
@@ -112,7 +116,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// flatten is preserved for parity).
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     distribute_field_to_children(xot, node, "generics");
-    rename(xot, node, GENERICS);
+    rename(xot, node, Generics);
     Ok(TransformAction::Flatten)
 }
 
@@ -126,7 +130,7 @@ pub fn inner_attribute_item(
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
         if get_kind(xot, child).as_deref() == Some("attribute") {
-            prepend_empty_element(xot, child, INNER)?;
+            prepend_empty_element(xot, child, Inner)?;
             break;
         }
     }
@@ -149,16 +153,16 @@ pub fn visibility_modifier(
         xot.detach(child)?;
     }
 
-    rename(xot, node, PUB);
+    rename(xot, node, Pub);
 
     if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
         let inner = trimmed[lp + 1..rp].trim();
         match inner {
-            "crate" => { prepend_empty_element(xot, node, CRATE)?; }
-            "super" => { prepend_empty_element(xot, node, SUPER)?; }
+            "crate" => { prepend_empty_element(xot, node, Crate)?; }
+            "super" => { prepend_empty_element(xot, node, Super)?; }
             _ if inner.starts_with("in ") => {
                 let path = inner[3..].trim();
-                prepend_element_with_text(xot, node, IN, path)?;
+                prepend_element_with_text(xot, node, InName.as_str(), path)?;
             }
             _ => {}
         }
@@ -173,8 +177,8 @@ pub fn raw_string_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, RAW)?;
-    rename(xot, node, STRING);
+    prepend_empty_element(xot, node, Raw)?;
+    rename(xot, node, RustString);
     Ok(TransformAction::Continue)
 }
 
@@ -199,10 +203,10 @@ pub fn reference_type(
         }
     }
     if has_mut {
-        prepend_empty_element(xot, node, MUT)?;
+        prepend_empty_element(xot, node, Mut)?;
     }
-    prepend_empty_element(xot, node, BORROWED)?;
-    rename(xot, node, TYPE);
+    prepend_empty_element(xot, node, Borrowed)?;
+    rename(xot, node, Type);
     Ok(TransformAction::Continue)
 }
 
@@ -219,7 +223,7 @@ pub fn struct_expression(
         node,
         &["type_identifier", "scoped_type_identifier"],
     )?;
-    rename(xot, node, LITERAL);
+    rename(xot, node, Literal);
     Ok(TransformAction::Continue)
 }
 
@@ -230,7 +234,7 @@ pub fn let_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     extract_modifiers(xot, node)?;
-    rename(xot, node, LET);
+    rename(xot, node, Let);
     Ok(TransformAction::Continue)
 }
 
@@ -254,7 +258,7 @@ pub fn default_access_for_declaration(
     if has_vis {
         None
     } else {
-        Some(PRIVATE)
+        Some(Private.as_str())
     }
 }
 
@@ -264,15 +268,14 @@ pub fn default_access_for_declaration(
 
 fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
-    const MODIFIERS: &[(&str, &str)] = &[
-        ("mut", MUT),
-        ("async", ASYNC),
-        ("unsafe", UNSAFE),
-        ("const", CONST),
-    ];
-
-    let found: Vec<&str> = texts.iter()
-        .filter_map(|t| MODIFIERS.iter().find(|(src, _)| *src == t).map(|(_, marker)| *marker))
+    let found: Vec<RustName> = texts.iter()
+        .filter_map(|t| match t.as_str() {
+            "mut" => Some(Mut),
+            "async" => Some(Async),
+            "unsafe" => Some(Unsafe),
+            "const" => Some(Const),
+            _ => None,
+        })
         .collect();
 
     for modifier in found.into_iter().rev() {

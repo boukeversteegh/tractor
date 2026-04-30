@@ -12,7 +12,9 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::output::*;
+use super::output::PhpName::{
+    Comment as CommentName, Leading, Public, String as PhpString, Trailing,
+};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`name`, `pair`) or grammar supertypes.
@@ -96,10 +98,10 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// of either family (or a mix on adjacent lines) merge into one
 /// `<comment>`.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//", "#"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 /// `visibility_modifier` / `static_modifier` / `final_modifier` /
@@ -148,7 +150,7 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
         xot.detach(child)?;
         xot.append(interp, child)?;
     }
-    rename(xot, node, STRING);
+    rename(xot, node, PhpString);
     Ok(TransformAction::Continue)
 }
 
@@ -171,7 +173,7 @@ pub fn default_access_for_declaration(
     if has_visibility_marker(xot, node) {
         None
     } else {
-        Some(PUBLIC)
+        Some(Public.as_str())
     }
 }
 

@@ -14,7 +14,11 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::JavaKind;
-use super::output::*;
+use super::output::JavaName::{
+    Call, Comment as CommentName, Else, Generic, Generics, If, Leading, Method, Name, Package,
+    Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
+    Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Void,
+};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`guard`, `pattern`, `super`, `this`, `throws`) or supertypes the
@@ -67,17 +71,17 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// run the shared trailing/leading/floating classifier with `//` line-
 /// comment grouping (Principle #1 / #2).
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 /// `boolean_type` / `floating_point_type` / `integral_type` — primitive
 /// type keywords. Render as `<type><name>int</name></type>` for uniform
 /// querying.
 pub fn primitive_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -86,7 +90,7 @@ pub fn primitive_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// separated because tree-sitter uses this kind specifically for type
 /// references.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -99,9 +103,9 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 /// replacement for `<name>`: JSON keeps `"name": "void"` and adds
 /// `"void": true` as the shortcut flag.
 pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
-    prepend_empty_element(xot, node, VOID)?;
+    prepend_empty_element(xot, node, Void)?;
     Ok(TransformAction::Continue)
 }
 
@@ -109,7 +113,7 @@ pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// grammar kind, so a bare `identifier` is always a name (definition
 /// or reference). Rename to `<name>`.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, NAME);
+    rename(xot, node, Name);
     Ok(TransformAction::Continue)
 }
 
@@ -128,8 +132,8 @@ pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// shared conditional-shape post-transform can collapse the chain
 /// uniformly.
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", ELSE)?;
-    rename(xot, node, IF);
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, If);
     Ok(TransformAction::Continue)
 }
 
@@ -140,8 +144,8 @@ pub fn ternary_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", ELSE)?;
-    rename(xot, node, TERNARY);
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, Ternary);
     Ok(TransformAction::Continue)
 }
 
@@ -153,7 +157,7 @@ pub fn ternary_expression(
 /// not the over-wrapped `<generic><type><name>T</name></type>...`.
 pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-    rename(xot, node, GENERIC);
+    rename(xot, node, Generic);
     Ok(TransformAction::Continue)
 }
 
@@ -162,7 +166,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// the children land directly under the enclosing declaration.
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     distribute_field_to_children(xot, node, "generics");
-    rename(xot, node, GENERICS);
+    rename(xot, node, Generics);
     Ok(TransformAction::Flatten)
 }
 
@@ -183,7 +187,7 @@ pub fn modifiers(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     let mut markers: Vec<&str> = Vec::new();
     if !has_access {
-        markers.push(PACKAGE);
+        markers.push(Package.as_str());
     }
     for word in &words {
         if is_known_modifier(word) {
@@ -210,8 +214,8 @@ pub fn explicit_constructor_invocation(
     for child in children {
         let child_kind = get_kind(xot, child);
         let tag = match child_kind.as_deref() {
-            Some("this") => THIS,
-            Some("super") => SUPER,
+            Some("this") => This,
+            Some("super") => Super,
             _ => continue,
         };
         let text = get_text_content(xot, child).unwrap_or_default();
@@ -220,7 +224,7 @@ pub fn explicit_constructor_invocation(
         insert_text_after(xot, marker, &text)?;
         break;
     }
-    rename(xot, node, CALL);
+    rename(xot, node, Call);
     Ok(TransformAction::Continue)
 }
 
@@ -237,7 +241,7 @@ pub fn method_declaration(
         prepend_empty_element(xot, node, marker)?;
     }
     wrap_method_return_type(xot, node)?;
-    rename(xot, node, METHOD);
+    rename(xot, node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -266,9 +270,9 @@ pub fn default_access_for_declaration(
         return None;
     }
     if is_inside_interface(xot, node) {
-        Some(PUBLIC)
+        Some(Public.as_str())
     } else {
-        Some(PACKAGE)
+        Some(Package.as_str())
     }
 }
 
@@ -277,15 +281,17 @@ pub fn default_access_for_declaration(
 // ---------------------------------------------------------------------
 
 fn is_access_modifier(text: &str) -> bool {
-    matches!(text, PUBLIC | PRIVATE | PROTECTED)
+    matches!(text.parse::<super::output::JavaName>().ok(), Some(Public | Private | Protected))
 }
 
 fn is_known_modifier(text: &str) -> bool {
     matches!(
-        text,
-        PUBLIC | PRIVATE | PROTECTED
-        | STATIC | FINAL | ABSTRACT | SYNCHRONIZED
-        | VOLATILE | TRANSIENT | NATIVE | STRICTFP
+        text.parse::<super::output::JavaName>().ok(),
+        Some(
+            Public | Private | Protected
+            | Static | Final | Abstract | Synchronized
+            | Volatile | Transient | Native | Strictfp
+        )
     )
 }
 
@@ -336,7 +342,7 @@ fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Er
         if get_attr(xot, child, "field").as_deref() != Some("type") {
             continue;
         }
-        let returns_name = xot.add_name(RETURNS);
+        let returns_name = xot.add_name(Returns.as_str());
         let wrapper = xot.new_element(returns_name);
         copy_source_location(xot, child, wrapper);
         set_attr(xot, wrapper, "field", "returns");

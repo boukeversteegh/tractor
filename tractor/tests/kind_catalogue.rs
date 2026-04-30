@@ -51,8 +51,8 @@ fn go_catalogue_covers_blueprint() {
 
 #[test]
 fn go_node_metadata_is_well_formed() {
-    use tractor::languages::go::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/go/output.rs");
+    use tractor::languages::go::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/go/output.rs");
 }
 
 #[test]
@@ -113,8 +113,8 @@ fn java_catalogue_covers_blueprint() {
 
 #[test]
 fn java_node_metadata_is_well_formed() {
-    use tractor::languages::java::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/java/output.rs");
+    use tractor::languages::java::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/java/output.rs");
 }
 
 #[test]
@@ -144,8 +144,8 @@ fn php_catalogue_covers_blueprint() {
 
 #[test]
 fn php_node_metadata_is_well_formed() {
-    use tractor::languages::php::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/php/output.rs");
+    use tractor::languages::php::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/php/output.rs");
 }
 
 #[test]
@@ -175,8 +175,8 @@ fn python_catalogue_covers_blueprint() {
 
 #[test]
 fn python_node_metadata_is_well_formed() {
-    use tractor::languages::python::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/python/output.rs");
+    use tractor::languages::python::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/python/output.rs");
 }
 
 #[test]
@@ -206,8 +206,8 @@ fn rust_catalogue_covers_blueprint() {
 
 #[test]
 fn rust_node_metadata_is_well_formed() {
-    use tractor::languages::rust_lang::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/rust_lang/output.rs");
+    use tractor::languages::rust_lang::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/rust_lang/output.rs");
 }
 
 #[test]
@@ -268,8 +268,8 @@ fn ruby_catalogue_covers_blueprint() {
 
 #[test]
 fn ruby_node_metadata_is_well_formed() {
-    use tractor::languages::ruby::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/ruby/output.rs");
+    use tractor::languages::ruby::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/ruby/output.rs");
 }
 
 #[test]
@@ -299,8 +299,8 @@ fn tsql_catalogue_covers_blueprint() {
 
 #[test]
 fn tsql_node_metadata_is_well_formed() {
-    use tractor::languages::tsql::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/tsql/output.rs");
+    use tractor::languages::tsql::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/tsql/output.rs");
 }
 
 /// Shared NODES well-formedness check: names are unique, every node
