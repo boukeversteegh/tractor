@@ -603,7 +603,7 @@ file/
   │       │   │   ├─ left/name
   │       │   │   ├─ op/compare[less]
   │       │   │   └─ right/int
-  │       │   └─ body/assign/
+  │       │   └─ body/expression/assign/
   │       │       ├─ left/name
   │       │       └─ right/int
   │       ├─ let/
@@ -624,7 +624,7 @@ file/
   │       ├─ let/
   │       │   ├─ name
   │       │   ├─ type/name
-  │       │   └─ value/try/call/field/
+  │       │   └─ value/expression[try]/call/field/
   │       │       ├─ value/string
   │       │       └─ name
   │       ├─ let/
@@ -661,7 +661,7 @@ file/
   ├─ function[pub]/
   │   ├─ name
   │   ├─ returns/type[never]
-  │   └─ body/macro/
+  │   └─ body/expression/macro/
   │       ├─ name
   │       └─ string
   ├─ function[pub]/
@@ -675,7 +675,7 @@ file/
   │       │       ├─ left/int
   │       │       ├─ op[plus]
   │       │       └─ right/int
-  │       └─ await/name
+  │       └─ expression[await]/name
   ├─ function[pub]/
   │   ├─ name
   │   └─ body/
@@ -691,13 +691,13 @@ file/
   │           ├─ let/value/unary/
   │           │   ├─ op[multiply]
   │           │   └─ name
-  │           └─ assign/
+  │           └─ expression/assign/
   │               ├─ left/name
   │               └─ right/int
   └─ function[private]/
       ├─ name
       └─ body/
-          ├─ macro/
+          ├─ expression/macro/
           │   ├─ name
           │   ├─ string
           │   └─ name

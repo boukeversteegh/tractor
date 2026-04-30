@@ -97,7 +97,8 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         // ---- Custom (language-specific logic in transformations.rs) ---
         RustKind::BlockComment        => Custom(transformations::comment),
         RustKind::DocComment          => Custom(transformations::comment),
-        RustKind::ExpressionStatement => Custom(transformations::skip),
+        RustKind::AwaitExpression     => Custom(transformations::await_expression),
+        RustKind::ExpressionStatement => Custom(transformations::expression_statement),
         RustKind::FieldIdentifier     => Custom(transformations::identifier),
         RustKind::GenericType         => Custom(transformations::generic_type),
         RustKind::Identifier          => Custom(transformations::identifier),
@@ -110,13 +111,13 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::ReferenceType       => Custom(transformations::reference_type),
         RustKind::ShorthandFieldIdentifier => Custom(transformations::identifier),
         RustKind::StructExpression    => Custom(transformations::struct_expression),
+        RustKind::TryExpression       => Custom(transformations::try_expression),
         RustKind::TypeIdentifier      => Custom(transformations::type_identifier),
         RustKind::TypeParameter       => Custom(transformations::type_parameter),
         RustKind::TypeParameters      => Custom(transformations::type_parameters),
         RustKind::VisibilityModifier  => Custom(transformations::visibility_modifier),
 
         // ---- Pure Rename -----------------------------------------------
-        RustKind::AwaitExpression          => Rename(Await),
         RustKind::BooleanLiteral           => Rename(Bool),
         RustKind::BreakExpression          => Rename(Break),
         RustKind::CallExpression           => Rename(Call),
@@ -155,7 +156,6 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::SourceFile               => Rename(File),
         RustKind::StringLiteral            => Rename(String),
         RustKind::TraitBounds              => Rename(Bounds),
-        RustKind::TryExpression            => Rename(Try),
         RustKind::TupleExpression          => Rename(Tuple),
         RustKind::TypeCastExpression       => Rename(Cast),
         RustKind::UnsafeBlock              => Rename(Unsafe),

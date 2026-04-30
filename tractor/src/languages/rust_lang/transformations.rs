@@ -12,9 +12,9 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::RustKind;
 use super::output::TractorNode::{
-    self, Async, Borrowed, Comment as CommentName, Const, Crate, Generic, Generics, In as InName,
-    Inner, Leading, Let, Literal, Mut, Name, Pattern, Private, Pub, Raw, String as RustString,
-    Super, Trailing, Type, Unsafe,
+    self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Generic,
+    Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Pattern, Private, Pub, Raw,
+    String as RustString, Super, Trailing, Try, Type, Unsafe,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -24,10 +24,56 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
-/// `expression_statement` — drop the wrapper before children are
-/// visited so children's parent context becomes the enclosing block.
+/// `expression_statement` — wrap value-producing statements in an
+/// `<expression>` host (Principle #15). Control-flow constructs used
+/// as statements (`if`, `for`, `while`, `loop`, `match`, `return`,
+/// `break`, `continue`, `block`, `unsafe_block`, `async_block`,
+/// `try_block`, `const_block`) drop the wrapper — they're structural,
+/// not annotations on a value, so they sit directly in the body.
+pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let inner_kind = xot.children(node)
+        .find(|&c| xot.element(c).is_some())
+        .and_then(|c| get_kind(xot, c));
+    let is_control_flow = matches!(
+        inner_kind.as_deref(),
+        Some(
+            "if_expression" | "for_expression" | "while_expression" | "loop_expression"
+            | "match_expression" | "return_expression" | "break_expression"
+            | "continue_expression" | "block" | "unsafe_block" | "async_block"
+            | "try_block" | "const_block"
+        )
+    );
+    if is_control_flow {
+        Ok(TransformAction::Skip)
+    } else {
+        xot.with_renamed(node, Expression);
+        Ok(TransformAction::Continue)
+    }
+}
+
+/// Legacy skip used by other kinds; kept for compatibility while the
+/// migration proceeds. Drops the wrapper, promotes children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `try_expression` — `foo()?`. Promote to `<expression>` host with a
+/// trailing `<try/>` marker (postfix in source, marker order matches).
+/// See [Principle #15: Stable Expression Hosts].
+pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_appended_empty_element(node, Try)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `await_expression` — `foo().await`. Rust's `.await` is postfix, so
+/// the marker trails the operand. Promote to `<expression>` host with
+/// a trailing `<await/>` marker. See [Principle #15: Stable Expression
+/// Hosts].
+pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Expression)
+        .with_appended_empty_element(node, Await)?;
+    Ok(TransformAction::Continue)
 }
 
 /// `<name>` field wrapper inserted by the builder. Rust-specific:

@@ -24,9 +24,9 @@ pub enum TractorNode {
     // Statements / control flow
     Let, Return, If, Else, ElseIf, For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
     Send, Label,
-    // Expressions (Try, Ref, Tuple dual-use)
+    // Expressions (Ref, Tuple dual-use; Await/Try are markers)
     Call, Index, Binary, Unary, Assign, Closure, Await, Try, Macro, Cast, Ref, Tuple, Unsafe,
-    Literal, Block,
+    Literal, Block, Expression,
     // Visibility
     Pub, In,
     // Literals / atoms
@@ -58,7 +58,10 @@ impl TractorNode {
     ///   - Struct   — struct_item (container) vs struct_pattern (marker)
     ///   - Generic  — generic_type (container) vs generic_function (marker)
     ///   - Const    — const_item (container) vs const_block (marker)
-    ///   - Try      — try_expression (container) vs try_block (marker)
+    ///
+    /// Marker-only (under stable expression hosts, principle #15):
+    ///   - Try   — try_block + try_expression both attach as `<try/>` marker.
+    ///   - Await — `await_expression` attaches as `<await/>` marker.
     pub fn spec(self) -> TractorNodeSpec {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
@@ -67,13 +70,14 @@ impl TractorNode {
             | Self::Pointer | Self::Never | Self::Unit | Self::Dynamic
             | Self::Abstract | Self::Associated | Self::Bounded | Self::Array | Self::Or
             | Self::Method | Self::Base | Self::Slice                                  => (true, false, Default),
-            Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async        => (true, false, Keyword),
+            Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
+            | Self::Await                                                              => (true, false, Keyword),
+            Self::Try                                                                  => (true, false, Operator),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Struct | Self::Trait | Self::Const                  => (true, true, Keyword),
             Self::Field | Self::Tuple                                                  => (true, true, Default),
             Self::Generic | Self::Ref                                                  => (true, true, Type),
-            Self::Try                                                                  => (true, true, Operator),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static | Self::Alias
