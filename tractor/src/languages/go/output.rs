@@ -195,13 +195,6 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: GENERIC,    marker: true, container: false, syntax: Default },
 ];
 
-// `KINDS: &[KindEntry]` and `rename_target` were dropped when Go
-// migrated to the rule-driven dispatcher. Per-kind handling now
-// lives in `super::rules::rule(GoKind) -> Rule` — an exhaustive
-// match over the typed enum that the compiler enforces. Other
-// languages still use `KindEntry` / `KindHandling` until they
-// migrate.
-
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)
 }

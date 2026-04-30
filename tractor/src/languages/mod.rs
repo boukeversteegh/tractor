@@ -46,46 +46,6 @@ pub struct NodeSpec {
     pub syntax: SyntaxCategory,
 }
 
-/// How a tree-sitter `kind` is handled by the language's transform.
-///
-/// A language's `KINDS` catalogue (in `<lang>/semantic.rs`) lists every
-/// tree-sitter kind the transform knows about, tagged with one of
-/// these handling variants. The `kind_catalogue` lint test parses the
-/// per-language blueprint fixture and asserts every distinct kind in
-/// the raw parse tree appears in `KINDS` — so when tree-sitter ships a
-/// new kind we don't yet handle, the test fails at a known site rather
-/// than silently producing `<some_unknown_kind kind="…">` output.
-#[derive(Debug, Clone, Copy)]
-pub enum KindHandling {
-    /// Pure rename: `kind` → `semantic` (no marker, no structural change).
-    Rename(&'static str),
-    /// Rename + marker: `kind` → `semantic` with `marker` empty element prepended.
-    RenameWithMarker(&'static str, &'static str),
-    /// Imperative dispatch arm in transform.rs with no rename hand-off
-    /// — the arm fully owns the renaming of the node (or leaves the
-    /// kind name in place).
-    Custom,
-    /// Imperative dispatch arm in transform.rs that ends with
-    /// `apply_rename(…, kind)` — i.e. the arm does structural work,
-    /// then defers the rename to `map_element_name`. Distinct from
-    /// `Custom` so the catalogue still drives the rename.
-    CustomThenRename(&'static str),
-    /// Same as `CustomThenRename` but with a marker prepended.
-    CustomThenRenameWithMarker(&'static str, &'static str),
-    /// Wrapper dropped, children promoted to siblings (Principle #12).
-    Flatten,
-    /// Kind passes through unchanged (no rename, no transform).
-    PassThrough,
-}
-
-/// Single entry in a language's tree-sitter kind catalogue. See
-/// [`KindHandling`] for the meaning of each variant.
-#[derive(Debug, Clone, Copy)]
-pub struct KindEntry {
-    pub kind: &'static str,
-    pub handling: KindHandling,
-}
-
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 

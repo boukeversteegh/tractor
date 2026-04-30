@@ -389,13 +389,6 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: UNMANAGED, marker: true, container: false, syntax: Default },
 ];
 
-// `KINDS: &[KindEntry]` and `rename_target` were dropped when C#
-// migrated to the rule-driven dispatcher. Per-kind handling now lives
-// in `rule(CsKind) -> Rule` below — an exhaustive match over the
-// typed enum that the compiler enforces. Other languages still use
-// `KindEntry` / `KindHandling` until they migrate.
-
-
 /// Look up a node spec by name. Linear scan — NODES is small and cold.
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)
