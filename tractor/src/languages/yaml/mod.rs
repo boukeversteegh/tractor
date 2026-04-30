@@ -19,6 +19,7 @@
 //! ```
 //! Queryable as: `//data/foo/bar[.='baz']`
 
+pub mod input;
 pub mod syntax;
 pub mod data;
 

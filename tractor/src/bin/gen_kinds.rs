@@ -74,6 +74,16 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types_sources: &[tree_sitter_sequel_tsql::NODE_TYPES],
         output_path: "tractor/src/languages/tsql/input.rs",
     },
+    LangCodegen {
+        enum_name: "JsonKind",
+        node_types_sources: &[tree_sitter_json::NODE_TYPES],
+        output_path: "tractor/src/languages/json/input.rs",
+    },
+    LangCodegen {
+        enum_name: "YamlKind",
+        node_types_sources: &[tree_sitter_yaml::NODE_TYPES],
+        output_path: "tractor/src/languages/yaml/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {

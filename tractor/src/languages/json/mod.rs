@@ -6,6 +6,7 @@
 //! - `data`: Projects into query-friendly data view where object keys
 //!   become element names and scalar values become text content.
 
+pub mod input;
 pub mod syntax;
 pub mod data;
 
