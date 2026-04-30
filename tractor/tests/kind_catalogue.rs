@@ -1,56 +1,21 @@
-//! Tree-sitter kind catalogue lint.
+//! Per-language blueprint coverage checks.
 //!
-//! For each programming language, parse its blueprint (or sample)
-//! fixture with the raw tree-sitter grammar and assert that every
-//! distinct named-node kind appears in the language's `KINDS`
-//! catalogue (declared in `<lang>/semantic.rs`).
+//! For each language, parse its blueprint fixture with the raw
+//! tree-sitter grammar and assert that every distinct named-node
+//! kind tree-sitter emits is a known `<Lang>Kind` variant — i.e.
+//! `input.rs` is up to date with the grammar.
 //!
-//! When this test fails it means tree-sitter is emitting a kind the
-//! transform doesn't yet know about. Add a `KindEntry` to the named
-//! catalogue (file path is included in the failure message).
+//! Compile-time exhaustiveness is enforced by the `rule(<Lang>Kind)
+//! -> Rule` match in each language's `rules.rs` (a new grammar kind
+//! makes the lib fail to build until classified). This runtime check
+//! adds the inverse guard: every kind the grammar actually emits is
+//! known to our enum — catches grammar drift on regenerate.
 
-use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use tractor::languages::{KindEntry, KindHandling, NodeSpec};
 use tractor::raw_kinds;
 
-struct Lang {
-    /// Language ID passed to `raw_kinds` (matches the dispatch table).
-    id: &'static str,
-    /// Filename relative to `tests/integration/languages/<id>/`.
-    fixture: &'static str,
-    /// Subdirectory under `tests/integration/languages/` (usually
-    /// matches `id` but a few languages use a different folder name).
-    fixture_dir: &'static str,
-    /// Pretty path to the per-language catalogue file, used in the
-    /// failure message so the engineer knows where to add the entry.
-    catalogue_path: &'static str,
-    /// The catalogue itself.
-    kinds: &'static [KindEntry],
-    /// Semantic node metadata emitted by the language transform.
-    nodes: &'static [NodeSpec],
-}
-
-const LANGUAGES: &[Lang] = &[
-    // All programming languages (C#, Go, Java, PHP, Python, Rust, TypeScript,
-    // Ruby) have migrated to the typed-enum + rule() shape — no `KindEntry`
-    // catalogue. Their blueprint coverage is checked by
-    // `<lang>_catalogue_covers_blueprint` below using `<Lang>Kind::from_str`.
-    // tsql is the lone remaining catalogue-driven language (data-only).
-    Lang {
-        id: "tsql",
-        fixture: "blueprint.sql",
-        fixture_dir: "tsql",
-        catalogue_path: "tractor/src/languages/tsql/semantic.rs",
-        kinds: tractor::languages::tsql::semantic::KINDS,
-        nodes: tractor::languages::tsql::semantic::NODES,
-    },
-];
-
 fn fixture_path(dir: &str, file: &str) -> PathBuf {
-    // CARGO_MANIFEST_DIR points at `tractor/tractor/`; the integration
-    // fixtures live in `tractor/tests/integration/languages/`.
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
@@ -59,77 +24,9 @@ fn fixture_path(dir: &str, file: &str) -> PathBuf {
         .join(file)
 }
 
-fn check_lang(lang: &Lang) {
-    let path = fixture_path(lang.fixture_dir, lang.fixture);
-    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| {
-        panic!("failed to read fixture {}: {}", path.display(), e)
-    });
-
-    let mut catalogue: BTreeSet<&str> = BTreeSet::new();
-    for entry in lang.kinds {
-        if !catalogue.insert(entry.kind) {
-            panic!(
-                "duplicate `{}` entry in {} — every kind appears at most once",
-                entry.kind, lang.catalogue_path
-            );
-        }
-    }
-
-    let kinds = raw_kinds(lang.id, &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if !catalogue.contains(k.as_str()) {
-            missing.push(k.clone());
-        }
-    }
-
-    assert!(
-        missing.is_empty(),
-        "tree-sitter {} emitted {} kind(s) not in the catalogue:\n{}\n\n\
-         Add a `KindEntry` for each one to {}.",
-        lang.id,
-        missing.len(),
-        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
-        lang.catalogue_path,
-    );
-}
-
-fn check_node_names(lang: &Lang) {
-    let mut names: Vec<&str> = lang.nodes.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "{} contains duplicate node names",
-        lang.catalogue_path
-    );
-
-    for node in lang.nodes {
-        assert!(
-            node.marker || node.container,
-            "{}: <{}> is neither marker nor container",
-            lang.catalogue_path,
-            node.name
-        );
-    }
-}
-
-/// Go-specific blueprint coverage check. Go has migrated to the
-/// typed-enum + rule() dispatcher, so coverage is asserted via
-/// `GoKind::from_str` rather than against a `KINDS` table.
-///
-/// In the new shape, kind drift is caught at compile time (the
-/// exhaustive `rule(GoKind) -> Rule` match fails to build when
-/// `kind.rs` is regenerated with new variants). This runtime check
-/// adds the inverse guard: every kind tree-sitter actually emits when
-/// parsing the blueprint must be a known `GoKind` variant — i.e.
-/// `input.rs` is up to date with the grammar.
 #[test]
 fn go_catalogue_covers_blueprint() {
     use tractor::languages::go::input::GoKind;
-    use tractor::raw_kinds;
 
     let path = fixture_path("go", "blueprint.go");
     let source = std::fs::read_to_string(&path)
@@ -148,442 +45,19 @@ fn go_catalogue_covers_blueprint() {
          Regenerate `tractor/src/languages/go/input.rs` via \
          `task gen:kinds` so the typed enum reflects the current grammar.",
         missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
     );
 }
 
 #[test]
 fn go_node_metadata_is_well_formed() {
     use tractor::languages::go::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/go/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/go/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
+    check_node_metadata(NODES, "tractor/src/languages/go/output.rs");
 }
 
-#[test]
-fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[0]);
-}
-
-/// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
-/// target is non-empty. Cheap, language-independent guardrail.
-#[test]
-fn rename_targets_are_non_empty() {
-    for lang in LANGUAGES {
-        for entry in lang.kinds {
-            match entry.handling {
-                KindHandling::Rename(s) | KindHandling::CustomThenRename(s) => {
-                    assert!(
-                        !s.is_empty(),
-                        "{}: empty rename target for kind `{}`",
-                        lang.id, entry.kind
-                    );
-                }
-                KindHandling::RenameWithMarker(s, m)
-                | KindHandling::CustomThenRenameWithMarker(s, m) => {
-                    assert!(
-                        !s.is_empty() && !m.is_empty(),
-                        "{}: empty rename/marker for kind `{}`",
-                        lang.id, entry.kind
-                    );
-                }
-                _ => {}
-            }
-        }
-    }
-}
-
-// Removed: `go_catalogue_entries_are_real_grammar_kinds`. That test
-// validated the old `KINDS` array against `GoKind`; with `KINDS`
-// gone, the equivalent guarantee comes from `rule(GoKind) -> Rule`
-// being exhaustive over the typed enum (compile-time).
-
-// Removed: `csharp_catalogue_entries_are_real_grammar_kinds`. That
-// test validated the old `KINDS` array against `CsKind`; with
-// `KINDS` gone, the equivalent guarantee comes from
-// `rule(CsKind) -> Rule` being exhaustive over the typed enum
-// (compile-time).
-
-/// Validate that every `KindEntry` in tsql's `KINDS` is a real
-/// grammar kind (`TsqlKind` variant). Catches dead entries.
-#[test]
-fn tsql_catalogue_entries_are_real_grammar_kinds() {
-    use tractor::languages::tsql::input::TsqlKind;
-    use tractor::languages::tsql::semantic::KINDS;
-
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if TsqlKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
-        }
-    }
-    assert!(
-        dead.is_empty(),
-        "tsql catalogue has {} dead entries (not in `TsqlKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/tsql/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
-    );
-}
-
-/// Ruby-specific blueprint coverage check via `RubyKind::from_str`.
-#[test]
-fn ruby_catalogue_covers_blueprint() {
-    use tractor::languages::ruby::input::RubyKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("ruby", "blueprint.rb");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("ruby", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if RubyKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter ruby emitted {} kind(s) not in `RubyKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/ruby/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn ruby_node_metadata_is_well_formed() {
-    use tractor::languages::ruby::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/ruby/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/ruby/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// TypeScript-specific blueprint coverage check via `TsKind::from_str`.
-#[test]
-fn typescript_catalogue_covers_blueprint() {
-    use tractor::languages::typescript::input::TsKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("typescript", "blueprint.ts");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("typescript", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if TsKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter typescript emitted {} kind(s) not in `TsKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/typescript/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn typescript_node_metadata_is_well_formed() {
-    use tractor::languages::typescript::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/typescript/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/typescript/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// Rust-specific blueprint coverage check. Rust has migrated to the
-/// typed-enum + rule() dispatcher; coverage is asserted via
-/// `RustKind::from_str` rather than against a `KINDS` table.
-#[test]
-fn rust_catalogue_covers_blueprint() {
-    use tractor::languages::rust_lang::input::RustKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("rust", "blueprint.rs");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("rust", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if RustKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter rust emitted {} kind(s) not in `RustKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/rust_lang/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn rust_node_metadata_is_well_formed() {
-    use tractor::languages::rust_lang::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/rust_lang/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/rust_lang/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// Python-specific blueprint coverage check. Python has migrated to
-/// the typed-enum + rule() dispatcher; coverage is asserted via
-/// `PyKind::from_str` rather than against a `KINDS` table.
-#[test]
-fn python_catalogue_covers_blueprint() {
-    use tractor::languages::python::input::PyKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("python", "blueprint.py");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("python", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if PyKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter python emitted {} kind(s) not in `PyKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/python/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn python_node_metadata_is_well_formed() {
-    use tractor::languages::python::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/python/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/python/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// PHP-specific blueprint coverage check. PHP has migrated to the
-/// typed-enum + rule() dispatcher, so coverage is asserted via
-/// `PhpKind::from_str` rather than against a `KINDS` table.
-#[test]
-fn php_catalogue_covers_blueprint() {
-    use tractor::languages::php::input::PhpKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("php", "blueprint.php");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("php", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if PhpKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter php emitted {} kind(s) not in `PhpKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/php/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn php_node_metadata_is_well_formed() {
-    use tractor::languages::php::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/php/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/php/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// Java-specific blueprint coverage check. Java has migrated to the
-/// typed-enum + rule() dispatcher, so coverage is asserted via
-/// `JavaKind::from_str` rather than against a `KINDS` table.
-///
-/// In the new shape, kind drift is caught at compile time (the
-/// exhaustive `rule(JavaKind) -> Rule` match fails to build when
-/// `input.rs` is regenerated with new variants). This runtime check
-/// adds the inverse guard: every kind tree-sitter actually emits when
-/// parsing the blueprint must be a known `JavaKind` variant — i.e.
-/// `input.rs` is up to date with the grammar.
-#[test]
-fn java_catalogue_covers_blueprint() {
-    use tractor::languages::java::input::JavaKind;
-    use tractor::raw_kinds;
-
-    let path = fixture_path("java", "blueprint.java");
-    let source = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
-
-    let kinds = raw_kinds("java", &source).expect("raw_kinds");
-    let mut missing: Vec<String> = Vec::new();
-    for k in &kinds {
-        if JavaKind::from_str(k).is_none() {
-            missing.push(k.clone());
-        }
-    }
-    assert!(
-        missing.is_empty(),
-        "tree-sitter java emitted {} kind(s) not in `JavaKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/java/input.rs` via \
-         `task gen:kinds` so the typed enum reflects the current grammar.",
-        missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-}
-
-#[test]
-fn java_node_metadata_is_well_formed() {
-    use tractor::languages::java::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-    names.sort();
-    let total = names.len();
-    names.dedup();
-    assert_eq!(
-        names.len(),
-        total,
-        "tractor/src/languages/java/output.rs contains duplicate node names"
-    );
-    for node in NODES {
-        assert!(
-            node.marker || node.container,
-            "tractor/src/languages/java/output.rs: <{}> is neither marker nor container",
-            node.name
-        );
-    }
-}
-
-/// C#-specific blueprint coverage check. C# has migrated to the
-/// typed-enum + rule() dispatcher, so coverage is asserted via
-/// `CsKind::from_str` rather than against a `KINDS` table.
-///
-/// In the new shape, kind drift is caught at compile time (the
-/// exhaustive `rule(CsKind) -> Rule` match fails to build when
-/// `input.rs` is regenerated with new variants). This runtime check
-/// adds the inverse guard: every kind tree-sitter actually emits when
-/// parsing the blueprint must be a known `CsKind` variant — i.e.
-/// `input.rs` is up to date with the grammar.
 #[test]
 fn csharp_catalogue_covers_blueprint() {
     use tractor::languages::csharp::input::CsKind;
-    use tractor::raw_kinds;
 
     let path = fixture_path("csharp", "blueprint.cs");
     let source = std::fs::read_to_string(&path)
@@ -602,41 +76,252 @@ fn csharp_catalogue_covers_blueprint() {
          Regenerate `tractor/src/languages/csharp/input.rs` via \
          `task gen:kinds` so the typed enum reflects the current grammar.",
         missing.len(),
-        missing
-            .iter()
-            .map(|k| format!("  - {}", k))
-            .collect::<Vec<_>>()
-            .join("\n"),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
     );
 }
 
 #[test]
 fn csharp_node_metadata_is_well_formed() {
     use tractor::languages::csharp::output::NODES;
-    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    check_node_metadata(NODES, "tractor/src/languages/csharp/output.rs");
+}
+
+#[test]
+fn java_catalogue_covers_blueprint() {
+    use tractor::languages::java::input::JavaKind;
+
+    let path = fixture_path("java", "blueprint.java");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("java", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if JavaKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter java emitted {} kind(s) not in `JavaKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/java/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn java_node_metadata_is_well_formed() {
+    use tractor::languages::java::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/java/output.rs");
+}
+
+#[test]
+fn php_catalogue_covers_blueprint() {
+    use tractor::languages::php::input::PhpKind;
+
+    let path = fixture_path("php", "blueprint.php");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("php", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if PhpKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter php emitted {} kind(s) not in `PhpKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/php/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn php_node_metadata_is_well_formed() {
+    use tractor::languages::php::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/php/output.rs");
+}
+
+#[test]
+fn python_catalogue_covers_blueprint() {
+    use tractor::languages::python::input::PyKind;
+
+    let path = fixture_path("python", "blueprint.py");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("python", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if PyKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter python emitted {} kind(s) not in `PyKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/python/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn python_node_metadata_is_well_formed() {
+    use tractor::languages::python::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/python/output.rs");
+}
+
+#[test]
+fn rust_catalogue_covers_blueprint() {
+    use tractor::languages::rust_lang::input::RustKind;
+
+    let path = fixture_path("rust", "blueprint.rs");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("rust", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if RustKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter rust emitted {} kind(s) not in `RustKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/rust_lang/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn rust_node_metadata_is_well_formed() {
+    use tractor::languages::rust_lang::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/rust_lang/output.rs");
+}
+
+#[test]
+fn typescript_catalogue_covers_blueprint() {
+    use tractor::languages::typescript::input::TsKind;
+
+    let path = fixture_path("typescript", "blueprint.ts");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("typescript", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if TsKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter typescript emitted {} kind(s) not in `TsKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/typescript/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn typescript_node_metadata_is_well_formed() {
+    use tractor::languages::typescript::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/typescript/output.rs");
+}
+
+#[test]
+fn ruby_catalogue_covers_blueprint() {
+    use tractor::languages::ruby::input::RubyKind;
+
+    let path = fixture_path("ruby", "blueprint.rb");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("ruby", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if RubyKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter ruby emitted {} kind(s) not in `RubyKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/ruby/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn ruby_node_metadata_is_well_formed() {
+    use tractor::languages::ruby::output::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/ruby/output.rs");
+}
+
+#[test]
+fn tsql_catalogue_covers_blueprint() {
+    use tractor::languages::tsql::input::TsqlKind;
+
+    let path = fixture_path("tsql", "blueprint.sql");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("tsql", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if TsqlKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter tsql emitted {} kind(s) not in `TsqlKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/tsql/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
+#[test]
+fn tsql_node_metadata_is_well_formed() {
+    use tractor::languages::tsql::semantic::NODES;
+    check_node_metadata(NODES, "tractor/src/languages/tsql/semantic.rs");
+}
+
+/// Shared NODES well-formedness check: names are unique, every node
+/// is at least one of marker / container.
+fn check_node_metadata(nodes: &[tractor::languages::NodeSpec], path: &str) {
+    let mut names: Vec<&str> = nodes.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
     names.dedup();
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/csharp/output.rs contains duplicate node names"
+        "{} contains duplicate node names",
+        path
     );
-    for node in NODES {
+    for node in nodes {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/csharp/output.rs: <{}> is neither marker nor container",
+            "{}: <{}> is neither marker nor container",
+            path,
             node.name
         );
-    }
-}
-
-/// Semantic node names should be unique and each node must have at
-/// least one role. This belongs with the catalogue checks rather
-/// than inside a language transform module.
-#[test]
-fn node_metadata_is_well_formed() {
-    for lang in LANGUAGES {
-        check_node_names(lang);
     }
 }
