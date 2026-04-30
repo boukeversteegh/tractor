@@ -26,8 +26,8 @@ fn ruby() {
                     [name='a']
                     [name='b']
                     [body//binary
-                        [left/name='a']
-                        [right/name='b']]]
+                        [left/expression/name='a']
+                        [right/expression/name='b']]]
                 [not(name/identifier | name/constant)]
         "#),
         1);

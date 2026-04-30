@@ -368,19 +368,19 @@ fn ruby() {
         &multi_xpath(r#"
             //for
                 [name='item']
-                [value/in/name='items']
+                [value/expression/in/name='items']
                 [body]
         "#),
         1);
 
     claim("Ruby while loop holds the condition under <condition>",
         &mut tree,
-        "//while[condition/name='running'][body]",
+        "//while[condition/expression/name='running'][body]",
         1);
 
     claim("Ruby until loop holds the inverted condition under <condition>",
         &mut tree,
-        "//until[condition/name='done'][body]",
+        "//until[condition/expression/name='done'][body]",
         1);
 }
 

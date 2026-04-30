@@ -174,7 +174,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["ruby", "rb"],
         transform: ruby::transform,
-        post_transform: Some(collapse_conditionals),
+        post_transform: Some(ruby_post_transform),
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
         node_spec: Some(ruby::output::spec),
@@ -523,6 +523,25 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 /// PHP post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    collapse_conditionals(xot, root)?;
+    crate::transform::wrap_expression_positions(
+        xot,
+        root,
+        &["value", "condition", "left", "right", "return"],
+    )?;
+    Ok(())
+}
+
+/// Ruby post-transform: collapse conditionals + wrap expression
+/// positions in `<expression>` hosts (Principle #15).
+///
+/// Ruby's tree-sitter grammar has no `expression_statement` analog —
+/// expressions appear directly under `<body>`. So statement-level
+/// host migration is deferred (would require walking body children
+/// to identify which are expression-shaped); this pass handles the
+/// slot-level hosts (`left`/`right`/`condition`/`value`/`return`)
+/// only.
+fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
