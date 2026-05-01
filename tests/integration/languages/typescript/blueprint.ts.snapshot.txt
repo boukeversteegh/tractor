@@ -112,11 +112,11 @@ program/
   │   │   ├─ name = "T"
   │   │   └─ constraint/type/name = "Shape"
   │   └─ body/
-  │       ├─ field[public]/
+  │       ├─ field[static and public]/
   │       │   ├─ name = "kind"
   │       │   ├─ type/name = "string"
   │       │   └─ value/expression/string = "\"base\""
-  │       ├─ field[protected]/
+  │       ├─ field[readonly and protected]/
   │       │   ├─ name = "createdAt"
   │       │   ├─ type/name = "number"
   │       │   └─ value/expression/call/callee/member/
@@ -191,7 +191,7 @@ program/
   │   │   ├─ type/name = "Base"
   │   │   └─ type/name = "T"
   │   └─ body/
-  │       ├─ field[private and public]/
+  │       ├─ field[private and static and public]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
   │       ├─ method[public]/
@@ -651,7 +651,7 @@ program/
   ├─ class/
   │   ├─ name = "StaticBlock"
   │   └─ body/
-  │       ├─ field[public]/
+  │       ├─ field[static and public]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
   │       └─ block[static]/body/block/expression/assign/

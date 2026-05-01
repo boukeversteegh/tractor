@@ -15,8 +15,8 @@ use super::input::TsKind;
 use super::output::TractorNode::{
     self, Abstract, Alias, Arrow, Asserts, Async, Await, Comment as CommentName, Const, Default,
     Else, Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method,
-    Name, NonNull, Optional, Parameter, Predicate, Prefix, Private, Protected, Public, Required,
-    Set, Ternary, Trailing, Type, Unary, Var, Variable,
+    Name, NonNull, Optional, Override, Parameter, Predicate, Prefix, Private, Protected, Public,
+    Readonly, Required, Set, Static, Ternary, Trailing, Type, Unary, Var, Variable,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -376,6 +376,9 @@ pub fn abstract_method_signature(
 }
 
 /// `public_field_definition` — class field. Default public.
+/// Also extracts modifier keywords from the leading text (`static`,
+/// `readonly`, `override`, `abstract`) into empty markers
+/// (Principle #2 / #7).
 pub fn public_field_definition(
     xot: &mut Xot,
     node: XotNode,
@@ -383,8 +386,37 @@ pub fn public_field_definition(
     if !has_visibility_marker(xot, node) {
         xot.with_prepended_marker_from(node, Public, node)?;
     }
+    extract_field_modifiers(xot, node)?;
     xot.with_renamed(node, Field);
     Ok(TransformAction::Continue)
+}
+
+/// Walk text children of a class field/property and convert
+/// keyword tokens (`static`, `readonly`, `override`, `abstract`)
+/// into empty marker children. Idempotent.
+fn extract_field_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    let mut found: Vec<TractorNode> = Vec::new();
+    for t in &texts {
+        for tok in t.split_whitespace() {
+            if let Ok(name) = tok.parse::<TractorNode>() {
+                if matches!(name, Static | Readonly | Override | Abstract) && !found.contains(&name) {
+                    found.push(name);
+                }
+            }
+        }
+    }
+    // Skip if marker already present (idempotent re-application).
+    let existing: std::collections::HashSet<String> = xot
+        .children(node)
+        .filter_map(|c| get_element_name(xot, c))
+        .collect();
+    for marker in found.into_iter().rev() {
+        if !existing.contains(marker.as_str()) {
+            xot.with_prepended_marker_from(node, marker, node)?;
+        }
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------
