@@ -683,7 +683,8 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 }
 
 /// PHP post-transform: collapse conditionals + wrap expression
-/// positions in `<expression>` hosts (Principle #15).
+/// positions in `<expression>` hosts (Principle #15) + restructure
+/// `<use>` elements into the unified path/alias/marker shape.
 fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
@@ -691,6 +692,172 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    php_restructure_use(xot, root)?;
+    Ok(())
+}
+
+/// Walk every `<use>` element and restructure to the shape:
+///   `use App\Base`           → `<use><path><name>App</name></path><name>Base</name></use>`
+///   `use App\Foo as Bar`     → `<use[alias]><path><name>App</name></path><name>Foo</name><alias><name>Bar</name></alias></use>`
+///   `use App\{First, Second}` → `<use[group]><path><name>App</name></path><use><name>First</name></use><use><name>Second</name></use></use>`
+///   `use function App\foo`   → `<use[function]><path><name>App</name></path><name>foo</name></use>`
+///
+/// Operates on the post-rule tree where children are already mostly
+/// `<name>` siblings (qualified_name / namespace_use_clause flattened).
+/// Detects markers from text content (`as`, `function`, `const`, `\`,
+/// `;`, `,`) and rebuilds the structural slots.
+fn php_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{XotWithExt, get_element_name};
+    use php::output::TractorNode::{Alias, Group, Function as PhpFunction, Path, Const};
+
+    // Collect `<use>` nodes first to avoid mutating during walk.
+    let mut targets: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "use", &mut targets);
+
+    for use_node in targets {
+        // 1. Determine flavor from preceding bare-keyword text.
+        //    `use function App\foo` → flavor Function; `use const App\BAR` → flavor Const.
+        let mut flavor: Option<php::output::TractorNode> = None;
+        let mut has_alias_keyword = false;
+        for child in xot.children(use_node).collect::<Vec<_>>() {
+            let Some(text) = xot.text_str(child) else { continue };
+            for tok in text.split_whitespace() {
+                match tok {
+                    "function" => flavor = Some(PhpFunction),
+                    "const" => flavor = Some(Const),
+                    "as" => has_alias_keyword = true,
+                    _ => {}
+                }
+            }
+        }
+
+        // 2. Detect group form: child is `<body>` containing names.
+        let group_body = xot.children(use_node).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("body")
+        });
+
+        // 3. Strip ALL noise text leaves on use_node.
+        for child in xot.children(use_node).collect::<Vec<_>>() {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+            }
+        }
+
+        // 4. Collect remaining element children in document order.
+        let element_children: Vec<XotNode> = xot.children(use_node)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+
+        // 5. Branch on group vs flat.
+        if let Some(body) = group_body {
+            // Group form. Element children before <body> = path segments.
+            let path_segments: Vec<XotNode> = element_children.iter()
+                .copied()
+                .take_while(|&c| c != body)
+                .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                .collect();
+
+            // Detach body's noise text leaves; remaining elements are leaf
+            // names (the {First, Second} list).
+            for child in xot.children(body).collect::<Vec<_>>() {
+                if xot.text_str(child).is_some() {
+                    xot.detach(child)?;
+                }
+            }
+            let leaf_names: Vec<XotNode> = xot.children(body)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+
+            // Build <path> from path_segments (clone-and-detach each segment
+            // into a fresh <path> wrapper).
+            let path_node = if !path_segments.is_empty() {
+                let path_elt = xot.add_name(Path.as_str());
+                let path_node = xot.new_element(path_elt);
+                xot.append(use_node, path_node)?;
+                for seg in path_segments {
+                    xot.detach(seg)?;
+                    xot.append(path_node, seg)?;
+                }
+                Some(path_node)
+            } else {
+                None
+            };
+            let _ = path_node;
+
+            // For each leaf name, create a child `<use><name>X</name></use>`.
+            for name in leaf_names {
+                let inner_use_elt = xot.add_name("use");
+                let inner_use = xot.new_element(inner_use_elt);
+                xot.append(use_node, inner_use)?;
+                xot.detach(name)?;
+                xot.append(inner_use, name)?;
+            }
+
+            // Detach the now-empty body wrapper.
+            xot.detach(body)?;
+
+            // Add [group] marker.
+            xot.with_prepended_marker(use_node, Group)?;
+        } else {
+            // Flat form: handle alias if present.
+            // Element children all start as <name>X</name>.
+            let names: Vec<XotNode> = element_children.iter()
+                .copied()
+                .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                .collect();
+
+            if has_alias_keyword && names.len() >= 2 {
+                // Last <name> is the alias; preceding ones are path + leaf.
+                let alias_name = *names.last().unwrap();
+                let path_and_leaf = &names[..names.len() - 1];
+
+                // path = all but last; leaf = last of path_and_leaf
+                let leaf_idx = path_and_leaf.len() - 1;
+                let path_segments = &path_and_leaf[..leaf_idx];
+                let _leaf = path_and_leaf[leaf_idx];
+
+                // Build <path> wrapping segments.
+                if !path_segments.is_empty() {
+                    let path_elt = xot.add_name(Path.as_str());
+                    let path_node = xot.new_element(path_elt);
+                    xot.insert_before(path_and_leaf[0], path_node)?;
+                    for &seg in path_segments {
+                        xot.detach(seg)?;
+                        xot.append(path_node, seg)?;
+                    }
+                }
+                // Wrap alias name in <alias>.
+                let alias_elt = xot.add_name(Alias.as_str());
+                let alias_node = xot.new_element(alias_elt);
+                xot.insert_before(alias_name, alias_node)?;
+                xot.detach(alias_name)?;
+                xot.append(alias_node, alias_name)?;
+
+                xot.with_prepended_marker(use_node, Alias)?;
+            } else if names.len() >= 2 {
+                // Plain multi-segment: all but last become <path>; last is leaf.
+                let leaf_idx = names.len() - 1;
+                let path_segments = &names[..leaf_idx];
+                let path_elt = xot.add_name(Path.as_str());
+                let path_node = xot.new_element(path_elt);
+                xot.insert_before(path_segments[0], path_node)?;
+                for &seg in path_segments {
+                    xot.detach(seg)?;
+                    xot.append(path_node, seg)?;
+                }
+            }
+            // names.len() == 1 → bare leaf, leave as-is.
+        }
+
+        if let Some(f) = flavor {
+            xot.with_prepended_marker(use_node, f)?;
+        }
+        let _ = has_alias_keyword;
+
+        // Discard the description doc-comment about `Const` only.
+        // The const flavor distinguishes from function flavor.
+    }
+
     Ok(())
 }
 
@@ -772,6 +939,18 @@ fn collect_if_nodes(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
     }
     for child in xot.children(node) {
         collect_if_nodes(xot, child, out);
+    }
+}
+
+/// Recursively collect every element with the given name into `out`,
+/// in document order.
+fn collect_named_elements(xot: &Xot, node: XotNode, name: &str, out: &mut Vec<XotNode>) {
+    use crate::transform::helpers::*;
+    if xot.element(node).is_some() && get_element_name(xot, node).as_deref() == Some(name) {
+        out.push(node);
+    }
+    for child in xot.children(node) {
+        collect_named_elements(xot, child, name, out);
     }
 }
 

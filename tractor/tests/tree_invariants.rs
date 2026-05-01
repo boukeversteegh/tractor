@@ -836,6 +836,15 @@ const REPEATED_NAME_WHITELIST: &[&str] = &[
     // TypeScript chained type assertions `<number>(<unknown>"42")`
     // produce nested `<as>` elements; the recursion is intentional.
     "as",
+    // Grouped imports/uses share an outer wrapper that has the same
+    // element name as its inner per-leaf children:
+    //   PHP:  `<use[group]>...<use><name>First</name></use>...</use>`
+    //   TS:   `<import[group]>...<import><name>a</name></import>...</import>`
+    // The shared keyword on both levels is intentional — the outer
+    // is the "grouped statement" and the inner is each "imported
+    // entity." See specs/.../transformations/imports-grouping.md.
+    "use",
+    "import",
 ];
 
 #[test]

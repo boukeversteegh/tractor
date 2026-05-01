@@ -52,6 +52,8 @@ pub enum TractorNode {
     // Iter 17: PHP-specific markers
     Nullsafe, Bottom, Intersection, Disjunctive, Global, Dynamic, Promoted,
     Heredoc, Nowdoc,
+    // Import-shape (path container, alias dual-use, group marker)
+    Path, Alias, Group,
     // Dual-use names
     Static, Default,
 }
@@ -79,12 +81,17 @@ impl TractorNode {
             | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open
             | Self::Prefix
             | Self::Nullsafe | Self::Bottom | Self::Intersection | Self::Disjunctive
-            | Self::Dynamic | Self::Promoted | Self::Heredoc | Self::Nowdoc             => (true, false, Default),
+            | Self::Dynamic | Self::Promoted | Self::Heredoc | Self::Nowdoc
+            | Self::Group                                                                => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Final | Self::Abstract | Self::Readonly | Self::Global               => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Constant | Self::Static | Self::Default               => (true, true, Keyword),
+            // `Alias` dual-use: `[alias]` marker on `<use>` for
+            // `use App\Foo as Bar` AND `<alias><name>Bar</name></alias>`
+            // child for the local-binding wrapper.
+            Self::Alias                                                                  => (true, true, Default),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `break;` / `continue;` are bare without
@@ -101,6 +108,7 @@ impl TractorNode {
             | Self::Clone | Self::Unset
             | Self::Bool | Self::Null                                                    => (false, true, Keyword),
             Self::Type                                                                   => (false, true, Type),
+            Self::Path                                                                   => (false, true, Default),
             Self::Call | Self::New                                                       => (false, true, Function),
             Self::Cast | Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op
                                                                                           => (false, true, Operator),

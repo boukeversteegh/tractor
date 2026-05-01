@@ -6,17 +6,16 @@ program/
   │   ├─ name = "App"
   │   └─ name = "Blueprint"
   ├─ use/
-  │   ├─ name = "App"
+  │   ├─ path/name = "App"
   │   └─ name = "Base"
-  ├─ use/
-  │   ├─ name = "App"
+  ├─ use[alias]/
+  │   ├─ path/name = "App"
   │   ├─ name = "Logger"
-  │   └─ name = "Log"
-  ├─ use/
-  │   ├─ name = "App"
-  │   └─ body/
-  │       ├─ name = "First"
-  │       └─ name = "Second"
+  │   └─ alias/name = "Log"
+  ├─ use[group]/
+  │   ├─ path/name = "App"
+  │   ├─ use/name = "First"
+  │   └─ use/name = "Second"
   ├─ comment[leading] = "/**\n * Demo class with various PHP features.\n */"
   ├─ class[abstract]/
   │   ├─ attribute/
