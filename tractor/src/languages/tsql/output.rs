@@ -74,22 +74,35 @@ impl TractorNode {
     }
 
     /// Per-name metadata. Default for unlisted variants: container with
-    /// `Default` syntax. T-SQL has no marker-only or dual-use names.
+    /// `Default` syntax.
     pub fn spec(self) -> TractorNodeSpec {
         let (marker, container, syntax) = match self {
+            // ---- Dual-use (marker AND container) -----------------------------
+            // `INT` / `VARCHAR(n)` etc. — type elements that may carry
+            // a length argument as a container OR be bare empty
+            // markers when the type has no parameters.
+            Self::Int | Self::Varchar | Self::Nvarchar | Self::Datetime         => (true, true, Type),
+            // Sort direction `ASC` / `DESC` — bare keyword marker on
+            // `<order>`.
+            Self::Direction                                                     => (true, true, Keyword),
+            // `DELETE` may be either a DML statement (container) or
+            // an empty marker on `ALTER TABLE ... DROP CONSTRAINT`.
+            Self::Delete                                                        => (true, true, Keyword),
+            // `<literal>` for SQL string/numeric literals — usually
+            // has a text child, but can be empty as a placeholder.
+            Self::Literal                                                       => (true, true, String),
+
             // ---- Containers with non-default syntax --------------------------
-            Self::Statement | Self::Select | Self::Insert | Self::Delete | Self::Update
-            | Self::From | Self::Where | Self::Having | Self::Join | Self::Direction
+            Self::Statement | Self::Select | Self::Insert | Self::Update
+            | Self::From | Self::Where | Self::Having | Self::Join
             | Self::Star | Self::Cte | Self::Union | Self::Exists
             | Self::Case | Self::When
             | Self::Merge | Self::Transaction | Self::Set | Self::Go | Self::Exec
             | Self::Alter | Self::Drop | Self::While | Self::Filter | Self::Declare
             | Self::Reset                                                        => (false, true, Keyword),
-            Self::Ref | Self::Int | Self::Varchar | Self::Nvarchar | Self::Datetime
-                                                                                => (false, true, Type),
+            Self::Ref                                                           => (false, true, Type),
             Self::Call | Self::Window | Self::Cast                              => (false, true, Function),
             Self::Compare | Self::Between | Self::Assign | Self::Op             => (false, true, Operator),
-            Self::Literal                                                       => (false, true, String),
             Self::Column | Self::Name | Self::Alias | Self::Schema | Self::Var | Self::Temp
                                                                                 => (false, true, Identifier),
             Self::Comment                                                       => (false, true, Comment),

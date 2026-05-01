@@ -71,6 +71,10 @@ impl TractorNode {
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::List | Self::Dict | Self::Set                                  => (true, true, Default),
+            // Generic: container for `Foo[T, U]` (with type children) +
+            // marker for empty / wildcard generics.
+            // Tuple: container for `(a, b)` literal + marker for empty `()`.
+            Self::Generic | Self::Tuple                                          => (true, true, Default),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `pass` is always bare; `break`/`continue`/

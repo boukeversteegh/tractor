@@ -92,6 +92,12 @@ impl TractorNode {
             Self::Array                                                             => (true, true, Type),
             // Template: container for template_expression + marker (dual-use like TS)
             Self::Template                                                          => (true, true, Default),
+            // Annotation: container for `@Annotation(args...)` (with arg
+            // children) + marker for bare `@Override` (no args).
+            // Generic: container for `<T extends Foo>` (with type
+            // children) + marker for wildcard `<?>` / empty type
+            // parameter list.
+            Self::Annotation | Self::Generic                                        => (true, true, Type),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container).
@@ -107,7 +113,6 @@ impl TractorNode {
             | Self::True | Self::False | Self::Null
             | Self::Assert | Self::Do
             | Self::Instanceof | Self::Module                                       => (false, true, Keyword),
-            Self::Generic                                                           => (false, true, Type),
             Self::Call | Self::Lambda                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op
             | Self::Cast                                                            => (false, true, Operator),
