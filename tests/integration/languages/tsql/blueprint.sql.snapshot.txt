@@ -372,7 +372,7 @@ file/
   │               └─ literal = "1"
   ├─ statement/drop/ref/name = "TempData"
   ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
-  ├─ statement/alter_table/
+  ├─ statement/alter/
   │   ├─ ref/name = "Orders"
   │   └─ constraint/
   │       ├─ name = "fk_customer"
@@ -380,6 +380,6 @@ file/
   │           ├─ columns/col/name = "CustomerID"
   │           ├─ ref/name = "Customers"
   │           └─ name = "ID"
-  └─ statement/alter_table/
+  └─ statement/alter/
       ├─ ref/name = "Orders"
       └─ drop/name = "fk_customer"

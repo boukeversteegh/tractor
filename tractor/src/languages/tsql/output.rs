@@ -46,10 +46,6 @@ pub enum TractorNode {
     Go,
     // EXEC
     Exec,
-    // ALTER TABLE
-    AlterTable, AddColumn,
-    // CREATE INDEX
-    CreateIndex, IndexFields,
     // Data types
     Int, Varchar, Nvarchar, Datetime,
     // Expressions
@@ -87,7 +83,6 @@ impl TractorNode {
             | Self::Star | Self::Cte | Self::Union | Self::Exists
             | Self::Case | Self::When
             | Self::Merge | Self::Transaction | Self::Set | Self::Go | Self::Exec
-            | Self::AlterTable | Self::CreateIndex
             | Self::Alter | Self::Drop | Self::While | Self::Filter | Self::Declare
             | Self::Reset                                                        => (false, true, Keyword),
             Self::Ref | Self::Int | Self::Varchar | Self::Nvarchar | Self::Datetime
