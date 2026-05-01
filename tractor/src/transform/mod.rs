@@ -309,7 +309,9 @@ pub mod helpers {
         fn with_wrap_child(&mut self, child: XotNode, wrapper: XotNode) -> Result<&mut Self, xot::Error>;
         fn with_wrapped_field_child<N: AsRef<str>>(&mut self, parent: XotNode, field: &str, wrapper: N) -> Result<&mut Self, xot::Error>;
         fn with_prepended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_prepended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error>;
         fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
+        fn with_appended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error>;
         fn with_inserted_empty_before<N: AsRef<str>>(&mut self, sibling: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_prepended_element_with_text<N: AsRef<str>>(&mut self, parent: XotNode, name: N, text: &str) -> Result<&mut Self, xot::Error>;
         fn with_inserted_text_after(&mut self, sibling: XotNode, text: &str) -> Result<&mut Self, xot::Error>;
@@ -386,8 +388,18 @@ pub mod helpers {
             Ok(self)
         }
 
+        fn with_prepended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error> {
+            prepend_marker_from(self, parent, name, source)?;
+            Ok(self)
+        }
+
         fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
             append_empty_element(self, parent, name)?;
+            Ok(self)
+        }
+
+        fn with_appended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error> {
+            append_marker_from(self, parent, name, source)?;
             Ok(self)
         }
 
@@ -591,6 +603,37 @@ pub mod helpers {
         let element = xot.new_element(name_id);
         xot.prepend(parent, element)?;
         Ok(element)
+    }
+
+    /// Prepend an empty marker as first child, copying source-location
+    /// attributes (`line`/`column`/`end_line`/`end_column`) from
+    /// `source`. Use when the marker is "tied to" a real source token
+    /// (Principle #10) — e.g. `<async/>` for the `async` keyword,
+    /// `<try/>` for `?`, `<await/>` for `await`. The `source` should
+    /// be the element whose source range covers the keyword token;
+    /// when the keyword is anonymous text, pass its containing element.
+    pub fn prepend_marker_from(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: impl AsRef<str>,
+        source: XotNode,
+    ) -> Result<XotNode, xot::Error> {
+        let marker = prepend_empty_element(xot, parent, name)?;
+        copy_source_location(xot, source, marker);
+        Ok(marker)
+    }
+
+    /// Append an empty marker as last child, copying source-location
+    /// attributes from `source`. See [`prepend_marker_from`].
+    pub fn append_marker_from(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: impl AsRef<str>,
+        source: XotNode,
+    ) -> Result<XotNode, xot::Error> {
+        let marker = append_empty_element(xot, parent, name)?;
+        copy_source_location(xot, source, marker);
+        Ok(marker)
     }
 
     /// Insert an empty element before a sibling

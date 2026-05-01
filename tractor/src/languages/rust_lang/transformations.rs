@@ -347,8 +347,14 @@ fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         .filter(|name| matches!(name, Mut | Async | Unsafe | Const))
         .collect();
 
+    // Source-location source: the keyword token is anonymous text inside
+    // `node` (a let_declaration or function_modifiers wrapper); copy
+    // `node`'s range onto each marker so `<async/>` carries the keyword's
+    // line/column (Principle #10). When multiple modifiers share the
+    // wrapper (`async unsafe fn`), they share the wrapper's range —
+    // the best fidelity available without per-token source info.
     for modifier in found.into_iter().rev() {
-        xot.with_prepended_empty_element(node, modifier)?;
+        xot.with_prepended_marker_from(node, modifier, node)?;
     }
     Ok(())
 }
