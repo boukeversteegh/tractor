@@ -176,7 +176,21 @@ where
             Ok(TransformAction::Continue)
         }
         Rule::Detach => {
+            // If the parent is a field-distribution wrapper element
+            // that becomes empty after we remove `node`, detach the
+            // wrapper too. Catches the TSQL `cast/<name/>` case where
+            // a `keyword_cast` was wrapped in `<name>` by the
+            // field-distribution pass and Detach leaves `<name/>`
+            // behind.
+            let parent = xot.parent(node).filter(|&p| xot.element(p).is_some());
             xot.detach(node)?;
+            if let Some(parent) = parent {
+                let has_field = crate::transform::helpers::get_attr(xot, parent, "field").is_some();
+                let has_any_child = xot.children(parent).next().is_some();
+                if has_field && !has_any_child {
+                    xot.detach(parent)?;
+                }
+            }
             Ok(TransformAction::Done)
         }
         Rule::Passthrough => Ok(TransformAction::Continue),

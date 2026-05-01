@@ -231,7 +231,7 @@ file/
   │   │   │   ├─ column/name = "Nickname"
   │   │   │   └─ column/name = "Name"
   │   │   ├─ alias = "DisplayName"
-  │   │   ├─ cast[name]/
+  │   │   ├─ cast/
   │   │   │   ├─ column/name = "Age"
   │   │   │   └─ varchar/literal = "10"
   │   │   └─ alias = "AgeText"
@@ -242,7 +242,7 @@ file/
   │           │   ├─ compare/
   │           │   │   ├─ column/name = "Email"
   │           │   │   └─ literal = "'%@gmail.com'"
-  │           │   └─ compare[literal]/column/name = "DeletedAt"
+  │           │   └─ compare/column/name = "DeletedAt"
   │           └─ compare/
   │               ├─ column/name = "Role"
   │               └─ list/
@@ -258,7 +258,7 @@ file/
   ├─ statement/create/
   │   ├─ ref/name = "Audit"
   │   └─ columns/
-  │       ├─ definition[int]/name = "ID"
+  │       ├─ definition/name = "ID"
   │       ├─ definition/
   │       │   ├─ name = "Action"
   │       │   └─ nvarchar/literal = "100"
