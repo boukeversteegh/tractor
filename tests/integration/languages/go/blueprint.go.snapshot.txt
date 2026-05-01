@@ -411,7 +411,9 @@ file/
           │   │   ├─ left/expression/name = "i"
           │   │   ├─ op/compare[less]
           │   │   └─ right/expression/int = "10"
-          │   ├─ unary/name = "i"
+          │   ├─ unary/
+          │   │   ├─ name = "i"
+          │   │   └─ op[increment] = "++"
           │   └─ body/if/
           │       ├─ condition/expression/binary/
           │       │   ├─ left/expression/name = "i"
@@ -454,7 +456,9 @@ file/
           │   │   ├─ left/expression/name = "n"
           │   │   ├─ op/compare[less]
           │   │   └─ right/expression/int = "3"
-          │   └─ body/unary/name = "n"
+          │   └─ body/unary/
+          │       ├─ name = "n"
+          │       └─ op[increment] = "++"
           ├─ go/call/closure/body/expression/call/
           │   ├─ member/
           │   │   ├─ name = "fmt"

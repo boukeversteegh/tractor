@@ -243,6 +243,25 @@ fn go_channel_receive_unary() {
         1);
 }
 
+/// Go's `inc_statement` and `dec_statement` (`i++`, `i--`) are postfix-
+/// only and were previously `Rename(Unary)` — so the operator was left
+/// as bare text inside `<unary>`. Cross-language increment/decrement
+/// queries (`//unary/op[increment]`) silently missed Go. Switching to
+/// `ExtractOpThenRename(Unary)` aligns Go with the C-family postfix
+/// shape established in iter 8.
+#[test]
+fn go_inc_dec_statement_extracts_op() {
+    claim("Go `i++` extracts `<op[increment]>`",
+        &mut parse_src("go", "package m\nfunc f() { i := 0; i++; _ = i }"),
+        "//unary[op[increment]][name='i']",
+        1);
+
+    claim("Go `n--` extracts `<op[decrement]>`",
+        &mut parse_src("go", "package m\nfunc f() { n := 0; n--; _ = n }"),
+        "//unary[op[decrement]][name='n']",
+        1);
+}
+
 #[test]
 fn php_update_prefix_vs_postfix() {
     claim("`++$x` extracts <op[increment]> AND carries <prefix>",
