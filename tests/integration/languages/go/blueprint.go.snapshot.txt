@@ -47,16 +47,18 @@ file/
   │       └─ returns/type/name = "string"
   ├─ interface[exported]/
   │   ├─ name = "ReadStringer"
-  │   ├─ name = "io"
-  │   ├─ name = "Reader"
+  │   ├─ type/
+  │   │   ├─ name = "io"
+  │   │   └─ name = "Reader"
   │   ├─ type/name = "Stringer"
   │   └─ method/
   │       ├─ name = "Close"
   │       └─ returns/type/name = "error"
   ├─ alias[exported]/
   │   ├─ name = "Alias"
-  │   ├─ name = "context"
-  │   └─ name = "Context"
+  │   └─ type/
+  │       ├─ name = "context"
+  │       └─ name = "Context"
   ├─ type[exported]/
   │   ├─ name = "UserID"
   │   └─ type/name = "int64"
@@ -65,8 +67,9 @@ file/
   │   └─ type[function]/
   │       ├─ parameter/
   │       │   ├─ name = "ctx"
-  │       │   ├─ name = "context"
-  │       │   └─ name = "Context"
+  │       │   └─ type/
+  │       │       ├─ name = "context"
+  │       │       └─ name = "Context"
   │       ├─ parameter/
   │       │   ├─ name = "id"
   │       │   └─ type/name = "UserID"
@@ -435,8 +438,9 @@ file/
       ├─ name = "controlFlow"
       ├─ parameter/
       │   ├─ name = "ctx"
-      │   ├─ name = "context"
-      │   └─ name = "Context"
+      │   └─ type/
+      │       ├─ name = "context"
+      │       └─ name = "Context"
       ├─ parameter/
       │   ├─ name = "in"
       │   └─ chan/value/expression/type/name = "int"
@@ -614,12 +618,14 @@ file/
           │               └─ expression/value/expression/int = "1"
           ├─ var/
           │   ├─ name = "r"
-          │   ├─ name = "io"
-          │   ├─ name = "Reader"
+          │   ├─ type/
+          │   │   ├─ name = "io"
+          │   │   └─ name = "Reader"
           │   └─ value/expression/call/
           │       ├─ name = "new"
-          │       ├─ name = "myio"
-          │       └─ name = "PipeReader"
+          │       └─ type/
+          │           ├─ name = "myio"
+          │           └─ name = "PipeReader"
           ├─ if/
           │   ├─ variable[short]/
           │   │   ├─ left/

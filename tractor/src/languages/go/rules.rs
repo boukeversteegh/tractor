@@ -49,7 +49,6 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         | GoKind::TypeParameterDeclaration
         | GoKind::TypeElem
         | GoKind::TypeConstraint
-        | GoKind::QualifiedType
         | GoKind::InterpretedStringLiteralContent
         | GoKind::RawStringLiteralContent
         | GoKind::EscapeSequence => Flatten { distribute_field: None },
@@ -67,6 +66,11 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::TypeAlias             => Custom(transformations::type_alias),
         GoKind::IfStatement           => Custom(transformations::if_statement),
         GoKind::TypeIdentifier        => Custom(transformations::type_identifier),
+        // `pkg.Name` qualified type — wrap in `<type>` with its
+        // segments as `<name>` children, matching the bare `Name`
+        // type-identifier shape so cross-language `//type/name='Name'`
+        // works for both forms.
+        GoKind::QualifiedType         => Rename(Type),
         GoKind::Comment               => Custom(transformations::comment),
 
         // ---- Pure Rename ----------------------------------------------
