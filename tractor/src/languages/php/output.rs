@@ -21,8 +21,10 @@ pub enum TractorNode {
     // Statements / control flow
     Return, If, Else, ElseIf, For, Foreach, While, Do, Switch, Case, Try, Catch, Finally, Throw,
     Echo, Continue, Break, Match, Arm, Yield, Require, Print, Exit, Declare, Goto,
+    Clone, Unset, Label,
     // Expressions
     Call, Member, Index, New, Cast, Assign, Binary, Unary, Ternary, Array, Spread, Expression,
+    Scope, Shell,
     // Types / atoms
     Type, String, Int, Float, Bool, Null, Variable,
     // Misc structural
@@ -47,6 +49,9 @@ pub enum TractorNode {
     Open,
     // Unary-shape marker
     Prefix,
+    // Iter 17: PHP-specific markers
+    Nullsafe, Bottom, Intersection, Disjunctive, Global, Dynamic, Promoted,
+    Heredoc, Nowdoc,
     // Dual-use names
     Static, Default,
 }
@@ -72,9 +77,11 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Primitive | Self::Union | Self::Optional
             | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open
-            | Self::Prefix                                                               => (true, false, Default),
+            | Self::Prefix
+            | Self::Nullsafe | Self::Bottom | Self::Intersection | Self::Disjunctive
+            | Self::Dynamic | Self::Promoted | Self::Heredoc | Self::Nowdoc             => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
-            | Self::Final | Self::Abstract | Self::Readonly                              => (true, false, Keyword),
+            | Self::Final | Self::Abstract | Self::Readonly | Self::Global               => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Constant | Self::Static | Self::Default               => (true, true, Keyword),
@@ -87,6 +94,7 @@ impl TractorNode {
             | Self::Foreach | Self::While | Self::Do | Self::Switch | Self::Case
             | Self::Try | Self::Catch | Self::Finally | Self::Throw
             | Self::Continue | Self::Break
+            | Self::Clone | Self::Unset
             | Self::Bool | Self::Null                                                    => (false, true, Keyword),
             Self::Type                                                                   => (false, true, Type),
             Self::Call | Self::New                                                       => (false, true, Function),

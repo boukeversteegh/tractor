@@ -35,9 +35,15 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
-        PhpKind::AssignmentExpression => ExtractOpThenRename(Assign),
-        PhpKind::BinaryExpression     => ExtractOpThenRename(Binary),
-        PhpKind::UnaryOpExpression    => ExtractOpThenRename(Unary),
+        PhpKind::AssignmentExpression          => ExtractOpThenRename(Assign),
+        PhpKind::AugmentedAssignmentExpression => ExtractOpThenRename(Assign),
+        PhpKind::BinaryExpression              => ExtractOpThenRename(Binary),
+        PhpKind::UnaryOpExpression             => ExtractOpThenRename(Unary),
+        // `=&` reference assignment — same op-extraction shape as `=`,
+        // sibling of compound `+=` etc.
+        PhpKind::ReferenceAssignmentExpression => ExtractOpThenRename(Assign),
+        // `@expr` — `@` is a unary suppress-error operator.
+        PhpKind::ErrorSuppressionExpression    => ExtractOpThenRename(Unary),
 
         // ---- RenameWithMarker ------------------------------------------
         PhpKind::AnonymousFunction              => RenameWithMarker(Function, Anonymous),
@@ -54,6 +60,23 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::UnionType                      => RenameWithMarker(Type, Union),
         PhpKind::VariadicParameter              => RenameWithMarker(Parameter, Variadic),
 
+        // ---- Iter 17: PHP 8 nullsafe + new type variants -------------
+        PhpKind::NullsafeMemberAccessExpression => RenameWithMarker(Member, Nullsafe),
+        PhpKind::NullsafeMemberCallExpression   => RenameWithMarker(Call, Nullsafe),
+        PhpKind::AnonymousClass                 => RenameWithMarker(Class, Anonymous),
+        PhpKind::BottomType                     => RenameWithMarker(Type, Bottom),
+        PhpKind::IntersectionType               => RenameWithMarker(Type, Intersection),
+        PhpKind::DisjunctiveNormalFormType      => RenameWithMarker(Type, Disjunctive),
+        // Function-local `static $x;` / `global $x;` declare scoped vars.
+        PhpKind::FunctionStaticDeclaration      => RenameWithMarker(Variable, Static),
+        PhpKind::GlobalDeclaration              => RenameWithMarker(Variable, Global),
+        PhpKind::DynamicVariableName            => RenameWithMarker(Variable, Dynamic),
+        // Constructor property promotion `public string $name` parameter.
+        PhpKind::PropertyPromotionParameter     => RenameWithMarker(Parameter, Promoted),
+        // First-class callable syntax `func(...)` — `...` placeholder
+        // marks the argument list as "all args".
+        PhpKind::VariadicPlaceholder            => RenameWithMarker(Argument, Variadic),
+
         // ---- Flatten with field distribution ---------------------------
         PhpKind::Arguments        => Flatten { distribute_field: Some("arguments") },
         PhpKind::FormalParameters => Flatten { distribute_field: Some("parameters") },
@@ -63,20 +86,37 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::ArrayElementInitializer
         | PhpKind::AttributeGroup
         | PhpKind::AttributeList
+        | PhpKind::ByRef
+        | PhpKind::ColonBlock
         | PhpKind::CompoundStatement
         | PhpKind::DeclarationList
         | PhpKind::DeclareDirective
+        | PhpKind::EmptyStatement
         | PhpKind::EnumDeclarationList
         | PhpKind::EscapeSequence
+        | PhpKind::HeredocBody
+        | PhpKind::HeredocEnd
+        | PhpKind::HeredocStart
         | PhpKind::MatchBlock
         | PhpKind::MatchConditionList
         | PhpKind::NamespaceName
         | PhpKind::NamespaceUseClause
         | PhpKind::NamespaceUseGroup
+        | PhpKind::NowdocBody
+        | PhpKind::NowdocString
         | PhpKind::ParenthesizedExpression
+        | PhpKind::PrimaryExpression
         | PhpKind::PropertyElement
+        | PhpKind::PropertyHookList
         | PhpKind::QualifiedName
-        | PhpKind::StringContent => Flatten { distribute_field: None },
+        | PhpKind::ReferenceModifier
+        | PhpKind::SequenceExpression
+        | PhpKind::StringContent
+        | PhpKind::SwitchBlock
+        | PhpKind::Text
+        | PhpKind::UseAsClause
+        | PhpKind::UseInsteadOfClause
+        | PhpKind::UseList => Flatten { distribute_field: None },
 
         // ---- DefaultAccessThenRename — class members default to public.
         PhpKind::MethodDeclaration   => da(Method),
@@ -91,6 +131,8 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::ReadonlyModifier   => Custom(transformations::modifier),
         PhpKind::StaticModifier     => Custom(transformations::modifier),
         PhpKind::VisibilityModifier => Custom(transformations::modifier),
+        // Deprecated `var $x` property declaration — equivalent to `public`.
+        PhpKind::VarModifier        => Custom(transformations::modifier),
 
         // ---- Pure Rename -----------------------------------------------
         PhpKind::Argument                  => Rename(Argument),
@@ -156,6 +198,22 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::WhileStatement            => Rename(While),
         PhpKind::YieldExpression           => Rename(Yield),
 
+        // ---- Iter 17: pure renames for previously-passthrough kinds ---
+        PhpKind::CloneExpression           => Rename(Clone),
+        PhpKind::UnsetStatement            => Rename(Unset),
+        PhpKind::NamedLabelStatement       => Rename(Label),
+        // `list($a, $b) = ...` destructuring — same shape as `[..]` array.
+        PhpKind::ListLiteral               => Rename(Array),
+        PhpKind::StaticVariableDeclaration => Rename(Variable),
+        PhpKind::CastType                  => Rename(Type),
+        // `self`/`parent`/`static` keyword-scope.
+        PhpKind::RelativeScope             => Rename(Scope),
+        // `` `cmd` `` shell-command literal.
+        PhpKind::ShellCommandExpression    => Rename(Shell),
+        // PHP 8.4+ property hooks `get { ... }` / `set(value) { ... }`
+        // — same shape as accessor methods.
+        PhpKind::PropertyHook              => Rename(Method),
+
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and the dispatcher leaves it as
         //      its raw grammar name (the previous behavior of the
@@ -164,145 +222,28 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         // Already matches our vocabulary.
         PhpKind::Name | PhpKind::Pair => Passthrough,
 
-        // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates for real semantics.
-        //      Grouped by theme; see Step 7 follow-up commit for proposals.
-
-        // TODO: PHP 8 nullsafe operator (`?->`). Sibling of
-        //   member_access_expression  → RenameWithMarker(MEMBER, INSTANCE)
-        //   member_call_expression    → RenameWithMarker(CALL, INSTANCE)
-        // Likely need a NULLSAFE marker:
-        //   nullsafe_member_access_expression → RenameWithMarker(MEMBER, NULLSAFE)
-        //   nullsafe_member_call_expression   → RenameWithMarker(CALL, NULLSAFE)
-        // (with INSTANCE preserved or replaced).
-        PhpKind::NullsafeMemberAccessExpression
-        | PhpKind::NullsafeMemberCallExpression => Passthrough,
-
-        // TODO: heredoc / nowdoc string variants (`<<<EOT` blocks).
-        // Each could rename to STRING with a marker for the variant.
-        //   heredoc / heredoc_body / heredoc_end / heredoc_start
-        //   nowdoc / nowdoc_body / nowdoc_string
-        PhpKind::Heredoc
-        | PhpKind::HeredocBody
-        | PhpKind::HeredocEnd
-        | PhpKind::HeredocStart
-        | PhpKind::Nowdoc
-        | PhpKind::NowdocBody
-        | PhpKind::NowdocString => Passthrough,
-
-        // TODO: PHP 8.1+ intersection-type / disjunctive-normal-form-
-        // type / bottom-type. Sibling of UnionType → RenameWithMarker(TYPE, UNION).
-        // Likely:
-        //   intersection_type            → RenameWithMarker(TYPE, INTERSECTION)
-        //   disjunctive_normal_form_type → similar
-        //   bottom_type (`never`)        → RenameWithMarker(TYPE, BOTTOM)
-        PhpKind::BottomType
-        | PhpKind::DisjunctiveNormalFormType
-        | PhpKind::IntersectionType => Passthrough,
-
-        // TODO: anonymous class — `new class { … }`. Sibling of
-        // class_declaration → CLASS, just inline. Likely
-        // RenameWithMarker(CLASS, ANONYMOUS).
-        PhpKind::AnonymousClass => Passthrough,
-
-        // TODO: increment / decrement (`++$x`, `$x--`); augmented
-        // assignment (`+=`); reference assignment (`=&`); reference
-        // modifier (`&` parameter). Each is a binary/unary variant.
-        //   update_expression                → ExtractOpThenRename(UNARY)
-        //   augmented_assignment_expression  → ExtractOpThenRename(ASSIGN)
-        //   reference_assignment_expression  → ExtractOpThenRename(ASSIGN) + REF marker?
-        //   reference_modifier               → modifier helper?
-        //   by_ref                           → marker?
-        PhpKind::AugmentedAssignmentExpression
-        | PhpKind::ByRef
-        | PhpKind::ReferenceAssignmentExpression
-        | PhpKind::ReferenceModifier => Passthrough,
-
         // `update_expression` covers `$x++` / `$x--` / `++$x` / `--$x`.
         // Custom dispatch detects prefix-vs-postfix from child order and
         // adds a `<prefix/>` marker for prefix forms — matches C#'s
         // explicit `prefix_unary_expression` so `//unary[prefix]` works
         // cross-language.
-        PhpKind::UpdateExpression          => Custom(transformations::update_expression),
+        PhpKind::UpdateExpression => Custom(transformations::update_expression),
 
-        // TODO: special-statement forms — `clone`, `unset`, `empty`
-        // (`;`), `goto`-target labels, list-literal destructuring,
-        // switch_block (the `{ case … }` body of switch_statement).
-        //   clone_expression       → Rename(CLONE)? own semantic?
-        //   unset_statement        → Rename(UNSET)?
-        //   empty_statement        → Flatten or Skip
-        //   named_label_statement  → Rename(LABEL)?
-        //   list_literal           → Rename(ARRAY) with marker?
-        //   switch_block           → Rename(BODY) (matches Java)
-        PhpKind::CloneExpression
-        | PhpKind::EmptyStatement
-        | PhpKind::ListLiteral
-        | PhpKind::NamedLabelStatement
-        | PhpKind::SwitchBlock
-        | PhpKind::UnsetStatement => Passthrough,
+        // `heredoc` / `nowdoc` — `<<<EOT` block-string variants. Both
+        // surface as `<string>` with a `[heredoc]` / `[nowdoc]` marker;
+        // body / start / end children flatten so the literal text
+        // bubbles up. Cross-language `//string` finds them alongside
+        // single- and double-quoted strings.
+        PhpKind::Heredoc => RenameWithMarker(String, Heredoc),
+        PhpKind::Nowdoc  => RenameWithMarker(String, Nowdoc),
 
-        // TODO: PHP-specific value forms.
-        //   error_suppression_expression  (`@func()`) — Rename(CALL) marker?
-        //   shell_command_expression      (`` `cmd` ``) — own semantic?
-        //   sequence_expression           (`a, b, c` in `for(;;)`) — Flatten?
-        //   relative_scope                (`self::`, `static::`) — passthrough?
-        //   variadic_placeholder          (`...` in `func(...)` first-class callable) — marker?
-        PhpKind::ErrorSuppressionExpression
-        | PhpKind::RelativeScope
-        | PhpKind::SequenceExpression
-        | PhpKind::ShellCommandExpression
-        | PhpKind::VariadicPlaceholder => Passthrough,
-
-        // TODO: declaration variants — function-local `static $x;`
-        // (different from class static), `global $x;`, alternative
-        // `:` syntax block, deprecated `var` keyword for properties.
-        //   function_static_declaration   → Rename(VARIABLE) marker?
-        //   global_declaration            → Rename(VARIABLE) marker?
-        //   colon_block                   → Flatten?
-        //   var_modifier                  → modifier helper (deprecated `var $x`)
-        //   static_variable_declaration   → Rename(VARIABLE)?
-        PhpKind::ColonBlock
-        | PhpKind::FunctionStaticDeclaration
-        | PhpKind::GlobalDeclaration
-        | PhpKind::StaticVariableDeclaration
-        | PhpKind::VarModifier => Passthrough,
-
-        // TODO: cast type child of cast_expression; dynamic variable
-        // name (`$$foo`); raw HTML text outside php tags.
-        //   cast_type             → Rename(TYPE)?
-        //   dynamic_variable_name → Rename(VARIABLE) marker?
-        //   text                  → Flatten or Rename(STRING)?
-        PhpKind::CastType
-        | PhpKind::DynamicVariableName
-        | PhpKind::Text => Passthrough,
-
-        // TODO: `use Trait` inside a class — different from namespace
-        // `use`. Currently both rename to USE; trait-use needs its
-        // own semantic and the as/insteadof clauses likely flatten.
-        //   use_as_clause         → Flatten?
-        //   use_insteadof_clause  → Flatten?
-        //   use_list              → Flatten
-        PhpKind::UseAsClause
-        | PhpKind::UseInsteadOfClause
-        | PhpKind::UseList => Passthrough,
-
-        // TODO: PHP 8.4+ property hooks (`get { … }` / `set { … }`).
-        // Likely Rename to a per-hook keyword, similar to C# accessors.
-        //   property_hook                → Rename(?) per hook kind
-        //   property_hook_list           → Flatten
-        //   property_promotion_parameter → Rename(PARAMETER) with marker?
-        PhpKind::PropertyHook
-        | PhpKind::PropertyHookList
-        | PhpKind::PropertyPromotionParameter => Passthrough,
-
-        // ---- Truly raw structural supertypes. Tree-sitter exposes
-        //      these as named kinds for grammar-introspection but they
-        //      almost never appear in parsed output; preserved as
-        //      passthrough for completeness.
+        // ---- Single-word passthroughs.
+        // `expression` / `literal` / `operation` / `statement` / `type`
+        // are tree-sitter structural supertypes that almost never
+        // surface in the parsed output.
         PhpKind::Expression
         | PhpKind::Literal
         | PhpKind::Operation
-        | PhpKind::PrimaryExpression
         | PhpKind::Statement
         | PhpKind::Type => Passthrough,
     }

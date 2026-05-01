@@ -123,15 +123,20 @@ pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
 }
 
 /// `visibility_modifier` / `static_modifier` / `final_modifier` /
-/// `abstract_modifier` / `readonly_modifier` — text → marker
-/// conversion. The source keyword survives as a dangling sibling so
-/// the enclosing declaration's XPath string-value still contains it
-/// (Principle #7).
+/// `abstract_modifier` / `readonly_modifier` / `var_modifier` —
+/// text → marker conversion. The source keyword survives as a dangling
+/// sibling so the enclosing declaration's XPath string-value still
+/// contains it (Principle #7).
+///
+/// Deprecated PHP 4 `var $x` is equivalent to `public $x`; rewrite
+/// the marker name so cross-language `//field[public]` queries find
+/// both forms.
 pub fn modifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(text) = get_text_content(xot, node) {
         let text = text.trim().to_string();
         if !text.is_empty() {
-            rename_to_marker(xot, node, &text)?;
+            let marker_name = if text == "var" { "public" } else { text.as_str() };
+            rename_to_marker(xot, node, marker_name)?;
             xot.with_inserted_text_after(node, &text)?;
             return Ok(TransformAction::Done);
         }
