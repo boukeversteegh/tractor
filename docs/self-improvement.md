@@ -230,11 +230,129 @@ self-improvement loop" so the user can re-evaluate later.
   otherwise split (helper in iter N, per-language adoption in N+1, …).
 - *Single-language gate-clear sweep* (e.g. clear all Principle #17
   violations in language X): 1 iteration per language.
-- *Design decision*: exit autonomy — escalate to user with subagent
-  review attached.
+- *Design decision*: see "Autonomy classes" below — most are still
+  in scope.
 
 **Anti-pattern: bundling unrelated fixes in one commit.** Even if two
 items are queued, prefer two commits.
+
+## Autonomy classes
+
+Three classes of work, not five tiers. Don't conflate scope (small/big),
+design-load (mechanical/tradeoff/heavy), and autonomy (decide alone /
+needs user). Use this taxonomy to classify each item:
+
+### Class 1 — Just do it
+
+Decide and ship. No user check-in. Spans:
+
+- **Mechanical fixes** — single-rule swap, table extension, mirror
+  a prior decision into another language.
+- **Decidable from principles** — when the design doc's Goals and
+  Principles point clearly to one option, it's not a design call.
+  Apply the principle, ship.
+- **Any-improvement-beats-status-quo** — when the current shape is
+  clearly broken and any defensible alternative is a strict win.
+  Pick the most-defensible-by-principles option, document the
+  rationale in the commit body, queue the *naming* question for an
+  end-of-loop review pass.
+- **Reversible micro-decisions** — node name choices, marker
+  vocabulary picks, helper API names. If a future user could
+  rename them with a sed sweep without touching shape semantics,
+  it's reversible. Pick something good, ship, list it for review.
+
+### Class 2 — Scaffold and stop
+
+When the full solution genuinely needs the user, ship the
+*architecture* without the final commitment. Forms of progress:
+
+- **Tests for the rogue cases** — even before the fix lands, a
+  test capturing the bad shape (or the desired shape with `#[ignore]`
+  / `should_panic`) prevents regression and pins the decision
+  point.
+- **A clearly-named transformer dispatch arm** — even if the arm
+  body is `Passthrough` or `Custom(transformations::TODO_decide)`,
+  having ONE explicit place where the decision lives reduces
+  future complexity.
+- **Helper or shared mechanism** — landing the helper without
+  per-language adoption (or with one adoption as a proof) leaves
+  the fan-out work as cheap mechanical follow-ups.
+- **Documented decision points** — the spec or per-language `*.md`
+  carries a "TODO: decide between A and B" with the cases laid
+  out. The user can answer in five lines and the loop runs the
+  rest.
+
+### Class 3 — Park
+
+Genuinely needs user prioritization or signals a *principle
+revision*. The only items that should park are ones that seem
+to contradict stated goals/principles — those need the human in
+the loop because the principles themselves may need updating.
+
+**Items that look like Class 3 but are actually Class 1:** purely
+"which order should we ship feature X vs Y?" — that's an order-
+of-implementation question. Pick any reasonable order and ship;
+the order is itself reversible.
+
+## Surface-area heuristic
+
+Prefer items that touch a lot of files or close out a category,
+even if individually less elegant. A 50-line refactor that fixes
+a class of issues in eight languages beats a 5-line fix in one
+language. The cumulative diff matters more than per-iter elegance.
+
+When choosing the next iter from the backlog: pick the item with
+the largest cross-language or cross-fixture surface, not the
+easiest. The easy wins follow.
+
+## Post-backlog roadmap
+
+When the active backlog drains, the loop continues with two
+follow-on bodies of work:
+
+### Fluent transformation API
+
+The `xot.with_X().with_Y().with_Z()` builder chain pattern is
+already partially in place. Audit the per-language transformation
+code for: (a) repeated imperative patterns that could become a
+single fluent call, (b) helpers that take `(&mut Xot, XotNode, …)`
+when a method-style API would read more naturally, (c) commit-on-
+done patterns that could be `.commit()` on a builder.
+
+### Cross-cutting invariant tests
+
+Build invariants in `tractor/tests/tree_invariants.rs` (or a new
+companion file) that catch *classes* of bugs in any language.
+Examples (proposed; some may need exceptions and may not be
+testable as universal invariants):
+
+- **No repeated parent/child same-name nesting** — `<body><body>`,
+  `<constraint><constraint>`, `<member><member>` etc. are nearly
+  always a mistake (the iter-30 / iter-34 / iter-35 fixes would
+  have been caught automatically). Allow a small whitelist of
+  legitimate cases (e.g. `<path><path>` for nested module paths
+  is intentional). If the whitelist grows past ~5 entries, the
+  invariant isn't holding and should be dropped.
+- **Container vs marker enforced shape** — output nodes whose
+  `TractorNodeSpec` declares `container: true` MUST either contain
+  content or be absent entirely (no empty container instances).
+  Marker-only nodes (`marker: true, container: false`) MUST be
+  empty. Dual-use (both `marker` and `container`) is exempt.
+- **No anonymous keyword text leaks** — a stricter form of
+  Principle #2: any text leaf inside an output element whose
+  trimmed value matches a known keyword (per a per-language
+  table of keywords) should be wrapped in a marker or accompanied
+  by one. May be too aggressive — start as advisory, promote to
+  asserted only if the false-positive rate is acceptable.
+- **Op marker text-content shape** — every `<op>` element's
+  trimmed text must equal exactly one entry in `OPERATOR_MARKERS`
+  (already partially enforced by `op_marker_matches_text`; extend
+  to cover the iter-25 token-boundary refinement).
+
+For each proposed invariant: implement it as a `#[test]`, run
+against current snapshots, fix or whitelist failures. The
+implementation IS the invariant — when an exception list grows
+unwieldy, drop the test.
 
 ## Working with reviewer subagents
 
@@ -257,22 +375,39 @@ When a subagent flags something:
 
 ## Operating directives (settled with the user)
 
-1. **Cadence**: run until the active backlog is empty.
-2. **Backlog ordering**: simple issues first (whether narrow scope or
-   broad-but-mechanical), then progressively harder design-heavy
-   items. Re-order the backlog as new items are discovered.
-3. **Subagent usage**: spawn a subagent **every time** a solution has
-   tradeoffs that must be weighed. Mechanical fixes (single-language
-   migration mirroring a prior decision; clear bug fixes; well-
-   precedented mechanical extensions) skip the subagent.
-4. **Post-cycle review**: after each iteration commits + pushes, spawn
+1. **Cadence**: run until the active backlog is empty, then continue
+   with the post-backlog roadmap (fluent API + cross-cutting
+   invariants).
+2. **Backlog ordering — surface area first**: pick the item with the
+   largest cross-language / cross-fixture surface, not the easiest.
+   A broad-but-mechanical sweep beats a narrow design tweak.
+3. **Subagent usage**: spawn a subagent for *shape and node design*
+   (when the change introduces a new shape, touches Principle #11 /
+   #13 / #15 territory, or affects more than one language at once).
+   Skip for mechanical fixes mirroring prior decisions or single-
+   language migrations of a precedented pattern.
+4. **Take charge**: don't park items unnecessarily. Class 1 (just do
+   it) covers more than it sounds — see "Autonomy classes" above.
+   Mechanical AND principle-decidable AND any-improvement-beats-
+   status-quo all qualify. Reversible micro-decisions (node names,
+   marker vocab) can be picked defensibly and queued for end-of-loop
+   review.
+5. **Class 2 progress counts**: when a full solution genuinely needs
+   the user, land architecture/tests/decision-point scaffolding.
+   Even partial progress that pins the decision-point and prevents
+   regression is a real iter.
+6. **Post-cycle review**: after each iteration commits + pushes, spawn
    a subagent to (a) review the diff against
    `specs/tractor-parse/semantic-tree/design.md`, and (b) report any
    *new* issues it surfaces for the backlog. Append the findings
    before starting the next iteration.
+7. **Queue naming questions for end-of-loop**: when picking a marker
+   vocab, node name, or helper API name autonomously, log the choice
+   in a "names to confirm" section of the active backlog so the user
+   can do a single rename pass at the end.
 
-These directives run without further user check-ins until the backlog
-is empty or the user pauses the loop.
+These directives run without further user check-ins until the loop
+is paused.
 
 ## Critical files
 
