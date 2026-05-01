@@ -693,7 +693,7 @@ file/
   ├─ comment[leading] = "// `extern crate` declaration — legacy import form for the 2015 edition."
   ├─ use[extern]/name = "alloc"
   ├─ comment[leading] = "// Foreign module / extern modifier — FFI block with variadic parameter."
-  ├─ mod[foreign]/
+  ├─ mod[extern and foreign]/
   │   ├─ string = "\"C\""
   │   └─ body/signature[pub]/
   │       ├─ name = "printf"

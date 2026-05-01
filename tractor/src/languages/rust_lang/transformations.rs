@@ -288,6 +288,19 @@ pub fn function_modifiers(
     Ok(TransformAction::Flatten)
 }
 
+/// `foreign_mod_item` — `extern "C" { … }`. Rename to `<mod>` with
+/// `<foreign/>` and `<extern/>` markers.
+pub fn foreign_mod_item(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Foreign, Mod};
+    xot.with_renamed(node, Mod)
+        .with_prepended_marker_from(node, Foreign, node)?
+        .with_prepended_marker_from(node, Extern, node)?;
+    Ok(TransformAction::Continue)
+}
+
 /// `extern_crate_declaration` — `extern crate alloc;`. Drop the literal
 /// `extern` / `crate` keyword children (Tree-sitter exposes them as
 /// `crate` elements that would otherwise carry text and violate the

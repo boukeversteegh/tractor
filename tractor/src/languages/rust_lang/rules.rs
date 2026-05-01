@@ -84,7 +84,10 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         // Custom handler (the bare keyword would violate marker-empty),
         // then renames to `<use>` + `<extern/>` marker.
         RustKind::ExternCrateDeclaration => Custom(transformations::extern_crate_declaration),
-        RustKind::ForeignModItem         => RenameWithMarker(Mod, Foreign),
+        // `extern "C" { ... }` — foreign mod block. The `extern`
+        // keyword leads the block; promote to <extern/> marker
+        // alongside <foreign/> so `//mod[extern]` finds the FFI form.
+        RustKind::ForeignModItem         => Custom(transformations::foreign_mod_item),
         RustKind::GenBlock               => RenameWithMarker(Block, Gen),
         RustKind::UnionItem              => da(Union),
 
