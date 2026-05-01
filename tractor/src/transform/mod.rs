@@ -229,6 +229,78 @@ pub fn wrap_body_value_children(
     Ok(())
 }
 
+/// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
+/// elements (and any other element name in `body_names`) recursively
+/// across the tree. C-family languages emit braces as anonymous text
+/// children of body wrappers; the braces are pure syntax — the body
+/// element itself already conveys "block here." Removing them keeps
+/// queries clean. Source-text reconstruction can re-add braces.
+pub fn strip_body_braces(
+    xot: &mut Xot,
+    root: XotNode,
+    body_names: &[&str],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    let mut bodies: Vec<XotNode> = Vec::new();
+    fn collect(
+        xot: &Xot,
+        node: XotNode,
+        body_names: &[&str],
+        out: &mut Vec<XotNode>,
+    ) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node)
+                .as_deref()
+                .map_or(false, |n| body_names.contains(&n))
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, body_names, out);
+        }
+    }
+    collect(xot, root, body_names, &mut bodies);
+    for body in bodies {
+        let children: Vec<XotNode> = xot.children(body).collect();
+        for c in children {
+            let Some(text) = xot.text_str(c).map(|s| s.to_string()) else { continue };
+            // Strip leading `{` (with surrounding whitespace) and
+            // trailing `}` (likewise) from each text leaf. These are
+            // the body-block delimiters; the body element itself
+            // already conveys "block here." Inner text content (e.g.
+            // bare `continue` keyword adjacent to a brace) survives.
+            let trimmed = text.trim();
+            if trimmed.is_empty() || trimmed == ";" {
+                xot.detach(c)?;
+                continue;
+            }
+            // Strip leading `{` if present.
+            let after_open = if let Some(rest) = trimmed.strip_prefix('{') {
+                rest.trim_start()
+            } else {
+                trimmed
+            };
+            // Strip trailing `}` if present.
+            let stripped = if let Some(rest) = after_open.strip_suffix('}') {
+                rest.trim_end()
+            } else {
+                after_open
+            };
+            if stripped == trimmed {
+                continue;
+            }
+            if stripped.is_empty() {
+                xot.detach(c)?;
+            } else {
+                let new_text = xot.new_text(stripped);
+                xot.insert_before(c, new_text)?;
+                xot.detach(c)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn collect_body_value_targets(
     xot: &Xot,
     node: XotNode,

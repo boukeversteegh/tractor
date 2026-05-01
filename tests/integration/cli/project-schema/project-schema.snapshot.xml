@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>class[public] (2)/ = "public class"
-  ├─ body (2)/ = {…}
+  ├─ body (2)/
   │   └─ … (26 children)
   └─ name (2) = "Calculator", "Greeter"
 

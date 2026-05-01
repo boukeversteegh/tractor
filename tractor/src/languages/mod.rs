@@ -323,7 +323,9 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         // `then`/`else` are block bodies (statement sequences), not
         // single-expression slots.
         &["value", "condition", "left", "right", "return"],
-    )
+    )?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
+    Ok(())
 }
 
 /// C# namespace shape unification (closes todo/34).
@@ -632,6 +634,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     rust_restructure_use(xot, root)?;
+    crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     Ok(())
 }
 
@@ -880,6 +883,7 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         &["value", "condition", "left", "right", "return"],
     )?;
     typescript_restructure_import(xot, root)?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
     Ok(())
 }
 
@@ -1302,6 +1306,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     java_unwrap_type_in_path(xot, root)?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
     Ok(())
 }
 
@@ -1344,6 +1349,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
     Ok(())
 }
 
@@ -1358,6 +1364,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     php_restructure_use(xot, root)?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
     Ok(())
 }
 

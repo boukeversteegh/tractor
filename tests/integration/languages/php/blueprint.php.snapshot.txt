@@ -195,9 +195,7 @@ program/
   │       │       │       │   │   ├─ left/expression/variable/name = "item"
   │       │       │       │   │   ├─ op/equals[strict]
   │       │       │       │   │   └─ right/expression/null = "null"
-  │       │       │       │   └─ body[continue]/
-  │       │       │       │       ├─ "{\n                continue"
-  │       │       │       │       └─ "}"
+  │       │       │       │   └─ body[continue]
   │       │       │       └─ try/
   │       │       │           ├─ body/expression/assign/
   │       │       │           │   ├─ left/expression/index/
@@ -211,9 +209,7 @@ program/
   │       │       │           └─ catch/
   │       │       │               ├─ types/type/name = "Throwable"
   │       │       │               ├─ name = "$e"
-  │       │       │               └─ body[continue]/
-  │       │       │                   ├─ "{\n                continue"
-  │       │       │                   └─ "}"
+  │       │       │               └─ body[continue]
   │       │       └─ return/expression/variable/name = "results"
   │       └─ method[private]/
   │           ├─ name = "transform"
@@ -330,16 +326,15 @@ program/
   ├─ comment = "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc."
   ├─ class/
   │   ├─ name = "PromotedDemo"
-  │   └─ body/method[public]/
+  │   └─ body/method[public and body]/
   │       ├─ name = "__construct"
   │       ├─ parameter[promoted and public and readonly]/
   │       │   ├─ type[primitive]/name = "string"
   │       │   └─ name = "$name"
-  │       ├─ parameter[promoted and protected]/
-  │       │   ├─ type[primitive]/name = "int"
-  │       │   ├─ name = "$count"
-  │       │   └─ int = "0"
-  │       └─ body = "{}"
+  │       └─ parameter[promoted and protected]/
+  │           ├─ type[primitive]/name = "int"
+  │           ├─ name = "$count"
+  │           └─ int = "0"
   ├─ interface/
   │   ├─ name = "Stringable"
   │   └─ body/method[public]/

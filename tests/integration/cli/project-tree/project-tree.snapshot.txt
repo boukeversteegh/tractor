@@ -2,23 +2,19 @@ class[public]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      ├─ "{"
       ├─ method[public]/
       │   └─ ... (26 children)
       ├─ method[public]/
       │   └─ ... (26 children)
-      ├─ method[public]/
-      │   └─ ... (26 children)
-      └─ "}"
+      └─ method[public]/
+          └─ ... (26 children)
 class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      ├─ "{"
       ├─ method[public]/
       │   └─ ... (22 children)
       ├─ method[public]/
       │   └─ ... (22 children)
-      ├─ method[public]/
-      │   └─ ... (7 children)
-      └─ "}"
+      └─ method[public]/
+          └─ ... (7 children)

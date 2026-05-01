@@ -2,27 +2,23 @@ class[public]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      ├─ "{"
       ├─ method[public]/
       │   └─ ... (26 children)
       ├─ method[public]/
       │   └─ ... (26 children)
-      ├─ method[public]/
-      │   └─ ... (26 children)
-      └─ "}"
+      └─ method[public]/
+          └─ ... (26 children)
 error: class found
 
 class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      ├─ "{"
       ├─ method[public]/
       │   └─ ... (22 children)
       ├─ method[public]/
       │   └─ ... (22 children)
-      ├─ method[public]/
-      │   └─ ... (7 children)
-      └─ "}"
+      └─ method[public]/
+          └─ ... (7 children)
 error: class found
 2 errors in 1 file

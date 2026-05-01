@@ -26,11 +26,7 @@
             <line>}</line>
           </lines>
           <value>public class Calculator
-{
-    public int Add(int a, int b) { return a + b; }
-    public int Subtract(int a, int b) { return a - b; }
-    public int Multiply(int a, int b) { return a * b; }
-}</value>
+public int Add(int a, int b) { return a + b; }public int Subtract(int a, int b) { return a - b; }public int Multiply(int a, int b) { return a * b; }</value>
           <rule-id>no-class</rule-id>
         </match>
         <match line="9" column="1" end_line="14" end_column="2">
@@ -45,11 +41,7 @@
             <line>}</line>
           </lines>
           <value>public class Greeter
-{
-    public string Hello(string name) { return "Hello, " + name; }
-    public string Goodbye(string name) { return "Goodbye, " + name; }
-    public void Reset() { }
-}</value>
+public string Hello(string name) { return "Hello, " + name; }public string Goodbye(string name) { return "Goodbye, " + name; }public void Reset() { }</value>
           <rule-id>no-class</rule-id>
         </match>
         <match line="13" column="5" end_line="13" end_column="28">
@@ -76,11 +68,7 @@
             <line>}</line>
           </lines>
           <value>public class Calculator
-{
-    public int Add(int a, int b) { return a + b; }
-    public int Subtract(int a, int b) { return a - b; }
-    public int Multiply(int a, int b) { return a * b; }
-}</value>
+public int Add(int a, int b) { return a + b; }public int Subtract(int a, int b) { return a - b; }public int Multiply(int a, int b) { return a * b; }</value>
         </match>
         <match line="9" column="1" end_line="14" end_column="2">
           <lines>
@@ -92,11 +80,7 @@
             <line>}</line>
           </lines>
           <value>public class Greeter
-{
-    public string Hello(string name) { return "Hello, " + name; }
-    public string Goodbye(string name) { return "Goodbye, " + name; }
-    public void Reset() { }
-}</value>
+public string Hello(string name) { return "Hello, " + name; }public string Goodbye(string name) { return "Goodbye, " + name; }public void Reset() { }</value>
         </match>
       </group>
     </group>

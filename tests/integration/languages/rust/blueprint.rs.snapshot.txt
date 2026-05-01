@@ -60,10 +60,9 @@ file/
   │           │   ├─ name = "INNER_CONST"
   │           │   ├─ type/name = "u32"
   │           │   └─ value/expression/int = "7"
-  │           └─ function/
+  │           └─ function[body]/
   │               ├─ pub/in = "crate::outer"
-  │               ├─ name = "path_vis"
-  │               └─ body = "{}"
+  │               └─ name = "path_vis"
   ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
   ├─ attribute/
   │   ├─ name = "derive"
@@ -238,15 +237,14 @@ file/
   │       │   └─ type[generic]/
   │       │       ├─ name = "Vec"
   │       │       └─ type/name = "u8"
-  │       └─ function[private]/
+  │       └─ function[private and body]/
   │           ├─ name = "draw"
   │           ├─ parameter[self]/self = "self"
-  │           ├─ parameter/
-  │           │   ├─ name = "_c"
-  │           │   └─ type[borrowed and mut]/path/
-  │           │       ├─ name = "Self"
-  │           │       └─ name = "Canvas"
-  │           └─ body = "{}"
+  │           └─ parameter/
+  │               ├─ name = "_c"
+  │               └─ type[borrowed and mut]/path/
+  │                   ├─ name = "Self"
+  │                   └─ name = "Canvas"
   ├─ alias[pub]/
   │   ├─ name = "BoxedDraw"
   │   ├─ lifetime/name = "'a"
@@ -715,7 +713,7 @@ file/
   │           ├─ name = "f"
   │           └─ type/name = "f32"
   ├─ comment[leading] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
-  ├─ function[pub]/
+  ├─ function[pub and body]/
   │   ├─ name = "hrtb_demo"
   │   ├─ generic/name = "F"
   │   ├─ generic/
@@ -727,19 +725,18 @@ file/
   │   ├─ parameter/
   │   │   ├─ name = "_t"
   │   │   └─ type[borrowed]/type/name = "T"
-  │   ├─ where/bound/
-  │   │   ├─ left/expression/type/name = "F"
-  │   │   └─ bounds/bound[higher]/
-  │   │       ├─ lifetime/name = "'a"
-  │   │       └─ type[function]/
-  │   │           ├─ type/name = "Fn"
-  │   │           ├─ type[borrowed]/
-  │   │           │   ├─ lifetime/name = "a"
-  │   │           │   └─ type/name = "i32"
-  │   │           └─ returns/type[borrowed]/
-  │   │               ├─ lifetime/name = "a"
-  │   │               └─ type/name = "i32"
-  │   └─ body = "{}"
+  │   └─ where/bound/
+  │       ├─ left/expression/type/name = "F"
+  │       └─ bounds/bound[higher]/
+  │           ├─ lifetime/name = "'a"
+  │           └─ type[function]/
+  │               ├─ type/name = "Fn"
+  │               ├─ type[borrowed]/
+  │               │   ├─ lifetime/name = "a"
+  │               │   └─ type/name = "i32"
+  │               └─ returns/type[borrowed]/
+  │                   ├─ lifetime/name = "a"
+  │                   └─ type/name = "i32"
   ├─ comment[leading] = "// Const generic parameter — `<const N: usize>`."
   ├─ struct[pub]/
   │   ├─ name = "FixedArray"

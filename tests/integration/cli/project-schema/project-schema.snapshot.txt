@@ -1,5 +1,5 @@
 class[public] (2)/ = "public class"
-  ├─ body (2)/ = {…}
+  ├─ body (2)/
   │   └─ … (26 children)
   └─ name (2) = "Calculator", "Greeter"
 
