@@ -212,14 +212,12 @@ fn yaml_directives_use_marker_shape() {
 
 #[test]
 fn yaml_escape_sequence_in_quoted_scalar() {
-    let mut tree = parse_src_with_mode(
-        "yaml",
-        "key: \"hello\\nworld\"\n",
-        Some(TreeMode::Structure),
-    );
-
     claim("`\"hello\\nworld\"` exposes the escape as <escape>\\n</escape>",
-        &mut tree,
+        &mut parse_src_with_mode(
+            "yaml",
+            "key: \"hello\\nworld\"\n",
+            Some(TreeMode::Structure),
+        ),
         "//escape='\\n'",
         1);
 }

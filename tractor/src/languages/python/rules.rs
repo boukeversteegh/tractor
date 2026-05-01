@@ -13,11 +13,11 @@ use super::input::PyKind;
 use super::output::TractorNode::{
     self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
-    ElseIf, Escape, Except, Exec, False, Finally, Float, For, Format, From, Future,
-    Generator, Generic, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
+    ElseIf, Escape, Except, Exec, False, Finally, Float, Format, From, Future,
+    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
     Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
-    Union, While, Wildcard, With, Yield, None as PyNone,
+    Union, While, Wildcard, Yield, None as PyNone,
 };
 use super::transformations;
 

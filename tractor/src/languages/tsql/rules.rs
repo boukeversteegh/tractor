@@ -471,7 +471,8 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         TsqlKind::Comment => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates for real semantics.
+        //      kind names. Pending real-semantics candidates tracked
+        //      in todo/36-rule-todo-followups.md.
 
         // alter_* variants — share the generic <alter> container.
         // The specific target is visible from child elements.
@@ -520,9 +521,10 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::DropType
         | TsqlKind::DropView => Rename(Drop),
 
-        // TODO: data-type kinds that aren't yet renamed. Each is the
-        // grammar's leaf for its corresponding SQL type and could
-        // rename to a TYPE marker.
+        // Data-type kinds: grammar leaves for SQL types. Currently
+        // surface as bare `<bigint>` / `<char>` / etc. Could unify
+        // under `<type>` with a marker per kind; pending decision in
+        // todo/36-rule-todo-followups.md (Bucket B).
         TsqlKind::Bigint
         | TsqlKind::Binary
         | TsqlKind::Bit

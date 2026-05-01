@@ -195,10 +195,6 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         //      OR the kind is unhandled and the dispatcher leaves it as
         //      its raw grammar name (the previous behavior of the
         //      catch-all `_` arm when `apply_rename` returned `None`).
-        //
-        // Many of these are TODO candidates for real semantic upgrades —
-        // see the propagation plan. For now, preserve old behavior so
-        // snapshots stay byte-identical.
 
         // Already matches our vocabulary (no underscore in kind name).
         CsKind::Discard
@@ -206,7 +202,8 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::Subpattern => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates for real semantics.
+        //      kind names. Pending real-semantics candidates tracked
+        //      in todo/36-rule-todo-followups.md.
 
         // Pattern combinators — mirror the existing RenameWithMarker pattern:
         //   constant_pattern    → RenameWithMarker(Pattern, Constant)

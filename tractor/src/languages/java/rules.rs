@@ -151,8 +151,8 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::Throws => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates for real semantics.
-        //      Grouped by theme; see Step 7 follow-up commit for proposals.
+        //      kind names. Pending real-semantics candidates tracked
+        //      in todo/36-rule-todo-followups.md, grouped by theme.
 
         // `update_expression` covers `++x` / `x++` / `--x` / `x--`.
         // Custom dispatch detects prefix-vs-postfix from child order and

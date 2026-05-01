@@ -241,7 +241,8 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::Metavariable => Custom(transformations::identifier),
 
         // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. TODO candidates for real semantics.
+        //      kind names. Pending real-semantics candidates tracked
+        //      in todo/36-rule-todo-followups.md.
 
         // `shebang` — `#!/usr/bin/env` line at the top of a script.
         RustKind::Shebang => Passthrough,

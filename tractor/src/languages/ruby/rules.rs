@@ -140,13 +140,12 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::When => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates.
+        //      kind names. Pending decisions tracked in
+        //      todo/36-rule-todo-followups.md.
 
-        // TODO: Ruby pattern-matching (3.0+) variants. Likely each
-        // renames to PATTERN with a marker:
-        // Pattern-matching family — `case x in ...` shapes. Variants
-        // attach as markers on the shared `<pattern>` host, so
-        // `//pattern` is the broad path and `[array]` / `[hash]` /
+        // Pattern-matching family — `case x in ...` shapes (Ruby 3.0+).
+        // Variants attach as markers on the shared `<pattern>` host,
+        // so `//pattern` is the broad path and `[array]` / `[hash]` /
         // `[alternative]` etc. narrow.
         RubyKind::AlternativePattern         => RenameWithMarker(Pattern, Alternative),
         RubyKind::ArrayPattern               => RenameWithMarker(Pattern, Array),
@@ -167,9 +166,9 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::IfGuard                    => Rename(If),
         RubyKind::UnlessGuard                => Rename(Unless),
 
-        // TODO: alias / undef declarations.
-        //   alias  → Rename(ALIAS)? own semantic?
-        //   undef  → Rename(UNDEF)?
+        // alias / undef declarations — pending Ruby-specific shape
+        // decision (own semantic vs. shared with import-like). Tracked
+        // in todo/36-rule-todo-followups.md.
         RubyKind::Alias
         | RubyKind::Undef => Passthrough,
 
@@ -187,9 +186,10 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // (matches Python's iter-13 shape for `"a" "b"`).
         RubyKind::ChainedString => RenameWithMarker(String, Concatenated),
 
-        // TODO: literal / numeric kinds without underscored names.
-        //   character / complex / rational — single-word, fine as-is
-        //   for the underscore gate; consider proper Rename later.
+        // Numeric / literal kinds — single-word grammar names, fine
+        // as raw passthrough. Could pick up proper Rename targets if
+        // a query-language audience needs them; tracked in
+        // todo/36-rule-todo-followups.md.
         RubyKind::Character
         | RubyKind::Complex
         | RubyKind::Float
@@ -206,9 +206,11 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // Ruby `return` strips its keyword leaf the same way Break / Next do.
         RubyKind::Return => RenameStripKeyword(Return, "return"),
 
-        // TODO: remaining single-word passthroughs (no underscore violation):
+        // Single-word passthroughs (no underscore violation):
         //   encoding/file/line — `__ENCODING__`/`__FILE__`/`__LINE__`
         //   setter / subshell / super / uninterpreted
+        // Tracked in todo/36-rule-todo-followups.md if these need
+        // semantic upgrades.
         RubyKind::Encoding
         | RubyKind::File
         | RubyKind::Line
