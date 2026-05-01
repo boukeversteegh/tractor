@@ -14,8 +14,9 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::GoKind;
 use super::output::TractorNode::{
-    self, Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
-    Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
+    self, Alias, Blank, Comment as CommentName, Dot, Else, Exported, Field, Function, If, Import,
+    Interface, Leading, Method, Name, Path, Raw, Short, String as GoString, Struct, Trailing, Type,
+    Unexported, Variable,
 };
 
 /// `expression_statement` is a pure grammar wrapper around a single
@@ -214,6 +215,141 @@ pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
     CLASSIFIER.classify_and_group(xot, node, Trailing, Leading)
+}
+
+/// `import_declaration` — strips the `import`/`(`/`)` punctuation
+/// tokens then flattens. Single-import case: the inner `import_spec`
+/// becomes a sibling at the file level. Block case: every spec
+/// becomes a sibling — the parens are a Go-specific syntax sugar
+/// with no shared prefix, so flat siblings is the right shape (per
+/// `imports-grouping.md`).
+pub fn import_declaration(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let to_drop: Vec<_> = xot.children(node)
+        .filter(|&c| {
+            let Some(text) = xot.text_str(c) else { return false; };
+            let trimmed = text.trim();
+            trimmed == "import" || trimmed == "(" || trimmed == ")" || trimmed.is_empty()
+        })
+        .collect();
+    for c in to_drop {
+        xot.detach(c)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
+/// `import_spec` — build the unified `<import>` shape:
+///   - `import "fmt"`         → `<import><path>fmt</path></import>`
+///   - `import myio "io"`     → `<import[alias]><path>io</path><alias><name>myio</name></alias></import>`
+///   - `import . "strings"`   → `<import[dot]><path>strings</path></import>`
+///   - `import _ "..."`       → `<import[blank]><path>...</path></import>`
+///
+/// Tree-sitter Go assigns `name` and `path` fields to import_spec
+/// children. The builder wraps `name` in a `<name>` element (per
+/// `GO_FIELD_WRAPPINGS`); `path` is unwrapped because it isn't in
+/// the field-wrapping table. So at handler time the children are:
+///   - `<name>` wrapper (containing package_identifier / blank_
+///     identifier / dot) — text content tells us which.
+///   - `interpreted_string_literal` (or `raw_string_literal`) —
+///     descendant text is the quoted path.
+pub fn import_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    enum PrefixKind { Alias, Blank, Dot }
+    let mut path_text: Option<String> = None;
+    let mut prefix: Option<(PrefixKind, String)> = None;
+    for child in xot.children(node).collect::<Vec<_>>() {
+        // Path: tree-sitter's `interpreted_string_literal` /
+        // `raw_string_literal` (no field wrapper).
+        if matches!(
+            get_kind(xot, child).and_then(|k| k.parse::<GoKind>().ok()),
+            Some(GoKind::InterpretedStringLiteral | GoKind::RawStringLiteral)
+        ) {
+            let raw = descendant_text(xot, child);
+            let stripped = raw
+                .trim()
+                .trim_start_matches('"')
+                .trim_end_matches('"')
+                .trim_start_matches('`')
+                .trim_end_matches('`')
+                .to_string();
+            path_text = Some(stripped);
+            continue;
+        }
+        // Prefix: builder wrapped `name` field as `<name>` element.
+        if get_element_name(xot, child).as_deref() == Some("name") {
+            let text = descendant_text(xot, child).trim().to_string();
+            let kind = match text.as_str() {
+                "_" => PrefixKind::Blank,
+                "." => PrefixKind::Dot,
+                "" => continue,
+                _ => PrefixKind::Alias,
+            };
+            prefix = Some((kind, text));
+        }
+    }
+
+    let path_text = match path_text {
+        Some(p) => p,
+        None => return Ok(TransformAction::Continue),
+    };
+
+    // Detach ALL original children — we'll build the new shape from scratch.
+    for child in xot.children(node).collect::<Vec<_>>() {
+        xot.detach(child)?;
+    }
+
+    // Append <path>TEXT</path>.
+    let path_elt = xot.add_name(Path.as_str());
+    let path_node = xot.new_element(path_elt);
+    xot.append(node, path_node)?;
+    let path_text_node = xot.new_text(&path_text);
+    xot.append(path_node, path_text_node)?;
+
+    if let Some((kind, text)) = prefix {
+        match kind {
+            PrefixKind::Blank => {
+                xot.with_prepended_marker(node, Blank)?;
+            }
+            PrefixKind::Dot => {
+                xot.with_prepended_marker(node, Dot)?;
+            }
+            PrefixKind::Alias => {
+                let alias_elt = xot.add_name(Alias.as_str());
+                let alias_node = xot.new_element(alias_elt);
+                xot.append(node, alias_node)?;
+                let name_elt = xot.add_name(Name.as_str());
+                let name_node = xot.new_element(name_elt);
+                xot.append(alias_node, name_node)?;
+                let alias_text_node = xot.new_text(&text);
+                xot.append(name_node, alias_text_node)?;
+                xot.with_prepended_marker(node, Alias)?;
+            }
+        }
+    }
+
+    xot.with_renamed(node, Import);
+    Ok(TransformAction::Done)
+}
+
+/// `import_spec_list` — strip `(`/`)` punctuation tokens, then flatten.
+/// Without the strip, the parens promote to the parent and leak as
+/// bare text leaves at file-level.
+pub fn import_spec_list(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let to_drop: Vec<_> = xot.children(node)
+        .filter(|&c| {
+            let Some(text) = xot.text_str(c) else { return false; };
+            let trimmed = text.trim();
+            trimmed == "(" || trimmed == ")" || trimmed.is_empty()
+        })
+        .collect();
+    for c in to_drop {
+        xot.detach(c)?;
+    }
+    Ok(TransformAction::Flatten)
 }
 
 // ---------------------------------------------------------------------

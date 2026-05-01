@@ -1,17 +1,15 @@
 file/
   ├─ comment[leading] = "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built."
   ├─ package/name = "blueprint"
-  ├─ import/string = "\"fmt\""
-  ├─ import/
-  │   ├─ string = "\"context\""
-  │   ├─ string = "\"errors\""
-  │   ├─ string = "\"io\""
-  │   ├─ name = "myio"
-  │   ├─ string = "\"io\""
-  │   ├─ name = "."
-  │   ├─ string = "\"strings\""
-  │   ├─ name = "_"
-  │   └─ string = "\"net/http/pprof\""
+  ├─ import/path = "fmt"
+  ├─ import/path = "context"
+  ├─ import/path = "errors"
+  ├─ import/path = "io"
+  ├─ import[alias]/
+  │   ├─ path = "io"
+  │   └─ alias/name = "myio"
+  ├─ import[dot]/path = "strings"
+  ├─ import[blank]/path = "net/http/pprof"
   ├─ const/
   │   ├─ name = "Pi"
   │   └─ value/expression/float = "3.14159"

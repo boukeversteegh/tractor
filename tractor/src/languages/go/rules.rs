@@ -41,14 +41,12 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::Block
         | GoKind::FieldDeclarationList
         | GoKind::ExpressionList
-        | GoKind::ImportSpec
         | GoKind::ConstSpec
         | GoKind::VarSpec
         | GoKind::LiteralElement
         | GoKind::KeyedElement
         | GoKind::LiteralValue
         | GoKind::VarSpecList
-        | GoKind::ImportSpecList
         | GoKind::ForClause
         | GoKind::TypeParameterList
         | GoKind::TypeParameterDeclaration
@@ -96,7 +94,9 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::FuncLiteral              => Rename(Closure),
         GoKind::GoStatement              => RenameStripKeyword(Go, "go"),
         GoKind::GotoStatement            => RenameStripKeyword(Goto, "goto"),
-        GoKind::ImportDeclaration        => Rename(Import),
+        GoKind::ImportDeclaration        => Custom(transformations::import_declaration),
+        GoKind::ImportSpec               => Custom(transformations::import_spec),
+        GoKind::ImportSpecList           => Custom(transformations::import_spec_list),
         GoKind::IncStatement             => ExtractOpThenRename(Unary),
         GoKind::IndexExpression          => Rename(Index),
         GoKind::InterfaceType            => Rename(Interface),

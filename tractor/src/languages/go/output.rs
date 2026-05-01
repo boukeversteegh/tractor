@@ -42,6 +42,8 @@ pub enum TractorNode {
     Name, Comment, Op,
     // Comment markers
     Trailing, Leading,
+    // Import-shape (Path, Alias as containers; Blank, Dot as markers)
+    Path, Blank, Dot,
     // Marker-only
     Raw, Short, Exported, Unexported, Negated, Generic, Implicit,
 }
@@ -67,12 +69,18 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::Raw | Self::Short | Self::Negated | Self::Generic
-            | Self::Implicit                                                       => (true, false, Default),
+            | Self::Implicit
+            | Self::Blank | Self::Dot                                              => (true, false, Default),
             Self::Exported | Self::Unexported                                      => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function                                                          => (true, true, Keyword),
             Self::Type | Self::Slice                                                => (true, true, Type),
+            // `Alias` is dual-use: marker `[alias]` on `<import>` for
+            // `import myio "io"` AND container `<alias><name>myio</name></alias>`
+            // for the local-binding wrapper. See
+            // specs/.../transformations/imports-grouping.md.
+            Self::Alias                                                             => (true, true, Default),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container with content). `return` / `break` / `continue`
@@ -89,6 +97,7 @@ impl TractorNode {
             | Self::If | Self::Else | Self::For | Self::Range
             | Self::Case | Self::Default | Self::Defer | Self::Go | Self::Select
             | Self::True | Self::False | Self::Nil                                  => (false, true, Keyword),
+            Self::Path                                                              => (false, true, Default),
             Self::Pointer | Self::Map | Self::Chan | Self::Array                    => (false, true, Type),
             Self::Call                                                              => (false, true, Function),
             Self::Binary | Self::Unary | Self::Op                                   => (false, true, Operator),
