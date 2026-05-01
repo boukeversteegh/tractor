@@ -24,8 +24,8 @@ file/
   ├─ statement/insert/
   │   ├─ ref/name = "AuditLog"
   │   ├─ list/
-  │   │   ├─ col/name = "Action"
-  │   │   └─ col/name = "Timestamp"
+  │   │   ├─ column/name = "Action"
+  │   │   └─ column/name = "Timestamp"
   │   └─ list/
   │       ├─ literal = "'UserQuery'"
   │       └─ call/ref/name = "GETDATE"
@@ -289,8 +289,8 @@ file/
   │   │       └─ name = "Name"
   │   └─ when/
   │       ├─ list/
-  │       │   ├─ col/name = "ID"
-  │       │   └─ col/name = "Name"
+  │       │   ├─ column/name = "ID"
+  │       │   └─ column/name = "Name"
   │       └─ list/
   │           ├─ column/
   │           │   ├─ ref/name = "s"
@@ -377,7 +377,7 @@ file/
   │   └─ constraint/
   │       ├─ name = "fk_customer"
   │       └─ constraint/
-  │           ├─ columns/col/name = "CustomerID"
+  │           ├─ columns/column/name = "CustomerID"
   │           ├─ ref/name = "Customers"
   │           └─ name = "ID"
   └─ statement/alter/

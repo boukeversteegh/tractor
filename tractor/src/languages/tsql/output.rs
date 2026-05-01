@@ -19,7 +19,7 @@ pub enum TractorNode {
     // Clauses
     From, Where, Order, Target, Group, Having, Join, Direction,
     // References and columns
-    Relation, Ref, Column, Col, Star,
+    Relation, Ref, Column, Star,
     // Literals and values
     Literal, List,
     // Functions / calls

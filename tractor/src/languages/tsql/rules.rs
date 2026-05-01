@@ -40,7 +40,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         TsqlKind::BetweenExpression  => Rename(Between),
         TsqlKind::Case               => Rename(Case),
         TsqlKind::Cast               => Rename(Cast),
-        TsqlKind::Column             => Rename(Col),
+        TsqlKind::Column             => Rename(Column),
         TsqlKind::ColumnDefinition   => Rename(Definition),
         TsqlKind::ColumnDefinitions  => Rename(Columns),
         TsqlKind::CreateFunction     => Rename(Function),
