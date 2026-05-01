@@ -211,6 +211,10 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "!~", primary: Some("match"), children: &["not"], nested: None },
     // Python walrus / assignment expression.
     OperatorSpec { text: ":=", primary: Some("assign"), children: &["walrus"], nested: None },
+    // PHP / Java / C# / Ruby type-test (PHP source: `instanceof`,
+    // Java/C# source: `instanceof` / `is`, Ruby `is_a?`/`kind_of?`
+    // are method-style — only the keyword form is in this table).
+    OperatorSpec { text: "instanceof", primary: Some("instanceof"), children: &[], nested: None },
     // Go channel receive (binary form is a separate `<send>` shape)
     OperatorSpec { text: "<-", primary: Some("receive"), children: &[], nested: None },
     // Unary prefix / postfix

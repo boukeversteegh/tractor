@@ -519,13 +519,13 @@ program/
   │               ├─ arm/
   │               │   ├─ binary/
   │               │   │   ├─ left/expression/variable/name = "value"
-  │               │   │   ├─ op = "instanceof"
+  │               │   │   ├─ op[instanceof] = "instanceof"
   │               │   │   └─ right/expression/name = "Stringable"
   │               │   └─ int = "1"
   │               ├─ arm/
   │               │   ├─ binary/
   │               │   │   ├─ left/expression/variable/name = "value"
-  │               │   │   ├─ op = "instanceof"
+  │               │   │   ├─ op[instanceof] = "instanceof"
   │               │   │   └─ right/expression/name = "Countable2"
   │               │   └─ int = "2"
   │               └─ arm[default]/int = "0"
