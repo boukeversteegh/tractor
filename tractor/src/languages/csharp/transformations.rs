@@ -15,10 +15,77 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Else, Expression, Generic, If, Internal, Leading, Name, NonNull,
-    Nullable, Private, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary,
-    Variable,
+    self, Accessor, Await, Else, Expression, Generic, If, Instance, Internal, Leading, Member, Name,
+    NonNull, Nullable, Optional, Private, Public, Protected, String as CsString, Ternary, This,
+    Trailing, Type, Unary, Variable,
 };
+
+/// `conditional_access_expression` — `Root.MaybeProperty?.Property`.
+/// Per Principle #15 (markers on stable hosts), the conditional form
+/// should be isomorphic to regular member access plus an
+/// `<optional/>` marker. Pre-iter-57 shape was non-isomorphic: the
+/// lhs sat under `<condition>/<expression>/<member[instance]>` while
+/// regular member access had no condition wrapper, and the inner
+/// `member_binding_expression` re-emitted `<member[optional]>`.
+///
+/// Target shape:
+///   member[instance and optional]/
+///     ├─ <member[instance]>...lhs...</member>
+///     ├─ "?"   (separator)
+///     ├─ "."   (separator, lifted from inner)
+///     └─ <name>Property</name>   (lifted from inner)
+///
+/// Implementation:
+/// 1. Strip the `<condition>` field-wrapper from the lhs (its
+///    contents become a direct child).
+/// 2. Flatten the inner `member_binding_expression`: lift its
+///    children (the `.` text and the property name) up to be direct
+///    children of `node`.
+/// 3. Rename to `<member>` and add `<instance/>` + `<optional/>` markers.
+pub fn conditional_access_expression(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    // Step 1: unwrap the <condition> field-wrapper (if present).
+    let children: Vec<XotNode> = xot.children(node).collect();
+    for child in &children {
+        if get_attr(xot, *child, "field").as_deref() == Some("condition") {
+            // Move all children of this wrapper out into `node`,
+            // before the wrapper, then detach the wrapper.
+            let inner: Vec<XotNode> = xot.children(*child).collect();
+            for inner_child in inner {
+                xot.detach(inner_child)?;
+                xot.insert_before(*child, inner_child)?;
+            }
+            xot.detach(*child)?;
+            break;
+        }
+    }
+
+    // Step 2: locate inner member_binding_expression and flatten it.
+    let children: Vec<XotNode> = xot.children(node).collect();
+    let mut inner_binding: Option<XotNode> = None;
+    for child in &children {
+        if get_kind(xot, *child).as_deref() == Some("member_binding_expression") {
+            inner_binding = Some(*child);
+            break;
+        }
+    }
+    if let Some(binding) = inner_binding {
+        let lifted: Vec<XotNode> = xot.children(binding).collect();
+        for c in lifted {
+            xot.detach(c)?;
+            xot.insert_before(binding, c)?;
+        }
+        xot.detach(binding)?;
+    }
+
+    // Step 3: rename to <member>, add <instance/> and <optional/>.
+    xot.with_renamed(node, Member)
+        .with_prepended_marker_from(node, Optional, node)?
+        .with_prepended_marker_from(node, Instance, node)?;
+    Ok(TransformAction::Continue)
+}
 
 /// `await_expression` — `await foo()`. C#'s `await` is prefix, so the
 /// marker leads the operand. Promote to `<expression>` host with a
