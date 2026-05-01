@@ -378,8 +378,16 @@ pub mod helpers {
         fn with_wrapped_field_child<N: AsRef<str>>(&mut self, parent: XotNode, field: &str, wrapper: N) -> Result<&mut Self, xot::Error>;
         fn with_prepended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_prepended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error>;
+        /// Shorthand for `with_prepended_marker_from(node, name, node)`
+        /// — the marker takes its source location from the parent
+        /// itself. Covers the ~85% case where the marker is a
+        /// modifier of the renamed element (e.g. `<async/>` on the
+        /// async function it modifies).
+        fn with_prepended_marker<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_appended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error>;
+        /// Shorthand for `with_appended_marker_from(node, name, node)`.
+        fn with_appended_marker<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_inserted_empty_before<N: AsRef<str>>(&mut self, sibling: XotNode, name: N) -> Result<&mut Self, xot::Error>;
         fn with_prepended_element_with_text<N: AsRef<str>>(&mut self, parent: XotNode, name: N, text: &str) -> Result<&mut Self, xot::Error>;
         fn with_inserted_text_after(&mut self, sibling: XotNode, text: &str) -> Result<&mut Self, xot::Error>;
@@ -461,6 +469,11 @@ pub mod helpers {
             Ok(self)
         }
 
+        fn with_prepended_marker<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            prepend_marker_from(self, parent, name, parent)?;
+            Ok(self)
+        }
+
         fn with_appended_empty_element<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
             append_empty_element(self, parent, name)?;
             Ok(self)
@@ -468,6 +481,11 @@ pub mod helpers {
 
         fn with_appended_marker_from<N: AsRef<str>>(&mut self, parent: XotNode, name: N, source: XotNode) -> Result<&mut Self, xot::Error> {
             append_marker_from(self, parent, name, source)?;
+            Ok(self)
+        }
+
+        fn with_appended_marker<N: AsRef<str>>(&mut self, parent: XotNode, name: N) -> Result<&mut Self, xot::Error> {
+            append_marker_from(self, parent, name, parent)?;
             Ok(self)
         }
 

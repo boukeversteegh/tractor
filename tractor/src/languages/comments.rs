@@ -73,7 +73,7 @@ impl CommentClassifier {
 
         // Trailing comments are attached to the previous sibling — no grouping
         if is_inline_node(xot, node) {
-            xot.with_prepended_marker_from(node, trailing_name, node)?;
+            xot.with_prepended_marker(node, trailing_name)?;
             return Ok(TransformAction::Done);
         }
 
@@ -82,7 +82,7 @@ impl CommentClassifier {
 
         // Classify the (possibly merged) comment
         if is_leading_comment(xot, node) {
-            xot.with_prepended_marker_from(node, leading_name, node)?;
+            xot.with_prepended_marker(node, leading_name)?;
         }
 
         // Detach consumed siblings (they've been merged into this node)

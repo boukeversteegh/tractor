@@ -31,7 +31,7 @@ pub fn file_scoped_namespace(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Namespace)
-        .with_appended_marker_from(node, File, node)?;
+        .with_appended_marker(node, File)?;
     Ok(TransformAction::Continue)
 }
 
@@ -97,8 +97,8 @@ pub fn conditional_access_expression(
 
     // Step 3: rename to <member>, add <instance/> and <optional/>.
     xot.with_renamed(node, Member)
-        .with_prepended_marker_from(node, Optional, node)?
-        .with_prepended_marker_from(node, Instance, node)?;
+        .with_prepended_marker(node, Optional)?
+        .with_prepended_marker(node, Instance)?;
     Ok(TransformAction::Continue)
 }
 
@@ -124,7 +124,7 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         return Ok(TransformAction::Flatten);
     }
     xot.with_renamed(node, Expression)
-        .with_prepended_marker_from(node, Await, node)?;
+        .with_prepended_marker(node, Await)?;
     Ok(TransformAction::Continue)
 }
 
@@ -391,7 +391,7 @@ pub fn prefix_unary_expression(
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary);
     if is_increment {
-        xot.with_prepended_marker_from(node, super::output::TractorNode::Prefix, node)?;
+        xot.with_prepended_marker(node, super::output::TractorNode::Prefix)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -418,7 +418,7 @@ pub fn postfix_unary_expression(
     let is_null_forgiving = texts.iter().any(|t| t.trim() == "!");
     if is_null_forgiving {
         xot.with_renamed(node, Expression)
-            .with_appended_marker_from(node, NonNull, node)?;
+            .with_appended_marker(node, NonNull)?;
     } else {
         extract_operator(xot, node)?;
         xot.with_renamed(node, Unary);

@@ -55,7 +55,7 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// See [Principle #15: Stable Expression Hosts].
 pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_appended_marker_from(node, Try, node)?;
+        .with_appended_marker(node, Try)?;
     Ok(TransformAction::Continue)
 }
 
@@ -65,7 +65,7 @@ pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// Hosts].
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_appended_marker_from(node, Await, node)?;
+        .with_appended_marker(node, Await)?;
     Ok(TransformAction::Continue)
 }
 
@@ -167,7 +167,7 @@ pub fn inner_attribute_item(
     for child in children {
         if get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
             == Some(RustKind::Attribute) {
-            xot.with_prepended_marker_from(child, Inner, child)?;
+            xot.with_prepended_marker(child, Inner)?;
             break;
         }
     }
@@ -191,8 +191,8 @@ pub fn visibility_modifier(
     if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
         let inner = trimmed[lp + 1..rp].trim();
         match inner {
-            "crate" => { xot.with_prepended_marker_from(node, Crate, node)?; }
-            "super" => { xot.with_prepended_marker_from(node, Super, node)?; }
+            "crate" => { xot.with_prepended_marker(node, Crate)?; }
+            "super" => { xot.with_prepended_marker(node, Super)?; }
             _ if inner.starts_with("in ") => {
                 let path = inner[3..].trim();
                 xot.with_prepended_element_with_text(node, InName, path)?;
@@ -210,7 +210,7 @@ pub fn raw_string_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_marker_from(node, Raw, node)?
+    xot.with_prepended_marker(node, Raw)?
         .with_renamed(node, RustString);
     Ok(TransformAction::Continue)
 }
@@ -237,9 +237,9 @@ pub fn reference_type(
         }
     }
     if has_mut {
-        xot.with_prepended_marker_from(node, Mut, node)?;
+        xot.with_prepended_marker(node, Mut)?;
     }
-    xot.with_prepended_marker_from(node, Borrowed, node)?
+    xot.with_prepended_marker(node, Borrowed)?
         .with_renamed(node, Type);
     Ok(TransformAction::Continue)
 }
@@ -281,7 +281,7 @@ pub fn static_item(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if let Some(marker) = default_access_for_declaration(xot, node) {
-        xot.with_prepended_marker_from(node, marker, node)?;
+        xot.with_prepended_marker(node, marker)?;
     }
     extract_modifiers(xot, node)?;
     xot.with_renamed(node, Static);
@@ -312,8 +312,8 @@ pub fn foreign_mod_item(
 ) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::{Foreign, Mod};
     xot.with_renamed(node, Mod)
-        .with_prepended_marker_from(node, Foreign, node)?
-        .with_prepended_marker_from(node, Extern, node)?;
+        .with_prepended_marker(node, Foreign)?
+        .with_prepended_marker(node, Extern)?;
     Ok(TransformAction::Continue)
 }
 
@@ -335,7 +335,7 @@ pub fn extern_crate_declaration(
     for child in to_remove {
         xot.detach(child)?;
     }
-    xot.with_prepended_marker_from(node, Extern, node)?
+    xot.with_prepended_marker(node, Extern)?
         .with_renamed(node, UseName);
     Ok(TransformAction::Continue)
 }
@@ -403,7 +403,7 @@ fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     // wrapper (`async unsafe fn`), they share the wrapper's range —
     // the best fidelity available without per-token source info.
     for modifier in found.into_iter().rev() {
-        xot.with_prepended_marker_from(node, modifier, node)?;
+        xot.with_prepended_marker(node, modifier)?;
     }
     Ok(())
 }

@@ -51,7 +51,7 @@ pub fn import_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformActio
     });
     xot.with_renamed(node, Import);
     if has_static {
-        xot.with_prepended_marker_from(node, Static, node)?;
+        xot.with_prepended_marker(node, Static)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -67,7 +67,7 @@ pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary);
     if was_prefix {
-        xot.with_prepended_marker_from(node, Prefix, node)?;
+        xot.with_prepended_marker(node, Prefix)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -135,7 +135,7 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
-    xot.with_prepended_marker_from(node, Void, node)?;
+    xot.with_prepended_marker(node, Void)?;
     Ok(TransformAction::Continue)
 }
 
@@ -292,7 +292,7 @@ pub fn method_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if let Some(marker) = default_access_for_declaration(xot, node) {
-        xot.with_prepended_marker_from(node, marker, node)?;
+        xot.with_prepended_marker(node, marker)?;
     }
     wrap_method_return_type(xot, node)?;
     xot.with_renamed(node, Method);

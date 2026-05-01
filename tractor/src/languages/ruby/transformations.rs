@@ -22,7 +22,7 @@ pub fn call_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     let texts = get_text_children(xot, node);
     let is_safe_nav = texts.iter().any(|t| t.contains("&."));
     if is_safe_nav {
-        xot.with_prepended_marker_from(node, Optional, node)?;
+        xot.with_prepended_marker(node, Optional)?;
     }
     xot.with_renamed(node, Call);
     Ok(TransformAction::Continue)
