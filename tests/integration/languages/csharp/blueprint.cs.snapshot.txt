@@ -267,9 +267,9 @@ unit/
   │       │           ├─ returns/type/name = "void"
   │       │           ├─ name = "OnChanged"
   │       │           └─ body/call/
-  │       │               ├─ member[conditional]/
+  │       │               ├─ member[optional]/
   │       │               │   ├─ condition/expression/name = "Changed"
-  │       │               │   └─ member[conditional]/name = "Invoke"
+  │       │               │   └─ member[optional]/name = "Invoke"
   │       │               └─ argument = "this"
   │       ├─ class[public and sealed and partial]/
   │       │   ├─ name = "Widget"
@@ -406,9 +406,9 @@ unit/
   │                   │   └─ declarator/
   │                   │       ├─ name = "shouted"
   │                   │       └─ binary/
-  │                   │           ├─ left/expression/call/member[conditional]/
+  │                   │           ├─ left/expression/call/member[optional]/
   │                   │           │   ├─ condition/expression/name = "widget"
-  │                   │           │   └─ member[conditional]/name = "Shout"
+  │                   │           │   └─ member[optional]/name = "Shout"
   │                   │           ├─ op[nullish-coalescing] = "??"
   │                   │           └─ right/expression/string = "\"n/a\""
   │                   ├─ variable/

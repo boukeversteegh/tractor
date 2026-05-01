@@ -64,7 +64,7 @@ pub enum TractorNode {
     // Comment markers
     Trailing, Leading,
     // Marker-only: member-access / pattern / type shape
-    Instance, Conditional, Array, Pointer, Function, Ref, Recursive, Relational, Logical,
+    Instance, Optional, Array, Pointer, Function, Ref, Recursive, Relational, Logical,
     Prefix, Lookup,
     // Pattern-combinator markers
     And, Or, Negated, List, Var,
@@ -100,7 +100,7 @@ impl TractorNode {
             // Type-shape / member-access / pattern markers
             Self::Nullable | Self::Array                                        => (true, false, Type),
             Self::Trailing | Self::Leading
-            | Self::Instance | Self::Conditional | Self::Pointer | Self::Function
+            | Self::Instance | Self::Optional | Self::Pointer | Self::Function
             | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var

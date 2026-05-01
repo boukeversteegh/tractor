@@ -42,12 +42,12 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
 
         // ---- RenameWithMarker ------------------------------------------
         CsKind::ArrayType                   => RenameWithMarker(Type, Array),
-        CsKind::ConditionalAccessExpression => RenameWithMarker(Member, Conditional),
+        CsKind::ConditionalAccessExpression => RenameWithMarker(Member, Optional),
         CsKind::ConstantPattern             => RenameWithMarker(Pattern, Constant),
         CsKind::DeclarationPattern          => RenameWithMarker(Pattern, Declaration),
         CsKind::FunctionPointerType         => RenameWithMarker(Type, Function),
         CsKind::MemberAccessExpression      => RenameWithMarker(Member, Instance),
-        CsKind::MemberBindingExpression     => RenameWithMarker(Member, Conditional),
+        CsKind::MemberBindingExpression     => RenameWithMarker(Member, Optional),
         CsKind::PointerType                 => RenameWithMarker(Type, Pointer),
         CsKind::PrefixUnaryExpression       => Custom(transformations::prefix_unary_expression),
         CsKind::RecursivePattern            => RenameWithMarker(Pattern, Recursive),
