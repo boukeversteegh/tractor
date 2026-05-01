@@ -41,6 +41,34 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `wildcard` — Java generic wildcard `<?>` / `<? extends T>` /
+/// `<? super T>`. Bare `?` becomes an empty `<wildcard/>` marker.
+/// Bounded forms keep the `extends` / `super` text + bound type
+/// children inside the wildcard element (so the bound is queryable
+/// while the marker still flags wildcardness).
+pub fn wildcard(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Wildcard;
+    // Strip the bare `?` text leaf (always present).
+    let to_drop: Vec<_> = xot.children(node).filter(|&c| {
+        xot.text_str(c).map(|t| t.trim() == "?").unwrap_or(false)
+    }).collect();
+    for c in to_drop {
+        xot.detach(c)?;
+    }
+    // If no other children remain, this is the bare `<?>` form —
+    // become an empty `<wildcard/>` marker.
+    if xot.children(node).next().is_none() {
+        xot.with_renamed(node, Wildcard);
+        Ok(TransformAction::Continue)
+    } else {
+        // Bounded form — keep as `<wildcard>` container with bound
+        // children (extends/super text + the bound type). Renames
+        // to `<wildcard>` as the structural element.
+        xot.with_renamed(node, Wildcard);
+        Ok(TransformAction::Continue)
+    }
+}
+
 /// `import_declaration` — Java import statement. Extracts an optional
 /// `<static/>` marker for `import static foo.Bar.baz` (Principle #7),
 /// then renames to `<import>`.

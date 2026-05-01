@@ -236,16 +236,20 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // ---- Passthrough — single-word names (no underscore) ----------
         // `permits` (sealed-class clause) — single-word OK.
         // `asterisk` (import wildcard) — single-word OK.
-        // `dimensions` (bare `[]` suffix) — single-word OK.
-        JavaKind::Permits | JavaKind::Asterisk | JavaKind::Dimensions => Passthrough,
+        JavaKind::Permits | JavaKind::Asterisk => Passthrough,
+        // `dimensions` is the `[]` suffix on `int[]` — pure syntax.
+        // The parent `<type[array]>` already conveys "array"; detach
+        // the literal `[]` so it doesn't leak as `dimensions = "[]"`.
+        JavaKind::Dimensions => Detach,
 
         // `resource` (try-with-resources variable) — like a variable declaration.
         // Named to avoid clash with the `Resource` marker on `<try[resource]>`.
         JavaKind::Resource => Rename(Variable),
         // `wildcard` (generic `<?>`, `<? extends T>`) — type-level wildcard.
-        // Reuses Generic since it's a type argument. Avoids clash with
-        // the `Wildcard` marker used for `underscore_pattern`.
-        JavaKind::Wildcard => Rename(Generic),
+        // Bare `<? >` becomes a `<wildcard/>` marker on the parent
+        // type. Bounded forms (`<? extends T>`) keep the bound names
+        // as children alongside the marker — handled in the custom.
+        JavaKind::Wildcard => Custom(transformations::wildcard),
 
         // ---- Structural supertypes (single-word, almost never in output)
         JavaKind::Declaration

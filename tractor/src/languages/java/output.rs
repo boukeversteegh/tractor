@@ -78,7 +78,7 @@ impl TractorNode {
             | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp
             | Self::Super                                                           => (true, false, Keyword),
             Self::Void | Self::Variadic | Self::Compact | Self::Prefix
-            | Self::Receiver | Self::Resource | Self::Wildcard
+            | Self::Receiver | Self::Resource
             | Self::Exports | Self::Opens | Self::Provides | Self::Requires | Self::Uses => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
@@ -88,6 +88,10 @@ impl TractorNode {
             // Class: container for class_declaration + marker for class_literal
             // Synchronized: marker on method + container for synchronized_statement
             Self::Class | Self::Synchronized                                        => (true, true, Keyword),
+            // Wildcard: marker for `underscore_pattern` (`case _ ->`) AND
+            // for bare `<?>` generic; container for bounded
+            // `<? extends T>` / `<? super T>` (keeps the bound).
+            Self::Wildcard                                                          => (true, true, Default),
             // Array: marker on <type> / <pattern> + container for array_initializer
             Self::Array                                                             => (true, true, Type),
             // Template: container for template_expression + marker (dual-use like TS)

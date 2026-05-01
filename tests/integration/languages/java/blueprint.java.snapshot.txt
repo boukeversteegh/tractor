@@ -308,9 +308,7 @@ program/
           │   ├─ name = "literals"
           │   └─ body/
           │       ├─ variable/
-          │       │   ├─ type[array]/
-          │       │   │   ├─ type/name = "int"
-          │       │   │   └─ dimensions = "[]"
+          │       │   ├─ type[array]/type/name = "int"
           │       │   └─ declarator/
           │       │       ├─ name = "arr"
           │       │       └─ value/expression/array/
@@ -323,9 +321,7 @@ program/
           │       │       ├─ name = "ch"
           │       │       └─ value/expression/char = "'A'"
           │       ├─ variable/
-          │       │   ├─ type[generic]/
-          │       │   │   ├─ name = "Class"
-          │       │   │   └─ generic = "?"
+          │       │   ├─ type[generic and wildcard]/name = "Class"
           │       │   └─ declarator/
           │       │       ├─ name = "cls"
           │       │       └─ value/expression/type[class]/type/name = "String"
