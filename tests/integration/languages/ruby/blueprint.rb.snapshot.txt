@@ -1,13 +1,13 @@
 program/
   ├─ comment = "# Kitchen-sink Ruby blueprint for tractor snapshot tests.\n# Rendered by `tractor query <file> -p tree --single` with NO depth limit\n# so any design-principle transform change produces a visible snapshot diff.\n# The file is intentionally syntactically valid but not executed."
   ├─ assign/
-  │   ├─ left/expression/constant = "MAX_RETRIES"
+  │   ├─ left/expression/name = "MAX_RETRIES"
   │   └─ right/expression/int = "3"
   ├─ assign/
-  │   ├─ left/expression/constant = "GREETINGS"
+  │   ├─ left/expression/name = "GREETINGS"
   │   └─ right/expression/array[string] = "%w[hi hello hey]"
   ├─ assign/
-  │   ├─ left/expression/constant = "SYMBOLS"
+  │   ├─ left/expression/name = "SYMBOLS"
   │   └─ right/expression/array[symbol] = "%i[one two three]"
   ├─ module/
   │   ├─ name = "Greeter"
@@ -54,7 +54,7 @@ program/
   │       │               ├─ left/expression/call/
   │       │               │   ├─ name = "other"
   │       │               │   ├─ name = "is_a?"
-  │       │               │   └─ constant = "Base"
+  │       │               │   └─ name = "Base"
   │       │               ├─ op/logical[and]
   │       │               └─ right/expression/binary/
   │       │                   ├─ left/expression/call/
@@ -64,42 +64,42 @@ program/
   │       │                   └─ right/expression/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
-  │           ├─ superclass/constant = "Base"
+  │           ├─ superclass/name = "Base"
   │           └─ body/
   │               ├─ call/
   │               │   ├─ name = "include"
-  │               │   └─ constant = "Greeter"
+  │               │   └─ name = "Greeter"
   │               ├─ call/
   │               │   ├─ name = "extend"
-  │               │   └─ constant = "Logging"
+  │               │   └─ name = "Logging"
   │               ├─ call/
   │               │   ├─ name = "prepend"
   │               │   └─ call/
-  │               │       ├─ constant = "Module"
+  │               │       ├─ name = "Module"
   │               │       └─ name = "new"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "SINGLE"
+  │               │   ├─ left/expression/name = "SINGLE"
   │               │   └─ right/expression/string = "'single-quoted \\n'"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "DOUBLE"
-  │               │   └─ right/expression/string/interpolation/constant = "MAX_RETRIES"
+  │               │   ├─ left/expression/name = "DOUBLE"
+  │               │   └─ right/expression/string/interpolation/name = "MAX_RETRIES"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "HEREDOC"
+  │               │   ├─ left/expression/name = "HEREDOC"
   │               │   └─ right = "<<-TEXT"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "SQUIGGLY"
+  │               │   ├─ left/expression/name = "SQUIGGLY"
   │               │   └─ right = "<<~TEXT"
-  │               ├─ interpolation/constant = "MAX_RETRIES"
+  │               ├─ interpolation/name = "MAX_RETRIES"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "PATTERN"
+  │               │   ├─ left/expression/name = "PATTERN"
   │               │   └─ right/expression/regex = "/\\A[a-z]+\\z/i"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "RANGE_INCL"
+  │               │   ├─ left/expression/name = "RANGE_INCL"
   │               │   └─ right/expression/range/
   │               │       ├─ int = "1"
   │               │       └─ int = "10"
   │               ├─ assign/
-  │               │   ├─ left/expression/constant = "RANGE_EXCL"
+  │               │   ├─ left/expression/name = "RANGE_EXCL"
   │               │   └─ right/expression/range/
   │               │       ├─ int = "1"
   │               │       └─ int = "10"
@@ -231,8 +231,8 @@ program/
   │   └─ body/case/
   │       ├─ value/expression/name = "value"
   │       ├─ when/
-  │       │   ├─ pattern/constant = "Integer"
-  │       │   ├─ pattern/constant = "Float"
+  │       │   ├─ pattern/name = "Integer"
+  │       │   ├─ pattern/name = "Float"
   │       │   └─ body/then = "then :number"
   │       ├─ when/
   │       │   ├─ pattern/range/
@@ -240,7 +240,7 @@ program/
   │       │   │   └─ int = "9"
   │       │   └─ body/then = "then :digit"
   │       ├─ when/
-  │       │   ├─ pattern/constant = "String"
+  │       │   ├─ pattern/name = "String"
   │       │   └─ body/then = "then :string"
   │       ├─ when/
   │       │   ├─ pattern/array/
@@ -326,7 +326,7 @@ program/
   │       │       │   ├─ name = "items"
   │       │       │   └─ name = "first"
   │       │       ├─ rescue/
-  │       │       │   ├─ exceptions/constant = "StandardError"
+  │       │       │   ├─ exceptions/name = "StandardError"
   │       │       │   ├─ variable/name = "e"
   │       │       │   └─ body/then/
   │       │       │       ├─ if/
@@ -432,11 +432,11 @@ program/
   │           └─ name = "flag"
   ├─ unless/
   │   ├─ condition/expression/call/
-  │   │   ├─ constant = "MAX_RETRIES"
+  │   │   ├─ name = "MAX_RETRIES"
   │   │   └─ name = "zero?"
   │   └─ then/call/
   │       ├─ name = "puts"
-  │       └─ string/interpolation/constant = "MAX_RETRIES"
+  │       └─ string/interpolation/name = "MAX_RETRIES"
   ├─ comment[leading] = "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
   ├─ method/
   │   ├─ name = "patterns"
@@ -457,7 +457,7 @@ program/
   │       │       │   ├─ if/condition/expression/call/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   ├─ name = "is_a?"
-  │       │       │   │   └─ constant = "Integer"
+  │       │       │   │   └─ name = "Integer"
   │       │       │   └─ body/then/binary/
   │       │       │       ├─ left/expression/name = "head"
   │       │       │       ├─ op[plus] = "+"
@@ -476,7 +476,7 @@ program/
   │       │       │   └─ body/then = ":find_pattern"
   │       │       ├─ in/
   │       │       │   ├─ pattern[hash]/pattern[keyword]/value/expression/pattern[as]/
-  │       │       │   │   ├─ value/expression/constant = "Integer"
+  │       │       │   │   ├─ value/expression/name = "Integer"
   │       │       │   │   └─ name = "k"
   │       │       │   └─ body/then/name = "k"
   │       │       ├─ in/
@@ -487,7 +487,7 @@ program/
   │       │       │   └─ body/then = ":small"
   │       │       └─ in/
   │       │           ├─ pattern[as]/
-  │       │           │   ├─ value/expression/constant = "Integer"
+  │       │           │   ├─ value/expression/name = "Integer"
   │       │           │   └─ name = "n"
   │       │           └─ body/then/name = "n"
   │       ├─ call/

@@ -157,7 +157,7 @@ fn ruby() {
     "#),
         &multi_xpath(r#"
             //begin
-                [rescue/exceptions/constant='StandardError']
+                [rescue/exceptions/name='StandardError']
                 [ensure]
         "#),
         1);

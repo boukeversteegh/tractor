@@ -103,10 +103,18 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::Retry  => RenameStripKeyword(Retry, "retry"),
         RubyKind::Yield  => RenameStripKeyword(Yield, "yield"),
 
+        // Capitalized identifiers — Ruby's grammar distinguishes
+        // `constant` lexically (uppercase first letter), but other
+        // languages use `<name>` for value-namespace identifiers
+        // regardless of casing. Collapse to `<name>` so cross-language
+        // `//name` queries find Ruby constants too (Principle #5);
+        // the capitalization is preserved in the text content for
+        // anyone needing the lexical distinction.
+        RubyKind::Constant => Rename(Name),
+
         // Already matches our vocabulary (no text leak in current snapshots).
         RubyKind::Block
         | RubyKind::Conditional
-        | RubyKind::Constant
         | RubyKind::Do
         | RubyKind::Exceptions
         | RubyKind::False
