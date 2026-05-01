@@ -146,6 +146,34 @@ pub fn type_parameter(
     }
 }
 
+/// `for_statement` — `for x in xs:` / `async for x in xs:`. Extract
+/// `<async/>` marker if the source is an `async for`.
+pub fn for_statement(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    if texts.iter().any(|t| t.split_whitespace().any(|tok| tok == "async")) {
+        xot.with_prepended_marker_from(node, Async, node)?;
+    }
+    xot.with_renamed(node, super::output::TractorNode::For);
+    Ok(TransformAction::Continue)
+}
+
+/// `with_statement` — `with x:` / `async with x:`. Same async-marker
+/// extraction as for_statement.
+pub fn with_statement(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    if texts.iter().any(|t| t.split_whitespace().any(|tok| tok == "async")) {
+        xot.with_prepended_marker_from(node, Async, node)?;
+    }
+    xot.with_renamed(node, super::output::TractorNode::With);
+    Ok(TransformAction::Continue)
+}
+
 /// `parameters` — Python's parameter list. Bare positional parameters
 /// surface as plain `<identifier>` children (which become `<name>`),
 /// inconsistent with `<parameter>` for default/typed params and

@@ -123,7 +123,9 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::False                 => Rename(False),
         PyKind::FinallyClause         => Rename(Finally),
         PyKind::Float                 => Rename(Float),
-        PyKind::ForStatement          => Rename(For),
+        // `async for` / `async with` — extract async modifier marker
+        // before renaming.
+        PyKind::ForStatement          => Custom(transformations::for_statement),
         PyKind::FormatSpecifier       => Rename(Format),
         PyKind::GeneratorExpression   => Rename(Generator),
         PyKind::GlobalStatement       => Rename(Global),
@@ -153,7 +155,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::TypedDefaultParameter => Rename(Parameter),
         PyKind::TypedParameter        => Rename(Parameter),
         PyKind::WhileStatement        => Rename(While),
-        PyKind::WithStatement         => Rename(With),
+        PyKind::WithStatement         => Custom(transformations::with_statement),
         PyKind::Yield                 => Rename(Yield),
 
         // ---- Passthrough — kind name already matches the vocabulary,
