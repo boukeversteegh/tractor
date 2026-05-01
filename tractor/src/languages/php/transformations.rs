@@ -16,14 +16,27 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Comment as CommentName, Leading, Prefix, Private, Protected, Public, String as PhpString,
-    Trailing, Unary,
+    Comment as CommentName, Leading, Prefix, Primitive, Private, Protected, Public,
+    String as PhpString, Trailing, Type, Unary,
 };
 
 /// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
 /// the wrapper, promote children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `primitive_type` — render as `<type[primitive]><name>string</name></type>`
+/// matching the cross-language type shape (`type/name` is the broad
+/// query path; `[primitive]` distinguishes built-in from user types).
+pub fn primitive_type(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Type);
+    wrap_text_in_name(xot, node)?;
+    xot.with_appended_empty_element(node, Primitive)?;
+    Ok(TransformAction::Continue)
 }
 
 /// `expression_statement` — wrap value-producing statements in an

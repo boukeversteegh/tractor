@@ -54,7 +54,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::MemberCallExpression           => RenameWithMarker(Call, Instance),
         PhpKind::OptionalType                   => RenameWithMarker(Type, Optional),
         PhpKind::PhpTag                         => RenameWithMarker(Tag, Open),
-        PhpKind::PrimitiveType                  => RenameWithMarker(Type, Primitive),
+        PhpKind::PrimitiveType                  => Custom(transformations::primitive_type),
         PhpKind::ScopedCallExpression           => RenameWithMarker(Call, Static),
         PhpKind::ScopedPropertyAccessExpression => RenameWithMarker(Member, Static),
         PhpKind::UnionType                      => RenameWithMarker(Type, Union),

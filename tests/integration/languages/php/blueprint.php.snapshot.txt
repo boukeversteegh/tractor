@@ -38,26 +38,26 @@ program/
   │       │   ├─ name = "DEFAULT_NAME"
   │       │   └─ string = "\"anonymous\""
   │       ├─ field[private]/
-  │       │   ├─ type[primitive] = "string"
+  │       │   ├─ type[primitive]/name = "string"
   │       │   └─ name = "$name"
   │       ├─ field[public and readonly]/
-  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ type[primitive]/name = "int"
   │       │   └─ name = "$count"
   │       ├─ field[protected]/
-  │       │   ├─ type[optional]/type[primitive] = "string"
+  │       │   ├─ type[optional]/type[primitive]/name = "string"
   │       │   ├─ name = "$label"
   │       │   └─ null = "null"
   │       ├─ field[public and static]/
-  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ type[primitive]/name = "int"
   │       │   ├─ name = "$registry"
   │       │   └─ int = "0"
   │       ├─ method[public]/
   │       │   ├─ name = "__construct"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   ├─ type[primitive]/name = "string"
   │       │   │   └─ name = "$name"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "int"
+  │       │   │   ├─ type[primitive]/name = "int"
   │       │   │   ├─ name = "$count"
   │       │   │   └─ int = "0"
   │       │   └─ body/
@@ -75,11 +75,11 @@ program/
   │       │           └─ right/expression/variable/name = "count"
   │       ├─ method[abstract and public]/
   │       │   ├─ name = "render"
-  │       │   └─ returns/type[primitive] = "string"
+  │       │   └─ returns/type[primitive]/name = "string"
   │       ├─ method[final and public and static]/
   │       │   ├─ name = "create"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   ├─ type[primitive]/name = "string"
   │       │   │   └─ name = "$name"
   │       │   ├─ returns/type/name = "static"
   │       │   └─ body/return/expression/new/
@@ -88,13 +88,13 @@ program/
   │       ├─ method[public]/
   │       │   ├─ name = "greet"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[optional]/type[primitive] = "string"
+  │       │   │   ├─ type[optional]/type[primitive]/name = "string"
   │       │   │   ├─ name = "$who"
   │       │   │   └─ null = "null"
   │       │   ├─ parameter[variadic]/
-  │       │   │   ├─ type[primitive] = "string"
+  │       │   │   ├─ type[primitive]/name = "string"
   │       │   │   └─ name = "$extras"
-  │       │   ├─ returns/type[primitive] = "string"
+  │       │   ├─ returns/type[primitive]/name = "string"
   │       │   └─ body/
   │       │       ├─ expression/assign/
   │       │       │   ├─ left/expression/variable/name = "target"
@@ -125,9 +125,9 @@ program/
   │       ├─ method[public]/
   │       │   ├─ name = "describe"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "int"
+  │       │   │   ├─ type[primitive]/name = "int"
   │       │   │   └─ name = "$n"
-  │       │   ├─ returns/type[primitive] = "string"
+  │       │   ├─ returns/type[primitive]/name = "string"
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/variable/name = "n"
@@ -144,9 +144,9 @@ program/
   │       ├─ method[public]/
   │       │   ├─ name = "categorize"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "mixed"
+  │       │   │   ├─ type[primitive]/name = "mixed"
   │       │   │   └─ name = "$value"
-  │       │   ├─ returns/type[primitive] = "string"
+  │       │   ├─ returns/type[primitive]/name = "string"
   │       │   └─ body/return/expression/match/
   │       │       ├─ condition/expression/bool = "true"
   │       │       └─ body/
@@ -177,9 +177,9 @@ program/
   │       ├─ method[public]/
   │       │   ├─ name = "process"
   │       │   ├─ parameter/
-  │       │   │   ├─ type[primitive] = "iterable"
+  │       │   │   ├─ type[primitive]/name = "iterable"
   │       │   │   └─ name = "$items"
-  │       │   ├─ returns/type[primitive] = "array"
+  │       │   ├─ returns/type[primitive]/name = "array"
   │       │   └─ body/
   │       │       ├─ expression/assign/
   │       │       │   ├─ left/expression/variable/name = "results"
@@ -219,35 +219,35 @@ program/
   │       └─ method[private]/
   │           ├─ name = "transform"
   │           ├─ parameter/
-  │           │   ├─ type[primitive] = "mixed"
+  │           │   ├─ type[primitive]/name = "mixed"
   │           │   └─ name = "$item"
-  │           ├─ returns/type[primitive] = "mixed"
+  │           ├─ returns/type[primitive]/name = "mixed"
   │           └─ body/return/expression/variable/name = "item"
   ├─ interface/
   │   ├─ name = "Speaker"
   │   └─ body/method[public]/
   │       ├─ name = "greet"
   │       ├─ parameter/
-  │       │   ├─ type[optional]/type[primitive] = "string"
+  │       │   ├─ type[optional]/type[primitive]/name = "string"
   │       │   └─ name = "$who"
-  │       └─ returns/type[primitive] = "string"
+  │       └─ returns/type[primitive]/name = "string"
   ├─ interface/
   │   ├─ name = "Countable"
   │   └─ body/method[public]/
   │       ├─ name = "count"
-  │       └─ returns/type[primitive] = "int"
+  │       └─ returns/type[primitive]/name = "int"
   ├─ trait/
   │   ├─ name = "Loggable"
   │   └─ body/method[protected]/
   │       ├─ name = "log"
   │       ├─ parameter/
-  │       │   ├─ type[primitive] = "string"
+  │       │   ├─ type[primitive]/name = "string"
   │       │   └─ name = "$msg"
-  │       ├─ returns/type[primitive] = "void"
+  │       ├─ returns/type[primitive]/name = "void"
   │       └─ body/echo/string/interpolation/variable/name = "msg"
   ├─ enum/
   │   ├─ name = "Status"
-  │   ├─ type[primitive] = "string"
+  │   ├─ type[primitive]/name = "string"
   │   └─ body/
   │       ├─ constant/
   │       │   ├─ name = "Active"
@@ -260,7 +260,7 @@ program/
   │       │   └─ value/expression/string = "\"pending\""
   │       └─ method[public]/
   │           ├─ name = "label"
-  │           ├─ returns/type[primitive] = "string"
+  │           ├─ returns/type[primitive]/name = "string"
   │           └─ body/return/expression/match/
   │               ├─ condition/expression/variable/name = "this"
   │               └─ body/
@@ -282,12 +282,12 @@ program/
   ├─ function/
   │   ├─ name = "factory"
   │   ├─ parameter/
-  │   │   ├─ type[primitive] = "callable"
+  │   │   ├─ type[primitive]/name = "callable"
   │   │   └─ name = "$fn"
   │   ├─ parameter[variadic]/
-  │   │   ├─ type[primitive] = "mixed"
+  │   │   ├─ type[primitive]/name = "mixed"
   │   │   └─ name = "$args"
-  │   ├─ returns/type[primitive] = "mixed"
+  │   ├─ returns/type[primitive]/name = "mixed"
   │   └─ body/return/expression/call/
   │       ├─ variable/name = "fn"
   │       └─ argument/spread/variable/name = "args"
@@ -296,9 +296,9 @@ program/
   │   ├─ op = "="
   │   └─ right/expression/function[arrow]/
   │       ├─ parameter/
-  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ type[primitive]/name = "int"
   │       │   └─ name = "$x"
-  │       ├─ returns/type[primitive] = "int"
+  │       ├─ returns/type[primitive]/name = "int"
   │       └─ body/binary/
   │           ├─ left/expression/variable/name = "x"
   │           ├─ op[multiply] = "*"
@@ -318,10 +318,10 @@ program/
   │   ├─ op = "="
   │   └─ right/expression/function[anonymous]/
   │       ├─ parameter/
-  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ type[primitive]/name = "int"
   │       │   └─ name = "$x"
   │       ├─ variable/name = "pipeline"
-  │       ├─ returns/type[primitive] = "int"
+  │       ├─ returns/type[primitive]/name = "int"
   │       └─ body/return/expression/binary/
   │           ├─ left/expression/call/
   │           │   ├─ variable/name = "pipeline"
@@ -334,10 +334,10 @@ program/
   │   └─ body/method[public]/
   │       ├─ name = "__construct"
   │       ├─ parameter[promoted and public and readonly]/
-  │       │   ├─ type[primitive] = "string"
+  │       │   ├─ type[primitive]/name = "string"
   │       │   └─ name = "$name"
   │       ├─ parameter[promoted and protected]/
-  │       │   ├─ type[primitive] = "int"
+  │       │   ├─ type[primitive]/name = "int"
   │       │   ├─ name = "$count"
   │       │   └─ int = "0"
   │       └─ body = "{}"
@@ -345,21 +345,21 @@ program/
   │   ├─ name = "Stringable"
   │   └─ body/method[public]/
   │       ├─ name = "__toString"
-  │       └─ returns/type[primitive] = "string"
+  │       └─ returns/type[primitive]/name = "string"
   ├─ interface/
   │   ├─ name = "Countable2"
   │   └─ body/method[public]/
   │       ├─ name = "size"
-  │       └─ returns/type[primitive] = "int"
+  │       └─ returns/type[primitive]/name = "int"
   ├─ function/
   │   ├─ name = "shapes"
   │   ├─ parameter/
   │   │   ├─ type[optional]/type/name = "PromotedDemo"
   │   │   └─ name = "$thing"
   │   ├─ parameter/
-  │   │   ├─ type[primitive] = "mixed"
+  │   │   ├─ type[primitive]/name = "mixed"
   │   │   └─ name = "$value"
-  │   ├─ returns/type[primitive] = "mixed"
+  │   ├─ returns/type[primitive]/name = "mixed"
   │   └─ body/
   │       ├─ comment[leading] = "// Nullsafe member access + call."
   │       ├─ expression/assign/
@@ -382,7 +382,7 @@ program/
   │       │       ├─ implements/name = "Stringable"
   │       │       └─ body/method[public]/
   │       │           ├─ name = "__toString"
-  │       │           ├─ returns/type[primitive] = "string"
+  │       │           ├─ returns/type[primitive]/name = "string"
   │       │           └─ body/return/expression/string = "\"anon\""
   │       ├─ comment[leading] = "// First-class callable + augmented assignment."
   │       ├─ expression/assign/
@@ -538,7 +538,7 @@ program/
   │   │   │   ├─ type/name = "Stringable"
   │   │   │   └─ type/name = "Countable2"
   │   │   └─ name = "$thing"
-  │   ├─ returns/type[primitive] = "int"
+  │   ├─ returns/type[primitive]/name = "int"
   │   └─ body/return/expression/call[instance]/
   │       ├─ variable/name = "thing"
   │       └─ name = "size"
@@ -550,9 +550,9 @@ program/
   │   │   │   ├─ type[intersection]/
   │   │   │   │   ├─ type/name = "Stringable"
   │   │   │   │   └─ type/name = "Countable2"
-  │   │   │   └─ type[primitive] = "null"
+  │   │   │   └─ type[primitive]/name = "null"
   │   │   └─ name = "$thing"
-  │   ├─ returns/type[primitive] = "bool"
+  │   ├─ returns/type[primitive]/name = "bool"
   │   └─ body/return/expression/binary/
   │       ├─ left/expression/variable/name = "thing"
   │       ├─ op/not-equals[strict]
