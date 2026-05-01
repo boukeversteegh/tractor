@@ -14,8 +14,9 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::GoKind;
 use super::output::TractorNode::{
-    self, Alias, Comment as CommentName, Else, Exported, Field, Function, If, Interface, Leading,
-    Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
+    self, Alias, Break, Comment as CommentName, Continue, Else, Exported, Fallthrough, Field,
+    Function, Go as GoNode, Goto, If, Interface, Leading, Method, Name, Raw, Return, Short,
+    String as GoString, Struct, Trailing, Type, Unexported, Variable,
 };
 
 /// `expression_statement` is a pure grammar wrapper around a single
@@ -25,6 +26,58 @@ use super::output::TractorNode::{
 pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, super::output::TractorNode::Expression);
     Ok(TransformAction::Continue)
+}
+
+/// Bare keyword-only statements (`return;`, `break;`, `continue;`,
+/// `goto LABEL;`, `fallthrough;`, `go expr()`). Tree-sitter keeps the
+/// keyword as a text child; without stripping it the output becomes
+/// `<return>return</return>` (Principle #2 / #13 leak). Rename and
+/// strip text-only children that exactly match the keyword form. Any
+/// element children (e.g. label name in `goto`, expression in `return`)
+/// are kept.
+fn bare_keyword_statement(
+    xot: &mut Xot,
+    node: XotNode,
+    name: TractorNode,
+    keyword: &str,
+) -> Result<TransformAction, xot::Error> {
+    let text_children: Vec<XotNode> = xot
+        .children(node)
+        .filter(|&c| {
+            xot.text_str(c)
+                .map(|s| s.trim().trim_end_matches(';').trim() == keyword)
+                .unwrap_or(false)
+        })
+        .collect();
+    for child in text_children {
+        xot.detach(child)?;
+    }
+    xot.with_renamed(node, name);
+    Ok(TransformAction::Continue)
+}
+
+pub fn return_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, Return, "return")
+}
+
+pub fn break_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, Break, "break")
+}
+
+pub fn continue_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, Continue, "continue")
+}
+
+pub fn goto_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, Goto, "goto")
+}
+
+pub fn fallthrough_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, Fallthrough, "fallthrough")
+}
+
+pub fn go_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    bare_keyword_statement(xot, node, GoNode, "go")
 }
 
 /// `parameter_list` does double duty in Go: formal parameters AND

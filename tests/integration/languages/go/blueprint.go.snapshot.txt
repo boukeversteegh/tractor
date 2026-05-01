@@ -245,17 +245,15 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/type/name = "T"
-  │   └─ body/
-  │       ├─ for/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "x"
-  │       │   │   └─ right/expression/name = "xs"
-  │       │   └─ body/assign/
-  │       │       ├─ left/expression/name = "total"
-  │       │       └─ right/expression/name = "x"
-  │       └─ return = "return"
+  │   └─ body[return]/for/
+  │       ├─ range/
+  │       │   ├─ left/
+  │       │   │   ├─ expression/name = "_"
+  │       │   │   └─ expression/name = "x"
+  │       │   └─ right/expression/name = "xs"
+  │       └─ body/assign/
+  │           ├─ left/expression/name = "total"
+  │           └─ right/expression/name = "x"
   ├─ function[exported]/
   │   ├─ name = "Uniq"
   │   ├─ name = "T"
@@ -264,7 +262,7 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/slice/type/name = "T"
-  │   └─ body/
+  │   └─ body[return]/
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "seen"
   │       │   └─ right/expression/literal/
@@ -272,38 +270,37 @@ file/
   │       │       │   ├─ type/name = "T"
   │       │       │   └─ value/expression/struct = "struct{}"
   │       │       └─ body = "{}"
-  │       ├─ for/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "x"
-  │       │   │   └─ right/expression/name = "xs"
-  │       │   └─ body/if/
-  │       │       ├─ variable[short]/
-  │       │       │   ├─ left/
-  │       │       │   │   ├─ expression/name = "_"
-  │       │       │   │   └─ expression/name = "ok"
-  │       │       │   └─ right/expression/index/
-  │       │       │       ├─ name = "seen"
-  │       │       │       └─ name = "x"
-  │       │       ├─ condition/expression/unary/
-  │       │       │   ├─ op/logical[not]
-  │       │       │   └─ name = "ok"
-  │       │       └─ then/
-  │       │           ├─ assign/
-  │       │           │   ├─ left/expression/index/
-  │       │           │   │   ├─ name = "seen"
-  │       │           │   │   └─ name = "x"
-  │       │           │   └─ right/expression/literal/
-  │       │           │       ├─ struct = "struct{}"
-  │       │           │       └─ body = "{}"
-  │       │           └─ assign/
-  │       │               ├─ left/expression/name = "out"
-  │       │               └─ right/expression/call/
-  │       │                   ├─ name = "append"
-  │       │                   ├─ name = "out"
-  │       │                   └─ name = "x"
-  │       └─ return = "return"
+  │       └─ for/
+  │           ├─ range/
+  │           │   ├─ left/
+  │           │   │   ├─ expression/name = "_"
+  │           │   │   └─ expression/name = "x"
+  │           │   └─ right/expression/name = "xs"
+  │           └─ body/if/
+  │               ├─ variable[short]/
+  │               │   ├─ left/
+  │               │   │   ├─ expression/name = "_"
+  │               │   │   └─ expression/name = "ok"
+  │               │   └─ right/expression/index/
+  │               │       ├─ name = "seen"
+  │               │       └─ name = "x"
+  │               ├─ condition/expression/unary/
+  │               │   ├─ op/logical[not]
+  │               │   └─ name = "ok"
+  │               └─ then/
+  │                   ├─ assign/
+  │                   │   ├─ left/expression/index/
+  │                   │   │   ├─ name = "seen"
+  │                   │   │   └─ name = "x"
+  │                   │   └─ right/expression/literal/
+  │                   │       ├─ struct = "struct{}"
+  │                   │       └─ body = "{}"
+  │                   └─ assign/
+  │                       ├─ left/expression/name = "out"
+  │                       └─ right/expression/call/
+  │                           ├─ name = "append"
+  │                           ├─ name = "out"
+  │                           └─ name = "x"
   ├─ function[unexported]/
   │   ├─ name = "variadic"
   │   ├─ parameter/
@@ -315,7 +312,7 @@ file/
   │   ├─ returns/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
-  │   └─ body/
+  │   └─ body[return]/
   │       ├─ defer/call/closure/body/assign/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/name = "recover"
@@ -324,16 +321,15 @@ file/
   │       │   └─ right/expression/call/
   │       │       ├─ name = "ToUpper"
   │       │       └─ name = "prefix"
-  │       ├─ for/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "v"
-  │       │   │   └─ right/expression/name = "vals"
-  │       │   └─ body/assign/
-  │       │       ├─ left/expression/name = "sum"
-  │       │       └─ right/expression/name = "v"
-  │       └─ return = "return"
+  │       └─ for/
+  │           ├─ range/
+  │           │   ├─ left/
+  │           │   │   ├─ expression/name = "_"
+  │           │   │   └─ expression/name = "v"
+  │           │   └─ right/expression/name = "vals"
+  │           └─ body/assign/
+  │               ├─ left/expression/name = "sum"
+  │               └─ right/expression/name = "v"
   ├─ comment[leading] = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
   ├─ function[unexported]/
   │   ├─ name = "arraysAndCasts"
@@ -390,9 +386,7 @@ file/
   │       │   ├─ value/expression/index/
   │       │   │   ├─ name = "implicit"
   │       │   │   └─ int = "0"
-  │       │   ├─ case/
-  │       │   │   ├─ value/expression/int = "10"
-  │       │   │   └─ fallthrough = "fallthrough"
+  │       │   ├─ case[fallthrough]/value/expression/int = "10"
   │       │   └─ case/
   │       │       ├─ value/expression/int = "20"
   │       │       └─ assign/
@@ -492,7 +486,9 @@ file/
           │       │   ├─ left/expression/name = "i"
           │       │   ├─ op[equals] = "=="
           │       │   └─ right/expression/int = "5"
-          │       └─ then/continue = "continue"
+          │       └─ then[continue]/
+          │           ├─ "{"
+          │           └─ "}"
           ├─ for/
           │   ├─ range/
           │   │   ├─ left/expression/name = "i"
@@ -678,3 +674,90 @@ file/
           │           ├─ name = "UserID"
           │           └─ int = "42"
           └─ return/expression/nil = "nil"
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return"), is_element=false
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return"), is_element=false
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return"), is_element=false
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="fallthrough"
+❌   child: text_str=Some("fallthrough"), is_element=false
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="continue"
+❌   child: text_str=Some("continue"), is_element=false
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="go"
+❌   child: text_str=Some("go "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="break"
+❌   child: text_str=Some("break "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="continue"
+❌   child: text_str=Some("continue "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="goto"
+❌   child: text_str=Some("goto "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach
+❌ === bare_keyword_statement called for keyword="return"
+❌   child: text_str=Some("return "), is_element=false
+❌   child: text_str=None, is_element=true
+❌   matched 1 text children to detach

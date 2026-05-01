@@ -79,13 +79,13 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::Identifier               => Rename(Name),
         GoKind::AssignmentStatement      => Rename(Assign),
         GoKind::BlankIdentifier          => Rename(Name),
-        GoKind::BreakStatement           => Rename(Break),
+        GoKind::BreakStatement           => Custom(transformations::break_statement),
         GoKind::CallExpression           => Rename(Call),
         GoKind::ChannelType              => Rename(Chan),
         GoKind::CommunicationCase        => Rename(Case),
         GoKind::CompositeLiteral         => Rename(Literal),
         GoKind::ConstDeclaration         => Rename(Const),
-        GoKind::ContinueStatement        => Rename(Continue),
+        GoKind::ContinueStatement        => Custom(transformations::continue_statement),
         GoKind::DecStatement             => ExtractOpThenRename(Unary),
         GoKind::DefaultCase              => Rename(Default),
         GoKind::DeferStatement           => Rename(Defer),
@@ -95,8 +95,8 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::FloatLiteral             => Rename(Float),
         GoKind::ForStatement             => Rename(For),
         GoKind::FuncLiteral              => Rename(Closure),
-        GoKind::GoStatement              => Rename(Go),
-        GoKind::GotoStatement            => Rename(Goto),
+        GoKind::GoStatement              => Custom(transformations::go_statement),
+        GoKind::GotoStatement            => Custom(transformations::goto_statement),
         GoKind::ImportDeclaration        => Rename(Import),
         GoKind::IncStatement             => ExtractOpThenRename(Unary),
         GoKind::IndexExpression          => Rename(Index),
@@ -114,7 +114,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::PointerType              => Rename(Pointer),
         GoKind::RangeClause              => Rename(Range),
         GoKind::ReceiveStatement         => Rename(Receive),
-        GoKind::ReturnStatement          => Rename(Return),
+        GoKind::ReturnStatement          => Custom(transformations::return_statement),
         GoKind::RuneLiteral              => Rename(Char),
         GoKind::SelectStatement          => Rename(Select),
         GoKind::SelectorExpression       => Rename(Member),
@@ -160,7 +160,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
 
         // `fallthrough_statement` is real Go control-flow; renames to
         // `<fallthrough>` alongside `<break>`, `<continue>`, `<goto>`.
-        GoKind::FallthroughStatement => Rename(Fallthrough),
+        GoKind::FallthroughStatement => Custom(transformations::fallthrough_statement),
 
         // `imaginary_literal` (`1i`) is a number-shaped literal,
         // grouped with floats.
