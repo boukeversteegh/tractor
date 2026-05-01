@@ -12,13 +12,14 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
+use crate::transform::operators::{extract_operator, is_prefix_form};
 
 use super::input::JavaKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
     Call, Comment as CommentName, Else, Expression, Generic, Generics, If, Leading, Method, Name,
-    Package, Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized, Volatile,
-    Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Void,
+    Package, Prefix, Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized,
+    Volatile, Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Unary, Void,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -43,6 +44,22 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// — every Java `expression_statement` produces a value.
 pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression);
+    Ok(TransformAction::Continue)
+}
+
+/// `update_expression` — `++x`, `x++`, `--x`, `x--`. Tree-sitter uses
+/// one kind for both prefix and postfix forms, distinguished only by
+/// child order. Extract the operator into `<op>`, rename to `<unary>`,
+/// and prepend `<prefix/>` when the source form was prefix so
+/// `//unary[prefix][op[increment]]` matches `++x` cross-language
+/// (parallels C#'s explicit `prefix_unary_expression` shape).
+pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let was_prefix = is_prefix_form(xot, node);
+    extract_operator(xot, node)?;
+    xot.with_renamed(node, Unary);
+    if was_prefix {
+        xot.with_prepended_empty_element(node, Prefix)?;
+    }
     Ok(TransformAction::Continue)
 }
 

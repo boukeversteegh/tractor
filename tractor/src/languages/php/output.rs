@@ -45,6 +45,8 @@ pub enum TractorNode {
     Anonymous, Arrow,
     // php_tag marker
     Open,
+    // Unary-shape marker
+    Prefix,
     // Dual-use names
     Static, Default,
 }
@@ -69,7 +71,8 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Primitive | Self::Union | Self::Optional
-            | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open                => (true, false, Default),
+            | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open
+            | Self::Prefix                                                               => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Final | Self::Abstract | Self::Readonly                              => (true, false, Keyword),
 

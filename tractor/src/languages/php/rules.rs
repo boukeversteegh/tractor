@@ -219,10 +219,11 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::ReferenceModifier => Custom(transformations::passthrough),
 
         // `update_expression` covers `$x++` / `$x--` / `++$x` / `--$x`.
-        // Extract the operator and rename to <unary> so prefix/postfix
-        // increments are queryable through the same shape as regular
-        // unary expressions (Goal #6 broad-to-narrow).
-        PhpKind::UpdateExpression          => ExtractOpThenRename(Unary),
+        // Custom dispatch detects prefix-vs-postfix from child order and
+        // adds a `<prefix/>` marker for prefix forms — matches C#'s
+        // explicit `prefix_unary_expression` so `//unary[prefix]` works
+        // cross-language.
+        PhpKind::UpdateExpression          => Custom(transformations::update_expression),
 
         // TODO: special-statement forms — `clone`, `unset`, `empty`
         // (`;`), `goto`-target labels, list-literal destructuring,

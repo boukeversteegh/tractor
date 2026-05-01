@@ -209,9 +209,11 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::CastExpression
         | JavaKind::InstanceofExpression => Custom(transformations::passthrough),
 
-        // TODO: increment / decrement — `++x`, `x--`. Same shape as
-        // unary_expression (extract op + rename UNARY).
-        JavaKind::UpdateExpression => ExtractOpThenRename(Unary),
+        // `update_expression` covers `++x` / `x++` / `--x` / `x--`.
+        // Custom dispatch detects prefix-vs-postfix from child order and
+        // adds a `<prefix/>` marker for prefix forms (parallels C#'s
+        // explicit `prefix_unary_expression` kind).
+        JavaKind::UpdateExpression => Custom(transformations::update_expression),
 
         // TODO: catch_formal_parameter is the variable inside a catch
         // clause — Rename(PARAMETER); catch_type is the exception type

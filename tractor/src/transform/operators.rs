@@ -265,6 +265,31 @@ pub fn is_operator_marker(name: &str) -> bool {
     )
 }
 
+/// Detect prefix form for `update_expression`-style nodes that
+/// conflate `++x` (prefix) and `x++` (postfix) under one tree-sitter
+/// kind. Inspects child order BEFORE operator extraction: in prefix
+/// forms the operator text appears as the first non-whitespace child;
+/// in postfix forms an element child (the operand) appears first.
+///
+/// Used by TS/Java/PHP `update_expression` transforms so a single
+/// `<prefix/>` marker pattern works cross-language and queries like
+/// `//unary[prefix][op[increment]]` distinguish `++x` from `x++`
+/// uniformly. C# splits prefix vs postfix at the kind level
+/// (`prefix_unary_expression` / `postfix_unary_expression`) so it
+/// doesn't need this helper.
+pub fn is_prefix_form(xot: &Xot, node: XotNode) -> bool {
+    for child in xot.children(node) {
+        if let Some(text) = xot.text_str(child) {
+            if !text.trim().is_empty() {
+                return true;
+            }
+        } else if xot.element(child).is_some() {
+            return false;
+        }
+    }
+    false
+}
+
 /// Find the operator text inside a binary/unary expression node (the
 /// first non-pure-punctuation text child) and prepend an `<op>` element
 /// for it. No-op if no operator-like text exists.

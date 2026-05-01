@@ -38,6 +38,8 @@ pub enum TractorNode {
     Static, Final, Abstract, Synchronized, Volatile, Transient, Native, Strictfp,
     // Special markers (This dual-use)
     Void, This, Super, Array, Variadic, Compact,
+    // Unary-shape marker
+    Prefix,
 }
 
 impl TractorNode {
@@ -63,7 +65,7 @@ impl TractorNode {
             | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp
             | Self::Super                                                           => (true, false, Keyword),
             Self::Array                                                             => (true, false, Type),
-            Self::Void | Self::Variadic | Self::Compact                             => (true, false, Default),
+            Self::Void | Self::Variadic | Self::Compact | Self::Prefix              => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Record                                                            => (true, true, Default),

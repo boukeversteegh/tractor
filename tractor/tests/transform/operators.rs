@@ -155,6 +155,53 @@ fn csharp_prefix_unary() {
         1);
 }
 
+/// TypeScript / Java / PHP all collapse `++x` and `x++` under one
+/// tree-sitter kind (`update_expression`), distinguished only by child
+/// order. To match C#'s `<unary[prefix]>` shape, the per-language
+/// transform detects prefix-form by inspecting child order BEFORE
+/// operator extraction, and prepends a `<prefix/>` marker. After this
+/// change `//unary[prefix][op[increment]]` matches `++x` in every
+/// language that emits `<unary>`; postfix sites (`x++`) lack `[prefix]`
+/// so the predicate cleanly distinguishes them.
+#[test]
+fn typescript_update_prefix_vs_postfix() {
+    claim("`++x` extracts <op[increment]> AND carries <prefix>",
+        &mut parse_src("typescript", "let x = 0; ++x;"),
+        "//unary[prefix][op[increment]]",
+        1);
+
+    claim("`x++` extracts <op[increment]> WITHOUT <prefix>",
+        &mut parse_src("typescript", "let x = 0; x++;"),
+        "//unary[op[increment]][not(prefix)]",
+        1);
+}
+
+#[test]
+fn java_update_prefix_vs_postfix() {
+    claim("`++i` extracts <op[increment]> AND carries <prefix>",
+        &mut parse_src("java", "class T { void m() { int i = 0; ++i; } }"),
+        "//unary[prefix][op[increment]]",
+        1);
+
+    claim("`i++` extracts <op[increment]> WITHOUT <prefix>",
+        &mut parse_src("java", "class T { void m() { int i = 0; i++; } }"),
+        "//unary[op[increment]][not(prefix)]",
+        1);
+}
+
+#[test]
+fn php_update_prefix_vs_postfix() {
+    claim("`++$x` extracts <op[increment]> AND carries <prefix>",
+        &mut parse_src("php", "<?php $x = 0; ++$x;"),
+        "//unary[prefix][op[increment]]",
+        1);
+
+    claim("`$x++` extracts <op[increment]> WITHOUT <prefix>",
+        &mut parse_src("php", "<?php $x = 0; $x++;"),
+        "//unary[op[increment]][not(prefix)]",
+        1);
+}
+
 /// C#'s null-forgiving operator (`name!`) is a postfix non-null
 /// assertion — it doesn't change the value at runtime, just suppresses
 /// a nullable warning. Per Principle #15 it surfaces as

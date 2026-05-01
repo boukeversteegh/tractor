@@ -53,6 +53,8 @@ pub enum TractorNode {
     // Type-shape markers (Array, Object dual-use)
     Union, Intersection, Array, Literal, Tuple, Parenthesized, Object, Conditional, Infer, Lookup,
     Keyof,
+    // Unary-shape marker
+    Prefix,
 }
 
 impl TractorNode {
@@ -78,7 +80,7 @@ impl TractorNode {
             | Self::Generator | Self::Get | Self::Set
             | Self::Union | Self::Intersection | Self::Literal | Self::Tuple
             | Self::Parenthesized | Self::Conditional | Self::Infer | Self::Lookup
-            | Self::Keyof                                                          => (true, false, Default),
+            | Self::Keyof | Self::Prefix                                           => (true, false, Default),
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async

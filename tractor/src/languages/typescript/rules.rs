@@ -23,7 +23,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::AugmentedAssignmentExpression => ExtractOpThenRename(Assign),
         TsKind::BinaryExpression              => ExtractOpThenRename(Binary),
         TsKind::UnaryExpression               => ExtractOpThenRename(Unary),
-        TsKind::UpdateExpression              => ExtractOpThenRename(Unary),
+        TsKind::UpdateExpression              => Custom(transformations::update_expression),
 
         // ---- RenameWithMarker ------------------------------------------
         TsKind::AbstractClassDeclaration => RenameWithMarker(Class, Abstract),

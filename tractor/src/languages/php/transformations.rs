@@ -11,11 +11,13 @@
 use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
+use crate::transform::operators::{extract_operator, is_prefix_form};
 
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Comment as CommentName, Leading, Private, Protected, Public, String as PhpString, Trailing,
+    Comment as CommentName, Leading, Prefix, Private, Protected, Public, String as PhpString,
+    Trailing, Unary,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -36,6 +38,22 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// no inner-kind dispatch needed.
 pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, super::output::TractorNode::Expression);
+    Ok(TransformAction::Continue)
+}
+
+/// `update_expression` — `++$x`, `$x++`, `--$x`, `$x--`. Tree-sitter
+/// uses one kind for both prefix and postfix forms, distinguished only
+/// by child order. Extract the operator into `<op>`, rename to
+/// `<unary>`, and prepend `<prefix/>` when the source form was prefix
+/// so `//unary[prefix][op[increment]]` matches `++$x` cross-language
+/// (parallels C#'s explicit `prefix_unary_expression` shape).
+pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let was_prefix = is_prefix_form(xot, node);
+    extract_operator(xot, node)?;
+    xot.with_renamed(node, Unary);
+    if was_prefix {
+        xot.with_prepended_empty_element(node, Prefix)?;
+    }
     Ok(TransformAction::Continue)
 }
 
