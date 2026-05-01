@@ -152,141 +152,104 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         //      kind names. Most are TODO candidates for real semantics.
         //      Grouped by theme; see Step 7 follow-up commit for proposals.
 
-        // TODO: Java module-info kinds (Java 9+ JPMS). Currently
-        // unhandled. Likely each gets a dedicated semantic name.
-        JavaKind::ExportsModuleDirective
-        | JavaKind::ModuleBody
-        | JavaKind::ModuleDeclaration
-        | JavaKind::ModuleDirective
-        | JavaKind::OpensModuleDirective
-        | JavaKind::ProvidesModuleDirective
-        | JavaKind::RequiresModifier
-        | JavaKind::RequiresModuleDirective
-        | JavaKind::UsesModuleDirective => Passthrough,
-
-        // TODO: Java annotation-type kinds (the @interface form).
-        // Currently unhandled. Likely:
-        //   annotation_type_declaration → Rename(INTERFACE) with marker
-        //   annotation_type_body → Flatten
-        //   annotation_type_element_declaration → Rename(METHOD)?
-        JavaKind::AnnotationTypeBody
-        | JavaKind::AnnotationTypeDeclaration
-        | JavaKind::AnnotationTypeElementDeclaration => Passthrough,
-
-        // TODO: pattern combinators sit alongside `type_pattern` and
-        // `record_pattern` already in the rule table. Each should
-        // rename to PATTERN with a marker:
-        //   underscore_pattern → RenameWithMarker(PATTERN, ?)
-        // Test impact: minimal in current snapshots; new pattern fixtures.
-        JavaKind::UnderscorePattern => Passthrough,
-
-        // TODO: array creation is the call-shaped sibling of
-        // `object_creation_expression` → NEW. Likely RenameWithMarker(NEW, ARRAY).
-        JavaKind::ArrayCreationExpression => Passthrough,
-
-        // TODO: special-statement forms — `break`, `continue`, `do`,
-        // `assert`, `synchronized`, `yield`, `labeled`. Each
-        // currently survives as its grammar kind. Most should rename
-        // to a new keyword constant.
-        JavaKind::AssertStatement
-        | JavaKind::BreakStatement
-        | JavaKind::ContinueStatement
-        | JavaKind::DoStatement
-        | JavaKind::LabeledStatement
-        | JavaKind::SynchronizedStatement
-        | JavaKind::YieldStatement => Passthrough,
-
-        // TODO: try-with-resources is the resource-managing sibling of
-        // `try_statement` → TRY. Likely RenameWithMarker(TRY, RESOURCE)
-        // or own semantic. `resource` / `resource_specification` are
-        // its body shape.
-        JavaKind::Resource
-        | JavaKind::ResourceSpecification
-        | JavaKind::TryWithResourcesStatement => Passthrough,
-
-        // TODO: cast expression is `(int)x`; instanceof_expression is
-        // `x instanceof Foo`. Both are conversion-related.
-        JavaKind::CastExpression
-        | JavaKind::InstanceofExpression => Passthrough,
-
         // `update_expression` covers `++x` / `x++` / `--x` / `x--`.
         // Custom dispatch detects prefix-vs-postfix from child order and
         // adds a `<prefix/>` marker for prefix forms (parallels C#'s
         // explicit `prefix_unary_expression` kind).
         JavaKind::UpdateExpression => Custom(transformations::update_expression),
 
-        // TODO: catch_formal_parameter is the variable inside a catch
-        // clause — Rename(PARAMETER); catch_type is the exception type
-        // expression — Rename(TYPE)? `extends_interfaces` is sibling of
-        // `super_interfaces` → IMPLEMENTS; likely Rename(EXTENDS).
-        JavaKind::CatchFormalParameter
-        | JavaKind::CatchType
-        | JavaKind::ExtendsInterfaces => Passthrough,
+        // ---- Control flow (Principle #17 — no underscored names) ------
+        JavaKind::AssertStatement        => Rename(Assert),
+        JavaKind::BreakStatement         => Rename(Break),
+        JavaKind::ContinueStatement      => Rename(Continue),
+        JavaKind::DoStatement            => Rename(Do),
+        JavaKind::LabeledStatement       => Rename(Label),
+        JavaKind::SynchronizedStatement  => Custom(transformations::synchronized_statement),
+        JavaKind::YieldStatement         => Rename(Yield),
 
-        // TODO: literal kinds not yet renamed.
-        //   character_literal → Rename(STRING)? own CHAR semantic?
-        //   class_literal → Rename(TYPE) with marker (`Foo.class`)
-        //   hex_floating_point_literal → Rename(FLOAT)
-        JavaKind::CharacterLiteral
-        | JavaKind::ClassLiteral
-        | JavaKind::HexFloatingPointLiteral => Passthrough,
+        // ---- Try-with-resources ----------------------------------------
+        JavaKind::TryWithResourcesStatement => RenameWithMarker(Try, Resource),
+        JavaKind::ResourceSpecification     => Flatten { distribute_field: None },
 
-        // TODO: array / annotation initializer / element kinds.
-        //   array_initializer → similar to `<call>` arguments?
-        //   element_value_array_initializer → annotation array form
-        //   element_value_pair → key=value annotation argument
-        JavaKind::ArrayInitializer
-        | JavaKind::ElementValueArrayInitializer
-        | JavaKind::ElementValuePair => Passthrough,
+        // ---- Expressions -----------------------------------------------
+        JavaKind::ArrayCreationExpression => RenameWithMarker(New, Array),
+        JavaKind::CastExpression          => Rename(Cast),
+        JavaKind::InstanceofExpression    => Rename(Instanceof),
+        JavaKind::MethodReference         => Rename(Reference),
 
-        // TODO: dimensions (the `[]` after a type) and dimensions_expr
-        // (the size in `new int[5]`). Already in NODES via DIMENSIONS.
-        JavaKind::Dimensions
-        | JavaKind::DimensionsExpr => Passthrough,
+        // ---- Catch / extends -------------------------------------------
+        JavaKind::CatchFormalParameter => Rename(Parameter),
+        JavaKind::CatchType            => Flatten { distribute_field: None },
+        JavaKind::ExtendsInterfaces    => Rename(Extends),
 
-        // TODO: receiver_parameter (instance method's `this` param);
-        // method_reference (`Foo::bar`); inferred_parameters (lambda's
-        // implicit param list); permits (sealed-class permits clause);
-        // static_initializer (static {} block).
-        JavaKind::InferredParameters
-        | JavaKind::MethodReference
-        | JavaKind::Permits
-        | JavaKind::ReceiverParameter
-        | JavaKind::StaticInitializer => Passthrough,
+        // ---- Literals --------------------------------------------------
+        JavaKind::CharacterLiteral       => Rename(Char),
+        JavaKind::ClassLiteral           => RenameWithMarker(Type, Class),
+        JavaKind::HexFloatingPointLiteral => Rename(Float),
 
-        // TODO: string interpolation (Java 21 string templates).
-        //   template_expression → Rename(STRING) with marker?
-        //   string_interpolation → Flatten?
-        //   multiline_string_fragment → Flatten (text block content)
-        //   escape_sequence → Flatten
-        JavaKind::EscapeSequence
-        | JavaKind::MultilineStringFragment
-        | JavaKind::StringInterpolation
-        | JavaKind::TemplateExpression => Passthrough,
+        // ---- Array / annotation initializers ---------------------------
+        JavaKind::ArrayInitializer              => Rename(Array),
+        JavaKind::ElementValueArrayInitializer  => Rename(Array),
+        JavaKind::ElementValuePair              => Rename(Pair),
 
-        // TODO: declaration markers — annotated_type wraps a type with
-        // annotations: `@NonNull String`. Likely Rename(TYPE) with
-        // additional handling.
-        JavaKind::AnnotatedType => Passthrough,
+        // ---- Dimensions ------------------------------------------------
+        JavaKind::DimensionsExpr => Rename(Dimensions),
 
-        // TODO: misc grammar kinds.
-        //   constant_declaration → interface field; Rename(FIELD) with marker?
-        //   asterisk → import wildcard `import java.util.*;`
-        //   wildcard → generic wildcard `<?>`; Rename(GENERIC) with marker?
-        //   record_pattern_body / record_pattern_component → record-pattern subparts
-        JavaKind::Asterisk
-        | JavaKind::ConstantDeclaration
-        | JavaKind::RecordPatternBody
-        | JavaKind::RecordPatternComponent
-        | JavaKind::Wildcard => Passthrough,
+        // ---- Method shapes ---------------------------------------------
+        JavaKind::InferredParameters => Flatten { distribute_field: None },
+        JavaKind::ReceiverParameter  => RenameWithMarker(Parameter, Receiver),
+        JavaKind::StaticInitializer  => RenameWithMarker(Block, Static),
 
-        // ---- Truly raw structural supertypes. Tree-sitter exposes
-        //      these as named kinds for grammar-introspection but they
-        //      almost never appear in parsed output; preserved as
-        //      passthrough for completeness.
+        // ---- String / template interpolation ---------------------------
+        JavaKind::EscapeSequence          => Flatten { distribute_field: None },
+        JavaKind::MultilineStringFragment => Flatten { distribute_field: None },
+        JavaKind::StringInterpolation     => Rename(Interpolation),
+        JavaKind::TemplateExpression      => Rename(Template),
+
+        // ---- Annotation-type (@interface) ------------------------------
+        JavaKind::AnnotatedType                    => Flatten { distribute_field: None },
+        JavaKind::AnnotationTypeBody               => Flatten { distribute_field: None },
+        JavaKind::AnnotationTypeDeclaration        => RenameWithMarker(Interface, Annotation),
+        JavaKind::AnnotationTypeElementDeclaration => Rename(Method),
+
+        // ---- Patterns --------------------------------------------------
+        JavaKind::UnderscorePattern     => RenameWithMarker(Pattern, Wildcard),
+        JavaKind::RecordPatternBody     => Flatten { distribute_field: None },
+        JavaKind::RecordPatternComponent => Flatten { distribute_field: None },
+
+        // ---- Interface constants / misc --------------------------------
+        JavaKind::ConstantDeclaration => Rename(Field),
+
+        // ---- Module-info (Java 9+ JPMS) --------------------------------
+        JavaKind::ModuleDeclaration       => Rename(Module),
+        JavaKind::ModuleBody              => Flatten { distribute_field: None },
+        JavaKind::ModuleDirective         => Flatten { distribute_field: None },
+        JavaKind::ExportsModuleDirective  => RenameWithMarker(Directive, Exports),
+        JavaKind::OpensModuleDirective    => RenameWithMarker(Directive, Opens),
+        JavaKind::ProvidesModuleDirective => RenameWithMarker(Directive, Provides),
+        JavaKind::RequiresModuleDirective => RenameWithMarker(Directive, Requires),
+        JavaKind::UsesModuleDirective     => RenameWithMarker(Directive, Uses),
+        JavaKind::RequiresModifier        => Flatten { distribute_field: None },
+
+        // ---- Passthrough — single-word names (no underscore) ----------
+        // `permits` (sealed-class clause) — single-word OK.
+        // `asterisk` (import wildcard) — single-word OK.
+        // `dimensions` (bare `[]` suffix) — single-word OK.
+        JavaKind::Permits | JavaKind::Asterisk | JavaKind::Dimensions => Passthrough,
+
+        // `resource` (try-with-resources variable) — like a variable declaration.
+        // Named to avoid clash with the `Resource` marker on `<try[resource]>`.
+        JavaKind::Resource => Rename(Variable),
+        // `wildcard` (generic `<?>`, `<? extends T>`) — type-level wildcard.
+        // Reuses Generic since it's a type argument. Avoids clash with
+        // the `Wildcard` marker used for `underscore_pattern`.
+        JavaKind::Wildcard => Rename(Generic),
+
+        // ---- Structural supertypes (single-word, almost never in output)
         JavaKind::Declaration
         | JavaKind::Expression
-        | JavaKind::PrimaryExpression
         | JavaKind::Statement => Passthrough,
+        // PrimaryExpression has an underscore — flatten instead of passthrough.
+        JavaKind::PrimaryExpression => Flatten { distribute_field: None },
     }
 }

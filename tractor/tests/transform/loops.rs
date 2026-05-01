@@ -11,16 +11,13 @@
 //!   range — disambiguated by children).
 //! - TypeScript uses a single `<for>` for C-style, `for...of`,
 //!   and `for...in`.
-//! - Java and TypeScript currently leak `do_statement` as a raw
-//!   tree-sitter kind for `do { … } while (…)`. C#'s do-while
-//!   does render as `<do>`. PHP renders it as `<do>`.
-//!
+
 //! Inner-shape conventions (cross-language inconsistencies pinned
 //! here on purpose so a future unification surfaces deliberately):
 //!
 //! - C-style `for`: initialisation + `<condition>` + update + body.
 //!   The update is `<unary>` in C# and TypeScript (operator
-//!   extracted), `<update_expression>` raw in Java and PHP, and
+//!   extracted), `<update_expression>` raw in PHP, and
 //!   `<assign>` in Go's `i = i + 1` form.
 //! - Iteration (`foreach` / `for...of` / `for...in` / `for x in
 //!   xs`): three different binding+iterable shapes are in use:
@@ -31,8 +28,8 @@
 //! - `while`: `<condition>` + `<body>`. C# / TypeScript / PHP
 //!   wrap the body in `<block>`; Python / Ruby / Rust / Go do
 //!   not.
-//! - `do`-`while`: body precedes condition; C# uses `<do>`, Java
-//!   and TypeScript leak `<do_statement>`.
+//! - `do`-`while`: body precedes condition; all languages render
+//!   as `<do>`.
 
 use crate::support::semantic::*;
 
@@ -55,7 +52,7 @@ fn java() {
             //method[name='run']/body
                 [for]
                 [while]
-                [do_statement]
+                [do]
                 [foreach]
         "#),
         1);
@@ -76,9 +73,9 @@ fn java() {
         "//while[condition/expression/name='running'][body]",
         1);
 
-    claim("Java do-while leaks <do_statement>; body precedes the condition",
+    claim("Java do-while: body precedes the condition",
         &mut tree,
-        "//do_statement[body][condition/expression/name='running']",
+        "//do[body][condition/expression/name='running']",
         1);
 
     claim("Java foreach uses <name> + <value> (no <left>/<right>) for the binding and iterable",

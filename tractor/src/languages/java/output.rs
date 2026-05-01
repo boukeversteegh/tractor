@@ -22,22 +22,35 @@ pub enum TractorNode {
     // Control flow
     Return, If, Else, ElseIf, For, Foreach, While, Try, Catch, Finally, Throw, Throws,
     Switch, Arm, Label, Case, Pattern, Guard, Body,
+    // Control flow additions
+    Assert, Block, Break, Continue, Do, Instanceof, Yield,
     // Expressions
     Call, New, Member, Index, Assign, Binary, Unary, Lambda, Ternary, Annotation, Expression,
+    // Expression additions
+    Cast, Reference,
     // Imports (Package dual-use)
     Import, Package,
+    // Module (Module + Directive container; Exports/Opens/Provides/Requires/Uses markers)
+    Directive, Module,
+    Exports, Opens, Provides, Requires, Uses,
     // Literals
-    String, Int, Float, True, False, Null,
+    String, Int, Float, True, False, Null, Char,
+    // String interpolation (Template dual-use; Interpolation container)
+    Template, Interpolation,
+    // Array / annotation containers
+    Pair,
     // Identifiers / comments / op
     Name, Comment, Op,
     // Comment markers
     Trailing, Leading,
     // Access modifiers (markers only)
     Public, Private, Protected,
-    // Other modifiers (markers only)
+    // Other modifiers (markers only — Synchronized dual-use: marker on method + container for stmt)
     Static, Final, Abstract, Synchronized, Volatile, Transient, Native, Strictfp,
-    // Special markers (This dual-use)
+    // Special markers (This dual-use; Array dual-use; Class dual-use for class_literal)
     Void, This, Super, Array, Variadic, Compact,
+    // New markers
+    Receiver, Resource, Wildcard,
     // Unary-shape marker
     Prefix,
 }
@@ -61,28 +74,39 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading                                          => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
-            | Self::Static | Self::Final | Self::Abstract | Self::Synchronized
+            | Self::Static | Self::Final | Self::Abstract
             | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp
             | Self::Super                                                           => (true, false, Keyword),
-            Self::Array                                                             => (true, false, Type),
-            Self::Void | Self::Variadic | Self::Compact | Self::Prefix              => (true, false, Default),
+            Self::Void | Self::Variadic | Self::Compact | Self::Prefix
+            | Self::Receiver | Self::Resource | Self::Wildcard
+            | Self::Exports | Self::Opens | Self::Provides | Self::Requires | Self::Uses => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Record                                                            => (true, true, Default),
             Self::Type                                                              => (true, true, Type),
             Self::Package | Self::This                                              => (true, true, Keyword),
+            // Class: container for class_declaration + marker for class_literal
+            // Synchronized: marker on method + container for synchronized_statement
+            Self::Class | Self::Synchronized                                        => (true, true, Keyword),
+            // Array: marker on <type> / <pattern> + container for array_initializer
+            Self::Array                                                             => (true, true, Type),
+            // Template: container for template_expression + marker (dual-use like TS)
+            Self::Template                                                          => (true, true, Default),
 
             // ---- Containers with non-default syntax --------------------------
-            Self::Class | Self::Interface | Self::Enum | Self::Method | Self::Field
+            Self::Interface | Self::Enum | Self::Method | Self::Field
             | Self::Parameter | Self::Import
             | Self::Return | Self::If | Self::Else | Self::For | Self::Foreach
             | Self::While | Self::Try | Self::Catch | Self::Finally | Self::Throw
             | Self::Switch | Self::Case | Self::New
-            | Self::True | Self::False | Self::Null                                 => (false, true, Keyword),
+            | Self::True | Self::False | Self::Null
+            | Self::Assert | Self::Break | Self::Continue | Self::Do
+            | Self::Instanceof | Self::Module | Self::Yield                         => (false, true, Keyword),
             Self::Generic                                                           => (false, true, Type),
             Self::Call | Self::Lambda                                               => (false, true, Function),
-            Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op    => (false, true, Operator),
-            Self::String                                                            => (false, true, String),
+            Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op
+            | Self::Cast                                                            => (false, true, Operator),
+            Self::String | Self::Char                                               => (false, true, String),
             Self::Int | Self::Float                                                 => (false, true, Number),
             Self::Name                                                              => (false, true, Identifier),
             Self::Comment                                                           => (false, true, Comment),

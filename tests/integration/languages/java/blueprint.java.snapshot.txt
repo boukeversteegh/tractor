@@ -266,15 +266,207 @@ program/
   │                   │       ├─ op/compare[less]
   │                   │       └─ right/expression/int = "0"
   │                   └─ then/throw/new/type/name = "IllegalArgumentException"
+  ├─ class[package]/
+  │   ├─ name = "Base"
+  │   └─ body/method[package]/
+  │       ├─ returns/type/name = "String"
+  │       ├─ name = "greet"
+  │       └─ body/return/expression/call/
+  │           ├─ name = "String"
+  │           ├─ name = "format"
+  │           ├─ string = "\"hello from %s\""
+  │           └─ call/
+  │               ├─ call/name = "getClass"
+  │               └─ name = "getSimpleName"
+  ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
+  ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
+  ├─ interface[annotation]/
+  │   ├─ name = "Config"
+  │   └─ body/
+  │       ├─ method/
+  │       │   ├─ type/name = "String"
+  │       │   ├─ name = "value"
+  │       │   └─ value/expression/string = "\"default\""
+  │       └─ method/
+  │           ├─ type/name = "int"
+  │           ├─ name = "timeout"
+  │           └─ value/expression/int = "30"
+  ├─ comment[leading] = "/** Static initializer + try-with-resources + labeled loops + misc. */"
   └─ class[package]/
-      ├─ name = "Base"
-      └─ body/method[package]/
-          ├─ returns/type/name = "String"
-          ├─ name = "greet"
-          └─ body/return/expression/call/
-              ├─ name = "String"
-              ├─ name = "format"
-              ├─ string = "\"hello from %s\""
-              └─ call/
-                  ├─ call/name = "getClass"
-                  └─ name = "getSimpleName"
+      ├─ name = "Extras"
+      └─ body/
+          ├─ field[package and static and final]/
+          │   ├─ type/name = "int"
+          │   └─ declarator/name = "SEED"
+          ├─ block[static]/expression/assign/
+          │   ├─ left/expression/name = "SEED"
+          │   ├─ op = "="
+          │   └─ right/expression/int = "42"
+          ├─ comment[leading] = "/** Array initializer, char literal, class literal, method reference. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "literals"
+          │   └─ body/
+          │       ├─ variable/
+          │       │   ├─ type[array]/
+          │       │   │   ├─ type/name = "int"
+          │       │   │   └─ dimensions = "[]"
+          │       │   └─ declarator/
+          │       │       ├─ name = "arr"
+          │       │       └─ value/expression/array/
+          │       │           ├─ int = "1"
+          │       │           ├─ int = "2"
+          │       │           └─ int = "3"
+          │       ├─ variable/
+          │       │   ├─ type/name = "char"
+          │       │   └─ declarator/
+          │       │       ├─ name = "ch"
+          │       │       └─ value/expression/char = "'A'"
+          │       ├─ variable/
+          │       │   ├─ type[generic]/
+          │       │   │   ├─ name = "Class"
+          │       │   │   └─ generic = "?"
+          │       │   └─ declarator/
+          │       │       ├─ name = "cls"
+          │       │       └─ value/expression/type[class]/type/name = "String"
+          │       └─ variable/
+          │           ├─ type[generic]/
+          │           │   ├─ name = "java.util.function.Function"
+          │           │   ├─ type/name = "Object"
+          │           │   └─ type/name = "String"
+          │           └─ declarator/
+          │               ├─ name = "ref"
+          │               └─ value/expression/reference/
+          │                   ├─ name = "String"
+          │                   └─ name = "valueOf"
+          ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "controlFlow"
+          │   ├─ parameter/
+          │   │   ├─ type/name = "Object"
+          │   │   └─ name = "o"
+          │   └─ body/
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "n"
+          │       │       └─ value/expression/cast/
+          │       │           ├─ type/name = "int"
+          │       │           └─ value/expression/int = "0L"
+          │       ├─ assert/
+          │       │   ├─ binary/
+          │       │   │   ├─ left/expression/name = "n"
+          │       │   │   ├─ op/compare[greater and or-equal]
+          │       │   │   └─ right/expression/int = "0"
+          │       │   └─ string = "\"non-negative\""
+          │       ├─ variable/
+          │       │   ├─ type/name = "boolean"
+          │       │   └─ declarator/
+          │       │       ├─ name = "isStr"
+          │       │       └─ value/expression/instanceof/
+          │       │           ├─ left/expression/name = "o"
+          │       │           └─ right/expression/type/name = "String"
+          │       ├─ label/
+          │       │   ├─ name = "outer"
+          │       │   └─ for/
+          │       │       ├─ variable/
+          │       │       │   ├─ type/name = "int"
+          │       │       │   └─ declarator/
+          │       │       │       ├─ name = "i"
+          │       │       │       └─ value/expression/int = "0"
+          │       │       ├─ condition/expression/binary/
+          │       │       │   ├─ left/expression/name = "i"
+          │       │       │   ├─ op/compare[less]
+          │       │       │   └─ right/expression/int = "5"
+          │       │       ├─ unary/
+          │       │       │   ├─ name = "i"
+          │       │       │   └─ op[increment] = "++"
+          │       │       └─ body/
+          │       │           ├─ if/
+          │       │           │   ├─ condition/expression/binary/
+          │       │           │   │   ├─ left/expression/name = "i"
+          │       │           │   │   ├─ op[equals] = "=="
+          │       │           │   │   └─ right/expression/int = "1"
+          │       │           │   └─ then/continue/name = "outer"
+          │       │           └─ if/
+          │       │               ├─ condition/expression/binary/
+          │       │               │   ├─ left/expression/name = "i"
+          │       │               │   ├─ op[equals] = "=="
+          │       │               │   └─ right/expression/int = "3"
+          │       │               └─ then/break/name = "outer"
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "k"
+          │       │       └─ value/expression/int = "0"
+          │       └─ do/
+          │           ├─ body/expression/unary/
+          │           │   ├─ name = "k"
+          │           │   └─ op[increment] = "++"
+          │           └─ condition/expression/binary/
+          │               ├─ left/expression/name = "k"
+          │               ├─ op/compare[less]
+          │               └─ right/expression/int = "3"
+          ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
+          ├─ method[package]/
+          │   ├─ returns/type[void]/name = "void"
+          │   ├─ name = "resources"
+          │   ├─ throws/type/name = "Exception"
+          │   └─ body/
+          │       ├─ try[resource]/
+          │       │   ├─ variable/
+          │       │   │   ├─ path/
+          │       │   │   │   ├─ path/
+          │       │   │   │   │   ├─ type/name = "java"
+          │       │   │   │   │   └─ type/name = "io"
+          │       │   │   │   └─ type/name = "InputStream"
+          │       │   │   ├─ name = "s"
+          │       │   │   └─ value/expression/null = "null"
+          │       │   ├─ body/if/
+          │       │   │   ├─ condition/expression/binary/
+          │       │   │   │   ├─ left/expression/name = "s"
+          │       │   │   │   ├─ op[equals] = "=="
+          │       │   │   │   └─ right/expression/null = "null"
+          │       │   │   └─ then/throw/new/path/
+          │       │   │       ├─ path/
+          │       │   │       │   ├─ type/name = "java"
+          │       │   │       │   └─ type/name = "io"
+          │       │   │       └─ type/name = "IOException"
+          │       │   └─ catch/
+          │       │       ├─ parameter/
+          │       │       │   ├─ path/
+          │       │       │   │   ├─ path/
+          │       │       │   │   │   ├─ type/name = "java"
+          │       │       │   │   │   └─ type/name = "io"
+          │       │       │   │   └─ type/name = "IOException"
+          │       │       │   ├─ type/name = "RuntimeException"
+          │       │       │   └─ name = "e"
+          │       │       └─ body/throw/name = "e"
+          │       └─ synchronized/
+          │           ├─ this = "this"
+          │           └─ body/expression/name = "SEED"
+          ├─ comment[leading] = "/** Yield in block-switch + switch with underscore/record pattern. */"
+          └─ method[package]/
+              ├─ returns/type/name = "int"
+              ├─ name = "yieldDemo"
+              ├─ parameter/
+              │   ├─ type/name = "Object"
+              │   └─ name = "o"
+              └─ body/
+                  ├─ variable/
+                  │   ├─ type/name = "int"
+                  │   └─ declarator/
+                  │       ├─ name = "v"
+                  │       └─ value/expression/switch/
+                  │           ├─ condition/expression/name = "o"
+                  │           └─ body/body/
+                  │               ├─ arm/
+                  │               │   ├─ label/pattern/pattern[type]/
+                  │               │   │   ├─ type/name = "Integer"
+                  │               │   │   └─ name = "i"
+                  │               │   └─ expression/name = "i"
+                  │               └─ arm/
+                  │                   ├─ label = "default"
+                  │                   └─ yield/int = "0"
+                  └─ return/expression/name = "v"

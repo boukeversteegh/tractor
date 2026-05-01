@@ -666,9 +666,9 @@ program/
   │   ├─ parameter[required]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "unknown"
-  │   ├─ returns/predicate/asserts/type_predicate/
-  │   │   ├─ name/identifier = "x"
-  │   │   └─ predefined_type = "number"
+  │   ├─ returns/predicate[asserts]/
+  │   │   ├─ name = "x"
+  │   │   └─ type/name = "number"
   │   └─ body/block/if/
   │       ├─ condition/expression/binary/
   │       │   ├─ left/expression/unary/

@@ -139,6 +139,34 @@ pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
     Ok(TransformAction::Continue)
 }
 
+/// `synchronized_statement` — `synchronized (lock) { ... }`. The
+/// parenthesized_expression wrapper around the lock expression is a
+/// tree-sitter grammar artifact; skip it (inline its content) before
+/// renaming to `<synchronized>`. Direct Skip-inside-Flatten causes a
+/// freed-node panic in the xot walker when the only text sibling of
+/// parenthesized_expression is the keyword "synchronized".
+pub fn synchronized_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    // Find and inline the parenthesized_expression child.
+    let children: Vec<XotNode> = xot.children(node).collect();
+    for child in children {
+        if get_kind(xot, child).as_deref() != Some("parenthesized_expression") {
+            continue;
+        }
+        // Promote element children of paren_expr before it, drop the wrapper.
+        let paren_children: Vec<XotNode> = xot.children(child)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for pc in paren_children {
+            xot.detach(pc)?;
+            xot.insert_before(child, pc)?;
+        }
+        xot.detach(child)?;
+        break;
+    }
+    xot.with_renamed(node, Synchronized);
+    Ok(TransformAction::Continue)
+}
+
 /// `if_statement` — Java's tree-sitter doesn't emit an `else_clause`
 /// wrapper: the `alternative` field of an if_statement points directly
 /// at the nested if_statement (for `else if`) or a block (for final
