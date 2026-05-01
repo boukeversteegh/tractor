@@ -410,21 +410,25 @@ file/
   │   └─ body/switch[type]/
   │       ├─ name = "v"
   │       ├─ value/expression/name = "x"
-  │       ├─ type/name = "nil"
-  │       ├─ return/expression/string = "\"nil\""
-  │       ├─ type/name = "int"
-  │       ├─ type/name = "int32"
-  │       ├─ type/name = "int64"
-  │       ├─ return/expression/string = "\"int-ish\""
-  │       ├─ type/name = "string"
-  │       ├─ return/expression/binary/
-  │       │   ├─ left/expression/string = "\"string:\""
-  │       │   ├─ op[plus] = "+"
-  │       │   └─ right/expression/name = "v"
-  │       ├─ type/name = "Stringer"
-  │       ├─ return/expression/call/member/
-  │       │   ├─ name = "v"
-  │       │   └─ name = "String"
+  │       ├─ case/
+  │       │   ├─ type/name = "nil"
+  │       │   └─ return/expression/string = "\"nil\""
+  │       ├─ case/
+  │       │   ├─ type/name = "int"
+  │       │   ├─ type/name = "int32"
+  │       │   ├─ type/name = "int64"
+  │       │   └─ return/expression/string = "\"int-ish\""
+  │       ├─ case/
+  │       │   ├─ type/name = "string"
+  │       │   └─ return/expression/binary/
+  │       │       ├─ left/expression/string = "\"string:\""
+  │       │       ├─ op[plus] = "+"
+  │       │       └─ right/expression/name = "v"
+  │       ├─ case/
+  │       │   ├─ type/name = "Stringer"
+  │       │   └─ return/expression/call/member/
+  │       │       ├─ name = "v"
+  │       │       └─ name = "String"
   │       └─ default/return/expression/call/
   │           ├─ member/
   │           │   ├─ name = "fmt"

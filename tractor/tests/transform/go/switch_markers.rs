@@ -19,7 +19,7 @@ fn go() {
             //switch
                 [type]
                 [value/expression/name='x']
-                [type/name='int']
+                [case/type/name='int']
         "#),
         1);
 

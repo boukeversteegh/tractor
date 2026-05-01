@@ -55,7 +55,6 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         | GoKind::TypeElem
         | GoKind::TypeConstraint
         | GoKind::QualifiedType
-        | GoKind::TypeCase
         | GoKind::InterpretedStringLiteralContent
         | GoKind::RawStringLiteralContent
         | GoKind::EscapeSequence => Flatten { distribute_field: None },
@@ -148,6 +147,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // `expression_case` joins `communication_case → Case` and
         // `default_case → Default` under `<case>`.
         GoKind::ExpressionCase => Rename(Case),
+        GoKind::TypeCase       => Rename(Case),
 
         // Parens are pure grouping with no semantic content; flatten
         // so the inner expression / type bubbles up. Matches the
