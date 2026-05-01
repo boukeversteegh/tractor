@@ -394,10 +394,10 @@ program/
   │       ├─ variable[const]/
   │       │   ├─ name = "spread"
   │       │   └─ value/expression/object/
-  │       │       ├─ spread/object/name = "scale"
-  │       │       ├─ name = "label"
-  │       │       ├─ name = "head"
-  │       │       └─ name = "rest"
+  │       │       ├─ spread/object/pair/name = "scale"
+  │       │       ├─ pair/name = "label"
+  │       │       ├─ pair/name = "head"
+  │       │       └─ pair/name = "rest"
   │       ├─ variable[const]/
   │       │   ├─ name = "msg"
   │       │   └─ value/expression/as/

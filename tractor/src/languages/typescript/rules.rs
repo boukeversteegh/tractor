@@ -170,7 +170,11 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::RestPattern               => Rename(Rest),
         TsKind::ReturnStatement           => RenameStripKeyword(Return, "return"),
         TsKind::SatisfiesExpression       => Rename(Satisfies),
-        TsKind::ShorthandPropertyIdentifier => Rename(Name),
+        // `{ x }` shorthand object property — semantically equivalent
+        // to `{ x: x }`. Wrap in `<pair>` with `<name>` for the key
+        // so the shape matches structured pairs (Principle #5
+        // within-language unification).
+        TsKind::ShorthandPropertyIdentifier => Custom(transformations::shorthand_property_identifier),
         TsKind::ShorthandPropertyIdentifierPattern => Rename(Name),
         TsKind::SpreadElement             => Rename(Spread),
         TsKind::StatementBlock            => Rename(Block),

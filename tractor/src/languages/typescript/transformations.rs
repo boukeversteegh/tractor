@@ -15,7 +15,7 @@ use super::input::TsKind;
 use super::output::TractorNode::{
     self, Abstract, Alias, Arrow, Asserts, Async, Await, Comment as CommentName, Const, Default,
     Else, Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method,
-    Name, NonNull, Optional, Override, Parameter, Predicate, Prefix, Private, Property,
+    Name, NonNull, Optional, Override, Pair, Parameter, Predicate, Prefix, Private, Property,
     Protected, Public, Readonly, Required, Set, Static, Ternary, Trailing, Type, Unary,
     Var, Variable,
 };
@@ -389,6 +389,45 @@ pub fn abstract_method_signature(
     }
     xot.with_renamed(node, Method)
         .with_prepended_marker(node, Abstract)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `shorthand_property_identifier` — `{ x }` is shorthand for
+/// `{ x: x }`. Wrap in `<pair><name>x</name></pair>` so the shape
+/// matches structured pairs (within-language Principle #5).
+///
+/// Caveat: tree-sitter also uses this kind for the `x` inside
+/// `{ ...x }` (spread within an object literal). Pair-wrapping
+/// would mislabel a spread target as a key/value pair, so detect
+/// the spread parent context and rename only to `<name>` there.
+pub fn shorthand_property_identifier(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    // Walk up: if any ancestor between us and the enclosing object
+    // literal is a `spread_element`, treat as a name (no pair wrap).
+    let mut cur = get_parent(xot, node);
+    let mut in_spread = false;
+    while let Some(p) = cur {
+        let kind = get_kind(xot, p).and_then(|k| k.parse::<TsKind>().ok());
+        match kind {
+            Some(TsKind::SpreadElement) => { in_spread = true; break; }
+            Some(TsKind::Object | TsKind::ObjectPattern) => break,
+            _ => cur = get_parent(xot, p),
+        }
+    }
+    if in_spread {
+        xot.with_renamed(node, Name);
+        return Ok(TransformAction::Continue);
+    }
+    let text = get_text_content(xot, node).unwrap_or_default().trim().to_string();
+    xot.with_only_text(node, "")?;
+    let name_elt = xot.add_name(Name.as_str());
+    let name_node = xot.new_element(name_elt);
+    xot.append(node, name_node)?;
+    let text_node = xot.new_text(&text);
+    xot.append(name_node, text_node)?;
+    xot.with_renamed(node, Pair);
     Ok(TransformAction::Continue)
 }
 
