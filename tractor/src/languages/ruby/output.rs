@@ -51,6 +51,8 @@ pub enum TractorNode {
     Block,
     // Pattern / argument / parameter / string shape markers (iter 15)
     Alternative, As, Find, Test, Forward, Destructured, Concatenated, Static, End,
+    // Safe-navigation marker on `<call>` / `<member>` for `a&.b`.
+    Optional,
 }
 
 impl TractorNode {
@@ -76,7 +78,8 @@ impl TractorNode {
             | Self::List | Self::Dict | Self::Delimited | Self::Singleton           => (true, false, Default),
             Self::Keyword | Self::Default | Self::Splat | Self::Kwsplat             => (true, false, Default),
             Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward
-            | Self::Destructured | Self::Concatenated | Self::Static | Self::End    => (true, false, Default),
+            | Self::Destructured | Self::Concatenated | Self::Static | Self::End
+            | Self::Optional                                                        => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Begin | Self::Do                                                  => (true, true, Keyword),

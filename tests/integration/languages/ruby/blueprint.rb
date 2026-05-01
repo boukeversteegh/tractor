@@ -179,6 +179,10 @@ end
 
 (a, b) = [10, 20]
 
+# Safe-navigation operator `&.` — `<call[optional]>` shape parallels
+# C# `?.` so cross-language `//call[optional]` finds either form.
+maybe = obj&.method(arg)
+
 END {
   puts "shutting down"
 }

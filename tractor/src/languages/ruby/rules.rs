@@ -67,7 +67,12 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::Begin               => Rename(Begin),
         RubyKind::Binary              => ExtractOpThenRename(Binary),
         RubyKind::Unary               => ExtractOpThenRename(Unary),
-        RubyKind::Call                => Rename(Call),
+        // `Call` covers both `obj.method` and `obj&.method` (safe-nav).
+        // Custom inspects text for `&.` to add `<optional/>` marker so
+        // cross-language `//call[optional]` / `//member[optional]`
+        // queries find Ruby safe-navigation (matches C# `?.` shape from
+        // iter 57; closes the residual item from todo/37).
+        RubyKind::Call                => Custom(transformations::call_expression),
         RubyKind::Case                => Rename(Case),
         RubyKind::Class               => Rename(Class),
         RubyKind::ClassVariable       => Rename(Name),

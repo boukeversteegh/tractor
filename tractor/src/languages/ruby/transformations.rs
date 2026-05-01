@@ -9,7 +9,24 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
-use super::output::TractorNode::{self, Comment as CommentName, Leading, Name, Parameter, Trailing};
+use super::output::TractorNode::{
+    self, Call, Comment as CommentName, Leading, Name, Optional, Parameter, Trailing,
+};
+
+/// `call` — `obj.method(...)` or `obj&.method(...)` (safe-navigation).
+/// Tree-sitter Ruby uses ONE kind for both; the only difference is
+/// the operator text (`.` vs `&.`). Detect `&.` and add an
+/// `<optional/>` marker so cross-language `//call[optional]` finds
+/// Ruby safe-navigation (matches C# `?.` shape from iter 57).
+pub fn call_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    let is_safe_nav = texts.iter().any(|t| t.contains("&."));
+    if is_safe_nav {
+        xot.with_prepended_marker_from(node, Optional, node)?;
+    }
+    xot.with_renamed(node, Call);
+    Ok(TransformAction::Continue)
+}
 
 /// `method_parameters` / `block_parameters` / `lambda_parameters` —
 /// wrap bare `identifier` children in `<parameter>` so cross-language

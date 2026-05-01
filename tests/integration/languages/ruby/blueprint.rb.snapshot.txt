@@ -531,6 +531,13 @@ program/
   │   └─ right/expression/array/
   │       ├─ int = "10"
   │       └─ int = "20"
+  ├─ comment[leading] = "# Safe-navigation operator `&.` — `<call[optional]>` shape parallels\n# C# `?.` so cross-language `//call[optional]` finds either form."
+  ├─ assign/
+  │   ├─ left/expression/name = "maybe"
+  │   └─ right/expression/call[optional]/
+  │       ├─ name = "obj"
+  │       ├─ name = "method"
+  │       └─ name = "arg"
   └─ block[end]/call/
       ├─ name = "puts"
       └─ string = "\"shutting down\""
