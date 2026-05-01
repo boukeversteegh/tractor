@@ -462,7 +462,7 @@ program/
   │       │       └─ right/expression/string = "\"ready\""
   │       ├─ switch/
   │       │   ├─ value/expression/name = "status"
-  │       │   └─ body/body/
+  │       │   └─ body/
   │       │       ├─ case/
   │       │       │   ├─ value/expression/string = "\"ready\""
   │       │       │   └─ body[break] = "break"

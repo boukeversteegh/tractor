@@ -171,7 +171,9 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::ReturnStatement                => RenameStripKeyword(Return, "return"),
         CsKind::SelectClause                   => Rename(Select),
         CsKind::StringLiteral                  => Rename(String),
-        CsKind::SwitchBody                     => Rename(Body),
+        // `switch_statement.body` field already wraps this in <body>;
+        // flatten avoids double-nested <body><body>...</body></body>.
+        CsKind::SwitchBody                     => Flatten { distribute_field: None },
         CsKind::SwitchExpression               => Rename(Switch),
         CsKind::SwitchExpressionArm            => Rename(Arm),
         CsKind::SwitchSection                  => Rename(Section),

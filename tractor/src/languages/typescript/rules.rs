@@ -176,7 +176,9 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::StatementBlock            => Rename(Block),
         TsKind::String                    => Rename(String),
         TsKind::SubscriptExpression       => Rename(Index),
-        TsKind::SwitchBody                => Rename(Body),
+        // `switch_statement.body` field already wraps this in <body>;
+        // flatten avoids double-nested <body><body>...</body></body>.
+        TsKind::SwitchBody                => Flatten { distribute_field: None },
         TsKind::SwitchCase                => Rename(Case),
         TsKind::SwitchDefault             => Rename(Default),
         TsKind::SwitchStatement           => Rename(Switch),

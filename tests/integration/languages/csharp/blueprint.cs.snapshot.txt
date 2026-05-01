@@ -461,7 +461,7 @@ unit/
   │                   │       └─ expression[non_null]/name = "widget"
   │                   ├─ switch/
   │                   │   ├─ value/expression/name = "token"
-  │                   │   └─ body/body/
+  │                   │   └─ body/
   │                   │       ├─ section[break]/
   │                   │       │   ├─ pattern[declaration]/
   │                   │       │   │   ├─ type/name = "Widget"
