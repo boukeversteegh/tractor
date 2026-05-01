@@ -376,10 +376,9 @@ file/
   │   ├─ ref/name = "Orders"
   │   └─ constraint/
   │       ├─ name = "fk_customer"
-  │       └─ constraint/
-  │           ├─ columns/column/name = "CustomerID"
-  │           ├─ ref/name = "Customers"
-  │           └─ name = "ID"
+  │       ├─ columns/column/name = "CustomerID"
+  │       ├─ ref/name = "Customers"
+  │       └─ name = "ID"
   └─ statement/alter/
       ├─ ref/name = "Orders"
       └─ drop/name = "fk_customer"

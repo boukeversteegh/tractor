@@ -559,6 +559,12 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
 
         // Constraint operations.
         TsqlKind::AddConstraint       => Rename(Constraint),
+        // The inner `constraint` body (FOREIGN KEY/PRIMARY KEY/CHECK/...)
+        // would re-emit `<constraint>`, producing nested
+        // `<constraint><constraint>...</constraint></constraint>` under
+        // `ADD CONSTRAINT`. Flatten so its keywords/columns/references
+        // lift into the outer `<constraint>`.
+        TsqlKind::Constraint          => Flatten { distribute_field: None },
 
         // Column operations within ALTER TABLE.
         TsqlKind::ChangeColumn
@@ -627,7 +633,6 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         TsqlKind::Array
         | TsqlKind::Bang
         | TsqlKind::Block
-        | TsqlKind::Constraint
         | TsqlKind::Constraints
         | TsqlKind::Enum
         | TsqlKind::Limit
