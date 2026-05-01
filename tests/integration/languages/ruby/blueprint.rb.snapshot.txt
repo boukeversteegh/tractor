@@ -194,15 +194,21 @@ program/
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "data"
   │                       │   └─ right/expression/hash/
-  │                       │       ├─ pair/value/expression/name = "@id"
-  │                       │       ├─ pair/value/expression/name = "@name"
+  │                       │       ├─ pair/
+  │                       │       │   ├─ name = "id"
+  │                       │       │   └─ value/expression/name = "@id"
+  │                       │       ├─ pair/
+  │                       │       │   ├─ name = "name"
+  │                       │       │   └─ value/expression/name = "@name"
   │                       │       └─ pair/
   │                       │           ├─ string = "'legacy'"
   │                       │           └─ value/expression/true = "true"
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "rocket"
   │                       │   └─ right/expression/hash/
-  │                       │       ├─ pair/value/expression/int = "1"
+  │                       │       ├─ pair/
+  │                       │       │   ├─ symbol = "foo"
+  │                       │       │   └─ value/expression/int = "1"
   │                       │       └─ pair/
   │                       │           ├─ symbol[delimited] = ":\"hello world\""
   │                       │           └─ value/expression/int = "2"
@@ -219,7 +225,9 @@ program/
   │                       │   ├─ left/expression/name = "merged"
   │                       │   └─ right/expression/hash/
   │                       │       ├─ spread[dict]/name = "data"
-  │                       │       └─ pair/value/expression/nil = "nil"
+  │                       │       └─ pair/
+  │                       │           ├─ name = "extra"
+  │                       │           └─ value/expression/nil = "nil"
   │                       └─ expression/array/
   │                           ├─ name = "data"
   │                           ├─ name = "rocket"

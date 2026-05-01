@@ -1551,6 +1551,77 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["body", "then", "else"],
         RUBY_VALUE_KINDS,
     )?;
+    ruby_extract_pair_keys(xot, root)?;
+    Ok(())
+}
+
+/// Within-language Principle #5: every Ruby pair should expose its
+/// key as a structured child (not bare text). Three source forms:
+///   1. `id: value`     — key is shorthand symbol; tree-sitter emits
+///                         `"id:"` as a single text leaf.
+///   2. `'k' => value`  — key is a string literal; the `=>` is a
+///                         bare text leaf between key and value.
+///   3. `:foo => value` — key is an explicit symbol; tree-sitter
+///                         emits `":foo =>"` as a single text leaf.
+///
+/// Extract the key into a proper `<name>` (form 1) or `<symbol>`
+/// (form 3) element, and strip the `=>` text (form 2). Source-text
+/// preservation is given up for queryability — Ruby pairs become
+/// uniformly `<pair><name|symbol|string>K</...><value>V</value></pair>`.
+fn ruby_extract_pair_keys(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    let mut pairs: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "pair", &mut pairs);
+
+    for pair in pairs {
+        // Inspect text leaves and strip arrow-only ones.
+        let children: Vec<XotNode> = xot.children(pair).collect();
+        for child in &children {
+            let trimmed = match xot.text_str(*child) {
+                Some(t) => t.trim().to_string(),
+                None => continue,
+            };
+            // Form 2: bare `=>` text — strip.
+            if trimmed == "=>" {
+                xot.detach(*child)?;
+                continue;
+            }
+            // Form 3: ":foo =>" — extract symbol foo, strip arrow.
+            if trimmed.starts_with(':') && trimmed.ends_with("=>") {
+                let key_part = trimmed
+                    .trim_start_matches(':')
+                    .trim_end_matches("=>")
+                    .trim()
+                    .to_string();
+                if !key_part.is_empty() {
+                    let symbol_elt = xot.add_name("symbol");
+                    let symbol_node = xot.new_element(symbol_elt);
+                    let key_text = xot.new_text(&key_part);
+                    xot.append(symbol_node, key_text)?;
+                    xot.insert_before(*child, symbol_node)?;
+                }
+                xot.detach(*child)?;
+                continue;
+            }
+            // Form 1: "id:" — extract bare name, strip trailing `:`.
+            if trimmed.ends_with(':') && !trimmed.starts_with(':') {
+                let key_part = trimmed
+                    .trim_end_matches(':')
+                    .trim()
+                    .to_string();
+                if !key_part.is_empty() && !key_part.contains(char::is_whitespace) {
+                    let name_elt = xot.add_name("name");
+                    let name_node = xot.new_element(name_elt);
+                    let key_text = xot.new_text(&key_part);
+                    xot.append(name_node, key_text)?;
+                    xot.insert_before(*child, name_node)?;
+                }
+                xot.detach(*child)?;
+                continue;
+            }
+        }
+        let _ = get_element_name;
+    }
     Ok(())
 }
 
