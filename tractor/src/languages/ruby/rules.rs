@@ -95,9 +95,16 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and survives as raw kind name.
 
-        // Already matches our vocabulary.
+        // Bare keyword statements — strip the keyword text leaf so the
+        // element is empty (Principle #2 / #13).
+        RubyKind::Break  => RenameStripKeyword(Break, "break"),
+        RubyKind::Next   => RenameStripKeyword(Next, "next"),
+        RubyKind::Redo   => RenameStripKeyword(Redo, "redo"),
+        RubyKind::Retry  => RenameStripKeyword(Retry, "retry"),
+        RubyKind::Yield  => RenameStripKeyword(Yield, "yield"),
+
+        // Already matches our vocabulary (no text leak in current snapshots).
         RubyKind::Block
-        | RubyKind::Break
         | RubyKind::Conditional
         | RubyKind::Constant
         | RubyKind::Do
@@ -106,21 +113,17 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::In
         | RubyKind::Interpolation
         | RubyKind::Lambda
-        | RubyKind::Next
         | RubyKind::Nil
         | RubyKind::Operator
         | RubyKind::Pair
         | RubyKind::Pattern
         | RubyKind::Range
-        | RubyKind::Redo
         | RubyKind::Regex
-        | RubyKind::Retry
         | RubyKind::Self_
         | RubyKind::Superclass
         | RubyKind::Then
         | RubyKind::True
-        | RubyKind::When
-        | RubyKind::Yield => Passthrough,
+        | RubyKind::When => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates.
@@ -186,13 +189,15 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::RightAssignmentList  => Rename(Right),       // `(a, b) = ...` RHS list
         RubyKind::ScopeResolution      => RenameWithMarker(Member, Static),  // `Foo::Bar`
 
+        // Ruby `return` strips its keyword leaf the same way Break / Next do.
+        RubyKind::Return => RenameStripKeyword(Return, "return"),
+
         // TODO: remaining single-word passthroughs (no underscore violation):
         //   encoding/file/line — `__ENCODING__`/`__FILE__`/`__LINE__`
-        //   return / setter / subshell / super / uninterpreted
+        //   setter / subshell / super / uninterpreted
         RubyKind::Encoding
         | RubyKind::File
         | RubyKind::Line
-        | RubyKind::Return
         | RubyKind::Setter
         | RubyKind::Subshell
         | RubyKind::Super

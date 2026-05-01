@@ -196,7 +196,9 @@ program/
   │       │       │       │   │   ├─ left/expression/variable/name = "item"
   │       │       │       │   │   ├─ op/equals[strict]
   │       │       │       │   │   └─ right/expression/null = "null"
-  │       │       │       │   └─ body/continue = "continue;"
+  │       │       │       │   └─ body[continue]/
+  │       │       │       │       ├─ "{\n                continue"
+  │       │       │       │       └─ "}"
   │       │       │       └─ try/
   │       │       │           ├─ body/expression/assign/
   │       │       │           │   ├─ left/expression/index/
@@ -210,7 +212,9 @@ program/
   │       │       │           └─ catch/
   │       │       │               ├─ types/type/name = "Throwable"
   │       │       │               ├─ name = "$e"
-  │       │       │               └─ body/continue = "continue;"
+  │       │       │               └─ body[continue]/
+  │       │       │                   ├─ "{\n                continue"
+  │       │       │                   └─ "}"
   │       │       └─ return/expression/variable/name = "results"
   │       └─ method[private]/
   │           ├─ name = "transform"

@@ -462,22 +462,21 @@ unit/
   │                   ├─ switch/
   │                   │   ├─ value/expression/name = "token"
   │                   │   └─ body/body/
-  │                   │       ├─ section/
+  │                   │       ├─ section[break]/
   │                   │       │   ├─ pattern[declaration]/
   │                   │       │   │   ├─ type/name = "Widget"
   │                   │       │   │   └─ name = "w"
-  │                   │       │   ├─ expression/call/
-  │                   │       │   │   ├─ member[instance]/
-  │                   │       │   │   │   ├─ name = "Console"
-  │                   │       │   │   │   └─ name = "WriteLine"
-  │                   │       │   │   └─ argument/call/member[instance]/
-  │                   │       │   │       ├─ name = "w"
-  │                   │       │   │       └─ name = "Describe"
-  │                   │       │   └─ break = "break;"
+  │                   │       │   └─ expression/call/
+  │                   │       │       ├─ member[instance]/
+  │                   │       │       │   ├─ name = "Console"
+  │                   │       │       │   └─ name = "WriteLine"
+  │                   │       │       └─ argument/call/member[instance]/
+  │                   │       │           ├─ name = "w"
+  │                   │       │           └─ name = "Describe"
   │                   │       ├─ section/
   │                   │       │   ├─ pattern[constant]/null = "null"
   │                   │       │   └─ throw/new/type/name = "InvalidOperationException"
-  │                   │       └─ section/break = "break;"
+  │                   │       └─ section[break] = "default: break"
   │                   ├─ if/
   │                   │   ├─ condition/expression/is/
   │                   │   │   ├─ name = "token"
@@ -689,7 +688,9 @@ unit/
   │                   │   │           └─ name = "Message"
   │                   │   ├─ catch/
   │                   │   │   ├─ declaration/type/name = "Exception"
-  │                   │   │   └─ body/block/throw = "throw;"
+  │                   │   │   └─ body/block[throw]/
+  │                   │   │       ├─ "{ throw"
+  │                   │   │       └─ "}"
   │                   │   └─ finally/block/expression/call/member[instance]/
   │                   │       ├─ name = "scope"
   │                   │       └─ name = "Flush"

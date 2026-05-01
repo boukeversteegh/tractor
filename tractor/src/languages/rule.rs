@@ -42,6 +42,14 @@ pub enum Rule<N> {
     /// Rename to `to` and prepend an empty `marker` element as the
     /// first child.
     RenameWithMarker(N, N),
+    /// Strip text children whose content equals `keyword` (with
+    /// optional trailing `;`), then rename the node to `to`. Used for
+    /// bare keyword statements where tree-sitter emits the keyword as
+    /// an anonymous text leaf inside the statement element (e.g.
+    /// `<break>break;</break>` → `<break/>`). Element children are
+    /// untouched, so labelled `break LABEL;` and `return value;` are
+    /// preserved.
+    RenameStripKeyword(N, &'static str),
     /// Drop the wrapper, promote children to siblings. If
     /// `distribute_field` is `Some`, set `field=<name>` on every child
     /// before flattening (so the children are still grouped under a
@@ -138,6 +146,11 @@ where
         Rule::RenameWithMarker(to, marker) => {
             xot.with_renamed(node, to)
                 .with_prepended_empty_element(node, marker)?;
+            Ok(TransformAction::Continue)
+        }
+        Rule::RenameStripKeyword(to, keyword) => {
+            crate::transform::helpers::strip_keyword_text(xot, node, keyword)?;
+            xot.with_renamed(node, to);
             Ok(TransformAction::Continue)
         }
         Rule::Flatten { distribute_field } => {

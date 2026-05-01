@@ -123,12 +123,12 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
 
         // ---- Pure Rename -----------------------------------------------
         TsKind::AsExpression              => Rename(As),
-        TsKind::BreakStatement            => Rename(Break),
+        TsKind::BreakStatement            => RenameStripKeyword(Break, "break"),
         TsKind::CallExpression            => Rename(Call),
         TsKind::CatchClause               => Rename(Catch),
         TsKind::ClassDeclaration          => Rename(Class),
         TsKind::ConstructSignature        => Rename(Constructor),
-        TsKind::ContinueStatement         => Rename(Continue),
+        TsKind::ContinueStatement         => RenameStripKeyword(Continue, "continue"),
         TsKind::ElseClause                => Rename(Else),
         TsKind::EnumAssignment            => Rename(Constant),
         TsKind::EnumDeclaration           => Rename(Enum),
@@ -168,7 +168,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::Program                   => Rename(Program),
         TsKind::PropertySignature         => Rename(Property),
         TsKind::RestPattern               => Rename(Rest),
-        TsKind::ReturnStatement           => Rename(Return),
+        TsKind::ReturnStatement           => RenameStripKeyword(Return, "return"),
         TsKind::SatisfiesExpression       => Rename(Satisfies),
         TsKind::ShorthandPropertyIdentifier => Rename(Name),
         TsKind::ShorthandPropertyIdentifierPattern => Rename(Name),

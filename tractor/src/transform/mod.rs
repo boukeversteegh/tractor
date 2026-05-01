@@ -892,6 +892,60 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Convert a bare keyword statement into an empty container/marker.
+    /// Tree-sitter emits the keyword (`return`, `break`, `continue`,
+    /// `throw`, `pass`, `goto`, `fallthrough`, `next`, `redo`, `retry`,
+    /// `yield`) as an anonymous text leaf inside the statement element
+    /// — this leaks the grammar token into the output (Principle #2 /
+    /// #13: `<break>break;</break>` instead of `<break/>`).
+    ///
+    /// Strategy: detach text children whose trimmed content (with any
+    /// trailing `;` removed) equals `keyword`, then re-insert the
+    /// keyword as a fresh text-node sibling immediately after `node`.
+    /// Element children of `node` are untouched, so labelled
+    /// `break LABEL;` and `return value;` are preserved. Same pattern
+    /// as `rename_to_marker` + `insert_text_after` — see PHP / TS
+    /// modifier handlers.
+    ///
+    /// The fresh sibling text keeps the parent's XPath string-value
+    /// intact, so `query -v value` on the enclosing block still shows
+    /// `{ return a + b; }` rather than `{ a + b; }`.
+    pub fn strip_keyword_text(
+        xot: &mut Xot,
+        node: XotNode,
+        keyword: &str,
+    ) -> Result<(), xot::Error> {
+        let text_children: Vec<XotNode> = xot
+            .children(node)
+            .filter(|&c| {
+                xot.text_str(c)
+                    .map(|s| s.trim().trim_end_matches(';').trim() == keyword)
+                    .unwrap_or(false)
+            })
+            .collect();
+        if text_children.is_empty() {
+            return Ok(());
+        }
+        // Capture the original text (with any surrounding whitespace) so
+        // a trailing space carries through to the sibling form.
+        let original_text: String = text_children
+            .iter()
+            .filter_map(|&c| xot.text_str(c).map(|s| s.to_string()))
+            .collect::<Vec<_>>()
+            .join("");
+        let text_with_trailing_space = if original_text.ends_with(char::is_whitespace) {
+            original_text
+        } else {
+            format!("{} ", keyword)
+        };
+        for child in text_children {
+            xot.detach(child)?;
+        }
+        let text_node = xot.new_text(&text_with_trailing_space);
+        xot.insert_before(node, text_node)?;
+        Ok(())
+    }
+
 }
 
 #[cfg(test)]

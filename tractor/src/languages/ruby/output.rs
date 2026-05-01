@@ -24,7 +24,7 @@ pub enum TractorNode {
     // Pattern-matching
     When, In, Pattern,
     // Control-flow keyword leaves
-    Next, Redo, Retry,
+    Next, Redo, Retry, Return,
     // Rescue / class header metadata
     Exceptions, Superclass,
     // Collections / atoms (Array, Hash, String, Symbol dual-use after iter 15)
@@ -95,7 +95,7 @@ impl TractorNode {
             | Self::If | Self::Unless | Self::Else | Self::ElseIf | Self::Case
             | Self::Match
             | Self::While | Self::Until | Self::For | Self::Rescue | Self::Ensure
-            | Self::Break | Self::When | Self::Next | Self::Redo | Self::Retry
+            | Self::Break | Self::When | Self::Next | Self::Redo | Self::Retry | Self::Return
             | Self::True | Self::False | Self::Self_ | Self::Yield                  => (false, true, Keyword),
             Self::Call | Self::Lambda                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary                               => (false, true, Operator),

@@ -487,7 +487,7 @@ file/
           │       │   ├─ op[equals] = "=="
           │       │   └─ right/expression/int = "5"
           │       └─ then[continue]/
-          │           ├─ "{"
+          │           ├─ "{\n\t\t\tcontinue"
           │           └─ "}"
           ├─ for/
           │   ├─ range/
@@ -674,90 +674,3 @@ file/
           │           ├─ name = "UserID"
           │           └─ int = "42"
           └─ return/expression/nil = "nil"
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return"), is_element=false
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return"), is_element=false
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return"), is_element=false
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="fallthrough"
-❌   child: text_str=Some("fallthrough"), is_element=false
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="continue"
-❌   child: text_str=Some("continue"), is_element=false
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="go"
-❌   child: text_str=Some("go "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="break"
-❌   child: text_str=Some("break "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="continue"
-❌   child: text_str=Some("continue "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="goto"
-❌   child: text_str=Some("goto "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach
-❌ === bare_keyword_statement called for keyword="return"
-❌   child: text_str=Some("return "), is_element=false
-❌   child: text_str=None, is_element=true
-❌   matched 1 text children to detach

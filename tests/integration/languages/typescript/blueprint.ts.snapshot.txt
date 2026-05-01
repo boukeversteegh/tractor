@@ -465,7 +465,7 @@ program/
   │       │   └─ body/body/
   │       │       ├─ case/
   │       │       │   ├─ value/expression/string = "\"ready\""
-  │       │       │   └─ body/break = "break;"
+  │       │       │   └─ body[break] = "break"
   │       │       ├─ case/
   │       │       │   ├─ value/expression/string = "\"error\""
   │       │       │   └─ body/throw/new/
@@ -473,7 +473,7 @@ program/
   │       │       │       └─ string = "\"bad\""
   │       │       └─ default/
   │       │           ├─ comment = "/* fallthrough */"
-  │       │           └─ body/break = "break;"
+  │       │           └─ body[break] = "break"
   │       ├─ variable[const]/
   │       │   ├─ name = "obj"
   │       │   ├─ type[generic]/
