@@ -347,7 +347,7 @@ file/
   │   ├─ ref/
   │   │   ├─ schema = "dbo"
   │   │   └─ name = "GetAge"
-  │   ├─ arg/arg/var = "BirthDate"
+  │   ├─ arg/var = "BirthDate"
   │   └─ body/call/
   │       ├─ ref/name = "DATEDIFF"
   │       ├─ column/name = "YEAR"

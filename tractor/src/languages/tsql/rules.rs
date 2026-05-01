@@ -54,7 +54,10 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         TsqlKind::Field              => Rename(Column),
         TsqlKind::From               => Rename(From),
         TsqlKind::FunctionArgument   => Rename(Arg),
-        TsqlKind::FunctionArguments  => Rename(Arg),
+        // FunctionArguments is the list wrapper; flatten so its
+        // FunctionArgument children become direct siblings under
+        // the parent <call>, avoiding `<arg><arg>...</arg></arg>`.
+        TsqlKind::FunctionArguments  => Flatten { distribute_field: None },
         TsqlKind::FunctionBody       => Rename(Body),
         TsqlKind::GoStatement        => Rename(Go),
         TsqlKind::GroupBy            => Rename(Group),
