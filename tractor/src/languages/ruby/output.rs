@@ -19,7 +19,7 @@ pub enum TractorNode {
     // Members / parameters
     Parameter, Variable,
     // Expressions
-    Call, Assign, Binary, Unary, Conditional, Range, Lambda, Yield, Spread, Left,
+    Call, Assign, Binary, Unary, Conditional, Range, Lambda, Yield, Spread, Left, Expression,
     // Pattern-matching
     When, In, Pattern,
     // Control-flow keyword leaves
