@@ -170,7 +170,7 @@ unit/
   │       │       │       ├─ op/logical[and]
   │       │       │       └─ right/expression/binary/
   │       │       │           ├─ left/expression/name = "p"
-  │       │       │           └─ op = "== this"
+  │       │       │           └─ op[equals] = "=="
   │       │       └─ method[public and override]/
   │       │           ├─ returns/type/name = "int"
   │       │           ├─ name = "GetHashCode"

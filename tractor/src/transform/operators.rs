@@ -25,14 +25,16 @@ pub fn prepend_op_element(xot: &mut Xot, parent: XotNode, op_text: &str) -> Resu
     let op_element = xot.new_element(op_name);
     add_operator_markers(xot, op_element, op_text)?;
 
-    // Find the source text node whose trimmed content equals the
-    // operator — typically `" + "` with surrounding whitespace
-    // for binary expressions.
+    // Find the source text node containing the operator — typically
+    // `" + "` with surrounding whitespace for binary expressions, or
+    // `"== this"` when an adjacent anonymous keyword leaks into the
+    // same text leaf (handled by `extract_operator`'s prefix narrowing).
     let source_text: Option<(XotNode, String)> = xot
         .children(parent)
         .find_map(|c| {
             let s = xot.text_str(c)?.to_string();
-            if s.trim() == op_text {
+            let trimmed = s.trim();
+            if trimmed == op_text || trimmed.starts_with(op_text) {
                 Some((c, s))
             } else {
                 None
@@ -311,14 +313,50 @@ pub fn is_prefix_form(xot: &Xot, node: XotNode) -> bool {
 /// Identical to the per-language `extract_operator` helpers — pulled
 /// here so `Rule::ExtractOpThenRename` can call it without forcing
 /// language-specific function pointers through the rule table.
+///
+/// When the candidate text contains a known operator from
+/// [`OPERATOR_MARKERS`] as a token-bounded prefix (e.g. `"== this"`
+/// when `this` leaks as anonymous text from tree-sitter), only the
+/// operator prefix is extracted. The trailing tokens stay as sibling
+/// text via `prepend_op_element`'s before/after slicing.
 pub fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     use super::helpers::get_text_children;
     let texts = get_text_children(xot, node);
-    let operator = texts.iter().find(|t| {
+    let candidate = texts.iter().find(|t| {
         !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
-    if let Some(op) = operator {
-        prepend_op_element(xot, node, op)?;
+    if let Some(text) = candidate {
+        let op_text = refine_operator_text(text);
+        prepend_op_element(xot, node, op_text)?;
     }
     Ok(())
+}
+
+/// Narrow a candidate operator string to a known operator prefix when
+/// the text leaks adjacent anonymous keywords (e.g. C# `"== this"`).
+///
+/// Strategy: prefer the longest [`OPERATOR_MARKERS`] entry that is a
+/// token-bounded prefix of `text` (followed by whitespace or
+/// end-of-string). Multi-word operators like `"is not"` win over
+/// single-word ones like `"is"`. If no match, return the trimmed text
+/// unchanged — preserving graceful degradation for language-specific
+/// operators absent from the table.
+fn refine_operator_text(text: &str) -> &str {
+    let trimmed = text.trim();
+    let mut best: Option<&'static str> = None;
+    for spec in OPERATOR_MARKERS.iter() {
+        if !trimmed.starts_with(spec.text) {
+            continue;
+        }
+        let rest = &trimmed[spec.text.len()..];
+        let token_bounded = rest.is_empty()
+            || rest.chars().next().map_or(false, char::is_whitespace);
+        if !token_bounded {
+            continue;
+        }
+        if best.map_or(true, |b| spec.text.len() > b.len()) {
+            best = Some(spec.text);
+        }
+    }
+    best.unwrap_or(trimmed)
 }
