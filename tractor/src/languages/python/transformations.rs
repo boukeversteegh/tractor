@@ -16,7 +16,7 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::PyKind;
 use super::output::TractorNode::{
     self, Async, Await, Comment as CommentName, Comprehension, Dict, Else, Expression, Function,
-    Leading, List, Literal, Private, Protected, Public, Set, Ternary, Trailing,
+    Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -124,6 +124,39 @@ pub fn type_node(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     inline_single_identifier(xot, node)?;
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
+}
+
+/// `parameters` — Python's parameter list. Bare positional parameters
+/// surface as plain `<identifier>` children (which become `<name>`),
+/// inconsistent with `<parameter>` for default/typed params and
+/// cross-language convention where every parameter is a `<parameter>`
+/// with markers (Principle #5).
+///
+/// Wrap each bare `identifier` child in a `<parameter>` element so
+/// `//parameter` finds positional bare params. Splat patterns
+/// (`*args`, `**kwargs`) keep their `<spread[list]>` / `<spread[dict]>`
+/// shape for now — separate iter to unify those under `<parameter>`
+/// with marker vocab.
+pub fn parameters(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let children: Vec<XotNode> = xot
+        .children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in children {
+        if get_kind(xot, child).as_deref() == Some("identifier") {
+            let param_name_id = xot.add_name(Parameter.as_str());
+            let param = xot.new_element(param_name_id);
+            xot.with_source_location_from(param, child);
+            xot.insert_before(child, param)?;
+            xot.detach(child)?;
+            xot.append(param, child)?;
+        }
+    }
+    distribute_field_to_children(xot, node, "parameters");
+    Ok(TransformAction::Flatten)
 }
 
 /// `function_definition` — extract async modifier if present;

@@ -45,7 +45,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
 
         // ---- Flatten with field distribution ---------------------------
         PyKind::ArgumentList  => Flatten { distribute_field: Some("arguments") },
-        PyKind::Parameters    => Flatten { distribute_field: Some("parameters") },
+        PyKind::Parameters    => Custom(transformations::parameters),
         PyKind::TypeParameter => Flatten { distribute_field: Some("arguments") },
 
         // ---- Pure Flatten ----------------------------------------------

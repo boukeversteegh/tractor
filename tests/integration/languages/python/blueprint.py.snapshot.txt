@@ -41,7 +41,7 @@ module/
   │   └─ right/expression/string = "\"\"\"line one\\nline two\"\"\""
   ├─ function/
   │   ├─ name = "simple"
-  │   ├─ name = "a"
+  │   ├─ parameter/name = "a"
   │   ├─ parameter/
   │   │   ├─ name = "b"
   │   │   └─ value/expression/int = "1"
@@ -61,13 +61,13 @@ module/
   │           └─ right/expression/name = "kw_only"
   ├─ function/
   │   ├─ name = "pos_only"
-  │   ├─ name = "a"
-  │   ├─ name = "b"
+  │   ├─ parameter/name = "a"
+  │   ├─ parameter/name = "b"
   │   ├─ positional = "/"
-  │   ├─ name = "c"
-  │   ├─ name = "d"
+  │   ├─ parameter/name = "c"
+  │   ├─ parameter/name = "d"
   │   ├─ keyword = "*"
-  │   ├─ name = "e"
+  │   ├─ parameter/name = "e"
   │   ├─ parameter/
   │   │   ├─ name = "f"
   │   │   └─ value/expression/int = "0"
@@ -164,7 +164,7 @@ module/
   │           └─ return/expression/name = "data"
   ├─ function/
   │   ├─ name = "gen_demo"
-  │   ├─ name = "n"
+  │   ├─ parameter/name = "n"
   │   └─ body/
   │       ├─ for/
   │       │   ├─ left/expression/name = "i"
@@ -181,11 +181,11 @@ module/
   │               └─ right/expression/int = "2"
   ├─ function/
   │   ├─ name = "repeat"
-  │   ├─ name = "times"
+  │   ├─ parameter/name = "times"
   │   └─ body/
   │       ├─ function/
   │       │   ├─ name = "decorator"
-  │       │   ├─ name = "fn"
+  │       │   ├─ parameter/name = "fn"
   │       │   └─ body/
   │       │       ├─ function/
   │       │       │   ├─ name = "wrapper"
@@ -254,7 +254,7 @@ module/
   │       │       └─ right/expression/int = "42"
   │       ├─ function[public]/
   │       │   ├─ name = "__init__"
-  │       │   ├─ name = "self"
+  │       │   ├─ parameter/name = "self"
   │       │   ├─ parameter/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
@@ -265,8 +265,8 @@ module/
   │       │       └─ right/expression/name = "name"
   │       └─ function[public]/
   │           ├─ name = "__eq__"
-  │           ├─ name = "self"
-  │           ├─ name = "other"
+  │           ├─ parameter/name = "self"
+  │           ├─ parameter/name = "other"
   │           └─ body/return/expression/logical/
   │               ├─ left/expression/call/
   │               │   ├─ name = "isinstance"
@@ -283,7 +283,7 @@ module/
   │                       └─ name = "name"
   ├─ function/
   │   ├─ name = "control_flow"
-  │   ├─ name = "items"
+  │   ├─ parameter/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
@@ -368,7 +368,7 @@ module/
   │       └─ return/expression/name = "total"
   ├─ function/
   │   ├─ name = "match_demo"
-  │   ├─ name = "msg"
+  │   ├─ parameter/name = "msg"
   │   └─ body/match/
   │       ├─ name = "msg"
   │       └─ body/
@@ -410,7 +410,7 @@ module/
   │               └─ then/return/expression/none = "None"
   ├─ function/
   │   ├─ name = "comprehensions"
-  │   ├─ name = "data"
+  │   ├─ parameter/name = "data"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "squares"
@@ -481,7 +481,7 @@ module/
   │           └─ expression/name = "matrix"
   ├─ function/
   │   ├─ name = "expression_demo"
-  │   ├─ name = "items"
+  │   ├─ parameter/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "first"
@@ -617,9 +617,9 @@ module/
   │       └─ name = "Foo"
   └─ function/
       ├─ name = "patterns_and_misc"
-      ├─ name = "values"
-      ├─ name = "items"
-      ├─ name = "x"
+      ├─ parameter/name = "values"
+      ├─ parameter/name = "items"
+      ├─ parameter/name = "x"
       └─ body/
           ├─ expression/string = "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
           ├─ assign/
