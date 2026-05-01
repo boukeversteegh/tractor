@@ -272,6 +272,37 @@ pub fn let_declaration(
     Ok(TransformAction::Continue)
 }
 
+/// `function_modifiers` — tree-sitter wraps function-level keywords
+/// (`async`, `const`, `unsafe`, `default`) inside a sub-element.
+/// Replace each keyword text leaf with the corresponding empty marker
+/// element, then flatten so the markers lift onto the parent
+/// `<function>` (matching `function[pub and async]` shape — same as
+/// C# `method[public and async]`, Java `method[public and synchronized]`).
+pub fn function_modifiers(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let children: Vec<_> = xot.children(node).collect();
+    for child in children {
+        let s = match xot.text_str(child) {
+            Some(s) => s.trim().to_string(),
+            None => continue,
+        };
+        let parsed: TractorNode = match s.parse().ok() {
+            Some(p) => p,
+            None => continue,
+        };
+        if !matches!(parsed, Async | Unsafe | Const) {
+            continue;
+        }
+        let marker_name = xot.add_name(parsed.as_str());
+        let marker = xot.new_element(marker_name);
+        xot.insert_before(child, marker)?;
+        xot.detach(child)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `extern_crate_declaration` — `extern crate alloc;`. Drop the literal
 /// `extern` / `crate` keyword children (Tree-sitter exposes them as
 /// `crate` elements that would otherwise carry text and violate the

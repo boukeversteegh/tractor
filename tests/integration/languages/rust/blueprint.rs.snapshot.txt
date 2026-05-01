@@ -192,21 +192,18 @@ file/
   │       │           ├─ field/name = "x"
   │       │           ├─ field/name = "y"
   │       │           └─ field/name = "label"
-  │       ├─ function[pub]/
-  │       │   ├─ modifiers = "async"
+  │       ├─ function[pub and async]/
   │       │   ├─ name = "async_clone"
   │       │   ├─ self/self = "self"
   │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/call/field/
   │       │       ├─ value/expression/self = "self"
   │       │       └─ name = "clone"
-  │       ├─ function[pub]/
-  │       │   ├─ modifiers = "const"
+  │       ├─ function[pub and const]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
   │       │   └─ body/int = "42"
-  │       └─ function[pub]/
-  │           ├─ modifiers = "unsafe"
+  │       └─ function[pub and unsafe]/
   │           ├─ name = "unsafe_read"
   │           ├─ parameter/
   │           │   ├─ name = "ptr"
@@ -664,8 +661,7 @@ file/
   │   └─ body/expression/macro/
   │       ├─ name = "panic"
   │       └─ string = "\"never returns\""
-  ├─ function[pub]/
-  │   ├─ modifiers = "async"
+  ├─ function[pub and async]/
   │   ├─ name = "async_demo"
   │   ├─ returns/type/name = "u32"
   │   └─ body/

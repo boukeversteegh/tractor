@@ -188,7 +188,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::FieldInitializer         => Rename(Field),
         RustKind::FloatLiteral             => Rename(Float),
         RustKind::ForExpression            => Rename(For),
-        RustKind::FunctionModifiers        => Rename(Modifiers),
+        RustKind::FunctionModifiers        => Custom(transformations::function_modifiers),
         RustKind::FunctionSignatureItem    => Rename(Signature),
         RustKind::IfExpression             => Rename(If),
         RustKind::ImplItem                 => Rename(Impl),
