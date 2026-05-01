@@ -11,13 +11,13 @@ use crate::languages::rule::Rule;
 
 use super::input::PyKind;
 use super::output::TractorNode::{
-    self, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
-    Compare, Continue, Decorator, Delete, Dict, Else, ElseIf, Except, False,
-    Finally, Float, For, Format, From, Generator, Global, If, Import, Int,
-    Keyword, Lambda, List, Logical, Match, Member, Module, Name, Nonlocal,
-    Parameter, Pass, Pattern, Positional, Raise, Return, Splat, Spread, String,
-    Subscript, True, Try, Type, Unary, Union, While, With, Yield,
-    None as PyNone,
+    self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
+    Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
+    ElseIf, Escape, Except, Exec, False, Finally, Float, For, Format, From, Future,
+    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Lambda, List,
+    Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
+    Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
+    Union, While, Wildcard, With, Yield, None as PyNone,
 };
 use super::transformations;
 
@@ -146,70 +146,74 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         | PyKind::Pair
         | PyKind::Tuple => Passthrough,
 
-        // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. TODO candidates for real semantics.
+        // ---- Type vocabulary ----------------------------------------
+        // Python 3.12 type-alias `type Foo = …` joins the cross-language
+        // <alias> family (matches Java / TS `type Foo = …`).
+        PyKind::TypeAliasStatement => Rename(Alias),
 
-        // TODO: Python 3.12 type-alias statement (`type Foo = …`).
-        // Likely Rename(TYPE) with marker, or own ALIAS semantic.
-        PyKind::TypeAliasStatement => Passthrough,
+        // PEP 695 generic-type-parameter shapes:
+        //   constrained_type  T: int        → <type[constrained]>
+        //   member_type       module.Foo    → <type[member]>
+        //   splat_type        *Ts           → <type[splat]>
+        PyKind::ConstrainedType => RenameWithMarker(Type, Constrained),
+        PyKind::MemberType      => RenameWithMarker(Type, Member),
+        PyKind::SplatType       => RenameWithMarker(Type, Splat),
 
-        // TODO: PEP 695 generic type parameters / constraints.
-        //   constrained_type → RenameWithMarker(TYPE, …)
-        //   member_type      → similar to attribute access for types
-        //   splat_type       → RenameWithMarker(TYPE, SPLAT)
-        PyKind::ConstrainedType
-        | PyKind::MemberType
-        | PyKind::SplatType => Passthrough,
+        // Match-statement patterns:
+        //   tuple_pattern   case (a, b):   → <pattern[tuple]>
+        //   complex_pattern case 1+2j:     → <pattern[complex]>
+        PyKind::TuplePattern   => RenameWithMarker(Pattern, Tuple),
+        PyKind::ComplexPattern => RenameWithMarker(Pattern, Complex),
 
-        // TODO: tuple_pattern in match arms; pattern combinators.
-        //   tuple_pattern → RenameWithMarker(PATTERN, TUPLE)?
-        //   complex_pattern → RenameWithMarker(PATTERN, COMPLEX)? (numeric)
-        PyKind::TuplePattern
-        | PyKind::ComplexPattern => Passthrough,
+        // PEP 654 except-group `except* E:` joins <except> with a
+        // <group/> marker so `//except[group]` picks them out.
+        PyKind::ExceptGroupClause => RenameWithMarker(Except, Group),
 
-        // TODO: PEP 654 except-group `except* E:`. Sibling of
-        // except_clause → EXCEPT. Likely RenameWithMarker(EXCEPT, GROUP).
-        PyKind::ExceptGroupClause => Passthrough,
+        // Python 2 leftovers — own elements (rare in modern code).
+        PyKind::ExecStatement  => Rename(Exec),
+        PyKind::PrintStatement => Rename(Print),
 
-        // TODO: Python 2 leftovers — `exec stmt`, `print stmt`. Pure
-        // historical; rename to a generic Rename(EXEC) / Rename(PRINT)?
-        PyKind::ExecStatement
-        | PyKind::PrintStatement => Passthrough,
+        // Import-shape markers:
+        //   `from __future__ import x`  → <import[future]>
+        //   `from m import *`           → <import[wildcard]>
+        PyKind::FutureImportStatement => RenameWithMarker(Import, Future),
+        PyKind::WildcardImport        => RenameWithMarker(Import, Wildcard),
 
-        // TODO: `from __future__ import …` is grammatically a separate
-        // kind from regular import_from_statement. Could share Rename(FROM)
-        // with a FUTURE marker.
-        PyKind::FutureImportStatement => Passthrough,
+        // String/f-string internals:
+        //   concatenated_string `"a" "b"`     → <string[concatenated]>
+        //   format_expression   `{expr}` body → <interpolation>
+        //                                       (matches the cross-language
+        //                                        interpolation shape)
+        //   escape_interpolation `{{` / `}}`  → <interpolation[escape]>
+        //                                       so `//interpolation[escape]`
+        //                                       picks them out
+        //   parenthesized_list_splat `(*a,)`  → <spread> (matches the
+        //                                       cross-language splat
+        //                                       vocabulary)
+        //   not_operator `not x`              → <unary> with op extraction
+        //                                       — sibling of unary_operator
+        PyKind::ConcatenatedString    => RenameWithMarker(String, Concatenated),
+        PyKind::FormatExpression      => Rename(Interpolation),
+        PyKind::EscapeInterpolation   => RenameWithMarker(Interpolation, Escape),
+        PyKind::ParenthesizedListSplat => Rename(Spread),
+        PyKind::NotOperator           => ExtractOpThenRename(Unary),
 
-        // TODO: `from x import *` wildcard. Currently passthrough; could
-        // rename to IMPORT with a marker.
-        PyKind::WildcardImport => Passthrough,
+        // Pure-whitespace continuation `\\\n` carries no semantics.
+        PyKind::LineContinuation => Flatten { distribute_field: None },
 
-        // TODO: f-string internals.
-        //   format_expression       — the `{expr}` body in an f-string
-        //   escape_interpolation    — `{{` / `}}` escape sequences
-        //   chevron                 — `print >> file, …` (py2 leftover)
-        //   concatenated_string     — adjacent literals: `"a" "b"`
-        //   ellipsis                — `...` literal
-        //   parenthesized_list_splat — `(*a,)` in tuple ctx
-        //   not_operator            — `not x` (sibling of unary_operator)
-        //   line_continuation       — `\\\n` (whitespace, usually skipped)
+        // Remaining unhandled grammar kinds — fall through with no
+        // semantic name. None contain underscores after iter 13's sweep.
         PyKind::Chevron
-        | PyKind::ConcatenatedString
         | PyKind::Ellipsis
-        | PyKind::EscapeInterpolation
-        | PyKind::FormatExpression
-        | PyKind::LineContinuation
-        | PyKind::NotOperator
         | PyKind::Parameter
-        | PyKind::ParenthesizedListSplat
         | PyKind::Slice => Passthrough,
 
         // ---- Truly raw structural supertypes. Tree-sitter exposes
         //      these as named kinds for grammar-introspection but they
-        //      almost never appear in parsed output.
+        //      almost never appear in parsed output. PrimaryExpression
+        //      is a supertype that flattens to its single child.
         PyKind::Expression
-        | PyKind::Pattern
-        | PyKind::PrimaryExpression => Passthrough,
+        | PyKind::Pattern => Passthrough,
+        PyKind::PrimaryExpression => Flatten { distribute_field: None },
     }
 }

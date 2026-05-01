@@ -13,7 +13,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
     // Top-level / declarations
-    Module, Class, Function, Decorated, Decorator, Lambda,
+    Module, Class, Function, Decorated, Decorator, Lambda, Alias,
     // Members
     Parameter, Argument,
     // Type vocabulary
@@ -23,6 +23,8 @@ pub enum TractorNode {
     Continue, Match, Arm, Pattern,
     // Imports / names
     Import, From, Assert, Delete, Global, Nonlocal,
+    // Python 2 leftovers (kept as own elements; rare in modern code)
+    Exec, Print,
     // Expressions
     Call, Member, Subscript, Assign, Binary, Unary, Compare, Logical, Await, Yield, Generator,
     Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation, Expression,
@@ -42,8 +44,8 @@ pub enum TractorNode {
     Async,
     // Collection-construction markers
     Literal, Comprehension,
-    // Pattern / type shape markers
-    Union, Splat,
+    // Pattern / type / import / string shape markers
+    Union, Splat, Constrained, Complex, Group, Future, Wildcard, Concatenated, Escape,
 }
 
 impl TractorNode {
@@ -60,7 +62,9 @@ impl TractorNode {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
-            | Self::Union | Self::Splat                                          => (true, false, Default),
+            | Self::Union | Self::Splat
+            | Self::Constrained | Self::Complex | Self::Group | Self::Future
+            | Self::Wildcard | Self::Concatenated | Self::Escape                 => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Async | Self::Literal | Self::Comprehension
             | Self::Await                                                        => (true, false, Keyword),
@@ -75,6 +79,7 @@ impl TractorNode {
             | Self::While | Self::Try | Self::Except | Self::Finally | Self::With
             | Self::Raise | Self::Pass | Self::Break | Self::Continue
             | Self::Import | Self::From
+            | Self::Exec | Self::Print
             | Self::Yield | Self::Generator
             | Self::True | Self::False | Self::None                              => (false, true, Keyword),
             Self::Type                                                           => (false, true, Type),

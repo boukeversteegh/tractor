@@ -564,20 +564,126 @@ module/
   │           ├─ expression/name = "tail"
   │           ├─ expression/name = "merged"
   │           └─ expression/name = "combined"
+  ├─ function/
+  │   ├─ name = "closure_demo"
+  │   └─ body/
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "counter"
+  │       │   └─ right/expression/int = "0"
+  │       ├─ function/
+  │       │   ├─ name = "inc"
+  │       │   └─ body/
+  │       │       ├─ nonlocal/name = "counter"
+  │       │       ├─ assign/
+  │       │       │   ├─ left/expression/name = "counter"
+  │       │       │   ├─ op/assign[plus]
+  │       │       │   └─ right/expression/int = "1"
+  │       │       └─ return/expression/name = "counter"
+  │       ├─ delete/name = "counter"
+  │       └─ return/expression/name = "inc"
+  ├─ comment[leading] = "# `from __future__ import …`; module-level so it parses as\n# future_import_statement (a separate kind from import_from_statement)."
+  ├─ import[future]/name = "annotations"
+  ├─ comment[leading] = "# Wildcard import (`from x import *`)."
+  ├─ from/
+  │   ├─ name = "os"
+  │   ├─ name = "path"
+  │   └─ import[wildcard] = "*"
+  ├─ comment[leading] = "# Python 3.12 type-alias statement and PEP 695 generics with constraints,\n# member-types, and splat-types."
+  ├─ alias/
+  │   ├─ left/expression/type/name = "IntOrStr"
+  │   └─ right/expression/type/binary/
+  │       ├─ left/expression/name = "int"
+  │       ├─ op/bitwise[or]
+  │       └─ right/expression/name = "str"
+  ├─ alias/
+  │   ├─ left/expression/type[generic]/
+  │   │   ├─ name = "Pair"
+  │   │   ├─ type/type[constrained]/
+  │   │   │   ├─ type/name = "T"
+  │   │   │   └─ type/name = "int"
+  │   │   ├─ type/type[constrained]/
+  │   │   │   ├─ type/name = "U"
+  │   │   │   └─ type/tuple/
+  │   │   │       ├─ name = "int"
+  │   │   │       └─ name = "str"
+  │   │   └─ type/type[splat]/name = "Ts"
+  │   └─ right/expression/type[generic]/
+  │       ├─ name = "tuple"
+  │       ├─ type/name = "T"
+  │       ├─ type/name = "U"
+  │       └─ type/type[splat]/name = "Ts"
+  ├─ alias/
+  │   ├─ left/expression/type/name = "Containing"
+  │   └─ right/expression/type/member/
+  │       ├─ name = "OrderedDict"
+  │       └─ name = "Foo"
   └─ function/
-      ├─ name = "closure_demo"
+      ├─ name = "patterns_and_misc"
+      ├─ name = "values"
+      ├─ name = "items"
+      ├─ name = "x"
       └─ body/
+          ├─ expression/string = "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
           ├─ assign/
-          │   ├─ left/expression/name = "counter"
-          │   └─ right/expression/int = "0"
-          ├─ function/
-          │   ├─ name = "inc"
+          │   ├─ left/expression/name = "matched"
+          │   └─ type/name = "int"
+          ├─ match/
+          │   ├─ name = "values"
           │   └─ body/
-          │       ├─ nonlocal/name = "counter"
-          │       ├─ assign/
-          │       │   ├─ left/expression/name = "counter"
-          │       │   ├─ op/assign[plus]
-          │       │   └─ right/expression/int = "1"
-          │       └─ return/expression/name = "counter"
-          ├─ delete/name = "counter"
-          └─ return/expression/name = "inc"
+          │       ├─ arm/
+          │       │   ├─ pattern/pattern[tuple]/
+          │       │   │   ├─ pattern/name = "a"
+          │       │   │   └─ pattern/name = "b"
+          │       │   └─ then/assign/
+          │       │       ├─ left/expression/name = "matched"
+          │       │       └─ right/expression/binary/
+          │       │           ├─ left/expression/name = "a"
+          │       │           ├─ op[plus] = "+"
+          │       │           └─ right/expression/name = "b"
+          │       ├─ arm/
+          │       │   ├─ pattern/pattern[complex]/
+          │       │   │   ├─ int = "1"
+          │       │   │   └─ int = "2j"
+          │       │   └─ then/assign/
+          │       │       ├─ left/expression/name = "matched"
+          │       │       └─ right/expression/unary/
+          │       │           ├─ op[minus] = "-"
+          │       │           └─ int = "1"
+          │       └─ arm/
+          │           ├─ pattern = "_"
+          │           └─ then/assign/
+          │               ├─ left/expression/name = "matched"
+          │               └─ right/expression/int = "0"
+          ├─ try/
+          │   ├─ body/assign/
+          │   │   ├─ left/expression/name = "result"
+          │   │   └─ right/expression/call/
+          │   │       ├─ name = "list"
+          │   │       └─ name = "items"
+          │   └─ except[group]/
+          │       ├─ tuple/
+          │       │   ├─ name = "ValueError"
+          │       │   └─ name = "TypeError"
+          │       └─ assign/
+          │           ├─ left/expression/name = "result"
+          │           └─ right/expression/list[literal] = "[]"
+          ├─ assign/
+          │   ├─ left/expression/name = "flag"
+          │   └─ right/expression/unary/
+          │       ├─ op/logical[not]
+          │       └─ name = "matched"
+          ├─ assign/
+          │   ├─ left/expression/name = "bundle"
+          │   └─ right/expression/tuple/spread[list]/name = "items"
+          ├─ assign/
+          │   ├─ left/expression/name = "banner"
+          │   └─ right/expression/string[concatenated]/
+          │       ├─ string = "\"first \""
+          │       ├─ string = "\"second \""
+          │       └─ string = "\"third\""
+          └─ return/
+              ├─ expression/name = "matched"
+              ├─ expression/name = "result"
+              ├─ expression/name = "flag"
+              ├─ expression/name = "bundle"
+              └─ expression/name = "banner"

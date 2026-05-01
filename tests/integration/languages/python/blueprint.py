@@ -178,3 +178,38 @@ def closure_demo():
         return counter
     del counter
     return inc
+
+
+# `from __future__ import …`; module-level so it parses as
+# future_import_statement (a separate kind from import_from_statement).
+from __future__ import annotations
+# Wildcard import (`from x import *`).
+from os.path import *
+
+
+# Python 3.12 type-alias statement and PEP 695 generics with constraints,
+# member-types, and splat-types.
+type IntOrStr = int | str
+type Pair[T: int, U: (int, str), *Ts] = tuple[T, U, *Ts]
+type Containing = OrderedDict.Foo
+
+
+def patterns_and_misc(values, items, x):
+    """Exercise tuple/complex match patterns, except*, `not`, parenthesized
+    splats, and concatenated string literals."""
+    matched: int
+    match values:
+        case (a, b):
+            matched = a + b
+        case 1+2j:
+            matched = -1
+        case _:
+            matched = 0
+    try:
+        result = list(items)
+    except* (ValueError, TypeError):
+        result = []
+    flag = not matched
+    bundle = (*items,)
+    banner = "first " "second " "third"
+    return matched, result, flag, bundle, banner
