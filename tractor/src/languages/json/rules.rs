@@ -27,7 +27,7 @@ pub fn syntax_rule(kind: JsonKind) -> Rule<&'static str> {
 
         // Leaves the syntax transform leaves alone.
         JsonKind::Comment        => Rule::Passthrough,
-        JsonKind::EscapeSequence => Rule::Passthrough,
+        JsonKind::EscapeSequence => Rule::Flatten { distribute_field: None },
     }
 }
 
@@ -48,6 +48,6 @@ pub fn data_rule(kind: JsonKind) -> Rule<&'static str> {
         JsonKind::Null          => Rule::Flatten { distribute_field: None },
 
         JsonKind::Comment        => Rule::Passthrough,
-        JsonKind::EscapeSequence => Rule::Passthrough,
+        JsonKind::EscapeSequence => Rule::Flatten { distribute_field: None },
     }
 }

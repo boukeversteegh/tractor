@@ -470,10 +470,8 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
 
-        // TODO: alter_* extras (Database/Function/Index/Policy/Procedure/
-        // Role/Schema/Sequence/Type/View). Sibling of `alter_table` →
-        // ALTER_TABLE. Each could rename to a per-target ALTER_X constant
-        // or share a marker.
+        // alter_* variants — share the generic <alter> container.
+        // The specific target is visible from child elements.
         TsqlKind::AlterColumn
         | TsqlKind::AlterDatabase
         | TsqlKind::AlterFunction
@@ -484,9 +482,9 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::AlterSchema
         | TsqlKind::AlterSequence
         | TsqlKind::AlterType
-        | TsqlKind::AlterView => Passthrough,
+        | TsqlKind::AlterView => Rename(Alter),
 
-        // TODO: create_* extras. Sibling of `create_table` → CREATE.
+        // create_* variants — share the generic <create> container (same as create_table).
         TsqlKind::CreateDatabase
         | TsqlKind::CreateExtension
         | TsqlKind::CreateMaterializedView
@@ -498,10 +496,9 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::CreateSequence
         | TsqlKind::CreateTrigger
         | TsqlKind::CreateType
-        | TsqlKind::CreateView => Passthrough,
+        | TsqlKind::CreateView => Rename(Create),
 
-        // TODO: drop_* statements. Each could rename to DROP with a
-        // per-target marker.
+        // drop_* variants — share the generic <drop> container.
         TsqlKind::DropColumn
         | TsqlKind::DropConstraint
         | TsqlKind::DropDatabase
@@ -513,7 +510,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::DropSequence
         | TsqlKind::DropTable
         | TsqlKind::DropType
-        | TsqlKind::DropView => Passthrough,
+        | TsqlKind::DropView => Rename(Drop),
 
         // TODO: data-type kinds that aren't yet renamed. Each is the
         // grammar's leaf for its corresponding SQL type and could
@@ -536,8 +533,8 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::Tinyint
         | TsqlKind::Varbinary => Passthrough,
 
-        // TODO: function-attribute clauses. Specific to PostgreSQL
-        // function declarations; currently all passthrough.
+        // PostgreSQL function-attribute clauses — flatten to surface their
+        // content (language name, cost value, etc.) directly in the parent.
         TsqlKind::FunctionCost
         | TsqlKind::FunctionDeclaration
         | TsqlKind::FunctionLanguage
@@ -547,72 +544,99 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::FunctionSecurity
         | TsqlKind::FunctionStrictness
         | TsqlKind::FunctionSupport
-        | TsqlKind::FunctionVolatility => Passthrough,
+        | TsqlKind::FunctionVolatility => Flatten { distribute_field: None },
 
-        // TODO: comparison and pattern operators (LIKE/SIMILAR/IN/NOT
-        // forms, DISTINCT FROM). Currently passthrough.
+        // Boolean comparison forms — all share <compare> with BinaryExpression.
         TsqlKind::DistinctFrom
         | TsqlKind::IsNot
         | TsqlKind::NotDistinctFrom
         | TsqlKind::NotIn
         | TsqlKind::NotLike
         | TsqlKind::NotSimilarTo
-        | TsqlKind::SimilarTo => Passthrough,
+        | TsqlKind::SimilarTo => Rename(Compare),
 
-        // TODO: control / DDL / misc.
-        TsqlKind::AddConstraint
-        | TsqlKind::Array
-        | TsqlKind::ArraySizeDefinition
-        | TsqlKind::AssignmentList
-        | TsqlKind::Bang
-        | TsqlKind::Block
-        | TsqlKind::ChangeColumn
-        | TsqlKind::ChangeOwnership
-        | TsqlKind::ColumnPosition
-        | TsqlKind::CommentStatement
-        | TsqlKind::CompositeField
-        | TsqlKind::Constraint
-        | TsqlKind::Constraints
-        | TsqlKind::CoveringColumns
-        | TsqlKind::CrossJoin
-        | TsqlKind::DollarQuote
-        | TsqlKind::Enum
-        | TsqlKind::EnumElements
-        | TsqlKind::FilterExpression
-        | TsqlKind::FrameDefinition
-        | TsqlKind::IndexHint
-        | TsqlKind::LateralCrossJoin
-        | TsqlKind::LateralJoin
-        | TsqlKind::Limit
-        | TsqlKind::Marginalia
+        // ---- DDL / control / misc — resolved --------------------------------
+
+        // Constraint operations.
+        TsqlKind::AddConstraint       => Rename(Constraint),
+
+        // Column operations within ALTER TABLE.
+        TsqlKind::ChangeColumn
         | TsqlKind::ModifyColumn
-        | TsqlKind::ObjectId
-        | TsqlKind::Offset
-        | TsqlKind::OpOther
-        | TsqlKind::OrderedColumns
-        | TsqlKind::Parameter
-        | TsqlKind::ParenthesizedExpression
-        | TsqlKind::RenameColumn
-        | TsqlKind::RenameObject
-        | TsqlKind::ResetStatement
-        | TsqlKind::Returning
-        | TsqlKind::RowFormat
-        | TsqlKind::SetConfiguration
-        | TsqlKind::SetSchema
+        | TsqlKind::RenameColumn      => Rename(Column),
+
+        // Change ownership / rename object — generic alter operation.
+        TsqlKind::ChangeOwnership
+        | TsqlKind::RenameObject      => Rename(Alter),
+
+        // Joins — all join forms share <join>.
+        TsqlKind::CrossJoin
+        | TsqlKind::LateralCrossJoin
+        | TsqlKind::LateralJoin       => Rename(Join),
+
+        // Column/field list kinds.
+        TsqlKind::CoveringColumns
+        | TsqlKind::OrderedColumns    => Rename(Columns),
+        TsqlKind::CompositeField      => Rename(Definition),
+        TsqlKind::EnumElements
+        | TsqlKind::AssignmentList    => Rename(List),
+
+        // COMMENT ON ... IS '...' statement.
+        TsqlKind::CommentStatement    => Rename(Statement),
+
+        // Comparison / pattern expressions without dedicated forms.
+        TsqlKind::ObjectId            => Rename(Ref),
+        TsqlKind::OpOther             => Rename(Op),
+
+        // Window / aggregate.
+        TsqlKind::FilterExpression    => Rename(Filter),
+        TsqlKind::FrameDefinition
+        | TsqlKind::WindowFrame       => Rename(Frame),
+        TsqlKind::WindowClause        => Rename(Window),
+        TsqlKind::TablePartition      => Rename(Partition),
+        TsqlKind::TableSort           => Rename(Order),
+
+        // WHILE loop.
+        TsqlKind::WhileStatement      => Rename(While),
+
+        // DECLARE variable statement.
+        TsqlKind::VarDeclaration
+        | TsqlKind::VarDeclarations   => Rename(Declare),
+
+        // SET / RESET configuration.
+        TsqlKind::SetConfiguration
+        | TsqlKind::SetSchema         => Rename(Set),
+        TsqlKind::ResetStatement      => Rename(Reset),
+
+        // Storage / table options (dialect-specific clauses).
+        TsqlKind::RowFormat
         | TsqlKind::StorageLocation
         | TsqlKind::StorageParameters
         | TsqlKind::StoredAs
+        | TsqlKind::TableOption       => Rename(Option),
+
+        // ---- Structural / rare: flatten to surface children ---------------
+        TsqlKind::ArraySizeDefinition  => Flatten { distribute_field: None },
+        TsqlKind::ColumnPosition       => Flatten { distribute_field: None },
+        TsqlKind::DollarQuote          => Flatten { distribute_field: None },
+        TsqlKind::IndexHint            => Flatten { distribute_field: None },
+        TsqlKind::ParenthesizedExpression => Flatten { distribute_field: None },
+        TsqlKind::TabletSplit          => Flatten { distribute_field: None },
+
+        // ---- No-underscore passthroughs (kind name is already valid) ------
+        TsqlKind::Array
+        | TsqlKind::Bang
+        | TsqlKind::Block
+        | TsqlKind::Constraint
+        | TsqlKind::Constraints
+        | TsqlKind::Enum
+        | TsqlKind::Limit
+        | TsqlKind::Marginalia
+        | TsqlKind::Offset
+        | TsqlKind::Parameter
+        | TsqlKind::Returning
         | TsqlKind::Subscript
-        | TsqlKind::TableOption
-        | TsqlKind::TablePartition
-        | TsqlKind::TableSort
         | TsqlKind::Tablespace
-        | TsqlKind::TabletSplit
-        | TsqlKind::Values
-        | TsqlKind::VarDeclaration
-        | TsqlKind::VarDeclarations
-        | TsqlKind::WhileStatement
-        | TsqlKind::WindowClause
-        | TsqlKind::WindowFrame => Passthrough,
+        | TsqlKind::Values            => Passthrough,
     }
 }

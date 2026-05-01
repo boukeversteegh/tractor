@@ -108,3 +108,13 @@ GO
 
 -- EXEC stored procedure
 EXEC sp_helpdb;
+
+-- Iter 21: new shapes — DDL variants.
+
+-- CREATE VIEW, DROP TABLE
+CREATE VIEW ActiveUsers AS SELECT ID, Name FROM Users WHERE Active = 1;
+DROP TABLE TempData;
+
+-- ALTER TABLE: add constraint, drop constraint
+ALTER TABLE Orders ADD CONSTRAINT fk_customer FOREIGN KEY (CustomerID) REFERENCES Customers(ID);
+ALTER TABLE Orders DROP CONSTRAINT fk_customer;

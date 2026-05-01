@@ -355,4 +355,31 @@ file/
   │       └─ call/ref/name = "GETDATE"
   ├─ go = "GO"
   ├─ comment = "-- EXEC stored procedure"
-  └─ statement/exec/ref/name = "sp_helpdb"
+  ├─ statement/exec/ref/name = "sp_helpdb"
+  ├─ comment = "-- Iter 21: new shapes — DDL variants."
+  ├─ comment = "-- CREATE VIEW, DROP TABLE"
+  ├─ statement/create/
+  │   ├─ ref/name = "ActiveUsers"
+  │   └─ create/
+  │       ├─ select/
+  │       │   ├─ column/name = "ID"
+  │       │   └─ column/name = "Name"
+  │       └─ from/
+  │           ├─ relation/ref/name = "Users"
+  │           └─ where/compare/
+  │               ├─ column/name = "Active"
+  │               ├─ op = "="
+  │               └─ literal = "1"
+  ├─ statement/drop/ref/name = "TempData"
+  ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
+  ├─ statement/alter_table/
+  │   ├─ ref/name = "Orders"
+  │   └─ constraint/
+  │       ├─ name = "fk_customer"
+  │       └─ constraint/
+  │           ├─ columns/col/name = "CustomerID"
+  │           ├─ ref/name = "Customers"
+  │           └─ name = "ID"
+  └─ statement/alter_table/
+      ├─ ref/name = "Orders"
+      └─ drop/name = "fk_customer"

@@ -54,6 +54,18 @@ pub enum TractorNode {
     Int, Varchar, Nvarchar, Datetime,
     // Expressions
     Compare, Between, Assign,
+    // DDL — generic containers
+    Alter, Drop, Constraint,
+    // Control flow
+    While,
+    // Window
+    Frame, Filter,
+    // Variable declarations
+    Declare,
+    // Storage / table options (catch-all for dialect-specific clauses)
+    Option,
+    // RESET statement
+    Reset,
     // Identifiers and their variants
     Name, Alias, Schema, Var, Temp, Comment,
     // Operator child
@@ -75,7 +87,9 @@ impl TractorNode {
             | Self::Star | Self::Cte | Self::Union | Self::Exists
             | Self::Case | Self::When
             | Self::Merge | Self::Transaction | Self::Set | Self::Go | Self::Exec
-            | Self::AlterTable | Self::CreateIndex                              => (false, true, Keyword),
+            | Self::AlterTable | Self::CreateIndex
+            | Self::Alter | Self::Drop | Self::While | Self::Filter | Self::Declare
+            | Self::Reset                                                        => (false, true, Keyword),
             Self::Ref | Self::Int | Self::Varchar | Self::Nvarchar | Self::Datetime
                                                                                 => (false, true, Type),
             Self::Call | Self::Window | Self::Cast                              => (false, true, Function),
