@@ -50,19 +50,24 @@ pub fn syntax_rule(kind: YamlKind) -> Rule<&'static str> {
         YamlKind::AnchorName         => Rule::Flatten { distribute_field: None },
         YamlKind::Comment            => Rule::Custom(strip_punct_flatten),
 
-        // Currently-unhandled kinds — preserve passthrough (matches
-        // the old `_ => Continue` default). TODO: directive and tag
-        // kinds may want explicit treatments.
-        YamlKind::DirectiveName      => Rule::Passthrough,
-        YamlKind::DirectiveParameter => Rule::Passthrough,
-        YamlKind::EscapeSequence     => Rule::Passthrough,
-        YamlKind::ReservedDirective  => Rule::Passthrough,
-        YamlKind::TagDirective       => Rule::Passthrough,
-        YamlKind::TagHandle          => Rule::Passthrough,
-        YamlKind::TagPrefix          => Rule::Passthrough,
-        YamlKind::TimestampScalar    => Rule::Passthrough,
-        YamlKind::YamlDirective      => Rule::Passthrough,
-        YamlKind::YamlVersion        => Rule::Passthrough,
+        // Directive family — `%YAML 1.2` and `%TAG !! tag:…`. Both
+        // surface under `<directive>` with a marker for the family
+        // (yaml/tag/reserved); inner pieces use single-word names
+        // (handle/prefix/version/parameter) so `//directive//handle`
+        // is the broad-to-narrow path.
+        YamlKind::YamlDirective      => Rule::RenameWithMarker("directive", "yaml"),
+        YamlKind::TagDirective       => Rule::RenameWithMarker("directive", "tag"),
+        YamlKind::ReservedDirective  => Rule::RenameWithMarker("directive", "reserved"),
+        YamlKind::DirectiveName      => Rule::Rename("name"),
+        YamlKind::DirectiveParameter => Rule::Rename("parameter"),
+        YamlKind::TagHandle          => Rule::Rename("handle"),
+        YamlKind::TagPrefix          => Rule::Rename("prefix"),
+        YamlKind::YamlVersion        => Rule::Rename("version"),
+        // Escape sequence inside a quoted scalar — `\n`, `\t`, etc.
+        YamlKind::EscapeSequence     => Rule::Rename("escape"),
+        // ISO 8601 timestamps (YAML 1.1 type). Joins int/float/bool/null
+        // as a top-level scalar element.
+        YamlKind::TimestampScalar    => Rule::Rename("timestamp"),
     }
 }
 
@@ -108,16 +113,16 @@ pub fn data_rule(kind: YamlKind) -> Rule<&'static str> {
         // Comments removed
         YamlKind::Comment            => Rule::Custom(strip_punct_flatten),
 
-        // Currently-unhandled kinds — preserve passthrough.
-        YamlKind::DirectiveName      => Rule::Passthrough,
-        YamlKind::DirectiveParameter => Rule::Passthrough,
-        YamlKind::EscapeSequence     => Rule::Passthrough,
-        YamlKind::ReservedDirective  => Rule::Passthrough,
-        YamlKind::TagDirective       => Rule::Passthrough,
-        YamlKind::TagHandle          => Rule::Passthrough,
-        YamlKind::TagPrefix          => Rule::Passthrough,
-        YamlKind::TimestampScalar    => Rule::Passthrough,
-        YamlKind::YamlDirective      => Rule::Passthrough,
-        YamlKind::YamlVersion        => Rule::Passthrough,
+        // Directive family — same shape as the syntax branch.
+        YamlKind::YamlDirective      => Rule::RenameWithMarker("directive", "yaml"),
+        YamlKind::TagDirective       => Rule::RenameWithMarker("directive", "tag"),
+        YamlKind::ReservedDirective  => Rule::RenameWithMarker("directive", "reserved"),
+        YamlKind::DirectiveName      => Rule::Rename("name"),
+        YamlKind::DirectiveParameter => Rule::Rename("parameter"),
+        YamlKind::TagHandle          => Rule::Rename("handle"),
+        YamlKind::TagPrefix          => Rule::Rename("prefix"),
+        YamlKind::YamlVersion        => Rule::Rename("version"),
+        YamlKind::EscapeSequence     => Rule::Rename("escape"),
+        YamlKind::TimestampScalar    => Rule::Rename("timestamp"),
     }
 }

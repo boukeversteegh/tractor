@@ -184,3 +184,42 @@ fn yaml_structure_mode_exposes_grammar_vocabulary() {
         "#),
         1);
 }
+
+/// YAML directives — `%YAML 1.2`, `%TAG !! tag:…`. After the iter-14
+/// underscore sweep, both surface as `<directive>` with a marker for
+/// the family (`yaml`/`tag`/`reserved`) so `//directive[yaml]` and
+/// `//directive[tag]` are the broad-to-narrow paths. Directives only
+/// appear in structure-mode output (data mode strips them since they
+/// carry no application data).
+#[test]
+fn yaml_directives_use_marker_shape() {
+    let mut tree = parse_src_with_mode(
+        "yaml",
+        "%YAML 1.2\n%TAG !! tag:example.com,2024:\n---\nfoo: bar\n",
+        Some(TreeMode::Structure),
+    );
+
+    claim("`%YAML 1.2` renders as <directive[yaml]> with <version>1.2</version>",
+        &mut tree,
+        "//directive[yaml][version='1.2']",
+        1);
+
+    claim("`%TAG ...` renders as <directive[tag]> with <handle> and <prefix>",
+        &mut tree,
+        "//directive[tag][handle='!!'][prefix='tag:example.com,2024:']",
+        1);
+}
+
+#[test]
+fn yaml_escape_sequence_in_quoted_scalar() {
+    let mut tree = parse_src_with_mode(
+        "yaml",
+        "key: \"hello\\nworld\"\n",
+        Some(TreeMode::Structure),
+    );
+
+    claim("`\"hello\\nworld\"` exposes the escape as <escape>\\n</escape>",
+        &mut tree,
+        "//escape='\\n'",
+        1);
+}
