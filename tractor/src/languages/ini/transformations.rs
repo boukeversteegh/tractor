@@ -10,11 +10,6 @@ use crate::transform::data_keys::*;
 
 use super::output::COMMENT;
 
-/// Continue without changes — used for kinds the transform leaves alone.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `document` → strip punctuation text children, then continue into
 /// section / setting / comment children.
 pub fn document(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

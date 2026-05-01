@@ -19,13 +19,6 @@ use super::output::TractorNode::{
     Trailing, Type, Unary, Var, Variable,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`array`, `constraint`, `object`, `pair`, `super`, `this`,
-/// `undefined`) or grammar supertypes.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Control-flow constructs used
 /// as statement-context expressions (`if`, `for`, `while`, `return`,

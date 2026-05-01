@@ -173,7 +173,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::Pair
         | TsKind::Super
         | TsKind::This
-        | TsKind::Undefined => Custom(transformations::passthrough),
+        | TsKind::Undefined => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates.
@@ -189,7 +189,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::Asserts
         | TsKind::AssertsAnnotation
         | TsKind::OmittingTypeAnnotation
-        | TsKind::TypeAssertion => Custom(transformations::passthrough),
+        | TsKind::TypeAssertion => Passthrough,
 
         // TODO: ambient declaration (`declare …`); class_static_block;
         // computed_property_name (`[expr]: value`); decorator
@@ -198,13 +198,13 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::ClassStaticBlock
         | TsKind::ComputedPropertyName
         | TsKind::Decorator
-        | TsKind::MetaProperty => Custom(transformations::passthrough),
+        | TsKind::MetaProperty => Passthrough,
 
         // TODO: more pattern shapes.
         //   assignment_pattern       → RenameWithMarker(PATTERN, ASSIGN)?
         //   pair_pattern             → key:value pattern
         TsKind::AssignmentPattern
-        | TsKind::PairPattern => Custom(transformations::passthrough),
+        | TsKind::PairPattern => Passthrough,
 
         // TODO: more type shapes.
         //   constructor_type      → RenameWithMarker(TYPE, CONSTRUCTOR)
@@ -224,7 +224,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::OptionalType
         | TsKind::RestType
         | TsKind::ThisType
-        | TsKind::TypeQuery => Custom(transformations::passthrough),
+        | TsKind::TypeQuery => Passthrough,
 
         // TODO: import / module variants.
         //   import / import_alias / import_attribute / import_require_clause
@@ -237,10 +237,10 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::InternalModule
         | TsKind::Module
         | TsKind::NamespaceExport
-        | TsKind::NestedIdentifier => Custom(transformations::passthrough),
+        | TsKind::NestedIdentifier => Passthrough,
 
         // TODO: instantiation expression (`Foo<T>`).
-        TsKind::InstantiationExpression => Custom(transformations::passthrough),
+        TsKind::InstantiationExpression => Passthrough,
 
         // TODO: special-statement / control-flow odds and ends.
         //   debugger_statement → Rename(DEBUGGER)?
@@ -254,7 +254,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::EmptyStatement
         | TsKind::LabeledStatement
         | TsKind::SequenceExpression
-        | TsKind::WithStatement => Custom(transformations::passthrough),
+        | TsKind::WithStatement => Passthrough,
 
         // TODO: regex / hashbang / HTML kinds.
         //   regex / regex_flags / regex_pattern → literal regex
@@ -267,7 +267,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::JsxNamespaceName
         | TsKind::Regex
         | TsKind::RegexFlags
-        | TsKind::RegexPattern => Custom(transformations::passthrough),
+        | TsKind::RegexPattern => Passthrough,
 
         // TODO: function-related extras.
         //   call_signature   → similar to method_signature
@@ -279,7 +279,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::Class
         | TsKind::EscapeSequence
         | TsKind::FunctionSignature
-        | TsKind::StatementIdentifier => Custom(transformations::passthrough),
+        | TsKind::StatementIdentifier => Passthrough,
 
         // ---- Truly raw structural supertypes.
         TsKind::Declaration
@@ -288,6 +288,6 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::PrimaryExpression
         | TsKind::PrimaryType
         | TsKind::Statement
-        | TsKind::Type => Custom(transformations::passthrough),
+        | TsKind::Type => Passthrough,
     }
 }

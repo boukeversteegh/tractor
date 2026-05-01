@@ -120,7 +120,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Then
         | RubyKind::True
         | RubyKind::When
-        | RubyKind::Yield => Custom(transformations::passthrough),
+        | RubyKind::Yield => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates.
@@ -149,13 +149,13 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::ParenthesizedPattern
         | RubyKind::TestPattern
         | RubyKind::UnlessGuard
-        | RubyKind::VariableReferencePattern => Custom(transformations::passthrough),
+        | RubyKind::VariableReferencePattern => Passthrough,
 
         // TODO: alias / undef declarations.
         //   alias  → Rename(ALIAS)? own semantic?
         //   undef  → Rename(UNDEF)?
         RubyKind::Alias
-        | RubyKind::Undef => Custom(transformations::passthrough),
+        | RubyKind::Undef => Passthrough,
 
         // TODO: special argument / parameter variants.
         //   block_argument           → marker
@@ -168,7 +168,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::DestructuredParameter
         | RubyKind::ForwardArgument
         | RubyKind::ForwardParameter
-        | RubyKind::HashSplatNil => Custom(transformations::passthrough),
+        | RubyKind::HashSplatNil => Passthrough,
 
         // TODO: literal / numeric kinds.
         //   character        → Rename(CHAR)?
@@ -180,7 +180,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Character
         | RubyKind::Complex
         | RubyKind::Float
-        | RubyKind::Rational => Custom(transformations::passthrough),
+        | RubyKind::Rational => Passthrough,
 
         // TODO: control-flow / structural odds and ends.
         //   element_reference (`a[i]`) → Rename(INDEX)?
@@ -207,6 +207,6 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Setter
         | RubyKind::Subshell
         | RubyKind::Super
-        | RubyKind::Uninterpreted => Custom(transformations::passthrough),
+        | RubyKind::Uninterpreted => Passthrough,
     }
 }

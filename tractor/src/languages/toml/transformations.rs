@@ -12,11 +12,6 @@ use super::input::TomlKind;
 use super::output::ITEM;
 use super::{strip_quotes, strip_quotes_from_node};
 
-/// Continue without changes.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `document` — strip text children, continue into the table /
 /// pair / comment children.
 pub fn document(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

@@ -19,12 +19,6 @@ use super::output::TractorNode::{
     Leading, List, Literal, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`interpolation`, `pair`, `tuple`) or grammar supertypes.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Python's `expression_statement`
 /// is also used for plain `assignment`s in tree-sitter's grammar; let

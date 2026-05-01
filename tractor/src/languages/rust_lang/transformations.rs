@@ -17,13 +17,6 @@ use super::output::TractorNode::{
     String as RustString, Super, Trailing, Try, Type, Unsafe,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`crate`, `label`, `self`, `super`, `attribute`) or grammar
-/// supertypes that survive as raw kind names.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Control-flow constructs used
 /// as statements (`if`, `for`, `while`, `loop`, `match`, `return`,

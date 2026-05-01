@@ -11,15 +11,6 @@ use crate::transform::{TransformAction, helpers::*};
 use super::input::RubyKind;
 use super::output::TractorNode::{self, Comment as CommentName, Leading, Name, Trailing};
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`block`, `break`, `conditional`, `constant`, `do`, `false`, `in`,
-/// `interpolation`, `lambda`, `next`, `nil`, `operator`, `pair`,
-/// `pattern`, `range`, `redo`, `regex`, `retry`, `self`, `superclass`,
-/// `then`, `true`, `unary`, `when`, `yield`, `exceptions`).
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `<name>` field wrapper inserted by the builder. Inline single
 /// identifier / constant / operator child as text. Operators apply
 /// for `def ==(other)` and friends (Ruby's tree-sitter tags the

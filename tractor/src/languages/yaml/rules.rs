@@ -53,16 +53,16 @@ pub fn syntax_rule(kind: YamlKind) -> Rule<&'static str> {
         // Currently-unhandled kinds — preserve passthrough (matches
         // the old `_ => Continue` default). TODO: directive and tag
         // kinds may want explicit treatments.
-        YamlKind::DirectiveName      => Rule::Custom(passthrough),
-        YamlKind::DirectiveParameter => Rule::Custom(passthrough),
-        YamlKind::EscapeSequence     => Rule::Custom(passthrough),
-        YamlKind::ReservedDirective  => Rule::Custom(passthrough),
-        YamlKind::TagDirective       => Rule::Custom(passthrough),
-        YamlKind::TagHandle          => Rule::Custom(passthrough),
-        YamlKind::TagPrefix          => Rule::Custom(passthrough),
-        YamlKind::TimestampScalar    => Rule::Custom(passthrough),
-        YamlKind::YamlDirective      => Rule::Custom(passthrough),
-        YamlKind::YamlVersion        => Rule::Custom(passthrough),
+        YamlKind::DirectiveName      => Rule::Passthrough,
+        YamlKind::DirectiveParameter => Rule::Passthrough,
+        YamlKind::EscapeSequence     => Rule::Passthrough,
+        YamlKind::ReservedDirective  => Rule::Passthrough,
+        YamlKind::TagDirective       => Rule::Passthrough,
+        YamlKind::TagHandle          => Rule::Passthrough,
+        YamlKind::TagPrefix          => Rule::Passthrough,
+        YamlKind::TimestampScalar    => Rule::Passthrough,
+        YamlKind::YamlDirective      => Rule::Passthrough,
+        YamlKind::YamlVersion        => Rule::Passthrough,
     }
 }
 
@@ -109,15 +109,15 @@ pub fn data_rule(kind: YamlKind) -> Rule<&'static str> {
         YamlKind::Comment            => Rule::Custom(strip_punct_flatten),
 
         // Currently-unhandled kinds — preserve passthrough.
-        YamlKind::DirectiveName      => Rule::Custom(passthrough),
-        YamlKind::DirectiveParameter => Rule::Custom(passthrough),
-        YamlKind::EscapeSequence     => Rule::Custom(passthrough),
-        YamlKind::ReservedDirective  => Rule::Custom(passthrough),
-        YamlKind::TagDirective       => Rule::Custom(passthrough),
-        YamlKind::TagHandle          => Rule::Custom(passthrough),
-        YamlKind::TagPrefix          => Rule::Custom(passthrough),
-        YamlKind::TimestampScalar    => Rule::Custom(passthrough),
-        YamlKind::YamlDirective      => Rule::Custom(passthrough),
-        YamlKind::YamlVersion        => Rule::Custom(passthrough),
+        YamlKind::DirectiveName      => Rule::Passthrough,
+        YamlKind::DirectiveParameter => Rule::Passthrough,
+        YamlKind::EscapeSequence     => Rule::Passthrough,
+        YamlKind::ReservedDirective  => Rule::Passthrough,
+        YamlKind::TagDirective       => Rule::Passthrough,
+        YamlKind::TagHandle          => Rule::Passthrough,
+        YamlKind::TagPrefix          => Rule::Passthrough,
+        YamlKind::TimestampScalar    => Rule::Passthrough,
+        YamlKind::YamlDirective      => Rule::Passthrough,
+        YamlKind::YamlVersion        => Rule::Passthrough,
     }
 }

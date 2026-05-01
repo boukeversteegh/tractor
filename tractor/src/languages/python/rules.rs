@@ -11,7 +11,7 @@ use crate::languages::rule::Rule;
 
 use super::input::PyKind;
 use super::output::TractorNode::{
-    self, Argument, Arm, As, Assert, Assign, Await, Binary, Break, Call, Cast, Class,
+    self, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Continue, Decorator, Delete, Dict, Else, ElseIf, Except, False,
     Finally, Float, For, Format, From, Generator, Global, If, Import, Int,
     Keyword, Lambda, List, Logical, Match, Member, Module, Name, Nonlocal,
@@ -144,14 +144,14 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         // Already matches our vocabulary.
         PyKind::Interpolation
         | PyKind::Pair
-        | PyKind::Tuple => Custom(transformations::passthrough),
+        | PyKind::Tuple => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. TODO candidates for real semantics.
 
         // TODO: Python 3.12 type-alias statement (`type Foo = …`).
         // Likely Rename(TYPE) with marker, or own ALIAS semantic.
-        PyKind::TypeAliasStatement => Custom(transformations::passthrough),
+        PyKind::TypeAliasStatement => Passthrough,
 
         // TODO: PEP 695 generic type parameters / constraints.
         //   constrained_type → RenameWithMarker(TYPE, …)
@@ -159,31 +159,31 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         //   splat_type       → RenameWithMarker(TYPE, SPLAT)
         PyKind::ConstrainedType
         | PyKind::MemberType
-        | PyKind::SplatType => Custom(transformations::passthrough),
+        | PyKind::SplatType => Passthrough,
 
         // TODO: tuple_pattern in match arms; pattern combinators.
         //   tuple_pattern → RenameWithMarker(PATTERN, TUPLE)?
         //   complex_pattern → RenameWithMarker(PATTERN, COMPLEX)? (numeric)
         PyKind::TuplePattern
-        | PyKind::ComplexPattern => Custom(transformations::passthrough),
+        | PyKind::ComplexPattern => Passthrough,
 
         // TODO: PEP 654 except-group `except* E:`. Sibling of
         // except_clause → EXCEPT. Likely RenameWithMarker(EXCEPT, GROUP).
-        PyKind::ExceptGroupClause => Custom(transformations::passthrough),
+        PyKind::ExceptGroupClause => Passthrough,
 
         // TODO: Python 2 leftovers — `exec stmt`, `print stmt`. Pure
         // historical; rename to a generic Rename(EXEC) / Rename(PRINT)?
         PyKind::ExecStatement
-        | PyKind::PrintStatement => Custom(transformations::passthrough),
+        | PyKind::PrintStatement => Passthrough,
 
         // TODO: `from __future__ import …` is grammatically a separate
         // kind from regular import_from_statement. Could share Rename(FROM)
         // with a FUTURE marker.
-        PyKind::FutureImportStatement => Custom(transformations::passthrough),
+        PyKind::FutureImportStatement => Passthrough,
 
         // TODO: `from x import *` wildcard. Currently passthrough; could
         // rename to IMPORT with a marker.
-        PyKind::WildcardImport => Custom(transformations::passthrough),
+        PyKind::WildcardImport => Passthrough,
 
         // TODO: f-string internals.
         //   format_expression       — the `{expr}` body in an f-string
@@ -203,13 +203,13 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         | PyKind::NotOperator
         | PyKind::Parameter
         | PyKind::ParenthesizedListSplat
-        | PyKind::Slice => Custom(transformations::passthrough),
+        | PyKind::Slice => Passthrough,
 
         // ---- Truly raw structural supertypes. Tree-sitter exposes
         //      these as named kinds for grammar-introspection but they
         //      almost never appear in parsed output.
         PyKind::Expression
         | PyKind::Pattern
-        | PyKind::PrimaryExpression => Custom(transformations::passthrough),
+        | PyKind::PrimaryExpression => Passthrough,
     }
 }

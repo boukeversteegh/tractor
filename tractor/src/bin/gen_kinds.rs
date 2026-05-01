@@ -199,9 +199,9 @@ fn render_enum(enum_name: &str, kinds: &[String]) -> String {
     let mut out = String::new();
     out.push_str("// DO NOT EDIT — regenerate via `task gen:kinds`.\n");
     out.push_str("// Source: this grammar's node-types.json (named, non-supertype kinds only).\n\n");
-    out.push_str("use strum_macros::{EnumString, IntoStaticStr};\n\n");
+    out.push_str("use strum_macros::{EnumIter, EnumString, IntoStaticStr};\n\n");
     out.push_str(
-        "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr)]\n",
+        "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumString, IntoStaticStr)]\n",
     );
     out.push_str("#[strum(serialize_all = \"snake_case\")]\n");
     out.push_str(&format!("pub enum {} {{\n", enum_name));

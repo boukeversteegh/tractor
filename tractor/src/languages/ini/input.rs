@@ -1,9 +1,9 @@
 // DO NOT EDIT — regenerate via `task gen:kinds`.
 // Source: this grammar's node-types.json (named, non-supertype kinds only).
 
-use strum_macros::{EnumString, IntoStaticStr};
+use strum_macros::{EnumIter, EnumString, IntoStaticStr};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, IntoStaticStr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumString, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
 pub enum IniKind {
     Comment,

@@ -292,12 +292,94 @@ fn no_underscore_in_node_names_except_whitelist() {
             report.record(&name, &fixture, String::new());
         });
     }
-    if !report.is_empty() {
-        report.print("Principle #1/#2 — no tree-sitter kind leaks (underscored names)");
-        if ASSERT_INVARIANTS && ASSERT_NO_UNDERSCORE {
-            panic!("underscored node names");
+
+    // Static-side complement: each language's rule table is the source
+    // of truth for which grammar kinds survive the transform with their
+    // raw name (`Rule::Passthrough`). Walk every language's rules and
+    // panic on any passthrough kind whose snake_case form contains an
+    // underscore not on the allowlist — even if no fixture currently
+    // exercises that kind. Catches drift before it reaches output.
+    let mut rule_violations: Vec<(&'static str, &'static str)> = Vec::new();
+    for (lang, kinds) in passthrough_kinds_per_language() {
+        for kind in kinds {
+            if !kind.contains('_') {
+                continue;
+            }
+            if ALLOWED_UNDERSCORE_NAMES.contains(&kind) {
+                continue;
+            }
+            rule_violations.push((lang, kind));
         }
     }
+    if !rule_violations.is_empty() {
+        eprintln!();
+        eprintln!(
+            "⚠ Principle #1/#2 — passthrough rule produces underscored kind names ({} violation(s))",
+            rule_violations.len()
+        );
+        eprintln!();
+        eprintln!("  These kinds map to `Rule::Passthrough` in the language's rules.rs,");
+        eprintln!("  so their raw grammar string surfaces as the element name. Either");
+        eprintln!("  rename them via `Rule::Rename` / `RenameWithMarker` / `Custom`, or");
+        eprintln!("  add the resulting name to ALLOWED_UNDERSCORE_NAMES if it's an");
+        eprintln!("  intentional multi-word concept (rare).");
+        eprintln!();
+        for (lang, kind) in &rule_violations {
+            eprintln!("  {:<12} {}", lang, kind);
+        }
+    }
+
+    let report_violation = !report.is_empty();
+    let rule_violation = !rule_violations.is_empty();
+    if report_violation {
+        report.print("Principle #1/#2 — no tree-sitter kind leaks (underscored names)");
+    }
+    if (report_violation || rule_violation) && ASSERT_INVARIANTS && ASSERT_NO_UNDERSCORE {
+        panic!("underscored node names");
+    }
+}
+
+/// `(lang_id, kind_strs)` for every language whose rule table is
+/// rule-driven. The kind strings are the snake_case `IntoStaticStr`
+/// outputs of the language's `Kind` enum, filtered to those that map
+/// to `Rule::Passthrough`. JSON / YAML have two rule branches (syntax
+/// + data); we union them so a kind passing through *either* branch
+/// counts.
+fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
+    use tractor::languages::rule::passthrough_kinds;
+    use tractor::languages::*;
+
+    fn dedupe(mut v: Vec<&'static str>) -> Vec<&'static str> {
+        v.sort();
+        v.dedup();
+        v
+    }
+
+    vec![
+        ("typescript", passthrough_kinds(typescript::rules::rule)),
+        ("csharp",     passthrough_kinds(csharp::rules::rule)),
+        ("python",     passthrough_kinds(python::rules::rule)),
+        ("go",         passthrough_kinds(go::rules::rule)),
+        ("rust",       passthrough_kinds(rust_lang::rules::rule)),
+        ("java",       passthrough_kinds(java::rules::rule)),
+        ("ruby",       passthrough_kinds(ruby::rules::rule)),
+        ("php",        passthrough_kinds(php::rules::rule)),
+        ("tsql",       passthrough_kinds(tsql::rules::rule)),
+        ("toml",       passthrough_kinds(toml::rules::rule)),
+        ("ini",        passthrough_kinds(ini::rules::rule)),
+        ("env",        passthrough_kinds(env::rules::rule)),
+        ("markdown",   passthrough_kinds(markdown::rules::rule)),
+        ("json", dedupe({
+            let mut v = passthrough_kinds(json::rules::syntax_rule);
+            v.extend(passthrough_kinds(json::rules::data_rule));
+            v
+        })),
+        ("yaml", dedupe({
+            let mut v = passthrough_kinds(yaml::rules::syntax_rule);
+            v.extend(passthrough_kinds(yaml::rules::data_rule));
+            v
+        })),
+    ]
 }
 
 // ---------------------------------------------------------------------------

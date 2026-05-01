@@ -22,13 +22,6 @@ use super::output::TractorNode::{
     Volatile, Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Unary, Void,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`guard`, `pattern`, `super`, `this`, `throws`) or supertypes the
-/// grammar emits but the transform never rewrites.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `parenthesized_expression` — pure grammar grouping; drop the
 /// wrapper before children are visited (children's parent context
 /// becomes the enclosing block / class body).

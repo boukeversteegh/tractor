@@ -35,7 +35,7 @@ pub fn rule(kind: MdKind) -> Rule<&'static str> {
         MdKind::CodeSpanDelimiter        => Detach,
         // `language` is consumed by the fenced_code_block handler — info_string
         // is detached before we'd recurse into language.
-        MdKind::Language                 => Custom(passthrough),
+        MdKind::Language                 => Passthrough,
 
         // ---- Emphasis ---------------------------------------------------
         MdKind::Emphasis            => Rename(EMPHASIS),
@@ -102,9 +102,9 @@ pub fn rule(kind: MdKind) -> Rule<&'static str> {
         MdKind::BlockContinuation => Detach,
 
         // ---- Passthrough — structural wrappers (current behaviour) ---
-        MdKind::Document  => Custom(passthrough),
-        MdKind::Section   => Custom(passthrough),
-        MdKind::Paragraph => Custom(passthrough),
-        MdKind::Inline    => Custom(passthrough),
+        MdKind::Document  => Passthrough,
+        MdKind::Section   => Passthrough,
+        MdKind::Paragraph => Passthrough,
+        MdKind::Inline    => Passthrough,
     }
 }

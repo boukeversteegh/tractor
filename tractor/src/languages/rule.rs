@@ -74,9 +74,50 @@ pub enum Rule<N> {
     /// purely-syntactic leaves the source text already carries
     /// — e.g. tsql's hundreds of `keyword_*` reserved words.
     Detach,
+    /// Leave the node untouched: keep its raw grammar kind as the
+    /// element name and continue walking children. Used for kinds the
+    /// transform has not yet rewritten — usually grammar supertypes
+    /// (`expression`, `pattern`) or kinds whose name already matches
+    /// our vocabulary (`pair`, `tuple`, `interpolation`).
+    ///
+    /// A passthrough kind whose name contains an underscore is a
+    /// drift signal: the raw grammar string leaks through into the
+    /// transformed tree. The
+    /// `no_underscore_in_node_names_except_whitelist` invariant in
+    /// `tractor/tests/tree_invariants.rs` enumerates every language's
+    /// rule table and gates on this.
+    Passthrough,
     /// Run the given handler. The function owns the renaming, child
     /// reshaping, and `TransformAction` choice.
     Custom(fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>),
+}
+
+impl<N> Rule<N> {
+    /// True iff this rule leaves the element name as-is. Used by
+    /// invariants that need to know which kinds bleed through their
+    /// raw grammar name.
+    pub fn is_passthrough(&self) -> bool {
+        matches!(self, Rule::Passthrough)
+    }
+}
+
+/// Enumerate every kind whose `rule()` is `Passthrough` — i.e. the
+/// raw grammar kind name survives into the transformed tree. Used by
+/// the `no_underscore_in_node_names_except_whitelist` invariant in
+/// `tractor/tests/tree_invariants.rs` to gate underscored grammar
+/// kinds at the table layer (rather than waiting for them to surface
+/// in fixture output).
+///
+/// `K` is a language's `Kind` enum (derives `EnumIter` + `IntoStaticStr`
+/// with snake_case). `N` is irrelevant here — we only inspect the
+/// rule's variant.
+pub fn passthrough_kinds<K, N>(rule_fn: fn(K) -> Rule<N>) -> Vec<&'static str>
+where
+    K: strum::IntoEnumIterator + Into<&'static str> + Copy,
+{
+    K::iter()
+        .filter_map(|k| rule_fn(k).is_passthrough().then(|| k.into()))
+        .collect()
 }
 
 /// Execute a [`Rule`] on a node. Shared dispatcher used by every
@@ -121,6 +162,7 @@ where
             xot.detach(node)?;
             Ok(TransformAction::Done)
         }
+        Rule::Passthrough => Ok(TransformAction::Continue),
         Rule::Custom(f) => f(xot, node),
     }
 }

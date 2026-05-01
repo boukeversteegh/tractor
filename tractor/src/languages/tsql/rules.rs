@@ -465,7 +465,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         //      OR the kind is unhandled and survives as raw kind name.
 
         // Already matches our vocabulary.
-        TsqlKind::Comment => Custom(transformations::passthrough),
+        TsqlKind::Comment => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
@@ -484,7 +484,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::AlterSchema
         | TsqlKind::AlterSequence
         | TsqlKind::AlterType
-        | TsqlKind::AlterView => Custom(transformations::passthrough),
+        | TsqlKind::AlterView => Passthrough,
 
         // TODO: create_* extras. Sibling of `create_table` → CREATE.
         TsqlKind::CreateDatabase
@@ -498,7 +498,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::CreateSequence
         | TsqlKind::CreateTrigger
         | TsqlKind::CreateType
-        | TsqlKind::CreateView => Custom(transformations::passthrough),
+        | TsqlKind::CreateView => Passthrough,
 
         // TODO: drop_* statements. Each could rename to DROP with a
         // per-target marker.
@@ -513,7 +513,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::DropSequence
         | TsqlKind::DropTable
         | TsqlKind::DropType
-        | TsqlKind::DropView => Custom(transformations::passthrough),
+        | TsqlKind::DropView => Passthrough,
 
         // TODO: data-type kinds that aren't yet renamed. Each is the
         // grammar's leaf for its corresponding SQL type and could
@@ -534,7 +534,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::Time
         | TsqlKind::Timestamp
         | TsqlKind::Tinyint
-        | TsqlKind::Varbinary => Custom(transformations::passthrough),
+        | TsqlKind::Varbinary => Passthrough,
 
         // TODO: function-attribute clauses. Specific to PostgreSQL
         // function declarations; currently all passthrough.
@@ -547,7 +547,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::FunctionSecurity
         | TsqlKind::FunctionStrictness
         | TsqlKind::FunctionSupport
-        | TsqlKind::FunctionVolatility => Custom(transformations::passthrough),
+        | TsqlKind::FunctionVolatility => Passthrough,
 
         // TODO: comparison and pattern operators (LIKE/SIMILAR/IN/NOT
         // forms, DISTINCT FROM). Currently passthrough.
@@ -557,7 +557,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::NotIn
         | TsqlKind::NotLike
         | TsqlKind::NotSimilarTo
-        | TsqlKind::SimilarTo => Custom(transformations::passthrough),
+        | TsqlKind::SimilarTo => Passthrough,
 
         // TODO: control / DDL / misc.
         TsqlKind::AddConstraint
@@ -613,6 +613,6 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::VarDeclarations
         | TsqlKind::WhileStatement
         | TsqlKind::WindowClause
-        | TsqlKind::WindowFrame => Custom(transformations::passthrough),
+        | TsqlKind::WindowFrame => Passthrough,
     }
 }

@@ -131,7 +131,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // ---- Passthrough (kind name already matches our vocabulary) ---
 
         // `iota` — already in NODES, intentionally a leaf. Correct.
-        GoKind::Iota => Custom(transformations::passthrough),
+        GoKind::Iota => Passthrough,
 
         // TODO: `array_type` should be `Rename(ARRAY)` (new semantic
         // constant) for consistency with sibling type kinds:
@@ -144,7 +144,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // NODES, only avoided in invariant tests because no fixture
         // exercises it.
         GoKind::ArrayType
-        | GoKind::ImplicitLengthArrayType => Custom(transformations::passthrough),
+        | GoKind::ImplicitLengthArrayType => Passthrough,
 
         // `dot` — the `.` placeholder in `import . "pkg"`. Treated as
         // an identifier-like leaf, same as `blank_identifier` and
@@ -168,7 +168,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // construct. Likely wants its own semantic name (FALLTHROUGH)
         // alongside BREAK / CONTINUE / GOTO, with a corresponding
         // TractorNodeSpec entry.
-        GoKind::FallthroughStatement => Custom(transformations::passthrough),
+        GoKind::FallthroughStatement => Passthrough,
 
         // `imaginary_literal` (`1i`) is a number-shaped literal,
         // grouped with floats.
@@ -177,21 +177,21 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // TODO: `slice_expression` (`s[i:j]`) is structurally similar
         // to `index_expression` (`s[i]`). Either reuse `Rename(INDEX)`
         // with a `<slice/>` marker, or introduce a SLICE_OP semantic.
-        GoKind::SliceExpression => Custom(transformations::passthrough),
+        GoKind::SliceExpression => Passthrough,
 
         // TODO: `type_conversion_expression` (`T(x)`) is semantically
         // a call. Likely `Rename(CALL)` with a `<type/>` marker, so
         // `//call[type]` matches every type conversion uniformly.
-        GoKind::TypeConversionExpression => Custom(transformations::passthrough),
+        GoKind::TypeConversionExpression => Passthrough,
 
         // TODO: `type_instantiation_expression` (`Foo[T]`) is generic
         // application. Could share the `<type><generic/>...` shape
         // already used for `generic_type`, or get its own semantic.
-        GoKind::TypeInstantiationExpression => Custom(transformations::passthrough),
+        GoKind::TypeInstantiationExpression => Passthrough,
 
         // TODO: `variadic_argument` (`args...`) is an argument variant.
         // Likely `Rename(ARGUMENT)` with a `<variadic/>` marker so
         // `//argument[variadic]` picks them out.
-        GoKind::VariadicArgument => Custom(transformations::passthrough),
+        GoKind::VariadicArgument => Passthrough,
     }
 }

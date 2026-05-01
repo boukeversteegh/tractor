@@ -173,7 +173,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::Crate
         | RustKind::Label
         | RustKind::Self_
-        | RustKind::Super => Custom(transformations::passthrough),
+        | RustKind::Super => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. TODO candidates for real semantics.
@@ -190,7 +190,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::AssignmentExpression
         | RustKind::NegativeLiteral
         | RustKind::UnitExpression
-        | RustKind::YieldExpression => Custom(transformations::passthrough),
+        | RustKind::YieldExpression => Passthrough,
 
         // TODO: pattern variants — sibling of mut/or/ref/struct patterns
         // already in the rule table. Each should rename to PATTERN with
@@ -208,7 +208,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::RemainingFieldPattern
         | RustKind::SlicePattern
         | RustKind::TokenBindingPattern
-        | RustKind::TuplePattern => Custom(transformations::passthrough),
+        | RustKind::TuplePattern => Passthrough,
 
         // TODO: macro and meta-syntactic kinds.
         //   macro_definition    → Rename(MACRO)? RenameWithMarker(MACRO, DEFINITION)?
@@ -223,7 +223,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::Metavariable
         | RustKind::TokenRepetition
         | RustKind::TokenRepetitionPattern
-        | RustKind::TokenTreePattern => Custom(transformations::passthrough),
+        | RustKind::TokenTreePattern => Passthrough,
 
         // TODO: extra declaration / item kinds the catalogue didn't
         // cover — should join the DefaultAccessThenRename family or
@@ -237,7 +237,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::ExternModifier
         | RustKind::ForeignModItem
         | RustKind::GenBlock
-        | RustKind::UnionItem => Custom(transformations::passthrough),
+        | RustKind::UnionItem => Passthrough,
 
         // TODO: type-related grammar shapes not yet renamed.
         //   bracketed_type      → Flatten or Rename(TYPE) marker?
@@ -254,7 +254,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::HigherRankedTraitBound
         | RustKind::RemovedTraitBound
         | RustKind::UseBounds
-        | RustKind::VariadicParameter => Custom(transformations::passthrough),
+        | RustKind::VariadicParameter => Passthrough,
 
         // TODO: control-flow / structural odds and ends.
         //   empty_statement → Flatten or Skip
@@ -262,6 +262,6 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         //   shebang         → top-of-file `#!/usr/bin/env`
         RustKind::EmptyStatement
         | RustKind::LetChain
-        | RustKind::Shebang => Custom(transformations::passthrough),
+        | RustKind::Shebang => Passthrough,
     }
 }

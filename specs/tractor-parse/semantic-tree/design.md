@@ -598,6 +598,68 @@ makes the rule expressible at all.
 depends on stable broad shapes), Principle #15 (stable marker
 locations are what make the repeated query surface stable).
 
+### 17. Avoid Compound Node Names
+
+Avoid compound (multi-word, underscored) node names. Single-word
+names keep queries short, predictable, and easy to remember. A
+compound like `string_literal` or `function_declaration` almost
+always signals one of three latent restructurings:
+
+1. **Variation expressible as a marker.** The compound encodes a
+   sub-kind that should attach as an empty marker on the broader
+   concept (Principles #7, #15).
+   `string_literal` → `<string><literal/>...</string>`,
+   queryable as `//string[literal]`.
+
+2. **Context already supplied by tree position.** The compound
+   adds a contextual qualifier that the parent already provides
+   (Principle #11).
+   `function_parameter` → `<function>/<parameter>`, queryable as
+   `//function/parameter`. No need to repeat `function_` in the
+   child name.
+
+3. **AST jargon that can be dropped entirely.** The suffix
+   describes the grammar machinery (declaration, expression,
+   statement, clause, list) rather than the developer concept.
+   `function_declaration` → `<function>`,
+   `if_statement` → `<if>`, `parameter_list` → flat `<parameter>`
+   siblings (Principle #12).
+
+**Allowed exceptions.** A compound is acceptable only when no
+single-word name conveys the concept, AND none of the three
+restructurings above applies. The bar is high — the obvious test
+case is `else_if`, where the concept is genuinely the *combination*
+of two keywords and neither half alone names it. Rare; expect to
+justify each one individually.
+
+```xml
+<!-- WRONG: AST jargon as a node name -->
+<function_declaration><name>foo</name>...</function_declaration>
+
+<!-- WRONG: contextual qualifier duplicating the parent -->
+<function><function_parameter><name>x</name></function_parameter></function>
+
+<!-- WRONG: variation baked into the name -->
+<string_literal>"hi"</string_literal>
+
+<!-- RIGHT: drop the suffix, lift the variant, trust position -->
+<function><name>foo</name><parameter><name>x</name></parameter></function>
+<string><literal/>"hi"</string>
+```
+
+The mechanical gate for this principle is the
+`no_underscore_in_node_names_except_whitelist` invariant in
+`tractor/tests/tree_invariants.rs`. It walks every language's rule
+table and fails on any `Rule::Passthrough` whose snake_case kind
+contains an underscore not on `ALLOWED_UNDERSCORE_NAMES` — catching
+drift at the table layer before it surfaces in fixture output.
+
+**Cites:** Goal #1 (intuitive queries — single-word names are
+easier to type and remember), Goal #4 (minimal query complexity),
+Principle #5 (unified concepts), Principle #7 (modifiers as
+markers), Principle #11 (specific names, not type hierarchies),
+Principle #12 (flat lists over wrapper elements).
+
 ---
 
 ## Decisions

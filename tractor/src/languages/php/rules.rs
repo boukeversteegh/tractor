@@ -162,7 +162,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //      catch-all `_` arm when `map_element_name` returned `None`).
 
         // Already matches our vocabulary.
-        PhpKind::Name | PhpKind::Pair => Custom(transformations::passthrough),
+        PhpKind::Name | PhpKind::Pair => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
@@ -176,7 +176,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //   nullsafe_member_call_expression   → RenameWithMarker(CALL, NULLSAFE)
         // (with INSTANCE preserved or replaced).
         PhpKind::NullsafeMemberAccessExpression
-        | PhpKind::NullsafeMemberCallExpression => Custom(transformations::passthrough),
+        | PhpKind::NullsafeMemberCallExpression => Passthrough,
 
         // TODO: heredoc / nowdoc string variants (`<<<EOT` blocks).
         // Each could rename to STRING with a marker for the variant.
@@ -188,7 +188,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::HeredocStart
         | PhpKind::Nowdoc
         | PhpKind::NowdocBody
-        | PhpKind::NowdocString => Custom(transformations::passthrough),
+        | PhpKind::NowdocString => Passthrough,
 
         // TODO: PHP 8.1+ intersection-type / disjunctive-normal-form-
         // type / bottom-type. Sibling of UnionType → RenameWithMarker(TYPE, UNION).
@@ -198,12 +198,12 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //   bottom_type (`never`)        → RenameWithMarker(TYPE, BOTTOM)
         PhpKind::BottomType
         | PhpKind::DisjunctiveNormalFormType
-        | PhpKind::IntersectionType => Custom(transformations::passthrough),
+        | PhpKind::IntersectionType => Passthrough,
 
         // TODO: anonymous class — `new class { … }`. Sibling of
         // class_declaration → CLASS, just inline. Likely
         // RenameWithMarker(CLASS, ANONYMOUS).
-        PhpKind::AnonymousClass => Custom(transformations::passthrough),
+        PhpKind::AnonymousClass => Passthrough,
 
         // TODO: increment / decrement (`++$x`, `$x--`); augmented
         // assignment (`+=`); reference assignment (`=&`); reference
@@ -216,7 +216,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::AugmentedAssignmentExpression
         | PhpKind::ByRef
         | PhpKind::ReferenceAssignmentExpression
-        | PhpKind::ReferenceModifier => Custom(transformations::passthrough),
+        | PhpKind::ReferenceModifier => Passthrough,
 
         // `update_expression` covers `$x++` / `$x--` / `++$x` / `--$x`.
         // Custom dispatch detects prefix-vs-postfix from child order and
@@ -239,7 +239,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::ListLiteral
         | PhpKind::NamedLabelStatement
         | PhpKind::SwitchBlock
-        | PhpKind::UnsetStatement => Custom(transformations::passthrough),
+        | PhpKind::UnsetStatement => Passthrough,
 
         // TODO: PHP-specific value forms.
         //   error_suppression_expression  (`@func()`) — Rename(CALL) marker?
@@ -251,7 +251,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::RelativeScope
         | PhpKind::SequenceExpression
         | PhpKind::ShellCommandExpression
-        | PhpKind::VariadicPlaceholder => Custom(transformations::passthrough),
+        | PhpKind::VariadicPlaceholder => Passthrough,
 
         // TODO: declaration variants — function-local `static $x;`
         // (different from class static), `global $x;`, alternative
@@ -265,7 +265,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::FunctionStaticDeclaration
         | PhpKind::GlobalDeclaration
         | PhpKind::StaticVariableDeclaration
-        | PhpKind::VarModifier => Custom(transformations::passthrough),
+        | PhpKind::VarModifier => Passthrough,
 
         // TODO: cast type child of cast_expression; dynamic variable
         // name (`$$foo`); raw HTML text outside php tags.
@@ -274,7 +274,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //   text                  → Flatten or Rename(STRING)?
         PhpKind::CastType
         | PhpKind::DynamicVariableName
-        | PhpKind::Text => Custom(transformations::passthrough),
+        | PhpKind::Text => Passthrough,
 
         // TODO: `use Trait` inside a class — different from namespace
         // `use`. Currently both rename to USE; trait-use needs its
@@ -284,7 +284,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //   use_list              → Flatten
         PhpKind::UseAsClause
         | PhpKind::UseInsteadOfClause
-        | PhpKind::UseList => Custom(transformations::passthrough),
+        | PhpKind::UseList => Passthrough,
 
         // TODO: PHP 8.4+ property hooks (`get { … }` / `set { … }`).
         // Likely Rename to a per-hook keyword, similar to C# accessors.
@@ -293,7 +293,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //   property_promotion_parameter → Rename(PARAMETER) with marker?
         PhpKind::PropertyHook
         | PhpKind::PropertyHookList
-        | PhpKind::PropertyPromotionParameter => Custom(transformations::passthrough),
+        | PhpKind::PropertyPromotionParameter => Passthrough,
 
         // ---- Truly raw structural supertypes. Tree-sitter exposes
         //      these as named kinds for grammar-introspection but they
@@ -304,6 +304,6 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::Operation
         | PhpKind::PrimaryExpression
         | PhpKind::Statement
-        | PhpKind::Type => Custom(transformations::passthrough),
+        | PhpKind::Type => Passthrough,
     }
 }

@@ -18,12 +18,6 @@ use super::output::TractorNode::{
     Method, Name, Raw, Short, String as GoString, Struct, Trailing, Type, Unexported, Variable,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`iota`, `dot`, `array_type`, …) — leave them unchanged.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `expression_statement` is a pure grammar wrapper around a single
 /// expression. Skip its subtree so the inner expression's transform
 /// drives the output (matches the previous behavior of returning

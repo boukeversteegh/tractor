@@ -18,12 +18,6 @@ use super::output::*;
 // Shared
 // =============================================================================
 
-/// Continue without changes — used for grammar leaves that don't
-/// need transformation (e.g. `comment`, `escape_sequence`).
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// Strip JSON punctuation children (`{`, `}`, `[`, `]`, `,`, `:`),
 /// then continue into element children. Used for `object` / `array`
 /// in the syntax branch.

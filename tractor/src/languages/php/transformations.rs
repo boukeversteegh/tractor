@@ -20,12 +20,6 @@ use super::output::TractorNode::{
     Trailing, Unary,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`name`, `pair`) or grammar supertypes.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
 /// the wrapper, promote children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {

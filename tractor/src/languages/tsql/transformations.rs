@@ -12,13 +12,6 @@ use crate::transform::{TransformAction, helpers::*};
 use super::input::TsqlKind;
 use super::output::TractorNode::{self, Alias, Name, Schema, Temp, Var};
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (currently just `comment`) or grammar leaves the transform never
-/// rewrites.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// Builder-inserted field wrappers `<value>`, `<left>`, `<right>` —
 /// tsql doesn't need them around expressions; flatten so the inner
 /// expression bubbles up. Dispatched by element name from the

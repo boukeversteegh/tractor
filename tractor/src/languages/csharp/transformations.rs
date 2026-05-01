@@ -20,15 +20,6 @@ use super::output::TractorNode::{
     Variable,
 };
 
-/// Kinds whose name happens to match our semantic vocabulary already
-/// (`discard`, `subpattern`, `interpolation`, `alias_qualified_name`)
-/// — leave them unchanged. Also used for kinds the post-transform
-/// pipeline consumes (`type_parameter_constraint`, etc.) and for
-/// kinds the grammar emits but the C# transform never rewrites.
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `await_expression` — `await foo()`. C#'s `await` is prefix, so the
 /// marker leads the operand. Promote to `<expression>` host with a
 /// leading `<await/>` marker. See [Principle #15: Stable Expression

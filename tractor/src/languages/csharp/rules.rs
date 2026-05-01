@@ -113,9 +113,9 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // shared `attach_where_clause_constraints` post-transform; they
         // never reach the dispatcher in practice. Passthrough is the
         // safe noop.
-        CsKind::ConstructorConstraint            => Custom(transformations::passthrough),
-        CsKind::TypeParameterConstraint          => Custom(transformations::passthrough),
-        CsKind::TypeParameterConstraintsClause   => Custom(transformations::passthrough),
+        CsKind::ConstructorConstraint            => Passthrough,
+        CsKind::TypeParameterConstraint          => Passthrough,
+        CsKind::TypeParameterConstraintsClause   => Passthrough,
 
         // ---- Pure Rename -----------------------------------------------
         CsKind::Argument                       => Rename(Argument),
@@ -201,7 +201,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::AliasQualifiedName
         | CsKind::Discard
         | CsKind::Interpolation
-        | CsKind::Subpattern => Custom(transformations::passthrough),
+        | CsKind::Subpattern => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
@@ -228,7 +228,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::ListPattern
         | CsKind::VarPattern
         | CsKind::TypePattern
-        | CsKind::ParenthesizedPattern => Custom(transformations::passthrough),
+        | CsKind::ParenthesizedPattern => Passthrough,
 
         // `as_expression` (`x as Foo`) and `is_expression` (`obj is
         // Foo`) join `is_pattern_expression` under `<is>` — they're
@@ -245,7 +245,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // one shared shape.
         CsKind::CastExpression
         | CsKind::DefaultExpression
-        | CsKind::ThrowExpression => Custom(transformations::passthrough),
+        | CsKind::ThrowExpression => Passthrough,
 
         // `element_access_expression` (`x[i]`) is the call-site
         // counterpart of `indexer_declaration` → Indexer. Joins
@@ -257,14 +257,14 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // (`new { X = 1 }`) stays as bucket-B work (needs a marker
         // alongside `Rename(New)`); see todo/36-rule-todo-followups.md.
         CsKind::AnonymousMethodExpression           => Rename(Lambda),
-        CsKind::AnonymousObjectCreationExpression   => Custom(transformations::passthrough),
+        CsKind::AnonymousObjectCreationExpression   => Passthrough,
 
         // TODO: array creations are siblings of
         // `object_creation_expression` → New. Likely `Rename(New)`
         // with an Array marker.
         CsKind::ArrayCreationExpression
         | CsKind::ImplicitArrayCreationExpression
-        | CsKind::ImplicitStackallocExpression => Custom(transformations::passthrough),
+        | CsKind::ImplicitStackallocExpression => Passthrough,
 
         // TODO: special-statement forms — `lock`, `fixed`, `unsafe`,
         // `checked`, `goto`, `yield`, `empty` (`;`), `labeled`. Each
@@ -278,13 +278,13 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::LabeledStatement
         | CsKind::LockStatement
         | CsKind::UnsafeStatement
-        | CsKind::YieldStatement => Custom(transformations::passthrough),
+        | CsKind::YieldStatement => Passthrough,
 
         // TODO: `with_expression` (`record with { X = 1 }`) and
         // `with_initializer` are record-update shapes. Either get a
         // dedicated With semantic or share Rename(New) with a marker.
         CsKind::WithExpression
-        | CsKind::WithInitializer => Custom(transformations::passthrough),
+        | CsKind::WithInitializer => Passthrough,
 
         // `event_declaration` is the property-shaped event form
         // (with accessors); pairs with `event_field_declaration`
@@ -347,6 +347,6 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::StringLiteralEncoding
         | CsKind::Type
         | CsKind::TypeDeclaration
-        | CsKind::TypeofExpression => Custom(transformations::passthrough),
+        | CsKind::TypeofExpression => Passthrough,
     }
 }

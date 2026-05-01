@@ -19,12 +19,6 @@ use super::output::*;
 // Shared
 // =============================================================================
 
-/// Continue without changes — used for grammar leaves the transform
-/// has nothing to say about (directives, escape sequences, …).
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// Strip punctuation text children (`{`, `}`, `[`, `]`, `,`, `:`),
 /// then continue into element children.
 pub fn strip_punct_continue(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

@@ -12,12 +12,6 @@ use crate::transform::{TransformAction, helpers::*};
 use super::input::MdKind;
 use super::output::*;
 
-/// Continue without changes — used for kinds the transform leaves
-/// alone (`document`, `section`, `paragraph`, `inline`).
-pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
-    Ok(TransformAction::Continue)
-}
-
 /// `atx_heading` → `<heading>` with `<h1/>`..`<h6/>` empty marker
 /// derived from the `atx_h*_marker` child.
 pub fn atx_heading(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

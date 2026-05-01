@@ -146,7 +146,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::Pattern
         | JavaKind::Super
         | JavaKind::This
-        | JavaKind::Throws => Custom(transformations::passthrough),
+        | JavaKind::Throws => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
@@ -162,7 +162,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::ProvidesModuleDirective
         | JavaKind::RequiresModifier
         | JavaKind::RequiresModuleDirective
-        | JavaKind::UsesModuleDirective => Custom(transformations::passthrough),
+        | JavaKind::UsesModuleDirective => Passthrough,
 
         // TODO: Java annotation-type kinds (the @interface form).
         // Currently unhandled. Likely:
@@ -171,18 +171,18 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         //   annotation_type_element_declaration → Rename(METHOD)?
         JavaKind::AnnotationTypeBody
         | JavaKind::AnnotationTypeDeclaration
-        | JavaKind::AnnotationTypeElementDeclaration => Custom(transformations::passthrough),
+        | JavaKind::AnnotationTypeElementDeclaration => Passthrough,
 
         // TODO: pattern combinators sit alongside `type_pattern` and
         // `record_pattern` already in the rule table. Each should
         // rename to PATTERN with a marker:
         //   underscore_pattern → RenameWithMarker(PATTERN, ?)
         // Test impact: minimal in current snapshots; new pattern fixtures.
-        JavaKind::UnderscorePattern => Custom(transformations::passthrough),
+        JavaKind::UnderscorePattern => Passthrough,
 
         // TODO: array creation is the call-shaped sibling of
         // `object_creation_expression` → NEW. Likely RenameWithMarker(NEW, ARRAY).
-        JavaKind::ArrayCreationExpression => Custom(transformations::passthrough),
+        JavaKind::ArrayCreationExpression => Passthrough,
 
         // TODO: special-statement forms — `break`, `continue`, `do`,
         // `assert`, `synchronized`, `yield`, `labeled`. Each
@@ -194,7 +194,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::DoStatement
         | JavaKind::LabeledStatement
         | JavaKind::SynchronizedStatement
-        | JavaKind::YieldStatement => Custom(transformations::passthrough),
+        | JavaKind::YieldStatement => Passthrough,
 
         // TODO: try-with-resources is the resource-managing sibling of
         // `try_statement` → TRY. Likely RenameWithMarker(TRY, RESOURCE)
@@ -202,12 +202,12 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // its body shape.
         JavaKind::Resource
         | JavaKind::ResourceSpecification
-        | JavaKind::TryWithResourcesStatement => Custom(transformations::passthrough),
+        | JavaKind::TryWithResourcesStatement => Passthrough,
 
         // TODO: cast expression is `(int)x`; instanceof_expression is
         // `x instanceof Foo`. Both are conversion-related.
         JavaKind::CastExpression
-        | JavaKind::InstanceofExpression => Custom(transformations::passthrough),
+        | JavaKind::InstanceofExpression => Passthrough,
 
         // `update_expression` covers `++x` / `x++` / `--x` / `x--`.
         // Custom dispatch detects prefix-vs-postfix from child order and
@@ -221,7 +221,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // `super_interfaces` → IMPLEMENTS; likely Rename(EXTENDS).
         JavaKind::CatchFormalParameter
         | JavaKind::CatchType
-        | JavaKind::ExtendsInterfaces => Custom(transformations::passthrough),
+        | JavaKind::ExtendsInterfaces => Passthrough,
 
         // TODO: literal kinds not yet renamed.
         //   character_literal → Rename(STRING)? own CHAR semantic?
@@ -229,7 +229,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         //   hex_floating_point_literal → Rename(FLOAT)
         JavaKind::CharacterLiteral
         | JavaKind::ClassLiteral
-        | JavaKind::HexFloatingPointLiteral => Custom(transformations::passthrough),
+        | JavaKind::HexFloatingPointLiteral => Passthrough,
 
         // TODO: array / annotation initializer / element kinds.
         //   array_initializer → similar to `<call>` arguments?
@@ -237,12 +237,12 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         //   element_value_pair → key=value annotation argument
         JavaKind::ArrayInitializer
         | JavaKind::ElementValueArrayInitializer
-        | JavaKind::ElementValuePair => Custom(transformations::passthrough),
+        | JavaKind::ElementValuePair => Passthrough,
 
         // TODO: dimensions (the `[]` after a type) and dimensions_expr
         // (the size in `new int[5]`). Already in NODES via DIMENSIONS.
         JavaKind::Dimensions
-        | JavaKind::DimensionsExpr => Custom(transformations::passthrough),
+        | JavaKind::DimensionsExpr => Passthrough,
 
         // TODO: receiver_parameter (instance method's `this` param);
         // method_reference (`Foo::bar`); inferred_parameters (lambda's
@@ -252,7 +252,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::MethodReference
         | JavaKind::Permits
         | JavaKind::ReceiverParameter
-        | JavaKind::StaticInitializer => Custom(transformations::passthrough),
+        | JavaKind::StaticInitializer => Passthrough,
 
         // TODO: string interpolation (Java 21 string templates).
         //   template_expression → Rename(STRING) with marker?
@@ -262,12 +262,12 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::EscapeSequence
         | JavaKind::MultilineStringFragment
         | JavaKind::StringInterpolation
-        | JavaKind::TemplateExpression => Custom(transformations::passthrough),
+        | JavaKind::TemplateExpression => Passthrough,
 
         // TODO: declaration markers — annotated_type wraps a type with
         // annotations: `@NonNull String`. Likely Rename(TYPE) with
         // additional handling.
-        JavaKind::AnnotatedType => Custom(transformations::passthrough),
+        JavaKind::AnnotatedType => Passthrough,
 
         // TODO: misc grammar kinds.
         //   constant_declaration → interface field; Rename(FIELD) with marker?
@@ -278,7 +278,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::ConstantDeclaration
         | JavaKind::RecordPatternBody
         | JavaKind::RecordPatternComponent
-        | JavaKind::Wildcard => Custom(transformations::passthrough),
+        | JavaKind::Wildcard => Passthrough,
 
         // ---- Truly raw structural supertypes. Tree-sitter exposes
         //      these as named kinds for grammar-introspection but they
@@ -287,6 +287,6 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::Declaration
         | JavaKind::Expression
         | JavaKind::PrimaryExpression
-        | JavaKind::Statement => Custom(transformations::passthrough),
+        | JavaKind::Statement => Passthrough,
     }
 }
