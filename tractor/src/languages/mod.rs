@@ -234,7 +234,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["toml"],
         transform: toml::transform,
-        post_transform: None,
+        post_transform: Some(toml_post_transform),
         syntax_category: toml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -349,6 +349,76 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
 ///    step 1, both block-scoped and file-scoped forms have flat
 ///    declarations; for file-scoped we additionally need to move
 ///    the trailing siblings INTO the namespace.
+/// TOML `[[arrays-of-tables]]` collapse (closes todo/35).
+///
+/// Each `[[servers]]` entry produces a separate `<servers><item>...`
+/// from the per-element transform. Multiple `[[servers]]` blocks
+/// thus emit sibling `<servers>` elements, each with one `<item>`.
+/// This contradicts every other array shape in tractor (one parent
+/// `<key>` with many `<item>` children) and breaks intuitive
+/// queries like `count(//servers) = 1`.
+///
+/// Walk every container; for each pair of adjacent same-named
+/// element children, merge the second into the first by moving its
+/// children over and detaching the now-empty second wrapper.
+fn toml_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    // Skip xot's document wrapper if present.
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    // Only merge same-named adjacent SIBLINGS at the top-level
+    // `<document>` (the AOT collapse case). Don't recurse — that
+    // would merge legitimate `<item>` siblings that represent
+    // distinct array elements. If multi-level AOT becomes a real
+    // case (`[[a.b]]` repeating where the inner `<b>` siblings
+    // should also merge), revisit and apply this recursively only
+    // for non-`<item>` names.
+    merge_adjacent_same_named(xot, root)?;
+    Ok(())
+}
+
+fn merge_adjacent_same_named(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    if xot.element(parent).is_none() {
+        return Ok(());
+    }
+    loop {
+        let children: Vec<XotNode> = xot.children(parent).collect();
+        let mut merged = false;
+        for i in 0..children.len().saturating_sub(1) {
+            let first = children[i];
+            let second = children[i + 1];
+            if xot.element(first).is_none() || xot.element(second).is_none() {
+                continue;
+            }
+            // Don't merge `<item>` siblings — they're distinct
+            // array elements.
+            if get_element_name(xot, first).as_deref() == Some("item") {
+                continue;
+            }
+            let n1 = get_element_name(xot, first);
+            let n2 = get_element_name(xot, second);
+            if n1.is_some() && n1 == n2 {
+                let to_move: Vec<XotNode> = xot.children(second).collect();
+                for c in to_move {
+                    xot.detach(c)?;
+                    xot.append(first, c)?;
+                }
+                xot.detach(second)?;
+                merged = true;
+                break;
+            }
+        }
+        if !merged {
+            break;
+        }
+    }
+    Ok(())
+}
+
 fn unify_file_scoped_namespace(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     use crate::transform::helpers::get_element_name;
 

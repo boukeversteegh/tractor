@@ -84,16 +84,12 @@ fn toml_array_of_strings() {
         1);
 }
 
-/// Today each `[[servers]]` occurrence becomes its own `<servers>`
-/// element with a single `<item>` — `count(//servers) = 2`. This
-/// disagrees with how TOML's other array forms (and JSON/YAML
-/// arrays) collapse into a single parent with N items. Tracked as
-/// **TODO #35** (`todo/35-toml-array-of-tables-flatten.md`); flip
-/// this test to assert one `<servers>` with two `<item>`s once
-/// fixed.
+/// Multiple `[[servers]]` occurrences collapse into ONE `<servers>`
+/// element with N `<item>` children, matching TOML's other array
+/// forms (and JSON / YAML). Closes todo/35.
 #[test]
 fn toml_array_of_tables() {
-    claim("two `[[servers]]` occurrences currently render as two sibling <servers> (TODO #35: should flatten to one)",
+    claim("two `[[servers]]` occurrences collapse into one <servers> with two <item>s",
         &mut parse_src("toml", r#"
             [[servers]]
             name = "web-1"
@@ -105,7 +101,7 @@ fn toml_array_of_tables() {
         "#),
         &multi_xpath(r#"
             //document
-                [count(servers)=2]
+                [count(servers)=1]
                 [servers/item[name='web-1'][port='8080']]
                 [servers/item[name='web-2'][port='8081']]
         "#),
