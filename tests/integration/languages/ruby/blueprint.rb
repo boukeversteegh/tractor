@@ -145,3 +145,40 @@ end
 unless MAX_RETRIES.zero?
   puts "retries: #{MAX_RETRIES}"
 end
+
+# Pattern-matching exercise — covers array/hash/find/alternative/as
+# patterns, guards (`if`/`unless` clauses inside `case/in`), and
+# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant
+# under `<pattern[X]>` so `//pattern[array]` etc. narrow.
+def patterns(values, ...)
+  result = case values
+           in []
+             :empty
+           in [head, *tail] if head.is_a?(Integer)
+             head + tail.size
+           in [first, *, last] unless first == last
+             :find_pattern
+           in {key: Integer => k}
+             k
+           in 1 | 2 | 3
+             :small
+           in Integer => n
+             n
+           end
+  forward(...)
+  joined = "first " "second " "third"
+  ::Configuration::Defaults
+  arr = [10, 20, 30]
+  arr[0]
+  result rescue :failed
+end
+
+def destructured((x, y), &block)
+  block.call(x, y)
+end
+
+(a, b) = [10, 20]
+
+END {
+  puts "shutting down"
+}

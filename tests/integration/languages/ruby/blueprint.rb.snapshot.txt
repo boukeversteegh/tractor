@@ -430,10 +430,107 @@ program/
   │           ├─ name = "b"
   │           ├─ name = "rest"
   │           └─ name = "flag"
-  └─ unless/
-      ├─ condition/expression/call/
-      │   ├─ constant = "MAX_RETRIES"
-      │   └─ name = "zero?"
-      └─ then/call/
-          ├─ name = "puts"
-          └─ string/interpolation/constant = "MAX_RETRIES"
+  ├─ unless/
+  │   ├─ condition/expression/call/
+  │   │   ├─ constant = "MAX_RETRIES"
+  │   │   └─ name = "zero?"
+  │   └─ then/call/
+  │       ├─ name = "puts"
+  │       └─ string/interpolation/constant = "MAX_RETRIES"
+  ├─ comment[leading] = "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
+  ├─ method/
+  │   ├─ name = "patterns"
+  │   ├─ name = "values"
+  │   ├─ parameter[forward] = "..."
+  │   └─ body/
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "result"
+  │       │   └─ right/expression/match/
+  │       │       ├─ value/expression/name = "values"
+  │       │       ├─ in/
+  │       │       │   ├─ pattern[array] = "[]"
+  │       │       │   └─ body/then = ":empty"
+  │       │       ├─ in/
+  │       │       │   ├─ pattern[array]/
+  │       │       │   │   ├─ name = "head"
+  │       │       │   │   └─ spread[list]/name = "tail"
+  │       │       │   ├─ if/condition/expression/call/
+  │       │       │   │   ├─ name = "head"
+  │       │       │   │   ├─ name = "is_a?"
+  │       │       │   │   └─ constant = "Integer"
+  │       │       │   └─ body/then/binary/
+  │       │       │       ├─ left/expression/name = "head"
+  │       │       │       ├─ op[plus] = "+"
+  │       │       │       └─ right/expression/call/
+  │       │       │           ├─ name = "tail"
+  │       │       │           └─ name = "size"
+  │       │       ├─ in/
+  │       │       │   ├─ pattern[array]/
+  │       │       │   │   ├─ name = "first"
+  │       │       │   │   ├─ spread[list] = "*"
+  │       │       │   │   └─ name = "last"
+  │       │       │   ├─ unless/condition/expression/binary/
+  │       │       │   │   ├─ left/expression/name = "first"
+  │       │       │   │   ├─ op[equals] = "=="
+  │       │       │   │   └─ right/expression/name = "last"
+  │       │       │   └─ body/then = ":find_pattern"
+  │       │       ├─ in/
+  │       │       │   ├─ pattern[hash]/pattern[keyword]/value/expression/pattern[as]/
+  │       │       │   │   ├─ value/expression/constant = "Integer"
+  │       │       │   │   └─ name = "k"
+  │       │       │   └─ body/then/name = "k"
+  │       │       ├─ in/
+  │       │       │   ├─ pattern[alternative]/
+  │       │       │   │   ├─ int = "1"
+  │       │       │   │   ├─ int = "2"
+  │       │       │   │   └─ int = "3"
+  │       │       │   └─ body/then = ":small"
+  │       │       └─ in/
+  │       │           ├─ pattern[as]/
+  │       │           │   ├─ value/expression/constant = "Integer"
+  │       │           │   └─ name = "n"
+  │       │           └─ body/then/name = "n"
+  │       ├─ call/
+  │       │   ├─ name = "forward"
+  │       │   └─ argument[forward] = "..."
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "joined"
+  │       │   └─ right/expression/string[concatenated]/
+  │       │       ├─ string = "\"first \""
+  │       │       ├─ string = "\"second \""
+  │       │       └─ string = "\"third\""
+  │       ├─ member[static]/
+  │       │   ├─ member[static]/name = "Configuration"
+  │       │   └─ name = "Defaults"
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "arr"
+  │       │   └─ right/expression/array/
+  │       │       ├─ int = "10"
+  │       │       ├─ int = "20"
+  │       │       └─ int = "30"
+  │       ├─ index/
+  │       │   ├─ name = "arr"
+  │       │   └─ int = "0"
+  │       └─ rescue/body/name = "result"
+  ├─ method/
+  │   ├─ name = "destructured"
+  │   ├─ parameter[destructured]/
+  │   │   ├─ name = "x"
+  │   │   └─ name = "y"
+  │   ├─ parameter[block]/name = "block"
+  │   └─ body/call/
+  │       ├─ name = "block"
+  │       ├─ name = "call"
+  │       ├─ name = "x"
+  │       └─ name = "y"
+  ├─ assign/
+  │   ├─ left/expression/left/expression/left/
+  │   │   ├─ expression[destructured]
+  │   │   ├─ expression/name = "a"
+  │   │   └─ expression/name = "b"
+  │   └─ right/expression/array/
+  │       ├─ int = "10"
+  │       └─ int = "20"
+  └─ block[end]/call/
+      ├─ name = "puts"
+      └─ string = "\"shutting down\""

@@ -127,29 +127,28 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
 
         // TODO: Ruby pattern-matching (3.0+) variants. Likely each
         // renames to PATTERN with a marker:
-        //   alternative_pattern   → RenameWithMarker(PATTERN, OR)?
-        //   array_pattern         → RenameWithMarker(PATTERN, ARRAY)
-        //   as_pattern            → RenameWithMarker(PATTERN, AS)?
-        //   case_match            → Rename(MATCH)
-        //   expression_reference_pattern / find_pattern / hash_pattern
-        //   keyword_pattern / match_pattern / parenthesized_pattern
-        //   test_pattern / variable_reference_pattern
-        //   if_guard / unless_guard / in_clause
-        RubyKind::AlternativePattern
-        | RubyKind::ArrayPattern
-        | RubyKind::AsPattern
-        | RubyKind::CaseMatch
-        | RubyKind::ExpressionReferencePattern
-        | RubyKind::FindPattern
-        | RubyKind::HashPattern
-        | RubyKind::IfGuard
-        | RubyKind::InClause
-        | RubyKind::KeywordPattern
-        | RubyKind::MatchPattern
-        | RubyKind::ParenthesizedPattern
-        | RubyKind::TestPattern
-        | RubyKind::UnlessGuard
-        | RubyKind::VariableReferencePattern => Passthrough,
+        // Pattern-matching family — `case x in ...` shapes. Variants
+        // attach as markers on the shared `<pattern>` host, so
+        // `//pattern` is the broad path and `[array]` / `[hash]` /
+        // `[alternative]` etc. narrow.
+        RubyKind::AlternativePattern         => RenameWithMarker(Pattern, Alternative),
+        RubyKind::ArrayPattern               => RenameWithMarker(Pattern, Array),
+        RubyKind::AsPattern                  => RenameWithMarker(Pattern, As),
+        RubyKind::ExpressionReferencePattern => RenameWithMarker(Pattern, Expression),
+        RubyKind::FindPattern                => RenameWithMarker(Pattern, Find),
+        RubyKind::HashPattern                => RenameWithMarker(Pattern, Hash),
+        RubyKind::KeywordPattern             => RenameWithMarker(Pattern, Keyword),
+        RubyKind::MatchPattern               => RenameWithMarker(Pattern, Match),
+        RubyKind::TestPattern                => RenameWithMarker(Pattern, Test),
+        RubyKind::VariableReferencePattern   => RenameWithMarker(Pattern, Variable),
+        // Pure grammar grouping; flatten so the inner pattern bubbles up.
+        RubyKind::ParenthesizedPattern       => Flatten { distribute_field: None },
+        // case/in shapes: `case_match` is the construct, `in_clause`
+        // is the `in pattern` arm body, guards are postfix predicates.
+        RubyKind::CaseMatch                  => Rename(Match),
+        RubyKind::InClause                   => Rename(In),
+        RubyKind::IfGuard                    => Rename(If),
+        RubyKind::UnlessGuard                => Rename(Unless),
 
         // TODO: alias / undef declarations.
         //   alias  → Rename(ALIAS)? own semantic?
@@ -157,53 +156,43 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::Alias
         | RubyKind::Undef => Passthrough,
 
-        // TODO: special argument / parameter variants.
-        //   block_argument           → marker
-        //   forward_argument         → marker
-        //   forward_parameter        → marker
-        //   destructured_left_assignment / destructured_parameter
-        //   hash_splat_nil           → marker for `**nil`
-        RubyKind::BlockArgument
-        | RubyKind::DestructuredLeftAssignment
-        | RubyKind::DestructuredParameter
-        | RubyKind::ForwardArgument
-        | RubyKind::ForwardParameter
-        | RubyKind::HashSplatNil => Passthrough,
+        // Argument / parameter shape variants. Cross-language same-
+        // concept naming: `<argument[block]>` / `<parameter[forward]>`
+        // / `<spread[nil]>` parallel Python's `<parameter[splat]>` etc.
+        RubyKind::BlockArgument             => RenameWithMarker(Argument, Block),
+        RubyKind::ForwardArgument           => RenameWithMarker(Argument, Forward),
+        RubyKind::ForwardParameter          => RenameWithMarker(Parameter, Forward),
+        RubyKind::DestructuredParameter     => RenameWithMarker(Parameter, Destructured),
+        RubyKind::DestructuredLeftAssignment => RenameWithMarker(Left, Destructured),
+        RubyKind::HashSplatNil              => RenameWithMarker(Spread, Nil),
 
-        // TODO: literal / numeric kinds.
-        //   character        → Rename(CHAR)?
-        //   chained_string   → adjacent literals; concat-like
-        //   complex          → Rename(COMPLEX)? (e.g. `1i`)
-        //   float            → Rename(FLOAT)
-        //   rational         → Rename(RATIONAL)? (e.g. `1r`)
-        RubyKind::ChainedString
-        | RubyKind::Character
+        // Adjacent string literals `"a" "b"` join under <string[concatenated]>
+        // (matches Python's iter-13 shape for `"a" "b"`).
+        RubyKind::ChainedString => RenameWithMarker(String, Concatenated),
+
+        // TODO: literal / numeric kinds without underscored names.
+        //   character / complex / rational — single-word, fine as-is
+        //   for the underscore gate; consider proper Rename later.
+        RubyKind::Character
         | RubyKind::Complex
         | RubyKind::Float
         | RubyKind::Rational => Passthrough,
 
-        // TODO: control-flow / structural odds and ends.
-        //   element_reference (`a[i]`) → Rename(INDEX)?
-        //   empty_statement   → Flatten?
-        //   end_block         → BeginBlock sibling: `END { ... }`
-        //   rescue_modifier   → Rename(RESCUE)?
-        //   right_assignment_list → Rename(RIGHT)?
-        //   return            → Rename(RETURN)
-        //   scope_resolution  → Rename(PATH)?
-        //   setter            → method-like (`def x=(v)`)
-        //   subshell          → backtick command
-        //   uninterpreted     → grammar marker for unparsed text
-        //   __FILE__ / __LINE__ / __ENCODING__ → marker (file / line / encoding)
-        RubyKind::ElementReference
-        | RubyKind::EmptyStatement
-        | RubyKind::Encoding
-        | RubyKind::EndBlock
+        // Control-flow / structural odds and ends with underscored names.
+        RubyKind::ElementReference     => Rename(Index),       // `arr[i]`
+        RubyKind::EmptyStatement       => Flatten { distribute_field: None },
+        RubyKind::EndBlock             => RenameWithMarker(Block, End),  // `END { ... }`
+        RubyKind::RescueModifier       => Rename(Rescue),      // `expr rescue fallback`
+        RubyKind::RightAssignmentList  => Rename(Right),       // `(a, b) = ...` RHS list
+        RubyKind::ScopeResolution      => RenameWithMarker(Member, Static),  // `Foo::Bar`
+
+        // TODO: remaining single-word passthroughs (no underscore violation):
+        //   encoding/file/line — `__ENCODING__`/`__FILE__`/`__LINE__`
+        //   return / setter / subshell / super / uninterpreted
+        RubyKind::Encoding
         | RubyKind::File
         | RubyKind::Line
-        | RubyKind::RescueModifier
-        | RubyKind::RightAssignmentList
         | RubyKind::Return
-        | RubyKind::ScopeResolution
         | RubyKind::Setter
         | RubyKind::Subshell
         | RubyKind::Super

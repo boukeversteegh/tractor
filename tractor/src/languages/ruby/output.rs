@@ -17,18 +17,19 @@ pub enum TractorNode {
     // Statements / control flow (Begin dual-use)
     If, Unless, Else, ElseIf, Case, Then, While, Until, For, Begin, Rescue, Ensure, Break, Continue,
     // Members / parameters
-    Parameter, Variable,
+    Parameter, Argument, Variable,
     // Expressions
-    Call, Assign, Binary, Unary, Conditional, Range, Lambda, Yield, Spread, Left, Expression,
+    Call, Assign, Binary, Unary, Conditional, Range, Lambda, Yield, Spread, Left, Right, Expression,
+    Index, Member, Match,
     // Pattern-matching
     When, In, Pattern,
     // Control-flow keyword leaves
     Next, Redo, Retry,
     // Rescue / class header metadata
     Exceptions, Superclass,
-    // Collections / atoms (String, Symbol dual-use)
+    // Collections / atoms (Array, Hash, String, Symbol dual-use after iter 15)
     Array, Hash, Pair, String, Interpolation, Symbol, Int, Float, Regex,
-    // Literal atoms
+    // Literal atoms (Nil dual-use after iter 15: container + `<spread[nil]>` marker)
     True, False, Nil,
     #[strum(serialize = "self")]
     Self_,
@@ -46,8 +47,10 @@ pub enum TractorNode {
     Delimited,
     // Class / method singleton marker
     Singleton,
-    // Dual-use (block container + `<parameter><block/>` marker)
+    // Dual-use (block container + `<parameter><block/>` marker, plus `<block[end]>` for END {...})
     Block,
+    // Pattern / argument / parameter / string shape markers (iter 15)
+    Alternative, As, Find, Test, Forward, Destructured, Concatenated, Static, End,
 }
 
 impl TractorNode {
@@ -72,19 +75,28 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::List | Self::Dict | Self::Delimited | Self::Singleton           => (true, false, Default),
             Self::Keyword | Self::Default                                           => (true, false, Default),
+            Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward
+            | Self::Destructured | Self::Concatenated | Self::Static | Self::End    => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Begin | Self::Do                                                  => (true, true, Keyword),
             Self::String | Self::Symbol                                             => (true, true, String),
             Self::Block                                                             => (true, true, Default),
+            // Iter 15: Array/Hash/Variable/Nil/Expression also surface as markers
+            // on <pattern> (`<pattern[array]>`, `<pattern[hash]>`, `<pattern[variable]>`,
+            // `<pattern[expression]>`); Nil also appears as `<spread[nil]>`.
+            Self::Array | Self::Hash                                                => (true, true, Type),
+            Self::Variable                                                          => (true, true, Default),
+            Self::Nil                                                               => (true, true, Keyword),
+            Self::Expression                                                        => (true, true, Default),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Class | Self::Method
             | Self::If | Self::Unless | Self::Else | Self::ElseIf | Self::Case
+            | Self::Match
             | Self::While | Self::Until | Self::For | Self::Rescue | Self::Ensure
             | Self::Break | Self::When | Self::Next | Self::Redo | Self::Retry
-            | Self::True | Self::False | Self::Nil | Self::Self_ | Self::Yield     => (false, true, Keyword),
-            Self::Array | Self::Hash                                                => (false, true, Type),
+            | Self::True | Self::False | Self::Self_ | Self::Yield                  => (false, true, Keyword),
             Self::Call | Self::Lambda                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary                               => (false, true, Operator),
             Self::Int | Self::Float                                                 => (false, true, Number),
