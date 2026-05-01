@@ -13,10 +13,10 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 
 use super::input::TsKind;
 use super::output::TractorNode::{
-    self, Abstract, Alias, Arrow, Async, Await, Comment as CommentName, Const, Default, Else,
-    Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method, Name,
-    NonNull, Optional, Parameter, Prefix, Private, Protected, Public, Required, Set, Ternary,
-    Trailing, Type, Unary, Var, Variable,
+    self, Abstract, Alias, Arrow, Asserts, Async, Await, Comment as CommentName, Const, Default,
+    Else, Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method,
+    Name, NonNull, Optional, Parameter, Predicate, Prefix, Private, Protected, Public, Required,
+    Set, Ternary, Trailing, Type, Unary, Var, Variable,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -149,6 +149,59 @@ pub fn modifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Er
             return Ok(TransformAction::Done);
         }
     }
+    Ok(TransformAction::Continue)
+}
+
+/// `asserts_annotation` — `asserts X is T`. Tree-sitter nests the inner
+/// `type_predicate` (`X is T`) underneath the `asserts` keyword token.
+/// Reshape to a single `<predicate>` carrying an `<asserts/>` marker:
+///   1. Promote the nested `type_predicate`'s children directly under
+///      this node, so the predicate is queryable without the raw grammar
+///      wrapper.
+///   2. Remove the nested `type_predicate` / `asserts` wrapper.
+///   3. Prepend an `<asserts/>` empty marker.
+///   4. Rename to `<predicate>`.
+/// Result: `//predicate[asserts]` finds asserting predicates;
+/// `//predicate` matches both forms (asserts and bare).
+pub fn asserts_annotation(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let children: Vec<_> = xot.children(node).collect();
+    let mut asserts_wrapper: Option<XotNode> = None;
+    let mut nested_predicate: Option<XotNode> = None;
+    for child in &children {
+        match get_kind(xot, *child).and_then(|k| k.parse::<TsKind>().ok()) {
+            Some(TsKind::TypePredicate) => {
+                nested_predicate = Some(*child);
+            }
+            _ if get_element_name(xot, *child).as_deref() == Some("asserts") => {
+                asserts_wrapper = Some(*child);
+                nested_predicate = xot.children(*child).find(|&grandchild| {
+                    get_kind(xot, grandchild).and_then(|k| k.parse::<TsKind>().ok())
+                        == Some(TsKind::TypePredicate)
+                });
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(predicate) = nested_predicate {
+        let insert_before = asserts_wrapper.unwrap_or(node);
+        let inner: Vec<_> = xot.children(predicate).collect();
+        for inner_child in inner {
+            xot.detach(inner_child)?;
+            xot.insert_before(insert_before, inner_child)?;
+        }
+        xot.detach(predicate)?;
+    }
+
+    if let Some(wrapper) = asserts_wrapper {
+        xot.detach(wrapper)?;
+    }
+
+    xot.with_prepended_empty_element(node, Asserts)?
+        .with_renamed(node, Predicate);
     Ok(TransformAction::Continue)
 }
 

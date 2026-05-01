@@ -121,6 +121,33 @@ fn typescript_markers() {
         &mut tree, "//alias[name='H']/type[readonly]/type[array]", 1);
 }
 
+/// TypeScript `asserts x is T` should collapse to a single
+/// `<predicate>` with an `<asserts/>` marker and the bound name/type
+/// directly under it.
+#[test]
+fn typescript_asserts_predicate() {
+    let mut tree = parse_src("typescript", r#"
+        function f(x: unknown): asserts x is number {
+            return;
+        }
+    "#);
+
+    claim("asserts predicates surface the variable name and type directly",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='f']/returns/predicate
+                [asserts]
+                [name='x']
+                [type[name='number']]
+        "#),
+        1);
+
+    claim("raw type-predicate wrappers do not survive the transform",
+        &mut tree,
+        "//function[name='f']/returns/predicate/type_predicate",
+        0);
+}
+
 /// Java `void` carries an additional <void/> marker on top of the
 /// `<name>void</name>` text leaf — the marker is a query
 /// shortcut, not a replacement. Other primitives keep just the
