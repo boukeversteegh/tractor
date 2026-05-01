@@ -13,7 +13,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
-    // Top-level / declarations (Function dual-use)
+    // Top-level / declarations (Function, Constructor, Generic, Alias dual-use)
     Program, Class, Interface, Enum, Function, Method, Property, Constructor, Indexer, Alias,
     Variable, Arrow,
     // Members
@@ -22,20 +22,20 @@ pub enum TractorNode {
     Type, Generic, Generics, Predicate, Annotation,
     // Control flow
     Block, Return, If, Else, ElseIf, For, While, Try, Catch, Throw, Finally, Switch, Case,
-    Break, Continue, Body,
-    // Expressions
+    Break, Continue, Body, Do, With, Debugger, Label,
+    // Expressions (Rest, This dual-use)
     Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Pattern,
     Spread, Rest, Expression, NonNull,
     // Imports / exports (Export dual-use)
-    Import, Export, Imports, Spec, Clause, Namespace,
+    Import, Export, Imports, Spec, Clause, Namespace, Declare,
     // Templates (Template dual-use)
     Template, Interpolation,
     // JSX
     Element, Opening, Closing, Prop, Value, Text,
     // Enum members + object pair
     Constant, Pair,
-    // Literals
-    String, Number, Bool, Null, Undefined,
+    // Literals + patterns
+    String, Number, Bool, Null, Undefined, Regex, Flags,
     // Keyword expressions
     This, Super, Constraint,
     // Identifiers / comments / op
@@ -53,8 +53,12 @@ pub enum TractorNode {
     // Type-shape markers (Array, Object dual-use)
     Union, Intersection, Array, Literal, Tuple, Parenthesized, Object, Conditional, Infer, Lookup,
     Keyof,
+    // Iter 18: more type / declaration markers
+    Existential, Typeof, Static, Asserts,
     // Unary-shape marker
     Prefix,
+    // Misc structural
+    Signature, Hashbang, Attribute,
 }
 
 impl TractorNode {
@@ -80,7 +84,8 @@ impl TractorNode {
             | Self::Generator | Self::Get | Self::Set
             | Self::Union | Self::Intersection | Self::Literal | Self::Tuple
             | Self::Parenthesized | Self::Conditional | Self::Infer | Self::Lookup
-            | Self::Keyof | Self::Prefix                                           => (true, false, Default),
+            | Self::Keyof | Self::Prefix
+            | Self::Existential | Self::Typeof | Self::Static | Self::Asserts      => (true, false, Default),
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async
@@ -91,17 +96,23 @@ impl TractorNode {
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Export | Self::Default                          => (true, true, Keyword),
             Self::Template | Self::Array | Self::Object                            => (true, true, Default),
+            // Iter 18: dual-use additions — marker on `<type>` / `<import>`
+            // for shape variants while remaining a container in their own
+            // declarative role.
+            Self::Constructor | Self::Generic | Self::Alias                        => (true, true, Type),
+            Self::Rest | Self::This                                                => (true, true, Default),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Class | Self::Interface | Self::Enum | Self::Method
-            | Self::Alias | Self::Variable | Self::Parameter
+            | Self::Variable | Self::Parameter
             | Self::Return | Self::If | Self::Else | Self::For | Self::While
             | Self::Try | Self::Catch | Self::Throw | Self::Finally | Self::Switch
             | Self::Case | Self::Break | Self::Continue | Self::New
             | Self::Yield | Self::Import
+            | Self::Do | Self::With | Self::Debugger | Self::Declare
             | Self::Bool | Self::Null | Self::Undefined
-            | Self::This | Self::Super                                             => (false, true, Keyword),
-            Self::Type | Self::Generic | Self::Generics                            => (false, true, Type),
+            | Self::Super                                                          => (false, true, Keyword),
+            Self::Type | Self::Generics                                            => (false, true, Type),
             Self::Call | Self::Arrow                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op   => (false, true, Operator),
             Self::String                                                           => (false, true, String),

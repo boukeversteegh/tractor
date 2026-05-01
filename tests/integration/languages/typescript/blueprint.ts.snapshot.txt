@@ -583,6 +583,284 @@ program/
   ├─ expression/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "defaultExport"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "aliasedB"
+  ├─ comment = "// Iter 18: TS 5+ / advanced type / declare / module shapes."
+  ├─ comment[leading] = "// Ambient `declare` declarations."
+  ├─ declare/variable[const]/
+  │   ├─ name = "__DEV__"
+  │   └─ type/name = "boolean"
+  ├─ declare/signature/
+  │   ├─ name = "externalThing"
+  │   ├─ parameter[required]/
+  │   │   ├─ name = "name"
+  │   │   └─ type/name = "string"
+  │   └─ returns/type/name = "void"
+  ├─ declare/namespace/
+  │   ├─ name = "SideEffect"
+  │   └─ body/block/signature/
+  │       ├─ name = "init"
+  │       └─ returns/type/name = "void"
+  ├─ comment[leading] = "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
+  ├─ alias/
+  │   ├─ name = "Builder"
+  │   └─ type[constructor]/
+  │       ├─ parameter[required]/
+  │       │   ├─ name = "input"
+  │       │   └─ type/name = "string"
+  │       └─ type/name = "Status"
+  ├─ alias/
+  │   ├─ name = "Identity"
+  │   ├─ generics/generic/name = "T"
+  │   └─ type[conditional]/
+  │       ├─ left/expression/type[typeof]/name = "globalThis"
+  │       ├─ right/expression/type/name = "T"
+  │       ├─ then/type/name = "T"
+  │       └─ type/name = "never"
+  ├─ alias/
+  │   ├─ name = "Reflective"
+  │   └─ type[object]/method/
+  │       ├─ name = "copy"
+  │       └─ returns/type[this] = "this"
+  ├─ comment[leading] = "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
+  ├─ alias/
+  │   ├─ name = "RestArgs"
+  │   └─ type[tuple]/
+  │       ├─ type/name = "number"
+  │       └─ type[rest]/type[array]/type/name = "string"
+  ├─ comment[leading] = "// `T?` only appears inside tuple element annotations."
+  ├─ alias/
+  │   ├─ name = "OptionalSlot"
+  │   └─ type[tuple]/
+  │       ├─ parameter[required]/
+  │       │   ├─ name = "head"
+  │       │   └─ type/name = "number"
+  │       └─ parameter[optional]/
+  │           ├─ name = "tail"
+  │           └─ type/name = "string"
+  ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
+  ├─ variable[const]/
+  │   ├─ name = "asserted"
+  │   └─ value/expression/as/
+  │       ├─ type/name = "number"
+  │       └─ as/
+  │           ├─ type/name = "unknown"
+  │           └─ string = "\"42\""
+  ├─ comment[leading] = "// Class with static initializer block."
+  ├─ class/
+  │   ├─ name = "StaticBlock"
+  │   └─ body/
+  │       ├─ field[public]/
+  │       │   ├─ name = "counter"
+  │       │   └─ value/expression/number = "0"
+  │       └─ block[static]/body/block/expression/assign/
+  │           ├─ left/expression/member/
+  │           │   ├─ object/name = "StaticBlock"
+  │           │   └─ property/name = "counter"
+  │           ├─ op = "="
+  │           └─ right/expression/number = "7"
+  ├─ comment[leading] = "// Asserts / type predicate annotations."
+  ├─ function/
+  │   ├─ name = "isNumber"
+  │   ├─ parameter[required]/
+  │   │   ├─ name = "x"
+  │   │   └─ type/name = "unknown"
+  │   ├─ returns/predicate/asserts/type_predicate/
+  │   │   ├─ name/identifier = "x"
+  │   │   └─ predefined_type = "number"
+  │   └─ body/block/if/
+  │       ├─ condition/expression/binary/
+  │       │   ├─ left/expression/unary/
+  │       │   │   ├─ op[typeof] = "typeof"
+  │       │   │   └─ name = "x"
+  │       │   ├─ op/not-equals[strict]
+  │       │   └─ right/expression/string = "\"number\""
+  │       └─ then/throw/new/
+  │           ├─ name = "Error"
+  │           └─ string = "\"not a number\""
+  ├─ comment[leading] = "// `Foo<T>` instantiation expression."
+  ├─ variable[const]/
+  │   ├─ name = "arrayOf"
+  │   └─ value/expression/type[generic]/
+  │       ├─ name = "Array"
+  │       └─ type/name = "number"
+  ├─ variable[const]/
+  │   ├─ name = "fixed"
+  │   └─ value/expression/call/callee/name = "arrayOf"
+  ├─ comment[leading] = "// Old-style `import x = require(y)` form."
+  ├─ import/
+  │   ├─ name = "legacy"
+  │   └─ string = "\"./legacy\""
+  ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
+  ├─ variable[const]/
+  │   ├─ name = "url"
+  │   └─ value/expression/member/
+  │       ├─ object/member = "import.meta"
+  │       └─ property/name = "url"
+  ├─ function/
+  │   ├─ name = "MetaCtor"
+  │   ├─ parameter[required]/
+  │   │   ├─ this = "this"
+  │   │   └─ type/name = "unknown"
+  │   └─ body/block/return/expression/binary/
+  │       ├─ left/expression/member/
+  │       │   ├─ object/member = "new.target"
+  │       │   ├─ member[optional] = "?."
+  │       │   └─ property/name = "name"
+  │       ├─ op[nullish-coalescing] = "??"
+  │       └─ right/expression/string = "\"\""
+  ├─ comment[leading] = "// Nested type / value identifiers."
+  ├─ alias/
+  │   ├─ name = "NestedTy"
+  │   └─ type[lookup]/
+  │       ├─ type/name = "StaticBlock"
+  │       └─ type[literal]/string = "\"counter\""
+  ├─ variable[const]/
+  │   ├─ name = "nestedVal"
+  │   └─ value/expression/member/
+  │       ├─ object/name = "StaticBlock"
+  │       └─ property/name = "counter"
+  ├─ comment[leading] = "// Regex literal + flags."
+  ├─ variable[const]/
+  │   ├─ name = "pattern"
+  │   └─ value/expression/regex/flags = "giu"
+  ├─ comment[leading] = "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
+  ├─ function/
+  │   ├─ name = "controlOdds"
+  │   ├─ parameter[required]/
+  │   │   ├─ name = "value"
+  │   │   └─ type/name = "number"
+  │   ├─ returns/type/name = "number"
+  │   └─ body/block/
+  │       ├─ variable[let]/
+  │       │   ├─ name = "total"
+  │       │   └─ value/expression/number = "0"
+  │       ├─ label/
+  │       │   ├─ name = "outer"
+  │       │   └─ body/for/
+  │       │       ├─ variable[let]/
+  │       │       │   ├─ name = "i"
+  │       │       │   ├─ value/expression/number = "0"
+  │       │       │   ├─ name = "j"
+  │       │       │   └─ value/expression/number = "100"
+  │       │       ├─ condition/expression/binary/
+  │       │       │   ├─ left/expression/name = "i"
+  │       │       │   ├─ op/compare[less]
+  │       │       │   └─ right/expression/number = "5"
+  │       │       ├─ unary/
+  │       │       │   ├─ name = "i"
+  │       │       │   └─ op[increment] = "++"
+  │       │       ├─ unary/
+  │       │       │   ├─ name = "j"
+  │       │       │   └─ op[decrement] = "--"
+  │       │       └─ body/block/
+  │       │           ├─ if/
+  │       │           │   ├─ condition/expression/binary/
+  │       │           │   │   ├─ left/expression/name = "i"
+  │       │           │   │   ├─ op/equals[strict]
+  │       │           │   │   └─ right/expression/number = "2"
+  │       │           │   └─ then/continue/name = "outer"
+  │       │           ├─ if/
+  │       │           │   ├─ condition/expression/binary/
+  │       │           │   │   ├─ left/expression/name = "i"
+  │       │           │   │   ├─ op/equals[strict]
+  │       │           │   │   └─ right/expression/number = "4"
+  │       │           │   └─ then/break/name = "outer"
+  │       │           └─ expression/assign/
+  │       │               ├─ left/expression/name = "total"
+  │       │               ├─ op = "="
+  │       │               └─ right/
+  │       │                   ├─ expression/assign/
+  │       │                   │   ├─ left/expression/name = "total"
+  │       │                   │   ├─ op/assign[plus]
+  │       │                   │   └─ right/expression/name = "i"
+  │       │                   └─ expression/binary/
+  │       │                       ├─ left/expression/name = "total"
+  │       │                       ├─ op[multiply] = "*"
+  │       │                       └─ right/expression/number = "2"
+  │       ├─ variable[let]/
+  │       │   ├─ name = "n"
+  │       │   └─ value/expression/number = "0"
+  │       ├─ do/
+  │       │   ├─ body/block/expression/unary/
+  │       │   │   ├─ name = "n"
+  │       │   │   └─ op[increment] = "++"
+  │       │   └─ condition/expression/binary/
+  │       │       ├─ left/expression/name = "n"
+  │       │       ├─ op/compare[less]
+  │       │       └─ right/expression/number = "3"
+  │       ├─ if/
+  │       │   ├─ condition/expression/bool = "false"
+  │       │   └─ then/debugger = "debugger;"
+  │       └─ return/expression/binary/
+  │           ├─ left/expression/name = "total"
+  │           ├─ op[plus] = "+"
+  │           └─ right/expression/name = "n"
+  ├─ comment[leading] = "// Pair pattern + assignment pattern in destructure with defaults."
+  ├─ function/
+  │   ├─ name = "destructure"
+  │   ├─ parameter[required]/
+  │   │   ├─ pattern[object]/
+  │   │   │   ├─ pair/
+  │   │   │   │   ├─ name = "a"
+  │   │   │   │   └─ value/expression/pattern[default]/
+  │   │   │   │       ├─ left/expression/name = "aa"
+  │   │   │   │       └─ right/expression/number = "1"
+  │   │   │   └─ pair/
+  │   │   │       ├─ name = "b"
+  │   │   │       └─ value/expression/name = "bb"
+  │   │   └─ type[object]/
+  │   │       ├─ property/
+  │   │       │   ├─ name = "a"
+  │   │       │   └─ type/name = "number"
+  │   │       └─ property/
+  │   │           ├─ name = "b"
+  │   │           └─ type/name = "number"
+  │   ├─ parameter[required]/
+  │   │   ├─ pattern[array]/
+  │   │   │   ├─ pattern[default]/
+  │   │   │   │   ├─ left/expression/name = "c"
+  │   │   │   │   └─ right/expression/number = "0"
+  │   │   │   └─ rest/name = "rest"
+  │   │   └─ type[array]/type/name = "number"
+  │   ├─ returns/type/name = "number"
+  │   └─ body/block/return/expression/binary/
+  │       ├─ left/expression/binary/
+  │       │   ├─ left/expression/binary/
+  │       │   │   ├─ left/expression/name = "aa"
+  │       │   │   ├─ op[plus] = "+"
+  │       │   │   └─ right/expression/name = "bb"
+  │       │   ├─ op[plus] = "+"
+  │       │   └─ right/expression/name = "c"
+  │       ├─ op[plus] = "+"
+  │       └─ right/expression/member/
+  │           ├─ object/name = "rest"
+  │           └─ property/name = "length"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "controlOdds"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "destructure"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "asserted"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "fixed"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "url"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "nestedVal"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "pattern"
+  ├─ expression/unary/
+  │   ├─ op[void] = "void"
+  │   └─ name = "MetaCtor"
   └─ expression/unary/
       ├─ op[void] = "void"
-      └─ name = "aliasedB"
+      └─ name = "legacy"

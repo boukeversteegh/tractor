@@ -48,18 +48,47 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::TupleType                => RenameWithMarker(Type, Tuple),
         TsKind::UnionType                => RenameWithMarker(Type, Union),
 
+        // ---- Iter 18: TypeScript type-shape variants ------------------
+        TsKind::ConstructorType          => RenameWithMarker(Type, Constructor),
+        TsKind::ExistentialType          => RenameWithMarker(Type, Existential),
+        TsKind::FlowMaybeType            => RenameWithMarker(Type, Optional),
+        TsKind::OptionalType             => RenameWithMarker(Type, Optional),
+        TsKind::RestType                 => RenameWithMarker(Type, Rest),
+        TsKind::ThisType                 => RenameWithMarker(Type, This),
+        TsKind::TypeQuery                => RenameWithMarker(Type, Typeof),
+        // `Foo<T>` instantiation expression — a generically-applied
+        // type/value reference. Same shape as `<type[generic]>`.
+        TsKind::InstantiationExpression  => RenameWithMarker(Type, Generic),
+        // `assignment_pattern` — destructure with default `[a = 1]`.
+        // Sibling of `object_assignment_pattern`.
+        TsKind::AssignmentPattern        => RenameWithMarker(Pattern, Default),
+        // Class-level static initializer block `static { ... }`.
+        TsKind::ClassStaticBlock         => RenameWithMarker(Block, Static),
+        // `import x = require(y)` legacy CommonJS import alias form.
+        TsKind::ImportAlias              => RenameWithMarker(Import, Alias),
+
         // ---- Flatten with field distribution ---------------------------
         TsKind::Arguments     => Flatten { distribute_field: Some("arguments") },
         TsKind::TypeArguments => Flatten { distribute_field: Some("arguments") },
 
         // ---- Pure Flatten ----------------------------------------------
-        TsKind::ClassBody
+        TsKind::AddingTypeAnnotation
+        | TsKind::ClassBody
         | TsKind::ClassHeritage
+        | TsKind::EmptyStatement
         | TsKind::EnumBody
+        | TsKind::EscapeSequence
         | TsKind::ExportClause
+        | TsKind::HtmlCharacterReference
+        | TsKind::ImportRequireClause
         | TsKind::InterfaceBody
         | TsKind::MappedTypeClause
+        | TsKind::OmittingTypeAnnotation
         | TsKind::ParenthesizedExpression
+        | TsKind::PrimaryExpression
+        | TsKind::PrimaryType
+        | TsKind::RegexPattern
+        | TsKind::SequenceExpression
         | TsKind::StringFragment
         | TsKind::TypeAnnotation
         | TsKind::VariableDeclarator => Flatten { distribute_field: None },
@@ -163,6 +192,50 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::WhileStatement            => Rename(While),
         TsKind::YieldExpression           => Rename(Yield),
 
+        // ---- Iter 18: pure renames for previously-passthrough kinds ---
+        // `asserts X is T` — promote the inner type_predicate's children
+        // and surface as `<predicate[asserts]>`.
+        TsKind::AssertsAnnotation         => Custom(transformations::asserts_annotation),
+        // `<T>expr` — old TS cast syntax. Same shape as `expr as T` (As).
+        TsKind::TypeAssertion             => Rename(As),
+        // `declare const x: T;` ambient declaration.
+        TsKind::AmbientDeclaration        => Rename(Declare),
+        // `[expr]: value` — computed property name.
+        TsKind::ComputedPropertyName      => Rename(Name),
+        // `new.target` / `import.meta` — both are member-access shapes.
+        TsKind::MetaProperty              => Rename(Member),
+        // `Foo.Bar` in type position — same shape as `<member>`.
+        TsKind::NestedTypeIdentifier      => Rename(Member),
+        // `Foo.Bar` value reference (scoped value identifier).
+        TsKind::NestedIdentifier          => Rename(Member),
+        // `extends Type` clause inside a type alias / mapped type.
+        TsKind::ExtendsTypeClause         => Rename(Extends),
+        // `import { x } with { type: 'json' }` import attributes.
+        TsKind::ImportAttribute           => Rename(Attribute),
+        // `key: pattern` — pair pattern in object destructure.
+        TsKind::PairPattern               => Rename(Pair),
+        // Bare interface signatures.
+        TsKind::CallSignature             => Rename(Signature),
+        TsKind::FunctionSignature         => Rename(Signature),
+        // Legacy / scoped-namespace variants.
+        TsKind::Module                    => Rename(Namespace),
+        TsKind::InternalModule            => Rename(Namespace),
+        TsKind::NamespaceExport           => Rename(Export),
+        // Special-statement / control-flow shapes.
+        TsKind::DebuggerStatement         => Rename(Debugger),
+        TsKind::DoStatement               => Rename(Do),
+        TsKind::WithStatement             => Rename(With),
+        TsKind::LabeledStatement          => Rename(Label),
+        TsKind::StatementIdentifier       => Rename(Name),
+        // JSX / HTML.
+        TsKind::JsxNamespaceName          => Rename(Name),
+        TsKind::HtmlComment               => Rename(Comment),
+        // Regex literal.
+        TsKind::Regex                     => Rename(Regex),
+        TsKind::RegexFlags                => Rename(Flags),
+        // `#!/usr/bin/env node` shebang line.
+        TsKind::HashBangLine              => Rename(Hashbang),
+
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and survives as raw kind name.
 
@@ -175,118 +248,25 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::This
         | TsKind::Undefined => Passthrough,
 
-        // ---- Unhandled in the previous dispatcher — survive as raw
-        //      kind names. Most are TODO candidates.
+        // `asserts` keyword token of `asserts x is T`. Run through the
+        // modifier helper to convert "asserts" text into an empty
+        // `<asserts/>` marker (Principle #7); the source keyword
+        // survives as a dangling sibling so the parent `<predicate>`'s
+        // string-value still includes it.
+        TsKind::Asserts => Custom(transformations::modifier),
 
-        // TODO: TypeScript 5+ type assertion / `asserts` predicate / asserts
-        // annotation.
-        //   asserts                  → marker on type_predicate?
-        //   asserts_annotation       → annotation form
-        //   adding_type_annotation   → typescript flow plus annotation
-        //   omitting_type_annotation → typescript flow minus annotation
-        //   type_assertion           → cast-like; Rename(CAST) marker?
-        TsKind::AddingTypeAnnotation
-        | TsKind::Asserts
-        | TsKind::AssertsAnnotation
-        | TsKind::OmittingTypeAnnotation
-        | TsKind::TypeAssertion => Passthrough,
-
-        // TODO: ambient declaration (`declare …`); class_static_block;
-        // computed_property_name (`[expr]: value`); decorator
-        // (`@Component`); meta_property (`new.target` / `import.meta`).
-        TsKind::AmbientDeclaration
-        | TsKind::ClassStaticBlock
-        | TsKind::ComputedPropertyName
+        // ---- Single-word passthroughs.
+        // `class` (class-as-expression — the `class` keyword in a value
+        // position; the `class_declaration` form already renames). The
+        // rest are tree-sitter structural supertypes that almost never
+        // surface in the parsed output.
+        // `import` / `decorator` keep their kind name (single word).
+        TsKind::Class
         | TsKind::Decorator
-        | TsKind::MetaProperty => Passthrough,
-
-        // TODO: more pattern shapes.
-        //   assignment_pattern       → RenameWithMarker(PATTERN, ASSIGN)?
-        //   pair_pattern             → key:value pattern
-        TsKind::AssignmentPattern
-        | TsKind::PairPattern => Passthrough,
-
-        // TODO: more type shapes.
-        //   constructor_type      → RenameWithMarker(TYPE, CONSTRUCTOR)
-        //   existential_type      → `*` type
-        //   extends_type_clause   → for type aliases
-        //   flow_maybe_type       → `?T` (Flow-only nullable)
-        //   nested_type_identifier → scoped type ref
-        //   optional_type         → `T?`
-        //   rest_type             → `...T`
-        //   this_type             → `this` in type position
-        //   type_query            → `typeof X` in type
-        TsKind::ConstructorType
-        | TsKind::ExistentialType
-        | TsKind::ExtendsTypeClause
-        | TsKind::FlowMaybeType
-        | TsKind::NestedTypeIdentifier
-        | TsKind::OptionalType
-        | TsKind::RestType
-        | TsKind::ThisType
-        | TsKind::TypeQuery => Passthrough,
-
-        // TODO: import / module variants.
-        //   import / import_alias / import_attribute / import_require_clause
-        //   internal_module / module / namespace_export
-        //   nested_identifier (scoped value name)
-        TsKind::Import
-        | TsKind::ImportAlias
-        | TsKind::ImportAttribute
-        | TsKind::ImportRequireClause
-        | TsKind::InternalModule
-        | TsKind::Module
-        | TsKind::NamespaceExport
-        | TsKind::NestedIdentifier => Passthrough,
-
-        // TODO: instantiation expression (`Foo<T>`).
-        TsKind::InstantiationExpression => Passthrough,
-
-        // TODO: special-statement / control-flow odds and ends.
-        //   debugger_statement → Rename(DEBUGGER)?
-        //   do_statement       → Rename(DO)
-        //   empty_statement    → Flatten or Skip
-        //   labeled_statement  → Rename(LABEL)
-        //   sequence_expression → `a, b, c` comma operator
-        //   with_statement     → Rename(WITH) (deprecated JS)
-        TsKind::DebuggerStatement
-        | TsKind::DoStatement
-        | TsKind::EmptyStatement
-        | TsKind::LabeledStatement
-        | TsKind::SequenceExpression
-        | TsKind::WithStatement => Passthrough,
-
-        // TODO: regex / hashbang / HTML kinds.
-        //   regex / regex_flags / regex_pattern → literal regex
-        //   hash_bang_line → `#!/usr/bin/env node`
-        //   html_character_reference / html_comment → JSX text fragments
-        //   jsx_namespace_name → JSX `xmlns:foo`
-        TsKind::HashBangLine
-        | TsKind::HtmlCharacterReference
-        | TsKind::HtmlComment
-        | TsKind::JsxNamespaceName
-        | TsKind::Regex
-        | TsKind::RegexFlags
-        | TsKind::RegexPattern => Passthrough,
-
-        // TODO: function-related extras.
-        //   call_signature   → similar to method_signature
-        //   function_signature → bare signature in interface
-        //   statement_identifier → labeled-statement target
-        //   escape_sequence  → string body escape
-        //   class            → class as expression
-        TsKind::CallSignature
-        | TsKind::Class
-        | TsKind::EscapeSequence
-        | TsKind::FunctionSignature
-        | TsKind::StatementIdentifier => Passthrough,
-
-        // ---- Truly raw structural supertypes.
-        TsKind::Declaration
+        | TsKind::Import
+        | TsKind::Declaration
         | TsKind::Expression
         | TsKind::Pattern
-        | TsKind::PrimaryExpression
-        | TsKind::PrimaryType
         | TsKind::Statement
         | TsKind::Type => Passthrough,
     }

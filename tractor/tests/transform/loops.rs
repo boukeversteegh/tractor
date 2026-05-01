@@ -162,13 +162,13 @@ fn typescript() {
         }
     "#);
 
-    claim("TypeScript surfaces three <for> forms (C-style, for-of, for-in) plus while",
+    claim("TypeScript surfaces three <for> forms (C-style, for-of, for-in) plus while/do",
         &mut tree,
         &multi_xpath(r#"
             //function[name='run']/body/block
                 [count(for)=3]
                 [while]
-                [do_statement]
+                [do]
         "#),
         1);
 
@@ -203,9 +203,9 @@ fn typescript() {
         "#),
         1);
 
-    claim("TypeScript do-while leaks <do_statement>; body precedes the condition",
+    claim("TypeScript do-while renames to <do>; body precedes the condition",
         &mut tree,
-        "//do_statement[body/block][condition/expression/bool or condition/expression/name]",
+        "//do[body/block][condition/expression/bool or condition/expression/name]",
         1);
 }
 
