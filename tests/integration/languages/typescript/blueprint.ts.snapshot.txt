@@ -191,7 +191,7 @@ program/
   │   │   ├─ type/name = "Base"
   │   │   └─ type/name = "T"
   │   └─ body/
-  │       ├─ field[private and static and public]/
+  │       ├─ field[private and static]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
   │       ├─ method[public]/

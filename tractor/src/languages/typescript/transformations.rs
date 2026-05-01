@@ -542,6 +542,20 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         xot.with_only_text(node, &clean_text)?;
         if is_private {
             if let Some(parent) = get_parent(xot, node) {
+                // Remove any auto-added Public marker (the parent's
+                // public_field_definition Custom ran before the `#`
+                // prefix was visible here).
+                let public_to_remove: Vec<_> = xot
+                    .children(parent)
+                    .filter(|&c| {
+                        get_element_name(xot, c)
+                            .and_then(|name| name.parse::<TractorNode>().ok())
+                            == Some(Public)
+                    })
+                    .collect();
+                for c in public_to_remove {
+                    xot.detach(c)?;
+                }
                 let already = xot.children(parent).any(|c| {
                     get_element_name(xot, c)
                         .and_then(|name| name.parse::<TractorNode>().ok())
