@@ -52,8 +52,8 @@ const ASSERT_NO_REPEATED_NAME: bool = true;
 // elements (per language `TractorNodeSpec` declarations) that
 // appear as empty leaf elements. An empty `<int/>` or `<name/>`
 // almost always means a transform detached the inner content but
-// left the wrapper. Advisory until violations clear.
-const ASSERT_CONTAINER_NON_EMPTY: bool = false;
+// left the wrapper. Now asserted (zero violations as of iter 49).
+const ASSERT_CONTAINER_NON_EMPTY: bool = true;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 

@@ -75,6 +75,9 @@ impl TractorNode {
             // marker for empty / wildcard generics.
             // Tuple: container for `(a, b)` literal + marker for empty `()`.
             Self::Generic | Self::Tuple                                          => (true, true, Default),
+            // Class: dual-use — container for `class Foo:` declaration;
+            // marker for class-pattern matches (`case Point(x=0, y=y):`).
+            Self::Class                                                          => (true, true, Keyword),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `pass` is always bare; `break`/`continue`/
@@ -83,7 +86,7 @@ impl TractorNode {
             | Self::Yield                                                        => (true, true, Keyword),
 
             // ---- Containers with non-default syntax --------------------------
-            Self::Module | Self::Class | Self::Function | Self::Decorated
+            Self::Module | Self::Function | Self::Decorated
             | Self::Decorator | Self::Parameter
             | Self::If | Self::ElseIf | Self::Else | Self::For
             | Self::While | Self::Try | Self::Except | Self::Finally | Self::With

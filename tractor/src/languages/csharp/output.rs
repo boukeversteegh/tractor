@@ -119,9 +119,13 @@ impl TractorNode {
             Self::Throw | Self::Return | Self::Break | Self::Continue
             | Self::Yield                                                       => (true, true, Keyword),
 
+            // Class: dual-use — container for `class Foo {…}` declaration;
+            // marker for generic constraint `where T : class, new()`.
+            Self::Class                                                         => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Namespace | Self::Import
-            | Self::Class | Self::Struct | Self::Interface | Self::Enum | Self::Record
+            | Self::Struct | Self::Interface | Self::Enum | Self::Record
             | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
             | Self::Do | Self::Try | Self::Catch | Self::Finally
             | Self::Using
@@ -133,7 +137,11 @@ impl TractorNode {
             Self::Char                                                          => (false, true, String),
             Self::Comment                                                       => (false, true, Comment),
             Self::Name                                                          => (false, true, Identifier),
-            Self::Type | Self::Attributes | Self::Attribute                     => (false, true, Type),
+            // Type: dual-use — `<type>` container for type references
+            // (e.g. `<type><name>string</name></type>`) and `[type]`
+            // marker on `<pattern>` (`pattern[type]`).
+            Self::Type                                                          => (true, true, Type),
+            Self::Attributes | Self::Attribute                                  => (false, true, Type),
             Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op => (false, true, Operator),
             Self::Lambda                                                        => (false, true, Function),
             Self::String                                                        => (false, true, String),
