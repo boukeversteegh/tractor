@@ -27,8 +27,10 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
     use Rule::*;
     match k {
         // ---- ExtractOpThenRename ---------------------------------------
-        RustKind::BinaryExpression => ExtractOpThenRename(Binary),
-        RustKind::UnaryExpression  => ExtractOpThenRename(Unary),
+        RustKind::BinaryExpression     => ExtractOpThenRename(Binary),
+        RustKind::UnaryExpression      => ExtractOpThenRename(Unary),
+        // `lhs = rhs` (non-compound). Sibling of `compound_assignment_expr`.
+        RustKind::AssignmentExpression => ExtractOpThenRename(Assign),
 
         // ---- RenameWithMarker ------------------------------------------
         RustKind::AbstractType          => RenameWithMarker(Type, Abstract),
@@ -52,6 +54,54 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::TupleType             => RenameWithMarker(Type, Tuple),
         RustKind::UnitType              => RenameWithMarker(Type, Unit),
 
+        // ---- Iter 16: pattern variants under <pattern> ---------------
+        // Each is a distinct pattern shape; query as `//pattern` for the
+        // broad case and `[capture]` / `[ref]` / `[slice]` etc. to narrow.
+        RustKind::CapturedPattern             => RenameWithMarker(Pattern, Capture),
+        RustKind::GenericPattern              => RenameWithMarker(Pattern, Generic),
+        RustKind::ReferencePattern            => RenameWithMarker(Pattern, Ref),
+        RustKind::RemainingFieldPattern       => RenameWithMarker(Pattern, Rest),
+        RustKind::SlicePattern                => RenameWithMarker(Pattern, Slice),
+        RustKind::TuplePattern                => RenameWithMarker(Pattern, Tuple),
+        RustKind::TokenBindingPattern         => RenameWithMarker(Pattern, Binding),
+
+        // ---- Iter 16: macro grammar ----------------------------------
+        // `macro_rules! name { ... }` — declaration-level, default-private.
+        // Use `Definition` marker to distinguish from `macro_invocation`
+        // (which renames to `<macro>` directly).
+        RustKind::MacroDefinition  => RenameWithMarker(Macro, Definition),
+        // Each macro_rule is `(pat) => { body }` — same shape as match arm.
+        RustKind::MacroRule        => Rename(Arm),
+        // `:expr`, `:ident`, `:ty`, ... — fragment-kind specifier on `$x:ident`.
+        RustKind::FragmentSpecifier => Rename(Fragment),
+        // `$(...)*` — repetition in macro body and pattern. Same shape both
+        // sides, parent (rule arm pattern vs body) disambiguates.
+        RustKind::TokenRepetition         => Rename(Repetition),
+        RustKind::TokenRepetitionPattern  => Rename(Repetition),
+
+        // ---- Iter 16: items / declarations ---------------------------
+        // `extern crate alloc;` strips the `crate` keyword child via a
+        // Custom handler (the bare keyword would violate marker-empty),
+        // then renames to `<use>` + `<extern/>` marker.
+        RustKind::ExternCrateDeclaration => Custom(transformations::extern_crate_declaration),
+        RustKind::ForeignModItem         => RenameWithMarker(Mod, Foreign),
+        RustKind::GenBlock               => RenameWithMarker(Block, Gen),
+        RustKind::UnionItem              => da(Union),
+
+        // ---- Iter 16: type-shaped grammar ----------------------------
+        RustKind::HigherRankedTraitBound  => RenameWithMarker(Bound, Higher),
+        RustKind::RemovedTraitBound       => RenameWithMarker(Bound, Optional),
+        RustKind::GenericTypeWithTurbofish => RenameWithMarker(Type, Turbofish),
+        RustKind::ConstParameter          => RenameWithMarker(Parameter, Const),
+        RustKind::VariadicParameter       => RenameWithMarker(Parameter, Variadic),
+        RustKind::UseBounds               => Rename(Bounds),
+
+        // ---- Iter 16: expression shapes ------------------------------
+        RustKind::ArrayExpression  => Rename(Array),
+        RustKind::NegativeLiteral  => RenameWithMarker(Literal, Negative),
+        RustKind::UnitExpression   => RenameWithMarker(Literal, Unit),
+        RustKind::YieldExpression  => Rename(Yield),
+
         // ---- Flatten with field distribution ---------------------------
         RustKind::Arguments     => Flatten { distribute_field: Some("arguments") },
         RustKind::Parameters    => Flatten { distribute_field: Some("parameters") },
@@ -60,13 +110,18 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         // ---- Pure Flatten ----------------------------------------------
         RustKind::AttributeItem
         | RustKind::Block
+        | RustKind::BracketedType
         | RustKind::ClosureParameters
         | RustKind::DeclarationList
+        | RustKind::EmptyStatement
         | RustKind::EnumVariantList
         | RustKind::EscapeSequence
+        | RustKind::ExternModifier
         | RustKind::FieldDeclarationList
         | RustKind::FieldInitializerList
+        | RustKind::ForLifetimes
         | RustKind::InnerDocCommentMarker
+        | RustKind::LetChain
         | RustKind::LetCondition
         | RustKind::MatchBlock
         | RustKind::MutableSpecifier
@@ -77,6 +132,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::ScopedUseList
         | RustKind::StringContent
         | RustKind::TokenTree
+        | RustKind::TokenTreePattern
         | RustKind::TupleStructPattern
         | RustKind::TypeBinding
         | RustKind::UseAsClause
@@ -175,93 +231,16 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::Self_
         | RustKind::Super => Passthrough,
 
+        // `$ident` inside macro body / macro pattern — text leaf that
+        // names a metavariable. Renames to `<name>` so the bound name is
+        // queryable like any other identifier; the `$` sigil stays in
+        // the leaf text to distinguish from regular names.
+        RustKind::Metavariable => Custom(transformations::identifier),
+
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. TODO candidates for real semantics.
 
-        // TODO: array/array_expression/unit/negative literals — sibling
-        // of integer/float/string. Each needs a Rename target.
-        //   array_expression    → Rename(ARRAY)? Rename(LITERAL) marker?
-        //   unit_expression     → Rename(UNIT)? RenameWithMarker(LITERAL, UNIT)?
-        //   negative_literal    → Rename(INT/FLOAT) marker?
-        //   assignment_expression → ExtractOpThenRename(ASSIGN) (currently
-        //     compound_assignment_expr handles this; assignment_expression
-        //     would be a sibling)
-        RustKind::ArrayExpression
-        | RustKind::AssignmentExpression
-        | RustKind::NegativeLiteral
-        | RustKind::UnitExpression
-        | RustKind::YieldExpression => Passthrough,
-
-        // TODO: pattern variants — sibling of mut/or/ref/struct patterns
-        // already in the rule table. Each should rename to PATTERN with
-        // a marker:
-        //   captured_pattern        → RenameWithMarker(PATTERN, CAPTURED)?
-        //   generic_pattern         → RenameWithMarker(PATTERN, GENERIC)?
-        //   reference_pattern       → RenameWithMarker(PATTERN, REF) (REF exists)
-        //   slice_pattern           → RenameWithMarker(PATTERN, SLICE)?
-        //   tuple_pattern           → RenameWithMarker(PATTERN, TUPLE)?
-        //   remaining_field_pattern → RenameWithMarker(PATTERN, REST)?
-        //   token_binding_pattern   → for macro_rules — different shape
-        RustKind::CapturedPattern
-        | RustKind::GenericPattern
-        | RustKind::ReferencePattern
-        | RustKind::RemainingFieldPattern
-        | RustKind::SlicePattern
-        | RustKind::TokenBindingPattern
-        | RustKind::TuplePattern => Passthrough,
-
-        // TODO: macro and meta-syntactic kinds.
-        //   macro_definition    → Rename(MACRO)? RenameWithMarker(MACRO, DEFINITION)?
-        //   macro_rule          → Rename(ARM)? Rename(RULE)?
-        //   metavariable        → marker for `$ident` in macro body
-        //   fragment_specifier  → marker for `:expr`/`:ident`/etc.
-        //   token_repetition / token_repetition_pattern / token_tree_pattern
-        //     → grammar shapes inside macro definitions
-        RustKind::FragmentSpecifier
-        | RustKind::MacroDefinition
-        | RustKind::MacroRule
-        | RustKind::Metavariable
-        | RustKind::TokenRepetition
-        | RustKind::TokenRepetitionPattern
-        | RustKind::TokenTreePattern => Passthrough,
-
-        // TODO: extra declaration / item kinds the catalogue didn't
-        // cover — should join the DefaultAccessThenRename family or
-        // similar.
-        //   extern_crate_declaration → Rename(USE) marker?
-        //   extern_modifier          → modifier helper
-        //   foreign_mod_item         → RenameWithMarker(MOD, FOREIGN)?
-        //   gen_block                → RenameWithMarker(BLOCK, GEN)?
-        //   union_item               → da(UNION) (new constant)?
-        RustKind::ExternCrateDeclaration
-        | RustKind::ExternModifier
-        | RustKind::ForeignModItem
-        | RustKind::GenBlock
-        | RustKind::UnionItem => Passthrough,
-
-        // TODO: type-related grammar shapes not yet renamed.
-        //   bracketed_type      → Flatten or Rename(TYPE) marker?
-        //   for_lifetimes       → Rename(LIFETIMES) wrapper?
-        //   higher_ranked_trait_bound → for `for<'a> Fn(...)` bounds
-        //   removed_trait_bound → `?Sized` etc; marker?
-        //   generic_type_with_turbofish → Rename(TYPE) marker?
-        //   const_parameter / variadic_parameter → parameter variants
-        //   use_bounds          → use-bound impl items
-        RustKind::BracketedType
-        | RustKind::ConstParameter
-        | RustKind::ForLifetimes
-        | RustKind::GenericTypeWithTurbofish
-        | RustKind::HigherRankedTraitBound
-        | RustKind::RemovedTraitBound
-        | RustKind::UseBounds
-        | RustKind::VariadicParameter => Passthrough,
-
-        // TODO: control-flow / structural odds and ends.
-        //   empty_statement → Flatten or Skip
-        //   let_chain       → Rename(LET) marker?
-        //   shebang         → top-of-file `#!/usr/bin/env`
-        RustKind::EmptyStatement
-        | RustKind::LetChain
-        | RustKind::Shebang => Passthrough,
+        // `shebang` — `#!/usr/bin/env` line at the top of a script.
+        RustKind::Shebang => Passthrough,
     }
 }

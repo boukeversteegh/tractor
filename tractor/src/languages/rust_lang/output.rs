@@ -12,8 +12,9 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
-    // Top-level / declarations (Function, Struct, Trait, Const dual-use)
+    // Top-level / declarations (Function, Struct, Trait, Const, Macro dual-use)
     File, Function, Impl, Struct, Enum, Trait, Mod, Use, Const, Static, Alias, Signature, Modifiers,
+    Union,
     // Members (Field dual-use)
     Parameter,
     #[strum(serialize = "self")]
@@ -23,10 +24,12 @@ pub enum TractorNode {
     Type, Generic, Generics, Path, Bounds, Bound, Where,
     // Statements / control flow
     Let, Return, If, Else, ElseIf, For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
-    Send, Label,
-    // Expressions (Ref, Tuple dual-use; Await/Try are markers)
+    Send, Label, Yield,
+    // Expressions (Ref, Tuple, Array dual-use; Await/Try are markers)
     Call, Index, Binary, Unary, Assign, Closure, Await, Try, Macro, Cast, Ref, Tuple, Unsafe,
     Literal, Block, Expression,
+    // Macro grammar
+    Repetition, Fragment,
     // Visibility
     Pub, In,
     // Literals / atoms
@@ -38,6 +41,9 @@ pub enum TractorNode {
     // Marker-only
     Raw, Inner, Borrowed, Private, Crate, Super, Mut, Async, Pointer, Never, Unit, Dynamic,
     Abstract, Associated, Bounded, Array, Or, Method, Base, Slice,
+    // Iter 16: pattern / macro / item / type / expression markers
+    Capture, Rest, Binding, Definition, Extern, Foreign, Gen, Higher, Optional, Turbofish, Variadic,
+    Negative,
 }
 
 impl TractorNode {
@@ -50,14 +56,17 @@ impl TractorNode {
     ///
     /// Dual-use names set BOTH `marker: true` and `container: true`:
     ///   - Function — function_item (container) vs function_type (marker)
-    ///   - Tuple    — tuple_expression (container) vs tuple_type (marker)
+    ///   - Tuple    — tuple_expression (container) vs tuple_pattern + tuple_type (markers)
     ///   - Trait    — trait_item (container) vs trait_type (marker)
-    ///   - Ref      — reference_expression (container) vs ref_pattern (marker)
+    ///   - Ref      — reference_expression (container) vs reference_pattern + ref_pattern (markers)
     ///   - Field    — field_expression / field_declaration (container) vs
     ///                field_pattern / base_field_initializer (markers)
     ///   - Struct   — struct_item (container) vs struct_pattern (marker)
-    ///   - Generic  — generic_type (container) vs generic_function (marker)
-    ///   - Const    — const_item (container) vs const_block (marker)
+    ///   - Generic  — generic_type (container) vs generic_function + generic_pattern (markers)
+    ///   - Const    — const_item (container) vs const_block + const_parameter (markers)
+    ///   - Macro    — macro_definition / macro_invocation (container) — Definition
+    ///                marker distinguishes the two when needed.
+    ///   - Array    — array_expression (container) vs array_type + slice_pattern (markers).
     ///
     /// Marker-only (under stable expression hosts, principle #15):
     ///   - Try   — try_block + try_expression both attach as `<try/>` marker.
@@ -68,26 +77,29 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Raw | Self::Inner | Self::Borrowed
             | Self::Pointer | Self::Never | Self::Unit | Self::Dynamic
-            | Self::Abstract | Self::Associated | Self::Bounded | Self::Array | Self::Or
+            | Self::Abstract | Self::Associated | Self::Bounded | Self::Or
             | Self::Method | Self::Base | Self::Slice                                  => (true, false, Default),
+            Self::Capture | Self::Rest | Self::Binding | Self::Definition
+            | Self::Foreign | Self::Higher | Self::Optional | Self::Turbofish
+            | Self::Variadic | Self::Negative                                          => (true, false, Default),
             Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
-            | Self::Await                                                              => (true, false, Keyword),
+            | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),
             Self::Try                                                                  => (true, false, Operator),
 
             // ---- Dual-use (marker AND container) -----------------------------
-            Self::Function | Self::Struct | Self::Trait | Self::Const                  => (true, true, Keyword),
+            Self::Function | Self::Struct | Self::Trait | Self::Const | Self::Macro    => (true, true, Keyword),
             Self::Field | Self::Tuple                                                  => (true, true, Default),
-            Self::Generic | Self::Ref                                                  => (true, true, Type),
+            Self::Generic | Self::Ref | Self::Array                                    => (true, true, Type),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static | Self::Alias
-            | Self::Parameter | Self::Self_
+            | Self::Union | Self::Parameter | Self::Self_
             | Self::Let | Self::Return | Self::If | Self::Else | Self::For | Self::While
             | Self::Loop | Self::Match | Self::Arm | Self::Break | Self::Continue
-            | Self::Unsafe | Self::Pub
+            | Self::Unsafe | Self::Pub | Self::Yield
             | Self::Bool                                                               => (false, true, Keyword),
             Self::Type | Self::Path                                                    => (false, true, Type),
-            Self::Call | Self::Closure | Self::Macro                                   => (false, true, Function),
+            Self::Call | Self::Closure                                                 => (false, true, Function),
             Self::Binary | Self::Unary | Self::Op                                      => (false, true, Operator),
             Self::String                                                               => (false, true, String),
             Self::Int | Self::Float                                                    => (false, true, Number),

@@ -187,9 +187,95 @@ pub fn unsafe_block() {
     }
 }
 
+// `extern crate` declaration — legacy import form for the 2015 edition.
+extern crate alloc;
+
+// Foreign module / extern modifier — FFI block with variadic parameter.
+extern "C" {
+    pub fn printf(fmt: *const u8, ...);
+}
+
+// Union — same shape family as struct/enum.
+pub union Either {
+    pub i: i32,
+    pub f: f32,
+}
+
+// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound.
+pub fn hrtb_demo<F, T: ?Sized>(_f: F, _t: &T)
+where
+    F: for<'a> Fn(&'a i32) -> &'a i32,
+{}
+
+// Const generic parameter — `<const N: usize>`.
+pub struct FixedArray<const N: usize> {
+    items: [u32; N],
+}
+
+// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /
+// token_binding_pattern / fragment_specifier / token_repetition.
+macro_rules! collect_pairs {
+    ($($key:ident = $value:expr),* $(,)?) => {
+        vec![$((stringify!($key), $value)),*]
+    };
+    () => { Vec::new() };
+}
+
+pub fn pattern_zoo(p: Point<'_, i32>, opt: Option<Point<'_, i32>>) -> i32 {
+    // remaining_field_pattern — `..`.
+    let Point { x, .. } = p;
+
+    // tuple_pattern + reference_pattern + captured_pattern.
+    let tuple = (1, 2, 3);
+    let total = match &tuple {
+        &(a @ 1..=10, b, _c) => a + b,
+        (a, b, c) => a + b + c,
+    };
+
+    // slice_pattern.
+    let arr = [1, 2, 3, 4, 5];
+    let head_tail = match &arr[..] {
+        [first, .., last] => first + last,
+        [only] => *only,
+        [] => 0,
+    };
+
+    // assignment_expression (non-compound).
+    let mut counter = 0;
+    counter = total + head_tail;
+
+    // array_expression.
+    let triples = [counter, counter * 2, counter * 3];
+
+    // unit_expression as value.
+    let unit_val = ();
+    let _ = unit_val;
+
+    // let-chain.
+    if let Some(inner) = opt && let Point { x: ix, .. } = inner && ix > 0 {
+        return ix + x;
+    }
+
+    // negative_literal in pattern position.
+    let signed = match -1i32 {
+        -1 => "neg",
+        0 => "zero",
+        _ => "pos",
+    };
+    let _ = signed;
+
+    // turbofish expression — `parse::<i32>` is generic_function but
+    // type-position turbofish like `Vec::<i32>::new` exercises
+    // generic_type_with_turbofish.
+    let v = Vec::<i32>::new();
+    v.len() as i32 + triples[0]
+}
+
 fn main() {
     println!("hello, {}", GREETING);
     let v = vec![1, 2, 3];
     let _ = patterns(Shape::Dot(1, 1));
     let _ = loops_and_flow();
+    let _ = pattern_zoo(Point::new(1, 2, "p"), None);
+    let _: Vec<(&str, i32)> = collect_pairs!(a = 1, b = 2);
 }

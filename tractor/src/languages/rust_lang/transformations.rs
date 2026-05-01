@@ -12,9 +12,9 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::RustKind;
 use super::output::TractorNode::{
-    self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Generic,
-    Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Pattern, Private, Pub, Raw,
-    String as RustString, Super, Trailing, Try, Type, Unsafe,
+    self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Extern,
+    Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Pattern, Private,
+    Pub, Raw, String as RustString, Super, Trailing, Try, Type, Unsafe, Use as UseName,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -272,6 +272,29 @@ pub fn let_declaration(
     Ok(TransformAction::Continue)
 }
 
+/// `extern_crate_declaration` — `extern crate alloc;`. Drop the literal
+/// `extern` / `crate` keyword children (Tree-sitter exposes them as
+/// `crate` elements that would otherwise carry text and violate the
+/// marker-empty invariant), then rename to `<use>` with an `<extern/>`
+/// marker so `//use[extern]` finds the legacy import form.
+pub fn extern_crate_declaration(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let to_remove: Vec<_> = xot.children(node)
+        .filter(|&c| matches!(
+            get_kind(xot, c).and_then(|k| k.parse::<RustKind>().ok()),
+            Some(RustKind::Crate)
+        ))
+        .collect();
+    for child in to_remove {
+        xot.detach(child)?;
+    }
+    xot.with_prepended_empty_element(node, Extern)?
+        .with_renamed(node, UseName);
+    Ok(TransformAction::Continue)
+}
+
 // ---------------------------------------------------------------------
 // Default-access resolver consumed by `Rule::DefaultAccessThenRename`.
 // 8 Rust declaration kinds (function, struct, enum, trait, const,
@@ -324,6 +347,7 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
                     | RustKind::TypeIdentifier
                     | RustKind::FieldIdentifier
                     | RustKind::ShorthandFieldIdentifier
+                    | RustKind::Metavariable
             )
         )
         {
