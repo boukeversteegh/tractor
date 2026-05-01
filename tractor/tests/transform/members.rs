@@ -82,10 +82,10 @@ fn java_scoped_path() {
 
 #[test]
 fn rust_scoped_path() {
-    claim("Rust use target keeps std::collections::HashMap as a nested path of names",
+    claim("Rust use target lifts the leaf out of <path> and exposes the prefix segments as flat path/name children",
         &mut parse_src("rust", "use std::collections::HashMap;\n"),
         &multi_xpath(r#"
-            //use/path
+            //use
                 [path
                     [name='std']
                     [name='collections']]

@@ -44,6 +44,8 @@ pub enum TractorNode {
     // Iter 16: pattern / macro / item / type / expression markers
     Capture, Rest, Binding, Definition, Extern, Foreign, Gen, Higher, Optional, Turbofish, Variadic,
     Negative,
+    // Import-shape markers (Group, Wildcard, Reexport on `<use>`)
+    Group, Wildcard, Reexport,
 }
 
 impl TractorNode {
@@ -81,7 +83,8 @@ impl TractorNode {
             | Self::Method | Self::Base | Self::Slice                                  => (true, false, Default),
             Self::Capture | Self::Rest | Self::Binding | Self::Definition
             | Self::Foreign | Self::Higher | Self::Optional | Self::Turbofish
-            | Self::Variadic | Self::Negative                                          => (true, false, Default),
+            | Self::Variadic | Self::Negative
+            | Self::Group | Self::Wildcard | Self::Reexport                            => (true, false, Default),
             Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
             | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),
             Self::Try                                                                  => (true, false, Operator),
@@ -105,8 +108,14 @@ impl TractorNode {
             Self::Pub | Self::Unsafe | Self::Break | Self::Continue | Self::Return
             | Self::Yield                                                              => (true, true, Keyword),
 
+            // `Alias` dual-use: `[alias]` marker on `<use>` for
+            // `use std::X as Y` AND `<alias><name>Y</name></alias>`
+            // child for the local-binding wrapper. Also covers Rust's
+            // `type Color = int` `<alias>` container shape.
+            Self::Alias                                                                => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
-            Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static | Self::Alias
+            Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static
             | Self::Union | Self::Parameter
             | Self::Let | Self::If | Self::Else | Self::For | Self::While
             | Self::Loop | Self::Match | Self::Arm

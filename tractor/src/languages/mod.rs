@@ -631,6 +631,242 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         // no-op for empty returns).
         &["value", "condition", "left", "right", "return"],
     )?;
+    rust_restructure_use(xot, root)?;
+    Ok(())
+}
+
+/// Restructure every Rust `<use>` element into the unified shape
+/// (per `imports-grouping.md`):
+///
+///   use std::collections::HashMap                  → <use><path><name>std</name><name>collections</name></path><name>HashMap</name></use>
+///   use std::collections::HashSet as Set           → <use[alias]>...<name>HashSet</name><alias><name>Set</name></alias></use>
+///   use std::collections::{HashMap, HashSet}       → <use[group]>...<use><name>HashMap</name></use><use><name>HashSet</name></use></use>
+///   use std::fmt::self                             → <use[self]>...</use>
+///   use std::fmt::*                                → <use[wildcard]>...</use>
+///   pub use foo::bar                               → <use[reexport][pub]>...</use>
+fn rust_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{XotWithExt, get_element_name};
+    use rust_lang::output::TractorNode::{Alias, Group, Reexport, Self_, Wildcard};
+
+    let mut targets: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "use", &mut targets);
+
+    for use_node in targets {
+        // Skip inner <use> elements that are children of a grouped <use>
+        // (we may be re-walking after restructuring an outer one).
+        if xot.parent(use_node)
+            .and_then(|p| get_element_name(xot, p))
+            .as_deref() == Some("use")
+        {
+            continue;
+        }
+
+        // 1. Inspect text leaves for keywords / sigils.
+        let mut has_as = false;
+        let mut has_wildcard = false;
+        let mut has_reexport_keyword = false;
+        for child in xot.children(use_node).collect::<Vec<_>>() {
+            let Some(text) = xot.text_str(child) else { continue };
+            for tok in text.split(|c: char| {
+                c.is_whitespace() || matches!(c, ':' | '{' | '}' | ';' | ',')
+            }) {
+                match tok {
+                    "as" => has_as = true,
+                    "*" => has_wildcard = true,
+                    _ => {}
+                }
+            }
+            if text.contains("pub use") {
+                has_reexport_keyword = true;
+            }
+        }
+        // The `[pub]` marker on a use element implies a re-export.
+        let has_pub_marker = xot.children(use_node)
+            .any(|c| get_element_name(xot, c).as_deref() == Some("pub"));
+        if has_pub_marker {
+            has_reexport_keyword = true;
+        }
+
+        // 2. Note `<self>` element (e.g. `use std::fmt::self`).
+        let self_child = xot.children(use_node)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("self"));
+        let has_self = self_child.is_some();
+        if let Some(s) = self_child {
+            xot.detach(s)?;
+        }
+
+        // 2b. BEFORE stripping noise text, capture which `<name>` pairs
+        //     are joined by an `as` text node. This is the only signal
+        //     we have that `Foo as Bar` belongs together inside a group
+        //     `{X, Foo as Bar, Y}` — `use_as_clause` flattens its
+        //     children, so the only remaining trace of pairing is the
+        //     `as` text leaf between two adjacent name elements.
+        let mut alias_pairs: Vec<(XotNode, XotNode)> = Vec::new();
+        let children_seq: Vec<XotNode> = xot.children(use_node).collect();
+        for window in children_seq.windows(3) {
+            let (a, mid, b) = (window[0], window[1], window[2]);
+            if get_element_name(xot, a).as_deref() == Some("name")
+                && get_element_name(xot, b).as_deref() == Some("name")
+            {
+                if let Some(text) = xot.text_str(mid) {
+                    if text.split_whitespace().any(|t| t == "as") {
+                        alias_pairs.push((a, b));
+                    }
+                }
+            }
+        }
+
+        // 3. Strip ALL noise text leaves on use_node.
+        for child in xot.children(use_node).collect::<Vec<_>>() {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+            }
+        }
+
+        // 4. Lift the trailing `<name>` out of the `<path>` IF this is
+        //    a simple-leaf case (`use std::collections::HashMap`) or an
+        //    alias case (`use std::collections::HashSet as Set` —
+        //    which has the leaf inside path and `as Set` as a sibling
+        //    name; we need both as siblings to wrap one as `<alias>`).
+        //    DON'T lift for group / wildcard / self-only cases — the
+        //    path-trailing segment IS a path segment there.
+        let path_child = xot.children(use_node)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("path"));
+        if let Some(path) = path_child {
+            // Flatten any nested `<path>` once.
+            let inner_paths: Vec<XotNode> = xot.children(path)
+                .filter(|&c| get_element_name(xot, c).as_deref() == Some("path"))
+                .collect();
+            for inner in inner_paths {
+                let inner_children: Vec<_> = xot.children(inner).collect();
+                for c in inner_children {
+                    xot.detach(c)?;
+                    xot.insert_before(inner, c)?;
+                }
+                xot.detach(inner)?;
+            }
+            // Strip path-internal noise.
+            for child in xot.children(path).collect::<Vec<_>>() {
+                if xot.text_str(child).is_some() {
+                    xot.detach(child)?;
+                }
+            }
+            // Count sibling names of path BEFORE the lift to classify the
+            // variant.
+            let pre_sibling_names = xot.children(use_node)
+                .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                .count();
+            // Lift only when this is a simple-leaf (0 siblings + no
+            // wildcard/self) OR an alias (has_as case where the alias
+            // occupies one sibling slot but the leaf still lives inside
+            // path).
+            let should_lift = (!has_wildcard && !has_self && pre_sibling_names == 0)
+                || (has_as && pre_sibling_names == 1);
+            if should_lift {
+                let path_names: Vec<XotNode> = xot.children(path)
+                    .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                    .collect();
+                if path_names.len() >= 2 {
+                    let leaf = *path_names.last().unwrap();
+                    xot.detach(leaf)?;
+                    if let Some(next) = xot.next_sibling(path) {
+                        xot.insert_before(next, leaf)?;
+                    } else if let Some(parent) = xot.parent(path) {
+                        xot.append(parent, leaf)?;
+                    }
+                }
+            }
+        }
+
+        // 5. Now the use_node has: optional <path>, then 0+ <name>
+        //    siblings. The number of name siblings + has_as / has_self
+        //    determines the variant.
+        let leaf_names: Vec<XotNode> = xot.children(use_node)
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+            .collect();
+
+        // Set of names that are the *alias* (second of an `as` pair).
+        let alias_targets: std::collections::HashSet<XotNode> =
+            alias_pairs.iter().map(|&(_, b)| b).collect();
+        // Set of names that are the *original* (first of an `as` pair).
+        let alias_originals: std::collections::HashSet<XotNode> =
+            alias_pairs.iter().map(|&(a, _)| a).collect();
+
+        let is_flat_alias_with_pair = has_as && alias_pairs.len() == 1
+            && leaf_names.len() == 2
+            && alias_pairs[0].0 == leaf_names[0]
+            && alias_pairs[0].1 == leaf_names[1];
+        // Flat alias when `use std::Foo as Bar` — original was inside
+        // `<path>` so no name-name `as` pair was captured (the captured
+        // adjacency was path-as-name). After step 4 lifted the path
+        // leaf, we now have two name siblings. has_as + 2 names with
+        // no captured pair = flat path-leaf alias.
+        let is_flat_alias_path_form = has_as && alias_pairs.is_empty()
+            && leaf_names.len() == 2;
+
+        if is_flat_alias_with_pair || is_flat_alias_path_form {
+            let alias_name = leaf_names[1];
+            let alias_elt = xot.add_name("alias");
+            let alias_node = xot.new_element(alias_elt);
+            xot.insert_before(alias_name, alias_node)?;
+            xot.detach(alias_name)?;
+            xot.append(alias_node, alias_name)?;
+            xot.with_prepended_marker(use_node, Alias)?;
+        } else if leaf_names.len() >= 2 || (leaf_names.len() >= 1 && has_self) {
+            // Group form. For each leaf name that's NOT the second of an
+            // alias pair, create an inner `<use>`. Pair-original names
+            // get inner `<use[alias]>` wrappers that ALSO consume the
+            // following alias-target name.
+            let mut i = 0;
+            while i < leaf_names.len() {
+                let name = leaf_names[i];
+                if alias_targets.contains(&name) {
+                    // Already consumed by previous alias pair.
+                    i += 1;
+                    continue;
+                }
+                let inner_use_elt = xot.add_name("use");
+                let inner_use = xot.new_element(inner_use_elt);
+                xot.insert_before(name, inner_use)?;
+                xot.detach(name)?;
+                xot.append(inner_use, name)?;
+                if alias_originals.contains(&name) {
+                    // Find paired alias target and wrap in <alias>.
+                    let paired = alias_pairs.iter()
+                        .find(|&&(orig, _)| orig == name)
+                        .map(|&(_, alias)| alias);
+                    if let Some(alias_name) = paired {
+                        let alias_elt = xot.add_name("alias");
+                        let alias_node = xot.new_element(alias_elt);
+                        xot.append(inner_use, alias_node)?;
+                        xot.detach(alias_name)?;
+                        xot.append(alias_node, alias_name)?;
+                        xot.with_prepended_marker(inner_use, Alias)?;
+                    }
+                }
+                i += 1;
+            }
+            // If there was a `<self>` entry, add inner `<use[self]/>`.
+            if has_self {
+                let inner_use_elt = xot.add_name("use");
+                let inner_use = xot.new_element(inner_use_elt);
+                xot.append(use_node, inner_use)?;
+                xot.with_prepended_marker(inner_use, Self_)?;
+            }
+            xot.with_prepended_marker(use_node, Group)?;
+        } else if has_self && leaf_names.is_empty() {
+            // Single self-import: `use std::fmt::self`.
+            xot.with_prepended_marker(use_node, Self_)?;
+        }
+
+        if has_wildcard {
+            xot.with_prepended_marker(use_node, Wildcard)?;
+        }
+        if has_reexport_keyword {
+            xot.with_prepended_marker(use_node, Reexport)?;
+        }
+    }
+
     Ok(())
 }
 

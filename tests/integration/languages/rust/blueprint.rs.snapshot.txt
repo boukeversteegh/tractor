@@ -6,44 +6,47 @@ file/
   │   ├─ name = "unused_variables"
   │   ├─ name = "unused_imports"
   │   └─ name = "unused_mut"
-  ├─ use/
+  ├─ use[group]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "collections"
-  │   ├─ name = "HashMap"
-  │   ├─ name = "HashSet"
-  │   └─ name = "Set"
-  ├─ use/
+  │   ├─ use/name = "HashMap"
+  │   └─ use[alias]/
+  │       ├─ name = "HashSet"
+  │       └─ alias/name = "Set"
+  ├─ use[group]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "fmt"
-  │   ├─ self = "self"
-  │   ├─ name = "Debug"
-  │   └─ name = "Display"
-  ├─ use/path/
+  │   ├─ use/name = "Debug"
+  │   ├─ use/name = "Display"
+  │   └─ use[self]
+  ├─ use/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "rc"
   │   └─ name = "Rc"
-  ├─ use/path/
+  ├─ use/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "sync"
   │   └─ name = "Arc"
-  ├─ use/path/
+  ├─ use/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "cell"
   │   └─ name = "RefCell"
-  ├─ use/
+  ├─ use[group]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "io"
-  │   ├─ name = "Read"
-  │   ├─ name = "IoRead"
-  │   ├─ name = "Write"
-  │   └─ name = "IoWrite"
-  ├─ use/path/
+  │   ├─ use[alias]/
+  │   │   ├─ name = "Read"
+  │   │   └─ alias/name = "IoRead"
+  │   └─ use[alias]/
+  │       ├─ name = "Write"
+  │       └─ alias/name = "IoWrite"
+  ├─ use[wildcard]/path/
   │   ├─ name = "std"
   │   └─ name = "vec"
   ├─ mod[pub]/
