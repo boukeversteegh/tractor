@@ -90,13 +90,22 @@ impl TractorNode {
             Self::Nil                                                               => (true, true, Keyword),
             Self::Expression                                                        => (true, true, Default),
 
+            // Bare-keyword statements: dual-use because they appear
+            // as either an empty marker (bare keyword) or a container
+            // (with optional content like a label/value).
+            //   <break/> bare vs <break>n</break> with arg
+            //   <next/> bare vs <next>label</next>
+            //   <redo/>, <retry/>, <return/>, <yield/> all bare-or-content
+            Self::Break | Self::Next | Self::Redo | Self::Retry | Self::Return
+            | Self::Yield                                                           => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Class | Self::Method
             | Self::If | Self::Unless | Self::Else | Self::ElseIf | Self::Case
             | Self::Match
             | Self::While | Self::Until | Self::For | Self::Rescue | Self::Ensure
-            | Self::Break | Self::When | Self::Next | Self::Redo | Self::Retry | Self::Return
-            | Self::True | Self::False | Self::Self_ | Self::Yield                  => (false, true, Keyword),
+            | Self::When
+            | Self::True | Self::False | Self::Self_                                => (false, true, Keyword),
             Self::Call | Self::Lambda                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary                               => (false, true, Operator),
             Self::Int | Self::Float                                                 => (false, true, Number),

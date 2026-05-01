@@ -95,13 +95,21 @@ impl TractorNode {
             // `parameter[self]/self = "self"` — same shape as C#
             // `parameter[this]/this = "this"`).
             Self::Self_                                                                => (true, true, Keyword),
+            // Bare-keyword statements + modifier markers: dual-use because
+            // they can appear as either a structural container (with
+            // content / restriction) or as an empty marker (bare keyword).
+            //   <pub/> (default-access marker) vs <pub><crate/></pub>
+            //   <unsafe/> (function modifier) vs <unsafe>{...}</unsafe>
+            //   <break/> (bare break) vs <break>'label</break>
+            //   <return/> (bare return) vs <return>expr</return>
+            Self::Pub | Self::Unsafe | Self::Break | Self::Continue | Self::Return
+            | Self::Yield                                                              => (true, true, Keyword),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static | Self::Alias
             | Self::Union | Self::Parameter
-            | Self::Let | Self::Return | Self::If | Self::Else | Self::For | Self::While
-            | Self::Loop | Self::Match | Self::Arm | Self::Break | Self::Continue
-            | Self::Unsafe | Self::Pub | Self::Yield
+            | Self::Let | Self::If | Self::Else | Self::For | Self::While
+            | Self::Loop | Self::Match | Self::Arm
             | Self::Bool                                                               => (false, true, Keyword),
             Self::Type | Self::Path                                                    => (false, true, Type),
             Self::Call | Self::Closure                                                 => (false, true, Function),

@@ -102,13 +102,19 @@ impl TractorNode {
             Self::Constructor | Self::Generic | Self::Alias                        => (true, true, Type),
             Self::Rest | Self::This                                                => (true, true, Default),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container). `break;` / `continue;` are bare without
+            // label; `return;` / `throw;` / `yield;` likewise.
+            Self::Break | Self::Continue | Self::Return | Self::Throw
+            | Self::Yield                                                          => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Class | Self::Interface | Self::Enum | Self::Method
             | Self::Variable | Self::Parameter
-            | Self::Return | Self::If | Self::Else | Self::For | Self::While
-            | Self::Try | Self::Catch | Self::Throw | Self::Finally | Self::Switch
-            | Self::Case | Self::Break | Self::Continue | Self::New
-            | Self::Yield | Self::Import
+            | Self::If | Self::Else | Self::For | Self::While
+            | Self::Try | Self::Catch | Self::Finally | Self::Switch
+            | Self::Case | Self::New
+            | Self::Import
             | Self::Do | Self::With | Self::Debugger | Self::Declare
             | Self::Bool | Self::Null | Self::Undefined
             | Self::Super                                                          => (false, true, Keyword),

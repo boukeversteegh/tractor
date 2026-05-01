@@ -72,15 +72,21 @@ impl TractorNode {
             // ---- Dual-use (marker AND container) -----------------------------
             Self::List | Self::Dict | Self::Set                                  => (true, true, Default),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container). `pass` is always bare; `break`/`continue`/
+            // `return` are bare without value.
+            Self::Pass | Self::Break | Self::Continue | Self::Return
+            | Self::Yield                                                        => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Module | Self::Class | Self::Function | Self::Decorated
             | Self::Decorator | Self::Parameter
-            | Self::Return | Self::If | Self::ElseIf | Self::Else | Self::For
+            | Self::If | Self::ElseIf | Self::Else | Self::For
             | Self::While | Self::Try | Self::Except | Self::Finally | Self::With
-            | Self::Raise | Self::Pass | Self::Break | Self::Continue
+            | Self::Raise
             | Self::Import | Self::From
             | Self::Exec | Self::Print
-            | Self::Yield | Self::Generator
+            | Self::Generator
             | Self::True | Self::False | Self::None                              => (false, true, Keyword),
             Self::Type                                                           => (false, true, Type),
             Self::Lambda | Self::Call                                            => (false, true, Function),

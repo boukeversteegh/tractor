@@ -93,15 +93,20 @@ impl TractorNode {
             // Template: container for template_expression + marker (dual-use like TS)
             Self::Template                                                          => (true, true, Default),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container).
+            Self::Break | Self::Continue | Self::Return | Self::Throw
+            | Self::Yield                                                           => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Interface | Self::Enum | Self::Method | Self::Field
             | Self::Parameter | Self::Import
-            | Self::Return | Self::If | Self::Else | Self::For | Self::Foreach
-            | Self::While | Self::Try | Self::Catch | Self::Finally | Self::Throw
+            | Self::If | Self::Else | Self::For | Self::Foreach
+            | Self::While | Self::Try | Self::Catch | Self::Finally
             | Self::Switch | Self::Case | Self::New
             | Self::True | Self::False | Self::Null
-            | Self::Assert | Self::Break | Self::Continue | Self::Do
-            | Self::Instanceof | Self::Module | Self::Yield                         => (false, true, Keyword),
+            | Self::Assert | Self::Do
+            | Self::Instanceof | Self::Module                                       => (false, true, Keyword),
             Self::Generic                                                           => (false, true, Type),
             Self::Call | Self::Lambda                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op

@@ -86,14 +86,18 @@ impl TractorNode {
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Constant | Self::Static | Self::Default               => (true, true, Keyword),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container). `break;` / `continue;` are bare without
+            // depth; `return;` / `throw;` likewise.
+            Self::Break | Self::Continue | Self::Return | Self::Throw                    => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Namespace | Self::Use | Self::Class | Self::Interface | Self::Trait
             | Self::Enum | Self::Method | Self::Field | Self::Const | Self::Parameter
             | Self::Extends | Self::Implements
-            | Self::Return | Self::If | Self::Else | Self::ElseIf | Self::For
+            | Self::If | Self::Else | Self::ElseIf | Self::For
             | Self::Foreach | Self::While | Self::Do | Self::Switch | Self::Case
-            | Self::Try | Self::Catch | Self::Finally | Self::Throw
-            | Self::Continue | Self::Break
+            | Self::Try | Self::Catch | Self::Finally
             | Self::Clone | Self::Unset
             | Self::Bool | Self::Null                                                    => (false, true, Keyword),
             Self::Type                                                                   => (false, true, Type),

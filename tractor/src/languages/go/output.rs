@@ -74,13 +74,20 @@ impl TractorNode {
             Self::Function                                                          => (true, true, Keyword),
             Self::Type | Self::Slice                                                => (true, true, Type),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container with content). `return` / `break` / `continue`
+            // are bare keyword leaves when no value/label, full
+            // containers otherwise. Same for `goto label`,
+            // `fallthrough`.
+            Self::Return | Self::Break | Self::Continue | Self::Goto
+            | Self::Fallthrough                                                     => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Package | Self::Import
             | Self::Method | Self::Struct | Self::Interface | Self::Const | Self::Var
             | Self::Parameter
-            | Self::Return | Self::If | Self::Else | Self::For | Self::Range
+            | Self::If | Self::Else | Self::For | Self::Range
             | Self::Case | Self::Default | Self::Defer | Self::Go | Self::Select
-            | Self::Break | Self::Continue | Self::Goto | Self::Fallthrough
             | Self::True | Self::False | Self::Nil                                  => (false, true, Keyword),
             Self::Pointer | Self::Map | Self::Chan | Self::Array                    => (false, true, Type),
             Self::Call                                                              => (false, true, Function),

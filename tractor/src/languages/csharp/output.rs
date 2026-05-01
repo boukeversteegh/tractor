@@ -112,13 +112,20 @@ impl TractorNode {
             Self::Logical                                                       => (true, true,  Operator),
             Self::Tuple | Self::Constant | Self::Declaration                    => (true, true,  Default),
 
+            // Bare-keyword statements: dual-use (empty marker OR
+            // container with content). `throw;` (rethrow) and
+            // `return;` / `break;` / `continue;` are bare; with
+            // value or label they're containers.
+            Self::Throw | Self::Return | Self::Break | Self::Continue
+            | Self::Yield                                                       => (true, true, Keyword),
+
             // ---- Containers with non-default syntax --------------------------
             Self::Namespace | Self::Import
             | Self::Class | Self::Struct | Self::Interface | Self::Enum | Self::Record
-            | Self::Return | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
-            | Self::Do | Self::Try | Self::Catch | Self::Finally | Self::Throw
-            | Self::Using | Self::Break | Self::Continue
-            | Self::Yield | Self::Checked | Self::Fixed | Self::Goto | Self::Lock
+            | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
+            | Self::Do | Self::Try | Self::Catch | Self::Finally
+            | Self::Using
+            | Self::Checked | Self::Fixed | Self::Goto | Self::Lock
             | Self::Default | Self::With | Self::Typeof | Self::Sizeof
             | Self::Bool | Self::Null
             | Self::Get | Self::Set | Self::Init | Self::Add | Self::Remove     => (false, true, Keyword),
