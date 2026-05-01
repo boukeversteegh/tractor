@@ -40,6 +40,14 @@ const ASSERT_OP_MARKER: bool = true;
 // element (one with a `kind` attribute) has a non-empty kind value. A
 // transform that accidentally wiped the attribute would surface here.
 const ASSERT_KIND_NON_EMPTY: bool = true;
+// `no_repeated_parent_child_name` flags `<X><X>…</X></X>` patterns where
+// a parent and immediate child share the same element name (e.g.
+// `<body><body>` from iter 30/35, `<constraint><constraint>` from iter
+// 34, `<arg><arg>` in TSQL). Allowed cases are listed in
+// `REPEATED_NAME_WHITELIST`. Advisory until violations clear; flip to
+// `true` once at zero. See docs/self-improvement.md "Cross-cutting
+// invariant tests".
+const ASSERT_NO_REPEATED_NAME: bool = false;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
@@ -745,5 +753,131 @@ fn kind_attribute_is_non_empty() {
         if ASSERT_INVARIANTS && ASSERT_KIND_NON_EMPTY {
             panic!("empty kind attributes");
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Invariant 9: No repeated parent/child same-name nesting.
+//
+// Catches `<body><body>`, `<constraint><constraint>`, `<arg><arg>`,
+// `<member><member>` etc. — the failure mode of iters 30 / 34 / 35.
+// Almost always a sign that two different rules independently
+// produced the same wrapper name and one should Flatten or rename.
+//
+// A small whitelist covers genuinely-recursive language structures
+// where the repetition is meaningful (e.g. `<path><path>` for nested
+// module paths). If the whitelist grows past ~5 entries the
+// invariant probably isn't holding and should be revisited per
+// docs/self-improvement.md.
+// ---------------------------------------------------------------------------
+
+/// Element names where parent/child nesting of the same name is
+/// genuinely meaningful (a recursive structure, not a grammar-leak
+/// double-wrap).
+///
+/// Each entry includes a brief reason. Adding to this list signals
+/// "the invariant doesn't apply here" — keep the list short and
+/// require every entry to have a defensible reason.
+const REPEATED_NAME_WHITELIST: &[&str] = &[
+    // Nested module / namespace paths: `java.util.function` is a
+    // path-of-paths in tree-sitter's grammar, and the recursion is
+    // semantically meaningful.
+    "path",
+    // Pattern combinators (Ruby `case in`, Python `match`) compose:
+    // `pattern[alternative]/pattern[type]/...` is genuinely nested
+    // patterns, not a wrapper bug.
+    "pattern",
+    // Member-access chains `a.b.c` produce nested `<member>`
+    // elements where each level represents one access segment;
+    // recursion is the intended shape (every other language does
+    // this too).
+    "member",
+    // Nested type expressions: `List<Map<String, T>>` produces
+    // `<type[generic]>/<type[generic]>` — nested by design.
+    "type",
+    // Composed function calls `f(g(x))` produce
+    // `<call>/<argument>/<call>` typically, but parent-being-call
+    // does happen in Ruby/Rust with method-chain shapes; the
+    // recursion is intentional.
+    "call",
+    // Chained comparisons (`a < b < c` in Python; `a IS NOT NULL AND
+    // b > c` in TSQL) emit nested `<compare>` levels.
+    "compare",
+    // Binary expressions: `a + b * c` parses as nested binaries.
+    "binary",
+    // Ternaries can nest: `a ? b : (c ? d : e)`.
+    "ternary",
+    // Nested list literals: `[[1,2],[3,4]]`. Same for dict-of-dicts,
+    // tuple-of-tuples — these compose recursively by nature.
+    "list",
+    "dict",
+    "tuple",
+    // String concatenation / nested f-strings: `"a" "b"` becomes
+    // `<string[concatenated]>/<string>...</string>`; Python f-strings
+    // can nest expressions that contain strings.
+    "string",
+    // Variable declarators in C-family languages can carry multiple
+    // bindings under one declaration (`int a = 1, b = 2`). Some
+    // languages also nest `<variable>` to scope.
+    "variable",
+];
+
+#[test]
+fn no_repeated_parent_child_name() {
+    use std::cell::RefCell;
+    let mut report = Report::default();
+    for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let Some(parsed) = parse_structure(&fixture) else { continue };
+        let xot = parsed.documents.xot();
+        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
+        let parent_stack: RefCell<Vec<String>> = RefCell::new(Vec::new());
+        check_repeated(xot, root, &parent_stack, &mut report, &fixture);
+    }
+    if !report.is_empty() {
+        report.print(
+            "Repeated parent/child same-name nesting (likely Flatten/rename gap)",
+        );
+        if ASSERT_INVARIANTS && ASSERT_NO_REPEATED_NAME {
+            panic!("repeated parent/child same-name nesting");
+        }
+    }
+}
+
+fn check_repeated(
+    xot: &Xot,
+    node: Node,
+    parent_stack: &std::cell::RefCell<Vec<String>>,
+    report: &mut Report,
+    fixture: &Path,
+) {
+    let name = element_name(xot, node);
+    if let Some(name) = name.as_deref() {
+        if !REPEATED_NAME_WHITELIST.contains(&name) {
+            if let Some(parent_name) = parent_stack.borrow().last() {
+                if parent_name == name {
+                    report.record(
+                        name,
+                        fixture,
+                        format!("<{name}> nested directly under <{name}>"),
+                    );
+                }
+            }
+        }
+    }
+    let pushed = if let Some(name) = name {
+        parent_stack.borrow_mut().push(name);
+        true
+    } else {
+        false
+    };
+    for child in xot.children(node) {
+        check_repeated(xot, child, parent_stack, report, fixture);
+    }
+    if pushed {
+        parent_stack.borrow_mut().pop();
     }
 }
