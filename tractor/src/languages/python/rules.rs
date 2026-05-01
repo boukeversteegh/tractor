@@ -140,7 +140,9 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::Lambda                => Rename(Lambda),
         PyKind::MatchStatement        => Rename(Match),
         PyKind::Module                => Rename(Module),
-        PyKind::NamedExpression       => Rename(Assign),
+        // `name := value` (PEP 572 walrus). Extract the `:=` operator
+        // into `<op>` so `//assign[op[walrus]]` matches uniformly.
+        PyKind::NamedExpression       => ExtractOpThenRename(Assign),
         PyKind::None                  => Rename(PyNone),
         PyKind::NonlocalStatement     => Rename(Nonlocal),
         PyKind::PassStatement         => RenameStripKeyword(Pass, "pass"),

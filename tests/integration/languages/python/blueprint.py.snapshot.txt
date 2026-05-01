@@ -514,6 +514,7 @@ module/
   │       │   ├─ condition/expression/compare/
   │       │   │   ├─ assign/
   │       │   │   │   ├─ name = "n"
+  │       │   │   │   ├─ op/assign[walrus]
   │       │   │   │   └─ value/expression/call/
   │       │   │   │       ├─ name = "len"
   │       │   │   │       └─ name = "items"

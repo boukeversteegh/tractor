@@ -202,6 +202,15 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "void",   primary: Some("void"),   children: &[], nested: None },
     // Ruby unary defined-test
     OperatorSpec { text: "defined?", primary: Some("defined"), children: &[], nested: None },
+    // Ruby spaceship comparator: `a <=> b` returns -1 / 0 / 1.
+    // Marker `compare-three-way` is more explicit than the source
+    // sigil and parallels the existing `compare` family.
+    OperatorSpec { text: "<=>", primary: Some("compare-three-way"), children: &[], nested: None },
+    // Ruby regex match operators.
+    OperatorSpec { text: "=~", primary: Some("match"), children: &[],      nested: None },
+    OperatorSpec { text: "!~", primary: Some("match"), children: &["not"], nested: None },
+    // Python walrus / assignment expression.
+    OperatorSpec { text: ":=", primary: Some("assign"), children: &["walrus"], nested: None },
     // Go channel receive (binary form is a separate `<send>` shape)
     OperatorSpec { text: "<-", primary: Some("receive"), children: &[], nested: None },
     // Unary prefix / postfix

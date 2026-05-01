@@ -43,15 +43,14 @@ These remain genuinely undecided. Each is a small one-iter call:
   on stable hosts), so a query-language audience chooses
   `//expression[try]` rather than `//op[try]`.
 
-- **Ruby `<=>` (spaceship)** — no marker. Suggested marker name:
-  `compare-three-way` or `spaceship`. Pick one; add to
-  `OPERATOR_MARKERS`.
-
-- **Ruby `=~` / `!~` (regex match)** — no marker. Suggested:
-  `match` (with `[not]` for `!~`). Pick; add.
-
-- **Python `:=` (walrus)** — verify whether emitted as
-  `<assign[walrus]>` or something else; add a row if missing.
+- ~~**Ruby `<=>` (spaceship)**~~ — *DONE iter 75.*
+  `op[compare-three-way] = "<=>"` chosen over `spaceship` (more
+  explicit, parallels existing `compare` family).
+- ~~**Ruby `=~` / `!~` (regex match)**~~ — *DONE iter 75.*
+  `op[match] = "=~"` and nested `op/{match[not]}/!~`.
+- ~~**Python `:=` (walrus)**~~ — *DONE iter 75.* Rule changed from
+  `Rename(Assign)` to `ExtractOpThenRename(Assign)` so `:=` extracts
+  via `op/{assign[walrus]}/`.
 
 - **Swift / Scala / OCaml** (when those languages get richer
   semantic transforms) — no audit yet; revisit per language.

@@ -146,6 +146,16 @@ The dual form is intentional: each query intent has a clean path.
 - iter 69: design proposal (subagent draft).
 - iter 71: per-user clarification — Principle #5 scope is within-
   language; PHP/Rust keep `<use>`, only structure unifies.
-- iter 70: Go shipped — `<import>` with full path/alias/blank/dot
-  shape; block parens dissolved.
-- PHP, Rust, TS: pending. Each rolls out as its own iter.
+- iter 70: Go `<import>` shipped — full path/alias/blank/dot shape,
+  block parens dissolved.
+- iter 72: PHP `<use>` shipped — path/alias/group + function/const
+  flavor markers.
+- iter 73: Rust `<use>` shipped — path/alias/group/wildcard/self/
+  reexport, including within-group alias pairing.
+- iter 74: TS `<import>` shipped — path/alias/group/namespace/
+  sideeffect; default-import + grouped-imports compose.
+
+C#, Java, Python imports already had decent shapes from prior iters;
+they're not part of this design rollout. If a cross-language audit
+surfaces gaps for those (e.g. C#/Java alias pairing), follow up
+with their own iters.
