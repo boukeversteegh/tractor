@@ -360,16 +360,15 @@ file/
   ├─ comment = "-- CREATE VIEW, DROP TABLE"
   ├─ statement/create/
   │   ├─ ref/name = "ActiveUsers"
-  │   └─ create/
-  │       ├─ select/
-  │       │   ├─ column/name = "ID"
-  │       │   └─ column/name = "Name"
-  │       └─ from/
-  │           ├─ relation/ref/name = "Users"
-  │           └─ where/compare/
-  │               ├─ column/name = "Active"
-  │               ├─ op = "="
-  │               └─ literal = "1"
+  │   ├─ select/
+  │   │   ├─ column/name = "ID"
+  │   │   └─ column/name = "Name"
+  │   └─ from/
+  │       ├─ relation/ref/name = "Users"
+  │       └─ where/compare/
+  │           ├─ column/name = "Active"
+  │           ├─ op = "="
+  │           └─ literal = "1"
   ├─ statement/drop/ref/name = "TempData"
   ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
   ├─ statement/alter/

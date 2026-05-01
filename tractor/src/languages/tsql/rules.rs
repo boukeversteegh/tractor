@@ -493,13 +493,18 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::CreateMaterializedView
         | TsqlKind::CreatePolicy
         | TsqlKind::CreateProcedure
-        | TsqlKind::CreateQuery
         | TsqlKind::CreateRole
         | TsqlKind::CreateSchema
         | TsqlKind::CreateSequence
         | TsqlKind::CreateTrigger
         | TsqlKind::CreateType
         | TsqlKind::CreateView => Rename(Create),
+
+        // `CREATE VIEW ... AS SELECT ...`: the inner create_query
+        // wraps the SELECT statement under create_view. Flatten so
+        // the SELECT lifts directly under the outer `<create>`,
+        // avoiding `<create><create>...</create></create>`.
+        TsqlKind::CreateQuery => Flatten { distribute_field: None },
 
         // drop_* variants — share the generic <drop> container.
         TsqlKind::DropColumn

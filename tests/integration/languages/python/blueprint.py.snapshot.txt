@@ -1,7 +1,7 @@
 module/
   ├─ expression/string = "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
   ├─ import/name = "os"
-  ├─ import/import/
+  ├─ import/
   │   ├─ name = "sys"
   │   └─ name = "system"
   ├─ from/
@@ -18,9 +18,8 @@ module/
   ├─ from/name = "sibling"
   ├─ from/
   │   ├─ name = "utils"
-  │   └─ import/
-  │       ├─ name = "helper"
-  │       └─ name = "h"
+  │   ├─ name = "helper"
+  │   └─ name = "h"
   ├─ assign/
   │   ├─ left/expression/name = "GLOBAL_FLAG"
   │   ├─ type/name = "bool"

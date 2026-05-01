@@ -301,7 +301,7 @@ program/
   │   ├─ parameter[required]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "unknown"
-  │   ├─ returns/predicate/predicate/
+  │   ├─ returns/predicate/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "Shape"
   │   └─ body/block/return/expression/binary/

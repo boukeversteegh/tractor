@@ -84,7 +84,13 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::Type                     => Custom(transformations::type_node),
 
         // ---- Pure Rename -----------------------------------------------
-        PyKind::AliasedImport         => Rename(Import),
+        // `import X as Y` — the inner aliased_import would re-emit
+        // `<import>` inside the outer ImportStatement `<import>`,
+        // creating `<import><import>name=X, name=Y</import></import>`.
+        // Flatten so the two names become direct children of the
+        // outer `<import>`. The first name is the imported module,
+        // the second is the alias — order conveys the relationship.
+        PyKind::AliasedImport         => Flatten { distribute_field: None },
         PyKind::AsPattern             => Rename(As),
         PyKind::AssertStatement       => Rename(Assert),
         PyKind::Assignment            => Rename(Assign),

@@ -44,10 +44,10 @@ const ASSERT_KIND_NON_EMPTY: bool = true;
 // a parent and immediate child share the same element name (e.g.
 // `<body><body>` from iter 30/35, `<constraint><constraint>` from iter
 // 34, `<arg><arg>` in TSQL). Allowed cases are listed in
-// `REPEATED_NAME_WHITELIST`. Advisory until violations clear; flip to
-// `true` once at zero. See docs/self-improvement.md "Cross-cutting
-// invariant tests".
-const ASSERT_NO_REPEATED_NAME: bool = false;
+// `REPEATED_NAME_WHITELIST`. Now asserted (zero violations as of
+// iter 45). See docs/self-improvement.md "Cross-cutting invariant
+// tests".
+const ASSERT_NO_REPEATED_NAME: bool = true;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
@@ -820,6 +820,9 @@ const REPEATED_NAME_WHITELIST: &[&str] = &[
     // bindings under one declaration (`int a = 1, b = 2`). Some
     // languages also nest `<variable>` to scope.
     "variable",
+    // TypeScript chained type assertions `<number>(<unknown>"42")`
+    // produce nested `<as>` elements; the recursion is intentional.
+    "as",
 ];
 
 #[test]

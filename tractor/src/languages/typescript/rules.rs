@@ -190,7 +190,11 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::TypeParameter             => Rename(Generic),
         TsKind::TypeParameters            => Rename(Generics),
         TsKind::TypePredicate             => Rename(Predicate),
-        TsKind::TypePredicateAnnotation   => Rename(Predicate),
+        // `: v is Shape` — the annotation wrapper only adds a `:` text;
+        // flatten so the inner type_predicate becomes the direct
+        // `<predicate>` child of the function (avoids
+        // `<predicate>/<predicate>` double-wrap).
+        TsKind::TypePredicateAnnotation   => Flatten { distribute_field: None },
         TsKind::WhileStatement            => Rename(While),
         TsKind::YieldExpression           => Rename(Yield),
 
