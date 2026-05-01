@@ -1,20 +1,18 @@
 program/
   ├─ comment = "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax."
-  ├─ import/
-  │   ├─ clause/
-  │   │   ├─ name = "defaultExport"
-  │   │   └─ imports/
-  │   │       ├─ spec/name = "namedA"
-  │   │       └─ spec/
-  │   │           ├─ name = "namedB"
-  │   │           └─ name = "aliasedB"
-  │   └─ string = "\"./barrel\""
-  ├─ import/
-  │   ├─ clause/namespace/name = "ns"
-  │   └─ string = "\"./namespace\""
-  ├─ import/
-  │   ├─ clause/imports/spec/name = "OnlyAtCompileTime"
-  │   └─ string = "\"./types\""
+  ├─ import[group]/
+  │   ├─ path = "./barrel"
+  │   ├─ name = "defaultExport"
+  │   ├─ import/name = "namedA"
+  │   └─ import[alias]/
+  │       ├─ name = "namedB"
+  │       └─ alias/name = "aliasedB"
+  ├─ import[namespace]/
+  │   ├─ path = "./namespace"
+  │   └─ alias/name = "ns"
+  ├─ import[group]/
+  │   ├─ path = "./types"
+  │   └─ import/name = "OnlyAtCompileTime"
   ├─ export/
   │   ├─ spec/name = "namedA"
   │   └─ string = "\"./barrel\""
@@ -691,7 +689,7 @@ program/
   ├─ comment[leading] = "// Old-style `import x = require(y)` form."
   ├─ import/
   │   ├─ name = "legacy"
-  │   └─ string = "\"./legacy\""
+  │   └─ path = "./legacy"
   ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
   ├─ variable[const]/
   │   ├─ name = "url"

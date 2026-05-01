@@ -59,6 +59,8 @@ pub enum TractorNode {
     Prefix,
     // Misc structural
     Signature, Hashbang, Attribute,
+    // Import-shape markers
+    Path, Group, Sideeffect, Reexport,
 }
 
 impl TractorNode {
@@ -85,7 +87,8 @@ impl TractorNode {
             | Self::Union | Self::Intersection | Self::Literal | Self::Tuple
             | Self::Parenthesized | Self::Conditional | Self::Infer | Self::Lookup
             | Self::Keyof | Self::Prefix
-            | Self::Existential | Self::Typeof | Self::Static | Self::Asserts      => (true, false, Default),
+            | Self::Existential | Self::Typeof | Self::Static | Self::Asserts
+            | Self::Group | Self::Sideeffect | Self::Reexport                     => (true, false, Default),
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async
@@ -101,6 +104,12 @@ impl TractorNode {
             // declarative role.
             Self::Constructor | Self::Generic | Self::Alias                        => (true, true, Type),
             Self::Rest | Self::This                                                => (true, true, Default),
+            // `Namespace` dual-use: `[namespace]` marker on `<import>` for
+            // `import * as ns from 'mod'` (TS namespace import), AND
+            // structural container `<namespace>` for raw tree-sitter
+            // `namespace_import` wrapper (still emitted before the
+            // post-walk restructures it).
+            Self::Namespace                                                        => (true, true, Keyword),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `break;` / `continue;` are bare without
@@ -119,6 +128,7 @@ impl TractorNode {
             | Self::Bool | Self::Null | Self::Undefined
             | Self::Super                                                          => (false, true, Keyword),
             Self::Type | Self::Generics                                            => (false, true, Type),
+            Self::Path                                                             => (false, true, Default),
             Self::Call | Self::Arrow                                               => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary | Self::Ternary | Self::Op   => (false, true, Operator),
             Self::String                                                           => (false, true, String),

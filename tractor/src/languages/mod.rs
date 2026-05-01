@@ -879,6 +879,169 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    typescript_restructure_import(xot, root)?;
+    Ok(())
+}
+
+/// Restructure every TypeScript `<import>` element into the unified
+/// shape (per `imports-grouping.md`).
+fn typescript_restructure_import(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{XotWithExt, get_element_name, get_text_content};
+    use typescript::output::TractorNode::{
+        Alias, Group, Namespace, Path, Sideeffect,
+    };
+
+    let mut targets: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "import", &mut targets);
+
+    for import_node in targets {
+        // Skip inner <import> children of an already-grouped import.
+        if xot.parent(import_node)
+            .and_then(|p| get_element_name(xot, p))
+            .as_deref() == Some("import")
+        {
+            continue;
+        }
+
+        // 1. Identify structural children. Tree-sitter TS produces:
+        //    - `<clause>` (import_clause: bindings)
+        //    - `<string>` (path module specifier)
+        //    plus noise text (`import`, `from`, `;`).
+        let clause = xot.children(import_node)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("clause"));
+        let path_string = xot.children(import_node)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("string"));
+
+        // 2. Extract path text (strip surrounding quotes).
+        let path_text = path_string
+            .and_then(|s| get_text_content(xot, s))
+            .map(|raw| raw.trim()
+                .trim_start_matches('"').trim_end_matches('"')
+                .trim_start_matches('\'').trim_end_matches('\'')
+                .trim_start_matches('`').trim_end_matches('`')
+                .to_string())
+            .unwrap_or_default();
+
+        // 3. Strip ALL direct text leaves and the path string element.
+        for child in xot.children(import_node).collect::<Vec<_>>() {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+            }
+        }
+        if let Some(s) = path_string {
+            xot.detach(s)?;
+        }
+
+        // 4. Build new structure.
+        if clause.is_none() {
+            // No `<clause>` — could be:
+            //  - side-effect: `import './x'` (only string)
+            //  - TS legacy: `import x = require('y')` (has `<name>` directly)
+            // Side-effect = no name child either; legacy keeps its <name>.
+            let has_direct_name = xot.children(import_node)
+                .any(|c| get_element_name(xot, c).as_deref() == Some("name"));
+            if !path_text.is_empty() {
+                let path_elt = xot.add_name(Path.as_str());
+                let path_node = xot.new_element(path_elt);
+                xot.append(import_node, path_node)?;
+                let path_text_node = xot.new_text(&path_text);
+                xot.append(path_node, path_text_node)?;
+            }
+            if !has_direct_name {
+                xot.with_prepended_marker(import_node, Sideeffect)?;
+            }
+            continue;
+        }
+        let clause = clause.unwrap();
+
+        // Append <path> (always, when clause is present).
+        if !path_text.is_empty() {
+            let path_elt = xot.add_name(Path.as_str());
+            let path_node = xot.new_element(path_elt);
+            xot.append(import_node, path_node)?;
+            let path_text_node = xot.new_text(&path_text);
+            xot.append(path_node, path_text_node)?;
+        }
+
+        // Inspect the clause's children to determine variant.
+        let namespace_child = xot.children(clause)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("namespace"));
+        let imports_child = xot.children(clause)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("imports"));
+
+        if let Some(ns) = namespace_child {
+            // `import * as ns from 'mod'`. Find the name inside <namespace>.
+            let ns_name = xot.children(ns)
+                .find(|&c| get_element_name(xot, c).as_deref() == Some("name"));
+            if let Some(name) = ns_name {
+                let alias_elt = xot.add_name("alias");
+                let alias_node = xot.new_element(alias_elt);
+                xot.append(import_node, alias_node)?;
+                xot.detach(name)?;
+                xot.append(alias_node, name)?;
+            }
+            xot.detach(clause)?;
+            xot.with_prepended_marker(import_node, Namespace)?;
+            continue;
+        }
+
+        if let Some(imports) = imports_child {
+            // Default name + group OR group only.
+            // Default name: clause has a direct <name> child.
+            let default_name = xot.children(clause)
+                .find(|&c| get_element_name(xot, c).as_deref() == Some("name"));
+            if let Some(d) = default_name {
+                xot.detach(d)?;
+                xot.append(import_node, d)?;
+            }
+            // Group: each <spec> child becomes inner <import>.
+            for spec in xot.children(imports).filter(|&c|
+                get_element_name(xot, c).as_deref() == Some("spec")
+            ).collect::<Vec<_>>() {
+                // Capture name-`as`-name pair if present.
+                let names: Vec<XotNode> = xot.children(spec)
+                    .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                    .collect();
+                let has_inner_as = xot.children(spec).any(|c|
+                    xot.text_str(c).map(|t| t.split_whitespace().any(|tok| tok == "as"))
+                        .unwrap_or(false)
+                );
+                // Build inner <import>.
+                let inner_elt = xot.add_name("import");
+                let inner = xot.new_element(inner_elt);
+                xot.append(import_node, inner)?;
+                if has_inner_as && names.len() == 2 {
+                    let original = names[0];
+                    let alias_name = names[1];
+                    xot.detach(original)?;
+                    xot.append(inner, original)?;
+                    let alias_elt = xot.add_name("alias");
+                    let alias_node = xot.new_element(alias_elt);
+                    xot.append(inner, alias_node)?;
+                    xot.detach(alias_name)?;
+                    xot.append(alias_node, alias_name)?;
+                    xot.with_prepended_marker(inner, Alias)?;
+                } else if let Some(&name) = names.first() {
+                    xot.detach(name)?;
+                    xot.append(inner, name)?;
+                }
+                xot.detach(spec)?;
+            }
+            xot.detach(clause)?;
+            xot.with_prepended_marker(import_node, Group)?;
+            continue;
+        }
+
+        // Default-only: `import def from 'mod'`. clause/<name>def</name>.
+        let default_name = xot.children(clause)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("name"));
+        if let Some(d) = default_name {
+            xot.detach(d)?;
+            xot.append(import_node, d)?;
+        }
+        xot.detach(clause)?;
+    }
+
     Ok(())
 }
 
