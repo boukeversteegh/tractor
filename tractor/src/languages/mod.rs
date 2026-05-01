@@ -314,6 +314,7 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
 /// the shared conditional collapse runs.
 fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_where_clause_constraints(xot, root)?;
+    unify_file_scoped_namespace(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
@@ -323,6 +324,98 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         // single-expression slots.
         &["value", "condition", "left", "right", "return"],
     )
+}
+
+/// C# namespace shape unification (closes todo/34).
+///
+/// Per Principle #5, both `namespace Foo { ... }` (block-scoped)
+/// and `namespace Foo;` (C# 10+ file-scoped) should share the same
+/// shape: declarations are direct children of `<namespace>`. The
+/// file-scoped form additionally carries a `<file/>` marker so
+/// `//namespace[file]` distinguishes the two when needed.
+///
+/// Two transforms here:
+///
+/// 1. **Drop the `<body>` wrapper from namespaces.** The C# field-
+///    distribution pass adds `<body>` for any element with a `body`
+///    field on the source. For namespaces the wrapper is misleading
+///    — a namespace doesn't have a "body" the way methods do; its
+///    children are first-class declarations. Walks every
+///    `<namespace>/<body>` and unwraps the body in place.
+///
+/// 2. **Fold file-scoped trailing siblings into the namespace.**
+///    Tree-sitter exposes file-scoped namespace as `<namespace>`
+///    followed by flat sibling declarations under `<unit>`. After
+///    step 1, both block-scoped and file-scoped forms have flat
+///    declarations; for file-scoped we additionally need to move
+///    the trailing siblings INTO the namespace.
+fn unify_file_scoped_namespace(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+
+    // Step 1: unwrap `<namespace>/<body>` everywhere.
+    let mut bodies_to_unwrap: Vec<XotNode> = Vec::new();
+    let mut stack = vec![root];
+    while let Some(n) = stack.pop() {
+        if xot.element(n).is_some()
+            && get_element_name(xot, n).as_deref() == Some("namespace")
+        {
+            for child in xot.children(n) {
+                if get_element_name(xot, child).as_deref() == Some("body") {
+                    bodies_to_unwrap.push(child);
+                }
+            }
+        }
+        for child in xot.children(n) {
+            stack.push(child);
+        }
+    }
+    for body in bodies_to_unwrap {
+        let inner: Vec<XotNode> = xot.children(body).collect();
+        for c in inner {
+            xot.detach(c)?;
+            xot.insert_before(body, c)?;
+        }
+        xot.detach(body)?;
+    }
+
+    // Step 2: file-scoped namespaces — fold following siblings.
+    let mut targets: Vec<XotNode> = Vec::new();
+    let mut stack = vec![root];
+    while let Some(n) = stack.pop() {
+        if xot.element(n).is_some()
+            && get_element_name(xot, n).as_deref() == Some("namespace")
+            && xot.children(n).any(|c| {
+                get_element_name(xot, c).as_deref() == Some("file")
+            })
+        {
+            targets.push(n);
+        }
+        for child in xot.children(n) {
+            stack.push(child);
+        }
+    }
+    for ns in targets {
+        let parent = match xot.parent(ns) {
+            Some(p) => p,
+            None => continue,
+        };
+        let mut following: Vec<XotNode> = Vec::new();
+        let mut after = false;
+        for sibling in xot.children(parent).collect::<Vec<_>>() {
+            if sibling == ns {
+                after = true;
+                continue;
+            }
+            if after && xot.element(sibling).is_some() {
+                following.push(sibling);
+            }
+        }
+        for sibling in following {
+            xot.detach(sibling)?;
+            xot.append(ns, sibling)?;
+        }
+    }
+    Ok(())
 }
 
 /// For each `<type_parameter_constraints_clause>` in the tree, move its

@@ -39,26 +39,28 @@ fn csharp_using_renames_to_import() {
 /// C# namespace declarations come in two syntactic forms — a
 /// classic block-scoped form (`namespace Foo { ... }`) and the
 /// C# 10+ file-scoped form (`namespace Foo;` with the declarations
-/// at the top level). Both render as `<namespace>` with a `<name>`
-/// child; only the block-scoped form carries a `<body>` wrapper —
-/// file-scoped declarations are flat siblings under `<unit>`.
+/// at the top level). Per Principle #5 (unified concepts), both
+/// share the same shape: declarations are direct children of
+/// `<namespace>`. The file-scoped form additionally carries a
+/// `<file/>` marker so queries can distinguish the two when needed
+/// (`//namespace[file]` vs `//namespace[not(file)]`).
 #[test]
 fn csharp_namespace_block_vs_file_scoped() {
-    claim("C# block-scoped namespace wraps declarations in a <body>",
+    claim("C# block-scoped namespace contains declarations directly",
         &mut parse_src("csharp", "namespace Block { class A {} }\n"),
-        "//namespace[name='Block']/body/class[name='A']",
+        "//namespace[name='Block']/class[name='A']",
         1);
 
     let mut file_scoped = parse_src("csharp", "namespace File;\nclass A {}\n");
 
-    claim("C# file-scoped namespace has a name but no <body>",
+    claim("C# file-scoped namespace contains declarations directly",
         &mut file_scoped,
-        "//namespace[name='File'][not(body)]",
+        "//namespace[name='File']/class[name='A']",
         1);
 
-    claim("C# file-scoped declarations are flat siblings of the namespace",
+    claim("C# file-scoped namespace carries a <file/> marker",
         &mut file_scoped,
-        "//unit[namespace[name='File']][class[name='A']]",
+        "//namespace[name='File'][file]",
         1);
 }
 

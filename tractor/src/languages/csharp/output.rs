@@ -66,6 +66,8 @@ pub enum TractorNode {
     // Marker-only: member-access / pattern / type shape
     Instance, Optional, Array, Pointer, Function, Ref, Recursive, Relational, Logical,
     Prefix, Lookup,
+    // File-scoped namespace marker (`namespace Foo;` form)
+    File,
     // Pattern-combinator markers
     And, Or, Negated, List, Var,
     // Creation / memory markers
@@ -104,7 +106,7 @@ impl TractorNode {
             | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
-            | Self::Anonymous | Self::Stackalloc                                => (true, false, Default),
+            | Self::Anonymous | Self::Stackalloc | Self::File                   => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),

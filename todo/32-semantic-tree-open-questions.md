@@ -102,7 +102,11 @@ chained calls). Currently `call` and `method_call` both rename to
 `<call>`, but the `<callee>` / `<object>` / `<property>` shape used
 for TS/JS isn't systematically applied.
 
-Needs a full design pass. Deferred until Ruby sees heavier use.
+Safe-navigation `&.` shape was settled in iter 64 (`<call[optional]>`
+matching C# / TS `<member[optional]>`). The broader call-shape
+question — when to expose `<callee>` / `<object>` / `<property>`
+fields — is still open. Needs a full design pass; deferred until
+Ruby sees heavier use.
 
 ### JSX / TSX — element shape
 

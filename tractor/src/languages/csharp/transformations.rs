@@ -15,10 +15,25 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Else, Expression, Generic, If, Instance, Internal, Leading, Member, Name,
-    NonNull, Nullable, Optional, Private, Public, Protected, String as CsString, Ternary, This,
-    Trailing, Type, Unary, Variable,
+    self, Accessor, Await, Else, Expression, File, Generic, If, Instance, Internal, Leading,
+    Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public, Protected,
+    String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
+
+/// `file_scoped_namespace_declaration` — `namespace Foo;`. Rename
+/// to `<namespace>` and add a `<file/>` marker. The post_transform
+/// pass `unify_file_scoped_namespace` walks for these and folds
+/// the trailing siblings under `<unit>` into a `<body>` child, so
+/// both forms (block-scoped and file-scoped) share the same shape.
+/// Closes todo/34.
+pub fn file_scoped_namespace(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Namespace)
+        .with_appended_marker_from(node, File, node)?;
+    Ok(TransformAction::Continue)
+}
 
 /// `conditional_access_expression` — `Root.MaybeProperty?.Property`.
 /// Per Principle #15 (markers on stable hosts), the conditional form

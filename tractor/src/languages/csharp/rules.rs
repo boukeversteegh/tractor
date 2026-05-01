@@ -140,7 +140,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::EnumMemberDeclaration          => Rename(Constant),
         CsKind::EventFieldDeclaration          => Rename(Event),
         CsKind::ExpressionStatement            => Rename(Expression),
-        CsKind::FileScopedNamespaceDeclaration => Rename(Namespace),
+        // File-scoped namespace `namespace Foo;` — same shape as
+        // block-scoped via post_transform's `unify_file_scoped_namespace`,
+        // distinguished by a `<file/>` marker. Closes todo/34.
+        CsKind::FileScopedNamespaceDeclaration =>
+            Custom(transformations::file_scoped_namespace),
         CsKind::FinallyClause                  => Rename(Finally),
         CsKind::ForStatement                   => Rename(For),
         CsKind::ForeachStatement               => Rename(Foreach),

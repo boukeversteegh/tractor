@@ -6,32 +6,68 @@ Audit cross-language operator coverage — ensure every language-specific
 operator either has a row in `OPERATOR_MARKERS` (with a chosen marker
 name) or is explicitly documented as an intentional gap.
 
-## Currently uncovered or undecided
+## Done
 
-- **Rust** `?` (try) — emitted as `<try>` element today. Out of the
-  `<op>` table; verify whether that's intentional or whether it should
-  have a `<try/>` marker on `<op>` instead.
-- **C#** `?.` (null-conditional) — no marker today.
-- **C#** `??` / `??=` — currently `nullish-coalescing` (matches TS).
-  Verify the marker name is canonical.
-- **Ruby** `<=>` (spaceship) — no marker.
-- **Ruby** `=~` / `!~` (regex match) — no marker.
-- **Python** `:=` (walrus) — verify whether emitted as
-  `<assign[walrus]/>` or something else.
-- **Python** `//=` (floor-divide-assign) — no marker today; rejected
-  earlier as out-of-scope but flagged here for consistency.
-- **Swift** (when language lands) — `?:` ternary, `??` nil-coalescing.
+The simplify-node-names branch closed the bulk of this audit:
+
+- **Cross-language coverage** — `typeof`, `void`, `defined?`,
+  `floor-divide` (`//`, `//=`), `matmul` (`@`, `@=`) added to
+  `OPERATOR_MARKERS` in iter 9.
+- **Go channel `<-`** — `op[receive] = "<-"` emitted via the table.
+- **Go increment / decrement** — `++` / `--` carry the canonical
+  marker on `<unary>`.
+- **Token-boundary refinement** — `extract_operator` now finds the
+  longest known operator prefix bounded by whitespace or
+  end-of-string, fixing the `op = "== this"` concatenation that
+  surfaced when adjacent anonymous keywords leaked into the same
+  text leaf (iter 25).
+- **C# `?.`** — structurally redesigned to be isomorphic with
+  regular member access plus an `<optional/>` marker; vocabulary
+  aligned with TS `<member[optional]>` (iters 26 / 57).
+- **Ruby `&.` safe-navigation** — `<call[optional]>` matches the
+  C# / TS shape (iter 64).
+- **Ruby unary `defined?`** — already in `OPERATOR_MARKERS` with
+  `<defined/>` primary marker.
+- **Source-location threading** — `<op>` and its marker children
+  carry `line` / `column` per Principle #10 (iter 37).
+
+## Open
+
+These remain genuinely undecided. Each is a small one-iter call:
+
+- **Rust `?` (try)** — emitted as `<try>` element today (the
+  `<expression>` host carries the marker per iter 27 work). Not in
+  the `<op>` table. Decide: keep as a marker on the host (current
+  state), or also add to `OPERATOR_MARKERS` so `//op[try]` works
+  uniformly. Current state defensible per Principle #15 (markers
+  on stable hosts), so a query-language audience chooses
+  `//expression[try]` rather than `//op[try]`.
+
+- **Ruby `<=>` (spaceship)** — no marker. Suggested marker name:
+  `compare-three-way` or `spaceship`. Pick one; add to
+  `OPERATOR_MARKERS`.
+
+- **Ruby `=~` / `!~` (regex match)** — no marker. Suggested:
+  `match` (with `[not]` for `!~`). Pick; add.
+
+- **Python `:=` (walrus)** — verify whether emitted as
+  `<assign[walrus]>` or something else; add a row if missing.
+
+- **Swift / Scala / OCaml** (when those languages get richer
+  semantic transforms) — no audit yet; revisit per language.
 
 ## Process
 
-1. Sweep each language's transform + augmented-assign / binary fixtures
-   to enumerate operators that hit `<op>`.
-2. For each, decide: add to `OPERATOR_MARKERS` with a chosen marker
-   name, or document as intentional gap (with rationale).
-3. Update tests to lock the chosen state.
-4. Update `specs/tractor-parse/semantic-tree/operator-element.md` if
-   the spec doesn't already cover the additions.
+1. For each Open item: pick a defensible marker name from
+   principles + cross-language consistency.
+2. Add to `OPERATOR_MARKERS` table in
+   `tractor/src/transform/operators.rs`.
+3. Extend per-language fixtures (e.g. `blueprint.rb`) so the
+   shape is exercised in snapshots.
+4. `task test`; review snapshot diffs.
 
 ## Origin
 
-Surfaced during PR #148 (proposal E3).
+Surfaced during PR #148 (proposal E3). The simplify-node-names
+branch closed most of it iter-by-iter; this version captures
+what remains.
