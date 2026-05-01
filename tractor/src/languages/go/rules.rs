@@ -133,18 +133,12 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // `iota` — already in NODES, intentionally a leaf. Correct.
         GoKind::Iota => Passthrough,
 
-        // TODO: `array_type` should be `Rename(ARRAY)` (new semantic
-        // constant) for consistency with sibling type kinds:
-        //   slice_type   → SLICE
-        //   map_type     → MAP
-        //   pointer_type → POINTER
-        //   channel_type → CHAN
-        // Also fold `implicit_length_array_type` into the same target.
-        // Currently `<array_type>` survives as a raw kind name — not in
-        // NODES, only avoided in invariant tests because no fixture
-        // exercises it.
-        GoKind::ArrayType
-        | GoKind::ImplicitLengthArrayType => Passthrough,
+        // `array_type` joins the sibling type kinds (slice/map/pointer/chan)
+        // under their semantic name. `implicit_length_array_type` (`[...]T`)
+        // shares the array shape with an `<implicit/>` marker so
+        // `//array[implicit]` picks out compiler-inferred lengths.
+        GoKind::ArrayType                => Rename(Array),
+        GoKind::ImplicitLengthArrayType  => RenameWithMarker(Array, Implicit),
 
         // `dot` — the `.` placeholder in `import . "pkg"`. Treated as
         // an identifier-like leaf, same as `blank_identifier` and
@@ -164,34 +158,31 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // `empty_statement` (a bare `;`) carries no semantic content.
         GoKind::EmptyStatement => Flatten { distribute_field: None },
 
-        // TODO: `fallthrough_statement` is a real Go control-flow
-        // construct. Likely wants its own semantic name (FALLTHROUGH)
-        // alongside BREAK / CONTINUE / GOTO, with a corresponding
-        // TractorNodeSpec entry.
-        GoKind::FallthroughStatement => Passthrough,
+        // `fallthrough_statement` is real Go control-flow; renames to
+        // `<fallthrough>` alongside `<break>`, `<continue>`, `<goto>`.
+        GoKind::FallthroughStatement => Rename(Fallthrough),
 
         // `imaginary_literal` (`1i`) is a number-shaped literal,
         // grouped with floats.
         GoKind::ImaginaryLiteral => Rename(Float),
 
-        // TODO: `slice_expression` (`s[i:j]`) is structurally similar
-        // to `index_expression` (`s[i]`). Either reuse `Rename(INDEX)`
-        // with a `<slice/>` marker, or introduce a SLICE_OP semantic.
-        GoKind::SliceExpression => Passthrough,
+        // `slice_expression` (`s[i:j]`) shares the index-access shape
+        // with a `<slice/>` marker — `//index[slice]` picks slice ops out.
+        // (Slice is dual-use: container for slice types, marker here.)
+        GoKind::SliceExpression => RenameWithMarker(Index, Slice),
 
-        // TODO: `type_conversion_expression` (`T(x)`) is semantically
-        // a call. Likely `Rename(CALL)` with a `<type/>` marker, so
+        // `type_conversion_expression` (`T(x)`) is semantically a call
+        // whose callee position is a type. `<call[type]>` so
         // `//call[type]` matches every type conversion uniformly.
-        GoKind::TypeConversionExpression => Passthrough,
+        GoKind::TypeConversionExpression => RenameWithMarker(Call, Type),
 
-        // TODO: `type_instantiation_expression` (`Foo[T]`) is generic
-        // application. Could share the `<type><generic/>...` shape
-        // already used for `generic_type`, or get its own semantic.
-        GoKind::TypeInstantiationExpression => Passthrough,
+        // `type_instantiation_expression` (`Foo[T]`) is generic
+        // application — same `<type[generic]>` shape as `generic_type`.
+        GoKind::TypeInstantiationExpression => RenameWithMarker(Type, Generic),
 
-        // TODO: `variadic_argument` (`args...`) is an argument variant.
-        // Likely `Rename(ARGUMENT)` with a `<variadic/>` marker so
-        // `//argument[variadic]` picks them out.
-        GoKind::VariadicArgument => Passthrough,
+        // `variadic_argument` (`args...`) renames to `<spread>` —
+        // matches the cross-language spread vocabulary (TS / Python /
+        // Ruby) so `//spread` finds variadic call sites uniformly.
+        GoKind::VariadicArgument => Rename(Spread),
     }
 }

@@ -334,6 +334,79 @@ file/
   │       │       ├─ left/expression/name = "sum"
   │       │       └─ right/expression/name = "v"
   │       └─ return = "return"
+  ├─ comment[leading] = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
+  ├─ function[unexported]/
+  │   ├─ name = "arraysAndCasts"
+  │   └─ body/
+  │       ├─ var/
+  │       │   ├─ name = "fixed"
+  │       │   ├─ array/
+  │       │   │   ├─ int = "5"
+  │       │   │   └─ type/name = "int"
+  │       │   └─ value/expression/literal/
+  │       │       ├─ array/
+  │       │       │   ├─ int = "5"
+  │       │       │   └─ type/name = "int"
+  │       │       └─ body/
+  │       │           ├─ int = "1"
+  │       │           ├─ int = "2"
+  │       │           ├─ int = "3"
+  │       │           ├─ int = "4"
+  │       │           └─ int = "5"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "implicit"
+  │       │   └─ right/expression/literal/
+  │       │       ├─ array[implicit]/type/name = "int"
+  │       │       └─ body/
+  │       │           ├─ int = "10"
+  │       │           ├─ int = "20"
+  │       │           └─ int = "30"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "sub"
+  │       │   └─ right/expression/index[slice]/
+  │       │       ├─ name = "fixed"
+  │       │       ├─ int = "1"
+  │       │       └─ int = "3"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "chRecvOnly"
+  │       │   └─ right/expression/call[type]/
+  │       │       ├─ chan/value/expression/type/name = "int"
+  │       │       └─ nil = "nil"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "mapper"
+  │       │   └─ right/expression/type[generic]/
+  │       │       ├─ type/name = "Map"
+  │       │       ├─ type/name = "int"
+  │       │       └─ type/name = "string"
+  │       ├─ assign/
+  │       │   ├─ left/
+  │       │   │   ├─ expression/name = "_"
+  │       │   │   └─ expression/name = "_"
+  │       │   └─ right/expression/call/
+  │       │       ├─ name = "variadic"
+  │       │       ├─ string = "\"nums\""
+  │       │       └─ spread/index[slice]/name = "fixed"
+  │       ├─ switch/
+  │       │   ├─ value/expression/index/
+  │       │   │   ├─ name = "implicit"
+  │       │   │   └─ int = "0"
+  │       │   ├─ case/
+  │       │   │   ├─ value/expression/int = "10"
+  │       │   │   └─ fallthrough = "fallthrough"
+  │       │   └─ case/
+  │       │       ├─ value/expression/int = "20"
+  │       │       └─ assign/
+  │       │           ├─ left/expression/name = "_"
+  │       │           └─ right/expression/name = "sub"
+  │       └─ assign/
+  │           ├─ left/
+  │           │   ├─ expression/name = "_"
+  │           │   ├─ expression/name = "_"
+  │           │   └─ expression/name = "_"
+  │           └─ right/
+  │               ├─ expression/name = "chRecvOnly"
+  │               ├─ expression/name = "mapper"
+  │               └─ expression/name = "sub"
   ├─ function[unexported]/
   │   ├─ name = "classify"
   │   ├─ parameter/

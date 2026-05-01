@@ -94,6 +94,27 @@ func variadic(prefix string, vals ...int) (sum int, err error) {
 	return
 }
 
+// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere
+// in the blueprint: fixed-length array types, implicit-length array
+// literals, slice expressions, parenthesized type conversions, generic
+// instantiation in value position, variadic argument expansion, and
+// the `fallthrough` switch keyword.
+func arraysAndCasts() {
+	var fixed [5]int = [5]int{1, 2, 3, 4, 5}
+	implicit := [...]int{10, 20, 30}
+	sub := fixed[1:3]
+	chRecvOnly := (<-chan int)(nil)
+	mapper := Map[int, string]
+	_, _ = variadic("nums", fixed[:]...)
+	switch implicit[0] {
+	case 10:
+		fallthrough
+	case 20:
+		_ = sub
+	}
+	_, _, _ = chRecvOnly, mapper, sub
+}
+
 func classify(x any) string {
 	switch v := x.(type) {
 	case nil:

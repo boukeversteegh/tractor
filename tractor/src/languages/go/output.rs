@@ -28,12 +28,12 @@ pub enum TractorNode {
     // Declarations (Function, Type are dual-use marker/container)
     Function, Method, Type, Struct, Interface, Const, Var, Alias, Variable,
     // Members / parameters
-    Field, Parameter, Arguments,
-    // Types
-    Pointer, Slice, Map, Chan,
+    Field, Parameter, Arguments, Spread,
+    // Types (Slice dual-use after iter 12: type vs. slice-expression marker)
+    Pointer, Slice, Map, Chan, Array,
     // Statements / control flow
     Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
-    Break, Continue, Goto, Labeled, Label, Send, Receive, Assign,
+    Break, Continue, Goto, Labeled, Label, Send, Receive, Assign, Fallthrough,
     // Expressions
     Call, Member, Index, Binary, Unary, Assert, Closure, Literal, Expression,
     // Literals / atoms
@@ -43,7 +43,7 @@ pub enum TractorNode {
     // Comment markers
     Trailing, Leading,
     // Marker-only
-    Raw, Short, Exported, Unexported, Negated, Generic,
+    Raw, Short, Exported, Unexported, Negated, Generic, Implicit,
 }
 
 impl TractorNode {
@@ -58,17 +58,21 @@ impl TractorNode {
     ///   - Function — function_declaration (container) vs function_type
     ///                (marker on `<type>`).
     ///   - Type     — type wrapper (container) vs type_switch_statement
-    ///                emits `<switch><type/>…>` (marker).
+    ///                emits `<switch><type/>…>` (marker), and
+    ///                `type_conversion_expression` emits `<call><type/>…>`.
+    ///   - Slice    — slice_type (container `<slice>`) vs slice_expression
+    ///                (marker `<index><slice/>…`).
     pub fn spec(self) -> TractorNodeSpec {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
-            | Self::Raw | Self::Short | Self::Negated | Self::Generic              => (true, false, Default),
+            | Self::Raw | Self::Short | Self::Negated | Self::Generic
+            | Self::Implicit                                                       => (true, false, Default),
             Self::Exported | Self::Unexported                                      => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function                                                          => (true, true, Keyword),
-            Self::Type                                                              => (true, true, Type),
+            Self::Type | Self::Slice                                                => (true, true, Type),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Package | Self::Import
@@ -76,9 +80,9 @@ impl TractorNode {
             | Self::Parameter
             | Self::Return | Self::If | Self::Else | Self::For | Self::Range
             | Self::Case | Self::Default | Self::Defer | Self::Go | Self::Select
-            | Self::Break | Self::Continue | Self::Goto
+            | Self::Break | Self::Continue | Self::Goto | Self::Fallthrough
             | Self::True | Self::False | Self::Nil                                  => (false, true, Keyword),
-            Self::Pointer | Self::Slice | Self::Map | Self::Chan                    => (false, true, Type),
+            Self::Pointer | Self::Map | Self::Chan | Self::Array                    => (false, true, Type),
             Self::Call                                                              => (false, true, Function),
             Self::Binary | Self::Unary | Self::Op                                   => (false, true, Operator),
             Self::String                                                            => (false, true, String),
