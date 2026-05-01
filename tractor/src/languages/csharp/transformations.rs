@@ -290,18 +290,27 @@ pub fn variable_declaration(
 /// in case future C# additions need to differentiate.
 /// `prefix_unary_expression` — `-x`, `!x`, `~x`, `++x`, `--x`. Extract
 /// the operator into `<op>` (matching the binary / regular-unary
-/// shape across languages) AND prepend a `<prefix/>` marker so
-/// callers can distinguish prefix from postfix increment / decrement
-/// (`++x` vs. `x++`). Equivalent to combining
-/// `ExtractOpThenRename(Unary)` with `RenameWithMarker(Unary, Prefix)`;
-/// no shared rule variant exists for this composition yet.
+/// shape across languages). Only `++` and `--` have a postfix
+/// counterpart, so only those carry the `<prefix/>` marker — for
+/// `!x` / `-x` / `~x` the prefix-form is the only form, and the
+/// marker would just be noise. This matches TS/Java/PHP's
+/// `update_expression` (`<prefix/>` only on ++/--) vs.
+/// `unary_expression` (no `<prefix/>` for !/-/~).
 pub fn prefix_unary_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
+    use crate::transform::helpers::get_text_children;
+    let texts = get_text_children(xot, node);
+    let is_increment = texts.iter().any(|t| {
+        let trimmed = t.trim();
+        trimmed == "++" || trimmed == "--"
+    });
     extract_operator(xot, node)?;
-    xot.with_renamed(node, Unary)
-        .with_prepended_marker_from(node, super::output::TractorNode::Prefix, node)?;
+    xot.with_renamed(node, Unary);
+    if is_increment {
+        xot.with_prepended_marker_from(node, super::output::TractorNode::Prefix, node)?;
+    }
     Ok(TransformAction::Continue)
 }
 

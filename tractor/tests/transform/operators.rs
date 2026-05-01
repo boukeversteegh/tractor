@@ -134,19 +134,24 @@ fn python_unary() {
 /// `++x` from `x++` since both use `<op[increment]/>`).
 #[test]
 fn csharp_prefix_unary() {
-    claim("`-1` extracts <op[minus]> and carries <prefix>",
+    // After iter 52: `<prefix/>` marker is reserved for ++/--
+    // (the only operators with a postfix counterpart). For
+    // !x / -x / ~x there's no postfix form, so the marker would
+    // be noise. C# now matches TS/Java/PHP's cross-language
+    // convention.
+    claim("`-1` extracts <op[minus]> on a plain <unary> (no [prefix] for !/-/~)",
         &mut parse_src("csharp", "int n = -1;"),
-        "//unary[prefix][op[minus]]/int='1'",
+        "//unary[op[minus]][not(prefix)]/int='1'",
         1);
 
-    claim("`!true` extracts <op> with logical-not marker",
+    claim("`!true` extracts <op> with logical-not marker (no [prefix] needed)",
         &mut parse_src("csharp", "bool b = !true;"),
-        "//unary[prefix][op/logical[not]]/bool='true'",
+        "//unary[op/logical[not]][not(prefix)]/bool='true'",
         1);
 
-    claim("`~x` extracts <op> and carries <prefix>",
+    claim("`~x` extracts <op> on plain <unary> (no [prefix] needed)",
         &mut parse_src("csharp", "int x = 0; int p = ~x;"),
-        "//unary[prefix]/op",
+        "//unary[op][not(prefix)]/name='x'",
         1);
 
     claim("`++x` carries [prefix] AND op[increment] — distinguishable from x++ which lacks [prefix]",

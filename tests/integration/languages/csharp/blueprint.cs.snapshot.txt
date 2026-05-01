@@ -149,7 +149,7 @@ unit/
   │       │       │   ├─ parameter/
   │       │       │   │   ├─ type/name = "Point"
   │       │       │   │   └─ name = "b"
-  │       │       │   └─ body/unary[prefix]/
+  │       │       │   └─ body/unary/
   │       │       │       ├─ op/logical[not]
   │       │       │       └─ binary/
   │       │       │           ├─ left/expression/name = "a"
