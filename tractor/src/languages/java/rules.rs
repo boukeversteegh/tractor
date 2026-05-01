@@ -124,7 +124,9 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::StringLiteral               => Rename(String),
         JavaKind::SuperInterfaces             => Rename(Implements),
         JavaKind::Superclass                  => Rename(Extends),
-        JavaKind::SwitchBlock                 => Rename(Body),
+        // `switch_expression.body` field already wraps this in <body>;
+        // flatten avoids double-nested <body><body>...</body></body>.
+        JavaKind::SwitchBlock                 => Flatten { distribute_field: None },
         JavaKind::SwitchBlockStatementGroup   => Rename(Case),
         JavaKind::SwitchExpression            => Rename(Switch),
         JavaKind::SwitchLabel                 => Rename(Label),

@@ -187,7 +187,7 @@ program/
   │       │   │   └─ name = "o"
   │       │   └─ body/return/expression/switch/
   │       │       ├─ condition/expression/name = "o"
-  │       │       └─ body/body/
+  │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ label/pattern/pattern[type]/
   │       │           │   │   ├─ type/name = "Integer"
@@ -234,7 +234,7 @@ program/
   │       │           ├─ name = "rgb"
   │       │           └─ body/return/expression/switch/
   │       │               ├─ condition/expression/this = "this"
-  │       │               └─ body/body/
+  │       │               └─ body/
   │       │                   ├─ arm/
   │       │                   │   ├─ label/name = "RED"
   │       │                   │   └─ expression/int = "0xFF0000"
@@ -460,7 +460,7 @@ program/
                   │       ├─ name = "v"
                   │       └─ value/expression/switch/
                   │           ├─ condition/expression/name = "o"
-                  │           └─ body/body/
+                  │           └─ body/
                   │               ├─ arm/
                   │               │   ├─ label/pattern/pattern[type]/
                   │               │   │   ├─ type/name = "Integer"
