@@ -144,8 +144,12 @@ where
             Ok(TransformAction::Continue)
         }
         Rule::RenameWithMarker(to, marker) => {
+            // The marker is tied to the renamed element's source range
+            // (e.g. `<member[optional]>` for `?.` carries the `?.`
+            // operator's location). Copy `node`'s line/column onto the
+            // marker (Principle #10).
             xot.with_renamed(node, to)
-                .with_prepended_empty_element(node, marker)?;
+                .with_prepended_marker_from(node, marker, node)?;
             Ok(TransformAction::Continue)
         }
         Rule::RenameStripKeyword(to, keyword) => {
