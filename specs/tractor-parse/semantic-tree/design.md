@@ -198,6 +198,21 @@ All type references are `<type>` whether simple, generic, or array.
 **Rationale:** Supports Design Goal #4 (minimal query complexity). Finding "all
 arguments" is `//argument`, not `//argument | //attribute_argument`.
 
+**Names don't need to be globally unique.** The principle is *concept ↔ name*,
+not *name ↔ exactly-one-element*. The same name can appear at multiple roles
+(e.g. as a structural container *and* as a marker on `<op>`) as long as parent
+context disambiguates queries. `//op/receive` (the operator marker) and
+`//case/receive` (Go's `receive_statement` clause) are unambiguous; only bare
+`//receive` matches both, and that's expected — both nodes really are
+"channel receive" at different syntactic levels. The design uses this same
+pattern elsewhere (`<default>` as a switch arm vs. a parameter-default marker;
+`<this>` as the bare expression vs. a `<call>` marker; `<not>` inside
+`<logical>` vs. inside `<bitwise>`).
+
+A name "collision" alone is not a Principle #5 violation. Reach for a rename
+only when the two uses encode *different* concepts — at which point the issue
+is misuse of one of the names, not the sharing.
+
 ### 6. Preserve Language Idioms
 
 When a language has a well-known keyword or term, preserve it even if it's short.
