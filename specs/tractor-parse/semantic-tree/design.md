@@ -198,6 +198,22 @@ All type references are `<type>` whether simple, generic, or array.
 **Rationale:** Supports Design Goal #4 (minimal query complexity). Finding "all
 arguments" is `//argument`, not `//argument | //attribute_argument`.
 
+**Scope: primarily within a single language.** This principle applies *within*
+a language's transformations — when a single language has multiple grammar
+kinds for the same concept, collapse them to one element name. It does **not**
+mandate that every language use the same vocabulary cross-language. PHP and
+Rust source say `use`; their element is `<use>`. Go, Java, C#, TypeScript,
+Python source say `import`; their element is `<import>`. A cross-language
+query for "any imported thing" is two paths (`//import | //use`) — that
+small disjunction is the correct cost for preserving each community's
+mental model (Goal #5). Don't rename `<use>` to `<import>` to satisfy a
+hypothetical cross-language query — it weakens Principle #1 (Use Language
+Keywords) without enough payoff.
+
+The structural shape *under* the keyword node (path / alias / variant
+markers) should still be uniform across languages — that's where the cost-
+benefit clearly favors unification. The keyword itself is the line we hold.
+
 **Names don't need to be globally unique.** The principle is *concept ↔ name*,
 not *name ↔ exactly-one-element*. The same name can appear at multiple roles
 (e.g. as a structural container *and* as a marker on `<op>`) as long as parent

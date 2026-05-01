@@ -1,19 +1,34 @@
-# Imports & use-grouping: cross-language shape
+# Imports & use-grouping: per-language structural shape
 
-This doc captures the unified shape for import / use statements across
-Go, PHP, Rust, and TypeScript. It supersedes the per-language ad-hoc
-shapes that lost alias/blank/wildcard semantics.
+This doc captures the structural shape for import / use statements
+across Go, PHP, Rust, and TypeScript. It supersedes the per-language
+ad-hoc shapes that lost alias/blank/wildcard semantics.
 
 ## Goal
 
-`//import[name='foo']` should match wherever a developer wrote a
-statement that imports `foo`, regardless of language or syntax form
-(plain, aliased, blank, wildcard, dot-import, group). Variant kinds
-attach as markers on `<import>`.
+For each language, the import shape should be queryable enough to
+answer "which imports of `foo`," "what's the alias for `bar`," "which
+imports are side-effect only," etc. The *structural* shape (path /
+alias / variant markers) is the same across languages — that's where
+unification clearly pays off. The *element name* preserves each
+language's source keyword (Principle #1).
+
+## Element naming
+
+Per Principle #5's within-language scope clarification:
+
+- Languages whose source keyword is `import` use `<import>`:
+  Go, Java, C#, TypeScript, Python.
+- Languages whose source keyword is `use` use `<use>`: Rust, PHP.
+
+A cross-language query for "any imported thing" is two paths
+(`//import | //use`). The small disjunction is the correct cost for
+keeping each community's mental model intact.
 
 ## Shape
 
-Every imported entity is an `<import>` element with these slots:
+Every imported entity (regardless of element name) carries the same
+structural slots:
 
 - `<path>`     — namespace path. Multi-segment paths use nested
                  `<name>` children (`<path><name>std</name><name>fmt</name></path>`).
@@ -23,15 +38,10 @@ Every imported entity is an `<import>` element with these slots:
                  (`HashMap` in `use std::collections::HashMap`).
                  Omitted when the path is the leaf (Go's quoted import).
 - `<alias>`    — wraps the local binding `<name>` for aliased imports.
-- markers      — variant kind on the `<import>` host:
+- markers      — variant kind on the host:
                  `[alias]`, `[blank]`, `[dot]`, `[wildcard]`,
                  `[self]`, `[group]`, `[sideeffect]`, `[function]`,
                  `[const]`, `[reexport]`, `[namespace]`.
-
-The element name is `<import>` for **all** languages, including Rust
-and PHP whose source keyword is `use`. The cross-language uniformity
-(Principle #5 Unified Concepts) wins over Principle #1 (Use Language
-Keywords) for this concept.
 
 ## Examples
 
@@ -45,26 +55,26 @@ Keywords) for this concept.
 | `import _ "net/http/pprof"`   | `<import[blank]><path>net/http/pprof</path></import>` |
 | `import (a; b; c)` block      | flat `<import>` siblings — no group wrapper |
 
-**PHP**
+**PHP** (element name `<use>`, structure same as `<import>`)
 
 | Source                       | Shape |
 |------------------------------|-------|
-| `use App\Base`               | `<import><path><name>App</name></path><name>Base</name></import>` |
-| `use App\Logger as Log`      | `<import[alias]><path><name>App</name></path><name>Logger</name><alias><name>Log</name></alias></import>` |
-| `use App\{First, Second}`    | `<import[group]><path><name>App</name></path><import><name>First</name></import><import><name>Second</name></import></import>` |
-| `use function App\foo`       | `<import[function]><path><name>App</name></path><name>foo</name></import>` |
-| `use const App\BAR`          | `<import[const]><path><name>App</name></path><name>BAR</name></import>` |
+| `use App\Base`               | `<use><path><name>App</name></path><name>Base</name></use>` |
+| `use App\Logger as Log`      | `<use[alias]><path><name>App</name></path><name>Logger</name><alias><name>Log</name></alias></use>` |
+| `use App\{First, Second}`    | `<use[group]><path><name>App</name></path><use><name>First</name></use><use><name>Second</name></use></use>` |
+| `use function App\foo`       | `<use[function]><path><name>App</name></path><name>foo</name></use>` |
+| `use const App\BAR`          | `<use[const]><path><name>App</name></path><name>BAR</name></use>` |
 
-**Rust**
+**Rust** (element name `<use>`, structure same as `<import>`)
 
 | Source                                    | Shape |
 |-------------------------------------------|-------|
-| `use std::collections::HashMap`           | `<import><path><name>std</name><name>collections</name></path><name>HashMap</name></import>` |
-| `use std::collections::{HashMap, HashSet}`| `<import[group]><path><name>std</name><name>collections</name></path><import><name>HashMap</name></import><import><name>HashSet</name></import></import>` |
-| `use std::collections::HashSet as Set`    | `<import[alias]><path><name>std</name><name>collections</name></path><name>HashSet</name><alias><name>Set</name></alias></import>` |
-| `use std::fmt::self`                      | `<import[self]><path><name>std</name><name>fmt</name></path></import>` |
-| `use std::fmt::*`                         | `<import[wildcard]><path><name>std</name><name>fmt</name></path></import>` |
-| `pub use foo::bar`                        | `<import[reexport][pub]>...</import>` (visibility composes) |
+| `use std::collections::HashMap`           | `<use><path><name>std</name><name>collections</name></path><name>HashMap</name></use>` |
+| `use std::collections::{HashMap, HashSet}`| `<use[group]><path><name>std</name><name>collections</name></path><use><name>HashMap</name></use><use><name>HashSet</name></use></use>` |
+| `use std::collections::HashSet as Set`    | `<use[alias]><path><name>std</name><name>collections</name></path><name>HashSet</name><alias><name>Set</name></alias></use>` |
+| `use std::fmt::self`                      | `<use[self]><path><name>std</name><name>fmt</name></path></use>` |
+| `use std::fmt::*`                         | `<use[wildcard]><path><name>std</name><name>fmt</name></path></use>` |
+| `pub use foo::bar`                        | `<use[reexport][pub]>...</use>` (visibility composes) |
 
 **TypeScript**
 
@@ -122,16 +132,20 @@ The dual form is intentional: each query intent has a clean path.
   semantic.
 - **Lost**: distinguishing TS default-import from named-import via a
   marker. Defaults are rare and the path-vs-leaf shape suffices.
-- **Cost**: Rust source uses `use` but the element is `<import>`.
-  Source text is preserved in the element's textual content; the
-  semantic tag wins for queries.
-- **Won**: cross-language uniformity. `//import[alias]/alias/name`,
-  `//import[wildcard]`, `//import[blank]` work identically in
-  every language.
+- **Cost**: cross-language queries need a small disjunction
+  (`//import | //use`) to cover both keyword families. Acceptable —
+  the structural shape under each is identical, so
+  `(//import | //use)[alias]/alias/name` extracts local bindings
+  uniformly.
+- **Won**: within-language structural uniformity. The same paths/
+  alias/marker shape applies to every language, so cross-language
+  queries beyond just-find-imports stay clean.
 
 ## Implementation status
 
-Designed iter 69 (subagent proposal). Implementation rolls out
-language by language; each iter migrates one language to the new
-shape and updates per-language transformation tests. Tracked in the
-self-improvement loop.
+- iter 69: design proposal (subagent draft).
+- iter 71: per-user clarification — Principle #5 scope is within-
+  language; PHP/Rust keep `<use>`, only structure unifies.
+- iter 70: Go shipped — `<import>` with full path/alias/blank/dot
+  shape; block parens dissolved.
+- PHP, Rust, TS: pending. Each rolls out as its own iter.
