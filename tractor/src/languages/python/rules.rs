@@ -14,7 +14,7 @@ use super::output::TractorNode::{
     self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
     ElseIf, Escape, Except, Exec, False, Finally, Float, For, Format, From, Future,
-    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Lambda, List,
+    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
     Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
     Union, While, Wildcard, With, Yield, None as PyNone,
@@ -35,10 +35,14 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::ClassPattern             => RenameWithMarker(Pattern, Class),
         PyKind::DictPattern              => RenameWithMarker(Pattern, Dict),
         PyKind::DictionarySplat          => RenameWithMarker(Spread, Dict),
-        PyKind::DictionarySplatPattern   => RenameWithMarker(Spread, Dict),
+        // `**kwargs` parameter — wrap in `<parameter[kwsplat]>` so
+        // cross-language `//parameter` finds it (Principle #5).
+        PyKind::DictionarySplatPattern   => RenameWithMarker(Parameter, Kwsplat),
         PyKind::ListPattern              => RenameWithMarker(Pattern, List),
         PyKind::ListSplat                => RenameWithMarker(Spread, List),
-        PyKind::ListSplatPattern         => RenameWithMarker(Spread, List),
+        // `*args` parameter — wrap in `<parameter[splat]>` so
+        // cross-language `//parameter` finds it (Principle #5).
+        PyKind::ListSplatPattern         => RenameWithMarker(Parameter, Splat),
         PyKind::SplatPattern             => RenameWithMarker(Pattern, Splat),
         PyKind::UnionPattern             => RenameWithMarker(Pattern, Union),
         PyKind::UnionType                => RenameWithMarker(Type, Union),

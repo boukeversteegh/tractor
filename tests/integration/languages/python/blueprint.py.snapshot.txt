@@ -44,11 +44,11 @@ module/
   │   ├─ parameter/
   │   │   ├─ name = "b"
   │   │   └─ value/expression/int = "1"
-  │   ├─ spread[list]/name = "args"
+  │   ├─ parameter[splat]/name = "args"
   │   ├─ parameter/
   │   │   ├─ name = "kw_only"
   │   │   └─ value/expression/int = "2"
-  │   ├─ spread[dict]/name = "kwargs"
+  │   ├─ parameter[kwsplat]/name = "kwargs"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
   │       └─ return/expression/binary/
@@ -188,8 +188,8 @@ module/
   │       │   └─ body/
   │       │       ├─ function/
   │       │       │   ├─ name = "wrapper"
-  │       │       │   ├─ spread[list]/name = "a"
-  │       │       │   ├─ spread[dict]/name = "kw"
+  │       │       │   ├─ parameter[splat]/name = "a"
+  │       │       │   ├─ parameter[kwsplat]/name = "kw"
   │       │       │   └─ body/for/
   │       │       │       ├─ left/expression/name = "_"
   │       │       │       ├─ right/expression/call/
@@ -531,7 +531,7 @@ module/
   │       ├─ assign/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "head"
-  │       │   │   ├─ expression/spread[list]/name = "mid"
+  │       │   │   ├─ expression/parameter[splat]/name = "mid"
   │       │   │   └─ expression/name = "tail"
   │       │   └─ right/expression/name = "items"
   │       ├─ assign/

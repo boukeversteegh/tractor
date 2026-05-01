@@ -45,7 +45,7 @@ pub enum TractorNode {
     // Collection-construction markers
     Literal, Comprehension,
     // Pattern / type / import / string shape markers
-    Union, Splat, Constrained, Complex, Group, Future, Wildcard, Concatenated, Escape,
+    Union, Splat, Kwsplat, Constrained, Complex, Group, Future, Wildcard, Concatenated, Escape,
 }
 
 impl TractorNode {
@@ -62,7 +62,7 @@ impl TractorNode {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
-            | Self::Union | Self::Splat
+            | Self::Union | Self::Splat | Self::Kwsplat
             | Self::Constrained | Self::Complex | Self::Group | Self::Future
             | Self::Wildcard | Self::Concatenated | Self::Escape                 => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
