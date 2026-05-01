@@ -14,13 +14,13 @@ program/
   │   └─ body/method/
   │       ├─ name = "hello"
   │       ├─ parameter/name = "name"
-  │       └─ body/string/interpolation/name = "name"
+  │       └─ body/expression/string/interpolation/name = "name"
   ├─ module/
   │   ├─ name = "Logging"
   │   └─ body/method/
   │       ├─ name = "log"
   │       ├─ parameter/name = "msg"
-  │       └─ body/call/
+  │       └─ body/expression/call/
   │           ├─ name = "puts"
   │           └─ string/interpolation/name = "msg"
   ├─ module/
@@ -29,8 +29,8 @@ program/
   │       ├─ class/
   │       │   ├─ name = "Base"
   │       │   └─ body/
-  │       │       ├─ call/name = "attr_accessor"
-  │       │       ├─ call/name = "attr_reader"
+  │       │       ├─ expression/call/name = "attr_accessor"
+  │       │       ├─ expression/call/name = "attr_reader"
   │       │       ├─ method/
   │       │       │   ├─ name = "initialize"
   │       │       │   ├─ parameter/name = "name"
@@ -50,7 +50,7 @@ program/
   │       │       └─ method/
   │       │           ├─ name = "=="
   │       │           ├─ parameter/name = "other"
-  │       │           └─ body/binary/
+  │       │           └─ body/expression/binary/
   │       │               ├─ left/expression/call/
   │       │               │   ├─ name = "other"
   │       │               │   ├─ name = "is_a?"
@@ -66,13 +66,13 @@ program/
   │           ├─ name = "User"
   │           ├─ superclass/name = "Base"
   │           └─ body/
-  │               ├─ call/
+  │               ├─ expression/call/
   │               │   ├─ name = "include"
   │               │   └─ name = "Greeter"
-  │               ├─ call/
+  │               ├─ expression/call/
   │               │   ├─ name = "extend"
   │               │   └─ name = "Logging"
-  │               ├─ call/
+  │               ├─ expression/call/
   │               │   ├─ name = "prepend"
   │               │   └─ call/
   │               │       ├─ name = "Module"
@@ -107,7 +107,7 @@ program/
   │               │   ├─ self = "self"
   │               │   ├─ name = "build"
   │               │   ├─ parameter/name = "name"
-  │               │   └─ body/call/
+  │               │   └─ body/expression/call/
   │               │       ├─ name = "new"
   │               │       └─ name = "name"
   │               ├─ class[singleton]/
@@ -142,7 +142,7 @@ program/
   │               │       │       ├─ condition/expression/call/name = "block_given?"
   │               │       │       ├─ yield/name = "msg"
   │               │       │       └─ name = "msg"
-  │               │       └─ conditional/
+  │               │       └─ expression/conditional/
   │               │           ├─ condition/expression/call/
   │               │           │   ├─ name = "opts"
   │               │           │   └─ name = "empty?"
@@ -163,7 +163,7 @@ program/
   │               │   ├─ name = "collect"
   │               │   ├─ parameter[splat]/name = "items"
   │               │   ├─ parameter[kwsplat]/name = "meta"
-  │               │   └─ body/binary/
+  │               │   └─ body/expression/binary/
   │               │       ├─ left/expression/call/
   │               │       │   ├─ call/
   │               │       │   │   ├─ name = "items"
@@ -172,22 +172,22 @@ program/
   │               │       │   └─ block/
   │               │       │       ├─ parameter/name = "it"
   │               │       │       ├─ parameter/name = "i"
-  │               │       │       └─ body/string/
+  │               │       │       └─ body/expression/string/
   │               │       │           ├─ interpolation/name = "i"
   │               │       │           └─ interpolation/name = "it"
   │               │       ├─ op[plus] = "+"
   │               │       └─ right/expression/call/
   │               │           ├─ name = "meta"
   │               │           └─ name = "keys"
-  │               ├─ name = "private"
+  │               ├─ expression/name = "private"
   │               ├─ method/
   │               │   ├─ name = "secret"
-  │               │   └─ body/string = "'shh'"
-  │               ├─ name = "protected"
+  │               │   └─ body/expression/string = "'shh'"
+  │               ├─ expression/name = "protected"
   │               ├─ method/
   │               │   ├─ name = "peer_only"
-  │               │   └─ body/name = "@id"
-  │               ├─ name = "public"
+  │               │   └─ body/expression/name = "@id"
+  │               ├─ expression/name = "public"
   │               └─ method/
   │                   ├─ name = "describe"
   │                   └─ body/
@@ -220,7 +220,7 @@ program/
   │                       │   └─ right/expression/hash/
   │                       │       ├─ spread[dict]/name = "data"
   │                       │       └─ pair/value/expression/nil = "nil"
-  │                       └─ array/
+  │                       └─ expression/array/
   │                           ├─ name = "data"
   │                           ├─ name = "rocket"
   │                           ├─ name = "list"
@@ -259,7 +259,7 @@ program/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
   │       │   └─ right/expression/int = "0"
-  │       ├─ call/
+  │       ├─ expression/call/
   │       │   ├─ name = "items"
   │       │   ├─ name = "each"
   │       │   └─ block[do]/
@@ -309,14 +309,14 @@ program/
   │       │   └─ body/do/assign/
   │       │       ├─ left/expression/name = "total"
   │       │       └─ right/expression/name = "j"
-  │       ├─ call/
+  │       ├─ expression/call/
   │       │   ├─ name = "loop"
   │       │   └─ block/body[break] = "break"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
   │       │   └─ right/expression/begin/
   │       │       ├─ unless/
-  │       │       │   ├─ body/call/
+  │       │       │   ├─ body/expression/call/
   │       │       │   │   ├─ name = "raise"
   │       │       │   │   └─ string = "'boom'"
   │       │       │   └─ condition/expression/call/
@@ -332,12 +332,12 @@ program/
   │       │       │       ├─ if/
   │       │       │       │   ├─ body[retry] = "retry"
   │       │       │       │   └─ condition/expression/false = "false"
-  │       │       │       └─ call/
+  │       │       │       └─ expression/call/
   │       │       │           ├─ name = "e"
   │       │       │           └─ name = "message"
-  │       │       ├─ else/string = "'ok'"
+  │       │       ├─ else/expression/string = "'ok'"
   │       │       └─ ensure/if/
-  │       │           ├─ body/call/
+  │       │           ├─ body/expression/call/
   │       │           │   ├─ name = "items"
   │       │           │   └─ name = "clear"
   │       │           └─ condition/expression/binary/
@@ -351,7 +351,7 @@ program/
   │       │   └─ right/expression/lambda/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
-  │       │       └─ body/block/body/binary/
+  │       │       └─ body/block/body/expression/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
@@ -361,7 +361,7 @@ program/
   │       │       ├─ name = "proc"
   │       │       └─ block/
   │       │           ├─ parameter/name = "n"
-  │       │           └─ body/binary/
+  │       │           └─ body/expression/binary/
   │       │               ├─ left/expression/name = "n"
   │       │               ├─ op[multiply] = "*"
   │       │               └─ right/expression/int = "2"
@@ -389,13 +389,13 @@ program/
   │       │       ├─ int = "2"
   │       │       ├─ int = "3"
   │       │       └─ int = "4"
-  │       ├─ binary/
+  │       ├─ expression/binary/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ left/expression/name = "flag"
   │       │   │   └─ right/expression/true = "true"
   │       │   ├─ op/logical[and]
   │       │   └─ right/expression/false = "false"
-  │       ├─ binary/
+  │       ├─ expression/binary/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ left/expression/name = "flag"
   │       │   │   └─ right/expression/true = "true"
@@ -414,7 +414,7 @@ program/
   │       │       └─ right/expression/unary/
   │       │           ├─ op/logical[not]
   │       │           └─ name = "flag"
-  │       └─ array/
+  │       └─ expression/array/
   │           ├─ name = "result"
   │           ├─ call/
   │           │   ├─ name = "adder"
@@ -434,7 +434,7 @@ program/
   │   ├─ condition/expression/call/
   │   │   ├─ name = "MAX_RETRIES"
   │   │   └─ name = "zero?"
-  │   └─ then/call/
+  │   └─ then/expression/call/
   │       ├─ name = "puts"
   │       └─ string/interpolation/name = "MAX_RETRIES"
   ├─ comment[leading] = "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
@@ -458,7 +458,7 @@ program/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   ├─ name = "is_a?"
   │       │       │   │   └─ name = "Integer"
-  │       │       │   └─ body/then/binary/
+  │       │       │   └─ body/then/expression/binary/
   │       │       │       ├─ left/expression/name = "head"
   │       │       │       ├─ op[plus] = "+"
   │       │       │       └─ right/expression/call/
@@ -478,7 +478,7 @@ program/
   │       │       │   ├─ pattern[hash]/pattern[keyword]/value/expression/pattern[as]/
   │       │       │   │   ├─ value/expression/name = "Integer"
   │       │       │   │   └─ name = "k"
-  │       │       │   └─ body/then/name = "k"
+  │       │       │   └─ body/then/expression/name = "k"
   │       │       ├─ in/
   │       │       │   ├─ pattern[alternative]/
   │       │       │   │   ├─ int = "1"
@@ -489,8 +489,8 @@ program/
   │       │           ├─ pattern[as]/
   │       │           │   ├─ value/expression/name = "Integer"
   │       │           │   └─ name = "n"
-  │       │           └─ body/then/name = "n"
-  │       ├─ call/
+  │       │           └─ body/then/expression/name = "n"
+  │       ├─ expression/call/
   │       │   ├─ name = "forward"
   │       │   └─ argument[forward] = "..."
   │       ├─ assign/
@@ -499,7 +499,7 @@ program/
   │       │       ├─ string = "\"first \""
   │       │       ├─ string = "\"second \""
   │       │       └─ string = "\"third\""
-  │       ├─ member[static]/
+  │       ├─ expression/member[static]/
   │       │   ├─ member[static]/name = "Configuration"
   │       │   └─ name = "Defaults"
   │       ├─ assign/
@@ -508,17 +508,17 @@ program/
   │       │       ├─ int = "10"
   │       │       ├─ int = "20"
   │       │       └─ int = "30"
-  │       ├─ index/
+  │       ├─ expression/index/
   │       │   ├─ name = "arr"
   │       │   └─ int = "0"
-  │       └─ rescue/body/name = "result"
+  │       └─ rescue/body/expression/name = "result"
   ├─ method/
   │   ├─ name = "destructured"
   │   ├─ parameter[destructured]/
   │   │   ├─ name = "x"
   │   │   └─ name = "y"
   │   ├─ parameter[block]/name = "block"
-  │   └─ body/call/
+  │   └─ body/expression/call/
   │       ├─ name = "block"
   │       ├─ name = "call"
   │       ├─ name = "x"

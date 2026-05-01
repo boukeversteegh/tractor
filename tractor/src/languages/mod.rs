@@ -537,10 +537,13 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 ///
 /// Ruby's tree-sitter grammar has no `expression_statement` analog —
 /// expressions appear directly under `<body>`. So statement-level
-/// host migration is deferred (would require walking body children
-/// to identify which are expression-shaped); this pass handles the
-/// slot-level hosts (`left`/`right`/`condition`/`value`/`return`)
-/// only.
+/// host migration handles two layers:
+/// 1. slot-level hosts (`left`/`right`/`condition`/`value`/`return`)
+/// 2. body-level: walk `<body>` / `<then>` / `<else>` children and
+///    wrap value-producing kinds in `<expression>`. Ruby has implicit
+///    return — every method body's last expression IS the return
+///    value — so value-producing children of body containers are
+///    real expression positions and should carry the host.
 fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
@@ -548,8 +551,32 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    crate::transform::wrap_body_value_children(
+        xot,
+        root,
+        &["body", "then", "else"],
+        RUBY_VALUE_KINDS,
+    )?;
     Ok(())
 }
+
+/// Element names that are value-producing in Ruby and should be
+/// wrapped in `<expression>` when they appear as direct children of
+/// a body-level container (`<body>`, `<then>`, `<else>`). Names NOT in
+/// this list are statement-only (declarations, control flow, jump
+/// statements, comments) and are left bare.
+const RUBY_VALUE_KINDS: &[&str] = &[
+    // Calls / member access / indexing — function results are values.
+    "call", "member", "index", "lambda", "yield",
+    // Operator expressions
+    "binary", "unary", "conditional", "range", "match",
+    // Literals
+    "string", "symbol", "int", "float", "regex",
+    "true", "false", "nil", "self",
+    "array", "hash", "pair",
+    // Identifiers / references
+    "name",
+];
 
 /// Post-transform pass that collapses every `<if>` in the tree into
 /// the flat conditional shape (see the cross-cutting convention in

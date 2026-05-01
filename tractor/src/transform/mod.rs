@@ -194,6 +194,74 @@ pub fn wrap_expression_positions(
     Ok(())
 }
 
+/// Wrap value-producing direct children of body-like containers in
+/// `<expression>` hosts (Principle #15 stable expression hosts).
+///
+/// `body_names`: container element names whose children are body
+/// statements (e.g. `["body", "then", "else"]` for Ruby).
+/// `value_kinds`: opt-IN list of element names that are
+/// value-producing — only these get wrapped. Statement-only kinds
+/// (declarations, control flow, jump statements, comments) are
+/// left bare.
+///
+/// Idempotent: skips children that are already `<expression>`.
+/// Synthesized hosts carry no source location (position markers).
+pub fn wrap_body_value_children(
+    xot: &mut Xot,
+    root: XotNode,
+    body_names: &[&str],
+    value_kinds: &[&str],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    if body_names.is_empty() || value_kinds.is_empty() {
+        return Ok(());
+    }
+    let root = find_content_root(xot, root);
+
+    let mut targets: Vec<XotNode> = Vec::new();
+    collect_body_value_targets(xot, root, body_names, value_kinds, &mut targets);
+
+    for child in targets {
+        let host_id = xot.add_name("expression");
+        let host = xot.new_element(host_id);
+        xot.with_wrap_child(child, host)?;
+    }
+    Ok(())
+}
+
+fn collect_body_value_targets(
+    xot: &Xot,
+    node: XotNode,
+    body_names: &[&str],
+    value_kinds: &[&str],
+    out: &mut Vec<XotNode>,
+) {
+    use helpers::*;
+    if xot.element(node).is_none() {
+        return;
+    }
+    let element_name = get_element_name(xot, node);
+    let is_body = element_name
+        .as_deref()
+        .map_or(false, |n| body_names.contains(&n));
+    if is_body {
+        for child in xot.children(node) {
+            if xot.element(child).is_none() {
+                continue;
+            }
+            let child_name = get_element_name(xot, child);
+            let Some(name) = child_name.as_deref() else { continue };
+            if !value_kinds.contains(&name) {
+                continue;
+            }
+            out.push(child);
+        }
+    }
+    for child in xot.children(node) {
+        collect_body_value_targets(xot, child, body_names, value_kinds, out);
+    }
+}
+
 fn collect_expression_position_targets(
     xot: &Xot,
     node: XotNode,
