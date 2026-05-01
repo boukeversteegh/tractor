@@ -1054,6 +1054,241 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    python_restructure_imports(xot, root)?;
+    Ok(())
+}
+
+/// Restructure Python `<import>` and `<from>` elements per the
+/// imports-grouping shape: `<path>` for the module path, `<alias>` for
+/// renamed bindings, inner `<import>` per imported entity inside `<from>`.
+fn python_restructure_imports(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{XotWithExt, get_element_name};
+    use python::output::TractorNode::{Alias, Path, Relative};
+
+    // Handle `<import>` (plain `import X` and `import X as Y`).
+    let mut imports: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "import", &mut imports);
+    for imp in imports {
+        // Skip if nested inside a <from> (we handle those separately
+        // below — the outer pass already restructured them).
+        if xot.parent(imp)
+            .and_then(|p| get_element_name(xot, p))
+            .as_deref() == Some("from")
+        {
+            continue;
+        }
+        // Capture name-`as`-name pair from text adjacency.
+        let alias_pairs = python_alias_pairs(xot, imp);
+        // Strip noise text (`import`, `as`, commas).
+        for child in xot.children(imp).collect::<Vec<_>>() {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+            }
+        }
+        // Now look at children. For dotted name `import a.b.c`, there
+        // may be a wrapper `<name>` containing inner `<name>X</name>`
+        // segments — flatten that into a `<path>`. For aliased
+        // `import a.b as x`, alias_pairs has the (last_segment, alias)
+        // pair captured.
+        python_flatten_dotted_name(xot, imp)?;
+        let names: Vec<XotNode> = xot.children(imp)
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+            .collect();
+
+        if !alias_pairs.is_empty() && names.len() >= 2 {
+            // Treat the last name as alias; rest become `<path>`.
+            let alias_name = *names.last().unwrap();
+            let path_segs = &names[..names.len() - 1];
+            // Single-segment path also wraps in <path> for cross-language
+            // consistency.
+            if !path_segs.is_empty() {
+                let path_elt = xot.add_name(Path.as_str());
+                let path_node = xot.new_element(path_elt);
+                xot.insert_before(path_segs[0], path_node)?;
+                for &seg in path_segs {
+                    xot.detach(seg)?;
+                    xot.append(path_node, seg)?;
+                }
+            }
+            let alias_elt = xot.add_name(Alias.as_str());
+            let alias_node = xot.new_element(alias_elt);
+            xot.insert_before(alias_name, alias_node)?;
+            xot.detach(alias_name)?;
+            xot.append(alias_node, alias_name)?;
+            xot.with_prepended_marker(imp, Alias)?;
+        } else if !names.is_empty() {
+            // Plain dotted import: wrap all names in <path>.
+            let path_elt = xot.add_name(Path.as_str());
+            let path_node = xot.new_element(path_elt);
+            xot.insert_before(names[0], path_node)?;
+            for &seg in &names {
+                xot.detach(seg)?;
+                xot.append(path_node, seg)?;
+            }
+        }
+    }
+
+    // Handle `<from>`.
+    let mut froms: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "from", &mut froms);
+    for fnode in froms {
+        // Look at text leaves to find the `import` keyword (separates
+        // the module path from imported names) and any leading dots
+        // (relative import marker).
+        let mut import_kw_seen_at: Option<usize> = None;
+        let mut has_relative = false;
+        let mut has_relative_only = false;
+        let children_seq: Vec<XotNode> = xot.children(fnode).collect();
+        for (idx, child) in children_seq.iter().enumerate() {
+            if let Some(text) = xot.text_str(*child) {
+                let trimmed = text.trim();
+                if trimmed.starts_with("from .") || trimmed == "from . import" {
+                    has_relative = true;
+                    if trimmed == "from . import" || trimmed == "from .. import" {
+                        has_relative_only = true;
+                    }
+                }
+                if trimmed.contains("import") {
+                    import_kw_seen_at = Some(idx);
+                }
+            }
+        }
+
+        let alias_pairs = python_alias_pairs(xot, fnode);
+        // Strip text noise.
+        for child in xot.children(fnode).collect::<Vec<_>>() {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+            }
+        }
+        python_flatten_dotted_name(xot, fnode)?;
+        let names: Vec<XotNode> = xot.children(fnode)
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+            .collect();
+
+        // Determine the boundary: how many leading names belong to the
+        // module path. import_kw_seen_at tells us roughly where, but
+        // since we stripped indices, count via text layout. Heuristic:
+        //  - If all names are 0: nothing to do (relative-only).
+        //  - Else module_path = first N names where N = total - num_imports.
+        // We don't have an easy way to count num_imports without the
+        // text layout. Fallback: assume the FIRST name is the module
+        // (most common case `from X import a, b, c`); the rest are
+        // imports. Aliases are tracked from alias_pairs.
+
+        if names.is_empty() {
+            if has_relative_only {
+                xot.with_prepended_marker(fnode, Relative)?;
+            }
+            continue;
+        }
+
+        // For relative-only `from . import x`: all names are imports,
+        // no module path. For `from .x import y`: first name is the
+        // (relative) module, rest are imports.
+        let path_count = if has_relative_only { 0 } else { 1 };
+        let path_segs: Vec<XotNode> = names.iter().take(path_count).copied().collect();
+        let import_names: Vec<XotNode> = names.iter().skip(path_count).copied().collect();
+
+        // Build <path> from path_segs.
+        if !path_segs.is_empty() {
+            let path_elt = xot.add_name(Path.as_str());
+            let path_node = xot.new_element(path_elt);
+            xot.insert_before(path_segs[0], path_node)?;
+            for &seg in &path_segs {
+                xot.detach(seg)?;
+                xot.append(path_node, seg)?;
+            }
+        }
+
+        // Identify alias pair targets within import_names.
+        let alias_target_set: std::collections::HashSet<XotNode> =
+            alias_pairs.iter().map(|&(_, b)| b).collect();
+        let alias_orig_pair: std::collections::HashMap<XotNode, XotNode> =
+            alias_pairs.iter().map(|&(a, b)| (a, b)).collect();
+
+        // Wrap each import-name in inner <import>; pair aliases.
+        let mut idx = 0;
+        while idx < import_names.len() {
+            let name = import_names[idx];
+            if alias_target_set.contains(&name) {
+                idx += 1;
+                continue;
+            }
+            let inner_imp_elt = xot.add_name("import");
+            let inner_imp = xot.new_element(inner_imp_elt);
+            xot.insert_before(name, inner_imp)?;
+            xot.detach(name)?;
+            xot.append(inner_imp, name)?;
+            if let Some(&alias_name) = alias_orig_pair.get(&name) {
+                let alias_elt = xot.add_name(Alias.as_str());
+                let alias_node = xot.new_element(alias_elt);
+                xot.append(inner_imp, alias_node)?;
+                xot.detach(alias_name)?;
+                xot.append(alias_node, alias_name)?;
+                xot.with_prepended_marker(inner_imp, Alias)?;
+            }
+            idx += 1;
+        }
+
+        if has_relative {
+            xot.with_prepended_marker(fnode, Relative)?;
+        }
+        let _ = import_kw_seen_at;
+    }
+
+    Ok(())
+}
+
+/// Capture (a, b) pairs of `<name>` siblings joined by an `as` text
+/// node — used by the Python import restructure to identify alias
+/// pairs inside `import x as y` / `from x import y as z`.
+fn python_alias_pairs(xot: &Xot, node: XotNode) -> Vec<(XotNode, XotNode)> {
+    use crate::transform::helpers::get_element_name;
+    let mut out = Vec::new();
+    let seq: Vec<XotNode> = xot.children(node).collect();
+    for window in seq.windows(3) {
+        let (a, mid, b) = (window[0], window[1], window[2]);
+        if get_element_name(xot, a).as_deref() == Some("name")
+            && get_element_name(xot, b).as_deref() == Some("name")
+        {
+            if let Some(text) = xot.text_str(mid) {
+                if text.split_whitespace().any(|t| t == "as") {
+                    out.push((a, b));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Tree-sitter Python's `dotted_name` (e.g. `a.b.c`) gets wrapped in
+/// the field `<name>` wrapper, producing `<name><name>a</name>"."<name>b</name>...</name>`.
+/// Flatten any such inner `<name>` wrapper child of `node` so its
+/// segments become direct children, ready for `<path>` wrapping.
+fn python_flatten_dotted_name(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    let wrappers: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            get_element_name(xot, c).as_deref() == Some("name")
+                && xot.children(c).any(|cc| {
+                    get_element_name(xot, cc).as_deref() == Some("name")
+                })
+        })
+        .collect();
+    for wrapper in wrappers {
+        let inner: Vec<XotNode> = xot.children(wrapper).collect();
+        for c in inner {
+            // Skip text "." separators inside the wrapper.
+            if xot.text_str(c).is_some() {
+                xot.detach(c)?;
+                continue;
+            }
+            xot.detach(c)?;
+            xot.insert_before(wrapper, c)?;
+        }
+        xot.detach(wrapper)?;
+    }
     Ok(())
 }
 

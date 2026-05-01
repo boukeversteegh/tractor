@@ -66,20 +66,20 @@ fn csharp_namespace_block_vs_file_scoped() {
 
 #[test]
 fn python_plain_import() {
-    claim("Python plain import renders as <import> with the module name as a child",
+    claim("Python plain import renders as <import> with the module name wrapped in <path>",
         &mut parse_src("python", "import os\n"),
-        "//import/name='os'",
+        "//import/path/name='os'",
         1);
 }
 
 #[test]
 fn python_from_import() {
-    claim("Python from-import renames the statement to <from>",
+    claim("Python from-import renames the statement to <from> with structured path/import children",
         &mut parse_src("python", "from foo import bar\n"),
         &multi_xpath(r#"
             //from
-                [name='foo']
-                [name='bar']
+                [path/name='foo']
+                [import/name='bar']
         "#),
         1);
 

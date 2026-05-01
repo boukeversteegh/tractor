@@ -1,25 +1,26 @@
 module/
   ├─ expression/string = "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
-  ├─ import/name = "os"
-  ├─ import/
-  │   ├─ name = "sys"
-  │   └─ name = "system"
+  ├─ import/path/name = "os"
+  ├─ import[alias]/
+  │   ├─ path/name = "sys"
+  │   └─ alias/name = "system"
   ├─ from/
-  │   ├─ name = "collections"
-  │   └─ name = "OrderedDict"
+  │   ├─ path/name = "collections"
+  │   └─ import/name = "OrderedDict"
   ├─ from/
-  │   ├─ name = "typing"
-  │   ├─ name = "Optional"
-  │   └─ name = "Union"
+  │   ├─ path/name = "typing"
+  │   ├─ import/name = "Optional"
+  │   └─ import/name = "Union"
   ├─ from/
-  │   ├─ name = "dataclasses"
-  │   ├─ name = "dataclass"
-  │   └─ name = "field"
-  ├─ from/name = "sibling"
-  ├─ from/
-  │   ├─ name = "utils"
-  │   ├─ name = "helper"
-  │   └─ name = "h"
+  │   ├─ path/name = "dataclasses"
+  │   ├─ import/name = "dataclass"
+  │   └─ import/name = "field"
+  ├─ from[relative]/import/name = "sibling"
+  ├─ from[relative]/
+  │   ├─ path/name = "utils"
+  │   └─ import[alias]/
+  │       ├─ name = "helper"
+  │       └─ alias/name = "h"
   ├─ assign/
   │   ├─ left/expression/name = "GLOBAL_FLAG"
   │   ├─ type/name = "bool"
@@ -600,11 +601,11 @@ module/
   │       ├─ delete/name = "counter"
   │       └─ return/expression/name = "inc"
   ├─ comment[leading] = "# `from __future__ import …`; module-level so it parses as\n# future_import_statement (a separate kind from import_from_statement)."
-  ├─ import[future]/name = "annotations"
+  ├─ import[future]/path/name = "annotations"
   ├─ comment[leading] = "# Wildcard import (`from x import *`)."
   ├─ from/
-  │   ├─ name = "os"
-  │   ├─ name = "path"
+  │   ├─ path/name = "os"
+  │   ├─ import/name = "path"
   │   └─ import[wildcard] = "*"
   ├─ comment[leading] = "# Python 3.12 type-alias statement and PEP 695 generics with constraints,\n# member-types, and splat-types."
   ├─ alias/

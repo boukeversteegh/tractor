@@ -46,6 +46,8 @@ pub enum TractorNode {
     Literal, Comprehension,
     // Pattern / type / import / string shape markers
     Union, Splat, Kwsplat, Constrained, Complex, Group, Future, Wildcard, Concatenated, Escape,
+    // Import-shape (Path container; Relative marker for `from . import`)
+    Path, Relative,
 }
 
 impl TractorNode {
@@ -64,13 +66,18 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Union | Self::Splat | Self::Kwsplat
             | Self::Constrained | Self::Complex | Self::Group | Self::Future
-            | Self::Wildcard | Self::Concatenated | Self::Escape                 => (true, false, Default),
+            | Self::Wildcard | Self::Concatenated | Self::Escape
+            | Self::Relative                                                      => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Async | Self::Literal | Self::Comprehension
             | Self::Await                                                        => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::List | Self::Dict | Self::Set                                  => (true, true, Default),
+            // Alias dual-use: `[alias]` marker on `<import>` for
+            // `import x as y` AND `<alias><name>y</name></alias>` for
+            // the local-binding wrapper (matches Go/Rust/PHP/TS shape).
+            Self::Alias                                                          => (true, true, Default),
             // Generic: container for `Foo[T, U]` (with type children) +
             // marker for empty / wildcard generics.
             // Tuple: container for `(a, b)` literal + marker for empty `()`.
@@ -96,6 +103,7 @@ impl TractorNode {
             | Self::Generator
             | Self::True | Self::False | Self::None                              => (false, true, Keyword),
             Self::Type                                                           => (false, true, Type),
+            Self::Path                                                           => (false, true, Default),
             Self::Lambda | Self::Call                                            => (false, true, Function),
             Self::Assign | Self::Binary | Self::Unary | Self::Compare
             | Self::Logical | Self::Ternary | Self::Op                           => (false, true, Operator),
