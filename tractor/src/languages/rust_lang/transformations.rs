@@ -341,11 +341,31 @@ pub fn default_access_for_declaration(
 // ---------------------------------------------------------------------
 
 fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    // Modifiers can appear as either:
+    //  - anonymous text children (`async unsafe` inside function_modifiers)
+    //  - element children with their own kind (`mutable_specifier` for `mut`)
+    // Cover both. Element children are processed BEFORE they're flattened
+    // by their own rule (top-down walk).
     let texts = get_text_children(xot, node);
-    let found: Vec<TractorNode> = texts.iter()
+    let mut found: Vec<TractorNode> = texts.iter()
         .filter_map(|t| t.parse().ok())
         .filter(|name| matches!(name, Mut | Async | Unsafe | Const))
         .collect();
+    // Element children: any whose text content parses to a modifier name.
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if xot.element(child).is_none() {
+            continue;
+        }
+        let text = match get_text_content(xot, child) {
+            Some(t) => t.trim().to_string(),
+            None => continue,
+        };
+        if let Ok(name) = text.parse::<TractorNode>() {
+            if matches!(name, Mut | Async | Unsafe | Const) && !found.contains(&name) {
+                found.push(name);
+            }
+        }
+    }
 
     // Source-location source: the keyword token is anonymous text inside
     // `node` (a let_declaration or function_modifiers wrapper); copy

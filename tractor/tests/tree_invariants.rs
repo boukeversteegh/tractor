@@ -54,6 +54,13 @@ const ASSERT_NO_REPEATED_NAME: bool = true;
 // almost always means a transform detached the inner content but
 // left the wrapper. Now asserted (zero violations as of iter 49).
 const ASSERT_CONTAINER_NON_EMPTY: bool = true;
+// `no_anonymous_keyword_leaks` flags text leaves whose trimmed
+// content matches a per-language MARKER_ONLY name when no marker
+// child of that name is present as a sibling under the same
+// parent. Catches Principle #2 / #7 regressions where a transform
+// failed to convert a keyword token into its corresponding marker.
+// Advisory until we calibrate false-positive rate.
+const ASSERT_NO_KEYWORD_LEAK: bool = false;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
@@ -965,6 +972,113 @@ fn containers_have_content_or_are_absent() {
         );
         if ASSERT_INVARIANTS && ASSERT_CONTAINER_NON_EMPTY {
             panic!("empty containers");
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Invariant 11: No anonymous keyword leaks.
+//
+// For every text leaf inside an output element whose trimmed content
+// matches a per-language MARKER_ONLY name, a sibling marker element
+// of that name MUST exist under the same parent. Catches Principle
+// #2 / #7 regressions where a keyword token was preserved as text
+// (good) but the corresponding marker conversion was missed (bad).
+//
+// Example caught:
+//   <function>{"pub fn"}</function>     ← "pub" is a keyword; no
+//                                         <pub/> sibling → leak
+//
+// Allowed:
+//   <function[pub]>{"pub fn", <name>foo</name>}</function>
+//   ↑ <pub/> marker present (the [pub] annotation)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn no_anonymous_keyword_leaks() {
+    let mut report = Report::default();
+    for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let Some(lang) = lang_from_ext(ext) else { continue };
+        if !tractor::languages::has_semantic_vocabulary(lang) {
+            continue;
+        }
+        let Some(parsed) = parse_structure(&fixture) else { continue };
+        let xot = parsed.documents.xot();
+        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
+        walk_elements(xot, root, &mut |xot, node| {
+            // Skip parents where text content is intentionally
+            // free-form (not a structural keyword position).
+            let parent_name = element_name(xot, node);
+            if matches!(parent_name.as_deref(),
+                Some("comment") | Some("name") | Some("string") | Some("symbol")
+                | Some("regex") | Some("interpolation") | Some("template")
+                | Some("char") | Some("escape")
+                // `<op>` text is a known operator; not a keyword leak
+                | Some("op")
+                // `<call>` and `<member>` may contain identifier text
+                // that happens to match a keyword name (e.g. method
+                // named `var`); intent is identifier, not keyword.
+                // Skip these for now; refine if false-negatives matter.
+            ) {
+                return;
+            }
+            // For each text child of `node`, check if its trimmed
+            // content tokenizes into one or more MARKER_ONLY names.
+            // If any such name has no sibling marker, flag it.
+            let element_children: std::collections::HashSet<String> = xot
+                .children(node)
+                .filter_map(|c| element_name(xot, c))
+                .collect();
+            for child in xot.children(node) {
+                let Some(text) = xot.text_str(child) else { continue };
+                let trimmed = text.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
+                // Tokenize: split on whitespace AND on common
+                // punctuation (`(`, `)`, `,`, `;`, `{`, `}`, `:`).
+                // Each token is checked against MARKER_ONLY.
+                for token in trimmed.split(|c: char| {
+                    c.is_whitespace()
+                        || matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | ':' | '[' | ']')
+                }) {
+                    if token.is_empty() {
+                        continue;
+                    }
+                    if !tractor::languages::is_marker_only_name(lang, token) {
+                        continue;
+                    }
+                    // Also skip if the token matches the parent
+                    // element's own name — happens when a keyword
+                    // statement has its keyword text inside.
+                    if element_name(xot, node).as_deref() == Some(token) {
+                        continue;
+                    }
+                    if !element_children.contains(token) {
+                        let parent_name = element_name(xot, node).unwrap_or_default();
+                        report.record(
+                            token,
+                            &fixture,
+                            format!(
+                                "keyword {:?} in <{}> text without sibling <{}/> marker",
+                                token, parent_name, token
+                            ),
+                        );
+                    }
+                }
+            }
+        });
+    }
+    if !report.is_empty() {
+        report.print(
+            "Anonymous keyword text leaks (no companion marker)",
+        );
+        if ASSERT_INVARIANTS && ASSERT_NO_KEYWORD_LEAK {
+            panic!("anonymous keyword leaks");
         }
     }
 }

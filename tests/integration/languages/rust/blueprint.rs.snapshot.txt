@@ -542,7 +542,7 @@ file/
   │       │   │       ├─ name = "Some"
   │       │   │       └─ int = "10"
   │       │   └─ then/let/value/expression/name = "v"
-  │       ├─ let/
+  │       ├─ let[mut]/
   │       │   ├─ name = "it"
   │       │   └─ value/expression/call/field/
   │       │       ├─ value/expression/macro/
@@ -592,7 +592,7 @@ file/
   │       │           │   ├─ op/compare[greater]
   │       │           │   └─ right/expression/int = "20"
   │       │           └─ then/break/label/name = "outer"
-  │       ├─ let/
+  │       ├─ let[mut]/
   │       │   ├─ name = "n"
   │       │   └─ value/expression/int = "0"
   │       ├─ while/
@@ -868,7 +868,7 @@ file/
   │       │               ├─ pattern/pattern[slice] = "[]"
   │       │               └─ value/expression/int = "0"
   │       ├─ comment[leading] = "// assignment_expression (non-compound)."
-  │       ├─ let/
+  │       ├─ let[mut]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/int = "0"
   │       ├─ expression/assign/
