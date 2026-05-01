@@ -135,7 +135,9 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::ImportStatement       => Rename(Import),
         PyKind::Integer               => Rename(Int),
         PyKind::KeywordArgument       => Rename(Argument),
-        PyKind::KeywordPattern        => Rename(Pattern),
+        // `x=0` inside `case Point(x=0):` — explicit key/value shape
+        // matches the dict-pattern shape (`<pattern[dict]>{string}{value}`).
+        PyKind::KeywordPattern        => Custom(transformations::keyword_pattern),
         PyKind::KeywordSeparator      => Rename(Keyword),
         PyKind::Lambda                => Rename(Lambda),
         PyKind::MatchStatement        => Rename(Match),

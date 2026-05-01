@@ -85,6 +85,10 @@ impl TractorNode {
             // Class: dual-use — container for `class Foo:` declaration;
             // marker for class-pattern matches (`case Point(x=0, y=y):`).
             Self::Class                                                          => (true, true, Keyword),
+            // Keyword: container for `<keyword>` field-wrapper on
+            // `def f(*, x): …` keyword-only marker AND `[keyword]`
+            // marker on `<pattern>` for class-pattern keyword args.
+            Self::Keyword                                                        => (true, true, Default),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `pass` is always bare; `break`/`continue`/

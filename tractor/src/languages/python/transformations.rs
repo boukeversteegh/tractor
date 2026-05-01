@@ -331,6 +331,28 @@ pub fn set_comprehension(
     Ok(TransformAction::Continue)
 }
 
+/// `keyword_pattern` — `x=0` inside a class pattern. Strips the bare
+/// `=` text leaf, adds `[keyword]` marker, renames to `<pattern>`.
+/// The resulting shape is `<pattern[keyword]>{<name>x</name><int>0</int>}`
+/// — name first, value second. The marker distinguishes from
+/// positional class-pattern args.
+pub fn keyword_pattern(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Keyword, Pattern as PatternName};
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            if text.trim() == "=" {
+                xot.detach(child)?;
+            }
+        }
+    }
+    xot.with_prepended_marker(node, Keyword)?
+        .with_renamed(node, PatternName);
+    Ok(TransformAction::Continue)
+}
+
 // ---------------------------------------------------------------------
 // Local helpers used by handlers above.
 // ---------------------------------------------------------------------

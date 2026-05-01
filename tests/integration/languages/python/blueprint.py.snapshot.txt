@@ -412,10 +412,10 @@ module/
   │           ├─ arm/
   │           │   ├─ pattern/pattern[class]/
   │           │   │   ├─ name = "Point"
-  │           │   │   ├─ pattern/pattern/
+  │           │   │   ├─ pattern/pattern[keyword]/
   │           │   │   │   ├─ name = "x"
   │           │   │   │   └─ int = "0"
-  │           │   │   └─ pattern/pattern/
+  │           │   │   └─ pattern/pattern[keyword]/
   │           │   │       ├─ name = "y"
   │           │   │       └─ name = "y"
   │           │   └─ then/return/expression/name = "y"
