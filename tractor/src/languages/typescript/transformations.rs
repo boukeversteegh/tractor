@@ -55,7 +55,21 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 }
 
 /// `await_expression` — `await foo()`. Prefix marker.
+///
+/// When parent is already `<expression>` (e.g. from
+/// `expression_statement`), lift the marker and flatten this node
+/// to avoid `<expression>/<expression[await]>` double-wrap (caught
+/// by `tree_invariants::no_repeated_parent_child_name`).
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let parent_is_expression = get_parent(xot, node)
+        .and_then(|p| get_element_name(xot, p))
+        .as_deref()
+        == Some("expression");
+    if parent_is_expression {
+        let parent = get_parent(xot, node).expect("parent_is_expression checked above");
+        xot.with_prepended_marker_from(parent, Await, node)?;
+        return Ok(TransformAction::Flatten);
+    }
     xot.with_renamed(node, Expression)
         .with_prepended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)

@@ -335,7 +335,7 @@ unit/
   │       │       │   │       └─ type/name = "Widget"
   │       │       │   ├─ name = "AllAsync"
   │       │       │   └─ body/block/
-  │       │       │       ├─ expression/expression[await]/call/
+  │       │       │       ├─ expression[await]/call/
   │       │       │       │   ├─ member[instance]/
   │       │       │       │   │   ├─ name = "Task"
   │       │       │       │   │   └─ name = "Delay"

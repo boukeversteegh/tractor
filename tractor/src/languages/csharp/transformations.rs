@@ -24,7 +24,23 @@ use super::output::TractorNode::{
 /// marker leads the operand. Promote to `<expression>` host with a
 /// leading `<await/>` marker. See [Principle #15: Stable Expression
 /// Hosts].
+///
+/// When the parent is already `<expression>` (e.g. from
+/// `expression_statement`'s rename), avoid double-wrapping: lift
+/// the `<await/>` marker onto the parent and flatten this node so
+/// its children become direct siblings of the marker. Catches the
+/// `<expression>/<expression[await]>` shape flagged by
+/// `tree_invariants::no_repeated_parent_child_name`.
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let parent_is_expression = get_parent(xot, node)
+        .and_then(|p| get_element_name(xot, p))
+        .as_deref()
+        == Some("expression");
+    if parent_is_expression {
+        let parent = get_parent(xot, node).expect("parent_is_expression checked above");
+        xot.with_prepended_marker_from(parent, Await, node)?;
+        return Ok(TransformAction::Flatten);
+    }
     xot.with_renamed(node, Expression)
         .with_prepended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)

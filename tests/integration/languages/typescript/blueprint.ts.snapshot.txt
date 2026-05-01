@@ -280,7 +280,7 @@ program/
   │               │   ├─ for/
   │               │   │   ├─ left/expression/name = "u"
   │               │   │   ├─ right/expression/name = "merged"
-  │               │   │   └─ body/block/expression/expression[await]/call/
+  │               │   │   └─ body/block/expression[await]/call/
   │               │   │       ├─ callee/name = "fetch"
   │               │   │       └─ name = "u"
   │               │   └─ return/expression/member/
