@@ -159,3 +159,46 @@ These declarations match the runtime shape — required by the
 invariant. Review: any name in the lists that should NOT be
 dual-use (i.e., should always be a container with content)
 indicates a runtime shape that needs fixing.
+
+### Imports / use grouping vocabulary (iters 70/72/73/74)
+
+Restructured imports across Go / PHP / Rust / TypeScript with the
+shared structural shape (`<path>` / `<alias>` / variant markers).
+Element name preserves each language's source keyword
+(`<import>` for Go/Java/C#/TS/Python; `<use>` for PHP/Rust) per
+the iter-71 Principle #5 scope clarification.
+
+Marker vocabulary picks (queued for review):
+
+- `[alias]` — used dual-form: marker on host AND `<alias>` child
+  wrapping the local-binding `<name>`. Two queries, two clean
+  paths. Alternative: marker only, name attribute on alias.
+  Rejected — Principle #14 prefers `<name>` element for
+  identifiers.
+- `[blank]` (Go `_`) vs `[dot]` (Go `.`) — distinct names because
+  the semantics differ (side-effect-only vs name-into-scope).
+- `[group]` for braced multi-imports vs flat siblings for Go's
+  parens. Asymmetry justified: parens carry no shared prefix,
+  braces always do.
+- `[wildcard]` (Rust `*`) vs `[namespace]` (TS `* as ns`) — two
+  different concepts, different markers. TS `*` without `as` is
+  a syntax error so there's no overlap.
+- `[self]` (Rust `use std::fmt::self`) — the module itself.
+- `[reexport]` (Rust `pub use`) — composes with `[pub]` visibility.
+- `[function]` / `[const]` (PHP `use function` / `use const`) —
+  PHP-specific namespace flavors.
+- `[sideeffect]` (TS `import './x'`) — module evaluated for side
+  effects only.
+- `<path>` content: bare text for Go (single string `"net/http/pprof"`
+  preserves source), nested `<name>` segments for languages that
+  expose path segmentation (Rust, PHP, Java, etc.).
+
+Cross-language test query: `(//import | //use)[alias]/alias/name`
+extracts local bindings uniformly from any language's import.
+
+### Go const / var bindings split into siblings (iter 76)
+
+Each `const_spec` / `var_spec` becomes its own `<const>` /
+`<var>` sibling. The block `const (A = 1; B = 2)` no longer
+merges everything into one element — per binding is per element,
+matching the iter-70 import handling.

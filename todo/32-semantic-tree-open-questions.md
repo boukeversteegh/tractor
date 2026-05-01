@@ -68,26 +68,26 @@ are currently opaque text. Structuring them is its own dedicated
 cycle per language; defer until the simpler shape questions are
 settled.
 
-### Import / binding grouping
+### ~~Import / binding grouping~~ — RESOLVED iters 70/72/73/74/76
 
-Go `import (...)`, Go `const (...)`, Go `var (...)`, PHP `use ...`
-all currently flatten into name-soup that loses pairing
-information (which path goes with which alias, which name
-inherits `iota`, which is the leaf vs the namespace path). See
-the per-language design discussions:
+Closed by the imports-grouping design at
+`specs/tractor-parse/semantic-tree/transformations/imports-grouping.md`
+and per-language implementations:
 
-- Go imports / const / var:
-  [`transformations/go.md`](../specs/tractor-parse/semantic-tree/transformations/go.md) —
-  *Open questions*.
-- PHP `use`:
-  [`transformations/php.md`](../specs/tractor-parse/semantic-tree/transformations/php.md) —
-  *Open questions*.
+- iter 70: Go imports — alias / blank / dot pairing recovered.
+- iter 72: PHP `<use>` — path/alias/group/function/const.
+- iter 73: Rust `<use>` — path/alias/group/wildcard/self/reexport,
+  including within-group alias pairing.
+- iter 74: TS `<import>` — path/alias/group/namespace/sideeffect.
+- iter 76: Go `const (...)` / `var (...)` — bindings split into
+  flat siblings (same pattern as imports).
 
-**Cross-cutting question (D4):** if these all gain a grouping
-wrapper, do they share a single `<spec>` element name across
-languages, or do they get distinct wrappers per family
-(`<spec>`, `<binding>`, `<part>`)? Decide once the per-language
-shapes are settled.
+**Cross-cutting question (D4) resolved.** No shared `<spec>`
+wrapper. Each binding is its own element of the language's
+keyword (`<import>` / `<use>` / `<const>` / `<var>`). Per
+iter-71's Principle #5 clarification, element names preserve the
+source keyword; structural slots (`<path>`, `<alias>`, variant
+markers) are uniform across languages.
 
 ### Ruby — method-call shape
 
