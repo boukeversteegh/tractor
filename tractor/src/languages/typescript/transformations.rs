@@ -516,7 +516,9 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
                         == Some(Private)
                 });
                 if !already {
-                    xot.with_prepended_empty_element(parent, Private)?;
+                    // The `#` prefix on the property name IS the source
+                    // token; copy `node`'s location onto the marker.
+                    xot.with_prepended_marker_from(parent, Private, node)?;
                 }
             }
         }

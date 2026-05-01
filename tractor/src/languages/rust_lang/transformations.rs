@@ -167,7 +167,7 @@ pub fn inner_attribute_item(
     for child in children {
         if get_kind(xot, child).and_then(|kind| kind.parse::<RustKind>().ok())
             == Some(RustKind::Attribute) {
-            xot.with_prepended_empty_element(child, Inner)?;
+            xot.with_prepended_marker_from(child, Inner, child)?;
             break;
         }
     }
