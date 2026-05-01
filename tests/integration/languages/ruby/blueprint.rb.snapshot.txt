@@ -13,13 +13,13 @@ program/
   │   ├─ name = "Greeter"
   │   └─ body/method/
   │       ├─ name = "hello"
-  │       ├─ name = "name"
+  │       ├─ parameter/name = "name"
   │       └─ body/string/interpolation/name = "name"
   ├─ module/
   │   ├─ name = "Logging"
   │   └─ body/method/
   │       ├─ name = "log"
-  │       ├─ name = "msg"
+  │       ├─ parameter/name = "msg"
   │       └─ body/call/
   │           ├─ name = "puts"
   │           └─ string/interpolation/name = "msg"
@@ -33,7 +33,7 @@ program/
   │       │       ├─ call/name = "attr_reader"
   │       │       ├─ method/
   │       │       │   ├─ name = "initialize"
-  │       │       │   ├─ name = "name"
+  │       │       │   ├─ parameter/name = "name"
   │       │       │   ├─ parameter[keyword]/
   │       │       │   │   ├─ name = "id"
   │       │       │   │   └─ value/expression/nil = "nil"
@@ -49,7 +49,7 @@ program/
   │       │       │               └─ right/expression/int = "0"
   │       │       └─ method/
   │       │           ├─ name = "=="
-  │       │           ├─ name = "other"
+  │       │           ├─ parameter/name = "other"
   │       │           └─ body/binary/
   │       │               ├─ left/expression/call/
   │       │               │   ├─ name = "other"
@@ -106,7 +106,7 @@ program/
   │               ├─ method[singleton]/
   │               │   ├─ self = "self"
   │               │   ├─ name = "build"
-  │               │   ├─ name = "name"
+  │               │   ├─ parameter/name = "name"
   │               │   └─ body/call/
   │               │       ├─ name = "new"
   │               │       └─ name = "name"
@@ -170,8 +170,8 @@ program/
   │               │       │   │   └─ name = "each_with_index"
   │               │       │   ├─ name = "map"
   │               │       │   └─ block/
-  │               │       │       ├─ name = "it"
-  │               │       │       ├─ name = "i"
+  │               │       │       ├─ parameter/name = "it"
+  │               │       │       ├─ parameter/name = "i"
   │               │       │       └─ body/string/
   │               │       │           ├─ interpolation/name = "i"
   │               │       │           └─ interpolation/name = "it"
@@ -227,7 +227,7 @@ program/
   │                           └─ name = "merged"
   ├─ method/
   │   ├─ name = "classify"
-  │   ├─ name = "value"
+  │   ├─ parameter/name = "value"
   │   └─ body/case/
   │       ├─ value/expression/name = "value"
   │       ├─ when/
@@ -254,7 +254,7 @@ program/
   │       └─ else = "else :unknown"
   ├─ method/
   │   ├─ name = "control"
-  │   ├─ name = "items"
+  │   ├─ parameter/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
@@ -263,7 +263,7 @@ program/
   │       │   ├─ name = "items"
   │       │   ├─ name = "each"
   │       │   └─ block[do]/
-  │       │       ├─ name = "x"
+  │       │       ├─ parameter/name = "x"
   │       │       └─ body/if/
   │       │           ├─ condition/expression/call/
   │       │           │   ├─ name = "x"
@@ -349,8 +349,8 @@ program/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "adder"
   │       │   └─ right/expression/lambda/
-  │       │       ├─ name = "a"
-  │       │       ├─ name = "b"
+  │       │       ├─ parameter/name = "a"
+  │       │       ├─ parameter/name = "b"
   │       │       └─ body/block/body/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
@@ -360,7 +360,7 @@ program/
   │       │   └─ right/expression/call/
   │       │       ├─ name = "proc"
   │       │       └─ block/
-  │       │           ├─ name = "n"
+  │       │           ├─ parameter/name = "n"
   │       │           └─ body/binary/
   │       │               ├─ left/expression/name = "n"
   │       │               ├─ op[multiply] = "*"
@@ -440,7 +440,7 @@ program/
   ├─ comment[leading] = "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
   ├─ method/
   │   ├─ name = "patterns"
-  │   ├─ name = "values"
+  │   ├─ parameter/name = "values"
   │   ├─ parameter[forward] = "..."
   │   └─ body/
   │       ├─ assign/

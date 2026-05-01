@@ -23,8 +23,8 @@ fn ruby() {
                 [name='Calculator']
                 [body/method
                     [name='add']
-                    [name='a']
-                    [name='b']
+                    [parameter/name='a']
+                    [parameter/name='b']
                     [body//binary
                         [left/expression/name='a']
                         [right/expression/name='b']]]
@@ -46,7 +46,7 @@ fn ruby() {
                 [.//method
                     [name='greet']
                     [singleton]
-                    [name='name']]
+                    [parameter/name='name']]
                 [not(name/identifier)]
         "#),
         1);

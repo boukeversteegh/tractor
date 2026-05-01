@@ -33,13 +33,14 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
 
         // ---- Flatten with field distribution ---------------------------
         RubyKind::ArgumentList     => Flatten { distribute_field: Some("arguments") },
-        RubyKind::MethodParameters => Flatten { distribute_field: Some("parameters") },
+        RubyKind::MethodParameters => Custom(transformations::method_parameters),
+        RubyKind::BlockParameters
+        | RubyKind::LambdaParameters => Custom(transformations::block_parameters),
 
         // ---- Pure Flatten ----------------------------------------------
         RubyKind::BareString
         | RubyKind::BareSymbol
         | RubyKind::BlockBody
-        | RubyKind::BlockParameters
         | RubyKind::BodyStatement
         | RubyKind::EscapeSequence
         | RubyKind::HashKeySymbol
@@ -47,7 +48,6 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::HeredocBody
         | RubyKind::HeredocContent
         | RubyKind::HeredocEnd
-        | RubyKind::LambdaParameters
         | RubyKind::ParenthesizedStatements
         | RubyKind::SimpleSymbol
         | RubyKind::StringContent => Flatten { distribute_field: None },

@@ -9,7 +9,50 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
-use super::output::TractorNode::{self, Comment as CommentName, Leading, Name, Trailing};
+use super::output::TractorNode::{self, Comment as CommentName, Leading, Name, Parameter, Trailing};
+
+/// `method_parameters` / `block_parameters` / `lambda_parameters` —
+/// wrap bare `identifier` children in `<parameter>` so cross-language
+/// `//parameter` finds positional bare params (Principle #5). Other
+/// param kinds (`keyword_parameter`, `optional_parameter`,
+/// `splat_parameter`, `hash_splat_parameter`, `block_parameter`)
+/// already get their own custom rule handling and are left alone.
+pub fn parameters(
+    xot: &mut Xot,
+    node: XotNode,
+    distribute_field: Option<&str>,
+) -> Result<TransformAction, xot::Error> {
+    let children: Vec<XotNode> = xot
+        .children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in children {
+        if get_kind(xot, child).as_deref() == Some("identifier") {
+            let param_name_id = xot.add_name(Parameter.as_str());
+            let param = xot.new_element(param_name_id);
+            xot.with_source_location_from(param, child);
+            xot.insert_before(child, param)?;
+            xot.detach(child)?;
+            xot.append(param, child)?;
+        }
+    }
+    if let Some(field) = distribute_field {
+        distribute_field_to_children(xot, node, field);
+    }
+    Ok(TransformAction::Flatten)
+}
+
+/// `method_parameters` adapter — distributes `parameters` field after
+/// wrapping bare identifiers (matches the previous Flatten rule).
+pub fn method_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    parameters(xot, node, Some("parameters"))
+}
+
+/// `block_parameters` / `lambda_parameters` adapter — no field
+/// distribution (matches the previous bare-Flatten rule).
+pub fn block_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    parameters(xot, node, None)
+}
 
 /// `<name>` field wrapper inserted by the builder. Inline single
 /// identifier / constant / operator child as text. Operators apply
