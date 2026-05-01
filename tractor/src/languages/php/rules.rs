@@ -69,7 +69,11 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::DisjunctiveNormalFormType      => RenameWithMarker(Type, Disjunctive),
         // Function-local `static $x;` / `global $x;` declare scoped vars.
         PhpKind::FunctionStaticDeclaration      => RenameWithMarker(Variable, Static),
-        PhpKind::GlobalDeclaration              => RenameWithMarker(Variable, Global),
+        // `global $x;` — rename to `<variable[global]>` BUT also flatten
+        // the inner variable_name children so the shape is
+        // `<variable[global]><name>x</name></variable>` instead of
+        // `<variable[global]><variable>{$, name=x}</variable></variable>`.
+        PhpKind::GlobalDeclaration              => Custom(transformations::global_declaration),
         PhpKind::DynamicVariableName            => RenameWithMarker(Variable, Dynamic),
         // Constructor property promotion `public string $name` parameter.
         PhpKind::PropertyPromotionParameter     => RenameWithMarker(Parameter, Promoted),
@@ -204,7 +208,12 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::NamedLabelStatement       => Rename(Label),
         // `list($a, $b) = ...` destructuring — same shape as `[..]` array.
         PhpKind::ListLiteral               => Rename(Array),
-        PhpKind::StaticVariableDeclaration => Rename(Variable),
+        // Inner declarator inside `static $x = null;`. The outer
+        // `function_static_declaration` already renames to
+        // `<variable[static]>`; flattening the inner avoids the
+        // `<variable[static]><variable>...</variable></variable>`
+        // double-wrap (within-language Principle #5).
+        PhpKind::StaticVariableDeclaration => Flatten { distribute_field: None },
         PhpKind::CastType                  => Rename(Type),
         // `self`/`parent`/`static` keyword-scope.
         PhpKind::RelativeScope             => Rename(Scope),

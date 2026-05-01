@@ -16,8 +16,8 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Comment as CommentName, Leading, Prefix, Primitive, Private, Protected, Public,
-    String as PhpString, Trailing, Type, Unary,
+    Comment as CommentName, Global, Leading, Prefix, Primitive, Private, Protected, Public,
+    String as PhpString, Trailing, Type, Unary, Variable,
 };
 
 /// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
@@ -193,6 +193,41 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 // (method, property) use the variant. Class-level types don't have
 // implicit access modifiers in PHP.
 // ---------------------------------------------------------------------
+
+/// `global_declaration` — `global $x;`. Strip the bare `global`
+/// keyword text. Within each variable_name child, lift the `<name>`
+/// out so the shape is `<variable[global]><name>x</name>...</variable>`
+/// rather than `<variable[global]><variable>{$, name=x}</variable></variable>`.
+pub fn global_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    // Strip the bare `global` keyword text.
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            if text.trim() == "global" || text.trim() == ";" {
+                xot.detach(child)?;
+            }
+        }
+    }
+    // For each variable_name child, lift its inner content (the
+    // `$` text + `<name>` element) up as siblings, then detach the
+    // variable_name wrapper.
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if !matches!(
+            get_kind(xot, child).and_then(|k| k.parse::<PhpKind>().ok()),
+            Some(PhpKind::VariableName)
+        ) {
+            continue;
+        }
+        let inner: Vec<_> = xot.children(child).collect();
+        for c in inner {
+            xot.detach(c)?;
+            xot.insert_before(child, c)?;
+        }
+        xot.detach(child)?;
+    }
+    xot.with_renamed(node, Variable)
+        .with_prepended_marker(node, Global)?;
+    Ok(TransformAction::Continue)
+}
 
 /// Returns `Some(PUBLIC)` when the declaration node lacks any visibility
 /// marker child; `None` when one is already present. Walk-order

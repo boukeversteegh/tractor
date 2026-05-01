@@ -438,10 +438,10 @@ program/
   │       │       ├─ int = "40"
   │       │       └─ int = "50"
   │       ├─ comment[leading] = "// Function-local static + global."
-  │       ├─ variable[static]/variable/
+  │       ├─ variable[static]/
   │       │   ├─ name = "$cached"
   │       │   └─ value/expression/null = "null"
-  │       ├─ variable[global]/variable/name = "REGISTRY"
+  │       ├─ variable[global]/name = "REGISTRY"
   │       ├─ comment[leading] = "// Dynamic variable name + cast type."
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "varname"
