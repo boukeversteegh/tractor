@@ -21,13 +21,19 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::DelimitedSymbol    => RenameWithMarker(Symbol, Delimited),
         RubyKind::DoBlock            => RenameWithMarker(Block, Do),
         RubyKind::HashSplatArgument  => RenameWithMarker(Spread, Dict),
-        RubyKind::HashSplatParameter => RenameWithMarker(Spread, Dict),
+        // `**kwargs` parameter — wrap in `<parameter[kwsplat]>` so
+        // cross-language `//parameter` finds it (Principle #5;
+        // matches Python iter 50).
+        RubyKind::HashSplatParameter => RenameWithMarker(Parameter, Kwsplat),
         RubyKind::KeywordParameter   => RenameWithMarker(Parameter, Keyword),
         RubyKind::OptionalParameter  => RenameWithMarker(Parameter, Default),
         RubyKind::SingletonClass     => RenameWithMarker(Class, Singleton),
         RubyKind::SingletonMethod    => RenameWithMarker(Method, Singleton),
         RubyKind::SplatArgument      => RenameWithMarker(Spread, List),
-        RubyKind::SplatParameter     => RenameWithMarker(Spread, List),
+        // `*args` parameter — wrap in `<parameter[splat]>` so
+        // cross-language `//parameter` finds it (Principle #5;
+        // matches Python iter 50).
+        RubyKind::SplatParameter     => RenameWithMarker(Parameter, Splat),
         RubyKind::StringArray        => RenameWithMarker(Array, String),
         RubyKind::SymbolArray        => RenameWithMarker(Array, Symbol),
 

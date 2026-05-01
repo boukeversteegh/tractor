@@ -69,9 +69,9 @@ fn typescript() {
 /// <keyword/> marker distinguishing them from positional ones.
 #[test]
 fn ruby() {
-    claim("Ruby splat parameter carries list spread marker",
+    claim("Ruby splat parameter wraps in <parameter[splat]>",
         &mut parse_src("ruby", "def f(*xs)\nend\n"),
-        "//spread[list][name='xs']",
+        "//parameter[splat][name='xs']",
         1);
 
     claim("Ruby keyword parameter carries keyword marker and default value",
@@ -83,8 +83,8 @@ fn ruby() {
         "#),
         1);
 
-    claim("Ruby kwargs parameter carries dict spread marker",
+    claim("Ruby kwargs parameter wraps in <parameter[kwsplat]>",
         &mut parse_src("ruby", "def f(**kw)\nend\n"),
-        "//spread[dict][name='kw']",
+        "//parameter[kwsplat][name='kw']",
         1);
 }

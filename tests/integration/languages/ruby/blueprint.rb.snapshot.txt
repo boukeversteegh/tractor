@@ -125,7 +125,7 @@ program/
   │               │   ├─ parameter[keyword]/
   │               │   │   ├─ name = "greeting"
   │               │   │   └─ value/expression/string = "'hi'"
-  │               │   ├─ spread[dict]/name = "opts"
+  │               │   ├─ parameter[kwsplat]/name = "opts"
   │               │   ├─ parameter[block]/name = "block"
   │               │   └─ body/
   │               │       ├─ assign/
@@ -161,8 +161,8 @@ program/
   │               │           └─ name = "upcase"
   │               ├─ method/
   │               │   ├─ name = "collect"
-  │               │   ├─ spread[list]/name = "items"
-  │               │   ├─ spread[dict]/name = "meta"
+  │               │   ├─ parameter[splat]/name = "items"
+  │               │   ├─ parameter[kwsplat]/name = "meta"
   │               │   └─ body/binary/
   │               │       ├─ left/expression/call/
   │               │       │   ├─ call/
@@ -453,7 +453,7 @@ program/
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "head"
-  │       │       │   │   └─ spread[list]/name = "tail"
+  │       │       │   │   └─ parameter[splat]/name = "tail"
   │       │       │   ├─ if/condition/expression/call/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   ├─ name = "is_a?"
@@ -467,7 +467,7 @@ program/
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "first"
-  │       │       │   │   ├─ spread[list] = "*"
+  │       │       │   │   ├─ parameter[splat] = "*"
   │       │       │   │   └─ name = "last"
   │       │       │   ├─ unless/condition/expression/binary/
   │       │       │   │   ├─ left/expression/name = "first"

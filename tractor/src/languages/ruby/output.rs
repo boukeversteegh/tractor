@@ -40,7 +40,7 @@ pub enum TractorNode {
     // Spread-shape markers
     List, Dict,
     // Parameter-shape markers
-    Keyword, Default,
+    Keyword, Default, Splat, Kwsplat,
     // Block-shape / dual-use marker
     Do,
     // Symbol-shape marker
@@ -74,7 +74,7 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::List | Self::Dict | Self::Delimited | Self::Singleton           => (true, false, Default),
-            Self::Keyword | Self::Default                                           => (true, false, Default),
+            Self::Keyword | Self::Default | Self::Splat | Self::Kwsplat             => (true, false, Default),
             Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward
             | Self::Destructured | Self::Concatenated | Self::Static | Self::End    => (true, false, Default),
 
