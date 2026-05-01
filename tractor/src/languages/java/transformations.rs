@@ -51,7 +51,7 @@ pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary);
     if was_prefix {
-        xot.with_prepended_empty_element(node, Prefix)?;
+        xot.with_prepended_marker_from(node, Prefix, node)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -119,7 +119,7 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn void_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
-    xot.with_prepended_empty_element(node, Void)?;
+    xot.with_prepended_marker_from(node, Void, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -276,7 +276,7 @@ pub fn method_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if let Some(marker) = default_access_for_declaration(xot, node) {
-        xot.with_prepended_empty_element(node, marker)?;
+        xot.with_prepended_marker_from(node, marker, node)?;
     }
     wrap_method_return_type(xot, node)?;
     xot.with_renamed(node, Method);

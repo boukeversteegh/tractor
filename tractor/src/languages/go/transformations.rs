@@ -53,7 +53,7 @@ pub fn type_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 
 /// `raw_string_literal` — render as `<string>` with a `<raw/>` marker.
 pub fn raw_string_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Raw)?
+    xot.with_prepended_marker_from(node, Raw, node)?
         .with_renamed(node, GoString);
     Ok(TransformAction::Continue)
 }
@@ -61,7 +61,7 @@ pub fn raw_string_literal(xot: &mut Xot, node: XotNode) -> Result<TransformActio
 /// `short_var_declaration` (`x := 42`) — render as `<variable>` with
 /// a `<short/>` marker to distinguish from `var x = 42`.
 pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Short)?
+    xot.with_prepended_marker_from(node, Short, node)?
         .with_renamed(node, Variable);
     Ok(TransformAction::Continue)
 }
@@ -71,7 +71,7 @@ pub fn short_var_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAc
 /// `<function>`.
 pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    xot.with_prepended_empty_element(node, marker)?
+    xot.with_prepended_marker_from(node, marker, node)?
         .with_renamed(node, Function);
     Ok(TransformAction::Continue)
 }
@@ -80,7 +80,7 @@ pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 /// `<method>`.
 pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    xot.with_prepended_empty_element(node, marker)?
+    xot.with_prepended_marker_from(node, marker, node)?
         .with_renamed(node, Method);
     Ok(TransformAction::Continue)
 }
@@ -89,7 +89,7 @@ pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformActio
 /// rule applies to struct fields too), rename to `<field>`.
 pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    xot.with_prepended_empty_element(node, marker)?
+    xot.with_prepended_marker_from(node, marker, node)?
         .with_renamed(node, Field);
     Ok(TransformAction::Continue)
 }
@@ -103,7 +103,7 @@ pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction
 /// reads "I'm declaring a struct named Hello" (Goal #5).
 pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    xot.with_prepended_empty_element(node, marker)?;
+    xot.with_prepended_marker_from(node, marker, node)?;
 
     let inner = xot
         .children(node)
@@ -133,7 +133,7 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// Rename to `<alias>` with the export marker.
 pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let marker = get_export_marker(xot, node);
-    xot.with_prepended_empty_element(node, marker)?
+    xot.with_prepended_marker_from(node, marker, node)?
         .with_renamed(node, Alias);
     Ok(TransformAction::Continue)
 }

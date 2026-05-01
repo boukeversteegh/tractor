@@ -52,7 +52,7 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// `await` — Python's `await foo()`. Prefix marker.
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_prepended_empty_element(node, Await)?;
+        .with_prepended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -139,11 +139,11 @@ pub fn function_definition(
 ) -> Result<TransformAction, xot::Error> {
     let texts = get_text_children(xot, node);
     if texts.iter().any(|t| t.contains("async")) {
-        xot.with_prepended_empty_element(node, Async)?;
+        xot.with_prepended_marker_from(node, Async, node)?;
     }
     if is_inside_class_body(xot, node) {
         if let Some(vis) = python_visibility_from_def(xot, node) {
-            xot.with_prepended_empty_element(node, vis)?;
+            xot.with_prepended_marker_from(node, vis, node)?;
         }
     }
     xot.with_renamed(node, Function);
@@ -195,13 +195,13 @@ pub fn conditional_expression(
 ///   `<list><literal/>...</list>`        — `[1, 2, 3]`
 ///   `<list><comprehension/>...</list>`  — `[x for x in xs]`
 pub fn list_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Literal)?;
+    xot.with_prepended_marker_from(node, Literal, node)?;
     Ok(TransformAction::Continue)
 }
 
 /// `set` literal — `{1, 2, 3}`. Same shape as `list_literal`.
 pub fn set_literal(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Literal)?;
+    xot.with_prepended_marker_from(node, Literal, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -211,7 +211,7 @@ pub fn dictionary_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Literal)?
+    xot.with_prepended_marker_from(node, Literal, node)?
         .with_renamed(node, Dict);
     Ok(TransformAction::Continue)
 }
@@ -223,7 +223,7 @@ pub fn list_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Comprehension)?
+    xot.with_prepended_marker_from(node, Comprehension, node)?
         .with_renamed(node, List);
     Ok(TransformAction::Continue)
 }
@@ -234,7 +234,7 @@ pub fn dictionary_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Comprehension)?
+    xot.with_prepended_marker_from(node, Comprehension, node)?
         .with_renamed(node, Dict);
     Ok(TransformAction::Continue)
 }
@@ -245,7 +245,7 @@ pub fn set_comprehension(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Comprehension)?
+    xot.with_prepended_marker_from(node, Comprehension, node)?
         .with_renamed(node, Set);
     Ok(TransformAction::Continue)
 }

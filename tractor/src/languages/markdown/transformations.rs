@@ -19,7 +19,7 @@ pub fn atx_heading(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
     xot.with_renamed(node, HEADING);
     if let Some(lvl) = level {
         let level_name = format!("h{}", lvl);
-        xot.with_prepended_empty_element(node, &level_name)?;
+        xot.with_prepended_marker_from(node, &level_name, node)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -31,7 +31,7 @@ pub fn setext_heading(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     xot.with_renamed(node, HEADING);
     if let Some(lvl) = level {
         let level_name = format!("h{}", lvl);
-        xot.with_prepended_empty_element(node, &level_name)?;
+        xot.with_prepended_marker_from(node, &level_name, node)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -54,7 +54,7 @@ pub fn list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error>
     let list_type = detect_list_type(xot, node);
     xot.with_renamed(node, LIST);
     if let Some(t) = list_type {
-        xot.with_prepended_empty_element(node, t)?;
+        xot.with_prepended_marker_from(node, t, node)?;
     }
     Ok(TransformAction::Continue)
 }

@@ -57,7 +57,7 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// `await_expression` — `await foo()`. Prefix marker.
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_prepended_empty_element(node, Await)?;
+        .with_prepended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -66,7 +66,7 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 /// not-operator and extracted the `!` into `<op>`.
 pub fn non_null_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_appended_empty_element(node, NonNull)?;
+        .with_appended_marker_from(node, NonNull, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -81,7 +81,7 @@ pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary);
     if was_prefix {
-        xot.with_prepended_empty_element(node, Prefix)?;
+        xot.with_prepended_marker_from(node, Prefix, node)?;
     }
     Ok(TransformAction::Continue)
 }
@@ -200,7 +200,7 @@ pub fn asserts_annotation(
         xot.detach(wrapper)?;
     }
 
-    xot.with_prepended_empty_element(node, Asserts)?
+    xot.with_prepended_marker_from(node, Asserts, node)?
         .with_renamed(node, Predicate);
     Ok(TransformAction::Continue)
 }
@@ -282,7 +282,7 @@ pub fn optional_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Optional)?
+    xot.with_prepended_marker_from(node, Optional, node)?
         .with_renamed(node, Parameter);
     Ok(TransformAction::Continue)
 }
@@ -293,7 +293,7 @@ pub fn required_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Required)?
+    xot.with_prepended_marker_from(node, Required, node)?
         .with_renamed(node, Parameter);
     Ok(TransformAction::Continue)
 }
@@ -340,7 +340,7 @@ pub fn generator_function_declaration(
 pub fn method_definition(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     if !has_visibility_marker(xot, node) {
-        xot.with_prepended_empty_element(node, Public)?;
+        xot.with_prepended_marker_from(node, Public, node)?;
     }
     xot.with_renamed(node, Method);
     Ok(TransformAction::Continue)
@@ -354,10 +354,10 @@ pub fn abstract_method_signature(
 ) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     if !has_visibility_marker(xot, node) {
-        xot.with_prepended_empty_element(node, Public)?;
+        xot.with_prepended_marker_from(node, Public, node)?;
     }
     xot.with_renamed(node, Method)
-        .with_prepended_empty_element(node, Abstract)?;
+        .with_prepended_marker_from(node, Abstract, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -367,7 +367,7 @@ pub fn public_field_definition(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if !has_visibility_marker(xot, node) {
-        xot.with_prepended_empty_element(node, Public)?;
+        xot.with_prepended_marker_from(node, Public, node)?;
     }
     xot.with_renamed(node, Field);
     Ok(TransformAction::Continue)
@@ -399,13 +399,13 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         }
     }
     if let Some(k) = accessor_kind {
-        xot.with_prepended_empty_element(node, k)?;
+        xot.with_prepended_marker_from(node, k, node)?;
     }
     if has_star {
-        xot.with_prepended_empty_element(node, Generator)?;
+        xot.with_prepended_marker_from(node, Generator, node)?;
     }
     if has_async {
-        xot.with_prepended_empty_element(node, Async)?;
+        xot.with_prepended_marker_from(node, Async, node)?;
     }
     Ok(())
 }
@@ -417,7 +417,7 @@ fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Er
         .filter(|name| matches!(name, Let | Const | Var | Async | Export | Default))
         .collect();
     for modifier in found.into_iter().rev() {
-        xot.with_prepended_empty_element(node, modifier)?;
+        xot.with_prepended_marker_from(node, modifier, node)?;
     }
     Ok(())
 }

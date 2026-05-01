@@ -26,7 +26,7 @@ use super::output::TractorNode::{
 /// Hosts].
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_prepended_empty_element(node, Await)?;
+        .with_prepended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -285,7 +285,7 @@ pub fn prefix_unary_expression(
 ) -> Result<TransformAction, xot::Error> {
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary)
-        .with_prepended_empty_element(node, super::output::TractorNode::Prefix)?;
+        .with_prepended_marker_from(node, super::output::TractorNode::Prefix, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -311,7 +311,7 @@ pub fn postfix_unary_expression(
     let is_null_forgiving = texts.iter().any(|t| t.trim() == "!");
     if is_null_forgiving {
         xot.with_renamed(node, Expression)
-            .with_appended_empty_element(node, NonNull)?;
+            .with_appended_marker_from(node, NonNull, node)?;
     } else {
         extract_operator(xot, node)?;
         xot.with_renamed(node, Unary);

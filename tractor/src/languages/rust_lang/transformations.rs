@@ -55,7 +55,7 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// See [Principle #15: Stable Expression Hosts].
 pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_appended_empty_element(node, Try)?;
+        .with_appended_marker_from(node, Try, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -65,7 +65,7 @@ pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// Hosts].
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression)
-        .with_appended_empty_element(node, Await)?;
+        .with_appended_marker_from(node, Await, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -191,8 +191,8 @@ pub fn visibility_modifier(
     if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
         let inner = trimmed[lp + 1..rp].trim();
         match inner {
-            "crate" => { xot.with_prepended_empty_element(node, Crate)?; }
-            "super" => { xot.with_prepended_empty_element(node, Super)?; }
+            "crate" => { xot.with_prepended_marker_from(node, Crate, node)?; }
+            "super" => { xot.with_prepended_marker_from(node, Super, node)?; }
             _ if inner.starts_with("in ") => {
                 let path = inner[3..].trim();
                 xot.with_prepended_element_with_text(node, InName, path)?;
@@ -210,7 +210,7 @@ pub fn raw_string_literal(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_prepended_empty_element(node, Raw)?
+    xot.with_prepended_marker_from(node, Raw, node)?
         .with_renamed(node, RustString);
     Ok(TransformAction::Continue)
 }
@@ -237,9 +237,9 @@ pub fn reference_type(
         }
     }
     if has_mut {
-        xot.with_prepended_empty_element(node, Mut)?;
+        xot.with_prepended_marker_from(node, Mut, node)?;
     }
-    xot.with_prepended_empty_element(node, Borrowed)?
+    xot.with_prepended_marker_from(node, Borrowed, node)?
         .with_renamed(node, Type);
     Ok(TransformAction::Continue)
 }
@@ -306,7 +306,7 @@ pub fn extern_crate_declaration(
     for child in to_remove {
         xot.detach(child)?;
     }
-    xot.with_prepended_empty_element(node, Extern)?
+    xot.with_prepended_marker_from(node, Extern, node)?
         .with_renamed(node, UseName);
     Ok(TransformAction::Continue)
 }

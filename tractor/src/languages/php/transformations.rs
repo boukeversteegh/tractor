@@ -35,7 +35,7 @@ pub fn primitive_type(
 ) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Type);
     wrap_text_in_name(xot, node)?;
-    xot.with_appended_empty_element(node, Primitive)?;
+    xot.with_appended_marker_from(node, Primitive, node)?;
     Ok(TransformAction::Continue)
 }
 
@@ -59,7 +59,7 @@ pub fn update_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     extract_operator(xot, node)?;
     xot.with_renamed(node, Unary);
     if was_prefix {
-        xot.with_prepended_empty_element(node, Prefix)?;
+        xot.with_prepended_marker_from(node, Prefix, node)?;
     }
     Ok(TransformAction::Continue)
 }
