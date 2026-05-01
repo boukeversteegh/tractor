@@ -308,7 +308,7 @@ program/
   │       ├─ left/expression/binary/
   │       │   ├─ left/expression/binary/
   │       │   │   ├─ left/expression/unary/
-  │       │   │   │   ├─ op = "typeof"
+  │       │   │   │   ├─ op[typeof] = "typeof"
   │       │   │   │   └─ name = "v"
   │       │   │   ├─ op/equals[strict]
   │       │   │   └─ right/expression/string = "\"object\""
@@ -504,7 +504,7 @@ program/
   │       │   │   │   └─ property/name = "entries"
   │       │   │   └─ name = "obj"
   │       │   └─ body/block/expression/unary/
-  │       │       ├─ op = "void"
+  │       │       ├─ op[void] = "void"
   │       │       └─ name = "v"
   │       ├─ while/
   │       │   ├─ condition/expression/bool = "false"
@@ -566,23 +566,23 @@ program/
   │           ├─ type/name = "string"
   │           └─ type[literal]/null = "null"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "arrow"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "doubled"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "fallback"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "nonNull"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "ns"
   ├─ expression/unary/
-  │   ├─ op = "void"
+  │   ├─ op[void] = "void"
   │   └─ name = "defaultExport"
   └─ expression/unary/
-      ├─ op = "void"
+      ├─ op[void] = "void"
       └─ name = "aliasedB"

@@ -342,7 +342,7 @@ program/
   │       │           │   └─ name = "clear"
   │       │           └─ condition/expression/binary/
   │       │               ├─ left/expression/unary/
-  │       │               │   ├─ op = "defined?"
+  │       │               │   ├─ op[defined] = "defined?"
   │       │               │   └─ name = "items"
   │       │               ├─ op/logical[and]
   │       │               └─ right/expression/false = "false"

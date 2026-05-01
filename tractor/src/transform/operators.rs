@@ -190,6 +190,16 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "not in", primary: Some("contains"), children: &["not"], nested: None },
     OperatorSpec { text: "is",     primary: Some("identity"), children: &[],      nested: None },
     OperatorSpec { text: "is not", primary: Some("identity"), children: &["not"], nested: None },
+    // Python floor-divide and matmul (binary + augmented-assign)
+    OperatorSpec { text: "//",  primary: Some("floor-divide"), children: &[],               nested: None },
+    OperatorSpec { text: "@",   primary: Some("matmul"),       children: &[],               nested: None },
+    OperatorSpec { text: "//=", primary: Some("assign"),       children: &["floor-divide"], nested: None },
+    OperatorSpec { text: "@=",  primary: Some("assign"),       children: &["matmul"],       nested: None },
+    // TypeScript / JavaScript unary type operators
+    OperatorSpec { text: "typeof", primary: Some("typeof"), children: &[], nested: None },
+    OperatorSpec { text: "void",   primary: Some("void"),   children: &[], nested: None },
+    // Ruby unary defined-test
+    OperatorSpec { text: "defined?", primary: Some("defined"), children: &[], nested: None },
     // Unary prefix / postfix
     OperatorSpec { text: "++", primary: Some("increment"), children: &[], nested: None },
     OperatorSpec { text: "--", primary: Some("decrement"), children: &[], nested: None },
@@ -258,10 +268,12 @@ pub fn is_operator_marker(name: &str) -> bool {
     matches!(name,
         "equals" | "not-equals" | "compare" | "less" | "greater" | "or-equal"
         | "plus" | "minus" | "multiply" | "divide" | "modulo" | "power"
+        | "floor-divide" | "matmul"
         | "logical" | "bitwise" | "shift" | "nullish-coalescing"
         | "assign" | "increment" | "decrement"
         | "strict" | "left" | "right" | "unsigned" | "xor"
         | "contains" | "identity" | "not" | "and" | "or"
+        | "typeof" | "void" | "defined"
     )
 }
 

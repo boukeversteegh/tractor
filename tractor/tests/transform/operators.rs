@@ -189,6 +189,52 @@ fn java_update_prefix_vs_postfix() {
         1);
 }
 
+/// Several common operators previously rendered as text-only `<op>`
+/// (no semantic marker child). After adding entries to
+/// `OPERATOR_MARKERS`, these now carry a marker so cross-language
+/// queries like `//op[matmul]` or `//op[typeof]` work without parsing
+/// text. The bare arithmetic forms (`//`, `@`) and the augmented-
+/// assignment forms (`//=`, `@=`) follow the same nesting convention
+/// as `+=` (`<op[assign[plus]]>`) — child marker under `<assign>`.
+#[test]
+fn python_floor_divide_and_matmul() {
+    claim("Python `//=` extracts `<op[assign[floor-divide]]>`",
+        &mut parse_src("python", "x = 4\nx //= 2\n"),
+        "//assign[op[assign[floor-divide]]]",
+        1);
+
+    claim("Python `@=` extracts `<op[assign[matmul]]>`",
+        &mut parse_src("python", "import numpy as np\nA = np.eye(2)\nA @= A\n"),
+        "//assign[op[assign[matmul]]]",
+        1);
+
+    claim("Python `//` (bare floor-divide) extracts `<op[floor-divide]>`",
+        &mut parse_src("python", "y = 7 // 2\n"),
+        "//binary[op[floor-divide]]",
+        1);
+}
+
+#[test]
+fn typescript_typeof_and_void_unary() {
+    claim("TypeScript `typeof x` extracts `<op[typeof]>`",
+        &mut parse_src("typescript", "let s: string = typeof x;"),
+        "//unary[op[typeof]]",
+        1);
+
+    claim("TypeScript `void 0` extracts `<op[void]>`",
+        &mut parse_src("typescript", "let u = void 0;"),
+        "//unary[op[void]]",
+        1);
+}
+
+#[test]
+fn ruby_defined_unary() {
+    claim("Ruby `defined? x` extracts `<op[defined]>`",
+        &mut parse_src("ruby", "x = 1\ndefined? x\n"),
+        "//unary[op[defined]]",
+        1);
+}
+
 #[test]
 fn php_update_prefix_vs_postfix() {
     claim("`++$x` extracts <op[increment]> AND carries <prefix>",

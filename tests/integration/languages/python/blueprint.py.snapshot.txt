@@ -120,7 +120,7 @@ module/
   │       │   └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
-  │       │   ├─ op = "//="
+  │       │   ├─ op/assign[floor-divide]
   │       │   └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
@@ -133,7 +133,7 @@ module/
   │       │           └─ int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
-  │       │   ├─ op = "@="
+  │       │   ├─ op/assign[matmul]
   │       │   └─ right/expression/name = "matrix"
   │       └─ return/expression/ternary/
   │           ├─ name = "result"
