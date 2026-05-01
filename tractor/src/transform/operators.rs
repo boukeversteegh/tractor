@@ -200,6 +200,8 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "void",   primary: Some("void"),   children: &[], nested: None },
     // Ruby unary defined-test
     OperatorSpec { text: "defined?", primary: Some("defined"), children: &[], nested: None },
+    // Go channel receive (binary form is a separate `<send>` shape)
+    OperatorSpec { text: "<-", primary: Some("receive"), children: &[], nested: None },
     // Unary prefix / postfix
     OperatorSpec { text: "++", primary: Some("increment"), children: &[], nested: None },
     OperatorSpec { text: "--", primary: Some("decrement"), children: &[], nested: None },
@@ -273,7 +275,7 @@ pub fn is_operator_marker(name: &str) -> bool {
         | "assign" | "increment" | "decrement"
         | "strict" | "left" | "right" | "unsigned" | "xor"
         | "contains" | "identity" | "not" | "and" | "or"
-        | "typeof" | "void" | "defined"
+        | "typeof" | "void" | "defined" | "receive"
     )
 }
 

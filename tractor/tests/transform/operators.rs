@@ -236,6 +236,14 @@ fn ruby_defined_unary() {
 }
 
 #[test]
+fn go_channel_receive_unary() {
+    claim("Go `<-ch` extracts `<op[receive]>`",
+        &mut parse_src("go", "package m\nfunc f(ch chan int) { v := <-ch; _ = v }"),
+        "//unary[op[receive]][name='ch']",
+        1);
+}
+
+#[test]
 fn php_update_prefix_vs_postfix() {
     claim("`++$x` extracts <op[increment]> AND carries <prefix>",
         &mut parse_src("php", "<?php $x = 0; ++$x;"),

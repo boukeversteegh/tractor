@@ -469,7 +469,7 @@ file/
           │       │   │   │   ├─ expression/name = "v"
           │       │   │   │   └─ expression/name = "ok"
           │       │   │   └─ right/expression/unary/
-          │       │   │       ├─ op = "<-"
+          │       │   │       ├─ op[receive] = "<-"
           │       │   │       └─ name = "in"
           │       │   ├─ if/
           │       │   │   ├─ condition/expression/unary/
@@ -486,7 +486,7 @@ file/
           │       │   └─ continue/label = "Outer"
           │       └─ case/
           │           ├─ receive/right/expression/unary/
-          │           │   ├─ op = "<-"
+          │           │   ├─ op[receive] = "<-"
           │           │   └─ call/member/
           │           │       ├─ name = "ctx"
           │           │       └─ name = "Done"
