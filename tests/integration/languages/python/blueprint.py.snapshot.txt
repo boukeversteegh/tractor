@@ -99,7 +99,7 @@ module/
   │   │   │   │   └─ type/name = "int"
   │   │   │   └─ type/none = "None"
   │   │   └─ value/expression/none = "None"
-  │   ├─ type[generic]/
+  │   ├─ returns/type[generic]/
   │   │   ├─ name = "Union"
   │   │   ├─ type/name = "int"
   │   │   └─ type/none = "None"
@@ -144,7 +144,7 @@ module/
   │   ├─ parameter/
   │   │   ├─ name = "url"
   │   │   └─ type/name = "str"
-  │   ├─ type/name = "bytes"
+  │   ├─ returns/type/name = "bytes"
   │   └─ body/with/
   │       ├─ value/expression/as/
   │       │   ├─ call/

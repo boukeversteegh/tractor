@@ -615,6 +615,7 @@ const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
+    ("return_type", "returns"),
 ];
 
 const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
