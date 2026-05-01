@@ -48,6 +48,12 @@ const ASSERT_KIND_NON_EMPTY: bool = true;
 // iter 45). See docs/self-improvement.md "Cross-cutting invariant
 // tests".
 const ASSERT_NO_REPEATED_NAME: bool = true;
+// `containers_have_content_or_are_absent` flags container-only
+// elements (per language `TractorNodeSpec` declarations) that
+// appear as empty leaf elements. An empty `<int/>` or `<name/>`
+// almost always means a transform detached the inner content but
+// left the wrapper. Advisory until violations clear.
+const ASSERT_CONTAINER_NON_EMPTY: bool = false;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
@@ -882,5 +888,83 @@ fn check_repeated(
     }
     if pushed {
         parent_stack.borrow_mut().pop();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Invariant 10: Container-only elements must have content.
+//
+// Per per-language `TractorNodeSpec`: an element declared
+// `marker: false, container: true` is a structural container (e.g.
+// `<call>`, `<name>`, `<type>`, `<body>`). It MUST contain children
+// (text or elements) when present — empty container instances
+// indicate a transform detached inner content but left the wrapper
+// behind (e.g. the empty `<name/>` and `<int/>` inside a TSQL CAST
+// when keyword children are detached).
+//
+// Marker-only and dual-use names are exempt — empty is their
+// expected shape (or one of two valid shapes for dual-use).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn containers_have_content_or_are_absent() {
+    use tractor::languages::{get_language, is_field_wrapper_name};
+    use tractor::transform::operators::is_operator_marker_name;
+    let mut report = Report::default();
+    for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let lang = match lang_from_ext(ext) {
+            Some(l) => l,
+            None => continue,
+        };
+        let lookup = match get_language(lang).and_then(|l| l.node_spec) {
+            Some(f) => f,
+            None => continue,
+        };
+        let Some(parsed) = parse_structure(&fixture) else { continue };
+        let xot = parsed.documents.xot();
+        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
+        walk_elements(xot, root, &mut |xot, node| {
+            let Some(name) = element_name(xot, node) else { return };
+            // Skip operator markers / field wrappers — handled elsewhere.
+            if is_operator_marker_name(&name) || is_field_wrapper_name(lang, &name) {
+                return;
+            }
+            // Look up per-language declaration.
+            let spec = match lookup(&name) {
+                Some(s) => s,
+                None => return, // Unknown name handled by other invariants.
+            };
+            // Only enforce on container-only declarations. Dual-use
+            // (marker AND container) is exempt — empty is valid as a
+            // marker.
+            if !(spec.container && !spec.marker) {
+                return;
+            }
+            // Element is empty if it has no element children AND
+            // no non-whitespace text children.
+            let has_element_child = xot.children(node).any(|c| xot.element(c).is_some());
+            let has_real_text = xot.children(node).any(|c| {
+                xot.text_str(c).map_or(false, |t| !t.trim().is_empty())
+            });
+            if !has_element_child && !has_real_text {
+                report.record(
+                    &name,
+                    &fixture,
+                    format!("<{name}/> is empty (container declared, content expected)"),
+                );
+            }
+        });
+    }
+    if !report.is_empty() {
+        report.print(
+            "Container-only elements must have content (no empty `<container/>`)",
+        );
+        if ASSERT_INVARIANTS && ASSERT_CONTAINER_NON_EMPTY {
+            panic!("empty containers");
+        }
     }
 }
