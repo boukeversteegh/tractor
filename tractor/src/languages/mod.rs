@@ -1066,6 +1066,37 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    java_unwrap_type_in_path(xot, root)?;
+    Ok(())
+}
+
+/// Inside `<path>`, tree-sitter Java's `scoped_type_identifier` produces
+/// `<type><name>X</name></type>` segments. The path is a namespace
+/// identifier path; the segments are *names*, not types (Principle
+/// #14). Walk every `<path>` and collapse `<type>` segment wrappers to
+/// bare `<name>` children.
+fn java_unwrap_type_in_path(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    let mut paths: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "path", &mut paths);
+    for path in paths {
+        for child in xot.children(path).collect::<Vec<_>>() {
+            if get_element_name(xot, child).as_deref() != Some("type") {
+                continue;
+            }
+            // Replace each <type><name>X</name></type> with <name>X</name>.
+            let inner_names: Vec<XotNode> = xot.children(child)
+                .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+                .collect();
+            if inner_names.len() != 1 {
+                continue;
+            }
+            let inner_name = inner_names[0];
+            xot.detach(inner_name)?;
+            xot.insert_before(child, inner_name)?;
+            xot.detach(child)?;
+        }
+    }
     Ok(())
 }
 

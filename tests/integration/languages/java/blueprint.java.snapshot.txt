@@ -418,9 +418,9 @@ program/
           │       │   ├─ variable/
           │       │   │   ├─ path/
           │       │   │   │   ├─ path/
-          │       │   │   │   │   ├─ type/name = "java"
-          │       │   │   │   │   └─ type/name = "io"
-          │       │   │   │   └─ type/name = "InputStream"
+          │       │   │   │   │   ├─ name = "java"
+          │       │   │   │   │   └─ name = "io"
+          │       │   │   │   └─ name = "InputStream"
           │       │   │   ├─ name = "s"
           │       │   │   └─ value/expression/null = "null"
           │       │   ├─ body/if/
@@ -430,16 +430,16 @@ program/
           │       │   │   │   └─ right/expression/null = "null"
           │       │   │   └─ then/throw/new/path/
           │       │   │       ├─ path/
-          │       │   │       │   ├─ type/name = "java"
-          │       │   │       │   └─ type/name = "io"
-          │       │   │       └─ type/name = "IOException"
+          │       │   │       │   ├─ name = "java"
+          │       │   │       │   └─ name = "io"
+          │       │   │       └─ name = "IOException"
           │       │   └─ catch/
           │       │       ├─ parameter/
           │       │       │   ├─ path/
           │       │       │   │   ├─ path/
-          │       │       │   │   │   ├─ type/name = "java"
-          │       │       │   │   │   └─ type/name = "io"
-          │       │       │   │   └─ type/name = "IOException"
+          │       │       │   │   │   ├─ name = "java"
+          │       │       │   │   │   └─ name = "io"
+          │       │       │   │   └─ name = "IOException"
           │       │       │   ├─ type/name = "RuntimeException"
           │       │       │   └─ name = "e"
           │       │       └─ body/throw/name = "e"
