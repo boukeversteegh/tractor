@@ -36,17 +36,27 @@ pub enum TractorNode {
     // Statements / control flow
     Return, If, Else, ElseIf, For, Foreach, While, Do, Try, Catch, Finally, Throw,
     Using, Break, Continue, Switch, Block, Expression, Range,
+    // Statement additions
+    Yield, Checked, Fixed, Goto, Lock, Default, With,
     // Expressions
     Call, Member, New, Assign, Binary, Unary, Lambda, Await, Ternary, Index, Is,
     Tuple, Literal, Pattern, NonNull,
+    // Expression additions
+    Cast, Typeof, Sizeof,
     // Generics (dual-use marker/container)
     Generic,
     // LINQ
     Query, From, Select, Order, Group, Let, Join, Ordering,
+    // LINQ addition
+    Into,
     // Dual-use container/pattern marker
     Constant, Declaration,
+    // Generic-constraint container
+    Constraint,
     // Literals / atoms
     String, Interpolation, Int, Float, Bool, Null,
+    // Literal addition
+    Char,
     // Patterns / leaves
     Subpattern, Discard, Modifier, Op,
     // Marker-only type shape
@@ -56,6 +66,10 @@ pub enum TractorNode {
     // Marker-only: member-access / pattern / type shape
     Instance, Conditional, Array, Pointer, Function, Ref, Recursive, Relational, Logical,
     Prefix, Lookup,
+    // Pattern-combinator markers
+    And, Or, Negated, List, Var,
+    // Creation / memory markers
+    Anonymous, Stackalloc,
     // Access modifiers (markers only)
     Public, Private, Protected, Internal,
     // Other modifiers (markers only); CONST is dual-use container/marker.
@@ -88,7 +102,9 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Conditional | Self::Pointer | Self::Function
             | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
-            | Self::Notnull | Self::Unmanaged                                   => (true, false, Default),
+            | Self::Notnull | Self::Unmanaged
+            | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
+            | Self::Anonymous | Self::Stackalloc                                => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),
@@ -102,8 +118,12 @@ impl TractorNode {
             | Self::Return | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
             | Self::Do | Self::Try | Self::Catch | Self::Finally | Self::Throw
             | Self::Using | Self::Break | Self::Continue
+            | Self::Yield | Self::Checked | Self::Fixed | Self::Goto | Self::Lock
+            | Self::Default | Self::With | Self::Typeof | Self::Sizeof
             | Self::Bool | Self::Null
             | Self::Get | Self::Set | Self::Init | Self::Add | Self::Remove     => (false, true, Keyword),
+            Self::Cast                                                          => (false, true, Operator),
+            Self::Char                                                          => (false, true, String),
             Self::Comment                                                       => (false, true, Comment),
             Self::Name                                                          => (false, true, Identifier),
             Self::Type | Self::Attributes | Self::Attribute                     => (false, true, Type),

@@ -817,11 +817,193 @@ unit/
   │       ├─ type/name = "int"
   │       ├─ name = "Answer"
   │       └─ value/expression/int = "42"
+  ├─ class[public and static]/
+  │   ├─ name = "Entry"
+  │   └─ body/method[public and static]/
+  │       ├─ returns/type/name = "int"
+  │       ├─ name = "Get"
+  │       └─ body/member[instance]/
+  │           ├─ name = "Hidden"
+  │           └─ name = "Answer"
+  ├─ comment = "// Iter 20: new shapes — statements, expressions, patterns, literals."
+  ├─ comment[leading] = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
   └─ class[public and static]/
-      ├─ name = "Entry"
-      └─ body/method[public and static]/
-          ├─ returns/type/name = "int"
-          ├─ name = "Get"
-          └─ body/member[instance]/
-              ├─ name = "Hidden"
-              └─ name = "Answer"
+      ├─ name = "Extras"
+      └─ body/
+          ├─ method[public and static]/
+          │   ├─ returns/type/name = "void"
+          │   ├─ name = "Statements"
+          │   ├─ parameter/
+          │   │   ├─ type/name = "object"
+          │   │   └─ name = "o"
+          │   └─ body/block/
+          │       ├─ comment[leading] = "// cast expression"
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "n"
+          │       │       └─ cast/
+          │       │           ├─ type/name = "int"
+          │       │           └─ value/expression/float = "3.14"
+          │       ├─ comment[leading] = "// char literal"
+          │       ├─ variable/
+          │       │   ├─ type/name = "char"
+          │       │   └─ declarator/
+          │       │       ├─ name = "ch"
+          │       │       └─ char = "'A'"
+          │       ├─ comment[leading] = "// checked statement + yield return (via iterator method below)"
+          │       ├─ checked/block/expression/assign/
+          │       │   ├─ left/expression/name = "n"
+          │       │   ├─ op = "="
+          │       │   └─ right/expression/binary/
+          │       │       ├─ left/expression/name = "n"
+          │       │       ├─ op[plus] = "+"
+          │       │       └─ right/expression/int = "1"
+          │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n// goto + labeled statement"
+          │       ├─ goto/name = "skip"
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "unreachable"
+          │       │       └─ int = "0"
+          │       ├─ label/
+          │       │   ├─ name = "skip"
+          │       │   └─ expression/assign/
+          │       │       ├─ left/expression/name = "_"
+          │       │       ├─ op = "="
+          │       │       └─ right/expression/name = "n"
+          │       ├─ comment[leading] = "// lock statement"
+          │       ├─ lock/
+          │       │   ├─ typeof/type/name = "Entry"
+          │       │   └─ block/expression/unary/
+          │       │       ├─ name = "n"
+          │       │       └─ op[increment] = "++"
+          │       ├─ comment[leading] = "// with expression (record update)"
+          │       ├─ variable/
+          │       │   ├─ type/name = "var"
+          │       │   └─ declarator/
+          │       │       ├─ name = "m"
+          │       │       └─ new/
+          │       │           ├─ type/name = "Money"
+          │       │           ├─ argument/float = "1.0m"
+          │       │           └─ argument/string = "\"USD\""
+          │       ├─ variable/
+          │       │   ├─ type/name = "var"
+          │       │   └─ declarator/
+          │       │       ├─ name = "m2"
+          │       │       └─ with/
+          │       │           ├─ name = "m"
+          │       │           └─ literal/
+          │       │               ├─ name = "Currency"
+          │       │               └─ string = "\"EUR\""
+          │       ├─ comment[leading] = "// anonymous object creation"
+          │       ├─ variable/
+          │       │   ├─ type/name = "var"
+          │       │   └─ declarator/
+          │       │       ├─ name = "anon"
+          │       │       └─ new[anonymous]/
+          │       │           ├─ name = "Name"
+          │       │           ├─ string = "\"foo\""
+          │       │           ├─ name = "Value"
+          │       │           └─ int = "42"
+          │       ├─ comment[leading] = "// array creation"
+          │       ├─ variable/
+          │       │   ├─ type[array]/type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "arr"
+          │       │       └─ new[array]/
+          │       │           ├─ type[array]/type/name = "int"
+          │       │           └─ literal/
+          │       │               ├─ int = "1"
+          │       │               ├─ int = "2"
+          │       │               └─ int = "3"
+          │       ├─ variable/
+          │       │   ├─ type[array]/type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "arr2"
+          │       │       └─ new[array]/literal/
+          │       │           ├─ int = "4"
+          │       │           ├─ int = "5"
+          │       │           └─ int = "6"
+          │       ├─ comment[leading] = "// typeof + sizeof"
+          │       ├─ variable/
+          │       │   ├─ type/name = "Type"
+          │       │   └─ declarator/
+          │       │       ├─ name = "t"
+          │       │       └─ typeof/type/name = "int"
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "sz"
+          │       │       └─ sizeof/type/name = "int"
+          │       ├─ comment[leading] = "// default expression"
+          │       ├─ variable/
+          │       │   ├─ type/name = "int"
+          │       │   └─ declarator/
+          │       │       ├─ name = "def"
+          │       │       └─ default/type/name = "int"
+          │       ├─ comment[leading] = "// throw expression (in null-coalescing context)"
+          │       ├─ variable/
+          │       │   ├─ type/name = "string"
+          │       │   └─ declarator/
+          │       │       ├─ name = "s"
+          │       │       └─ null = "null"
+          │       └─ variable/
+          │           ├─ type/name = "string"
+          │           └─ declarator/
+          │               ├─ name = "s2"
+          │               └─ binary/
+          │                   ├─ left/expression/name = "s"
+          │                   ├─ op[nullish-coalescing] = "??"
+          │                   └─ right/expression/throw/new/
+          │                       ├─ type/name = "ArgumentNullException"
+          │                       └─ argument/call/
+          │                           ├─ name = "nameof"
+          │                           └─ argument/name = "s"
+          ├─ method[public and static]/
+          │   ├─ returns/type[generic]/
+          │   │   ├─ name = "IEnumerable"
+          │   │   └─ type/name = "int"
+          │   ├─ name = "Yields"
+          │   └─ body/block/
+          │       ├─ yield/int = "1"
+          │       └─ yield/int = "2"
+          └─ method[public and static]/
+              ├─ returns/type/name = "string"
+              ├─ name = "Patterns"
+              ├─ parameter/
+              │   ├─ type/name = "object"
+              │   └─ name = "o"
+              └─ body/block/return/expression/switch/
+                  ├─ name = "o"
+                  ├─ arm/
+                  │   ├─ pattern[and]/
+                  │   │   ├─ left/expression/pattern[declaration]/
+                  │   │   │   ├─ type/name = "int"
+                  │   │   │   └─ name = "i"
+                  │   │   └─ right/expression/pattern[relational]/int = "0"
+                  │   └─ string = "\"positive int\""
+                  ├─ arm/
+                  │   ├─ pattern[and]/
+                  │   │   ├─ left/expression/pattern[declaration]/
+                  │   │   │   ├─ type/name = "int"
+                  │   │   │   └─ name = "i"
+                  │   │   └─ right/expression/pattern[relational]/int = "0"
+                  │   └─ string = "\"non-positive int\""
+                  ├─ arm/
+                  │   ├─ pattern[or]/
+                  │   │   ├─ left/expression/pattern[declaration]/
+                  │   │   │   ├─ type/name = "string"
+                  │   │   │   └─ name = "s"
+                  │   │   └─ right/expression/pattern[constant]/null = "null"
+                  │   └─ string = "\"string or null\""
+                  ├─ arm/
+                  │   ├─ pattern[negated]/pattern[type]/type/name = "string"
+                  │   └─ string = "\"not string\""
+                  └─ arm/
+                      ├─ pattern[declaration]/
+                      │   ├─ type/name = "var"
+                      │   └─ name = "x"
+                      └─ call/member[instance]/
+                          ├─ expression[non_null]/name = "x"
+                          └─ name = "ToString"

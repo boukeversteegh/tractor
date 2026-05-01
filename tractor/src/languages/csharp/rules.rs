@@ -110,12 +110,13 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::VariableDeclaration           => Custom(transformations::variable_declaration),
 
         // `where T : new()` / constraint-clause kinds — consumed by the
-        // shared `attach_where_clause_constraints` post-transform; they
-        // never reach the dispatcher in practice. Passthrough is the
-        // safe noop.
-        CsKind::ConstructorConstraint            => Passthrough,
-        CsKind::TypeParameterConstraint          => Passthrough,
-        CsKind::TypeParameterConstraintsClause   => Passthrough,
+        // shared `attach_where_clause_constraints` post-transform (which
+        // reads the original `kind` attribute, not the element name).
+        // Rename to valid output names so no underscore leaks if they
+        // survive to output.
+        CsKind::ConstructorConstraint            => Rename(New),
+        CsKind::TypeParameterConstraint          => Rename(Constraint),
+        CsKind::TypeParameterConstraintsClause   => Rename(Where),
 
         // ---- Pure Rename -----------------------------------------------
         CsKind::Argument                       => Rename(Argument),
@@ -197,38 +198,25 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // see the propagation plan. For now, preserve old behavior so
         // snapshots stay byte-identical.
 
-        // Already matches our vocabulary.
-        CsKind::AliasQualifiedName
-        | CsKind::Discard
+        // Already matches our vocabulary (no underscore in kind name).
+        CsKind::Discard
         | CsKind::Interpolation
         | CsKind::Subpattern => Passthrough,
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Most are TODO candidates for real semantics.
 
-        // TODO: pattern combinators sit alongside pattern variants
-        // already in the rule table. Each should rename to PATTERN
-        // with a marker — sibling shapes:
+        // Pattern combinators — mirror the existing RenameWithMarker pattern:
         //   constant_pattern    → RenameWithMarker(Pattern, Constant)
-        //   declaration_pattern => RenameWithMarker(Pattern, Declaration)
-        //   recursive_pattern   => RenameWithMarker(Pattern, Recursive)
-        // Likely targets:
-        //   and_pattern      → RenameWithMarker(Pattern, And)        (new marker)
-        //   or_pattern       → RenameWithMarker(Pattern, Or)         (new marker)
-        //   negated_pattern  → RenameWithMarker(Pattern, Negated)    (new marker)
-        //   list_pattern     → RenameWithMarker(Pattern, List)       (new marker)
-        //   var_pattern      → RenameWithMarker(Pattern, Var)        (new marker)
-        //   type_pattern     → RenameWithMarker(Pattern, Type)       (Type exists)
-        //   parenthesized_pattern → Flatten { distribute_field: None }
-        // Test impact: none in current snapshots; would change new
-        // pattern fixtures.
-        CsKind::AndPattern
-        | CsKind::OrPattern
-        | CsKind::NegatedPattern
-        | CsKind::ListPattern
-        | CsKind::VarPattern
-        | CsKind::TypePattern
-        | CsKind::ParenthesizedPattern => Passthrough,
+        //   declaration_pattern → RenameWithMarker(Pattern, Declaration)
+        //   recursive_pattern   → RenameWithMarker(Pattern, Recursive)
+        CsKind::AndPattern              => RenameWithMarker(Pattern, And),
+        CsKind::OrPattern               => RenameWithMarker(Pattern, Or),
+        CsKind::NegatedPattern          => RenameWithMarker(Pattern, Negated),
+        CsKind::ListPattern             => RenameWithMarker(Pattern, List),
+        CsKind::VarPattern              => RenameWithMarker(Pattern, Var),
+        CsKind::TypePattern             => RenameWithMarker(Pattern, Type),
+        CsKind::ParenthesizedPattern    => Flatten { distribute_field: None },
 
         // `as_expression` (`x as Foo`) and `is_expression` (`obj is
         // Foo`) join `is_pattern_expression` under `<is>` — they're
@@ -237,15 +225,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::AsExpression
         | CsKind::IsExpression => Rename(Is),
 
-        // TODO: `cast_expression` (`(int)x`) and `default_expression`
-        // (`default(T)`) are call-shaped operations. Could each get
-        // their own semantic (Cast / Default) or share `Rename(Call)`
-        // with a marker. `throw_expression` (the expression form of
-        // `throw e`) is the sibling of `throw_statement` → Throw; pick
-        // one shared shape.
-        CsKind::CastExpression
-        | CsKind::DefaultExpression
-        | CsKind::ThrowExpression => Passthrough,
+        // Cast/default/throw expressions: each gets its own semantic.
+        // `throw_expression` shares `<throw>` with `throw_statement`.
+        CsKind::CastExpression      => Rename(Cast),
+        CsKind::DefaultExpression   => Rename(Default),
+        CsKind::ThrowExpression     => Rename(Throw),
 
         // `element_access_expression` (`x[i]`) is the call-site
         // counterpart of `indexer_declaration` → Indexer. Joins
@@ -254,37 +238,29 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
 
         // `anonymous_method_expression` is the older `delegate { … }`
         // syntax — functionally a lambda. `anonymous_object_creation_expression`
-        // (`new { X = 1 }`) stays as bucket-B work (needs a marker
-        // alongside `Rename(New)`); see todo/36-rule-todo-followups.md.
+        // (`new { X = 1 }`) joins `<new>` with an anonymous marker.
         CsKind::AnonymousMethodExpression           => Rename(Lambda),
-        CsKind::AnonymousObjectCreationExpression   => Passthrough,
+        CsKind::AnonymousObjectCreationExpression   => RenameWithMarker(New, Anonymous),
 
-        // TODO: array creations are siblings of
-        // `object_creation_expression` → New. Likely `Rename(New)`
-        // with an Array marker.
+        // Array and stackalloc creations join `<new>` with shape markers.
         CsKind::ArrayCreationExpression
-        | CsKind::ImplicitArrayCreationExpression
-        | CsKind::ImplicitStackallocExpression => Passthrough,
+        | CsKind::ImplicitArrayCreationExpression   => RenameWithMarker(New, Array),
+        CsKind::ImplicitStackallocExpression
+        | CsKind::StackallocExpression              => RenameWithMarker(New, Stackalloc),
 
-        // TODO: special-statement forms — `lock`, `fixed`, `unsafe`,
-        // `checked`, `goto`, `yield`, `empty` (`;`), `labeled`. Each
-        // currently survives as its grammar kind. Most should `Rename`
-        // to a new keyword constant; `empty_statement` should likely
-        // be `Flatten` or skipped entirely.
-        CsKind::CheckedStatement
-        | CsKind::EmptyStatement
-        | CsKind::FixedStatement
-        | CsKind::GotoStatement
-        | CsKind::LabeledStatement
-        | CsKind::LockStatement
-        | CsKind::UnsafeStatement
-        | CsKind::YieldStatement => Passthrough,
+        // Special-statement forms.
+        CsKind::CheckedStatement    => Rename(Checked),
+        CsKind::EmptyStatement      => Flatten { distribute_field: None },
+        CsKind::FixedStatement      => Rename(Fixed),
+        CsKind::GotoStatement       => Rename(Goto),
+        CsKind::LabeledStatement    => Rename(Label),
+        CsKind::LockStatement       => Rename(Lock),
+        CsKind::UnsafeStatement     => RenameWithMarker(Block, Unsafe),
+        CsKind::YieldStatement      => Rename(Yield),
 
-        // TODO: `with_expression` (`record with { X = 1 }`) and
-        // `with_initializer` are record-update shapes. Either get a
-        // dedicated With semantic or share Rename(New) with a marker.
-        CsKind::WithExpression
-        | CsKind::WithInitializer => Passthrough,
+        // Record update: `with` expression + its initializer body.
+        CsKind::WithExpression  => Rename(With),
+        CsKind::WithInitializer => Rename(Literal),
 
         // `event_declaration` is the property-shaped event form
         // (with accessors); pairs with `event_field_declaration`
@@ -293,35 +269,66 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::EventDeclaration               => Rename(Event),
         CsKind::ConversionOperatorDeclaration  => Rename(Operator),
 
-        // ---- Truly unhandled (preprocessor, lvalue/rvalue wrappers,
-        //      C++/CLI ref types, raw structural supertypes, etc.) ---
-        CsKind::ArrayRankSpecifier
-        | CsKind::AttributeTargetSpecifier
-        | CsKind::BracketedArgumentList
-        | CsKind::CallingConvention
-        | CsKind::CharacterLiteral
-        | CsKind::CharacterLiteralContent
-        | CsKind::CheckedExpression
-        | CsKind::Declaration
-        | CsKind::DeclarationExpression
-        | CsKind::ExplicitInterfaceSpecifier
-        | CsKind::Expression
-        | CsKind::ExternAliasDirective
-        | CsKind::FunctionPointerParameter
-        | CsKind::GlobalAttribute
-        | CsKind::GlobalStatement
-        | CsKind::InterpolationAlignmentClause
-        | CsKind::InterpolationFormatClause
-        | CsKind::InterpolationQuote
-        | CsKind::JoinIntoClause
-        | CsKind::Literal
-        | CsKind::LvalueExpression
-        | CsKind::MakerefExpression
-        | CsKind::NonLvalueExpression
-        | CsKind::ParenthesizedVariableDesignation
-        | CsKind::Pattern
-        | CsKind::PositionalPatternClause
-        | CsKind::PreprocArg
+        // Character literals.
+        CsKind::CharacterLiteral        => Rename(Char),
+        CsKind::CharacterLiteralContent => Flatten { distribute_field: None },
+
+        // Checked expression (mirrors checked_statement).
+        CsKind::CheckedExpression       => Rename(Checked),
+
+        // typeof / sizeof expressions.
+        CsKind::TypeofExpression        => Rename(Typeof),
+        CsKind::SizeofExpression        => Rename(Sizeof),
+
+        // `ref x` expression wraps its operand.
+        CsKind::RefExpression           => RenameWithMarker(Expression, Ref),
+
+        // LINQ join-into clause.
+        CsKind::JoinIntoClause          => Rename(Into),
+
+        // `extern alias Foo;` is import-like.
+        CsKind::ExternAliasDirective    => Rename(Import),
+
+        // Function pointer parameter is a parameter.
+        CsKind::FunctionPointerParameter => Rename(Parameter),
+
+        // `[assembly: Attr]` — the global attribute container.
+        CsKind::GlobalAttribute         => Rename(Attribute),
+
+        // `Bar(x)` in `class Foo(int x) : Bar(x)` — primary ctor base type.
+        CsKind::PrimaryConstructorBaseType => Rename(Extends),
+
+        // ---- Structural supertypes / wrappers (flatten, promote children) ---
+        CsKind::AliasQualifiedName      => Flatten { distribute_field: None },
+        CsKind::ArrayRankSpecifier      => Flatten { distribute_field: None },
+        CsKind::AttributeTargetSpecifier => Flatten { distribute_field: None },
+        CsKind::BracketedArgumentList   => Flatten { distribute_field: Some("arguments") },
+        CsKind::CallingConvention       => Flatten { distribute_field: None },
+        CsKind::Declaration             => Flatten { distribute_field: None },
+        CsKind::DeclarationExpression   => Flatten { distribute_field: None },
+        CsKind::ExplicitInterfaceSpecifier => Flatten { distribute_field: None },
+        CsKind::Expression              => Flatten { distribute_field: None },
+        CsKind::GlobalStatement         => Flatten { distribute_field: None },
+        CsKind::InterpolationAlignmentClause => Flatten { distribute_field: None },
+        CsKind::InterpolationFormatClause => Flatten { distribute_field: None },
+        CsKind::InterpolationQuote      => Flatten { distribute_field: None },
+        CsKind::Literal                 => Flatten { distribute_field: None },
+        CsKind::LvalueExpression        => Flatten { distribute_field: None },
+        CsKind::MakerefExpression       => Flatten { distribute_field: None },
+        CsKind::NonLvalueExpression     => Flatten { distribute_field: None },
+        CsKind::ParenthesizedVariableDesignation => Flatten { distribute_field: None },
+        CsKind::Pattern                 => Flatten { distribute_field: None },
+        CsKind::PositionalPatternClause => Flatten { distribute_field: None },
+        CsKind::ReftypeExpression       => Flatten { distribute_field: None },
+        CsKind::RefvalueExpression      => Flatten { distribute_field: None },
+        CsKind::ScopedType              => Flatten { distribute_field: None },
+        CsKind::Statement               => Flatten { distribute_field: None },
+        CsKind::StringLiteralEncoding   => Flatten { distribute_field: None },
+        CsKind::Type                    => Flatten { distribute_field: None },
+        CsKind::TypeDeclaration         => Flatten { distribute_field: None },
+
+        // Preprocessor directives and shebang — flatten to suppress raw output.
+        CsKind::PreprocArg
         | CsKind::PreprocDefine
         | CsKind::PreprocElif
         | CsKind::PreprocElse
@@ -335,18 +342,6 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::PreprocRegion
         | CsKind::PreprocUndef
         | CsKind::PreprocWarning
-        | CsKind::PrimaryConstructorBaseType
-        | CsKind::RefExpression
-        | CsKind::ReftypeExpression
-        | CsKind::RefvalueExpression
-        | CsKind::ScopedType
-        | CsKind::ShebangDirective
-        | CsKind::SizeofExpression
-        | CsKind::StackallocExpression
-        | CsKind::Statement
-        | CsKind::StringLiteralEncoding
-        | CsKind::Type
-        | CsKind::TypeDeclaration
-        | CsKind::TypeofExpression => Passthrough,
+        | CsKind::ShebangDirective      => Flatten { distribute_field: None },
     }
 }

@@ -175,3 +175,61 @@ public static class Entry
 {
     public static int Get() => Hidden.Answer;
 }
+
+// Iter 20: new shapes — statements, expressions, patterns, literals.
+
+/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>
+public static class Extras
+{
+    public static void Statements(object o)
+    {
+        // cast expression
+        int n = (int)3.14;
+        // char literal
+        char ch = 'A';
+        // checked statement + yield return (via iterator method below)
+        checked { n = n + 1; }
+        // fixed + unsafe handled in unsafe context (pointer omitted for clarity)
+        // goto + labeled statement
+        goto skip;
+        int unreachable = 0;
+        skip:
+        _ = n;
+        // lock statement
+        lock (typeof(Entry)) { n++; }
+        // with expression (record update)
+        var m = new Money(1.0m, "USD");
+        var m2 = m with { Currency = "EUR" };
+        // anonymous object creation
+        var anon = new { Name = "foo", Value = 42 };
+        // array creation
+        int[] arr = new int[] { 1, 2, 3 };
+        int[] arr2 = new[] { 4, 5, 6 };
+        // typeof + sizeof
+        Type t = typeof(int);
+        int sz = sizeof(int);
+        // default expression
+        int def = default(int);
+        // throw expression (in null-coalescing context)
+        string s = null;
+        string s2 = s ?? throw new ArgumentNullException(nameof(s));
+    }
+
+    public static IEnumerable<int> Yields()
+    {
+        yield return 1;
+        yield return 2;
+    }
+
+    public static string Patterns(object o)
+    {
+        return o switch
+        {
+            int i and > 0        => "positive int",
+            int i and <= 0       => "non-positive int",
+            string s or null     => "string or null",
+            not string           => "not string",
+            var x                => x!.ToString(),
+        };
+    }
+}
