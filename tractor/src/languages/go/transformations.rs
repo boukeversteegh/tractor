@@ -334,7 +334,8 @@ pub fn import_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
 
 /// `import_spec_list` — strip `(`/`)` punctuation tokens, then flatten.
 /// Without the strip, the parens promote to the parent and leak as
-/// bare text leaves at file-level.
+/// bare text leaves at file-level. Also used for `const_spec_list`
+/// and `var_spec_list` (same `(...)` block shape).
 pub fn import_spec_list(
     xot: &mut Xot,
     node: XotNode,
@@ -344,6 +345,34 @@ pub fn import_spec_list(
             let Some(text) = xot.text_str(c) else { return false; };
             let trimmed = text.trim();
             trimmed == "(" || trimmed == ")" || trimmed.is_empty()
+        })
+        .collect();
+    for c in to_drop {
+        xot.detach(c)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
+/// `const_declaration` / `var_declaration` — same flat-siblings
+/// pattern as imports. Strip the leading keyword and any block
+/// parens, then flatten. Each `const_spec` / `var_spec` (renamed to
+/// `<const>` / `<var>` by their own rules) becomes its own sibling.
+pub fn const_or_var_declaration(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let to_drop: Vec<_> = xot.children(node)
+        .filter(|&c| {
+            let Some(text) = xot.text_str(c) else { return false; };
+            let trimmed = text.trim();
+            // Tree-sitter Go combines bare `const`/`var` keywords
+            // with the following `(` into a single anonymous text
+            // token (`"const ("` / `"var ("`); also handle the
+            // unsplit forms.
+            trimmed == "const" || trimmed == "var"
+                || trimmed == "const (" || trimmed == "var ("
+                || trimmed == "(" || trimmed == ")" || trimmed == ";"
+                || trimmed.is_empty()
         })
         .collect();
     for c in to_drop {

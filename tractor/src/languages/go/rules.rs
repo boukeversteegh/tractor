@@ -41,12 +41,9 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::Block
         | GoKind::FieldDeclarationList
         | GoKind::ExpressionList
-        | GoKind::ConstSpec
-        | GoKind::VarSpec
         | GoKind::LiteralElement
         | GoKind::KeyedElement
         | GoKind::LiteralValue
-        | GoKind::VarSpecList
         | GoKind::ForClause
         | GoKind::TypeParameterList
         | GoKind::TypeParameterDeclaration
@@ -81,7 +78,14 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::ChannelType              => Rename(Chan),
         GoKind::CommunicationCase        => Rename(Case),
         GoKind::CompositeLiteral         => Rename(Literal),
-        GoKind::ConstDeclaration         => Rename(Const),
+        // ConstDeclaration / VarDeclaration mirror import handling:
+        // strip the bare keyword + parens, flatten so each
+        // ConstSpec / VarSpec becomes its own sibling. The single-
+        // binding case yields one sibling; the block form yields
+        // multiple. (Group preservation deferred — devs can
+        // reconstruct from source position if needed.)
+        GoKind::ConstDeclaration         => Custom(transformations::const_or_var_declaration),
+        GoKind::ConstSpec                => Rename(Const),
         GoKind::ContinueStatement        => RenameStripKeyword(Continue, "continue"),
         GoKind::DecStatement             => ExtractOpThenRename(Unary),
         GoKind::DefaultCase              => Rename(Default),
@@ -124,7 +128,9 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::True                     => Rename(True),
         GoKind::TypeArguments            => Rename(Arguments),
         GoKind::TypeAssertionExpression  => Rename(Assert),
-        GoKind::VarDeclaration           => Rename(Var),
+        GoKind::VarDeclaration           => Custom(transformations::const_or_var_declaration),
+        GoKind::VarSpec                  => Rename(Var),
+        GoKind::VarSpecList              => Custom(transformations::import_spec_list),
         GoKind::VariadicParameterDeclaration => Rename(Parameter),
 
         // ---- Passthrough (kind name already matches our vocabulary) ---

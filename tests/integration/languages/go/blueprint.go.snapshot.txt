@@ -15,20 +15,22 @@ file/
   │   └─ value/expression/float = "3.14159"
   ├─ const/
   │   ├─ name = "StatusIdle"
-  │   ├─ value/expression/iota = "iota"
-  │   ├─ name = "StatusRunning"
-  │   ├─ name = "StatusDone"
-  │   ├─ name = "_"
-  │   └─ name = "StatusError"
+  │   └─ value/expression/iota = "iota"
+  ├─ const/name = "StatusRunning"
+  ├─ const/name = "StatusDone"
+  ├─ const/name = "_"
+  ├─ const/name = "StatusError"
   ├─ var/
   │   ├─ name = "ErrNotFound"
-  │   ├─ value/expression/call/
-  │   │   ├─ member/
-  │   │   │   ├─ name = "errors"
-  │   │   │   └─ name = "New"
-  │   │   └─ string = "\"not found\""
+  │   └─ value/expression/call/
+  │       ├─ member/
+  │       │   ├─ name = "errors"
+  │       │   └─ name = "New"
+  │       └─ string = "\"not found\""
+  ├─ var/
   │   ├─ name = "globalCount"
-  │   ├─ type/name = "int"
+  │   └─ type/name = "int"
+  ├─ var/
   │   ├─ name = "name"
   │   ├─ name = "age"
   │   └─ value/
