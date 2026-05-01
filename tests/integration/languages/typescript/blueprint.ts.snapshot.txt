@@ -35,7 +35,7 @@ program/
   │   │   ├─ name = "T"
   │   │   └─ value/expression/type[default]/type/name = "number"
   │   └─ body/
-  │       ├─ property/
+  │       ├─ property[readonly]/
   │       │   ├─ name = "id"
   │       │   └─ type/name = "string"
   │       ├─ property/
@@ -134,7 +134,7 @@ program/
   │       │   ├─ parameter[required and public]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   ├─ parameter[optional and private]/
+  │       │   ├─ parameter[optional and readonly and private]/
   │       │   │   ├─ name = "seed"
   │       │   │   └─ type/name = "number"
   │       │   └─ body/block = "{}"

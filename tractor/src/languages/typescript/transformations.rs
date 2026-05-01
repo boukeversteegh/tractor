@@ -15,8 +15,9 @@ use super::input::TsKind;
 use super::output::TractorNode::{
     self, Abstract, Alias, Arrow, Asserts, Async, Await, Comment as CommentName, Const, Default,
     Else, Export, Expression, Extends, Field, Function, Generator, Get, Leading, Let, Method,
-    Name, NonNull, Optional, Override, Parameter, Predicate, Prefix, Private, Protected, Public,
-    Readonly, Required, Set, Static, Ternary, Trailing, Type, Unary, Var, Variable,
+    Name, NonNull, Optional, Override, Parameter, Predicate, Prefix, Private, Property,
+    Protected, Public, Readonly, Required, Set, Static, Ternary, Trailing, Type, Unary,
+    Var, Variable,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -291,22 +292,38 @@ pub fn variable_declaration(
 }
 
 /// `optional_parameter` — `foo?: T`. Prepend `<optional/>` marker,
+/// extract any modifier keywords (`readonly` for parameter properties),
 /// rename to `<parameter>`.
 pub fn optional_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
+    extract_field_modifiers(xot, node)?;
     xot.with_prepended_marker_from(node, Optional, node)?
         .with_renamed(node, Parameter);
     Ok(TransformAction::Continue)
 }
 
+/// `property_signature` — interface property declaration. Extracts
+/// modifier keywords (`readonly`) into markers, then renames to
+/// `<property>`.
+pub fn property_signature(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    extract_field_modifiers(xot, node)?;
+    xot.with_renamed(node, Property);
+    Ok(TransformAction::Continue)
+}
+
 /// `required_parameter` — `foo: T`. Prepend `<required/>` marker
-/// (exhaustive with optional), rename to `<parameter>`.
+/// (exhaustive with optional), extract any modifier keywords
+/// (`readonly` for parameter properties), rename to `<parameter>`.
 pub fn required_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
+    extract_field_modifiers(xot, node)?;
     xot.with_prepended_marker_from(node, Required, node)?
         .with_renamed(node, Parameter);
     Ok(TransformAction::Continue)

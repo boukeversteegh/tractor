@@ -17,9 +17,10 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::JavaKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Call, Comment as CommentName, Else, Expression, Generic, Generics, If, Leading, Method, Name,
-    Package, Prefix, Private, Protected, Public, Returns, Static, Final, Abstract, Synchronized,
-    Volatile, Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type, Unary, Void,
+    Call, Comment as CommentName, Else, Expression, Generic, Generics, If, Import, Leading,
+    Method, Name, Package, Prefix, Private, Protected, Public, Returns, Static, Final, Abstract,
+    Synchronized, Volatile, Transient, Native, Strictfp, Super, Ternary, This, Trailing, Type,
+    Unary, Void,
 };
 
 /// `parenthesized_expression` — pure grammar grouping; drop the
@@ -37,6 +38,21 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// — every Java `expression_statement` produces a value.
 pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_renamed(node, Expression);
+    Ok(TransformAction::Continue)
+}
+
+/// `import_declaration` — Java import statement. Extracts an optional
+/// `<static/>` marker for `import static foo.Bar.baz` (Principle #7),
+/// then renames to `<import>`.
+pub fn import_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    let has_static = texts.iter().any(|t| {
+        t.split_whitespace().any(|tok| tok == "static")
+    });
+    xot.with_renamed(node, Import);
+    if has_static {
+        xot.with_prepended_marker_from(node, Static, node)?;
+    }
     Ok(TransformAction::Continue)
 }
 

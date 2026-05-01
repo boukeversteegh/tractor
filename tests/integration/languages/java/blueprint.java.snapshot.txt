@@ -22,7 +22,7 @@ program/
   │   │   │   └─ name = "util"
   │   │   └─ name = "function"
   │   └─ name = "Function"
-  ├─ import/path/
+  ├─ import[static]/path/
   │   ├─ path/
   │   │   ├─ path/
   │   │   │   ├─ name = "java"

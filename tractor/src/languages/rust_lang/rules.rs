@@ -148,7 +148,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::EnumItem     => da(Enum),
         RustKind::FunctionItem => da(Function),
         RustKind::ModItem      => da(Mod),
-        RustKind::StaticItem   => da(Static),
+        RustKind::StaticItem   => Custom(transformations::static_item),
         RustKind::StructItem   => da(Struct),
         RustKind::TraitItem    => da(Trait),
         RustKind::TypeItem     => da(Alias),

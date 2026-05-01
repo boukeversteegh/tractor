@@ -14,7 +14,7 @@ use super::input::RustKind;
 use super::output::TractorNode::{
     self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Extern,
     Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Pattern, Private,
-    Pub, Raw, String as RustString, Super, Trailing, Try, Type, Unsafe, Use as UseName,
+    Pub, Raw, Static, String as RustString, Super, Trailing, Try, Type, Unsafe, Use as UseName,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -269,6 +269,22 @@ pub fn let_declaration(
 ) -> Result<TransformAction, xot::Error> {
     extract_modifiers(xot, node)?;
     xot.with_renamed(node, Let);
+    Ok(TransformAction::Continue)
+}
+
+/// `static_item` — `static FOO: T = …` and `static mut FOO: T = …`.
+/// Combines default-access resolution with `mut` modifier extraction
+/// (Principle #7). Without this the `mutable_specifier` text leaks
+/// inside `<static>` as bare `mut` keyword text.
+pub fn static_item(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    if let Some(marker) = default_access_for_declaration(xot, node) {
+        xot.with_prepended_marker_from(node, marker, node)?;
+    }
+    extract_modifiers(xot, node)?;
+    xot.with_renamed(node, Static);
     Ok(TransformAction::Continue)
 }
 

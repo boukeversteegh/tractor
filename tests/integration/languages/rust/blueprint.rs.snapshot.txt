@@ -270,7 +270,7 @@ file/
   │   ├─ name = "GREETING"
   │   ├─ type[borrowed]/type/name = "str"
   │   └─ value/expression/string = "\"hello\""
-  ├─ static[private]/
+  ├─ static[mut and private]/
   │   ├─ name = "COUNTER"
   │   ├─ type/name = "u32"
   │   └─ value/expression/int = "0"

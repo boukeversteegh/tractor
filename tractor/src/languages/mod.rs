@@ -362,7 +362,6 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
 /// element children, merge the second into the first by moving its
 /// children over and detaching the now-empty second wrapper.
 fn toml_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::helpers::get_element_name;
     // Skip xot's document wrapper if present.
     let root = if xot.is_document(root) {
         xot.document_element(root).unwrap_or(root)

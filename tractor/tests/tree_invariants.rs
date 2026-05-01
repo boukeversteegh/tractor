@@ -59,8 +59,8 @@ const ASSERT_CONTAINER_NON_EMPTY: bool = true;
 // child of that name is present as a sibling under the same
 // parent. Catches Principle #2 / #7 regressions where a transform
 // failed to convert a keyword token into its corresponding marker.
-// Advisory until we calibrate false-positive rate.
-const ASSERT_NO_KEYWORD_LEAK: bool = false;
+// Now asserted (zero violations as of iter 67).
+const ASSERT_NO_KEYWORD_LEAK: bool = true;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
@@ -1035,37 +1035,46 @@ fn no_anonymous_keyword_leaks() {
                 .collect();
             for child in xot.children(node) {
                 let Some(text) = xot.text_str(child) else { continue };
-                let trimmed = text.trim();
+                let trimmed = text.trim().trim_end_matches(';').trim();
                 if trimmed.is_empty() {
                     continue;
                 }
-                // Tokenize: split on whitespace AND on common
-                // punctuation (`(`, `)`, `,`, `;`, `{`, `}`, `:`).
-                // Each token is checked against MARKER_ONLY.
-                for token in trimmed.split(|c: char| {
-                    c.is_whitespace()
-                        || matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | ':' | '[' | ']')
-                }) {
-                    if token.is_empty() {
+                // Whitespace-only tokenization: a "leak" means the text
+                // is a sequence of bare keywords separated by spaces
+                // (e.g. `pub fn`, `static`, `end`). If any token isn't
+                // a marker-only name, treat the whole text as
+                // identifier/path/expression (e.g. `crate::outer`,
+                // `is_a?`) and skip — a transform may eventually
+                // structurize it but it's not a marker leak.
+                let tokens: Vec<&str> = trimmed.split_whitespace().collect();
+                if tokens.is_empty() {
+                    continue;
+                }
+                let parent_name = element_name(xot, node);
+                let all_keywords = tokens.iter().all(|t| {
+                    tractor::languages::is_marker_only_name(lang, t)
+                        // Element's own name counts as "expected" keyword.
+                        || parent_name.as_deref() == Some(*t)
+                });
+                if !all_keywords {
+                    continue;
+                }
+                for token in tokens {
+                    if parent_name.as_deref() == Some(token) {
                         continue;
                     }
                     if !tractor::languages::is_marker_only_name(lang, token) {
                         continue;
                     }
-                    // Also skip if the token matches the parent
-                    // element's own name — happens when a keyword
-                    // statement has its keyword text inside.
-                    if element_name(xot, node).as_deref() == Some(token) {
-                        continue;
-                    }
                     if !element_children.contains(token) {
-                        let parent_name = element_name(xot, node).unwrap_or_default();
+                        let parent_name_str =
+                            parent_name.clone().unwrap_or_default();
                         report.record(
                             token,
                             &fixture,
                             format!(
                                 "keyword {:?} in <{}> text without sibling <{}/> marker",
-                                token, parent_name, token
+                                token, parent_name_str, token
                             ),
                         );
                     }

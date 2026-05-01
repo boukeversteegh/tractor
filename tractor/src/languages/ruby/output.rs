@@ -78,8 +78,15 @@ impl TractorNode {
             | Self::List | Self::Dict | Self::Delimited | Self::Singleton           => (true, false, Default),
             Self::Keyword | Self::Default | Self::Splat | Self::Kwsplat             => (true, false, Default),
             Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward
-            | Self::Destructured | Self::Concatenated | Self::Static | Self::End
+            | Self::Destructured | Self::Concatenated | Self::Static
             | Self::Optional                                                        => (true, false, Default),
+            // `End` is dual-use: marker form `<block[end]>` for the
+            // `END { ... }` at-exit hook, AND a syntactic block-closer
+            // keyword that legitimately appears as bare text inside
+            // every Ruby compound element (`<module>...end</module>`).
+            // Declaring dual-use prevents the leak detector from
+            // flagging the source-text-preservation form.
+            Self::End                                                               => (true, true, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Begin | Self::Do                                                  => (true, true, Keyword),

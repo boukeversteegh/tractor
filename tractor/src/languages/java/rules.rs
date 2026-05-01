@@ -107,7 +107,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::ForStatement                => Rename(For),
         JavaKind::FormalParameter             => Rename(Parameter),
         JavaKind::HexIntegerLiteral           => Rename(Int),
-        JavaKind::ImportDeclaration           => Rename(Import),
+        JavaKind::ImportDeclaration           => Custom(transformations::import_declaration),
         JavaKind::LambdaExpression            => Rename(Lambda),
         JavaKind::LocalVariableDeclaration    => Rename(Variable),
         JavaKind::MarkerAnnotation            => Rename(Annotation),

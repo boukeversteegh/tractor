@@ -166,7 +166,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::PredefinedType            => Custom(transformations::type_identifier),
         TsKind::PrivatePropertyIdentifier => Rename(Name),
         TsKind::Program                   => Rename(Program),
-        TsKind::PropertySignature         => Rename(Property),
+        TsKind::PropertySignature         => Custom(transformations::property_signature),
         TsKind::RestPattern               => Rename(Rest),
         TsKind::ReturnStatement           => RenameStripKeyword(Return, "return"),
         TsKind::SatisfiesExpression       => Rename(Satisfies),

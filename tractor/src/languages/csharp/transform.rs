@@ -15,7 +15,7 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::input::CsKind;
 use super::output::{self, TractorNode};
 use TractorNode::{
-    Abstract, Async, Const, Extern, Internal, New, Override, Partial, Private, Protected, Public,
+    Abstract, Async, Const, Extern, File, Internal, New, Override, Partial, Private, Protected, Public,
     Readonly, Sealed, Static, Unsafe, Virtual,
 };
 
@@ -58,9 +58,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 pub const ACCESS_MODIFIERS: &[TractorNode] = &[Public, Private, Protected, Internal];
 
 /// C# non-access modifiers in canonical declaration order.
+/// `File` is the C# 11 `file` modifier (file-local class/type).
 pub const OTHER_MODIFIERS: &[TractorNode] = &[
     Static, Abstract, Virtual, Override, Sealed,
-    Readonly, Const, Partial, Async, Extern, Unsafe, New,
+    Readonly, Const, Partial, Async, Extern, Unsafe, New, File,
 ];
 
 /// Map a transformed element name to a syntax category for highlighting.

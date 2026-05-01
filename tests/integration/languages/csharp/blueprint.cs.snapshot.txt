@@ -811,8 +811,7 @@ unit/
   └─ namespace[file]/
       ├─ name = "Tractor.Fixtures.FileScoped"
       ├─ import/name = "System"
-      ├─ class[internal and sealed]/
-      │   ├─ modifier = "file"
+      ├─ class[internal and file and sealed]/
       │   ├─ name = "Hidden"
       │   └─ body/property[public and static]/
       │       ├─ type/name = "int"

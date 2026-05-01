@@ -97,7 +97,7 @@ impl TractorNode {
             Self::Public | Self::Private | Self::Protected | Self::Internal
             | Self::Static | Self::Abstract | Self::Virtual | Self::Override | Self::Sealed
             | Self::Readonly | Self::Partial | Self::Async | Self::Extern | Self::Unsafe
-            | Self::This | Self::Await                                          => (true, false, Keyword),
+            | Self::Await                                                       => (true, false, Keyword),
             Self::NonNull                                                       => (true, false, Operator),
             // Type-shape / member-access / pattern markers
             Self::Nullable | Self::Array                                        => (true, false, Type),
@@ -124,6 +124,13 @@ impl TractorNode {
             // Class: dual-use — container for `class Foo {…}` declaration;
             // marker for generic constraint `where T : class, new()`.
             Self::Class                                                         => (true, true, Keyword),
+            // `This` is dual-use: marker form `[this]` on extension-method
+            // receiver parameter (`public static void M(this string s)`),
+            // AND a name-like self-reference that legitimately appears as
+            // bare text in expressions (`this.Foo`, `==this`, `this`-as-
+            // argument). Declaring dual-use exempts the source-text form
+            // from the keyword-leak detector.
+            Self::This                                                          => (true, true, Keyword),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Namespace | Self::Import
