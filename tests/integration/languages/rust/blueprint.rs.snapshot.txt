@@ -138,7 +138,7 @@ file/
   │       │   └─ value/expression/int = "64"
   │       ├─ signature/
   │       │   ├─ name = "draw"
-  │       │   ├─ self/self = "self"
+  │       │   ├─ parameter[self]/self = "self"
   │       │   └─ parameter/
   │       │       ├─ name = "c"
   │       │       └─ type[borrowed and mut]/path/
@@ -146,7 +146,7 @@ file/
   │       │           └─ name = "Canvas"
   │       └─ function[private]/
   │           ├─ name = "name"
-  │           ├─ self/self = "self"
+  │           ├─ parameter[self]/self = "self"
   │           ├─ returns/type/name = "String"
   │           └─ body/call/
   │               ├─ path/
@@ -194,7 +194,7 @@ file/
   │       │           └─ field/name = "label"
   │       ├─ function[pub and async]/
   │       │   ├─ name = "async_clone"
-  │       │   ├─ self/self = "self"
+  │       │   ├─ parameter[self]/self = "self"
   │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/call/field/
   │       │       ├─ value/expression/self = "self"
@@ -237,7 +237,7 @@ file/
   │       │       └─ type/name = "u8"
   │       └─ function[private]/
   │           ├─ name = "draw"
-  │           ├─ self/self = "self"
+  │           ├─ parameter[self]/self = "self"
   │           ├─ parameter/
   │           │   ├─ name = "_c"
   │           │   └─ type[borrowed and mut]/path/

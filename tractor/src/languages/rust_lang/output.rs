@@ -90,10 +90,15 @@ impl TractorNode {
             Self::Function | Self::Struct | Self::Trait | Self::Const | Self::Macro    => (true, true, Keyword),
             Self::Field | Self::Tuple                                                  => (true, true, Default),
             Self::Generic | Self::Ref | Self::Array                                    => (true, true, Type),
+            // `<self>` keyword container + `[self]` marker on `<parameter>`
+            // for the receiver parameter (`fn f(&self) {}` →
+            // `parameter[self]/self = "self"` — same shape as C#
+            // `parameter[this]/this = "this"`).
+            Self::Self_                                                                => (true, true, Keyword),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static | Self::Alias
-            | Self::Union | Self::Parameter | Self::Self_
+            | Self::Union | Self::Parameter
             | Self::Let | Self::Return | Self::If | Self::Else | Self::For | Self::While
             | Self::Loop | Self::Match | Self::Arm | Self::Break | Self::Continue
             | Self::Unsafe | Self::Pub | Self::Yield

@@ -207,7 +207,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::ReturnExpression         => Rename(Return),
         RustKind::ScopedIdentifier         => Rename(Path),
         RustKind::ScopedTypeIdentifier     => Rename(Path),
-        RustKind::SelfParameter            => Rename(Self_),
+        RustKind::SelfParameter            => RenameWithMarker(Parameter, Self_),
         RustKind::ShorthandFieldInitializer => Rename(Field),
         RustKind::SourceFile               => Rename(File),
         RustKind::StringLiteral            => Rename(String),
