@@ -16,7 +16,7 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::PyKind;
 use super::output::TractorNode::{
     self, Async, Await, Comment as CommentName, Comprehension, Dict, Else, Expression, Function,
-    Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
+    Generic, Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -124,6 +124,26 @@ pub fn type_node(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     inline_single_identifier(xot, node)?;
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
+}
+
+/// `type_parameter` serves double duty in tree-sitter Python:
+/// PEP 695 declaration params (`def f[T]()`) and subscript generic
+/// args (`Optional[str]`). Dispatch by parent kind.
+pub fn type_parameter(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let parent_kind = get_parent(xot, node).and_then(|p| get_kind(xot, p));
+    if parent_kind.as_deref() == Some("generic_type") {
+        // Subscript form: parent is already `<type[generic]>`. Flatten
+        // so type-args become direct children — matches TS shape.
+        Ok(TransformAction::Flatten)
+    } else {
+        // PEP 695 declaration form: rename to `<generic>` and let it
+        // sit as a direct child of the function / class / type-alias.
+        xot.with_renamed(node, Generic);
+        Ok(TransformAction::Continue)
+    }
 }
 
 /// `parameters` — Python's parameter list. Bare positional parameters

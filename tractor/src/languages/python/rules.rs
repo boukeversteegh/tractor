@@ -14,7 +14,7 @@ use super::output::TractorNode::{
     self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
     ElseIf, Escape, Except, Exec, False, Finally, Float, For, Format, From, Future,
-    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
+    Generator, Generic, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
     Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
     Union, While, Wildcard, With, Yield, None as PyNone,
@@ -50,7 +50,16 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         // ---- Flatten with field distribution ---------------------------
         PyKind::ArgumentList  => Flatten { distribute_field: Some("arguments") },
         PyKind::Parameters    => Custom(transformations::parameters),
-        PyKind::TypeParameter => Flatten { distribute_field: Some("arguments") },
+        // `type_parameter` serves DOUBLE DUTY in tree-sitter Python:
+        //   1. PEP 695 declaration param list — `def f[T, U]()` /
+        //      `class A[T]` / `type X[T] = ...`. Should wrap in
+        //      `<generic>` (matches Java/TS declaration-level shape).
+        //   2. Subscript generic argument list — `Optional[str]`,
+        //      `list[int]`. Already inside `<type[generic]>` parent;
+        //      should Flatten so type-args become direct children
+        //      (matches TS `type[generic]/{name=Map, type, type}`).
+        // Custom handler dispatches by parent kind.
+        PyKind::TypeParameter => Custom(transformations::type_parameter),
 
         // ---- Pure Flatten ----------------------------------------------
         PyKind::AsPatternTarget

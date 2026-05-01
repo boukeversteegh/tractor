@@ -79,6 +79,26 @@ module/
   │           ├─ name = "d"
   │           ├─ name = "e"
   │           └─ name = "f"
+  ├─ comment[leading] = "# PEP 695 generic function/class/type-alias declarations."
+  ├─ function/
+  │   ├─ name = "identity"
+  │   ├─ generic/type/name = "T"
+  │   ├─ parameter/
+  │   │   ├─ name = "v"
+  │   │   └─ type/name = "T"
+  │   ├─ returns/type/name = "T"
+  │   └─ body/return/expression/name = "v"
+  ├─ class/
+  │   ├─ name = "Box"
+  │   ├─ generic/type/name = "T"
+  │   └─ body[pass] = "pass"
+  ├─ alias/
+  │   ├─ left/expression/type[generic]/
+  │   │   ├─ name = "Vec"
+  │   │   └─ type/name = "T"
+  │   └─ right/expression/type[generic]/
+  │       ├─ name = "list"
+  │       └─ type/name = "T"
   ├─ function/
   │   ├─ name = "annotated"
   │   ├─ parameter/

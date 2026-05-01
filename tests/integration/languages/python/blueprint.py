@@ -29,6 +29,18 @@ def pos_only(a, b, /, c, d, *, e, f=0):
     return (a, b, c, d, e, f)
 
 
+# PEP 695 generic function/class/type-alias declarations.
+def identity[T](v: T) -> T:
+    return v
+
+
+class Box[T]:
+    pass
+
+
+type Vec[T] = list[T]
+
+
 def annotated(x: int, y: Optional[str] = None, z: list[int] | None = None) -> Union[int, None]:
     assert x >= 0, "x must be non-negative"
     result: int = x
