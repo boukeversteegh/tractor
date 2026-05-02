@@ -203,6 +203,17 @@ pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     Ok(TransformAction::Continue)
 }
 
+/// `base_clause` — `class Foo extends Bar` (PHP allows only one).
+/// Renames to `<extends>` and adds `field="extends"` so JSON output
+/// is consistently an array regardless of count.
+pub fn base_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    xot.with_renamed(node, Extends)
+        .with_attr(node, "field", "extends")
+        .with_attr(node, "list", "true");
+    Ok(TransformAction::Continue)
+}
+
 /// `class_interface_clause` — `implements A, B, C`. Wrap each
 /// interface name in its own `<implements>` sibling with
 /// `field="implements"` so JSON serializers reconstruct as an
@@ -222,6 +233,7 @@ pub fn class_interface_clause(
         xot.detach(child)?;
         xot.append(impl_node, child)?;
         xot.with_attr(impl_node, "field", "implements");
+        xot.with_attr(impl_node, "list", "true");
     }
     Ok(TransformAction::Flatten)
 }

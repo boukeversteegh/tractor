@@ -350,6 +350,7 @@ pub fn argument_list(
             xot.detach(child)?;
             xot.append(extends_node, child)?;
             xot.with_attr(extends_node, "field", "extends");
+            xot.with_attr(extends_node, "list", "true");
         }
     } else {
         distribute_field_to_children(xot, node, "arguments");

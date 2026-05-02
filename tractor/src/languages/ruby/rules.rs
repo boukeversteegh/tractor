@@ -203,12 +203,12 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::ChainedString => RenameWithMarker(String, Concatenated),
 
         // `class Foo < Base` — Ruby's `<` is the inheritance operator
-        // (no keyword in source). Per Principle #18, name the
-        // relationship after the most cross-language idiomatic
-        // operator name: `<extends>` (single sibling — Ruby has
-        // single inheritance via `<`; mixins use `include`/`extend`
-        // which are method calls, separate shape).
-        RubyKind::Superclass => Rename(Extends),
+        // (no keyword in source). Per Principle #18, name after the
+        // most cross-language idiomatic operator: `<extends>`.
+        // Always single (Ruby has single inheritance), but adds
+        // `field="extends"` for JSON-array consistency
+        // (Principle #12).
+        RubyKind::Superclass => Custom(transformations::superclass),
 
         // Numeric / literal kinds — single-word grammar names, fine
         // as raw passthrough. Could pick up proper Rename targets if

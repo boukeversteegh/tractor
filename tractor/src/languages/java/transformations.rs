@@ -41,6 +41,18 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `superclass` — `class Foo extends Bar` (Java allows only one).
+/// Renames to `<extends>` and adds `field="extends"` for JSON-array
+/// consistency (Principle #12 — field attribute on collapsed-list
+/// children, even single).
+pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    xot.with_renamed(node, Extends)
+        .with_attr(node, "field", "extends")
+        .with_attr(node, "list", "true");
+    Ok(TransformAction::Continue)
+}
+
 /// `throws_clause` — `throws E1, E2, E3`. Wrap each thrown type in
 /// its own `<throws>` element with `field="throws"` (Principle #18
 /// — name after operator; Principle #12 — multiple siblings, not
@@ -57,15 +69,36 @@ pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
         xot.detach(child)?;
         xot.append(throws_node, child)?;
         xot.with_attr(throws_node, "field", "throws");
+        xot.with_attr(throws_node, "list", "true");
     }
     Ok(TransformAction::Flatten)
 }
 
-/// `super_interfaces` — `implements A, B, C`. Wrap each interface
-/// type in its own `<implements>` sibling with `field="implements"`
-/// (Principle #12 — flat siblings + JSON-array recovery).
+/// `super_interfaces` — `implements A, B, C`. Tree-sitter wraps the
+/// type list under an inner `type_list` node; descend through it (and
+/// any other transparent wrappers) to find the real type children,
+/// then wrap each in its own `<implements>` sibling with
+/// `field="implements"` and `list="true"` (Principle #12 — flat
+/// siblings + JSON-array recovery).
 pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Implements;
+    // Lift children of any inner `type_list` up to be direct children
+    // of `super_interfaces` first, then wrap each as `<implements>`.
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_kind(xot, child).as_deref() == Some("type_list") {
+            let inner: Vec<XotNode> = xot.children(child)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for inner_child in inner {
+                xot.detach(inner_child)?;
+                xot.insert_before(child, inner_child)?;
+            }
+            xot.detach(child)?;
+        }
+    }
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
@@ -76,6 +109,7 @@ pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         xot.detach(child)?;
         xot.append(impl_node, child)?;
         xot.with_attr(impl_node, "field", "implements");
+        xot.with_attr(impl_node, "list", "true");
     }
     Ok(TransformAction::Flatten)
 }

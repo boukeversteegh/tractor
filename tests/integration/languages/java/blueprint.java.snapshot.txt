@@ -40,8 +40,8 @@ program/
   │   │   └─ extends/type[generic]/
   │   │       ├─ name = "Comparable"
   │   │       └─ type/name = "T"
-  │   ├─ extends/type/name = "Base"
-  │   ├─ implements/type[generic]/
+  │   ├─ extends[@list="true"]/type/name = "Base"
+  │   ├─ implements[@list="true"]/type[generic]/
   │   │   ├─ name = "Handler"
   │   │   └─ type/name = "T"
   │   └─ body/
@@ -107,7 +107,7 @@ program/
   │       │   ├─ parameter/
   │       │   │   ├─ type/name = "T"
   │       │   │   └─ name = "input"
-  │       │   ├─ throws/type/name = "IllegalArgumentException"
+  │       │   ├─ throws[@list="true"]/type/name = "IllegalArgumentException"
   │       │   └─ body/if/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "input"
@@ -222,7 +222,7 @@ program/
   │       │       ├─ parameter/
   │       │       │   ├─ type/name = "U"
   │       │       │   └─ name = "input"
-  │       │       └─ throws/type/name = "IllegalArgumentException"
+  │       │       └─ throws[@list="true"]/type/name = "IllegalArgumentException"
   │       ├─ enum[public]/
   │       │   ├─ name = "Color"
   │       │   └─ body/
@@ -408,7 +408,7 @@ program/
           ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "resources"
-          │   ├─ throws/type/name = "Exception"
+          │   ├─ throws[@list="true"]/type/name = "Exception"
           │   └─ body/
           │       ├─ try[resource]/
           │       │   ├─ variable/

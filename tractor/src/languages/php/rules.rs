@@ -142,7 +142,12 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::Argument                  => Rename(Argument),
         PhpKind::ArrayCreationExpression   => Rename(Array),
         PhpKind::Attribute                 => Rename(Attribute),
-        PhpKind::BaseClause                => Rename(Extends),
+        // `class Foo extends Bar` — PHP allows only one parent class.
+        // Wrap in `<extends field="extends">` so JSON serializers
+        // produce a uniform `extends: [...]` array regardless of
+        // single/multi (Principle #12 — field attribute on
+        // collapsed-list children).
+        PhpKind::BaseClause                => Custom(transformations::base_clause),
         PhpKind::Boolean                   => Rename(Bool),
         PhpKind::BreakStatement            => RenameStripKeyword(Break, "break"),
         PhpKind::CaseStatement             => Rename(Case),

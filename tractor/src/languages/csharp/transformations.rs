@@ -45,6 +45,7 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         xot.detach(child)?;
         xot.append(extends_node, child)?;
         xot.with_attr(extends_node, "field", "extends");
+        xot.with_attr(extends_node, "list", "true");
     }
     Ok(TransformAction::Flatten)
 }

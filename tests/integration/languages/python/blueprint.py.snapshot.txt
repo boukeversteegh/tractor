@@ -257,11 +257,11 @@ module/
   │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Meta"
-  │   ├─ extends/name = "type"
+  │   ├─ extends[@list="true"]/name = "type"
   │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Derived"
-  │   ├─ extends/name = "Base"
+  │   ├─ extends[@list="true"]/name = "Base"
   │   ├─ argument/
   │   │   ├─ name = "metaclass"
   │   │   └─ value/expression/name = "Meta"

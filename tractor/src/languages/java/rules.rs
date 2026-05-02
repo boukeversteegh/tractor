@@ -127,7 +127,10 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // produce multiple `<implements>` siblings, one per interface.
         // Drops the literal `implements` keyword text leaf.
         JavaKind::SuperInterfaces             => Custom(transformations::super_interfaces),
-        JavaKind::Superclass                  => Rename(Extends),
+        // `class Foo extends Bar` — Java allows only one parent class.
+        // Wrap in `<extends field="extends">` for JSON-array
+        // consistency (Principle #12).
+        JavaKind::Superclass                  => Custom(transformations::superclass),
         // `switch_expression.body` field already wraps this in <body>;
         // flatten avoids double-nested <body><body>...</body></body>.
         JavaKind::SwitchBlock                 => Flatten { distribute_field: None },

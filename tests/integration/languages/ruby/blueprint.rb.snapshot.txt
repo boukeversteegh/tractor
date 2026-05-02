@@ -68,7 +68,7 @@ program/
   │       │                   └─ right/expression/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
-  │           ├─ extends/name = "Base"
+  │           ├─ extends[@list="true"]/name = "Base"
   │           └─ body/
   │               ├─ expression/call/
   │               │   ├─ name = "include"

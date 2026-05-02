@@ -76,8 +76,14 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                             let child_field = child_attrs.iter()
                                 .find(|(k, _)| k == "field")
                                 .map(|(_, v)| v.clone());
+                            let is_list_field = child_attrs.iter()
+                                .any(|(k, v)| k == "list" && v == "true");
                             let val = xml_node_to_json_inner(child, max_depth, depth + 1);
-                            content_children.push(ChildEntry { field: child_field, value: val });
+                            content_children.push(ChildEntry {
+                                field: child_field,
+                                value: val,
+                                is_list_field,
+                            });
                         }
                     }
                     XmlNode::Text(text) => {
@@ -120,14 +126,21 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
 
             // Group entries with the same field name into an array
             // (Principle #12 Flat Lists): sibling `<parameter field="parameters">`
-            // elements become a `"parameters": [...]` array, while a singleton
-            // `<name field="name">` stays a scalar property.
+            // elements become a `"parameters": [...]` array. Singleton
+            // field wrappers (e.g. `<name field="name">`) stay as
+            // scalar properties — except when the element ALSO carries
+            // a `list="true"` attribute, which forces array form so
+            // consumers don't branch on scalar-vs-array (used for
+            // multi-target relationships like extends/implements/throws
+            // where exactly one target is a valid case but the field
+            // is conceptually always a list).
             let mut array_children: Vec<Value> = Vec::new();
             for entry in content_children {
                 if is_anon_text_entry(&entry) {
                     continue;
                 }
                 if let Some(field_name) = entry.field {
+                    let force_array = entry.is_list_field;
                     match obj.remove(&field_name) {
                         Some(Value::Array(mut arr)) => {
                             arr.push(entry.value);
@@ -137,7 +150,11 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                             obj.insert(field_name, Value::Array(vec![existing, entry.value]));
                         }
                         None => {
-                            obj.insert(field_name, entry.value);
+                            if force_array {
+                                obj.insert(field_name, Value::Array(vec![entry.value]));
+                            } else {
+                                obj.insert(field_name, entry.value);
+                            }
                         }
                     }
                 } else {
@@ -189,6 +206,7 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
 struct ChildEntry {
     field: Option<String>,
     value: Value,
+    is_list_field: bool,
 }
 
 fn is_anon_text_entry(entry: &ChildEntry) -> bool {

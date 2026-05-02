@@ -85,9 +85,8 @@ fn java_vocabulary() {
                 [generic[name='T']
                     [extends/type[name='Animal']]]
                 [extends/type[name='Animal']]
-                [implements
-                    [type[name='Barker']]
-                    [type[name='Runner']]]
+                [implements/type[name='Barker']]
+                [implements/type[name='Runner']]
                 [body/field
                     [declarator/name='a']
                     [type[name='int']]]

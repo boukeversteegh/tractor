@@ -101,6 +101,17 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
     Ok(TransformAction::Continue)
 }
 
+/// `superclass` — `class Foo < Base`. Renames to `<extends>` with
+/// `field="extends"` so JSON serializers produce a uniform
+/// `extends: [...]` array (Principle #12 + #18).
+pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    xot.with_renamed(node, Extends)
+        .with_attr(node, "field", "extends")
+        .with_attr(node, "list", "true");
+    Ok(TransformAction::Continue)
+}
+
 /// `comment` — Ruby uses `#` for line comments. Rename and run the
 /// shared classifier.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

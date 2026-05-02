@@ -184,7 +184,7 @@ program/
   │   │   └─ value/expression/type[default]/type[generic]/
   │   │       ├─ name = "Shape"
   │   │       └─ type/name = "number"
-  │   ├─ extends/
+  │   ├─ extends[@list="true"]/
   │   │   ├─ type/name = "Base"
   │   │   └─ type/name = "T"
   │   └─ body/
