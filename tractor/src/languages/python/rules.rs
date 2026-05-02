@@ -111,7 +111,11 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::AsPattern             => Rename(As),
         PyKind::AssertStatement       => Rename(Assert),
         PyKind::Assignment            => Rename(Assign),
-        PyKind::Attribute             => Rename(Member),
+        // `obj.attr` — receiver and accessed-attribute play different
+        // roles. Per Principle #19: each role gets a slot-named
+        // container (`<object>` / `<property>`). Matches TS / Java
+        // (iter 147) shape.
+        PyKind::Attribute             => Custom(transformations::attribute),
         PyKind::BreakStatement        => RenameStripKeyword(Break, "break"),
         PyKind::Call                  => Rename(Call),
         PyKind::CaseClause            => Rename(Arm),

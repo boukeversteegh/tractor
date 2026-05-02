@@ -24,8 +24,8 @@ file/
   │   ├─ name = "ErrNotFound"
   │   └─ value/expression/call/
   │       ├─ member/
-  │       │   ├─ name = "errors"
-  │       │   └─ name = "New"
+  │       │   ├─ object/name = "errors"
+  │       │   └─ property/name = "New"
   │       └─ string[@list="arguments"] = "\"not found\""
   ├─ var[@list="var"]/
   │   ├─ name = "globalCount"
@@ -124,13 +124,13 @@ file/
   │   │   └─ type/name = "T"
   │   └─ body/assign[@list="assign"]/
   │       ├─ left/expression/member/
-  │       │   ├─ name = "c"
-  │       │   └─ name = "items"
+  │       │   ├─ object/name = "c"
+  │       │   └─ property/name = "items"
   │       └─ right/expression/call/
   │           ├─ name = "append"
   │           ├─ member[@list="arguments"]/
-  │           │   ├─ name = "c"
-  │           │   └─ name = "items"
+  │           │   ├─ object/name = "c"
+  │           │   └─ property/name = "items"
   │           └─ name[@list="arguments"] = "v"
   ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
@@ -140,15 +140,15 @@ file/
   │   ├─ returns/type/name = "string"
   │   └─ body/return[@list="return"]/expression/call/
   │       ├─ member/
-  │       │   ├─ name = "fmt"
-  │       │   └─ name = "Sprintf"
+  │       │   ├─ object/name = "fmt"
+  │       │   └─ property/name = "Sprintf"
   │       ├─ string[@list="arguments"] = "\"(%d,%d)\""
   │       ├─ member[@list="arguments"]/
-  │       │   ├─ name = "p"
-  │       │   └─ name = "X"
+  │       │   ├─ object/name = "p"
+  │       │   └─ property/name = "X"
   │       └─ member[@list="arguments"]/
-  │           ├─ name = "p"
-  │           └─ name = "Y"
+  │           ├─ object/name = "p"
+  │           └─ property/name = "Y"
   ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
@@ -161,13 +161,13 @@ file/
   │   └─ body/
   │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/member/
-  │       │   │   ├─ name = "p"
-  │       │   │   └─ name = "X"
+  │       │   │   ├─ object/name = "p"
+  │       │   │   └─ property/name = "X"
   │       │   └─ right/expression/name = "dx"
   │       └─ assign[@list="assign"]/
   │           ├─ left/expression/member/
-  │           │   ├─ name = "p"
-  │           │   └─ name = "Y"
+  │           │   ├─ object/name = "p"
+  │           │   └─ property/name = "Y"
   │           └─ right/expression/name = "dy"
   ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
@@ -176,8 +176,8 @@ file/
   │   ├─ name = "Error"
   │   ├─ returns/type/name = "string"
   │   └─ body/return[@list="return"]/expression/member/
-  │       ├─ name = "e"
-  │       └─ name = "msg"
+  │       ├─ object/name = "e"
+  │       └─ property/name = "msg"
   ├─ function[unexported and @list="function"]/
   │   ├─ name = "wrap"
   │   ├─ parameter[@list="parameters"]/
@@ -186,8 +186,8 @@ file/
   │   ├─ returns/type/name = "error"
   │   └─ body/return[@list="return"]/expression/call/
   │       ├─ member/
-  │       │   ├─ name = "fmt"
-  │       │   └─ name = "Errorf"
+  │       │   ├─ object/name = "fmt"
+  │       │   └─ property/name = "Errorf"
   │       ├─ string[@list="arguments"] = "\"wrap: %w\""
   │       └─ name[@list="arguments"] = "err"
   ├─ function[unexported and @list="function"]/
@@ -430,12 +430,12 @@ file/
   │       ├─ case/
   │       │   ├─ type/name = "Stringer"
   │       │   └─ return/expression/call/member/
-  │       │       ├─ name = "v"
-  │       │       └─ name = "String"
+  │       │       ├─ object/name = "v"
+  │       │       └─ property/name = "String"
   │       └─ default/return/expression/call/
   │           ├─ member/
-  │           │   ├─ name = "fmt"
-  │           │   └─ name = "Sprintf"
+  │           │   ├─ object/name = "fmt"
+  │           │   └─ property/name = "Sprintf"
   │           ├─ string[@list="arguments"] = "\"%T\""
   │           └─ name[@list="arguments"] = "v"
   └─ function[unexported and @list="function"]/
@@ -466,8 +466,8 @@ file/
           │   │   │   ├─ expression/name = "x"
           │   │   │   └─ expression/name = "err"
           │   │   └─ right/expression/call/member/
-          │   │       ├─ name = "io"
-          │   │       └─ name = "Pipe"
+          │   │       ├─ object/name = "io"
+          │   │       └─ property/name = "Pipe"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "err"
           │   │   ├─ op[inequality] = "!="
@@ -538,8 +538,8 @@ file/
           │       └─ op[increment] = "++"
           ├─ go[@list="go"]/call/closure/body/expression[@list="expression"]/call/
           │   ├─ member/
-          │   │   ├─ name = "fmt"
-          │   │   └─ name = "Println"
+          │   │   ├─ object/name = "fmt"
+          │   │   └─ property/name = "Println"
           │   └─ string[@list="arguments"] = "\"bg\""
           ├─ labeled[@list="labeled"]/
           │   ├─ label = "Outer"
@@ -569,8 +569,8 @@ file/
           │           ├─ receive/right/expression/unary/
           │           │   ├─ op[receive] = "<-"
           │           │   └─ call/member/
-          │           │       ├─ name = "ctx"
-          │           │       └─ name = "Done"
+          │           │       ├─ object/name = "ctx"
+          │           │       └─ property/name = "Done"
           │           └─ goto/label = "cleanup"
           ├─ labeled[@list="labeled"]/
           │   ├─ label = "cleanup"
@@ -657,8 +657,8 @@ file/
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/call/
           │   │   │   ├─ member/
-          │   │   │   │   ├─ name = "errors"
-          │   │   │   │   └─ name = "As"
+          │   │   │   │   ├─ object/name = "errors"
+          │   │   │   │   └─ property/name = "As"
           │   │   │   ├─ name[@list="arguments"] = "err"
           │   │   │   └─ unary[@list="arguments"]/
           │   │   │       ├─ op[bitwise and and] = "&"
@@ -666,8 +666,8 @@ file/
           │   │   ├─ op[logical and or] = "||"
           │   │   └─ right/expression/call/
           │   │       ├─ member/
-          │   │       │   ├─ name = "errors"
-          │   │       │   └─ name = "Is"
+          │   │       │   ├─ object/name = "errors"
+          │   │       │   └─ property/name = "Is"
           │   │       ├─ name[@list="arguments"] = "err"
           │   │       └─ name[@list="arguments"] = "ErrNotFound"
           │   └─ then/return/expression/name = "err"

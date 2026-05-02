@@ -19,6 +19,31 @@ use super::output::TractorNode::{
     Generic, Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
+/// `attribute` — `obj.attr`. Wraps the object and attribute names in
+/// role-named containers (`<object>` / `<property>`) so the two
+/// `<name>` siblings under `<member>` no longer collide on element
+/// name. Matches TS/Java member-access shape (Principle #19).
+pub fn attribute(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Member, Object, Property};
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        let wrapper = match field.as_deref() {
+            Some("object") => Object,
+            Some("attribute") => Property,
+            _ => continue,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Member);
+    Ok(TransformAction::Continue)
+}
+
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Python's `expression_statement`
 /// is also used for plain `assignment`s in tree-sitter's grammar; let

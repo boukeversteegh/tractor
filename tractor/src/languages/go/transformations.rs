@@ -19,6 +19,32 @@ use super::output::TractorNode::{
     Unexported, Variable,
 };
 
+/// `selector_expression` — `obj.field`. Wraps the operand and field
+/// names in role-named containers (`<object>` / `<property>`) so
+/// the two `<name>` siblings under `<member>` no longer collide on
+/// element name. Matches TS/Java/Python member-access shape
+/// (Principle #19).
+pub fn selector_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Member, Object, Property};
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        let wrapper = match field.as_deref() {
+            Some("operand") => Object,
+            Some("field") => Property,
+            _ => continue,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Member);
+    Ok(TransformAction::Continue)
+}
+
 /// `type_instantiation_expression` — `Map[int, string]` standalone
 /// (e.g. `var mapper = Map[int, string]`). Tree-sitter emits the
 /// head type and each argument as flat siblings of the wrapper. Per

@@ -26,8 +26,9 @@ pub enum TractorNode {
     // Python 2 leftovers (kept as own elements; rare in modern code)
     Exec, Print,
     // Expressions
-    Call, Member, Subscript, Assign, Binary, Unary, Compare, Logical, Await, Yield, Generator,
-    Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation, Expression,
+    Call, Member, Object, Property, Subscript, Assign, Binary, Unary, Compare, Logical, Await,
+    Yield, Generator, Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation,
+    Expression,
     // Function-signature separators
     Keyword, Positional,
     // Collection containers (dual-use marker/container)

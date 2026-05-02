@@ -41,6 +41,32 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `field_access` — `obj.field`. Wraps the object identifier and the
+/// accessed-field identifier in role-named containers (`<object>` /
+/// `<property>`) so the two `<name>` siblings under `<member>` no
+/// longer collide on element name and JSON-serialize as named
+/// properties (Principle #19 role-mixed wrap; matches TS shape).
+pub fn field_access(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Member, Object, Property};
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        let wrapper = match field.as_deref() {
+            Some("object") => Object,
+            Some("field") => Property,
+            _ => continue,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Member);
+    Ok(TransformAction::Continue)
+}
+
 /// `superclass` — `class Foo extends Bar` (Java allows only one).
 /// Renames to `<extends>` and adds `field="extends"` for JSON-array
 /// consistency (Principle #12 — field attribute on collapsed-list

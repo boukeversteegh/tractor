@@ -179,8 +179,8 @@ module/
   │           ├─ assign[@list="assign"]/
   │           │   ├─ left/expression/name = "data"
   │           │   └─ right/expression[await]/call/member/
-  │           │       ├─ name = "conn"
-  │           │       └─ name = "read"
+  │           │       ├─ object/name = "conn"
+  │           │       └─ property/name = "read"
   │           └─ return[@list="return"]/expression/name = "data"
   ├─ function[@list="function"]/
   │   ├─ name = "gen_demo"
@@ -280,8 +280,8 @@ module/
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign[@list="assign"]/
   │       │       ├─ left/expression/member/
-  │       │       │   ├─ name = "self"
-  │       │       │   └─ name = "name"
+  │       │       │   ├─ object/name = "self"
+  │       │       │   └─ property/name = "name"
   │       │       └─ right/expression/name = "name"
   │       └─ function[public and @list="function"]/
   │           ├─ name = "__eq__"
@@ -295,12 +295,12 @@ module/
   │               ├─ op[logical and and] = "and"
   │               └─ right/expression/compare/
   │                   ├─ member/
-  │                   │   ├─ name = "self"
-  │                   │   └─ name = "name"
+  │                   │   ├─ object/name = "self"
+  │                   │   └─ property/name = "name"
   │                   ├─ op[equals] = "=="
   │                   └─ member/
-  │                       ├─ name = "other"
-  │                       └─ name = "name"
+  │                       ├─ object/name = "other"
+  │                       └─ property/name = "name"
   ├─ function[@list="function"]/
   │   ├─ name = "control_flow"
   │   ├─ parameter[@list="parameters"]/name = "items"
@@ -380,11 +380,11 @@ module/
   │       │   │   └─ name = "fb"
   │       │   └─ body/
   │       │       ├─ expression[@list="expression"]/call/member/
-  │       │       │   ├─ name = "fa"
-  │       │       │   └─ name = "read"
+  │       │       │   ├─ object/name = "fa"
+  │       │       │   └─ property/name = "read"
   │       │       └─ expression[@list="expression"]/call/member/
-  │       │           ├─ name = "fb"
-  │       │           └─ name = "read"
+  │       │           ├─ object/name = "fb"
+  │       │           └─ property/name = "read"
   │       └─ return[@list="return"]/expression/name = "total"
   ├─ function[@list="function"]/
   │   ├─ name = "match_demo"
@@ -455,8 +455,8 @@ module/
   │       │       │   ├─ expression/name = "k"
   │       │       │   └─ expression/name = "v"
   │       │       ├─ right/expression/call/member/
-  │       │       │   ├─ name = "data"
-  │       │       │   └─ name = "items"
+  │       │       │   ├─ object/name = "data"
+  │       │       │   └─ property/name = "items"
   │       │       └─ name = "v"
   │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/name = "uniq"
@@ -634,8 +634,8 @@ module/
   ├─ alias[@list="alias"]/
   │   ├─ left/type/name = "Containing"
   │   └─ right/type/member/
-  │       ├─ name = "OrderedDict"
-  │       └─ name = "Foo"
+  │       ├─ object/name = "OrderedDict"
+  │       └─ property/name = "Foo"
   └─ function[@list="function"]/
       ├─ name = "patterns_and_misc"
       ├─ parameter[@list="parameters"]/name = "values"

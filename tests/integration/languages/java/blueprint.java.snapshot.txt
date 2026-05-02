@@ -82,8 +82,8 @@ program/
   │       │       ├─ call[super and @list="call"]
   │       │       └─ expression[@list="expression"]/assign/
   │       │           ├─ left/expression/member/
-  │       │           │   ├─ this = "this"
-  │       │           │   └─ name = "name"
+  │       │           │   ├─ object/this = "this"
+  │       │           │   └─ property/name = "name"
   │       │           ├─ op = "="
   │       │           └─ right/expression/name = "name"
   │       ├─ method[public and static and @list="method"]/

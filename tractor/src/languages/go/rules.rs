@@ -142,7 +142,11 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::ReturnStatement          => RenameStripKeyword(Return, "return"),
         GoKind::RuneLiteral              => Rename(Char),
         GoKind::SelectStatement          => Rename(Select),
-        GoKind::SelectorExpression       => Rename(Member),
+        // `obj.field` — receiver and accessed-field play different
+        // roles. Per Principle #19: each role gets a slot-named
+        // container (`<object>` / `<property>`). Matches TS / Java /
+        // Python (iter 147) shape.
+        GoKind::SelectorExpression       => Custom(transformations::selector_expression),
         GoKind::SendStatement            => Rename(Send),
         GoKind::SliceType                => Rename(Slice),
         GoKind::SourceFile               => Rename(File),

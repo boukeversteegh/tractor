@@ -102,7 +102,12 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::EnhancedForStatement        => Rename(Foreach),
         JavaKind::EnumConstant                => Rename(Constant),
         JavaKind::False                       => Rename(False),
-        JavaKind::FieldAccess                 => Rename(Member),
+        // `obj.field` — receiver and accessed property play different
+        // roles. Per Principle #19 (role-mixed wrap): each role gets a
+        // slot-named container so two `<name>` siblings don't rely on
+        // sibling order to disambiguate. Matches TypeScript's
+        // `<member><object/><property/></member>` shape (iter 147).
+        JavaKind::FieldAccess                 => Custom(transformations::field_access),
         JavaKind::FinallyClause               => Rename(Finally),
         JavaKind::ForStatement                => Rename(For),
         JavaKind::FormalParameter             => Rename(Parameter),
