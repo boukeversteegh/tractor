@@ -308,8 +308,14 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // `[assembly: Attr]` — the global attribute container.
         CsKind::GlobalAttribute         => Rename(Attribute),
 
-        // `Bar(x)` in `class Foo(int x) : Bar(x)` — primary ctor base type.
-        CsKind::PrimaryConstructorBaseType => Rename(Extends),
+        // `Bar(x)` in `class Foo(int x) : Bar(x)` — primary ctor base
+        // type. Flatten so the inner identifier + argument_list lift
+        // into base_list as flat siblings; the base_list Custom
+        // handler groups the args into the preceding type's
+        // `<extends>` (iter 130). Renaming this to `<extends>`
+        // directly produced `<extends>/<extends>` nesting because
+        // base_list also wraps it in `<extends>`.
+        CsKind::PrimaryConstructorBaseType => Flatten { distribute_field: None },
 
         // ---- Structural supertypes / wrappers (flatten, promote children) ---
         CsKind::AliasQualifiedName      => Flatten { distribute_field: None },

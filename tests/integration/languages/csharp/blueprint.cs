@@ -36,6 +36,9 @@ namespace Tractor.Fixtures.Traditional
 
     public record Money(decimal Amount, string Currency);
 
+    public record TaxedMoney(decimal Amount, string Currency, decimal TaxRate)
+        : Money(Amount, Currency);
+
     [Serializable, Obsolete("use V2", false)]
     public abstract partial class EntityBase
     {

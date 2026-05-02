@@ -187,6 +187,21 @@ unit/
   │   │   └─ parameter[@list="true"]/
   │   │       ├─ type/name = "string"
   │   │       └─ name = "Currency"
+  │   ├─ record[public]/
+  │   │   ├─ name = "TaxedMoney"
+  │   │   ├─ parameter[@list="true"]/
+  │   │   │   ├─ type/name = "decimal"
+  │   │   │   └─ name = "Amount"
+  │   │   ├─ parameter[@list="true"]/
+  │   │   │   ├─ type/name = "string"
+  │   │   │   └─ name = "Currency"
+  │   │   ├─ parameter[@list="true"]/
+  │   │   │   ├─ type/name = "decimal"
+  │   │   │   └─ name = "TaxRate"
+  │   │   └─ extends[@list="true"]/
+  │   │       ├─ type/name = "Money"
+  │   │       ├─ argument[@list="true"]/name = "Amount"
+  │   │       └─ argument[@list="true"]/name = "Currency"
   │   ├─ class[public and abstract and partial]/
   │   │   ├─ attribute[@list="true"]/name = "Serializable"
   │   │   ├─ attribute[@list="true"]/
