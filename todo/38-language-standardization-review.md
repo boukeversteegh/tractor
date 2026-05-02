@@ -236,6 +236,11 @@ findings:
   cleanly).
 - iter 100: Java `default ->` switch label uses `[default]` marker
   (introduces `Default` dual-use enum variant).
+- iter 102: Java `super()` / `this()` constructor invocations
+  drop the keyword text and parens noise — `<call[super]/>` /
+  `<call[this]>argument...</call>`.
+- iter 103: Go `type Container[T any]` wraps generic params in
+  `<generics>` (via `type_parameters` field-wrap config).
 
 Decisions queued for review (renames are mechanical):
 - `[keyword]` marker name on pattern (vs `kwarg`, `kw`) — kept
