@@ -1311,7 +1311,10 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     java_unwrap_type_in_path(xot, root)?;
-    crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
+    crate::transform::strip_body_braces(
+        xot, root,
+        &["body", "block", "then", "else", "call"],
+    )?;
     Ok(())
 }
 

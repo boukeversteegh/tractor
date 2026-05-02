@@ -79,7 +79,7 @@ program/
   │       │   │   ├─ type/name = "String"
   │       │   │   └─ name = "name"
   │       │   └─ body/
-  │       │       ├─ call[super] = "super();"
+  │       │       ├─ call[super]
   │       │       └─ expression/assign/
   │       │           ├─ left/expression/member/
   │       │           │   ├─ this = "this"

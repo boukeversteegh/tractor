@@ -322,11 +322,25 @@ pub fn explicit_constructor_invocation(
             Some(JavaKind::Super) => Super,
             _ => continue,
         };
-        let text = get_text_content(xot, child).unwrap_or_default();
         xot.detach(child)?;
-        let marker = prepend_empty_element(xot, node, tag)?;
-        xot.with_inserted_text_after(marker, &text)?;
+        prepend_empty_element(xot, node, tag)?;
         break;
+    }
+    // Strip remaining `(`/`)`/`;` punctuation text leaves so the call
+    // is clean (the `[this]` / `[super]` marker captures the keyword).
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            let trimmed = text.trim();
+            if trimmed.is_empty()
+                || trimmed == "("
+                || trimmed == ")"
+                || trimmed == ";"
+                || trimmed == "()"
+                || trimmed == "();"
+            {
+                xot.detach(child)?;
+            }
+        }
     }
     xot.with_renamed(node, Call);
     Ok(TransformAction::Continue)
