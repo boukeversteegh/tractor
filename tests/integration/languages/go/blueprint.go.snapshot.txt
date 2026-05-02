@@ -47,10 +47,10 @@ file/
   │       └─ returns/type/name = "string"
   ├─ interface[exported]/
   │   ├─ name = "ReadStringer"
-  │   ├─ type/
+  │   ├─ extends[@list="true"]/type/
   │   │   ├─ name = "io"
   │   │   └─ name = "Reader"
-  │   ├─ type/name = "Stringer"
+  │   ├─ extends[@list="true"]/type/name = "Stringer"
   │   └─ method/
   │       ├─ name = "Close"
   │       └─ returns/type/name = "error"

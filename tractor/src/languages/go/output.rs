@@ -31,6 +31,8 @@ pub enum TractorNode {
     Field, Parameter, Arguments, Spread,
     // Types (Slice dual-use after iter 12: type vs. slice-expression marker)
     Pointer, Slice, Map, Chan, Array,
+    // Inheritance / interface embedding (cross-language)
+    Extends,
     // Statements / control flow
     Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
     Break, Continue, Goto, Labeled, Label, Send, Receive, Assign, Fallthrough,

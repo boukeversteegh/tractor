@@ -170,6 +170,15 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     if let Some(inner) = inner {
         let inner_kind = get_kind(xot, inner).and_then(|kind| kind.parse::<GoKind>().ok());
         let new_name = if inner_kind == Some(GoKind::StructType) { Struct } else { Interface };
+        // For interface types, wrap each embedding entry (a `type_elem`
+        // with a single plain-type child) in `<extends>` so
+        // cross-language `//interface/extends/type[name='X']` finds Go's
+        // embedded interfaces. Type-set elements (negated_type, unions
+        // involving `|`) keep their shape — they're constraint types,
+        // not parent types.
+        if inner_kind == Some(GoKind::InterfaceType) {
+            wrap_interface_embeds_in_extends(xot, inner)?;
+        }
         xot.with_renamed(node, new_name);
         let inner_children: Vec<_> = xot.children(inner).collect();
         for c in inner_children {
@@ -181,6 +190,46 @@ pub fn type_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         xot.with_renamed(node, Type);
     }
     Ok(TransformAction::Continue)
+}
+
+fn wrap_interface_embeds_in_extends(
+    xot: &mut Xot,
+    interface_type_node: XotNode,
+) -> Result<(), xot::Error> {
+    use super::output::TractorNode::Extends;
+    let elem_children: Vec<XotNode> = xot.children(interface_type_node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_kind(xot, child).as_deref() != Some("type_elem") {
+            continue;
+        }
+        let inner_elements: Vec<XotNode> = xot.children(child)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        if inner_elements.len() != 1 {
+            continue;
+        }
+        let inner_kind = get_kind(xot, inner_elements[0]);
+        let is_plain_type = matches!(
+            inner_kind.as_deref(),
+            Some("qualified_type")
+                | Some("type_identifier")
+                | Some("generic_type")
+        );
+        if !is_plain_type {
+            continue;
+        }
+        let ext_elt = xot.add_name(Extends.as_str());
+        let ext_node = xot.new_element(ext_elt);
+        xot.with_source_location_from(ext_node, child)
+            .with_attr(ext_node, "field", "extends")
+            .with_attr(ext_node, "list", "true");
+        xot.insert_before(child, ext_node)?;
+        xot.detach(child)?;
+        xot.append(ext_node, child)?;
+    }
+    Ok(())
 }
 
 /// `type_alias` (`type Color = int`) — distinct from `type MyInt int`.
