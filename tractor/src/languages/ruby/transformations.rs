@@ -65,10 +65,13 @@ pub fn method_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction
     parameters(xot, node, Some("parameters"))
 }
 
-/// `block_parameters` / `lambda_parameters` adapter — no field
-/// distribution (matches the previous bare-Flatten rule).
+/// `block_parameters` / `lambda_parameters` adapter — distributes
+/// the same `parameters` field as method_parameters so within-Ruby
+/// (Principle #5) block params and method params share one shape.
+/// Each parameter ends up with `field="parameters" list="true"` so
+/// JSON output is uniformly an array regardless of count.
 pub fn block_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    parameters(xot, node, None)
+    parameters(xot, node, Some("parameters"))
 }
 
 /// `<name>` field wrapper inserted by the builder. Inline single

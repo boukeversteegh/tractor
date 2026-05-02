@@ -174,8 +174,8 @@ program/
   │               │       │   │   └─ name = "each_with_index"
   │               │       │   ├─ name = "map"
   │               │       │   └─ block/
-  │               │       │       ├─ parameter/name = "it"
-  │               │       │       ├─ parameter/name = "i"
+  │               │       │       ├─ parameter[@list="true"]/name = "it"
+  │               │       │       ├─ parameter[@list="true"]/name = "i"
   │               │       │       └─ body/expression/string/
   │               │       │           ├─ interpolation/name = "i"
   │               │       │           └─ interpolation/name = "it"
@@ -275,7 +275,7 @@ program/
   │       │   ├─ name = "items"
   │       │   ├─ name = "each"
   │       │   └─ block[do]/
-  │       │       ├─ parameter/name = "x"
+  │       │       ├─ parameter[@list="true"]/name = "x"
   │       │       └─ body/if/
   │       │           ├─ condition/expression/call/
   │       │           │   ├─ name = "x"
@@ -361,8 +361,8 @@ program/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "adder"
   │       │   └─ right/expression/lambda/
-  │       │       ├─ parameter/name = "a"
-  │       │       ├─ parameter/name = "b"
+  │       │       ├─ parameter[@list="true"]/name = "a"
+  │       │       ├─ parameter[@list="true"]/name = "b"
   │       │       └─ body/block/body/expression/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
@@ -372,7 +372,7 @@ program/
   │       │   └─ right/expression/call/
   │       │       ├─ name = "proc"
   │       │       └─ block/
-  │       │           ├─ parameter/name = "n"
+  │       │           ├─ parameter[@list="true"]/name = "n"
   │       │           └─ body/expression/binary/
   │       │               ├─ left/expression/name = "n"
   │       │               ├─ op[multiply] = "*"
