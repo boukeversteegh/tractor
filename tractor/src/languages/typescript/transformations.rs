@@ -232,17 +232,71 @@ pub fn formal_parameters(
     Ok(TransformAction::Flatten)
 }
 
-/// `extends_clause` — `class Foo extends Bar`. TS classes only allow
-/// one extends so this is always single-target. Tree-sitter tags
-/// the base-class identifier as `field="value"`; retag as `<type>`
-/// for the uniform namespace vocabulary, then add `field="extends"`
-/// for JSON array consistency.
+/// `extends_clause` — `class Foo extends Bar` or `extends Base<T>`.
+/// TS classes only allow one extends.
+///
+/// Tree-sitter quirk: inside `extends_clause`, a generic base like
+/// `Base<T>` is emitted as flat sibling children
+/// (`identifier "Base"` + `type_arguments<T>`) rather than nested
+/// inside a `generic_type` node like every other type position.
+/// Synthesize a `generic_type` wrapper around the pair so the
+/// existing `generic_type` handler (run when the walker descends)
+/// produces the canonical `<type[generic]>{name=Base, type=T}` shape.
+///
+/// After the synthetic wrap, retag the `<value>` field-wrapper (used
+/// for non-generic forms) as `<type>` for the uniform namespace
+/// vocabulary, then add `field="extends"` and `list="true"` for JSON
+/// array consistency.
 pub fn extends_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    synthesize_generic_type_in_extends(xot, node)?;
     retag_value_as_type(xot, node)?;
     xot.with_renamed(node, Extends)
         .with_attr(node, "field", "extends")
         .with_attr(node, "list", "true");
     Ok(TransformAction::Continue)
+}
+
+/// Detect a base-name child + `type_arguments` sibling inside an
+/// extends_clause and combine them into a synthetic `generic_type`
+/// element so the walker's normal handler produces the canonical
+/// generic-type shape.
+///
+/// The base-name child is the `<value>` field-wrapper inserted by the
+/// builder (extends_clause's value field carries the parent class
+/// identifier).
+fn synthesize_generic_type_in_extends(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<(), xot::Error> {
+    let children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    let value_wrapper = children.iter().copied().find(|&c|
+        get_element_name(xot, c).as_deref() == Some("value")
+    );
+    let type_args = children.iter().copied().find(|&c|
+        get_kind(xot, c).as_deref() == Some("type_arguments")
+    );
+    let (value, args) = match (value_wrapper, type_args) {
+        (Some(v), Some(a)) => (v, a),
+        _ => return Ok(()),
+    };
+    let gt_id = xot.add_name("generic_type");
+    let gt = xot.new_element(gt_id);
+    xot.with_source_location_from(gt, value)
+        .with_attr(gt, "kind", "generic_type");
+    xot.insert_before(value, gt)?;
+    let inner_elements: Vec<XotNode> = xot.children(value)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for inner in inner_elements {
+        xot.detach(inner)?;
+        xot.append(gt, inner)?;
+    }
+    xot.detach(value)?;
+    xot.detach(args)?;
+    xot.append(gt, args)?;
+    Ok(())
 }
 
 /// `extends_type_clause` — `interface I extends A, B, C`. Multiple
