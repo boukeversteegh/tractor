@@ -47,7 +47,7 @@ pub enum TractorNode {
     // Import-shape (Path, Alias as containers; Blank, Dot as markers)
     Path, Blank, Dot,
     // Marker-only
-    Raw, Short, Exported, Unexported, Negated, Generic, Implicit,
+    Raw, Short, Exported, Unexported, Approximation, Generic, Implicit,
 }
 
 impl TractorNode {
@@ -70,7 +70,7 @@ impl TractorNode {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
-            | Self::Raw | Self::Short | Self::Negated
+            | Self::Raw | Self::Short | Self::Approximation
             | Self::Implicit
             | Self::Blank | Self::Dot                                              => (true, false, Default),
             // `Generic` is dual-use: marker `[generic]` on `<type>`

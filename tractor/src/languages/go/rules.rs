@@ -31,7 +31,12 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // ---- RenameWithMarker -----------------------------------------
         GoKind::FunctionType        => RenameWithMarker(Type, Function),
         GoKind::GenericType         => RenameWithMarker(Type, Generic),
-        GoKind::NegatedType         => RenameWithMarker(Type, Negated),
+        // `~int` — type approximation in generic constraints, NOT
+        // negation. Means "any type whose underlying type is int".
+        // Marker name matches Go developer terminology (Goal #5,
+        // Principle #1) — `~` is the "tilde / approximation"
+        // operator in the spec, not "negation".
+        GoKind::NegatedType         => RenameWithMarker(Type, Approximation),
         GoKind::TypeSwitchStatement => RenameWithMarker(Switch, Type),
 
         // ---- Flatten with field distribution --------------------------

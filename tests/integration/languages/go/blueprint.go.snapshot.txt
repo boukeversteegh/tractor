@@ -38,8 +38,8 @@ file/
   │       └─ expression/int = "30"
   ├─ interface[exported]/
   │   ├─ name = "Number"
-  │   ├─ type[negated]/type/name = "int"
-  │   └─ type[negated]/type/name = "float64"
+  │   ├─ type[approximation]/type/name = "int"
+  │   └─ type[approximation]/type/name = "float64"
   ├─ interface[exported]/
   │   ├─ name = "Stringer"
   │   └─ method/
