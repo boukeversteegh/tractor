@@ -6,14 +6,14 @@ program/
   │   ├─ name[@list="name"] = "App"
   │   └─ name[@list="name"] = "Blueprint"
   ├─ use[@list="use"]/
-  │   ├─ path/name = "App"
+  │   ├─ path/name[@list="name"] = "App"
   │   └─ name = "Base"
   ├─ use[alias and @list="use"]/
-  │   ├─ path/name = "App"
+  │   ├─ path/name[@list="name"] = "App"
   │   ├─ name = "Logger"
   │   └─ alias/name = "Log"
   ├─ use[group and @list="use"]/
-  │   ├─ path/name = "App"
+  │   ├─ path/name[@list="name"] = "App"
   │   ├─ use/name = "First"
   │   └─ use/name = "Second"
   ├─ comment[leading and @list="comment"] = "/**\n * Demo class with various PHP features.\n */"
