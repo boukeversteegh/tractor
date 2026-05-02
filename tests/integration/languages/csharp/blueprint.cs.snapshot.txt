@@ -535,7 +535,7 @@ unit/
   │               │           │   │   │   │   └─ name = "Where"
   │               │           │   │   │   └─ argument[@list="arguments"]/lambda/
   │               │           │   │   │       ├─ parameter = "n"
-  │               │           │   │   │       └─ body/binary[@list="binary"]/
+  │               │           │   │   │       └─ value/expression/binary/
   │               │           │   │   │           ├─ left/expression/binary/
   │               │           │   │   │           │   ├─ left/expression/name = "n"
   │               │           │   │   │           │   ├─ op[modulo] = "%"
@@ -545,7 +545,7 @@ unit/
   │               │           │   │   └─ name = "Select"
   │               │           │   └─ argument[@list="arguments"]/lambda/
   │               │           │       ├─ parameter = "n"
-  │               │           │       └─ body/binary[@list="binary"]/
+  │               │           │       └─ value/expression/binary/
   │               │           │           ├─ left/expression/name = "n"
   │               │           │           ├─ op[plus] = "+"
   │               │           │           └─ right/expression/int = "1"
@@ -570,7 +570,7 @@ unit/
   │               │       ├─ name = "cube"
   │               │       └─ lambda/
   │               │           ├─ parameter = "x"
-  │               │           └─ body/binary[@list="binary"]/
+  │               │           └─ value/expression/binary/
   │               │               ├─ left/expression/binary/
   │               │               │   ├─ left/expression/name = "x"
   │               │               │   ├─ op[multiply] = "*"
@@ -579,13 +579,26 @@ unit/
   │               │               └─ right/expression/name = "x"
   │               ├─ variable[@list="variable"]/
   │               │   ├─ type[generic]/
+  │               │   │   ├─ name = "Func"
+  │               │   │   ├─ type[@list="arguments"]/name = "int"
+  │               │   │   └─ type[@list="arguments"]/name = "int"
+  │               │   └─ declarator/
+  │               │       ├─ name = "blockLambda"
+  │               │       └─ lambda/
+  │               │           ├─ parameter = "x"
+  │               │           └─ body/block[@list="block"]/return[@list="return"]/expression/binary/
+  │               │               ├─ left/expression/name = "x"
+  │               │               ├─ op[plus] = "+"
+  │               │               └─ right/expression/int = "1"
+  │               ├─ variable[@list="variable"]/
+  │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Action"
   │               │   │   └─ type[@list="arguments"]/name = "string"
   │               │   └─ declarator/
   │               │       ├─ name = "log"
   │               │       └─ lambda/
   │               │           ├─ parameter = "msg"
-  │               │           └─ body/call[@list="call"]/
+  │               │           └─ value/expression/call/
   │               │               ├─ member[instance]/
   │               │               │   ├─ name = "Console"
   │               │               │   └─ name = "WriteLine"

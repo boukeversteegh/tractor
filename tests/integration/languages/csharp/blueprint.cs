@@ -123,6 +123,7 @@ namespace Tractor.Fixtures.Traditional
             // local function + lambda
             int Square(int x) => x * x;
             Func<int, int> cube = x => x * x * x;
+            Func<int, int> blockLambda = x => { return x + 1; };
             Action<string> log = msg => Console.WriteLine(msg);
             log($"sum={evens.Sum()} cube={cube(3)} sq={Square(4)}");
 

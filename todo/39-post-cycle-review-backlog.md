@@ -222,25 +222,29 @@ member-access receiver). But several transform sites still
   - **Effort**: 1 iter per language (~7 iters total) once decided.
   - **Source**: long-pending; flagged in multiple cycles.
 
-### Closure/arrow/lambda body unification — round 2 (C#, PHP, Ruby)
+### Closure/arrow/lambda body unification — round 2 (PHP, Ruby)
 
-- [ ] **Extend iter 161/162 archetype to C#, PHP, Ruby** — Rust
-  closure / TS arrow / Python lambda all now produce
-  `value/expression/<kind>/...` for single-expression bodies, but
-  C#, PHP, and Ruby still emit `body/<kind>[@list="<kind>"]/...`.
-  - **Concrete sites**:
-    - C# `lambda` single-expr body: `tests/integration/languages/csharp/blueprint.cs.snapshot.txt:536-538`
-      (also :546, :573, :588). Current: `lambda/.../body/binary[@list="binary"]/...`.
-    - PHP `function[arrow]` single-expr body:
-      `tests/integration/languages/php/blueprint.php.snapshot.txt:296`.
-      Current: `function[arrow]/.../body/binary[@list="binary"]/...`.
-    - Ruby `lambda`: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:363-369`.
-      Current: `lambda/.../body/block[@list="block"]/body/expression[@list="expression"]/...`
-      (doubled `body` shape — extra peel needed).
-  - **Expected**: `value/expression/<kind>/...`, matching iter 161/162.
-  - **Effort**: 1 iter per language (3 iters total). The Ruby case
-    needs an extra peel step for the doubled body wrapper.
-  - **Source**: post-cycle review of iters 161-164.
+C# closed iter 167. Two remaining:
+
+- [ ] **PHP arrow function body re-tag** — PHP
+  `function[arrow]` single-expr body:
+  `tests/integration/languages/php/blueprint.php.snapshot.txt:296`.
+  Current: `function[arrow]/.../body/binary[@list="binary"]/...`.
+  Expected: `value/expression/binary/...`. Mechanical extension of
+  iter 167 (C# lambda); PHP arrow functions are always
+  single-expression (`fn() => expr`) so no `is_block` discriminator
+  needed. Effort: small.
+
+- [ ] **Ruby lambda body unification** —
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:363-369`.
+  Current: `lambda/.../body/block[@list="block"]/body/expression[@list="expression"]/...`
+  (doubled `body` shape — extra peel needed). Ruby blocks/lambdas
+  may have multiple statements as well as single-expression
+  semantics; needs careful handling. Effort: medium. Likely needs a
+  subagent design review since the doubled-body shape is
+  Ruby-specific.
+
+- [x] C# lambda body unification — closed iter 167.
 
 ### TS arrow block-body fixture missing
 
@@ -281,6 +285,12 @@ member-access receiver). But several transform sites still
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 167: C# lambda body unification — single-expr lambdas
+  retag `<body>` as `<value>` (matches Rust closure / TS arrow /
+  Python lambda); block-bodied lambdas keep `<body>` via
+  `is_block` discriminator. Added block-bodied lambda fixture.
+  AnonymousMethodExpression (`delegate {...}`) routes through same
+  handler; always-block keeps `<body>` naturally.
 - [x] iter 166: TS arrow block-body fixture added; iter-162
   `is_block` discriminator now exercised.
 - [x] iter 165: stale doc-comment sweep round 3 — `apply_field_wrappings`

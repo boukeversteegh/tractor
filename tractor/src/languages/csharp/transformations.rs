@@ -16,8 +16,8 @@ use crate::transform::operators::extract_operator;
 use super::input::CsKind;
 use super::output::TractorNode::{
     self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Instance, Internal,
-    Leading, Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public, Protected,
-    String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
+    Lambda, Leading, Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public,
+    Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
 
 /// `file_scoped_namespace_declaration` — `namespace Foo;`. Rename
@@ -213,6 +213,35 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
     }
     xot.with_renamed(node, Expression)
         .with_prepended_marker(node, Await)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `lambda_expression` / `anonymous_method_expression` — `(x) => x`,
+/// `x => { ... }`, or `delegate { ... }`. For single-expression
+/// bodies, re-tag the `<body>` wrapper to `<value>` so
+/// `wrap_expression_positions` wraps the body's content in
+/// `<expression>` host (Principle #15). Block bodies (including the
+/// always-block `delegate { ... }` form) keep `<body>` so per-statement
+/// `list=` distribution works correctly. Mirrors the TS `arrow_function`
+/// fix from iter 162.
+pub fn lambda(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let body_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+    if let Some(body) = body_child {
+        let inner_kind = xot.children(body)
+            .filter(|&c| xot.element(c).is_some())
+            .next()
+            .and_then(|c| get_kind(xot, c));
+        let is_block = inner_kind.as_deref() == Some("block");
+        if !is_block {
+            let value_id = xot.add_name("value");
+            if let Some(elem) = xot.element_mut(body) {
+                elem.set_name(value_id);
+            }
+        }
+    }
+    xot.with_renamed(node, Lambda);
     Ok(TransformAction::Continue)
 }
 

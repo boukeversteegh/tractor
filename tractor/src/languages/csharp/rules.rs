@@ -168,7 +168,12 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::InvocationExpression           => Rename(Call),
         CsKind::IsPatternExpression            => Rename(Is),
         CsKind::JoinClause                     => Rename(Join),
-        CsKind::LambdaExpression               => Rename(Lambda),
+        // `lambda_expression` — re-tag `<body>` as `<value>` for
+        // single-expression bodies so `wrap_expression_positions`
+        // wraps the body in `<expression>` host (Principle #15).
+        // Block bodies keep `<body>`. Mirrors iter 161/162 (Rust
+        // closure / TS arrow / Python lambda).
+        CsKind::LambdaExpression               => Custom(transformations::lambda),
         CsKind::LetClause                      => Rename(Let),
         CsKind::LocalFunctionStatement         => Rename(Method),
         CsKind::NamespaceDeclaration           => Rename(Namespace),
@@ -250,9 +255,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::ElementAccessExpression => Rename(Index),
 
         // `anonymous_method_expression` is the older `delegate { … }`
-        // syntax — functionally a lambda. `anonymous_object_creation_expression`
-        // (`new { X = 1 }`) joins `<new>` with an anonymous marker.
-        CsKind::AnonymousMethodExpression           => Rename(Lambda),
+        // syntax — functionally a lambda; always block-bodied so the
+        // `lambda` handler's `is_block` check naturally keeps `<body>`.
+        // `anonymous_object_creation_expression` (`new { X = 1 }`)
+        // joins `<new>` with an anonymous marker.
+        CsKind::AnonymousMethodExpression           => Custom(transformations::lambda),
         CsKind::AnonymousObjectCreationExpression   => RenameWithMarker(New, Anonymous),
 
         // Array and stackalloc creations join `<new>` with shape markers.
