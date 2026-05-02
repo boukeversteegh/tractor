@@ -28,7 +28,7 @@ pub enum TractorNode {
     // Declarations (Function, Type are dual-use marker/container)
     Function, Method, Type, Struct, Interface, Const, Var, Alias, Variable,
     // Members / parameters
-    Field, Parameter, Arguments, Spread,
+    Field, Parameter, Arguments, Spread, Pair,
     // Types (Slice dual-use after iter 12: type vs. slice-expression marker)
     Pointer, Slice, Map, Chan, Array,
     // Inheritance / interface embedding (cross-language)

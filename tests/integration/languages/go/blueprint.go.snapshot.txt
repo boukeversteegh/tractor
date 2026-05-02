@@ -512,10 +512,12 @@ file/
           │   │       │   ├─ type/name = "string"
           │   │       │   └─ value/type/name = "int"
           │   │       └─ body/
-          │   │           ├─ string[@list="string"] = "\"a\""
-          │   │           ├─ value[@list="value"]/expression/int = "1"
-          │   │           ├─ string[@list="string"] = "\"b\""
-          │   │           └─ value[@list="value"]/expression/int = "2"
+          │   │           ├─ pair[@list="pair"]/
+          │   │           │   ├─ string = "\"a\""
+          │   │           │   └─ value/expression/int = "1"
+          │   │           └─ pair[@list="pair"]/
+          │   │               ├─ string = "\"b\""
+          │   │               └─ value/expression/int = "2"
           │   └─ body/assign[@list="assign"]/
           │       ├─ left/
           │       │   ├─ expression/name = "_"
@@ -594,30 +596,35 @@ file/
           │       │   └─ literal/
           │       │       ├─ type/name = "Point"
           │       │       └─ body/
-          │       │           ├─ name[@list="name"] = "X"
-          │       │           ├─ value[@list="value"]/expression/int = "1"
-          │       │           ├─ name[@list="name"] = "Y"
-          │       │           └─ value[@list="value"]/expression/int = "2"
+          │       │           ├─ pair[@list="pair"]/
+          │       │           │   ├─ name = "X"
+          │       │           │   └─ value/expression/int = "1"
+          │       │           └─ pair[@list="pair"]/
+          │       │               ├─ name = "Y"
+          │       │               └─ value/expression/int = "2"
           │       └─ expression/literal/
           │           ├─ slice/type/name = "Point"
           │           └─ body/
-          │               ├─ name[@list="name"] = "X"
-          │               ├─ value[@list="value"]/expression/int = "0"
-          │               ├─ name[@list="name"] = "X"
-          │               ├─ value[@list="value"]/expression/int = "1"
-          │               ├─ name[@list="name"] = "Y"
-          │               └─ value[@list="value"]/expression/int = "1"
+          │               ├─ pair[@list="pair"]/
+          │               │   ├─ name = "X"
+          │               │   └─ value/expression/int = "0"
+          │               ├─ pair[@list="pair"]/
+          │               │   ├─ name = "X"
+          │               │   └─ value/expression/int = "1"
+          │               └─ pair[@list="pair"]/
+          │                   ├─ name = "Y"
+          │                   └─ value/expression/int = "1"
           ├─ variable[short and @list="variable"]/
           │   ├─ left/expression/name = "m"
           │   └─ right/expression/literal/
           │       ├─ map/
           │       │   ├─ type/name = "string"
           │       │   └─ value/type/name = "Point"
-          │       └─ body/
-          │           ├─ string[@list="string"] = "\"a\""
-          │           └─ value[@list="value"]/
-          │               ├─ expression/name = "X"
-          │               └─ expression/value/expression/int = "1"
+          │       └─ body/pair[@list="pair"]/
+          │           ├─ string = "\"a\""
+          │           └─ value/expression/pair/
+          │               ├─ name = "X"
+          │               └─ value/expression/int = "1"
           ├─ var[@list="var"]/
           │   ├─ name = "r"
           │   ├─ type/

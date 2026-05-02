@@ -42,12 +42,19 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // ---- Flatten with field distribution --------------------------
         GoKind::ArgumentList => Flatten { distribute_field: Some("arguments") },
 
+        // `X: 1` inside a composite literal — preserve the pairing
+        // structurally as `<pair><name>X</name><value/expression/int=1/></pair>`
+        // (Principle #19 role-mixed wrap). Without this, the inner
+        // literal_value's body distributed list= per element name and
+        // produced parallel `name: [X, Y]` / `value: [1, 2]` arrays
+        // that lost the X↔1 / Y↔2 pairing.
+        GoKind::KeyedElement              => Rename(Pair),
+
         // ---- Pure Flatten ---------------------------------------------
         GoKind::Block
         | GoKind::FieldDeclarationList
         | GoKind::ExpressionList
         | GoKind::LiteralElement
-        | GoKind::KeyedElement
         | GoKind::LiteralValue
         | GoKind::ForClause
         | GoKind::TypeElem
