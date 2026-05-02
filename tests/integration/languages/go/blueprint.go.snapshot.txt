@@ -375,8 +375,8 @@ file/
   │       │   ├─ left/expression/name = "mapper"
   │       │   └─ right/expression/type[generic]/
   │       │       ├─ type/name = "Map"
-  │       │       ├─ type/name = "int"
-  │       │       └─ type/name = "string"
+  │       │       ├─ type[@list="true"]/name = "int"
+  │       │       └─ type[@list="true"]/name = "string"
   │       ├─ assign/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "_"

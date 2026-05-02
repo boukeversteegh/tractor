@@ -19,6 +19,32 @@ use super::output::TractorNode::{
     Unexported, Variable,
 };
 
+/// `type_instantiation_expression` — `Map[int, string]` standalone
+/// (e.g. `var mapper = Map[int, string]`). Tree-sitter emits the
+/// head type and each argument as flat siblings of the wrapper. Per
+/// Principle #5 (within-Go consistency with the parameter-position
+/// `Container[T]` shape that goes through `type_arguments`): rename
+/// to `<type[generic]>` and tag every type sibling AFTER the head
+/// with `field="arguments" list="true"` so JSON serializers
+/// reconstruct as an `arguments` array.
+pub fn type_instantiation_expression(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    // Skip the head (first element child); the remaining elements are
+    // the type arguments.
+    for child in elem_children.iter().skip(1) {
+        xot.with_attr(*child, "field", "arguments");
+        xot.with_attr(*child, "list", "true");
+    }
+    xot.with_renamed(node, Type)
+        .with_prepended_marker(node, super::output::TractorNode::Generic)?;
+    Ok(TransformAction::Continue)
+}
+
 /// `type_arguments` — `[T, string]` after a generic type. Tree-sitter
 /// nests each argument under a transparent `type_elem` wrapper; lift
 /// each `type_elem`'s element child up first so the subsequent flatten

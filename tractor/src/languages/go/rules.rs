@@ -200,7 +200,11 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
 
         // `type_instantiation_expression` (`Foo[T]`) is generic
         // application — same `<type[generic]>` shape as `generic_type`.
-        GoKind::TypeInstantiationExpression => RenameWithMarker(Type, Generic),
+        // `Map[int, string]` standalone (e.g. `var f = Map[int, string]`).
+        // Same conceptual shape as `type_arguments` inside `generic_type`
+        // (`Container[T]`); custom handler tags non-head type siblings
+        // with `field="arguments" list="true"` for JSON-array recovery.
+        GoKind::TypeInstantiationExpression => Custom(transformations::type_instantiation_expression),
 
         // `variadic_argument` (`args...`) renames to `<spread>` —
         // matches the cross-language spread vocabulary (TS / Python /
