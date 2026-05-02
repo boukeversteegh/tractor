@@ -42,8 +42,9 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 }
 
 /// `throws_clause` — `throws E1, E2, E3`. Wrap each thrown type in
-/// its own `<throws>` element (Principle #18 — name after operator;
-/// Principle #12 — multiple siblings, not list wrapper).
+/// its own `<throws>` element with `field="throws"` (Principle #18
+/// — name after operator; Principle #12 — multiple siblings, not
+/// list wrapper, with field attribute for JSON array recovery).
 pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Throws;
     let elem_children: Vec<XotNode> = xot.children(node)
@@ -55,13 +56,14 @@ pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
         xot.insert_before(child, throws_node)?;
         xot.detach(child)?;
         xot.append(throws_node, child)?;
+        xot.with_attr(throws_node, "field", "throws");
     }
     Ok(TransformAction::Flatten)
 }
 
 /// `super_interfaces` — `implements A, B, C`. Wrap each interface
-/// type in its own `<implements>` element so multiple targets become
-/// multiple flat siblings (Principle #12 — no list container).
+/// type in its own `<implements>` sibling with `field="implements"`
+/// (Principle #12 — flat siblings + JSON-array recovery).
 pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Implements;
     let elem_children: Vec<XotNode> = xot.children(node)
@@ -73,6 +75,7 @@ pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         xot.insert_before(child, impl_node)?;
         xot.detach(child)?;
         xot.append(impl_node, child)?;
+        xot.with_attr(impl_node, "field", "implements");
     }
     Ok(TransformAction::Flatten)
 }

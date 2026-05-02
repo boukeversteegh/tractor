@@ -204,16 +204,14 @@ pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 }
 
 /// `class_interface_clause` — `implements A, B, C`. Wrap each
-/// interface name in its own `<implements>` element so the shape
-/// is multiple flat siblings rather than a single `<implements>`
-/// list container (Principle #12).
+/// interface name in its own `<implements>` sibling with
+/// `field="implements"` so JSON serializers reconstruct as an
+/// `implements` array (Principle #12 — flat siblings + field attr).
 pub fn class_interface_clause(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Implements;
-    // Iterate non-text element children. Each becomes its own
-    // `<implements>` sibling.
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
@@ -223,6 +221,7 @@ pub fn class_interface_clause(
         xot.insert_before(child, impl_node)?;
         xot.detach(child)?;
         xot.append(impl_node, child)?;
+        xot.with_attr(impl_node, "field", "implements");
     }
     Ok(TransformAction::Flatten)
 }

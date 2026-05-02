@@ -31,8 +31,8 @@ use super::output::TractorNode::{
 /// per Principle #18 we name the relationship after the most
 /// cross-language idiomatic operator name: `<extends>`. Per
 /// Principle #12 (no list containers), each entry becomes its own
-/// `<extends>` sibling — accepting the syntactic ambiguity that
-/// we can't tell a base class from an interface at this level.
+/// `<extends>` sibling with `field="extends"` so JSON serializers
+/// reconstruct as an `extends` array.
 pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
     let elem_children: Vec<XotNode> = xot.children(node)
@@ -44,6 +44,7 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         xot.insert_before(child, extends_node)?;
         xot.detach(child)?;
         xot.append(extends_node, child)?;
+        xot.with_attr(extends_node, "field", "extends");
     }
     Ok(TransformAction::Flatten)
 }
