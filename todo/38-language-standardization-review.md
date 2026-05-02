@@ -225,6 +225,11 @@ findings:
 - iter 90: empty body elements detached after brace strip.
 - iter 91: Python class bases wrap in `<extends>` via field config.
 - iter 92: Rust closure params uniformly wrapped in `<parameter>`.
+- iter 94: PHP `op[concat] = "."` and `op[assign[concat]] = ".="`.
+- iter 95: PHP cast type wraps in `<name>` (Principle #14).
+- iter 96: Ruby `simple_symbol` becomes `<symbol>` (was bare text).
+- iter 97: C# constructor chain `: this(0)` / `: base(...)` uses
+  `[this]` / `[base]` markers (introduces `Base` enum variant).
 
 Decisions queued for review (renames are mechanical):
 - `[keyword]` marker name on pattern (vs `kwarg`, `kw`) — kept
