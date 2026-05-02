@@ -306,6 +306,13 @@ pub fn strip_body_braces(
                 xot.detach(c)?;
             }
         }
+        // If the body is now empty (no children at all), detach it.
+        // Empty `<body/>` would render as a `[body]` marker on the
+        // parent — since there's no content, the marker carries no
+        // useful info. Better to drop the element entirely.
+        if xot.children(body).next().is_none() {
+            xot.detach(body)?;
+        }
     }
     Ok(())
 }

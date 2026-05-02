@@ -326,7 +326,7 @@ program/
   ├─ comment = "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc."
   ├─ class/
   │   ├─ name = "PromotedDemo"
-  │   └─ body/method[public and body]/
+  │   └─ body/method[public]/
   │       ├─ name = "__construct"
   │       ├─ parameter[promoted and public and readonly]/
   │       │   ├─ type[primitive]/name = "string"

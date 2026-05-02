@@ -268,7 +268,7 @@ file/
   │   └─ body[return]/
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "seen"
-  │       │   └─ right/expression/literal[body]/map/
+  │       │   └─ right/expression/literal/map/
   │       │       ├─ type/name = "T"
   │       │       └─ value/expression/struct = "struct{}"
   │       └─ for/
@@ -293,7 +293,7 @@ file/
   │                   │   ├─ left/expression/index/
   │                   │   │   ├─ name = "seen"
   │                   │   │   └─ name = "x"
-  │                   │   └─ right/expression/literal[body]/struct = "struct{}"
+  │                   │   └─ right/expression/literal/struct = "struct{}"
   │                   └─ assign/
   │                       ├─ left/expression/name = "out"
   │                       └─ right/expression/call/

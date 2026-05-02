@@ -60,7 +60,7 @@ file/
   │           │   ├─ name = "INNER_CONST"
   │           │   ├─ type/name = "u32"
   │           │   └─ value/expression/int = "7"
-  │           └─ function[body]/
+  │           └─ function/
   │               ├─ pub/in = "crate::outer"
   │               └─ name = "path_vis"
   ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
@@ -237,7 +237,7 @@ file/
   │       │   └─ type[generic]/
   │       │       ├─ name = "Vec"
   │       │       └─ type/name = "u8"
-  │       └─ function[private and body]/
+  │       └─ function[private]/
   │           ├─ name = "draw"
   │           ├─ parameter[self]/self = "self"
   │           └─ parameter/
@@ -713,7 +713,7 @@ file/
   │           ├─ name = "f"
   │           └─ type/name = "f32"
   ├─ comment[leading] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
-  ├─ function[pub and body]/
+  ├─ function[pub]/
   │   ├─ name = "hrtb_demo"
   │   ├─ generic/name = "F"
   │   ├─ generic/
