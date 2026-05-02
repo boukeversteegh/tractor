@@ -1,20 +1,20 @@
 unit/
   ├─ comment[@list="comment"] = "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
-  ├─ import[@list="import"]/name = "System"
+  ├─ import[@list="import"]/name[@list="name"] = "System"
   ├─ import[@list="import"]/
-  │   ├─ name = "System"
-  │   ├─ name = "Collections"
-  │   └─ name = "Generic"
+  │   ├─ name[@list="name"] = "System"
+  │   ├─ name[@list="name"] = "Collections"
+  │   └─ name[@list="name"] = "Generic"
   ├─ import[@list="import"]/
-  │   ├─ name = "System"
-  │   └─ name = "Linq"
+  │   ├─ name[@list="name"] = "System"
+  │   └─ name[@list="name"] = "Linq"
   ├─ import[@list="import"]/
-  │   ├─ name = "System"
-  │   ├─ name = "Threading"
-  │   └─ name = "Tasks"
+  │   ├─ name[@list="name"] = "System"
+  │   ├─ name[@list="name"] = "Threading"
+  │   └─ name[@list="name"] = "Tasks"
   ├─ import[@list="import"]/
-  │   ├─ name = "System"
-  │   └─ name = "Math"
+  │   ├─ name[@list="name"] = "System"
+  │   └─ name[@list="name"] = "Math"
   ├─ namespace[@list="namespace"]/
   │   ├─ name[@list="name"] = "Tractor.Fixtures.Traditional"
   │   ├─ delegate[public and @list="delegate"]/
@@ -818,7 +818,7 @@ unit/
   │                       └─ name = "Length"
   └─ namespace[file and @list="namespace"]/
       ├─ name[@list="name"] = "Tractor.Fixtures.FileScoped"
-      ├─ import[@list="import"]/name = "System"
+      ├─ import[@list="import"]/name[@list="name"] = "System"
       ├─ class[internal and file and sealed and @list="class"]/
       │   ├─ name = "Hidden"
       │   └─ body/property[public and static and @list="property"]/

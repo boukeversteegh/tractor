@@ -11,7 +11,6 @@
 
 use xot::{Xot, Node as XotNode};
 
-use super::helpers::append_marker;
 
 /// Attach an `<op>` element to `parent` carrying `op_text`, with
 /// semantic marker children driven by [`OPERATOR_MARKERS`].

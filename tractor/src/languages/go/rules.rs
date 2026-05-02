@@ -155,7 +155,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::True                     => Rename(True),
         // `[T, string]` — generic type arguments. Per Principle #12,
         // each argument becomes a flat `<type>` sibling under
-        // `<type[generic]>` with `field="arguments" list="true"` for
+        // `<type[generic]>` with `list="arguments"` for
         // JSON-array recovery. The Custom handler also lifts the
         // inner `type_elem` wrappers so the field attribute lands on
         // the real type, not on the disappearing wrapper.
@@ -220,7 +220,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // `Map[int, string]` standalone (e.g. `var f = Map[int, string]`).
         // Same conceptual shape as `type_arguments` inside `generic_type`
         // (`Container[T]`); custom handler tags non-head type siblings
-        // with `field="arguments" list="true"` for JSON-array recovery.
+        // with `list="arguments"` for JSON-array recovery.
         GoKind::TypeInstantiationExpression => Custom(transformations::type_instantiation_expression),
 
         // `variadic_argument` (`args...`) renames to `<spread>` —

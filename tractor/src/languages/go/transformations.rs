@@ -73,7 +73,7 @@ pub fn selector_expression(xot: &mut Xot, node: XotNode) -> Result<TransformActi
 /// Principle #5 (within-Go consistency with the parameter-position
 /// `Container[T]` shape that goes through `type_arguments`): rename
 /// to `<type[generic]>` and tag every type sibling AFTER the head
-/// with `field="arguments" list="true"` so JSON serializers
+/// with `list="arguments"` so JSON serializers
 /// reconstruct as an `arguments` array.
 pub fn type_instantiation_expression(
     xot: &mut Xot,

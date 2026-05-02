@@ -123,7 +123,7 @@ pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 
 /// `extends_interfaces` — `interface I extends A, B`. Same pattern as
 /// `super_interfaces`: lift inner `type_list` children, wrap each in
-/// `<extends>` with `field="extends"` + `list="true"`.
+/// `<extends>` with `list="extends"`.
 pub fn extends_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
     let elem_children: Vec<XotNode> = xot.children(node)
@@ -157,7 +157,7 @@ pub fn extends_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformActio
 
 /// `type_bound` — `<T extends A & B>` generic bound. Same pattern as
 /// `super_interfaces`: each bound becomes a flat `<extends>` sibling
-/// with `field="extends"` + `list="true"` so multi-bound and single-
+/// with `list="extends"` so multi-bound and single-
 /// bound forms differ only by sibling count.
 pub fn type_bound(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
@@ -179,7 +179,7 @@ pub fn type_bound(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 /// type list under an inner `type_list` node; descend through it (and
 /// any other transparent wrappers) to find the real type children,
 /// then wrap each in its own `<implements>` sibling with
-/// `field="implements"` and `list="true"` (Principle #12 — flat
+/// `list="implements"` (Principle #12 — flat
 /// siblings + JSON-array recovery).
 pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Implements;

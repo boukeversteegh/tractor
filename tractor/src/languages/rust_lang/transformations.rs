@@ -21,7 +21,7 @@ use super::output::TractorNode::{
 /// `trait_bounds` — `: Clone + Send + 'static` after a generic
 /// parameter, type parameter, or trait header. Per Principle #12 (no
 /// list containers) + #18 (name relationships after the operator):
-/// each constraint becomes a flat `<extends field="extends" list="true">`
+/// each constraint becomes a flat `<extends list="extends">`
 /// sibling, matching Java's `<T extends A & B>` shape and the
 /// cross-language relationship-naming rule. Drops the `<bounds>`
 /// wrapper.

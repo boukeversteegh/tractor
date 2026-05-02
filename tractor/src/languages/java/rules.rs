@@ -157,7 +157,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // `<T extends A & B>` — multi-bound generic constraint.
         // Per Principle #12 (no list containers) + #18 (name after
         // operator): each bound becomes a flat `<extends>` sibling
-        // with `field="extends"` + `list="true"`.
+        // with `list="extends"`.
         JavaKind::TypeBound                   => Custom(transformations::type_bound),
         JavaKind::VariableDeclarator          => Rename(Declarator),
         JavaKind::WhileStatement              => Rename(While),
@@ -212,7 +212,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::CatchType            => Flatten { distribute_field: None },
         // `interface I extends A, B` — multiple parent interfaces.
         // Same shape as `super_interfaces`: flat `<extends>` siblings
-        // with `field="extends"` + `list="true"`.
+        // with `list="extends"`.
         JavaKind::ExtendsInterfaces    => Custom(transformations::extends_interfaces),
 
         // ---- Literals --------------------------------------------------

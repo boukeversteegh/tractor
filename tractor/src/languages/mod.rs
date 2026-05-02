@@ -334,7 +334,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         xot, root,
-        &["body", "block", "unit", "namespace", "section"],
+        &["body", "block", "unit", "namespace", "section", "import"],
     )?;
     Ok(())
 }
