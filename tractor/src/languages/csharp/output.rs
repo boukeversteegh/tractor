@@ -85,6 +85,10 @@ pub enum TractorNode {
     // The `base` keyword appears literally in C# source so the
     // marker name matches it (Principle #1).
     Base,
+    // Marker on `<type>` for an enum's underlying integral type
+    // (`enum Color : uint`). Distinct from `<extends>` since enums
+    // don't inherit; the slot is "storage type", not "parent type".
+    Underlying,
 }
 
 impl TractorNode {
@@ -112,7 +116,7 @@ impl TractorNode {
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
             | Self::Anonymous | Self::Stackalloc | Self::File
-            | Self::Base                                                        => (true, false, Default),
+            | Self::Base | Self::Underlying                                     => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),

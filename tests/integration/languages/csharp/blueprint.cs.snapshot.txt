@@ -34,7 +34,7 @@ unit/
   │   ├─ enum[public]/
   │   │   ├─ attribute[@list="true"]/name = "Flags"
   │   │   ├─ name = "Trait"
-  │   │   ├─ extends[@list="true"]/type/name = "uint"
+  │   │   ├─ type[underlying]/name = "uint"
   │   │   └─ body/
   │   │       ├─ constant/
   │   │       │   ├─ name = "None"

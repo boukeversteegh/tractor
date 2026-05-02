@@ -26,26 +26,46 @@ use super::output::TractorNode::{
 /// the trailing siblings under `<unit>` into a `<body>` child, so
 /// both forms (block-scoped and file-scoped) share the same shape.
 /// Closes todo/34.
-/// `base_list` — C# `: A, B, C` after a class/struct/interface
-/// declaration. C# uses `:` (no `extends`/`implements` keyword), so
-/// per Principle #18 we name the relationship after the most
-/// cross-language idiomatic operator name: `<extends>`. Per
-/// Principle #12 (no list containers), each entry becomes its own
-/// `<extends>` sibling with `field="extends"` so JSON serializers
-/// reconstruct as an `extends` array.
+/// `base_list` — C# `: A, B, C` after a class/struct/interface/enum
+/// declaration. Tree-sitter uses one kind for two semantically
+/// distinct constructs:
+///
+///  * On a class/struct/interface/record: list of parent types (real
+///    inheritance / interface implementation). Per Principle #18 +
+///    iter 109 / 117 / 122, each entry becomes a flat `<extends>`
+///    sibling so cross-language `//class/extends/type[name='X']`
+///    works uniformly.
+///
+///  * On an enum: a SINGLE underlying integral storage type
+///    (`enum Color : uint`). C# enums cannot inherit; this is *not*
+///    a parent-type relationship. Naming it `<extends>` would
+///    pollute `//enum/extends/type` queries with a non-inheritance
+///    construct, so we use `<type[underlying] field="underlying">`
+///    instead — a distinct slot that surfaces `//enum/type[underlying]`
+///    as the canonical query.
 pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    use super::output::TractorNode::Extends;
+    let parent_kind = get_parent(xot, node).and_then(|p| get_kind(xot, p));
+    let is_enum_underlying = parent_kind.as_deref() == Some("enum_declaration");
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
-    for child in elem_children {
-        let extends_elt = xot.add_name(Extends.as_str());
-        let extends_node = xot.new_element(extends_elt);
-        xot.insert_before(child, extends_node)?;
-        xot.detach(child)?;
-        xot.append(extends_node, child)?;
-        xot.with_attr(extends_node, "field", "extends");
-        xot.with_attr(extends_node, "list", "true");
+    if is_enum_underlying {
+        for child in elem_children {
+            xot.with_renamed(child, Type)
+                .with_appended_marker(child, super::output::TractorNode::Underlying)?
+                .with_attr(child, "field", "underlying");
+        }
+    } else {
+        use super::output::TractorNode::Extends;
+        for child in elem_children {
+            let extends_elt = xot.add_name(Extends.as_str());
+            let extends_node = xot.new_element(extends_elt);
+            xot.insert_before(child, extends_node)?;
+            xot.detach(child)?;
+            xot.append(extends_node, child)?;
+            xot.with_attr(extends_node, "field", "extends");
+            xot.with_attr(extends_node, "list", "true");
+        }
     }
     Ok(TransformAction::Flatten)
 }
