@@ -311,7 +311,7 @@ program/
   │       │       └─ right/expression/int = "1"
   │       ├─ for/
   │       │   ├─ name = "j"
-  │       │   ├─ value/expression/in/range/
+  │       │   ├─ value/expression/range/
   │       │   │   ├─ int = "1"
   │       │   │   └─ int = "3"
   │       │   └─ body/do/assign/

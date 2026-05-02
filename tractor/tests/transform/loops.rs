@@ -360,12 +360,12 @@ fn ruby() {
         "#),
         1);
 
-    claim("Ruby for-in uses <name> + <value>/<in> (extra <in> wrapper unique to Ruby)",
+    claim("Ruby for-in: loop var as <name>, iterable directly under <value>/<expression>",
         &mut tree,
         &multi_xpath(r#"
             //for
                 [name='item']
-                [value/expression/in/name='items']
+                [value/expression/name='items']
                 [body]
         "#),
         1);

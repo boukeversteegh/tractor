@@ -123,13 +123,19 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // anyone needing the lexical distinction.
         RubyKind::Constant => Rename(Name),
 
+        // `for j in 1..3` — tree-sitter wraps the iterable in an `<in>`
+        // kind. The `in` is just a keyword separating the loop var
+        // from the collection; flatten so the iterable is a direct
+        // child of `<value>` (or wherever the field places it).
+        // The case/in clause uses `InClause` → `<in>` instead.
+        RubyKind::In => Flatten { distribute_field: None },
+
         // Already matches our vocabulary (no text leak in current snapshots).
         RubyKind::Block
         | RubyKind::Conditional
         | RubyKind::Do
         | RubyKind::Exceptions
         | RubyKind::False
-        | RubyKind::In
         | RubyKind::Interpolation
         | RubyKind::Lambda
         | RubyKind::Nil
