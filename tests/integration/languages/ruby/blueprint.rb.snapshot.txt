@@ -13,16 +13,16 @@ program/
   │   ├─ name = "Greeter"
   │   └─ body/method/
   │       ├─ name = "hello"
-  │       ├─ parameter/name = "name"
+  │       ├─ parameter[@list="true"]/name = "name"
   │       └─ body/expression/string/interpolation/name = "name"
   ├─ module/
   │   ├─ name = "Logging"
   │   └─ body/method/
   │       ├─ name = "log"
-  │       ├─ parameter/name = "msg"
+  │       ├─ parameter[@list="true"]/name = "msg"
   │       └─ body/expression/call/
   │           ├─ name = "puts"
-  │           └─ string/interpolation/name = "msg"
+  │           └─ string[@list="true"]/interpolation/name = "msg"
   ├─ module/
   │   ├─ name = "App"
   │   └─ body/
@@ -31,14 +31,14 @@ program/
   │       │   └─ body/
   │       │       ├─ expression/call/
   │       │       │   ├─ name = "attr_accessor"
-  │       │       │   └─ symbol = ":name"
+  │       │       │   └─ symbol[@list="true"] = ":name"
   │       │       ├─ expression/call/
   │       │       │   ├─ name = "attr_reader"
-  │       │       │   └─ symbol = ":id"
+  │       │       │   └─ symbol[@list="true"] = ":id"
   │       │       ├─ method/
   │       │       │   ├─ name = "initialize"
-  │       │       │   ├─ parameter/name = "name"
-  │       │       │   ├─ parameter[keyword]/
+  │       │       │   ├─ parameter[@list="true"]/name = "name"
+  │       │       │   ├─ parameter[keyword and @list="true"]/
   │       │       │   │   ├─ name = "id"
   │       │       │   │   └─ value/expression/nil = "nil"
   │       │       │   └─ body/
@@ -53,12 +53,12 @@ program/
   │       │       │               └─ right/expression/int = "0"
   │       │       └─ method/
   │       │           ├─ name = "=="
-  │       │           ├─ parameter/name = "other"
+  │       │           ├─ parameter[@list="true"]/name = "other"
   │       │           └─ body/expression/binary/
   │       │               ├─ left/expression/call/
   │       │               │   ├─ name = "other"
   │       │               │   ├─ name = "is_a?"
-  │       │               │   └─ name = "Base"
+  │       │               │   └─ name[@list="true"] = "Base"
   │       │               ├─ op/logical[and]
   │       │               └─ right/expression/binary/
   │       │                   ├─ left/expression/call/
@@ -72,13 +72,13 @@ program/
   │           └─ body/
   │               ├─ expression/call/
   │               │   ├─ name = "include"
-  │               │   └─ name = "Greeter"
+  │               │   └─ name[@list="true"] = "Greeter"
   │               ├─ expression/call/
   │               │   ├─ name = "extend"
-  │               │   └─ name = "Logging"
+  │               │   └─ name[@list="true"] = "Logging"
   │               ├─ expression/call/
   │               │   ├─ name = "prepend"
-  │               │   └─ call/
+  │               │   └─ call[@list="true"]/
   │               │       ├─ name = "Module"
   │               │       └─ name = "new"
   │               ├─ assign/
@@ -110,10 +110,10 @@ program/
   │               ├─ method[singleton]/
   │               │   ├─ self = "self"
   │               │   ├─ name = "build"
-  │               │   ├─ parameter/name = "name"
+  │               │   ├─ parameter[@list="true"]/name = "name"
   │               │   └─ body/expression/call/
   │               │       ├─ name = "new"
-  │               │       └─ name = "name"
+  │               │       └─ name[@list="true"] = "name"
   │               ├─ class[singleton]/
   │               │   ├─ value/expression/self = "self"
   │               │   └─ body/method/
@@ -123,14 +123,14 @@ program/
   │               │           └─ right/expression/hash = "{}"
   │               ├─ method/
   │               │   ├─ name = "greet?"
-  │               │   ├─ parameter[default]/
+  │               │   ├─ parameter[default and @list="true"]/
   │               │   │   ├─ name = "formal"
   │               │   │   └─ value/expression/false = "false"
-  │               │   ├─ parameter[keyword]/
+  │               │   ├─ parameter[keyword and @list="true"]/
   │               │   │   ├─ name = "greeting"
   │               │   │   └─ value/expression/string = "'hi'"
-  │               │   ├─ parameter[kwsplat]/name = "opts"
-  │               │   ├─ parameter[block]/name = "block"
+  │               │   ├─ parameter[kwsplat and @list="true"]/name = "opts"
+  │               │   ├─ parameter[block and @list="true"]/name = "block"
   │               │   └─ body/
   │               │       ├─ assign/
   │               │       │   ├─ left/expression/name = "msg"
@@ -144,7 +144,7 @@ program/
   │               │       │   ├─ left/expression/name = "msg"
   │               │       │   └─ right/expression/conditional/
   │               │       │       ├─ condition/expression/call/name = "block_given?"
-  │               │       │       ├─ yield/name = "msg"
+  │               │       │       ├─ yield/name[@list="true"] = "msg"
   │               │       │       └─ name = "msg"
   │               │       └─ expression/conditional/
   │               │           ├─ condition/expression/call/
@@ -165,8 +165,8 @@ program/
   │               │           └─ name = "upcase"
   │               ├─ method/
   │               │   ├─ name = "collect"
-  │               │   ├─ parameter[splat]/name = "items"
-  │               │   ├─ parameter[kwsplat]/name = "meta"
+  │               │   ├─ parameter[splat and @list="true"]/name = "items"
+  │               │   ├─ parameter[kwsplat and @list="true"]/name = "meta"
   │               │   └─ body/expression/binary/
   │               │       ├─ left/expression/call/
   │               │       │   ├─ call/
@@ -239,7 +239,7 @@ program/
   │                           └─ name = "merged"
   ├─ method/
   │   ├─ name = "classify"
-  │   ├─ parameter/name = "value"
+  │   ├─ parameter[@list="true"]/name = "value"
   │   └─ body/case/
   │       ├─ value/expression/name = "value"
   │       ├─ when/
@@ -266,7 +266,7 @@ program/
   │       └─ else/expression/symbol = ":unknown"
   ├─ method/
   │   ├─ name = "control"
-  │   ├─ parameter/name = "items"
+  │   ├─ parameter[@list="true"]/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
@@ -330,7 +330,7 @@ program/
   │       │       ├─ unless/
   │       │       │   ├─ body/expression/call/
   │       │       │   │   ├─ name = "raise"
-  │       │       │   │   └─ string = "'boom'"
+  │       │       │   │   └─ string[@list="true"] = "'boom'"
   │       │       │   └─ condition/expression/call/
   │       │       │       ├─ name = "items"
   │       │       │       └─ name = "any?"
@@ -434,12 +434,12 @@ program/
   │           ├─ call/
   │           │   ├─ name = "adder"
   │           │   ├─ name = "call"
-  │           │   ├─ int = "1"
-  │           │   └─ int = "2"
+  │           │   ├─ int[@list="true"] = "1"
+  │           │   └─ int[@list="true"] = "2"
   │           ├─ call/
   │           │   ├─ name = "doubler"
   │           │   ├─ name = "call"
-  │           │   └─ int = "3"
+  │           │   └─ int[@list="true"] = "3"
   │           ├─ name = "ternary"
   │           ├─ name = "a"
   │           ├─ name = "b"
@@ -451,12 +451,12 @@ program/
   │   │   └─ name = "zero?"
   │   └─ then/expression/call/
   │       ├─ name = "puts"
-  │       └─ string/interpolation/name = "MAX_RETRIES"
+  │       └─ string[@list="true"]/interpolation/name = "MAX_RETRIES"
   ├─ comment[leading] = "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow."
   ├─ method/
   │   ├─ name = "patterns"
-  │   ├─ parameter/name = "values"
-  │   ├─ parameter[forward] = "..."
+  │   ├─ parameter[@list="true"]/name = "values"
+  │   ├─ parameter[forward and @list="true"] = "..."
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
@@ -472,7 +472,7 @@ program/
   │       │       │   ├─ if/condition/expression/call/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   ├─ name = "is_a?"
-  │       │       │   │   └─ name = "Integer"
+  │       │       │   │   └─ name[@list="true"] = "Integer"
   │       │       │   └─ body/then/expression/binary/
   │       │       │       ├─ left/expression/name = "head"
   │       │       │       ├─ op[plus] = "+"
@@ -507,7 +507,7 @@ program/
   │       │           └─ body/then/expression/name = "n"
   │       ├─ expression/call/
   │       │   ├─ name = "forward"
-  │       │   └─ argument[forward] = "..."
+  │       │   └─ argument[forward and @list="true"] = "..."
   │       ├─ assign/
   │       │   ├─ left/expression/name = "joined"
   │       │   └─ right/expression/string[concatenated]/
@@ -531,15 +531,15 @@ program/
   │           └─ symbol = ":failed"
   ├─ method/
   │   ├─ name = "destructured"
-  │   ├─ parameter[destructured]/
+  │   ├─ parameter[destructured and @list="true"]/
   │   │   ├─ name = "x"
   │   │   └─ name = "y"
-  │   ├─ parameter[block]/name = "block"
+  │   ├─ parameter[block and @list="true"]/name = "block"
   │   └─ body/expression/call/
   │       ├─ name = "block"
   │       ├─ name = "call"
-  │       ├─ name = "x"
-  │       └─ name = "y"
+  │       ├─ name[@list="true"] = "x"
+  │       └─ name[@list="true"] = "y"
   ├─ assign/
   │   ├─ left/expression/left/expression/left/
   │   │   ├─ expression[destructured]
@@ -554,7 +554,7 @@ program/
   │   └─ right/expression/call[optional]/
   │       ├─ name = "obj"
   │       ├─ name = "method"
-  │       └─ name = "arg"
+  │       └─ name[@list="true"] = "arg"
   └─ block[end]/call/
       ├─ name = "puts"
-      └─ string = "\"shutting down\""
+      └─ string[@list="true"] = "\"shutting down\""

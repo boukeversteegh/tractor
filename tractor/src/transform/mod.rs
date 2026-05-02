@@ -1047,7 +1047,12 @@ pub mod helpers {
     /// Used with `TransformAction::Flatten` to implement Principle #12
     /// (Flat Lists): a purely-grouping wrapper is replaced by its children,
     /// which inherit a `field="<plural>"` attribute so non-XML serializers
-    /// (JSON/YAML) can collect same-field siblings into an array.
+    /// (JSON/YAML) can collect same-field siblings into an array. Each
+    /// child also gains `list="true"` so JSON renders the field as an
+    /// array even when the list contains a single item — otherwise a
+    /// 1-arg call would round-trip as `"arguments": {...}` (object) while
+    /// a 2-arg call would round-trip as `"arguments": [{...}, {...}]`
+    /// (array), and consumers can't write uniform code against the field.
     pub fn distribute_field_to_children(xot: &mut Xot, node: XotNode, field: impl AsRef<str>) {
         let field = field.as_ref();
         let children: Vec<XotNode> = xot.children(node)
@@ -1055,6 +1060,7 @@ pub mod helpers {
             .collect();
         for child in children {
             xot.with_attr(child, "field", field);
+            xot.with_attr(child, "list", "true");
         }
     }
 

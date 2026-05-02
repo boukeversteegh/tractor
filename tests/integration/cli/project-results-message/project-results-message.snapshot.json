@@ -229,12 +229,14 @@
               }
             },
             "name": "Hello",
-            "parameters": {
-              "type": {
-                "name": "string"
-              },
-              "name": "name"
-            },
+            "parameters": [
+              {
+                "type": {
+                  "name": "string"
+                },
+                "name": "name"
+              }
+            ],
             "body": {
               "block": {
                 "children": [
@@ -287,12 +289,14 @@
               }
             },
             "name": "Goodbye",
-            "parameters": {
-              "type": {
-                "name": "string"
-              },
-              "name": "name"
-            },
+            "parameters": [
+              {
+                "type": {
+                  "name": "string"
+                },
+                "name": "name"
+              }
+            ],
             "body": {
               "block": {
                 "children": [

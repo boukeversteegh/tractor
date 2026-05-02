@@ -41,15 +41,15 @@ module/
   │   └─ right/expression/string = "\"\"\"line one\\nline two\"\"\""
   ├─ function/
   │   ├─ name = "simple"
-  │   ├─ parameter/name = "a"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/name = "a"
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "b"
   │   │   └─ value/expression/int = "1"
-  │   ├─ parameter[args]/name = "args"
-  │   ├─ parameter/
+  │   ├─ parameter[args and @list="true"]/name = "args"
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "kw_only"
   │   │   └─ value/expression/int = "2"
-  │   ├─ parameter[kwargs]/name = "kwargs"
+  │   ├─ parameter[kwargs and @list="true"]/name = "kwargs"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
   │       └─ return/expression/binary/
@@ -61,14 +61,14 @@ module/
   │           └─ right/expression/name = "kw_only"
   ├─ function/
   │   ├─ name = "pos_only"
-  │   ├─ parameter/name = "a"
-  │   ├─ parameter/name = "b"
-  │   ├─ positional = "/"
-  │   ├─ parameter/name = "c"
-  │   ├─ parameter/name = "d"
-  │   ├─ keyword = "*"
-  │   ├─ parameter/name = "e"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/name = "a"
+  │   ├─ parameter[@list="true"]/name = "b"
+  │   ├─ positional[@list="true"] = "/"
+  │   ├─ parameter[@list="true"]/name = "c"
+  │   ├─ parameter[@list="true"]/name = "d"
+  │   ├─ keyword[@list="true"] = "*"
+  │   ├─ parameter[@list="true"]/name = "e"
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "f"
   │   │   └─ value/expression/int = "0"
   │   └─ body/
@@ -84,7 +84,7 @@ module/
   ├─ function/
   │   ├─ name = "identity"
   │   ├─ generic/type/name = "T"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
   │   ├─ returns/type/name = "T"
@@ -102,16 +102,16 @@ module/
   │       └─ type/name = "T"
   ├─ function/
   │   ├─ name = "annotated"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "int"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "y"
   │   │   ├─ type[generic]/
   │   │   │   ├─ name = "Optional"
   │   │   │   └─ type/name = "str"
   │   │   └─ value/expression/none = "None"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "z"
   │   │   ├─ type/type[union]/
   │   │   │   ├─ type[generic]/
@@ -161,7 +161,7 @@ module/
   │           └─ none = "None"
   ├─ function[async]/
   │   ├─ name = "async_work"
-  │   ├─ parameter/
+  │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "url"
   │   │   └─ type/name = "str"
   │   ├─ returns/type/name = "bytes"
@@ -169,7 +169,7 @@ module/
   │       ├─ value/expression/as/
   │       │   ├─ call/
   │       │   │   ├─ name = "open_conn"
-  │       │   │   └─ name = "url"
+  │       │   │   └─ name[@list="true"] = "url"
   │       │   └─ name = "conn"
   │       └─ body/
   │           ├─ for[async]/
@@ -184,49 +184,49 @@ module/
   │           └─ return/expression/name = "data"
   ├─ function/
   │   ├─ name = "gen_demo"
-  │   ├─ parameter/name = "n"
+  │   ├─ parameter[@list="true"]/name = "n"
   │   └─ body/
   │       ├─ for/
   │       │   ├─ left/expression/name = "i"
   │       │   ├─ right/expression/call/
   │       │   │   ├─ name = "range"
-  │       │   │   └─ name = "n"
+  │       │   │   └─ name[@list="true"] = "n"
   │       │   └─ body/yield/name = "i"
   │       └─ yield/call/
   │           ├─ name = "range"
-  │           ├─ name = "n"
-  │           └─ binary/
+  │           ├─ name[@list="true"] = "n"
+  │           └─ binary[@list="true"]/
   │               ├─ left/expression/name = "n"
   │               ├─ op[multiply] = "*"
   │               └─ right/expression/int = "2"
   ├─ function/
   │   ├─ name = "repeat"
-  │   ├─ parameter/name = "times"
+  │   ├─ parameter[@list="true"]/name = "times"
   │   └─ body/
   │       ├─ function/
   │       │   ├─ name = "decorator"
-  │       │   ├─ parameter/name = "fn"
+  │       │   ├─ parameter[@list="true"]/name = "fn"
   │       │   └─ body/
   │       │       ├─ function/
   │       │       │   ├─ name = "wrapper"
-  │       │       │   ├─ parameter[args]/name = "a"
-  │       │       │   ├─ parameter[kwargs]/name = "kw"
+  │       │       │   ├─ parameter[args and @list="true"]/name = "a"
+  │       │       │   ├─ parameter[kwargs and @list="true"]/name = "kw"
   │       │       │   └─ body/for/
   │       │       │       ├─ left/expression/name = "_"
   │       │       │       ├─ right/expression/call/
   │       │       │       │   ├─ name = "range"
-  │       │       │       │   └─ name = "times"
+  │       │       │       │   └─ name[@list="true"] = "times"
   │       │       │       └─ body/expression/call/
   │       │       │           ├─ name = "fn"
-  │       │       │           ├─ spread[list]/name = "a"
-  │       │       │           └─ spread[dict]/name = "kw"
+  │       │       │           ├─ spread[list and @list="true"]/name = "a"
+  │       │       │           └─ spread[dict and @list="true"]/name = "kw"
   │       │       └─ return/expression/name = "wrapper"
   │       └─ return/expression/name = "decorator"
   ├─ function/
   │   ├─ decorator/name = "staticmethod"
   │   ├─ decorator/call/
   │   │   ├─ name = "repeat"
-  │   │   └─ int = "3"
+  │   │   └─ int[@list="true"] = "3"
   │   ├─ name = "stacked"
   │   └─ body[pass]
   ├─ class/
@@ -249,7 +249,7 @@ module/
   │           │   └─ type/name = "str"
   │           └─ right/expression/call/
   │               ├─ name = "field"
-  │               └─ argument/
+  │               └─ argument[@list="true"]/
   │                   ├─ name = "default_factory"
   │                   └─ value/expression/name = "list"
   ├─ class/
@@ -274,8 +274,8 @@ module/
   │       │       └─ right/expression/int = "42"
   │       ├─ function[public]/
   │       │   ├─ name = "__init__"
-  │       │   ├─ parameter/name = "self"
-  │       │   ├─ parameter/
+  │       │   ├─ parameter[@list="true"]/name = "self"
+  │       │   ├─ parameter[@list="true"]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
@@ -285,13 +285,13 @@ module/
   │       │       └─ right/expression/name = "name"
   │       └─ function[public]/
   │           ├─ name = "__eq__"
-  │           ├─ parameter/name = "self"
-  │           ├─ parameter/name = "other"
+  │           ├─ parameter[@list="true"]/name = "self"
+  │           ├─ parameter[@list="true"]/name = "other"
   │           └─ body/return/expression/logical/
   │               ├─ left/expression/call/
   │               │   ├─ name = "isinstance"
-  │               │   ├─ name = "other"
-  │               │   └─ name = "Derived"
+  │               │   ├─ name[@list="true"] = "other"
+  │               │   └─ name[@list="true"] = "Derived"
   │               ├─ op/logical[and]
   │               └─ right/expression/compare/
   │                   ├─ member/
@@ -303,7 +303,7 @@ module/
   │                       └─ name = "name"
   ├─ function/
   │   ├─ name = "control_flow"
-  │   ├─ parameter/name = "items"
+  │   ├─ parameter[@list="true"]/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
@@ -314,7 +314,7 @@ module/
   │       │   │   └─ expression/name = "v"
   │       │   ├─ right/expression/call/
   │       │   │   ├─ name = "enumerate"
-  │       │   │   └─ name = "items"
+  │       │   │   └─ name[@list="true"] = "items"
   │       │   ├─ body/if/
   │       │   │   ├─ condition/expression/compare/
   │       │   │   │   ├─ name = "v"
@@ -359,7 +359,7 @@ module/
   │       │   │   └─ raise/
   │       │   │       ├─ call/
   │       │   │       │   ├─ name = "RuntimeError"
-  │       │   │       │   └─ string = "\"bad\""
+  │       │   │       │   └─ string[@list="true"] = "\"bad\""
   │       │   │       └─ name = "e"
   │       │   ├─ except[pass]/value/expression/name = "Exception"
   │       │   ├─ else/body/assign/
@@ -371,12 +371,12 @@ module/
   │       │   ├─ value/expression/as/
   │       │   │   ├─ call/
   │       │   │   │   ├─ name = "open"
-  │       │   │   │   └─ string = "\"a\""
+  │       │   │   │   └─ string[@list="true"] = "\"a\""
   │       │   │   └─ name = "fa"
   │       │   ├─ value/expression/as/
   │       │   │   ├─ call/
   │       │   │   │   ├─ name = "open"
-  │       │   │   │   └─ string = "\"b\""
+  │       │   │   │   └─ string[@list="true"] = "\"b\""
   │       │   │   └─ name = "fb"
   │       │   └─ body/
   │       │       ├─ expression/call/member/
@@ -388,7 +388,7 @@ module/
   │       └─ return/expression/name = "total"
   ├─ function/
   │   ├─ name = "match_demo"
-  │   ├─ parameter/name = "msg"
+  │   ├─ parameter[@list="true"]/name = "msg"
   │   └─ body/match/
   │       ├─ name = "msg"
   │       └─ body/
@@ -430,7 +430,7 @@ module/
   │               └─ then/return/expression/none = "None"
   ├─ function/
   │   ├─ name = "comprehensions"
-  │   ├─ parameter/name = "data"
+  │   ├─ parameter[@list="true"]/name = "data"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "squares"
@@ -473,7 +473,7 @@ module/
   │       │       ├─ left/expression/name = "_"
   │       │       ├─ right/expression/call/
   │       │       │   ├─ name = "range"
-  │       │       │   └─ int = "2"
+  │       │       │   └─ int[@list="true"] = "2"
   │       │       └─ name = "x"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
@@ -484,11 +484,11 @@ module/
   │       │       ├─ left/expression/name = "i"
   │       │       ├─ right/expression/call/
   │       │       │   ├─ name = "range"
-  │       │       │   └─ int = "3"
+  │       │       │   └─ int[@list="true"] = "3"
   │       │       ├─ left/expression/name = "j"
   │       │       ├─ right/expression/call/
   │       │       │   ├─ name = "range"
-  │       │       │   └─ int = "3"
+  │       │       │   └─ int[@list="true"] = "3"
   │       │       └─ compare/
   │       │           ├─ name = "i"
   │       │           ├─ op[not-equals] = "!="
@@ -501,7 +501,7 @@ module/
   │           └─ expression/name = "matrix"
   ├─ function/
   │   ├─ name = "expression_demo"
-  │   ├─ parameter/name = "items"
+  │   ├─ parameter[@list="true"]/name = "items"
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "first"
@@ -518,12 +518,12 @@ module/
   │       │   │   │   ├─ op/assign[walrus]
   │       │   │   │   └─ value/expression/call/
   │       │   │   │       ├─ name = "len"
-  │       │   │   │       └─ name = "items"
+  │       │   │   │       └─ name[@list="true"] = "items"
   │       │   │   ├─ op/compare[greater]
   │       │   │   └─ int = "3"
   │       │   └─ then/expression/call/
   │       │       ├─ name = "print"
-  │       │       └─ string/interpolation/name = "n"
+  │       │       └─ string[@list="true"]/interpolation/name = "n"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "name"
   │       │   └─ right/expression/string = "\"world\""
@@ -541,15 +541,15 @@ module/
   │       │   ├─ left/expression/name = "doubled"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "list"
-  │       │       └─ call/
+  │       │       └─ call[@list="true"]/
   │       │           ├─ name = "map"
-  │       │           ├─ lambda/
+  │       │           ├─ lambda[@list="true"]/
   │       │           │   ├─ name = "v"
   │       │           │   └─ body/binary/
   │       │           │       ├─ left/expression/name = "v"
   │       │           │       ├─ op[multiply] = "*"
   │       │           │       └─ right/expression/int = "2"
-  │       │           └─ name = "items"
+  │       │           └─ name[@list="true"] = "items"
   │       ├─ assign/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "head"
@@ -638,9 +638,9 @@ module/
   │       └─ name = "Foo"
   └─ function/
       ├─ name = "patterns_and_misc"
-      ├─ parameter/name = "values"
-      ├─ parameter/name = "items"
-      ├─ parameter/name = "x"
+      ├─ parameter[@list="true"]/name = "values"
+      ├─ parameter[@list="true"]/name = "items"
+      ├─ parameter[@list="true"]/name = "x"
       └─ body/
           ├─ expression/string = "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
           ├─ assign/
@@ -678,7 +678,7 @@ module/
           │   │   ├─ left/expression/name = "result"
           │   │   └─ right/expression/call/
           │   │       ├─ name = "list"
-          │   │       └─ name = "items"
+          │   │       └─ name[@list="true"] = "items"
           │   └─ except[group]/
           │       ├─ tuple/
           │       │   ├─ name = "ValueError"
