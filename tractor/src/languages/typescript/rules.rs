@@ -194,7 +194,12 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::True                      => Rename(Bool),
         TsKind::TryStatement              => Rename(Try),
         TsKind::TypeParameter             => Rename(Generic),
-        TsKind::TypeParameters            => Rename(Generics),
+        // `<T, U>` generic parameter list. Per Principle #12 (no list
+        // containers): flatten the wrapper so each `<generic>` becomes
+        // a direct sibling of the enclosing declaration with
+        // `field="generics" list="true"` for JSON-array recovery.
+        // Matches Java / Rust shape.
+        TsKind::TypeParameters            => Flatten { distribute_field: Some("generics") },
         TsKind::TypePredicate             => Rename(Predicate),
         // `: v is Shape` — the annotation wrapper only adds a `:` text;
         // flatten so the inner type_predicate becomes the direct

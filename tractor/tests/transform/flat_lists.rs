@@ -122,9 +122,8 @@ fn rust() {
         &mut tree, "//parameters | //parameter_list | //type_parameters | //argument_list | //arguments", 0);
 }
 
-/// TypeScript currently retains a thin <generics> grouping
-/// element — pin that as current behaviour. Parameters and
-/// arguments still flatten.
+/// TypeScript flattens generic parameter lists into flat `<generic>`
+/// siblings (Principle #12 — no list containers), matching Java/Rust.
 #[test]
 fn typescript() {
     let mut tree = parse_src("typescript", r#"
@@ -132,12 +131,13 @@ fn typescript() {
         first<string, number>("x", 1, 2);
     "#);
 
-    claim("TypeScript function shape flattens parameters but keeps generics wrapper",
+    claim("TypeScript function flattens parameters and generic-parameter list",
         &mut tree,
         &multi_xpath(r#"
             //function[name='first']
                 [count(parameter)=3]
-                [generics[count(generic)=2]]
+                [count(generic)=2]
+                [not(generics)]
         "#),
         1);
 

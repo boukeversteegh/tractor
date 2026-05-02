@@ -203,7 +203,7 @@ fn typescript_vocabulary() {
         &mut tree,
         &multi_xpath(r#"
             //alias[name='Box']
-                [generics/generic[name='T']]
+                [generic[name='T']]
                 [type[name='Array']
                     [generic]
                     [type[name='T']]]

@@ -18,7 +18,7 @@ program/
   │   └─ string = "\"./barrel\""
   ├─ export/alias/
   │   ├─ name = "Re"
-  │   ├─ generics/generic/name = "T"
+  │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[conditional]/
   │       ├─ left/expression/type/name = "T"
   │       ├─ right/expression/type[generic]/
@@ -29,7 +29,7 @@ program/
   ├─ comment[leading] = "/** A shape with an optional label and readonly id. */"
   ├─ export/interface/
   │   ├─ name = "Shape"
-  │   ├─ generics/generic/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ value/expression/type[default]/type/name = "number"
   │   └─ body/
@@ -73,7 +73,7 @@ program/
   │       └─ type[literal]/string = "\"error\""
   ├─ export/alias/
   │   ├─ name = "Mapper"
-  │   ├─ generics/generic/name = "T"
+  │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[function]/
   │       ├─ parameter[required and @list="true"]/
   │       │   ├─ name = "input"
@@ -81,7 +81,7 @@ program/
   │       └─ returns/type/name = "T"
   ├─ export/alias/
   │   ├─ name = "Partialized"
-  │   ├─ generics/generic/name = "T"
+  │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[object]/indexer/
   │       ├─ name = "K"
   │       ├─ type[keyof]/type/name = "T"
@@ -106,7 +106,7 @@ program/
   ├─ comment[leading] = "/** Abstract base using visibility + readonly + static. */"
   ├─ export/class[abstract]/
   │   ├─ name = "Base"
-  │   ├─ generics/generic/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ constraint/type/name = "Shape"
   │   └─ body/
@@ -178,7 +178,7 @@ program/
   │               └─ name[@list="true"] = "value"
   ├─ export/class/
   │   ├─ name = "Widget"
-  │   ├─ generics/generic/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   ├─ constraint/type/name = "Shape"
   │   │   └─ value/expression/type[default]/type[generic]/
@@ -352,7 +352,7 @@ program/
   │           └─ string[@list="true"] = "\"\""
   ├─ function[async]/
   │   ├─ name = "compute"
-  │   ├─ generics/generic/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ constraint/type[union]/
   │   │       ├─ type/name = "number"
@@ -516,7 +516,7 @@ program/
   ├─ variable[const]/
   │   ├─ name = "arrow"
   │   └─ value/expression/arrow/
-  │       ├─ generics/generic/name = "U"
+  │       ├─ generic[@list="true"]/name = "U"
   │       ├─ parameter[required and @list="true"]/
   │       │   ├─ name = "xs"
   │       │   └─ type[array]/type/name = "U"
@@ -609,7 +609,7 @@ program/
   │       └─ type/name = "Status"
   ├─ alias/
   │   ├─ name = "Identity"
-  │   ├─ generics/generic/name = "T"
+  │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[conditional]/
   │       ├─ left/expression/type[typeof]/name = "globalThis"
   │       ├─ right/expression/type/name = "T"
