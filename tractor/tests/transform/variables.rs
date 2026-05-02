@@ -40,14 +40,14 @@ fn python() {
         1);
 
     claim("arithmetic augmented assignment keeps assign shape with operator marker",
-        &mut parse_src("python", "x += 1\n"), "//assign[op/assign[plus]]", 1);
+        &mut parse_src("python", "x += 1\n"), "//assign[op[assign and plus]]", 1);
 
     claim("power augmented assignment uses power marker",
-        &mut parse_src("python", "x **= 1\n"), "//assign[op/assign[power]]", 1);
+        &mut parse_src("python", "x **= 1\n"), "//assign[op[assign and power]]", 1);
 
-    claim("bitwise augmented assignment nests the bitwise operator marker",
-        &mut parse_src("python", "x &= 1\n"), "//assign[op/assign/bitwise[and]]", 1);
+    claim("bitwise augmented assignment carries flat bitwise marker siblings",
+        &mut parse_src("python", "x &= 1\n"), "//assign[op[assign and bitwise and and]]", 1);
 
-    claim("shift augmented assignment nests the shift operator marker",
-        &mut parse_src("python", "x <<= 1\n"), "//assign[op/assign/shift[left]]", 1);
+    claim("shift augmented assignment carries flat shift marker siblings",
+        &mut parse_src("python", "x <<= 1\n"), "//assign[op[assign and shift and left]]", 1);
 }

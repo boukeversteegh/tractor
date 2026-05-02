@@ -127,7 +127,7 @@ module/
   │       ├─ assert/
   │       │   ├─ compare/
   │       │   │   ├─ name = "x"
-  │       │   │   ├─ op/compare[greater and or-equal]
+  │       │   │   ├─ op[compare and greater and or-equal] = ">="
   │       │   │   └─ int = "0"
   │       │   └─ string = "\"x must be non-negative\""
   │       ├─ assign/
@@ -136,11 +136,11 @@ module/
   │       │   └─ right/expression/name = "x"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
-  │       │   ├─ op/assign[plus]
+  │       │   ├─ op[assign and plus] = "+="
   │       │   └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
-  │       │   ├─ op/assign[floor-divide]
+  │       │   ├─ op[assign and floor-divide] = "//="
   │       │   └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
@@ -153,7 +153,7 @@ module/
   │       │           └─ int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
-  │       │   ├─ op/assign[matmul]
+  │       │   ├─ op[assign and matmul] = "@="
   │       │   └─ right/expression/name = "matrix"
   │       └─ return/expression/ternary/
   │           ├─ name = "result"
@@ -292,7 +292,7 @@ module/
   │               │   ├─ name = "isinstance"
   │               │   ├─ name[@list="true"] = "other"
   │               │   └─ name[@list="true"] = "Derived"
-  │               ├─ op/logical[and]
+  │               ├─ op[logical and and] = "and"
   │               └─ right/expression/compare/
   │                   ├─ member/
   │                   │   ├─ name = "self"
@@ -318,7 +318,7 @@ module/
   │       │   ├─ body/if/
   │       │   │   ├─ condition/expression/compare/
   │       │   │   │   ├─ name = "v"
-  │       │   │   │   ├─ op/compare[less]
+  │       │   │   │   ├─ op[compare and less] = "<"
   │       │   │   │   └─ int = "0"
   │       │   │   ├─ then[continue] = "continue"
   │       │   │   ├─ else_if/
@@ -329,11 +329,11 @@ module/
   │       │   │   │   └─ then[break] = "break"
   │       │   │   └─ else/body/assign/
   │       │   │       ├─ left/expression/name = "total"
-  │       │   │       ├─ op/assign[plus]
+  │       │   │       ├─ op[assign and plus] = "+="
   │       │   │       └─ right/expression/name = "v"
   │       │   └─ else/body/assign/
   │       │       ├─ left/expression/name = "total"
-  │       │       ├─ op/assign[plus]
+  │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "n"
@@ -341,11 +341,11 @@ module/
   │       ├─ while/
   │       │   ├─ condition/expression/compare/
   │       │   │   ├─ name = "n"
-  │       │   │   ├─ op/compare[less]
+  │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ int = "10"
   │       │   ├─ body/assign/
   │       │   │   ├─ left/expression/name = "n"
-  │       │   │   ├─ op/assign[plus]
+  │       │   │   ├─ op[assign and plus] = "+="
   │       │   │   └─ right/expression/int = "1"
   │       │   └─ else/body[pass]
   │       ├─ try/
@@ -364,7 +364,7 @@ module/
   │       │   ├─ except[pass]/value/expression/name = "Exception"
   │       │   ├─ else/body/assign/
   │       │   │   ├─ left/expression/name = "total"
-  │       │   │   ├─ op/assign[plus]
+  │       │   │   ├─ op[assign and plus] = "+="
   │       │   │   └─ right/expression/int = "1"
   │       │   └─ finally/expression/call/name = "cleanup"
   │       ├─ with/
@@ -400,7 +400,7 @@ module/
   │           │   │   └─ value/expression/pattern/name = "pid"
   │           │   ├─ compare/
   │           │   │   ├─ name = "pid"
-  │           │   │   ├─ op/compare[greater]
+  │           │   │   ├─ op[compare and greater] = ">"
   │           │   │   └─ int = "0"
   │           │   └─ then/return/expression/name = "pid"
   │           ├─ arm/
@@ -443,7 +443,7 @@ module/
   │       │       ├─ right/expression/name = "data"
   │       │       └─ compare/
   │       │           ├─ name = "x"
-  │       │           ├─ op/compare[greater]
+  │       │           ├─ op[compare and greater] = ">"
   │       │           └─ int = "0"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "pairs"
@@ -515,11 +515,11 @@ module/
   │       │   ├─ condition/expression/compare/
   │       │   │   ├─ assign/
   │       │   │   │   ├─ name = "n"
-  │       │   │   │   ├─ op/assign[walrus]
+  │       │   │   │   ├─ op[assign and walrus] = ":="
   │       │   │   │   └─ value/expression/call/
   │       │   │   │       ├─ name = "len"
   │       │   │   │       └─ name[@list="true"] = "items"
-  │       │   │   ├─ op/compare[greater]
+  │       │   │   ├─ op[compare and greater] = ">"
   │       │   │   └─ int = "3"
   │       │   └─ then/expression/call/
   │       │       ├─ name = "print"
@@ -595,7 +595,7 @@ module/
   │       │       ├─ nonlocal/name = "counter"
   │       │       ├─ assign/
   │       │       │   ├─ left/expression/name = "counter"
-  │       │       │   ├─ op/assign[plus]
+  │       │       │   ├─ op[assign and plus] = "+="
   │       │       │   └─ right/expression/int = "1"
   │       │       └─ return/expression/name = "counter"
   │       ├─ delete/name = "counter"
@@ -612,7 +612,7 @@ module/
   │   ├─ left/type/name = "IntOrStr"
   │   └─ right/type/binary/
   │       ├─ left/expression/name = "int"
-  │       ├─ op/bitwise[or]
+  │       ├─ op[bitwise and or] = "|"
   │       └─ right/expression/name = "str"
   ├─ alias/
   │   ├─ left/type[generic]/
@@ -689,7 +689,7 @@ module/
           ├─ assign/
           │   ├─ left/expression/name = "flag"
           │   └─ right/expression/unary/
-          │       ├─ op/logical[not]
+          │       ├─ op[logical and not] = "not"
           │       └─ name = "matched"
           ├─ assign/
           │   ├─ left/expression/name = "bundle"

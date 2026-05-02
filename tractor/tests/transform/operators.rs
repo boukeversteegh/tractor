@@ -146,7 +146,7 @@ fn csharp_prefix_unary() {
 
     claim("`!true` extracts <op> with logical-not marker (no [prefix] needed)",
         &mut parse_src("csharp", "bool b = !true;"),
-        "//unary[op/logical[not]][not(prefix)]/bool='true'",
+        "//unary[op[logical and not]][not(prefix)]/bool='true'",
         1);
 
     claim("`~x` extracts <op> on plain <unary> (no [prefix] needed)",
@@ -203,14 +203,14 @@ fn java_update_prefix_vs_postfix() {
 /// as `+=` (`<op[assign[plus]]>`) — child marker under `<assign>`.
 #[test]
 fn python_floor_divide_and_matmul() {
-    claim("Python `//=` extracts `<op[assign[floor-divide]]>`",
+    claim("Python `//=` carries flat `assign` + `floor-divide` markers on `<op>`",
         &mut parse_src("python", "x = 4\nx //= 2\n"),
-        "//assign[op[assign[floor-divide]]]",
+        "//assign[op[assign and floor-divide]]",
         1);
 
-    claim("Python `@=` extracts `<op[assign[matmul]]>`",
+    claim("Python `@=` carries flat `assign` + `matmul` markers on `<op>`",
         &mut parse_src("python", "import numpy as np\nA = np.eye(2)\nA @= A\n"),
-        "//assign[op[assign[matmul]]]",
+        "//assign[op[assign and matmul]]",
         1);
 
     claim("Python `//` (bare floor-divide) extracts `<op[floor-divide]>`",
@@ -356,7 +356,7 @@ fn python_compare() {
         &multi_xpath(r#"
             //compare
                 [name='x']
-                [op/compare[less]]
+                [op[compare and less]]
                 [int='5']
         "#),
         1);
@@ -374,7 +374,7 @@ fn python_logical() {
         &multi_xpath(r#"
             //logical
                 [left/expression/name='a']
-                [op/logical[and]]
+                [op[logical and and]]
                 [right/expression/name='b']
         "#),
         1);

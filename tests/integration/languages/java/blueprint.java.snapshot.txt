@@ -118,7 +118,7 @@ program/
   │       │       │   └─ string[@list="true"] = "\"null\""
   │       │       ├─ else_if/
   │       │       │   ├─ condition/expression/unary/
-  │       │       │   │   ├─ op/logical[not]
+  │       │       │   │   ├─ op[logical and not] = "!"
   │       │       │   │   └─ name = "ready"
   │       │       │   └─ then/return/expression/null = "null"
   │       │       └─ else/return/expression/name = "input"
@@ -131,13 +131,13 @@ program/
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "n"
-  │       │       │   ├─ op/compare[greater]
+  │       │       │   ├─ op[compare and greater] = ">"
   │       │       │   └─ right/expression/int = "0"
   │       │       ├─ then/string = "\"positive\""
   │       │       └─ else/ternary/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/name = "n"
-  │       │           │   ├─ op/compare[less]
+  │       │           │   ├─ op[compare and less] = "<"
   │       │           │   └─ right/expression/int = "0"
   │       │           ├─ then/string = "\"negative\""
   │       │           └─ else/string = "\"zero\""
@@ -159,7 +159,7 @@ program/
   │       │       │   ├─ value/expression/name = "xs"
   │       │       │   └─ body/expression/assign/
   │       │       │       ├─ left/expression/name = "total"
-  │       │       │       ├─ op/assign[plus]
+  │       │       │       ├─ op[assign and plus] = "+="
   │       │       │       └─ right/expression/name = "x"
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
@@ -169,7 +169,7 @@ program/
   │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
   │       │       │   │   ├─ left/expression/name = "i"
-  │       │       │   │   ├─ op/compare[less]
+  │       │       │   │   ├─ op[compare and less] = "<"
   │       │       │   │   └─ right/expression/int = "3"
   │       │       │   └─ body/expression/assign/
   │       │       │       ├─ left/expression/name = "i"
@@ -202,7 +202,7 @@ program/
   │       │           │   │   │   ├─ type/name = "String"
   │       │           │   │   │   └─ name = "s"
   │       │           │   │   └─ guard/unary/
-  │       │           │   │       ├─ op/logical[not]
+  │       │           │   │       ├─ op[logical and not] = "!"
   │       │           │   │       └─ call/
   │       │           │   │           ├─ name = "s"
   │       │           │   │           └─ name = "isEmpty"
@@ -258,12 +258,12 @@ program/
   │                   ├─ condition/expression/binary/
   │                   │   ├─ left/expression/binary/
   │                   │   │   ├─ left/expression/name = "x"
-  │                   │   │   ├─ op/compare[less]
+  │                   │   │   ├─ op[compare and less] = "<"
   │                   │   │   └─ right/expression/int = "0"
-  │                   │   ├─ op/logical[or]
+  │                   │   ├─ op[logical and or] = "||"
   │                   │   └─ right/expression/binary/
   │                   │       ├─ left/expression/name = "y"
-  │                   │       ├─ op/compare[less]
+  │                   │       ├─ op[compare and less] = "<"
   │                   │       └─ right/expression/int = "0"
   │                   └─ then/throw/new/type/name = "IllegalArgumentException"
   ├─ class[package]/
@@ -355,7 +355,7 @@ program/
           │       ├─ assert/
           │       │   ├─ binary/
           │       │   │   ├─ left/expression/name = "n"
-          │       │   │   ├─ op/compare[greater and or-equal]
+          │       │   │   ├─ op[compare and greater and or-equal] = ">="
           │       │   │   └─ right/expression/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
@@ -375,7 +375,7 @@ program/
           │       │       │       └─ value/expression/int = "0"
           │       │       ├─ condition/expression/binary/
           │       │       │   ├─ left/expression/name = "i"
-          │       │       │   ├─ op/compare[less]
+          │       │       │   ├─ op[compare and less] = "<"
           │       │       │   └─ right/expression/int = "5"
           │       │       ├─ unary/
           │       │       │   ├─ name = "i"
@@ -404,7 +404,7 @@ program/
           │           │   └─ op[increment] = "++"
           │           └─ condition/expression/binary/
           │               ├─ left/expression/name = "k"
-          │               ├─ op/compare[less]
+          │               ├─ op[compare and less] = "<"
           │               └─ right/expression/int = "3"
           ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
           ├─ method[package]/

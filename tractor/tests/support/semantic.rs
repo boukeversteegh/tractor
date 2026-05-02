@@ -92,26 +92,10 @@ pub fn assert_value(tree: &mut XeeParseResult, xpath: &str, expected: &str, inva
 #[allow(dead_code)]
 pub fn _arc_sentinel(_: Arc<Vec<String>>) {}
 
-/// Quote-aware whitespace stripper: collapses ASCII whitespace
-/// OUTSIDE of `'…'` and `"…"` string literals so queries can be
-/// written with indentation in source. Whitespace inside literals
-/// (e.g. `[.='// instance counter']`) is preserved verbatim.
+/// Pass-through. XPath natively allows whitespace anywhere outside
+/// string literals, so multi-line indented queries work without any
+/// preprocessing. Kept as a thin helper so existing callers can stay
+/// unchanged; new code can pass raw strings to `claim`.
 pub fn multi_xpath(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    let mut in_quote: Option<char> = None;
-    for c in s.chars() {
-        match in_quote {
-            Some(q) => {
-                out.push(c);
-                if c == q { in_quote = None; }
-            }
-            None if c == '\'' || c == '"' => {
-                out.push(c);
-                in_quote = Some(c);
-            }
-            None if c.is_whitespace() => {}
-            None => out.push(c),
-        }
-    }
-    out
+    s.to_string()
 }

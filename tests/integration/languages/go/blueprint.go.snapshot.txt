@@ -290,7 +290,7 @@ file/
   │               │       ├─ name = "seen"
   │               │       └─ name = "x"
   │               ├─ condition/expression/unary/
-  │               │   ├─ op/logical[not]
+  │               │   ├─ op[logical and not] = "!"
   │               │   └─ name = "ok"
   │               └─ then/
   │                   ├─ assign/
@@ -484,7 +484,7 @@ file/
           │   │   └─ right/expression/int = "0"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "i"
-          │   │   ├─ op/compare[less]
+          │   │   ├─ op[compare and less] = "<"
           │   │   └─ right/expression/int = "10"
           │   ├─ unary/
           │   │   ├─ name = "i"
@@ -529,7 +529,7 @@ file/
           ├─ for/
           │   ├─ binary/
           │   │   ├─ left/expression/name = "n"
-          │   │   ├─ op/compare[less]
+          │   │   ├─ op[compare and less] = "<"
           │   │   └─ right/expression/int = "3"
           │   └─ body/unary/
           │       ├─ name = "n"
@@ -552,7 +552,7 @@ file/
           │       │   │       └─ name = "in"
           │       │   ├─ if/
           │       │   │   ├─ condition/expression/unary/
-          │       │   │   │   ├─ op/logical[not]
+          │       │   │   │   ├─ op[logical and not] = "!"
           │       │   │   │   └─ name = "ok"
           │       │   │   └─ then/break/label = "Outer"
           │       │   └─ send/
@@ -590,7 +590,7 @@ file/
           │   │   └─ expression/name = "pts"
           │   └─ right/
           │       ├─ expression/unary/
-          │       │   ├─ op/bitwise[and]
+          │       │   ├─ op[bitwise and and] = "&"
           │       │   └─ literal/
           │       │       ├─ type/name = "Point"
           │       │       └─ body/
@@ -654,9 +654,9 @@ file/
           │   │   │   │   └─ name = "As"
           │   │   │   ├─ name[@list="true"] = "err"
           │   │   │   └─ unary[@list="true"]/
-          │   │   │       ├─ op/bitwise[and]
+          │   │   │       ├─ op[bitwise and and] = "&"
           │   │   │       └─ name = "target"
-          │   │   ├─ op/logical[or]
+          │   │   ├─ op[logical and or] = "||"
           │   │   └─ right/expression/call/
           │   │       ├─ member/
           │   │       │   ├─ name = "errors"

@@ -131,7 +131,7 @@ unit/
   │   │       │       │   └─ right/expression/member[instance]/
   │   │       │       │       ├─ name = "b"
   │   │       │       │       └─ name = "X"
-  │   │       │       ├─ op/logical[and]
+  │   │       │       ├─ op[logical and and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/member[instance]/
   │   │       │           │   ├─ name = "a"
@@ -149,7 +149,7 @@ unit/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
   │   │       │   └─ body/unary/
-  │   │       │       ├─ op/logical[not]
+  │   │       │       ├─ op[logical and not] = "!"
   │   │       │       └─ binary/
   │   │       │           ├─ left/expression/name = "a"
   │   │       │           ├─ op[equals] = "=="
@@ -166,7 +166,7 @@ unit/
   │   │       │       │   └─ pattern[declaration]/
   │   │       │       │       ├─ type/name = "Point"
   │   │       │       │       └─ name = "p"
-  │   │       │       ├─ op/logical[and]
+  │   │       │       ├─ op[logical and and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/name = "p"
   │   │       │           └─ op[equals] = "=="
@@ -458,7 +458,7 @@ unit/
   │               │           │   │   ├─ left/expression/member[instance]/
   │               │           │   │   │   ├─ name = "w"
   │               │           │   │   │   └─ name = "Id"
-  │               │           │   │   ├─ op/compare[greater]
+  │               │           │   │   ├─ op[compare and greater] = ">"
   │               │           │   │   └─ right/expression/int = "100"
   │               │           │   └─ string = "\"big\""
   │               │           └─ arm/
@@ -611,7 +611,7 @@ unit/
   │               │   │       └─ int = "0"
   │               │   ├─ condition/expression/binary/
   │               │   │   ├─ left/expression/name = "i"
-  │               │   │   ├─ op/compare[less]
+  │               │   │   ├─ op[compare and less] = "<"
   │               │   │   └─ right/expression/int = "2"
   │               │   ├─ unary/
   │               │   │   ├─ name = "i"
@@ -626,7 +626,7 @@ unit/
   │               │   ├─ left/expression/unary/
   │               │   │   ├─ name = "j"
   │               │   │   └─ op[increment] = "++"
-  │               │   ├─ op/compare[less]
+  │               │   ├─ op[compare and less] = "<"
   │               │   └─ right/expression/int = "2"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
@@ -639,7 +639,7 @@ unit/
   │               │   │   └─ op[increment] = "++"
   │               │   └─ condition/expression/binary/
   │               │       ├─ left/expression/name = "k"
-  │               │       ├─ op/compare[less]
+  │               │       ├─ op[compare and less] = "<"
   │               │       └─ right/expression/int = "2"
   │               ├─ foreach/
   │               │   ├─ type/name = "var"
@@ -688,7 +688,7 @@ unit/
   │               │   │   │   │   │   ├─ name = "ex"
   │               │   │   │   │   │   └─ name = "Message"
   │               │   │   │   │   └─ name = "Length"
-  │               │   │   │   ├─ op/compare[greater]
+  │               │   │   │   ├─ op[compare and greater] = ">"
   │               │   │   │   └─ right/expression/int = "0"
   │               │   │   └─ body/block/expression/call/
   │               │   │       ├─ name = "log"

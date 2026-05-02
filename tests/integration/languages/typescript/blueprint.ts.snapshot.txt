@@ -240,7 +240,7 @@ program/
   │       │       │   └─ value/expression/number = "0"
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "i"
-  │       │       │   ├─ op/compare[less]
+  │       │       │   ├─ op[compare and less] = "<"
   │       │       │   └─ right/expression/member/
   │       │       │       ├─ object/member/
   │       │       │       │   ├─ object/this = "this"
@@ -307,14 +307,14 @@ program/
   │       │   │   ├─ left/expression/unary/
   │       │   │   │   ├─ op[typeof] = "typeof"
   │       │   │   │   └─ name = "v"
-  │       │   │   ├─ op/equals[strict]
+  │       │   │   ├─ op[equals and strict] = "==="
   │       │   │   └─ right/expression/string = "\"object\""
-  │       │   ├─ op/logical[and]
+  │       │   ├─ op[logical and and] = "&&"
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/name = "v"
-  │       │       ├─ op/not-equals[strict]
+  │       │       ├─ op[not-equals and strict] = "!=="
   │       │       └─ right/expression/null = "null"
-  │       ├─ op/logical[and]
+  │       ├─ op[logical and and] = "&&"
   │       └─ right/expression/binary/
   │           ├─ left/expression/string = "\"id\""
   │           ├─ op[contains] = "in"
@@ -429,7 +429,7 @@ program/
   │       ├─ if/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
-  │       │   │   ├─ op/compare[less]
+  │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/number = "0"
   │       │   ├─ then/expression/assign/
   │       │   │   ├─ left/expression/name = "status"
@@ -438,7 +438,7 @@ program/
   │       │   ├─ else_if/
   │       │   │   ├─ condition/expression/binary/
   │       │   │   │   ├─ left/expression/name = "n"
-  │       │   │   │   ├─ op/equals[strict]
+  │       │   │   │   ├─ op[equals and strict] = "==="
   │       │   │   │   └─ right/expression/number = "0"
   │       │   │   └─ then/expression/assign/
   │       │   │       ├─ left/expression/name = "status"
@@ -447,7 +447,7 @@ program/
   │       │   ├─ else_if/
   │       │   │   ├─ condition/expression/binary/
   │       │   │   │   ├─ left/expression/name = "n"
-  │       │   │   │   ├─ op/compare[less]
+  │       │   │   │   ├─ op[compare and less] = "<"
   │       │   │   │   └─ right/expression/number = "10"
   │       │   │   └─ then/expression/assign/
   │       │   │       ├─ left/expression/name = "status"
@@ -491,7 +491,7 @@ program/
   │       │       ├─ left/expression[non_null]/index/
   │       │       │   ├─ object/name = "obj"
   │       │       │   └─ name = "k"
-  │       │       ├─ op/assign[plus]
+  │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/number = "1"
   │       ├─ for/
   │       │   ├─ left/expression/pattern[array]/name = "v"
@@ -509,7 +509,7 @@ program/
   │       └─ return/expression/ternary/
   │           ├─ condition/expression/binary/
   │           │   ├─ left/expression/name = "n"
-  │           │   ├─ op/compare[greater]
+  │           │   ├─ op[compare and greater] = ">"
   │           │   └─ right/expression/number = "0"
   │           ├─ then/name = "status"
   │           └─ else/string = "\"idle\""
@@ -671,7 +671,7 @@ program/
   │       │   ├─ left/expression/unary/
   │       │   │   ├─ op[typeof] = "typeof"
   │       │   │   └─ name = "x"
-  │       │   ├─ op/not-equals[strict]
+  │       │   ├─ op[not-equals and strict] = "!=="
   │       │   └─ right/expression/string = "\"number\""
   │       └─ then/throw/new/
   │           ├─ name = "Error"
@@ -743,7 +743,7 @@ program/
   │       │       │   └─ value/expression/number = "100"
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "i"
-  │       │       │   ├─ op/compare[less]
+  │       │       │   ├─ op[compare and less] = "<"
   │       │       │   └─ right/expression/number = "5"
   │       │       ├─ unary/
   │       │       │   ├─ name = "i"
@@ -755,13 +755,13 @@ program/
   │       │           ├─ if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
-  │       │           │   │   ├─ op/equals[strict]
+  │       │           │   │   ├─ op[equals and strict] = "==="
   │       │           │   │   └─ right/expression/number = "2"
   │       │           │   └─ then/continue/name = "outer"
   │       │           ├─ if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
-  │       │           │   │   ├─ op/equals[strict]
+  │       │           │   │   ├─ op[equals and strict] = "==="
   │       │           │   │   └─ right/expression/number = "4"
   │       │           │   └─ then/break/name = "outer"
   │       │           └─ expression/assign/
@@ -770,7 +770,7 @@ program/
   │       │               └─ right/
   │       │                   ├─ expression/assign/
   │       │                   │   ├─ left/expression/name = "total"
-  │       │                   │   ├─ op/assign[plus]
+  │       │                   │   ├─ op[assign and plus] = "+="
   │       │                   │   └─ right/expression/name = "i"
   │       │                   └─ expression/binary/
   │       │                       ├─ left/expression/name = "total"
@@ -785,7 +785,7 @@ program/
   │       │   │   └─ op[increment] = "++"
   │       │   └─ condition/expression/binary/
   │       │       ├─ left/expression/name = "n"
-  │       │       ├─ op/compare[less]
+  │       │       ├─ op[compare and less] = "<"
   │       │       └─ right/expression/number = "3"
   │       ├─ if/
   │       │   ├─ condition/expression/bool = "false"

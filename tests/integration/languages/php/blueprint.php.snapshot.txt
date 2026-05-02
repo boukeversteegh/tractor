@@ -108,7 +108,7 @@ program/
   │       │           │   ├─ left/expression/member[instance]/
   │       │           │   │   ├─ variable/name = "this"
   │       │           │   │   └─ name = "count"
-  │       │           │   ├─ op/compare[greater]
+  │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "10"
   │       │           ├─ body/return/expression/string/interpolation/variable/name = "target"
   │       │           ├─ else_if/
@@ -116,7 +116,7 @@ program/
   │       │           │   │   ├─ left/expression/member[instance]/
   │       │           │   │   │   ├─ variable/name = "this"
   │       │           │   │   │   └─ name = "count"
-  │       │           │   │   ├─ op/compare[greater]
+  │       │           │   │   ├─ op[compare and greater] = ">"
   │       │           │   │   └─ right/expression/int = "0"
   │       │           │   └─ body/return/expression/string/interpolation/variable/name = "target"
   │       │           └─ else/body/return/expression/string/interpolation/variable/name = "target"
@@ -129,13 +129,13 @@ program/
   │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/variable/name = "n"
-  │       │       │   ├─ op/compare[greater]
+  │       │       │   ├─ op[compare and greater] = ">"
   │       │       │   └─ right/expression/int = "0"
   │       │       ├─ body/string = "\"positive\""
   │       │       └─ ternary/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/variable/name = "n"
-  │       │           │   ├─ op/compare[less]
+  │       │           │   ├─ op[compare and less] = "<"
   │       │           │   └─ right/expression/int = "0"
   │       │           ├─ body/string = "\"negative\""
   │       │           └─ string = "\"zero\""
@@ -158,12 +158,12 @@ program/
   │       │           │   │   ├─ left/expression/call/
   │       │           │   │   │   ├─ name = "is_string"
   │       │           │   │   │   └─ argument[@list="true"]/variable/name = "value"
-  │       │           │   │   ├─ op/logical[and]
+  │       │           │   │   ├─ op[logical and and] = "&&"
   │       │           │   │   └─ right/expression/binary/
   │       │           │   │       ├─ left/expression/call/
   │       │           │   │       │   ├─ name = "strlen"
   │       │           │   │       │   └─ argument[@list="true"]/variable/name = "value"
-  │       │           │   │       ├─ op/compare[greater]
+  │       │           │   │       ├─ op[compare and greater] = ">"
   │       │           │   │       └─ right/expression/int = "0"
   │       │           │   └─ string = "\"non-empty string\""
   │       │           ├─ arm/
@@ -192,7 +192,7 @@ program/
   │       │       │       ├─ if/
   │       │       │       │   ├─ condition/expression/binary/
   │       │       │       │   │   ├─ left/expression/variable/name = "item"
-  │       │       │       │   │   ├─ op/equals[strict]
+  │       │       │       │   │   ├─ op[equals and strict] = "==="
   │       │       │       │   │   └─ right/expression/null = "null"
   │       │       │       │   └─ body[continue]
   │       │       │       └─ try/
@@ -390,11 +390,11 @@ program/
   │       │   └─ right/expression/int = "0"
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "count"
-  │       │   ├─ op/assign[plus]
+  │       │   ├─ op[assign and plus] = "+="
   │       │   └─ right/expression/int = "5"
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "count"
-  │       │   ├─ op/assign[multiply]
+  │       │   ├─ op[assign and multiply] = "*="
   │       │   └─ right/expression/int = "2"
   │       ├─ comment[leading] = "// Reference assignment + by-ref foreach."
   │       ├─ expression/assign/
@@ -415,7 +415,7 @@ program/
   │       │   ├─ variable/name = "x"
   │       │   └─ body/expression/assign/
   │       │       ├─ left/expression/variable/name = "x"
-  │       │       ├─ op/assign[multiply]
+  │       │       ├─ op[assign and multiply] = "*="
   │       │       └─ right/expression/int = "10"
   │       ├─ unset/variable/name = "x"
   │       ├─ comment[leading] = "// List destructure."
@@ -494,7 +494,7 @@ program/
   │       │   │   └─ right/expression/int = "10"
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/variable/name = "i"
-  │       │   │   ├─ op/compare[less]
+  │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/variable/name = "j"
   │       │   ├─ unary/
   │       │   │   ├─ variable/name = "i"
@@ -548,7 +548,7 @@ program/
   │   ├─ returns/type[primitive]/name = "bool"
   │   └─ body/return/expression/binary/
   │       ├─ left/expression/variable/name = "thing"
-  │       ├─ op/not-equals[strict]
+  │       ├─ op[not-equals and strict] = "!=="
   │       └─ right/expression/null = "null"
   ├─ comment[leading] = "// Bottom type (`never`) in return position."
   ├─ function/

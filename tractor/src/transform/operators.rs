@@ -269,7 +269,16 @@ pub fn is_operator_marker_name(name: &str) -> bool {
 /// Add semantic marker children inside an `<op>` element based on
 /// operator text — drives off the declarative `OPERATOR_MARKERS`
 /// table. Unknown operators get no markers (graceful degradation).
+/// Render every operator marker as a flat sibling under `<op>` —
+/// no nesting of marker categories. `==` → `<op><equals/></op>`;
+/// `===` → `<op><equals/><strict/></op>`; `<=` →
+/// `<op><compare/><less/><or-equal/></op>`; `&&=` →
+/// `<op><assign/><logical/><and/></op>`. Marker order is
+/// "primary, children, nested-name, nested-children" but since
+/// markers are presence-flags the order is semantically irrelevant
+/// — XPath predicates use `[primary and child]` regardless.
 fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
+    use crate::transform::helpers::append_empty_element;
     let spec = match lookup_operator_spec(text) {
         Some(s) => s,
         None => return Ok(()),
@@ -278,9 +287,15 @@ fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xo
         Some(p) => p,
         None => return Ok(()),
     };
-    let primary_el = append_marker(xot, op, primary, spec.children)?;
+    append_empty_element(xot, op, primary)?;
+    for child in spec.children {
+        append_empty_element(xot, op, child)?;
+    }
     if let Some((nested_name, nested_children)) = spec.nested {
-        append_marker(xot, primary_el, nested_name, nested_children)?;
+        append_empty_element(xot, op, nested_name)?;
+        for nested_child in nested_children {
+            append_empty_element(xot, op, nested_child)?;
+        }
     }
     Ok(())
 }

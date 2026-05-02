@@ -490,7 +490,7 @@ file/
   │       │           │   │   │   └─ pattern[field]/name = "h"
   │       │           │   │   └─ condition/expression/binary/
   │       │           │   │       ├─ left/expression/name = "w"
-  │       │           │   │       ├─ op/compare[greater]
+  │       │           │   │       ├─ op[compare and greater] = ">"
   │       │           │   │       └─ right/expression/int = "0"
   │       │           │   └─ value/expression/cast/
   │       │           │       ├─ value/expression/binary/
@@ -587,7 +587,7 @@ file/
   │       │           │   │   ├─ left/expression/name = "i"
   │       │           │   │   ├─ op[multiply] = "*"
   │       │           │   │   └─ right/expression/name = "j"
-  │       │           │   ├─ op/compare[greater]
+  │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "20"
   │       │           └─ then/break/label/name = "outer"
   │       ├─ let[mut]/
@@ -596,7 +596,7 @@ file/
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
-  │       │   │   ├─ op/compare[less]
+  │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/expression/assign/
   │       │       ├─ left/expression/name = "n"
@@ -908,7 +908,7 @@ file/
   │       │   │   ├─ expression/value/expression/name = "inner"
   │       │   │   └─ expression/binary/
   │       │   │       ├─ left/expression/name = "ix"
-  │       │   │       ├─ op/compare[greater]
+  │       │   │       ├─ op[compare and greater] = ">"
   │       │   │       └─ right/expression/int = "0"
   │       │   └─ then/return/expression/binary/
   │       │       ├─ left/expression/name = "ix"

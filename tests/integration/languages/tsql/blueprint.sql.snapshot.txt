@@ -16,7 +16,7 @@ file/
   │       │   ├─ column/
   │       │   │   ├─ ref/name = "u"
   │       │   │   └─ name = "Age"
-  │       │   ├─ op/compare[greater]
+  │       │   ├─ op[compare and greater] = ">"
   │       │   └─ literal = "18"
   │       └─ order/target/column/
   │           ├─ ref/name = "u"
@@ -33,7 +33,7 @@ file/
   │   ├─ ref/name = "OldRecords"
   │   └─ where/compare/
   │       ├─ column/name = "CreatedAt"
-  │       ├─ op/compare[less]
+  │       ├─ op[compare and less] = "<"
   │       └─ literal = "'2020-01-01'"
   ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
@@ -110,7 +110,7 @@ file/
   │           ├─ column/
   │           │   ├─ ref/name = "o"
   │           │   └─ name = "Total"
-  │           ├─ op/compare[greater]
+  │           ├─ op[compare and greater] = ">"
   │           └─ literal = "100"
   ├─ comment = "-- Subquery with IN"
   ├─ statement/
@@ -125,7 +125,7 @@ file/
   │                   ├─ relation/ref/name = "Orders"
   │                   └─ where/compare/
   │                       ├─ column/name = "Total"
-  │                       ├─ op/compare[greater]
+  │                       ├─ op[compare and greater] = ">"
   │                       └─ literal = "50"
   ├─ comment = "-- EXISTS"
   ├─ statement/
@@ -169,7 +169,7 @@ file/
   │           ├─ call/
   │           │   ├─ ref/name = "COUNT"
   │           │   └─ star = "*"
-  │           ├─ op/compare[greater]
+  │           ├─ op[compare and greater] = ">"
   │           └─ literal = "5"
   ├─ comment = "-- CASE WHEN"
   ├─ statement/
@@ -178,7 +178,7 @@ file/
   │   │   ├─ case/
   │   │   │   ├─ compare/
   │   │   │   │   ├─ column/name = "Age"
-  │   │   │   │   ├─ op/compare[greater and or-equal]
+  │   │   │   │   ├─ op[compare and greater and or-equal] = ">="
   │   │   │   │   └─ literal = "18"
   │   │   │   ├─ literal = "'Adult'"
   │   │   │   └─ literal = "'Minor'"
