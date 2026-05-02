@@ -26,7 +26,7 @@ file/
   │       ├─ member/
   │       │   ├─ name = "errors"
   │       │   └─ name = "New"
-  │       └─ string[@list="true"] = "\"not found\""
+  │       └─ string[@list="arguments"] = "\"not found\""
   ├─ var/
   │   ├─ name = "globalCount"
   │   └─ type/name = "int"
@@ -47,10 +47,10 @@ file/
   │       └─ returns/type/name = "string"
   ├─ interface[exported]/
   │   ├─ name = "ReadStringer"
-  │   ├─ extends[@list="true"]/type/
+  │   ├─ extends[@list="extends"]/type/
   │   │   ├─ name = "io"
   │   │   └─ name = "Reader"
-  │   ├─ extends[@list="true"]/type/name = "Stringer"
+  │   ├─ extends[@list="extends"]/type/name = "Stringer"
   │   └─ method/
   │       ├─ name = "Close"
   │       └─ returns/type/name = "error"
@@ -65,18 +65,18 @@ file/
   ├─ type[exported]/
   │   ├─ name = "Handler"
   │   └─ type[function]/
-  │       ├─ parameter[@list="true"]/
+  │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "ctx"
   │       │   └─ type/
   │       │       ├─ name = "context"
   │       │       └─ name = "Context"
-  │       ├─ parameter[@list="true"]/
+  │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "id"
   │       │   └─ type/name = "UserID"
   │       └─ returns/type/name = "error"
   ├─ struct[exported]/
   │   ├─ name = "Container"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "any"
   │   └─ field[unexported]/
@@ -113,13 +113,13 @@ file/
   │           ├─ name = "Created"
   │           └─ type/name = "int64"
   ├─ method[exported]/
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "c"
   │   │   └─ pointer/type[generic]/
   │   │       ├─ type/name = "Container"
-  │   │       └─ type[@list="true"]/name = "T"
+  │   │       └─ type[@list="arguments"]/name = "T"
   │   ├─ name = "Push"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
   │   └─ body/assign/
@@ -128,12 +128,12 @@ file/
   │       │   └─ name = "items"
   │       └─ right/expression/call/
   │           ├─ name = "append"
-  │           ├─ member[@list="true"]/
+  │           ├─ member[@list="arguments"]/
   │           │   ├─ name = "c"
   │           │   └─ name = "items"
-  │           └─ name[@list="true"] = "v"
+  │           └─ name[@list="arguments"] = "v"
   ├─ method[exported]/
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
   │   │   └─ type/name = "Point"
   │   ├─ name = "String"
@@ -142,19 +142,19 @@ file/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Sprintf"
-  │       ├─ string[@list="true"] = "\"(%d,%d)\""
-  │       ├─ member[@list="true"]/
+  │       ├─ string[@list="arguments"] = "\"(%d,%d)\""
+  │       ├─ member[@list="arguments"]/
   │       │   ├─ name = "p"
   │       │   └─ name = "X"
-  │       └─ member[@list="true"]/
+  │       └─ member[@list="arguments"]/
   │           ├─ name = "p"
   │           └─ name = "Y"
   ├─ method[exported]/
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
   │   │   └─ pointer/type/name = "Point"
   │   ├─ name = "Shift"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "dx"
   │   │   ├─ name = "dy"
   │   │   └─ type/name = "int"
@@ -170,7 +170,7 @@ file/
   │           │   └─ name = "Y"
   │           └─ right/expression/name = "dy"
   ├─ method[exported]/
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "e"
   │   │   └─ pointer/type/name = "MyErr"
   │   ├─ name = "Error"
@@ -180,7 +180,7 @@ file/
   │       └─ name = "msg"
   ├─ function[unexported]/
   │   ├─ name = "wrap"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "err"
   │   │   └─ type/name = "error"
   │   ├─ returns/type/name = "error"
@@ -188,8 +188,8 @@ file/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Errorf"
-  │       ├─ string[@list="true"] = "\"wrap: %w\""
-  │       └─ name[@list="true"] = "err"
+  │       ├─ string[@list="arguments"] = "\"wrap: %w\""
+  │       └─ name[@list="arguments"] = "err"
   ├─ function[unexported]/
   │   ├─ name = "doThing"
   │   ├─ returns/type/name = "error"
@@ -204,17 +204,17 @@ file/
   │       └─ expression/name = "ErrNotFound"
   ├─ function[exported]/
   │   ├─ name = "Map"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   ├─ name = "U"
   │   │   └─ type/name = "any"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "f"
   │   │   └─ type[function]/
-  │   │       ├─ parameter[@list="true"]/type/name = "T"
+  │   │       ├─ parameter[@list="parameters"]/type/name = "T"
   │   │       └─ returns/type/name = "U"
   │   ├─ returns/slice/type/name = "U"
   │   └─ body/
@@ -222,11 +222,11 @@ file/
   │       │   ├─ left/expression/name = "out"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "make"
-  │       │       ├─ slice[@list="true"]/type/name = "U"
-  │       │       ├─ int[@list="true"] = "0"
-  │       │       └─ call[@list="true"]/
+  │       │       ├─ slice[@list="arguments"]/type/name = "U"
+  │       │       ├─ int[@list="arguments"] = "0"
+  │       │       └─ call[@list="arguments"]/
   │       │           ├─ name = "len"
-  │       │           └─ name[@list="true"] = "xs"
+  │       │           └─ name[@list="arguments"] = "xs"
   │       ├─ for/
   │       │   ├─ range/
   │       │   │   ├─ left/
@@ -237,17 +237,17 @@ file/
   │       │       ├─ left/expression/name = "out"
   │       │       └─ right/expression/call/
   │       │           ├─ name = "append"
-  │       │           ├─ name[@list="true"] = "out"
-  │       │           └─ call[@list="true"]/
+  │       │           ├─ name[@list="arguments"] = "out"
+  │       │           └─ call[@list="arguments"]/
   │       │               ├─ name = "f"
-  │       │               └─ name[@list="true"] = "x"
+  │       │               └─ name[@list="arguments"] = "x"
   │       └─ return/expression/name = "out"
   ├─ function[exported]/
   │   ├─ name = "Sum"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "Number"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/type/name = "T"
@@ -262,10 +262,10 @@ file/
   │           └─ right/expression/name = "x"
   ├─ function[exported]/
   │   ├─ name = "Uniq"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "comparable"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/slice/type/name = "T"
@@ -302,14 +302,14 @@ file/
   │                       ├─ left/expression/name = "out"
   │                       └─ right/expression/call/
   │                           ├─ name = "append"
-  │                           ├─ name[@list="true"] = "out"
-  │                           └─ name[@list="true"] = "x"
+  │                           ├─ name[@list="arguments"] = "out"
+  │                           └─ name[@list="arguments"] = "x"
   ├─ function[unexported]/
   │   ├─ name = "variadic"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "prefix"
   │   │   └─ type/name = "string"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "vals"
   │   │   └─ type/name = "int"
   │   ├─ returns/
@@ -323,7 +323,7 @@ file/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "ToUpper"
-  │       │       └─ name[@list="true"] = "prefix"
+  │       │       └─ name[@list="arguments"] = "prefix"
   │       └─ for/
   │           ├─ range/
   │           │   ├─ left/
@@ -375,16 +375,16 @@ file/
   │       │   ├─ left/expression/name = "mapper"
   │       │   └─ right/expression/type[generic]/
   │       │       ├─ type/name = "Map"
-  │       │       ├─ type[@list="true"]/name = "int"
-  │       │       └─ type[@list="true"]/name = "string"
+  │       │       ├─ type[@list="arguments"]/name = "int"
+  │       │       └─ type[@list="arguments"]/name = "string"
   │       ├─ assign/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "_"
   │       │   │   └─ expression/name = "_"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "variadic"
-  │       │       ├─ string[@list="true"] = "\"nums\""
-  │       │       └─ spread[@list="true"]/index[slice]/name = "fixed"
+  │       │       ├─ string[@list="arguments"] = "\"nums\""
+  │       │       └─ spread[@list="arguments"]/index[slice]/name = "fixed"
   │       ├─ switch/
   │       │   ├─ value/expression/index/
   │       │   │   ├─ name = "implicit"
@@ -406,7 +406,7 @@ file/
   │               └─ expression/name = "sub"
   ├─ function[unexported]/
   │   ├─ name = "classify"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "any"
   │   ├─ returns/type/name = "string"
@@ -436,19 +436,19 @@ file/
   │           ├─ member/
   │           │   ├─ name = "fmt"
   │           │   └─ name = "Sprintf"
-  │           ├─ string[@list="true"] = "\"%T\""
-  │           └─ name[@list="true"] = "v"
+  │           ├─ string[@list="arguments"] = "\"%T\""
+  │           └─ name[@list="arguments"] = "v"
   └─ function[unexported]/
       ├─ name = "controlFlow"
-      ├─ parameter[@list="true"]/
+      ├─ parameter[@list="parameters"]/
       │   ├─ name = "ctx"
       │   └─ type/
       │       ├─ name = "context"
       │       └─ name = "Context"
-      ├─ parameter[@list="true"]/
+      ├─ parameter[@list="parameters"]/
       │   ├─ name = "in"
       │   └─ chan/value/type/name = "int"
-      ├─ parameter[@list="true"]/
+      ├─ parameter[@list="parameters"]/
       │   ├─ name = "out"
       │   └─ chan/value/type/name = "int"
       ├─ returns/type/name = "error"
@@ -474,7 +474,7 @@ file/
           │   │   └─ right/expression/nil = "nil"
           │   ├─ then/return/expression/call/
           │   │   ├─ name = "wrap"
-          │   │   └─ name[@list="true"] = "err"
+          │   │   └─ name[@list="arguments"] = "err"
           │   └─ else/assign/
           │       ├─ left/expression/name = "_"
           │       └─ right/expression/name = "x"
@@ -538,7 +538,7 @@ file/
           │   ├─ member/
           │   │   ├─ name = "fmt"
           │   │   └─ name = "Println"
-          │   └─ string[@list="true"] = "\"bg\""
+          │   └─ string[@list="arguments"] = "\"bg\""
           ├─ labeled/
           │   ├─ label = "Outer"
           │   └─ for/body/select/
@@ -576,14 +576,14 @@ file/
           │       ├─ left/expression/name = "buffered"
           │       └─ right/expression/call/
           │           ├─ name = "make"
-          │           ├─ chan[@list="true"]/value/type/name = "int"
-          │           └─ int[@list="true"] = "4"
+          │           ├─ chan[@list="arguments"]/value/type/name = "int"
+          │           └─ int[@list="arguments"] = "4"
           ├─ send/
           │   ├─ name = "buffered"
           │   └─ value/expression/int = "1"
           ├─ expression/call/
           │   ├─ name = "close"
-          │   └─ name[@list="true"] = "buffered"
+          │   └─ name[@list="arguments"] = "buffered"
           ├─ variable[short]/
           │   ├─ left/
           │   │   ├─ expression/name = "pt"
@@ -625,7 +625,7 @@ file/
           │   │   └─ name = "Reader"
           │   └─ value/expression/call/
           │       ├─ name = "new"
-          │       └─ type[@list="true"]/
+          │       └─ type[@list="arguments"]/
           │           ├─ name = "myio"
           │           └─ name = "PipeReader"
           ├─ if/
@@ -652,8 +652,8 @@ file/
           │   │   │   ├─ member/
           │   │   │   │   ├─ name = "errors"
           │   │   │   │   └─ name = "As"
-          │   │   │   ├─ name[@list="true"] = "err"
-          │   │   │   └─ unary[@list="true"]/
+          │   │   │   ├─ name[@list="arguments"] = "err"
+          │   │   │   └─ unary[@list="arguments"]/
           │   │   │       ├─ op[bitwise and and] = "&"
           │   │   │       └─ name = "target"
           │   │   ├─ op[logical and or] = "||"
@@ -661,8 +661,8 @@ file/
           │   │       ├─ member/
           │   │       │   ├─ name = "errors"
           │   │       │   └─ name = "Is"
-          │   │       ├─ name[@list="true"] = "err"
-          │   │       └─ name[@list="true"] = "ErrNotFound"
+          │   │       ├─ name[@list="arguments"] = "err"
+          │   │       └─ name[@list="arguments"] = "ErrNotFound"
           │   └─ then/return/expression/name = "err"
           ├─ assign/
           │   ├─ left/
@@ -680,5 +680,5 @@ file/
           │       ├─ expression/name = "m"
           │       └─ expression/call/
           │           ├─ name = "UserID"
-          │           └─ int[@list="true"] = "42"
+          │           └─ int[@list="arguments"] = "42"
           └─ return/expression/nil = "nil"

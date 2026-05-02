@@ -292,8 +292,7 @@ pub fn constraint(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
         }
     }
     xot.with_renamed(node, Extends)
-        .with_attr(node, "field", "extends")
-        .with_attr(node, "list", "true");
+        .with_attr(node, "list", "extends");
     Ok(TransformAction::Continue)
 }
 
@@ -316,8 +315,7 @@ pub fn extends_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     synthesize_generic_type_in_extends(xot, node)?;
     retag_value_as_type(xot, node)?;
     xot.with_renamed(node, Extends)
-        .with_attr(node, "field", "extends")
-        .with_attr(node, "list", "true");
+        .with_attr(node, "list", "extends");
     Ok(TransformAction::Continue)
 }
 
@@ -380,8 +378,7 @@ pub fn extends_type_clause(
         xot.insert_before(child, extends_node)?;
         xot.detach(child)?;
         xot.append(extends_node, child)?;
-        xot.with_attr(extends_node, "field", "extends");
-        xot.with_attr(extends_node, "list", "true");
+        xot.with_attr(extends_node, "list", "extends");
     }
     Ok(TransformAction::Flatten)
 }
@@ -402,8 +399,7 @@ pub fn implements_clause(
         xot.insert_before(child, impl_node)?;
         xot.detach(child)?;
         xot.append(impl_node, child)?;
-        xot.with_attr(impl_node, "field", "implements");
-        xot.with_attr(impl_node, "list", "true");
+        xot.with_attr(impl_node, "list", "implements");
     }
     Ok(TransformAction::Flatten)
 }
@@ -712,8 +708,7 @@ fn retag_value_as_type(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error>
         .filter(|&c| xot.element(c).is_some())
         .find(|&c| get_element_name(xot, c).as_deref() == Some("value"));
     if let Some(v) = value_child {
-        xot.with_renamed(v, Type)
-            .with_attr(v, "field", "type");
+        xot.with_renamed(v, Type);
     }
     Ok(())
 }

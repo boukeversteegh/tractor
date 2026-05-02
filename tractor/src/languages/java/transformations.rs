@@ -48,8 +48,7 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
     xot.with_renamed(node, Extends)
-        .with_attr(node, "field", "extends")
-        .with_attr(node, "list", "true");
+        .with_attr(node, "list", "extends");
     Ok(TransformAction::Continue)
 }
 
@@ -68,8 +67,7 @@ pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
         xot.insert_before(child, throws_node)?;
         xot.detach(child)?;
         xot.append(throws_node, child)?;
-        xot.with_attr(throws_node, "field", "throws");
-        xot.with_attr(throws_node, "list", "true");
+        xot.with_attr(throws_node, "list", "throws");
     }
     Ok(TransformAction::Flatten)
 }
@@ -103,8 +101,7 @@ pub fn extends_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformActio
         xot.insert_before(child, ext_node)?;
         xot.detach(child)?;
         xot.append(ext_node, child)?;
-        xot.with_attr(ext_node, "field", "extends");
-        xot.with_attr(ext_node, "list", "true");
+        xot.with_attr(ext_node, "list", "extends");
     }
     Ok(TransformAction::Flatten)
 }
@@ -124,8 +121,7 @@ pub fn type_bound(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
         xot.insert_before(child, ext_node)?;
         xot.detach(child)?;
         xot.append(ext_node, child)?;
-        xot.with_attr(ext_node, "field", "extends");
-        xot.with_attr(ext_node, "list", "true");
+        xot.with_attr(ext_node, "list", "extends");
     }
     Ok(TransformAction::Flatten)
 }
@@ -164,8 +160,7 @@ pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         xot.insert_before(child, impl_node)?;
         xot.detach(child)?;
         xot.append(impl_node, child)?;
-        xot.with_attr(impl_node, "field", "implements");
-        xot.with_attr(impl_node, "list", "true");
+        xot.with_attr(impl_node, "list", "implements");
     }
     Ok(TransformAction::Flatten)
 }
@@ -593,9 +588,7 @@ fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Er
         let returns_name = get_name(xot, Returns);
         let wrapper = xot.new_element(returns_name);
         xot.with_source_location_from(wrapper, child)
-            .with_attr(wrapper, "field", "returns")
-            .with_wrap_child(child, wrapper)?
-            .with_removed_attr(child, "field");
+            .with_wrap_child(child, wrapper)?;
         break;
     }
     Ok(())

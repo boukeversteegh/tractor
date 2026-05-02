@@ -65,8 +65,7 @@ pub fn trait_bounds(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
             xot.detach(child)?;
             xot.append(ext_node, child)?;
         }
-        xot.with_attr(ext_node, "field", "extends");
-        xot.with_attr(ext_node, "list", "true");
+        xot.with_attr(ext_node, "list", "extends");
         if let Some(m) = marker {
             xot.with_appended_marker(ext_node, m)?;
         }

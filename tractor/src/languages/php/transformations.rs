@@ -39,8 +39,7 @@ pub fn enum_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         .collect();
     for child in elem_children {
         if get_kind(xot, child).as_deref() == Some("primitive_type") {
-            xot.with_appended_marker(child, Underlying)?
-                .with_attr(child, "field", "underlying");
+            xot.with_appended_marker(child, Underlying)?;
             break;
         }
     }
@@ -231,8 +230,7 @@ pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 pub fn base_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
     xot.with_renamed(node, Extends)
-        .with_attr(node, "field", "extends")
-        .with_attr(node, "list", "true");
+        .with_attr(node, "list", "extends");
     Ok(TransformAction::Continue)
 }
 
@@ -254,8 +252,7 @@ pub fn class_interface_clause(
         xot.insert_before(child, impl_node)?;
         xot.detach(child)?;
         xot.append(impl_node, child)?;
-        xot.with_attr(impl_node, "field", "implements");
-        xot.with_attr(impl_node, "list", "true");
+        xot.with_attr(impl_node, "list", "implements");
     }
     Ok(TransformAction::Flatten)
 }

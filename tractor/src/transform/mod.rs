@@ -121,19 +121,11 @@ pub fn apply_field_wrappings(
         let wrapper_id = xot.add_name(&wrapper_name);
         let wrapper = xot.new_element(wrapper_id);
         xot.with_source_location_from(wrapper, element)
-            .with_attr(wrapper, "field", &wrapper_name);
-
-        // Rewrite the inner element's `field` to its own local-name so the
-        // JSON serializer can treat the inner as a named property of the
-        // wrapper. Preserves the semantics the old builder produced.
-        let inner_local = xot
-            .element(element)
-            .map(|e| xot.local_name_str(e.name()).to_string());
-        if let Some(local) = inner_local {
-            xot.with_attr(element, "field", &local);
-        }
-
-        xot.with_wrap_child(element, wrapper)?;
+            .with_wrap_child(element, wrapper)?;
+        // The wrapper element's name IS the JSON key (Principle #19;
+        // role-uniform singleton wrappers). The inner element keeps any
+        // tree-sitter `field=` attribute it carried — preserved for
+        // `--meta` debug output, ignored by JSON.
     }
     Ok(())
 }
@@ -1135,25 +1127,28 @@ pub mod helpers {
         Ok(())
     }
 
-    /// Distribute a `field=<name>` attribute to every element child of `node`.
+    /// Distribute a `list="<name>"` attribute to every element child of `node`.
     ///
     /// Used with `TransformAction::Flatten` to implement Principle #12
     /// (Flat Lists): a purely-grouping wrapper is replaced by its children,
-    /// which inherit a `field="<plural>"` attribute so non-XML serializers
-    /// (JSON/YAML) can collect same-field siblings into an array. Each
-    /// child also gains `list="true"` so JSON renders the field as an
-    /// array even when the list contains a single item — otherwise a
-    /// 1-arg call would round-trip as `"arguments": {...}` (object) while
-    /// a 2-arg call would round-trip as `"arguments": [{...}, {...}]`
-    /// (array), and consumers can't write uniform code against the field.
+    /// which inherit a `list="<plural>"` attribute. Non-XML serializers
+    /// (JSON/YAML) read the attribute as the JSON key and emit the
+    /// children as an array — deterministically, regardless of cardinality
+    /// (so a 1-arg call emits `"arguments": [{...}]` matching a 3-arg
+    /// call's `"arguments": [{...}, {...}, {...}]`).
+    ///
+    /// The function is still named `distribute_field_to_children` for
+    /// legacy callsite compatibility; the attribute it writes is now
+    /// `list=`, not `field=`. Tree-sitter's own `field=` attributes are
+    /// preserved untouched (they survive into `--meta` debug output but
+    /// are ignored by the JSON serializer).
     pub fn distribute_field_to_children(xot: &mut Xot, node: XotNode, field: impl AsRef<str>) {
         let field = field.as_ref();
         let children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .collect();
         for child in children {
-            xot.with_attr(child, "field", field);
-            xot.with_attr(child, "list", "true");
+            xot.with_attr(child, "list", field);
         }
     }
 
@@ -1183,15 +1178,10 @@ pub mod helpers {
         let wrapper_id = xot.add_name(wrapper);
         let wrapper_node = xot.new_element(wrapper_id);
         xot.with_source_location_from(wrapper_node, child)
-            .with_attr(wrapper_node, "field", wrapper);
-        // Rewrite inner's field to its own local-name for JSON lifting.
-        let inner_local = xot
-            .element(child)
-            .map(|e| xot.local_name_str(e.name()).to_string());
-        if let Some(local) = inner_local {
-            xot.with_attr(child, "field", &local);
-        }
-        xot.with_wrap_child(child, wrapper_node)?;
+            .with_wrap_child(child, wrapper_node)?;
+        // Wrapper element name IS the JSON key (Principle #19); inner
+        // child keeps its tree-sitter field= for --meta. JSON ignores
+        // field=.
         Ok(())
     }
 

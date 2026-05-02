@@ -7,136 +7,133 @@
       "public": true,
       "name": "Calculator",
       "body": {
+        "$type": "body",
+        "method": {
+          "$type": "method",
+          "public": true,
+          "returns": {
+            "$type": "returns",
+            "type": {
+              "$type": "type",
+              "name": "int"
+            }
+          },
+          "name": "Add",
+          "parameters": [
+            {
+              "$type": "parameter",
+              "type": {
+                "$type": "type",
+                "name": "int"
+              },
+              "name": "a"
+            },
+            {
+              "$type": "parameter",
+              "type": {
+                "$type": "type",
+                "name": "int"
+              },
+              "name": "b"
+            }
+          ],
+          "body": {
+            "$type": "body",
+            "block": {
+              "$type": "block",
+              "return": {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "a"
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "plus": true,
+                      "text": "+"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "b"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "children": [
           {
             "$type": "method",
             "public": true,
             "returns": {
+              "$type": "returns",
               "type": {
-                "name": "int"
-              }
-            },
-            "name": "Add",
-            "parameters": [
-              {
-                "type": {
-                  "name": "int"
-                },
-                "name": "a"
-              },
-              {
-                "type": {
-                  "name": "int"
-                },
-                "name": "b"
-              }
-            ],
-            "body": {
-              "block": {
-                "children": [
-                  {
-                    "$type": "return",
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "children": [
-                          {
-                            "$type": "binary",
-                            "left": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "a"
-                                }
-                              ]
-                            },
-                            "right": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "b"
-                                }
-                              ]
-                            },
-                            "children": [
-                              {
-                                "$type": "op",
-                                "plus": true,
-                                "text": "+"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "$type": "method",
-            "public": true,
-            "returns": {
-              "type": {
+                "$type": "type",
                 "name": "int"
               }
             },
             "name": "Subtract",
             "parameters": [
               {
+                "$type": "parameter",
                 "type": {
+                  "$type": "type",
                   "name": "int"
                 },
                 "name": "a"
               },
               {
+                "$type": "parameter",
                 "type": {
+                  "$type": "type",
                   "name": "int"
                 },
                 "name": "b"
               }
             ],
             "body": {
+              "$type": "body",
               "block": {
-                "children": [
-                  {
-                    "$type": "return",
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "children": [
-                          {
-                            "$type": "binary",
-                            "left": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "a"
-                                }
-                              ]
-                            },
-                            "right": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "b"
-                                }
-                              ]
-                            },
-                            "children": [
-                              {
-                                "$type": "op",
-                                "minus": true,
-                                "text": "-"
-                              }
-                            ]
-                          }
-                        ]
+                "$type": "block",
+                "return": {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "minus": true,
+                        "text": "-"
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "b"
+                        }
                       }
-                    ]
+                    }
                   }
-                ]
+                }
               }
             }
           },
@@ -144,65 +141,63 @@
             "$type": "method",
             "public": true,
             "returns": {
+              "$type": "returns",
               "type": {
+                "$type": "type",
                 "name": "int"
               }
             },
             "name": "Multiply",
             "parameters": [
               {
+                "$type": "parameter",
                 "type": {
+                  "$type": "type",
                   "name": "int"
                 },
                 "name": "a"
               },
               {
+                "$type": "parameter",
                 "type": {
+                  "$type": "type",
                   "name": "int"
                 },
                 "name": "b"
               }
             ],
             "body": {
+              "$type": "body",
               "block": {
-                "children": [
-                  {
-                    "$type": "return",
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "children": [
-                          {
-                            "$type": "binary",
-                            "left": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "a"
-                                }
-                              ]
-                            },
-                            "right": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "b"
-                                }
-                              ]
-                            },
-                            "children": [
-                              {
-                                "$type": "op",
-                                "multiply": true,
-                                "text": "*"
-                              }
-                            ]
-                          }
-                        ]
+                "$type": "block",
+                "return": {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "multiply": true,
+                        "text": "*"
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "b"
+                        }
                       }
-                    ]
+                    }
                   }
-                ]
+                }
               }
             }
           }
@@ -219,124 +214,117 @@
       "public": true,
       "name": "Greeter",
       "body": {
+        "$type": "body",
+        "method": {
+          "$type": "method",
+          "public": true,
+          "returns": {
+            "$type": "returns",
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
+          },
+          "name": "Hello",
+          "parameters": [
+            {
+              "$type": "parameter",
+              "type": {
+                "$type": "type",
+                "name": "string"
+              },
+              "name": "name"
+            }
+          ],
+          "body": {
+            "$type": "body",
+            "block": {
+              "$type": "block",
+              "return": {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "string": "\"Hello, \""
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "plus": true,
+                      "text": "+"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "name"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "children": [
           {
             "$type": "method",
             "public": true,
             "returns": {
+              "$type": "returns",
               "type": {
-                "name": "string"
-              }
-            },
-            "name": "Hello",
-            "parameters": [
-              {
-                "type": {
-                  "name": "string"
-                },
-                "name": "name"
-              }
-            ],
-            "body": {
-              "block": {
-                "children": [
-                  {
-                    "$type": "return",
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "children": [
-                          {
-                            "$type": "binary",
-                            "left": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "string": "\"Hello, \""
-                                }
-                              ]
-                            },
-                            "right": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "name"
-                                }
-                              ]
-                            },
-                            "children": [
-                              {
-                                "$type": "op",
-                                "plus": true,
-                                "text": "+"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "$type": "method",
-            "public": true,
-            "returns": {
-              "type": {
+                "$type": "type",
                 "name": "string"
               }
             },
             "name": "Goodbye",
             "parameters": [
               {
+                "$type": "parameter",
                 "type": {
+                  "$type": "type",
                   "name": "string"
                 },
                 "name": "name"
               }
             ],
             "body": {
+              "$type": "body",
               "block": {
-                "children": [
-                  {
-                    "$type": "return",
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "children": [
-                          {
-                            "$type": "binary",
-                            "left": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "string": "\"Goodbye, \""
-                                }
-                              ]
-                            },
-                            "right": {
-                              "children": [
-                                {
-                                  "$type": "expression",
-                                  "name": "name"
-                                }
-                              ]
-                            },
-                            "children": [
-                              {
-                                "$type": "op",
-                                "plus": true,
-                                "text": "+"
-                              }
-                            ]
-                          }
-                        ]
+                "$type": "block",
+                "return": {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "string": "\"Goodbye, \""
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "plus": true,
+                        "text": "+"
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "name"
+                        }
                       }
-                    ]
+                    }
                   }
-                ]
+                }
               }
             }
           },
@@ -344,7 +332,9 @@
             "$type": "method",
             "public": true,
             "returns": {
+              "$type": "returns",
               "type": {
+                "$type": "type",
                 "name": "void"
               }
             },

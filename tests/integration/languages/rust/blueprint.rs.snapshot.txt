@@ -70,13 +70,13 @@ file/
   │   └─ name = "Clone"
   ├─ struct[pub]/
   │   ├─ name = "Point"
-  │   ├─ lifetime[@list="true"]/name = "a"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ lifetime[@list="generics"]/name = "a"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   ├─ where/bound/
   │   │   ├─ left/type/name = "T"
-  │   │   ├─ extends[@list="true"]/type/name = "Clone"
-  │   │   ├─ extends[@list="true"]/type/name = "Send"
-  │   │   └─ extends[@list="true"]/lifetime/name = "static"
+  │   │   ├─ extends[@list="extends"]/type/name = "Clone"
+  │   │   ├─ extends[@list="extends"]/type/name = "Send"
+  │   │   └─ extends[@list="extends"]/lifetime/name = "static"
   │   └─ body/
   │       ├─ field[pub]/
   │       │   ├─ name = "x"
@@ -93,7 +93,7 @@ file/
   ├─ comment[leading] = "/// A tuple struct."
   ├─ struct[pub]/
   │   ├─ name = "Pair"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   └─ body[pub]/
   │       ├─ type/name = "T"
   │       └─ type/name = "T"
@@ -105,7 +105,7 @@ file/
   │   └─ name = "Debug"
   ├─ enum[pub]/
   │   ├─ name = "Shape"
-  │   ├─ lifetime[@list="true"]/name = "a"
+  │   ├─ lifetime[@list="generics"]/name = "a"
   │   └─ body/
   │       ├─ variant/name = "Nothing"
   │       ├─ variant/
@@ -130,7 +130,7 @@ file/
   │           └─ value/expression/int = "10"
   ├─ trait[pub]/
   │   ├─ name = "Drawable"
-  │   ├─ extends[@list="true"]/type/name = "Debug"
+  │   ├─ extends[@list="extends"]/type/name = "Debug"
   │   └─ body/
   │       ├─ type[associated]/name = "Canvas"
   │       ├─ const[private]/
@@ -139,32 +139,32 @@ file/
   │       │   └─ value/expression/int = "64"
   │       ├─ signature/
   │       │   ├─ name = "draw"
-  │       │   ├─ parameter[self and @list="true"]/self = "self"
-  │       │   └─ parameter[@list="true"]/
+  │       │   ├─ parameter[self and @list="parameters"]/self = "self"
+  │       │   └─ parameter[@list="parameters"]/
   │       │       ├─ name = "c"
   │       │       └─ type[borrowed and mut]/path/
   │       │           ├─ name = "Self"
   │       │           └─ name = "Canvas"
   │       └─ function[private]/
   │           ├─ name = "name"
-  │           ├─ parameter[self and @list="true"]/self = "self"
+  │           ├─ parameter[self and @list="parameters"]/self = "self"
   │           ├─ returns/type/name = "String"
   │           └─ body/call/
   │               ├─ path/
   │               │   ├─ name = "String"
   │               │   └─ name = "from"
-  │               └─ string[@list="true"] = "\"drawable\""
+  │               └─ string[@list="arguments"] = "\"drawable\""
   ├─ impl/
-  │   ├─ lifetime[@list="true"]/name = "a"
-  │   ├─ generic[@list="true"]/
+  │   ├─ lifetime[@list="generics"]/name = "a"
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
-  │   │   ├─ extends[@list="true"]/type/name = "Clone"
-  │   │   ├─ extends[@list="true"]/type/name = "Send"
-  │   │   └─ extends[@list="true"]/lifetime/name = "static"
+  │   │   ├─ extends[@list="extends"]/type/name = "Clone"
+  │   │   ├─ extends[@list="extends"]/type/name = "Send"
+  │   │   └─ extends[@list="extends"]/lifetime/name = "static"
   │   ├─ type[generic]/
   │   │   ├─ name = "Point"
-  │   │   ├─ lifetime[@list="true"]/name = "a"
-  │   │   └─ type[@list="true"]/name = "T"
+  │   │   ├─ lifetime[@list="arguments"]/name = "a"
+  │   │   └─ type[@list="arguments"]/name = "T"
   │   └─ body/
   │       ├─ const[pub]/
   │       │   ├─ name = "ORIGIN_LABEL"
@@ -174,13 +174,13 @@ file/
   │       │   └─ value/expression/string = "\"origin\""
   │       ├─ function[pub]/
   │       │   ├─ name = "new"
-  │       │   ├─ parameter[@list="true"]/
+  │       │   ├─ parameter[@list="parameters"]/
   │       │   │   ├─ name = "x"
   │       │   │   └─ type/name = "T"
-  │       │   ├─ parameter[@list="true"]/
+  │       │   ├─ parameter[@list="parameters"]/
   │       │   │   ├─ name = "y"
   │       │   │   └─ type/name = "T"
-  │       │   ├─ parameter[@list="true"]/
+  │       │   ├─ parameter[@list="parameters"]/
   │       │   │   ├─ name = "label"
   │       │   │   └─ type[borrowed]/
   │       │   │       ├─ lifetime/name = "a"
@@ -194,7 +194,7 @@ file/
   │       │           └─ field/name = "label"
   │       ├─ function[pub and async]/
   │       │   ├─ name = "async_clone"
-  │       │   ├─ parameter[self and @list="true"]/self = "self"
+  │       │   ├─ parameter[self and @list="parameters"]/self = "self"
   │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/call/field/
   │       │       ├─ value/expression/self = "self"
@@ -205,7 +205,7 @@ file/
   │       │   └─ body/int = "42"
   │       └─ function[pub and unsafe]/
   │           ├─ name = "unsafe_read"
-  │           ├─ parameter[@list="true"]/
+  │           ├─ parameter[@list="parameters"]/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/type/name = "T"
   │           ├─ returns/type/name = "T"
@@ -215,50 +215,50 @@ file/
   │               │   └─ name = "ptr"
   │               └─ name = "clone"
   ├─ impl/
-  │   ├─ lifetime[@list="true"]/name = "a"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ lifetime[@list="generics"]/name = "a"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   ├─ type/name = "Drawable"
   │   ├─ type[generic]/
   │   │   ├─ name = "Point"
-  │   │   ├─ lifetime[@list="true"]/name = "a"
-  │   │   └─ type[@list="true"]/name = "T"
+  │   │   ├─ lifetime[@list="arguments"]/name = "a"
+  │   │   └─ type[@list="arguments"]/name = "T"
   │   ├─ where/bound/
   │   │   ├─ left/type/name = "T"
-  │   │   ├─ extends[@list="true"]/type/name = "Clone"
-  │   │   ├─ extends[@list="true"]/type/name = "Send"
-  │   │   ├─ extends[@list="true"]/type/name = "Debug"
-  │   │   └─ extends[@list="true"]/lifetime/name = "static"
+  │   │   ├─ extends[@list="extends"]/type/name = "Clone"
+  │   │   ├─ extends[@list="extends"]/type/name = "Send"
+  │   │   ├─ extends[@list="extends"]/type/name = "Debug"
+  │   │   └─ extends[@list="extends"]/lifetime/name = "static"
   │   └─ body/
   │       ├─ alias[private]/
   │       │   ├─ name = "Canvas"
   │       │   └─ type[generic]/
   │       │       ├─ name = "Vec"
-  │       │       └─ type[@list="true"]/name = "u8"
+  │       │       └─ type[@list="arguments"]/name = "u8"
   │       └─ function[private]/
   │           ├─ name = "draw"
-  │           ├─ parameter[self and @list="true"]/self = "self"
-  │           └─ parameter[@list="true"]/
+  │           ├─ parameter[self and @list="parameters"]/self = "self"
+  │           └─ parameter[@list="parameters"]/
   │               ├─ name = "_c"
   │               └─ type[borrowed and mut]/path/
   │                   ├─ name = "Self"
   │                   └─ name = "Canvas"
   ├─ alias[pub]/
   │   ├─ name = "BoxedDraw"
-  │   ├─ lifetime[@list="true"]/name = "a"
+  │   ├─ lifetime[@list="generics"]/name = "a"
   │   └─ type[generic]/
   │       ├─ name = "Box"
-  │       └─ type[bounded and @list="true"]/
+  │       └─ type[bounded and @list="arguments"]/
   │           ├─ type[dynamic]/type[generic]/
   │           │   ├─ name = "Drawable"
   │           │   ├─ name = "Canvas"
   │           │   └─ type[generic]/
   │           │       ├─ name = "Vec"
-  │           │       └─ type[@list="true"]/name = "u8"
+  │           │       └─ type[@list="arguments"]/name = "u8"
   │           └─ lifetime/name = "a"
   ├─ alias[pub]/
   │   ├─ name = "Callback"
   │   └─ type[function]/
-  │       ├─ type[@list="true"]/name = "i32"
+  │       ├─ type[@list="parameters"]/name = "i32"
   │       └─ returns/type/name = "i32"
   ├─ const[pub]/
   │   ├─ name = "PI"
@@ -315,8 +315,8 @@ file/
   │       ├─ let/
   │       │   ├─ name = "add"
   │       │   ├─ type[function]/
-  │       │   │   ├─ type[@list="true"]/name = "i32"
-  │       │   │   ├─ type[@list="true"]/name = "i32"
+  │       │   │   ├─ type[@list="parameters"]/name = "i32"
+  │       │   │   ├─ type[@list="parameters"]/name = "i32"
   │       │   │   └─ returns/type/name = "i32"
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/name = "a"
@@ -331,7 +331,7 @@ file/
   │       │       ├─ path/
   │       │       │   ├─ name = "String"
   │       │       │   └─ name = "from"
-  │       │       └─ string[@list="true"] = "\"owned\""
+  │       │       └─ string[@list="arguments"] = "\"owned\""
   │       ├─ let/
   │       │   ├─ name = "moved"
   │       │   └─ value/expression/closure/
@@ -355,48 +355,48 @@ file/
   │       │   ├─ name = "b"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Box"
-  │       │   │   └─ type[@list="true"]/name = "i32"
+  │       │   │   └─ type[@list="arguments"]/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name = "Box"
   │       │       │   └─ name = "new"
-  │       │       └─ int[@list="true"] = "1"
+  │       │       └─ int[@list="arguments"] = "1"
   │       ├─ let/
   │       │   ├─ name = "rc"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Rc"
-  │       │   │   └─ type[@list="true"]/name = "String"
+  │       │   │   └─ type[@list="arguments"]/name = "String"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name = "Rc"
   │       │       │   └─ name = "new"
-  │       │       └─ call[@list="true"]/
+  │       │       └─ call[@list="arguments"]/
   │       │           ├─ path/
   │       │           │   ├─ name = "String"
   │       │           │   └─ name = "from"
-  │       │           └─ string[@list="true"] = "\"rc\""
+  │       │           └─ string[@list="arguments"] = "\"rc\""
   │       ├─ let/
   │       │   ├─ name = "arc"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Arc"
-  │       │   │   └─ type[@list="true"]/name = "u32"
+  │       │   │   └─ type[@list="arguments"]/name = "u32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name = "Arc"
   │       │       │   └─ name = "new"
-  │       │       └─ int[@list="true"] = "9"
+  │       │       └─ int[@list="arguments"] = "9"
   │       ├─ let/
   │       │   ├─ name = "cell"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "RefCell"
-  │       │   │   └─ type[generic and @list="true"]/
+  │       │   │   └─ type[generic and @list="arguments"]/
   │       │   │       ├─ name = "Vec"
-  │       │   │       └─ type[@list="true"]/name = "i32"
+  │       │   │       └─ type[@list="arguments"]/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name = "RefCell"
   │       │       │   └─ name = "new"
-  │       │       └─ macro[@list="true"]/
+  │       │       └─ macro[@list="arguments"]/
   │       │           ├─ name = "vec"
   │       │           ├─ int = "1"
   │       │           ├─ int = "2"
@@ -409,12 +409,12 @@ file/
   │               │   │   ├─ field/
   │               │   │   │   ├─ value/expression/string = "\"42\""
   │               │   │   │   └─ name = "parse"
-  │               │   │   └─ type[@list="true"]/name = "i32"
+  │               │   │   └─ type[@list="arguments"]/name = "i32"
   │               │   └─ name = "unwrap_or"
-  │               └─ int[@list="true"] = "0"
+  │               └─ int[@list="arguments"] = "0"
   ├─ function[pub]/
   │   ├─ name = "patterns"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "s"
   │   │   └─ type/name = "Shape"
   │   ├─ returns/type/name = "i32"
@@ -425,9 +425,9 @@ file/
   │       │       ├─ path/
   │       │       │   ├─ name = "Point"
   │       │       │   └─ name = "new"
-  │       │       ├─ int[@list="true"] = "1"
-  │       │       ├─ int[@list="true"] = "2"
-  │       │       └─ string[@list="true"] = "\"p\""
+  │       │       ├─ int[@list="arguments"] = "1"
+  │       │       ├─ int[@list="arguments"] = "2"
+  │       │       └─ string[@list="arguments"] = "\"p\""
   │       ├─ let/
   │       │   ├─ name = "q"
   │       │   └─ value/expression/literal/
@@ -538,7 +538,7 @@ file/
   │       │   │   ├─ expression/name = "v"
   │       │   │   └─ expression/value/expression/call/
   │       │   │       ├─ name = "Some"
-  │       │   │       └─ int[@list="true"] = "10"
+  │       │   │       └─ int[@list="arguments"] = "10"
   │       │   └─ then/let/value/expression/name = "v"
   │       ├─ let[mut]/
   │       │   ├─ name = "it"
@@ -609,8 +609,8 @@ file/
   │   ├─ name = "try_and_cast"
   │   ├─ returns/type[generic]/
   │   │   ├─ name = "Result"
-  │   │   ├─ type[@list="true"]/name = "i32"
-  │   │   └─ path[@list="true"]/
+  │   │   ├─ type[@list="arguments"]/name = "i32"
+  │   │   └─ path[@list="arguments"]/
   │   │       ├─ path/
   │   │       │   ├─ name = "std"
   │   │       │   └─ name = "num"
@@ -631,11 +631,11 @@ file/
   │       │       └─ type/name = "i32"
   │       └─ call/
   │           ├─ name = "Ok"
-  │           └─ name[@list="true"] = "casted"
+  │           └─ name[@list="arguments"] = "casted"
   ├─ function[pub]/
   │   ├─ name = "trait_object_and_impl"
-  │   ├─ lifetime[@list="true"]/name = "a"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ lifetime[@list="generics"]/name = "a"
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "d"
   │   │   └─ type[borrowed]/
   │   │       ├─ lifetime/name = "a"
@@ -644,7 +644,7 @@ file/
   │   │           ├─ name = "Canvas"
   │   │           └─ type[generic]/
   │   │               ├─ name = "Vec"
-  │   │               └─ type[@list="true"]/name = "u8"
+  │   │               └─ type[@list="arguments"]/name = "u8"
   │   ├─ returns/type[bounded]/
   │   │   ├─ type[abstract]/type/name = "Display"
   │   │   └─ lifetime/name = "a"
@@ -695,10 +695,10 @@ file/
   │   ├─ string = "\"C\""
   │   └─ body/signature[pub]/
   │       ├─ name = "printf"
-  │       ├─ parameter[@list="true"]/
+  │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "fmt"
   │       │   └─ type[pointer]/type/name = "u8"
-  │       └─ parameter[variadic and @list="true"] = "..."
+  │       └─ parameter[variadic and @list="parameters"] = "..."
   ├─ comment[leading] = "// Union — same shape family as struct/enum."
   ├─ union[pub]/
   │   ├─ name = "Either"
@@ -712,23 +712,23 @@ file/
   ├─ comment[leading] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
   ├─ function[pub]/
   │   ├─ name = "hrtb_demo"
-  │   ├─ generic[@list="true"]/name = "F"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/name = "F"
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
-  │   │   └─ extends[optional and @list="true"]/type/name = "Sized"
-  │   ├─ parameter[@list="true"]/
+  │   │   └─ extends[optional and @list="extends"]/type/name = "Sized"
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "_f"
   │   │   └─ type/name = "F"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "_t"
   │   │   └─ type[borrowed]/type/name = "T"
   │   └─ where/bound/
   │       ├─ left/type/name = "F"
-  │       └─ extends[higher and @list="true"]/
-  │           ├─ lifetime[@list="true"]/name = "a"
+  │       └─ extends[higher and @list="extends"]/
+  │           ├─ lifetime[@list="generics"]/name = "a"
   │           └─ type[function]/
   │               ├─ type/name = "Fn"
-  │               ├─ type[borrowed and @list="true"]/
+  │               ├─ type[borrowed and @list="parameters"]/
   │               │   ├─ lifetime/name = "a"
   │               │   └─ type/name = "i32"
   │               └─ returns/type[borrowed]/
@@ -737,7 +737,7 @@ file/
   ├─ comment[leading] = "// Const generic parameter — `<const N: usize>`."
   ├─ struct[pub]/
   │   ├─ name = "FixedArray"
-  │   ├─ parameter[const and @list="true"]/
+  │   ├─ parameter[const and @list="generics"]/
   │   │   ├─ name = "N"
   │   │   └─ type/name = "usize"
   │   └─ body/field/
@@ -771,20 +771,20 @@ file/
   │           └─ expression/name = "new"
   ├─ function[pub]/
   │   ├─ name = "pattern_zoo"
-  │   ├─ parameter[@list="true"]/
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
   │   │   └─ type[generic]/
   │   │       ├─ name = "Point"
-  │   │       ├─ lifetime[@list="true"]/name = "_"
-  │   │       └─ type[@list="true"]/name = "i32"
-  │   ├─ parameter[@list="true"]/
+  │   │       ├─ lifetime[@list="arguments"]/name = "_"
+  │   │       └─ type[@list="arguments"]/name = "i32"
+  │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "opt"
   │   │   └─ type[generic]/
   │   │       ├─ name = "Option"
-  │   │       └─ type[generic and @list="true"]/
+  │   │       └─ type[generic and @list="arguments"]/
   │   │           ├─ name = "Point"
-  │   │           ├─ lifetime[@list="true"]/name = "_"
-  │   │           └─ type[@list="true"]/name = "i32"
+  │   │           ├─ lifetime[@list="arguments"]/name = "_"
+  │   │           └─ type[@list="arguments"]/name = "i32"
   │   ├─ returns/type/name = "i32"
   │   └─ body/
   │       ├─ comment[leading] = "// remaining_field_pattern — `..`."
@@ -938,7 +938,7 @@ file/
   │       │   └─ value/expression/call/path/
   │       │       ├─ type[generic]/
   │       │       │   ├─ name = "Vec"
-  │       │       │   └─ type[@list="true"]/name = "i32"
+  │       │       │   └─ type[@list="arguments"]/name = "i32"
   │       │       └─ name = "new"
   │       └─ binary/
   │           ├─ left/expression/cast/
@@ -966,27 +966,27 @@ file/
           │       └─ int = "3"
           ├─ let/value/expression/call/
           │   ├─ name = "patterns"
-          │   └─ call[@list="true"]/
+          │   └─ call[@list="arguments"]/
           │       ├─ path/
           │       │   ├─ name = "Shape"
           │       │   └─ name = "Dot"
-          │       ├─ int[@list="true"] = "1"
-          │       └─ int[@list="true"] = "1"
+          │       ├─ int[@list="arguments"] = "1"
+          │       └─ int[@list="arguments"] = "1"
           ├─ let/value/expression/call/name = "loops_and_flow"
           ├─ let/value/expression/call/
           │   ├─ name = "pattern_zoo"
-          │   ├─ call[@list="true"]/
+          │   ├─ call[@list="arguments"]/
           │   │   ├─ path/
           │   │   │   ├─ name = "Point"
           │   │   │   └─ name = "new"
-          │   │   ├─ int[@list="true"] = "1"
-          │   │   ├─ int[@list="true"] = "2"
-          │   │   └─ string[@list="true"] = "\"p\""
-          │   └─ name[@list="true"] = "None"
+          │   │   ├─ int[@list="arguments"] = "1"
+          │   │   ├─ int[@list="arguments"] = "2"
+          │   │   └─ string[@list="arguments"] = "\"p\""
+          │   └─ name[@list="arguments"] = "None"
           └─ let/
               ├─ type[generic]/
               │   ├─ name = "Vec"
-              │   └─ type[tuple and @list="true"]/
+              │   └─ type[tuple and @list="arguments"]/
               │       ├─ type[borrowed]/type/name = "str"
               │       └─ type/name = "i32"
               └─ value/expression/macro/

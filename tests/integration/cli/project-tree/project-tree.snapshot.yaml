@@ -2,9 +2,11 @@
   public: true
   name: Calculator
   body:
+    $type: body
     $truncated: 81
 - $type: class
   public: true
   name: Greeter
   body:
+    $type: body
     $truncated: 52

@@ -37,8 +37,7 @@ pub fn type_instantiation_expression(
     // Skip the head (first element child); the remaining elements are
     // the type arguments.
     for child in elem_children.iter().skip(1) {
-        xot.with_attr(*child, "field", "arguments");
-        xot.with_attr(*child, "list", "true");
+        xot.with_attr(*child, "list", "arguments");
     }
     xot.with_renamed(node, Type)
         .with_prepended_marker(node, super::output::TractorNode::Generic)?;
@@ -223,8 +222,7 @@ fn wrap_interface_embeds_in_extends(
         let ext_elt = xot.add_name(Extends.as_str());
         let ext_node = xot.new_element(ext_elt);
         xot.with_source_location_from(ext_node, child)
-            .with_attr(ext_node, "field", "extends")
-            .with_attr(ext_node, "list", "true");
+            .with_attr(ext_node, "list", "extends");
         xot.insert_before(child, ext_node)?;
         xot.detach(child)?;
         xot.append(ext_node, child)?;

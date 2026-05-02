@@ -42,12 +42,7 @@ pub fn xml_node_to_json(node: &XmlNode, max_depth: Option<usize>) -> Value {
 
 fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize) -> Value {
     match node {
-        XmlNode::Element { name, attributes, children } => {
-            // Extract field attribute
-            let field = attributes.iter()
-                .find(|(k, _)| k == "field")
-                .map(|(_, v)| v.clone());
-
+        XmlNode::Element { name, attributes: _, children } => {
             // Whether element children at depth+1 should be skipped.
             let skip_element_children = max_depth.map_or(false, |max| depth + 1 >= max);
 
@@ -73,16 +68,19 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                             // Self-closing → boolean flag.
                             flags.push(child_name.clone());
                         } else {
-                            let child_field = child_attrs.iter()
-                                .find(|(k, _)| k == "field")
+                            // `list="X"` is the renderer signal for "I am one
+                            // item in a list named X" (Principle #12). When
+                            // present, the child is always emitted into an
+                            // array under JSON key X. When absent, the child
+                            // is keyed by its element name (singleton property).
+                            let list_name = child_attrs.iter()
+                                .find(|(k, _)| k == "list")
                                 .map(|(_, v)| v.clone());
-                            let is_list_field = child_attrs.iter()
-                                .any(|(k, v)| k == "list" && v == "true");
                             let val = xml_node_to_json_inner(child, max_depth, depth + 1);
                             content_children.push(ChildEntry {
-                                field: child_field,
+                                element_name: child_name.clone(),
+                                list_name,
                                 value: val,
-                                is_list_field,
                             });
                         }
                     }
@@ -104,61 +102,57 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             let combined_text = if has_text { text_fragments.join(" ") } else { String::new() };
             let children_truncated = truncated_descendants > 0;
 
-            // Pure text-only leaf
+            // Pure text-only leaf — return scalar string. Parent will key
+            // by the element name or list name; this just supplies the value.
             if is_text_only && flags.is_empty() && has_text && !children_truncated {
-                if field.is_some() {
-                    return Value::String(combined_text);
-                } else {
-                    let mut obj = Map::new();
-                    obj.insert(name.clone(), Value::String(combined_text));
-                    return Value::Object(obj);
-                }
+                return Value::String(combined_text);
             }
 
             let mut obj = Map::new();
-            if field.is_none() {
-                obj.insert(KEY_TYPE.into(), Value::String(name.clone()));
-            }
+            obj.insert(KEY_TYPE.into(), Value::String(name.clone()));
 
             for flag in flags {
                 obj.insert(flag, Value::Bool(true));
             }
 
-            // Group entries with the same field name into an array
-            // (Principle #12 Flat Lists): sibling `<parameter field="parameters">`
-            // elements become a `"parameters": [...]` array. Singleton
-            // field wrappers (e.g. `<name field="name">`) stay as
-            // scalar properties — except when the element ALSO carries
-            // a `list="true"` attribute, which forces array form so
-            // consumers don't branch on scalar-vs-array (used for
-            // multi-target relationships like extends/implements/throws
-            // where exactly one target is a valid case but the field
-            // is conceptually always a list).
+            // Slot children into the JSON object:
+            //   `list="X"` present → property `X`, value is always an array
+            //                        (multiple siblings append).
+            //   `list=` absent     → property keyed by element name; collisions
+            //                        promote to anonymous `children` array
+            //                        (transform-bug fallback per Principle #19).
             let mut array_children: Vec<Value> = Vec::new();
             for entry in content_children {
                 if is_anon_text_entry(&entry) {
                     continue;
                 }
-                if let Some(field_name) = entry.field {
-                    let force_array = entry.is_list_field;
-                    match obj.remove(&field_name) {
+                if let Some(list) = entry.list_name {
+                    match obj.remove(&list) {
                         Some(Value::Array(mut arr)) => {
                             arr.push(entry.value);
-                            obj.insert(field_name, Value::Array(arr));
+                            obj.insert(list, Value::Array(arr));
                         }
                         Some(existing) => {
-                            obj.insert(field_name, Value::Array(vec![existing, entry.value]));
+                            obj.insert(list, Value::Array(vec![existing, entry.value]));
                         }
                         None => {
-                            if force_array {
-                                obj.insert(field_name, Value::Array(vec![entry.value]));
-                            } else {
-                                obj.insert(field_name, entry.value);
-                            }
+                            obj.insert(list, Value::Array(vec![entry.value]));
                         }
                     }
                 } else {
-                    array_children.push(entry.value);
+                    let elem_key = entry.element_name;
+                    match obj.remove(&elem_key) {
+                        None => {
+                            obj.insert(elem_key, entry.value);
+                        }
+                        Some(existing) => {
+                            // Same-element-name collision without `list=` —
+                            // shouldn't happen for role-mixed shapes after
+                            // Principle #19. Fall back to anonymous children.
+                            obj.insert(elem_key, existing);
+                            array_children.push(entry.value);
+                        }
+                    }
                 }
             }
 
@@ -204,15 +198,22 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
 }
 
 struct ChildEntry {
-    field: Option<String>,
+    /// The XML element name (used as JSON key when `list_name` is absent).
+    element_name: String,
+    /// Optional `list="X"` attribute value (Principle #12). When set, this
+    /// child is always emitted into a JSON array under key X, regardless
+    /// of cardinality.
+    list_name: Option<String>,
     value: Value,
-    is_list_field: bool,
 }
 
-fn is_anon_text_entry(entry: &ChildEntry) -> bool {
-    entry.field.is_none() && entry.value.as_object().map_or(false, |o| {
-        o.len() == 1 && o.contains_key(KEY_TEXT)
-    })
+fn is_anon_text_entry(_entry: &ChildEntry) -> bool {
+    // Anonymous-text-entry detection used pre-iter-139 to suppress the
+    // outer `{name: "..."}` wrap that bare text-leaves emitted. After
+    // the rewrite, text-only leaves return raw strings, so this is a
+    // dead helper retained to keep the call sites readable. Always
+    // returns false; the dead-code path has no effect.
+    false
 }
 
 #[cfg(test)]

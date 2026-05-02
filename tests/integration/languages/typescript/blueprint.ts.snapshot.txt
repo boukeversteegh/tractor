@@ -18,18 +18,18 @@ program/
   │   └─ string = "\"./barrel\""
   ├─ export/alias/
   │   ├─ name = "Re"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[conditional]/
   │       ├─ left/type/name = "T"
   │       ├─ right/type[generic]/
   │       │   ├─ name = "Array"
-  │       │   └─ type[infer and @list="true"]/type/name = "U"
+  │       │   └─ type[infer and @list="arguments"]/type/name = "U"
   │       ├─ then/type/name = "U"
   │       └─ else/type/name = "never"
   ├─ comment[leading] = "/** A shape with an optional label and readonly id. */"
   ├─ export/interface/
   │   ├─ name = "Shape"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ type[default]/type/name = "number"
   │   └─ body/
@@ -44,7 +44,7 @@ program/
   │       │   └─ type/name = "T"
   │       └─ method/
   │           ├─ name = "describe"
-  │           ├─ parameter[required and @list="true"]/
+  │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "prefix"
   │           │   └─ type/name = "string"
   │           └─ returns/type/name = "string"
@@ -73,15 +73,15 @@ program/
   │       └─ type[literal]/string = "\"error\""
   ├─ export/alias/
   │   ├─ name = "Mapper"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[function]/
-  │       ├─ parameter[required and @list="true"]/
+  │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ name = "input"
   │       │   └─ type/name = "T"
   │       └─ returns/type/name = "T"
   ├─ export/alias/
   │   ├─ name = "Partialized"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[object]/indexer/
   │       ├─ name = "K"
   │       ├─ type[keyof]/type/name = "T"
@@ -106,9 +106,9 @@ program/
   ├─ comment[leading] = "/** Abstract base using visibility + readonly + static. */"
   ├─ export/class[abstract]/
   │   ├─ name = "Base"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
-  │   │   └─ extends[@list="true"]/type/name = "Shape"
+  │   │   └─ extends[@list="extends"]/type/name = "Shape"
   │   └─ body/
   │       ├─ field[static and public]/
   │       │   ├─ name = "kind"
@@ -124,15 +124,15 @@ program/
   │       │   ├─ name = "_cache"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Map"
-  │       │   │   ├─ type[@list="true"]/name = "string"
-  │       │   │   └─ type[@list="true"]/name = "T"
+  │       │   │   ├─ type[@list="arguments"]/name = "string"
+  │       │   │   └─ type[@list="arguments"]/name = "T"
   │       │   └─ value/expression/new/name = "Map"
   │       ├─ method[public]/
   │       │   ├─ name = "constructor"
-  │       │   ├─ parameter[required and public and @list="true"]/
+  │       │   ├─ parameter[required and public and @list="parameters"]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   └─ parameter[optional and readonly and private and @list="true"]/
+  │       │   └─ parameter[optional and readonly and private and @list="parameters"]/
   │       │       ├─ name = "seed"
   │       │       └─ type/name = "number"
   │       ├─ method[abstract and public]/
@@ -148,7 +148,7 @@ program/
   │       │       └─ property/name = "size"
   │       ├─ method[public and set]/
   │       │   ├─ name = "primary"
-  │       │   ├─ parameter[required and @list="true"]/
+  │       │   ├─ parameter[required and @list="parameters"]/
   │       │   │   ├─ name = "value"
   │       │   │   └─ type/name = "T"
   │       │   └─ body/block/expression/call/
@@ -157,14 +157,14 @@ program/
   │       │       │   │   ├─ object/this = "this"
   │       │       │   │   └─ property/name = "_cache"
   │       │       │   └─ property/name = "set"
-  │       │       ├─ string[@list="true"] = "\"primary\""
-  │       │       └─ name[@list="true"] = "value"
+  │       │       ├─ string[@list="arguments"] = "\"primary\""
+  │       │       └─ name[@list="arguments"] = "value"
   │       └─ method[public]/
   │           ├─ name = "store"
-  │           ├─ parameter[required and @list="true"]/
+  │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "key"
   │           │   └─ type/name = "string"
-  │           ├─ parameter[required and @list="true"]/
+  │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "value"
   │           │   └─ type/name = "T"
   │           ├─ returns/type/name = "void"
@@ -174,36 +174,36 @@ program/
   │               │   │   ├─ object/this = "this"
   │               │   │   └─ property/name = "_cache"
   │               │   └─ property/name = "set"
-  │               ├─ name[@list="true"] = "key"
-  │               └─ name[@list="true"] = "value"
+  │               ├─ name[@list="arguments"] = "key"
+  │               └─ name[@list="arguments"] = "value"
   ├─ export/class/
   │   ├─ name = "Widget"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
-  │   │   ├─ extends[@list="true"]/type/name = "Shape"
+  │   │   ├─ extends[@list="extends"]/type/name = "Shape"
   │   │   └─ type[default]/type[generic]/
   │   │       ├─ name = "Shape"
-  │   │       └─ type[@list="true"]/name = "number"
-  │   ├─ extends[@list="true"]/type[generic]/
+  │   │       └─ type[@list="arguments"]/name = "number"
+  │   ├─ extends[@list="extends"]/type[generic]/
   │   │   ├─ name = "Base"
-  │   │   └─ type[@list="true"]/name = "T"
+  │   │   └─ type[@list="arguments"]/name = "T"
   │   └─ body/
   │       ├─ field[private and static]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
   │       ├─ method[public]/
   │       │   ├─ name = "constructor"
-  │       │   ├─ parameter[required and @list="true"]/
+  │       │   ├─ parameter[required and @list="parameters"]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   ├─ parameter[required and private and @list="true"]/
+  │       │   ├─ parameter[required and private and @list="parameters"]/
   │       │   │   ├─ name = "items"
   │       │   │   ├─ type[array]/type/name = "T"
   │       │   │   └─ value/expression/array = "[]"
   │       │   └─ body/block/
   │       │       ├─ expression/call/
   │       │       │   ├─ callee/super = "super"
-  │       │       │   └─ name[@list="true"] = "name"
+  │       │       │   └─ name[@list="arguments"] = "name"
   │       │       └─ expression/unary/
   │       │           ├─ member/
   │       │           │   ├─ object/name = "Widget"
@@ -231,7 +231,7 @@ program/
   │       │   ├─ name = "entries"
   │       │   ├─ returns/type[generic]/
   │       │   │   ├─ name = "Generator"
-  │       │   │   └─ type[tuple and @list="true"]/
+  │       │   │   └─ type[tuple and @list="arguments"]/
   │       │   │       ├─ type/name = "number"
   │       │   │       └─ type/name = "T"
   │       │   └─ body/block/for/
@@ -258,15 +258,15 @@ program/
   │       │               └─ name = "i"
   │       └─ method[public and async]/
   │           ├─ name = "loadAll"
-  │           ├─ parameter[required and @list="true"]/
+  │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "urls"
   │           │   └─ type[array]/type/name = "string"
-  │           ├─ parameter[required and @list="true"]/
+  │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ rest/name = "extra"
   │           │   └─ type[array]/type/name = "string"
   │           ├─ returns/type[generic]/
   │           │   ├─ name = "Promise"
-  │           │   └─ type[array and @list="true"]/type/name = "T"
+  │           │   └─ type[array and @list="arguments"]/type/name = "T"
   │           └─ body/block/try/
   │               ├─ body/block/
   │               │   ├─ variable[const]/
@@ -279,7 +279,7 @@ program/
   │               │   │   ├─ right/expression/name = "merged"
   │               │   │   └─ body/block/expression[await]/call/
   │               │   │       ├─ callee/name = "fetch"
-  │               │   │       └─ name[@list="true"] = "u"
+  │               │   │       └─ name[@list="arguments"] = "u"
   │               │   └─ return/expression/member/
   │               │       ├─ object/this = "this"
   │               │       └─ property/name = "items"
@@ -295,7 +295,7 @@ program/
   │                   └─ property/name = "length"
   ├─ function/
   │   ├─ name = "isShape"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "unknown"
   │   ├─ returns/predicate/
@@ -322,21 +322,21 @@ program/
   ├─ variable[const]/
   │   ├─ name = "tag"
   │   └─ value/expression/arrow/
-  │       ├─ parameter[required and @list="true"]/
+  │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ name = "parts"
   │       │   └─ type/name = "TemplateStringsArray"
-  │       ├─ parameter[required and @list="true"]/
+  │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ rest/name = "vals"
   │       │   └─ type[array]/type/name = "unknown"
   │       └─ body/call/
   │           ├─ callee/member/
   │           │   ├─ object/name = "parts"
   │           │   └─ property/name = "reduce"
-  │           ├─ type[@list="true"]/name = "string"
-  │           ├─ arrow[@list="true"]/
-  │           │   ├─ parameter[required and @list="true"]/name = "acc"
-  │           │   ├─ parameter[required and @list="true"]/name = "p"
-  │           │   ├─ parameter[required and @list="true"]/name = "i"
+  │           ├─ type[@list="arguments"]/name = "string"
+  │           ├─ arrow[@list="arguments"]/
+  │           │   ├─ parameter[required and @list="parameters"]/name = "acc"
+  │           │   ├─ parameter[required and @list="parameters"]/name = "p"
+  │           │   ├─ parameter[required and @list="parameters"]/name = "i"
   │           │   └─ body/binary/
   │           │       ├─ left/expression/binary/
   │           │       │   ├─ left/expression/name = "acc"
@@ -349,18 +349,18 @@ program/
   │           │           │   └─ name = "i"
   │           │           ├─ op[nullish-coalescing] = "??"
   │           │           └─ right/expression/string = "\"\""
-  │           └─ string[@list="true"] = "\"\""
+  │           └─ string[@list="arguments"] = "\"\""
   ├─ function[async]/
   │   ├─ name = "compute"
-  │   ├─ generic[@list="true"]/
+  │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
-  │   │   └─ extends[@list="true"]/type[union]/
+  │   │   └─ extends[@list="extends"]/type[union]/
   │   │       ├─ type/name = "number"
   │   │       └─ type/name = "string"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "input"
   │   │   └─ type/name = "T"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ pattern[object]/
   │   │   │   ├─ pattern[default]/
   │   │   │   │   ├─ left/expression/name = "scale"
@@ -376,7 +376,7 @@ program/
   │   │   └─ value/expression/object = "{}"
   │   ├─ returns/type[generic]/
   │   │   ├─ name = "Promise"
-  │   │   └─ type[@list="true"]/name = "Greeting"
+  │   │   └─ type[@list="arguments"]/name = "Greeting"
   │   └─ body/block/
   │       ├─ variable[const]/
   │       │   ├─ pattern[array]/
@@ -386,9 +386,9 @@ program/
   │       │       ├─ callee/member/
   │       │       │   ├─ object/call/
   │       │       │   │   ├─ callee/name = "String"
-  │       │       │   │   └─ name[@list="true"] = "input"
+  │       │       │   │   └─ name[@list="arguments"] = "input"
   │       │       │   └─ property/name = "split"
-  │       │       └─ string[@list="true"] = "\"\""
+  │       │       └─ string[@list="arguments"] = "\"\""
   │       ├─ comment[trailing] = "// array destructure + rest"
   │       ├─ variable[const]/
   │       │   ├─ name = "spread"
@@ -417,7 +417,7 @@ program/
   ├─ comment[leading] = "/* A block comment describing control flow demos. */"
   ├─ export/function/
   │   ├─ name = "controlFlow"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "n"
   │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "Status"
@@ -467,7 +467,7 @@ program/
   │       │       │   ├─ value/expression/string = "\"error\""
   │       │       │   └─ body/throw/new/
   │       │       │       ├─ name = "Error"
-  │       │       │       └─ string[@list="true"] = "\"bad\""
+  │       │       │       └─ string[@list="arguments"] = "\"bad\""
   │       │       └─ default/
   │       │           ├─ comment = "/* fallthrough */"
   │       │           └─ body[break]
@@ -475,8 +475,8 @@ program/
   │       │   ├─ name = "obj"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Record"
-  │       │   │   ├─ type[@list="true"]/name = "string"
-  │       │   │   └─ type[@list="true"]/name = "number"
+  │       │   │   ├─ type[@list="arguments"]/name = "string"
+  │       │   │   └─ type[@list="arguments"]/name = "number"
   │       │   └─ value/expression/object/
   │       │       ├─ pair/
   │       │       │   ├─ name = "a"
@@ -499,7 +499,7 @@ program/
   │       │   │   ├─ callee/member/
   │       │   │   │   ├─ object/name = "Object"
   │       │   │   │   └─ property/name = "entries"
-  │       │   │   └─ name[@list="true"] = "obj"
+  │       │   │   └─ name[@list="arguments"] = "obj"
   │       │   └─ body/block/expression/unary/
   │       │       ├─ op[void] = "void"
   │       │       └─ name = "v"
@@ -516,8 +516,8 @@ program/
   ├─ variable[const]/
   │   ├─ name = "arrow"
   │   └─ value/expression/arrow/
-  │       ├─ generic[@list="true"]/name = "U"
-  │       ├─ parameter[required and @list="true"]/
+  │       ├─ generic[@list="generics"]/name = "U"
+  │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ name = "xs"
   │       │   └─ type[array]/type/name = "U"
   │       ├─ returns/type[union]/
@@ -536,8 +536,8 @@ program/
   │       │   │   ├─ number = "2"
   │       │   │   └─ number = "3"
   │       │   └─ property/name = "map"
-  │       └─ arrow[@list="true"]/
-  │           ├─ parameter[required and @list="true"]/name = "x"
+  │       └─ arrow[@list="arguments"]/
+  │           ├─ parameter[required and @list="parameters"]/name = "x"
   │           ├─ returns/type/name = "number"
   │           └─ body/binary/
   │               ├─ left/expression/name = "x"
@@ -590,7 +590,7 @@ program/
   │   └─ type/name = "boolean"
   ├─ declare/signature/
   │   ├─ name = "externalThing"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "name"
   │   │   └─ type/name = "string"
   │   └─ returns/type/name = "void"
@@ -603,13 +603,13 @@ program/
   ├─ alias/
   │   ├─ name = "Builder"
   │   └─ type[constructor]/
-  │       ├─ parameter[required and @list="true"]/
+  │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ name = "input"
   │       │   └─ type/name = "string"
   │       └─ type/name = "Status"
   ├─ alias/
   │   ├─ name = "Identity"
-  │   ├─ generic[@list="true"]/name = "T"
+  │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[conditional]/
   │       ├─ left/type[typeof]/name = "globalThis"
   │       ├─ right/type/name = "T"
@@ -640,9 +640,9 @@ program/
   ├─ variable[const]/
   │   ├─ name = "asserted"
   │   └─ value/expression/as/
-  │       ├─ type[@list="true"]/name = "number"
+  │       ├─ type[@list="arguments"]/name = "number"
   │       └─ as/
-  │           ├─ type[@list="true"]/name = "unknown"
+  │           ├─ type[@list="arguments"]/name = "unknown"
   │           └─ string = "\"42\""
   ├─ comment[leading] = "// Class with static initializer block."
   ├─ class/
@@ -660,7 +660,7 @@ program/
   ├─ comment[leading] = "// Asserts / type predicate annotations."
   ├─ function/
   │   ├─ name = "isNumber"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "unknown"
   │   ├─ returns/predicate[asserts]/
@@ -675,13 +675,13 @@ program/
   │       │   └─ right/expression/string = "\"number\""
   │       └─ then/throw/new/
   │           ├─ name = "Error"
-  │           └─ string[@list="true"] = "\"not a number\""
+  │           └─ string[@list="arguments"] = "\"not a number\""
   ├─ comment[leading] = "// `Foo<T>` instantiation expression."
   ├─ variable[const]/
   │   ├─ name = "arrayOf"
   │   └─ value/expression/type[generic]/
   │       ├─ name = "Array"
-  │       └─ type[@list="true"]/name = "number"
+  │       └─ type[@list="arguments"]/name = "number"
   ├─ variable[const]/
   │   ├─ name = "fixed"
   │   └─ value/expression/call/callee/name = "arrayOf"
@@ -697,7 +697,7 @@ program/
   │       └─ property/name = "url"
   ├─ function/
   │   ├─ name = "MetaCtor"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ this = "this"
   │   │   └─ type/name = "unknown"
   │   └─ body/block/return/expression/binary/
@@ -725,7 +725,7 @@ program/
   ├─ comment[leading] = "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
   ├─ function/
   │   ├─ name = "controlOdds"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "value"
   │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "number"
@@ -797,7 +797,7 @@ program/
   ├─ comment[leading] = "// Pair pattern + assignment pattern in destructure with defaults."
   ├─ function/
   │   ├─ name = "destructure"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ pattern[object]/
   │   │   │   ├─ pair/
   │   │   │   │   ├─ name = "a"
@@ -814,7 +814,7 @@ program/
   │   │       └─ property/
   │   │           ├─ name = "b"
   │   │           └─ type/name = "number"
-  │   ├─ parameter[required and @list="true"]/
+  │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ pattern[array]/
   │   │   │   ├─ pattern[default]/
   │   │   │   │   ├─ left/expression/name = "c"

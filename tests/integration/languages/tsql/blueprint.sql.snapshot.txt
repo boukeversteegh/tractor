@@ -231,7 +231,7 @@ file/
   │   │   │   ├─ column/name = "Nickname"
   │   │   │   └─ column/name = "Name"
   │   │   ├─ alias = "DisplayName"
-  │   │   ├─ cast/
+  │   │   ├─ cast[name]/
   │   │   │   ├─ column/name = "Age"
   │   │   │   └─ varchar/literal = "10"
   │   │   └─ alias = "AgeText"

@@ -52,8 +52,7 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     if is_enum_underlying {
         for child in elem_children {
             xot.with_renamed(child, Type)
-                .with_appended_marker(child, super::output::TractorNode::Underlying)?
-                .with_attr(child, "field", "underlying");
+                .with_appended_marker(child, super::output::TractorNode::Underlying)?;
         }
     } else {
         use super::output::TractorNode::Extends;
@@ -79,8 +78,7 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             xot.insert_before(child, extends_node)?;
             xot.detach(child)?;
             xot.append(extends_node, child)?;
-            xot.with_attr(extends_node, "field", "extends");
-            xot.with_attr(extends_node, "list", "true");
+            xot.with_attr(extends_node, "list", "extends");
             current_extends = Some(extends_node);
         }
     }

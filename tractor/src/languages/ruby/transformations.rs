@@ -110,8 +110,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
     xot.with_renamed(node, Extends)
-        .with_attr(node, "field", "extends")
-        .with_attr(node, "list", "true");
+        .with_attr(node, "list", "extends");
     Ok(TransformAction::Continue)
 }
 
