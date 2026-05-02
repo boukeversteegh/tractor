@@ -1,0 +1,1360 @@
+{
+  "$type": "file",
+  "go": "GO",
+  "transaction": {
+    "$type": "transaction",
+    "statement": {
+      "$type": "statement",
+      "update": {
+        "$type": "update",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Accounts"
+          }
+        },
+        "assign": {
+          "$type": "assign",
+          "column": {
+            "$type": "column",
+            "name": "Balance"
+          },
+          "op": "=",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "Balance"
+            },
+            "op": {
+              "$type": "op",
+              "minus": true,
+              "text": "-"
+            },
+            "literal": "100"
+          }
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "ID"
+            },
+            "op": "=",
+            "literal": "1"
+          }
+        }
+      }
+    },
+    "children": [
+      {
+        "$type": "statement",
+        "update": {
+          "$type": "update",
+          "relation": {
+            "$type": "relation",
+            "ref": {
+              "$type": "ref",
+              "name": "Accounts"
+            }
+          },
+          "assign": {
+            "$type": "assign",
+            "column": {
+              "$type": "column",
+              "name": "Balance"
+            },
+            "op": "=",
+            "compare": {
+              "$type": "compare",
+              "column": {
+                "$type": "column",
+                "name": "Balance"
+              },
+              "op": {
+                "$type": "op",
+                "plus": true,
+                "text": "+"
+              },
+              "literal": "100"
+            }
+          },
+          "where": {
+            "$type": "where",
+            "compare": {
+              "$type": "compare",
+              "column": {
+                "$type": "column",
+                "name": "ID"
+              },
+              "op": "=",
+              "literal": "2"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "comment": "-- Simple T-SQL example",
+  "statement": {
+    "$type": "statement",
+    "select": {
+      "$type": "select",
+      "column": {
+        "$type": "column",
+        "ref": {
+          "$type": "ref",
+          "name": "u"
+        },
+        "name": "Name"
+      },
+      "children": [
+        {
+          "$type": "column",
+          "ref": {
+            "$type": "ref",
+            "name": "u"
+          },
+          "name": "Age"
+        }
+      ]
+    },
+    "from": {
+      "$type": "from",
+      "relation": {
+        "$type": "relation",
+        "ref": {
+          "$type": "ref",
+          "name": "Users"
+        },
+        "alias": "u"
+      },
+      "where": {
+        "$type": "where",
+        "compare": {
+          "$type": "compare",
+          "column": {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "u"
+            },
+            "name": "Age"
+          },
+          "op": {
+            "$type": "op",
+            "compare": true,
+            "greater": true,
+            "text": ">"
+          },
+          "literal": "18"
+        }
+      },
+      "order": {
+        "$type": "order",
+        "target": {
+          "$type": "target",
+          "column": {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "u"
+            },
+            "name": "Name"
+          }
+        }
+      }
+    }
+  },
+  "children": [
+    {
+      "$type": "statement",
+      "insert": {
+        "$type": "insert",
+        "ref": {
+          "$type": "ref",
+          "name": "AuditLog"
+        },
+        "list": {
+          "$type": "list",
+          "column": {
+            "$type": "column",
+            "name": "Action"
+          },
+          "children": [
+            {
+              "$type": "column",
+              "name": "Timestamp"
+            }
+          ]
+        },
+        "children": [
+          {
+            "$type": "list",
+            "literal": "'UserQuery'",
+            "call": {
+              "$type": "call",
+              "ref": {
+                "$type": "ref",
+                "name": "GETDATE"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "statement",
+      "delete": true,
+      "from": {
+        "$type": "from",
+        "ref": {
+          "$type": "ref",
+          "name": "OldRecords"
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "CreatedAt"
+            },
+            "op": {
+              "$type": "op",
+              "compare": true,
+              "less": true,
+              "text": "<"
+            },
+            "literal": "'2020-01-01'"
+          }
+        }
+      }
+    },
+    "-- Bracket identifiers, schema-qualified names, variables",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "alias": "UserName",
+        "column": {
+          "$type": "column",
+          "ref": {
+            "$type": "ref",
+            "schema": "dbo",
+            "name": "Users"
+          },
+          "name": "Name"
+        },
+        "children": [
+          {
+            "$type": "column",
+            "var": "StartDate"
+          }
+        ]
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "schema": "dbo",
+            "name": "Users"
+          }
+        },
+        "where": {
+          "$type": "where",
+          "between": {
+            "$type": "between",
+            "column": {
+              "$type": "column",
+              "name": "Age"
+            },
+            "literal": "18",
+            "children": [
+              "65"
+            ]
+          }
+        }
+      }
+    },
+    "-- UPDATE with variables and schema-qualified table",
+    {
+      "$type": "statement",
+      "update": {
+        "$type": "update",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "schema": "dbo",
+            "name": "Config"
+          }
+        },
+        "assign": {
+          "$type": "assign",
+          "op": "=",
+          "column": {
+            "$type": "column",
+            "name": "Value"
+          },
+          "children": [
+            {
+              "$type": "column",
+              "var": "NewValue"
+            }
+          ]
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "op": "=",
+            "column": {
+              "$type": "column",
+              "name": "Key"
+            },
+            "children": [
+              {
+                "$type": "column",
+                "var": "KeyName"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "-- JOINs",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "ref": {
+            "$type": "ref",
+            "name": "o"
+          },
+          "name": "ID"
+        },
+        "children": [
+          {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "u"
+            },
+            "name": "Name"
+          },
+          {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "a"
+            },
+            "name": "City"
+          }
+        ]
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Orders"
+          },
+          "alias": "o"
+        },
+        "join": {
+          "$type": "join",
+          "relation": {
+            "$type": "relation",
+            "ref": {
+              "$type": "ref",
+              "name": "Users"
+            },
+            "alias": "u"
+          },
+          "compare": {
+            "$type": "compare",
+            "op": "=",
+            "column": {
+              "$type": "column",
+              "ref": {
+                "$type": "ref",
+                "name": "o"
+              },
+              "name": "UserID"
+            },
+            "children": [
+              {
+                "$type": "column",
+                "ref": {
+                  "$type": "ref",
+                  "name": "u"
+                },
+                "name": "ID"
+              }
+            ]
+          }
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "ref": {
+                "$type": "ref",
+                "name": "o"
+              },
+              "name": "Total"
+            },
+            "op": {
+              "$type": "op",
+              "compare": true,
+              "greater": true,
+              "text": ">"
+            },
+            "literal": "100"
+          }
+        },
+        "children": [
+          {
+            "$type": "join",
+            "relation": {
+              "$type": "relation",
+              "ref": {
+                "$type": "ref",
+                "name": "Addresses"
+              },
+              "alias": "a"
+            },
+            "compare": {
+              "$type": "compare",
+              "op": "=",
+              "column": {
+                "$type": "column",
+                "ref": {
+                  "$type": "ref",
+                  "name": "u"
+                },
+                "name": "ID"
+              },
+              "children": [
+                {
+                  "$type": "column",
+                  "ref": {
+                    "$type": "ref",
+                    "name": "a"
+                  },
+                  "name": "UserID"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "-- Subquery with IN",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Name"
+        }
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Users"
+          }
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "ID"
+            },
+            "subquery": {
+              "$type": "subquery",
+              "select": {
+                "$type": "select",
+                "column": {
+                  "$type": "column",
+                  "name": "UserID"
+                }
+              },
+              "from": {
+                "$type": "from",
+                "relation": {
+                  "$type": "relation",
+                  "ref": {
+                    "$type": "ref",
+                    "name": "Orders"
+                  }
+                },
+                "where": {
+                  "$type": "where",
+                  "compare": {
+                    "$type": "compare",
+                    "column": {
+                      "$type": "column",
+                      "name": "Total"
+                    },
+                    "op": {
+                      "$type": "op",
+                      "compare": true,
+                      "greater": true,
+                      "text": ">"
+                    },
+                    "literal": "50"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "-- EXISTS",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "ref": {
+            "$type": "ref",
+            "name": "u"
+          },
+          "name": "Name"
+        }
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Users"
+          },
+          "alias": "u"
+        },
+        "where": {
+          "$type": "where",
+          "exists": {
+            "$type": "exists",
+            "subquery": {
+              "$type": "subquery",
+              "select": {
+                "$type": "select",
+                "literal": "1"
+              },
+              "from": {
+                "$type": "from",
+                "relation": {
+                  "$type": "relation",
+                  "ref": {
+                    "$type": "ref",
+                    "name": "Orders"
+                  },
+                  "alias": "o"
+                },
+                "where": {
+                  "$type": "where",
+                  "compare": {
+                    "$type": "compare",
+                    "op": "=",
+                    "column": {
+                      "$type": "column",
+                      "ref": {
+                        "$type": "ref",
+                        "name": "o"
+                      },
+                      "name": "UserID"
+                    },
+                    "children": [
+                      {
+                        "$type": "column",
+                        "ref": {
+                          "$type": "ref",
+                          "name": "u"
+                        },
+                        "name": "ID"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "-- GROUP BY, HAVING, aggregate functions",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Department"
+        },
+        "call": {
+          "$type": "call",
+          "ref": {
+            "$type": "ref",
+            "name": "COUNT"
+          },
+          "star": "*"
+        },
+        "alias": "HeadCount",
+        "children": [
+          {
+            "$type": "call",
+            "ref": {
+              "$type": "ref",
+              "name": "AVG"
+            },
+            "column": {
+              "$type": "column",
+              "name": "Salary"
+            }
+          },
+          "AvgSalary"
+        ]
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Employees"
+          }
+        },
+        "group": {
+          "$type": "group",
+          "column": {
+            "$type": "column",
+            "name": "Department"
+          }
+        },
+        "having": {
+          "$type": "having",
+          "compare": {
+            "$type": "compare",
+            "call": {
+              "$type": "call",
+              "ref": {
+                "$type": "ref",
+                "name": "COUNT"
+              },
+              "star": "*"
+            },
+            "op": {
+              "$type": "op",
+              "compare": true,
+              "greater": true,
+              "text": ">"
+            },
+            "literal": "5"
+          }
+        }
+      }
+    },
+    "-- CASE WHEN",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Name"
+        },
+        "case": {
+          "$type": "case",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "Age"
+            },
+            "op": {
+              "$type": "op",
+              "compare": true,
+              "greater": true,
+              "equal": true,
+              "text": ">="
+            },
+            "literal": "18"
+          },
+          "literal": "'Adult'",
+          "children": [
+            "'Minor'"
+          ]
+        },
+        "alias": "Category"
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Users"
+          }
+        }
+      }
+    },
+    "-- CTE (Common Table Expression)",
+    {
+      "$type": "statement",
+      "cte": {
+        "$type": "cte",
+        "name": "ActiveUsers",
+        "statement": {
+          "$type": "statement",
+          "select": {
+            "$type": "select",
+            "column": {
+              "$type": "column",
+              "name": "ID"
+            },
+            "children": [
+              {
+                "$type": "column",
+                "name": "Name"
+              }
+            ]
+          },
+          "from": {
+            "$type": "from",
+            "relation": {
+              "$type": "relation",
+              "ref": {
+                "$type": "ref",
+                "name": "Users"
+              }
+            },
+            "where": {
+              "$type": "where",
+              "compare": {
+                "$type": "compare",
+                "column": {
+                  "$type": "column",
+                  "name": "Active"
+                },
+                "op": "=",
+                "literal": "1"
+              }
+            }
+          }
+        }
+      },
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Name"
+        }
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "ActiveUsers"
+          }
+        }
+      }
+    },
+    "-- UNION ALL",
+    {
+      "$type": "statement",
+      "union": {
+        "$type": "union",
+        "select": {
+          "$type": "select",
+          "column": {
+            "$type": "column",
+            "name": "Name"
+          },
+          "literal": "'User'",
+          "alias": "Source"
+        },
+        "from": {
+          "$type": "from",
+          "relation": {
+            "$type": "relation",
+            "ref": {
+              "$type": "ref",
+              "name": "Users"
+            }
+          }
+        },
+        "children": [
+          {
+            "$type": "select",
+            "column": {
+              "$type": "column",
+              "name": "Name"
+            },
+            "literal": "'Admin'",
+            "alias": "Source"
+          },
+          {
+            "$type": "from",
+            "relation": {
+              "$type": "relation",
+              "ref": {
+                "$type": "ref",
+                "name": "Admins"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "-- Window function with PARTITION BY",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Name"
+        },
+        "window": {
+          "$type": "window",
+          "call": {
+            "$type": "call",
+            "ref": {
+              "$type": "ref",
+              "name": "ROW_NUMBER"
+            }
+          },
+          "over": {
+            "$type": "over",
+            "partition": {
+              "$type": "partition",
+              "column": {
+                "$type": "column",
+                "name": "Department"
+              }
+            },
+            "order": {
+              "$type": "order",
+              "target": {
+                "$type": "target",
+                "direction": true,
+                "column": {
+                  "$type": "column",
+                  "name": "Salary"
+                }
+              }
+            }
+          }
+        },
+        "alias": "Rank"
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Employees"
+          }
+        }
+      }
+    },
+    "-- COALESCE, CAST, LIKE, IS NULL, IN list",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "call": {
+          "$type": "call",
+          "ref": {
+            "$type": "ref",
+            "name": "COALESCE"
+          },
+          "column": {
+            "$type": "column",
+            "name": "Nickname"
+          },
+          "children": [
+            {
+              "$type": "column",
+              "name": "Name"
+            }
+          ]
+        },
+        "cast": {
+          "$type": "cast",
+          "name": true,
+          "column": {
+            "$type": "column",
+            "name": "Age"
+          },
+          "varchar": {
+            "$type": "varchar",
+            "literal": "10"
+          }
+        },
+        "alias": "DisplayName",
+        "children": [
+          "AgeText"
+        ]
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Users"
+          }
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "compare": {
+              "$type": "compare",
+              "compare": {
+                "$type": "compare",
+                "column": {
+                  "$type": "column",
+                  "name": "Email"
+                },
+                "literal": "'%@gmail.com'"
+              },
+              "children": [
+                {
+                  "$type": "compare",
+                  "column": {
+                    "$type": "column",
+                    "name": "DeletedAt"
+                  }
+                }
+              ]
+            },
+            "children": [
+              {
+                "$type": "compare",
+                "column": {
+                  "$type": "column",
+                  "name": "Role"
+                },
+                "list": {
+                  "$type": "list",
+                  "literal": "'admin'",
+                  "children": [
+                    "'moderator'"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "-- DISTINCT with ORDER BY DESC",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Department"
+        }
+      },
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Employees"
+          }
+        },
+        "order": {
+          "$type": "order",
+          "target": {
+            "$type": "target",
+            "direction": true,
+            "column": {
+              "$type": "column",
+              "name": "Department"
+            }
+          }
+        }
+      }
+    },
+    "-- CREATE TABLE",
+    {
+      "$type": "statement",
+      "create": {
+        "$type": "create",
+        "ref": {
+          "$type": "ref",
+          "name": "Audit"
+        },
+        "columns": {
+          "$type": "columns",
+          "definition": {
+            "$type": "definition",
+            "name": "ID"
+          },
+          "children": [
+            {
+              "$type": "definition",
+              "name": "Action",
+              "nvarchar": {
+                "$type": "nvarchar",
+                "literal": "100"
+              }
+            },
+            {
+              "$type": "definition",
+              "name": "CreatedAt",
+              "call": {
+                "$type": "call",
+                "ref": {
+                  "$type": "ref",
+                  "name": "GETDATE"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "-- MERGE statement",
+    {
+      "$type": "statement",
+      "ref": {
+        "$type": "ref",
+        "name": "Target"
+      },
+      "alias": "t",
+      "compare": {
+        "$type": "compare",
+        "op": "=",
+        "column": {
+          "$type": "column",
+          "ref": {
+            "$type": "ref",
+            "name": "t"
+          },
+          "name": "ID"
+        },
+        "children": [
+          {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "s"
+            },
+            "name": "ID"
+          }
+        ]
+      },
+      "when": {
+        "$type": "when",
+        "assign": {
+          "$type": "assign",
+          "op": "=",
+          "column": {
+            "$type": "column",
+            "ref": {
+              "$type": "ref",
+              "name": "t"
+            },
+            "name": "Name"
+          },
+          "children": [
+            {
+              "$type": "column",
+              "ref": {
+                "$type": "ref",
+                "name": "s"
+              },
+              "name": "Name"
+            }
+          ]
+        }
+      },
+      "children": [
+        {
+          "$type": "ref",
+          "name": "Source"
+        },
+        "s",
+        {
+          "$type": "when",
+          "list": {
+            "$type": "list",
+            "column": {
+              "$type": "column",
+              "name": "ID"
+            },
+            "children": [
+              {
+                "$type": "column",
+                "name": "Name"
+              }
+            ]
+          },
+          "children": [
+            {
+              "$type": "list",
+              "column": {
+                "$type": "column",
+                "ref": {
+                  "$type": "ref",
+                  "name": "s"
+                },
+                "name": "ID"
+              },
+              "children": [
+                {
+                  "$type": "column",
+                  "ref": {
+                    "$type": "ref",
+                    "name": "s"
+                  },
+                  "name": "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "-- SELECT INTO temp table",
+    {
+      "$type": "statement",
+      "select": {
+        "$type": "select",
+        "column": {
+          "$type": "column",
+          "name": "Name"
+        },
+        "children": [
+          {
+            "$type": "column",
+            "name": "Age"
+          }
+        ]
+      },
+      "temp": "#TempUsers",
+      "from": {
+        "$type": "from",
+        "relation": {
+          "$type": "relation",
+          "ref": {
+            "$type": "ref",
+            "name": "Users"
+          }
+        },
+        "where": {
+          "$type": "where",
+          "compare": {
+            "$type": "compare",
+            "column": {
+              "$type": "column",
+              "name": "Active"
+            },
+            "op": "=",
+            "literal": "1"
+          }
+        }
+      }
+    },
+    "-- Transaction",
+    "-- SET variable",
+    {
+      "$type": "statement",
+      "set": {
+        "$type": "set",
+        "ref": {
+          "$type": "ref",
+          "var": "Threshold"
+        },
+        "literal": "42"
+      }
+    },
+    "-- Scalar function",
+    {
+      "$type": "statement",
+      "function": {
+        "$type": "function",
+        "int": true,
+        "ref": {
+          "$type": "ref",
+          "schema": "dbo",
+          "name": "GetAge"
+        },
+        "arg": {
+          "$type": "arg",
+          "var": "BirthDate"
+        },
+        "body": {
+          "$type": "body",
+          "call": {
+            "$type": "call",
+            "ref": {
+              "$type": "ref",
+              "name": "DATEDIFF"
+            },
+            "column": {
+              "$type": "column",
+              "name": "YEAR"
+            },
+            "call": {
+              "$type": "call",
+              "ref": {
+                "$type": "ref",
+                "name": "GETDATE"
+              }
+            },
+            "children": [
+              {
+                "$type": "column",
+                "var": "BirthDate"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "-- EXEC stored procedure",
+    {
+      "$type": "statement",
+      "exec": {
+        "$type": "exec",
+        "ref": {
+          "$type": "ref",
+          "name": "sp_helpdb"
+        }
+      }
+    },
+    "-- Iter 21: new shapes — DDL variants.",
+    "-- CREATE VIEW, DROP TABLE",
+    {
+      "$type": "statement",
+      "create": {
+        "$type": "create",
+        "ref": {
+          "$type": "ref",
+          "name": "ActiveUsers"
+        },
+        "select": {
+          "$type": "select",
+          "column": {
+            "$type": "column",
+            "name": "ID"
+          },
+          "children": [
+            {
+              "$type": "column",
+              "name": "Name"
+            }
+          ]
+        },
+        "from": {
+          "$type": "from",
+          "relation": {
+            "$type": "relation",
+            "ref": {
+              "$type": "ref",
+              "name": "Users"
+            }
+          },
+          "where": {
+            "$type": "where",
+            "compare": {
+              "$type": "compare",
+              "column": {
+                "$type": "column",
+                "name": "Active"
+              },
+              "op": "=",
+              "literal": "1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "statement",
+      "drop": {
+        "$type": "drop",
+        "ref": {
+          "$type": "ref",
+          "name": "TempData"
+        }
+      }
+    },
+    "-- ALTER TABLE: add constraint, drop constraint",
+    {
+      "$type": "statement",
+      "alter": {
+        "$type": "alter",
+        "ref": {
+          "$type": "ref",
+          "name": "Orders"
+        },
+        "constraint": {
+          "$type": "constraint",
+          "ref": {
+            "$type": "ref",
+            "name": "Customers"
+          },
+          "columns": {
+            "$type": "columns",
+            "column": {
+              "$type": "column",
+              "name": "CustomerID"
+            }
+          },
+          "name": "fk_customer",
+          "children": [
+            "ID"
+          ]
+        }
+      }
+    },
+    {
+      "$type": "statement",
+      "alter": {
+        "$type": "alter",
+        "ref": {
+          "$type": "ref",
+          "name": "Orders"
+        },
+        "drop": {
+          "$type": "drop",
+          "name": "fk_customer"
+        }
+      }
+    }
+  ]
+}

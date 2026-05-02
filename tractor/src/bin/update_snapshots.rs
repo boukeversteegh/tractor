@@ -27,7 +27,14 @@ use std::process::{self, Command};
 ///   queryable markers, no source text). Text preservation is enforced
 ///   separately by `tests/text_preservation.rs`.
 ///
-/// Output: `<source>.snapshot.txt` next to each blueprint.
+/// Output: two snapshots per blueprint, both rendering the same tree
+/// at the same depth:
+/// - `<source>.snapshot.txt` — text shape, primary diff for transform
+///   changes (no source text per `-p shape`).
+/// - `<source>.snapshot.json` — JSON tree projection (via `-p tree
+///   --single -f json`), so cardinality decisions (`list=` →
+///   array vs object) are visible in fixtures and shape regressions
+///   that only show up in JSON consumers are caught.
 const BLUEPRINTS: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/typescript/blueprint.ts", "//program", 0, true),
     ("tests/integration/languages/java/blueprint.java",     "//program", 0, true),
@@ -729,16 +736,19 @@ fn main() {
         }
 
         let txt_snap = format!("{}.snapshot.txt", source_rel);
+        let json_snap = format!("{}.snapshot.json", source_rel);
         let depth_str = depth.to_string();
         let projection = if shape_only { "shape" } else { "tree" };
-        let mut args: Vec<&str> = vec![
+
+        // --- text snapshot: shape projection (existing) ---
+        let mut txt_args: Vec<&str> = vec![
             "query", &source_rel, "-x", xpath, "-p", projection, "--single",
         ];
         if depth > 0 {
-            args.push("--depth");
-            args.push(&depth_str);
+            txt_args.push("--depth");
+            txt_args.push(&depth_str);
         }
-        let txt_out = run_tractor_args(&tractor_bin, &args);
+        let txt_out = run_tractor_args(&tractor_bin, &txt_args);
 
         if check_mode {
             match fs::read_to_string(&txt_snap) {
@@ -751,6 +761,34 @@ fn main() {
         } else {
             fs::write(&txt_snap, &txt_out).expect("cannot write .snapshot.txt");
             println!("  blueprint {} -> .snapshot.txt", source_rel);
+        }
+
+        processed += 1;
+
+        // --- json snapshot: tree projection (cardinality fixture) ---
+        // Always uses `-p tree`: shape would lose source text and
+        // primitive values, defeating the purpose of having a JSON
+        // fixture that shows what consumers actually receive.
+        let mut json_args: Vec<&str> = vec![
+            "query", &source_rel, "-x", xpath, "-p", "tree", "--single", "-f", "json",
+        ];
+        if depth > 0 {
+            json_args.push("--depth");
+            json_args.push(&depth_str);
+        }
+        let json_out = run_tractor_args(&tractor_bin, &json_args);
+
+        if check_mode {
+            match fs::read_to_string(&json_snap) {
+                Ok(existing) if existing != json_out => {
+                    mismatches.push(Mismatch::changed(&json_snap, &existing, &json_out));
+                }
+                Err(_) => mismatches.push(Mismatch::missing(&json_snap, &json_out)),
+                _ => {}
+            }
+        } else {
+            fs::write(&json_snap, &json_out).expect("cannot write .snapshot.json");
+            println!("  blueprint {} -> .snapshot.json", source_rel);
         }
 
         processed += 1;

@@ -303,6 +303,16 @@ C# closed iter 167; PHP closed iter 168; Ruby Block/DoBlock closed iter 169.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 170: per-language JSON blueprint snapshots
+  (`blueprint.<ext>.snapshot.json`) added alongside existing
+  `.snapshot.txt`. Generated via `-p tree --single -f json`.
+  149 fixtures total (was 140). Cardinality decisions (`list=` →
+  array vs object) are now visible in fixtures, so
+  shape-changes that only manifest in JSON consumers will surface
+  in PR diffs. Already revealed: Ruby `MAX_RETRIES.zero?` call
+  serializes with `name=MAX_RETRIES` and `children=["zero?"]` —
+  receiver/method collision; folds into the existing
+  Java/Python/Go/TS/Ruby call-shape divergence backlog item.
 - [x] iter 169: Ruby Block + DoBlock body re-tag — call-attached
   closures (`each {}`, `proc {}`, `each do...end`, `loop {}`, etc.)
   now produce `block/value/expression/...` matching the

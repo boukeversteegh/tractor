@@ -1,0 +1,2168 @@
+{
+  "$type": "program",
+  "import": [
+    {
+      "$type": "import",
+      "path": {
+        "$type": "path",
+        "name": [
+          "java",
+          "util",
+          "List"
+        ]
+      }
+    },
+    {
+      "$type": "import",
+      "path": {
+        "$type": "path",
+        "name": [
+          "java",
+          "util",
+          "Map"
+        ]
+      }
+    },
+    {
+      "$type": "import",
+      "path": {
+        "$type": "path",
+        "name": [
+          "java",
+          "util",
+          "function",
+          "Function"
+        ]
+      }
+    },
+    {
+      "$type": "import",
+      "static": true,
+      "path": {
+        "$type": "path",
+        "name": [
+          "java",
+          "util",
+          "Collections",
+          "emptyList"
+        ]
+      }
+    }
+  ],
+  "package": [
+    {
+      "$type": "package",
+      "path": {
+        "$type": "path",
+        "name": [
+          "com",
+          "example",
+          "blueprint"
+        ]
+      }
+    }
+  ],
+  "comment": [
+    "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/** Javadoc comment on the class. */"
+    },
+    "// Iter 19: new shapes — control flow, expressions, literals, patterns.",
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/** @interface (annotation type) with a constant. */"
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/** Static initializer + try-with-resources + labeled loops + misc. */"
+    }
+  ],
+  "interface": [
+    {
+      "$type": "interface",
+      "annotation": true,
+      "name": "Config",
+      "body": {
+        "$type": "body",
+        "method": [
+          {
+            "$type": "method",
+            "type": {
+              "$type": "type",
+              "name": "String"
+            },
+            "name": "value",
+            "value": {
+              "$type": "value",
+              "expression": {
+                "$type": "expression",
+                "string": "\"default\""
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "type": {
+              "$type": "type",
+              "name": "int"
+            },
+            "name": "timeout",
+            "value": {
+              "$type": "value",
+              "expression": {
+                "$type": "expression",
+                "int": "30"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "class": [
+    {
+      "$type": "class",
+      "public": true,
+      "final": true,
+      "annotation": {
+        "$type": "annotation",
+        "name": "SuppressWarnings",
+        "string": "\"unchecked\""
+      },
+      "name": "Demo",
+      "generics": [
+        {
+          "$type": "generic",
+          "name": "T",
+          "extends": [
+            {
+              "$type": "extends",
+              "type": {
+                "$type": "type",
+                "generic": true,
+                "name": "Comparable",
+                "arguments": [
+                  {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "extends": [
+        {
+          "$type": "extends",
+          "type": {
+            "$type": "type",
+            "name": "Base"
+          }
+        }
+      ],
+      "implements": [
+        {
+          "$type": "implements",
+          "type": {
+            "$type": "type",
+            "generic": true,
+            "name": "Handler",
+            "arguments": [
+              {
+                "$type": "type",
+                "name": "T"
+              }
+            ]
+          }
+        }
+      ],
+      "body": {
+        "$type": "body",
+        "comment": [
+          "// Line comment before a field",
+          {
+            "$type": "comment",
+            "leading": true,
+            "text": "/* block comment */"
+          },
+          {
+            "$type": "comment",
+            "trailing": true,
+            "text": "// trailing line comment"
+          }
+        ],
+        "field": [
+          {
+            "$type": "field",
+            "public": true,
+            "static": true,
+            "final": true,
+            "type": {
+              "$type": "type",
+              "name": "int"
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "MAX",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "int": "100"
+                }
+              }
+            }
+          },
+          {
+            "$type": "field",
+            "private": true,
+            "type": {
+              "$type": "type",
+              "name": "String"
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "name"
+            }
+          },
+          {
+            "$type": "field",
+            "protected": true,
+            "type": {
+              "$type": "type",
+              "generic": true,
+              "name": "List",
+              "arguments": [
+                {
+                  "$type": "type",
+                  "generic": true,
+                  "name": "Map",
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "name": "String"
+                    },
+                    {
+                      "$type": "type",
+                      "name": "T"
+                    }
+                  ]
+                }
+              ]
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "items"
+            }
+          },
+          {
+            "$type": "field",
+            "package": true,
+            "type": {
+              "$type": "type",
+              "name": "int"
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "pkg"
+            }
+          },
+          {
+            "$type": "field",
+            "package": true,
+            "transient": true,
+            "volatile": true,
+            "type": {
+              "$type": "type",
+              "name": "boolean"
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "ready"
+            }
+          }
+        ],
+        "constructor": [
+          {
+            "$type": "constructor",
+            "public": true,
+            "name": "Demo",
+            "body": {
+              "$type": "body",
+              "call": [
+                {
+                  "$type": "call",
+                  "this": true,
+                  "arguments": [
+                    "null"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "$type": "constructor",
+            "public": true,
+            "name": "Demo",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "String"
+                },
+                "name": "name"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "call": [
+                {
+                  "$type": "call",
+                  "super": true
+                }
+              ],
+              "expression": [
+                {
+                  "$type": "expression",
+                  "assign": {
+                    "$type": "assign",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "member": {
+                          "$type": "member",
+                          "object": {
+                            "$type": "object",
+                            "this": "this"
+                          },
+                          "property": {
+                            "$type": "property",
+                            "name": "name"
+                          }
+                        }
+                      }
+                    },
+                    "op": "=",
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "name"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "method": [
+          {
+            "$type": "method",
+            "public": true,
+            "static": true,
+            "generics": [
+              {
+                "$type": "generic",
+                "name": "R"
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "R"
+              }
+            },
+            "name": "factory",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "generic": true,
+                  "name": "Function",
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "name": "String"
+                    },
+                    {
+                      "$type": "type",
+                      "name": "R"
+                    }
+                  ]
+                },
+                "name": "mapper"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "call": {
+                      "$type": "call",
+                      "object": {
+                        "$type": "object",
+                        "name": "mapper"
+                      },
+                      "name": "apply",
+                      "arguments": [
+                        "\"hello\""
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "synchronized": true,
+            "annotation": {
+              "$type": "annotation",
+              "name": "Override"
+            },
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "T"
+              }
+            },
+            "name": "process",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "T"
+                },
+                "name": "input"
+              }
+            ],
+            "throws": [
+              {
+                "$type": "throws",
+                "type": {
+                  "$type": "type",
+                  "name": "IllegalArgumentException"
+                }
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "if": [
+                {
+                  "$type": "if",
+                  "condition": {
+                    "$type": "condition",
+                    "expression": {
+                      "$type": "expression",
+                      "binary": {
+                        "$type": "binary",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "input"
+                          }
+                        },
+                        "op": {
+                          "$type": "op",
+                          "equals": true,
+                          "text": "=="
+                        },
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "null": "null"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "then": {
+                    "$type": "then",
+                    "throw": {
+                      "$type": "throw",
+                      "new": {
+                        "$type": "new",
+                        "type": {
+                          "$type": "type",
+                          "name": "IllegalArgumentException"
+                        },
+                        "arguments": [
+                          "\"null\""
+                        ]
+                      }
+                    }
+                  },
+                  "else_if": {
+                    "$type": "else_if",
+                    "condition": {
+                      "$type": "condition",
+                      "expression": {
+                        "$type": "expression",
+                        "unary": {
+                          "$type": "unary",
+                          "op": {
+                            "$type": "op",
+                            "logical": true,
+                            "not": true,
+                            "text": "!"
+                          },
+                          "name": "ready"
+                        }
+                      }
+                    },
+                    "then": {
+                      "$type": "then",
+                      "return": {
+                        "$type": "return",
+                        "expression": {
+                          "$type": "expression",
+                          "null": "null"
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "$type": "else",
+                    "return": {
+                      "$type": "return",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "input"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "String"
+              }
+            },
+            "name": "describe",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "n"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "ternary": {
+                      "$type": "ternary",
+                      "condition": {
+                        "$type": "condition",
+                        "expression": {
+                          "$type": "expression",
+                          "binary": {
+                            "$type": "binary",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "$type": "op",
+                              "compare": true,
+                              "greater": true,
+                              "text": ">"
+                            },
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "int": "0"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "then": {
+                        "$type": "then",
+                        "string": "\"positive\""
+                      },
+                      "else": {
+                        "$type": "else",
+                        "ternary": {
+                          "$type": "ternary",
+                          "condition": {
+                            "$type": "condition",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "n"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "compare": true,
+                                  "less": true,
+                                  "text": "<"
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "0"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "then": {
+                            "$type": "then",
+                            "string": "\"negative\""
+                          },
+                          "else": {
+                            "$type": "else",
+                            "string": "\"zero\""
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "int"
+              }
+            },
+            "name": "sum",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "variadic": true,
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "declarator": {
+                  "$type": "declarator",
+                  "name": "xs"
+                }
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "foreach": [
+                {
+                  "$type": "foreach",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "name": "x",
+                  "value": {
+                    "$type": "value",
+                    "expression": {
+                      "$type": "expression",
+                      "name": "xs"
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "assign": {
+                          "$type": "assign",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "total"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "assign": true,
+                            "plus": true,
+                            "text": "+="
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "x"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "variable": [
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "total",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "int": "0"
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "i",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "int": "0"
+                      }
+                    }
+                  }
+                }
+              ],
+              "while": [
+                {
+                  "$type": "while",
+                  "condition": {
+                    "$type": "condition",
+                    "expression": {
+                      "$type": "expression",
+                      "binary": {
+                        "$type": "binary",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "i"
+                          }
+                        },
+                        "op": {
+                          "$type": "op",
+                          "compare": true,
+                          "less": true,
+                          "text": "<"
+                        },
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "int": "3"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "assign": {
+                          "$type": "assign",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "i"
+                            }
+                          },
+                          "op": "=",
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "i"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "plus": true,
+                                  "text": "+"
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "1"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "name": "total"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "String"
+              }
+            },
+            "name": "match",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "Object"
+                },
+                "name": "o"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "switch": {
+                      "$type": "switch",
+                      "condition": {
+                        "$type": "condition",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "o"
+                        }
+                      },
+                      "body": {
+                        "$type": "body",
+                        "arm": [
+                          {
+                            "$type": "arm",
+                            "label": {
+                              "$type": "label",
+                              "pattern": {
+                                "$type": "pattern",
+                                "pattern": {
+                                  "$type": "pattern",
+                                  "type": true,
+                                  "name": "i",
+                                  "children": [
+                                    {
+                                      "$type": "type",
+                                      "name": "Integer"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "string": "\"int \""
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "plus": true,
+                                  "text": "+"
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "i"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "$type": "arm",
+                            "label": {
+                              "$type": "label",
+                              "pattern": {
+                                "$type": "pattern",
+                                "pattern": {
+                                  "$type": "pattern",
+                                  "type": true,
+                                  "name": "s",
+                                  "children": [
+                                    {
+                                      "$type": "type",
+                                      "name": "String"
+                                    }
+                                  ]
+                                }
+                              },
+                              "guard": {
+                                "$type": "guard",
+                                "unary": {
+                                  "$type": "unary",
+                                  "op": {
+                                    "$type": "op",
+                                    "logical": true,
+                                    "not": true,
+                                    "text": "!"
+                                  },
+                                  "call": {
+                                    "$type": "call",
+                                    "object": {
+                                      "$type": "object",
+                                      "name": "s"
+                                    },
+                                    "name": "isEmpty"
+                                  }
+                                }
+                              }
+                            },
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "string": "\"non-empty: \""
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "plus": true,
+                                  "text": "+"
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "s"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "$type": "arm",
+                            "label": {
+                              "$type": "label",
+                              "default": true
+                            },
+                            "expression": {
+                              "$type": "expression",
+                              "string": "\"other\""
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "interface": [
+          {
+            "$type": "interface",
+            "private": true,
+            "name": "Handler",
+            "generics": [
+              {
+                "$type": "generic",
+                "name": "U"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "method": [
+                {
+                  "$type": "method",
+                  "public": true,
+                  "returns": {
+                    "$type": "returns",
+                    "type": {
+                      "$type": "type",
+                      "name": "U"
+                    }
+                  },
+                  "name": "process",
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "type": {
+                        "$type": "type",
+                        "name": "U"
+                      },
+                      "name": "input"
+                    }
+                  ],
+                  "throws": [
+                    {
+                      "$type": "throws",
+                      "type": {
+                        "$type": "type",
+                        "name": "IllegalArgumentException"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "enum": [
+          {
+            "$type": "enum",
+            "public": true,
+            "name": "Color",
+            "body": {
+              "$type": "body",
+              "constant": [
+                {
+                  "$type": "constant",
+                  "name": "RED"
+                },
+                {
+                  "$type": "constant",
+                  "name": "GREEN"
+                },
+                {
+                  "$type": "constant",
+                  "name": "BLUE"
+                }
+              ],
+              "method": [
+                {
+                  "$type": "method",
+                  "public": true,
+                  "returns": {
+                    "$type": "returns",
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  },
+                  "name": "rgb",
+                  "body": {
+                    "$type": "body",
+                    "return": [
+                      {
+                        "$type": "return",
+                        "expression": {
+                          "$type": "expression",
+                          "switch": {
+                            "$type": "switch",
+                            "condition": {
+                              "$type": "condition",
+                              "expression": {
+                                "$type": "expression",
+                                "this": "this"
+                              }
+                            },
+                            "body": {
+                              "$type": "body",
+                              "arm": [
+                                {
+                                  "$type": "arm",
+                                  "label": {
+                                    "$type": "label",
+                                    "name": "RED"
+                                  },
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "0xFF0000"
+                                  }
+                                },
+                                {
+                                  "$type": "arm",
+                                  "label": {
+                                    "$type": "label",
+                                    "name": "GREEN"
+                                  },
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "0x00FF00"
+                                  }
+                                },
+                                {
+                                  "$type": "arm",
+                                  "label": {
+                                    "$type": "label",
+                                    "name": "BLUE"
+                                  },
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "0x0000FF"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "record": [
+          {
+            "$type": "record",
+            "public": true,
+            "name": "Point",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "x"
+              },
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "y"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "constructor": [
+                {
+                  "$type": "constructor",
+                  "compact": true,
+                  "public": true,
+                  "name": "Point",
+                  "body": {
+                    "$type": "body",
+                    "if": [
+                      {
+                        "$type": "if",
+                        "condition": {
+                          "$type": "condition",
+                          "expression": {
+                            "$type": "expression",
+                            "binary": {
+                              "$type": "binary",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "binary": {
+                                    "$type": "binary",
+                                    "left": {
+                                      "$type": "left",
+                                      "expression": {
+                                        "$type": "expression",
+                                        "name": "x"
+                                      }
+                                    },
+                                    "op": {
+                                      "$type": "op",
+                                      "compare": true,
+                                      "less": true,
+                                      "text": "<"
+                                    },
+                                    "right": {
+                                      "$type": "right",
+                                      "expression": {
+                                        "$type": "expression",
+                                        "int": "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "logical": true,
+                                "or": true,
+                                "text": "||"
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "binary": {
+                                    "$type": "binary",
+                                    "left": {
+                                      "$type": "left",
+                                      "expression": {
+                                        "$type": "expression",
+                                        "name": "y"
+                                      }
+                                    },
+                                    "op": {
+                                      "$type": "op",
+                                      "compare": true,
+                                      "less": true,
+                                      "text": "<"
+                                    },
+                                    "right": {
+                                      "$type": "right",
+                                      "expression": {
+                                        "$type": "expression",
+                                        "int": "0"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "then": {
+                          "$type": "then",
+                          "throw": {
+                            "$type": "throw",
+                            "new": {
+                              "$type": "new",
+                              "type": {
+                                "$type": "type",
+                                "name": "IllegalArgumentException"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "class",
+      "package": true,
+      "name": "Base",
+      "body": {
+        "$type": "body",
+        "method": [
+          {
+            "$type": "method",
+            "package": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "String"
+              }
+            },
+            "name": "greet",
+            "body": {
+              "$type": "body",
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "call": {
+                      "$type": "call",
+                      "object": {
+                        "$type": "object",
+                        "name": "String"
+                      },
+                      "name": "format",
+                      "arguments": [
+                        "\"hello from %s\"",
+                        {
+                          "$type": "call",
+                          "object": {
+                            "$type": "object",
+                            "call": {
+                              "$type": "call",
+                              "name": "getClass"
+                            }
+                          },
+                          "name": "getSimpleName"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "class",
+      "package": true,
+      "name": "Extras",
+      "body": {
+        "$type": "body",
+        "field": [
+          {
+            "$type": "field",
+            "package": true,
+            "static": true,
+            "final": true,
+            "type": {
+              "$type": "type",
+              "name": "int"
+            },
+            "declarator": {
+              "$type": "declarator",
+              "name": "SEED"
+            }
+          }
+        ],
+        "block": [
+          {
+            "$type": "block",
+            "static": true,
+            "expression": [
+              {
+                "$type": "expression",
+                "assign": {
+                  "$type": "assign",
+                  "left": {
+                    "$type": "left",
+                    "expression": {
+                      "$type": "expression",
+                      "name": "SEED"
+                    }
+                  },
+                  "op": "=",
+                  "right": {
+                    "$type": "right",
+                    "expression": {
+                      "$type": "expression",
+                      "int": "42"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "comment": [
+          {
+            "$type": "comment",
+            "leading": true,
+            "text": "/** Array initializer, char literal, class literal, method reference. */"
+          },
+          {
+            "$type": "comment",
+            "leading": true,
+            "text": "/** Cast, instanceof, assert, break/continue with label. */"
+          },
+          {
+            "$type": "comment",
+            "leading": true,
+            "text": "/** Try-with-resources + multi-catch + synchronized block. */"
+          },
+          {
+            "$type": "comment",
+            "leading": true,
+            "text": "/** Yield in block-switch + switch with underscore/record pattern. */"
+          }
+        ],
+        "method": [
+          {
+            "$type": "method",
+            "package": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "name": "literals",
+            "body": {
+              "$type": "body",
+              "variable": [
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "type": {
+                      "$type": "type",
+                      "name": "int"
+                    }
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "arr",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "array": {
+                          "$type": "array",
+                          "int": "1",
+                          "children": [
+                            "2",
+                            "3"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "char"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "ch",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "char": "'A'"
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "generic": true,
+                    "wildcard": true,
+                    "name": "Class"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "cls",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "type": {
+                          "$type": "type",
+                          "class": true,
+                          "type": {
+                            "$type": "type",
+                            "name": "String"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "generic": true,
+                    "name": "java.util.function.Function",
+                    "arguments": [
+                      {
+                        "$type": "type",
+                        "name": "Object"
+                      },
+                      {
+                        "$type": "type",
+                        "name": "String"
+                      }
+                    ]
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "ref",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "reference": {
+                          "$type": "reference",
+                          "name": "String",
+                          "children": [
+                            "valueOf"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "name": "controlFlow",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "Object"
+                },
+                "name": "o"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "assert": [
+                {
+                  "$type": "assert",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "n"
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "compare": true,
+                      "greater": true,
+                      "equal": true,
+                      "text": ">="
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "int": "0"
+                      }
+                    }
+                  },
+                  "string": "\"non-negative\""
+                }
+              ],
+              "label": [
+                {
+                  "$type": "label",
+                  "name": "outer",
+                  "for": {
+                    "$type": "for",
+                    "variable": {
+                      "$type": "variable",
+                      "type": {
+                        "$type": "type",
+                        "name": "int"
+                      },
+                      "declarator": {
+                        "$type": "declarator",
+                        "name": "i",
+                        "value": {
+                          "$type": "value",
+                          "expression": {
+                            "$type": "expression",
+                            "int": "0"
+                          }
+                        }
+                      }
+                    },
+                    "condition": {
+                      "$type": "condition",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "i"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "compare": true,
+                            "less": true,
+                            "text": "<"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "int": "5"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "unary": {
+                      "$type": "unary",
+                      "name": "i",
+                      "op": {
+                        "$type": "op",
+                        "increment": true,
+                        "text": "++"
+                      }
+                    },
+                    "body": {
+                      "$type": "body",
+                      "if": [
+                        {
+                          "$type": "if",
+                          "condition": {
+                            "$type": "condition",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "i"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "equals": true,
+                                  "text": "=="
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "1"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "then": {
+                            "$type": "then",
+                            "continue": {
+                              "$type": "continue",
+                              "name": "outer"
+                            }
+                          }
+                        },
+                        {
+                          "$type": "if",
+                          "condition": {
+                            "$type": "condition",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "i"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "equals": true,
+                                  "text": "=="
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "int": "3"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "then": {
+                            "$type": "then",
+                            "break": {
+                              "$type": "break",
+                              "name": "outer"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "variable": [
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "n",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "cast": {
+                          "$type": "cast",
+                          "type": {
+                            "$type": "type",
+                            "name": "int"
+                          },
+                          "value": {
+                            "$type": "value",
+                            "expression": {
+                              "$type": "expression",
+                              "int": "0L"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "boolean"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "isStr",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "instanceof": {
+                          "$type": "instanceof",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "o"
+                            }
+                          },
+                          "right": {
+                            "$type": "right",
+                            "type": {
+                              "$type": "type",
+                              "name": "String"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "k",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "int": "0"
+                      }
+                    }
+                  }
+                }
+              ],
+              "do": [
+                {
+                  "$type": "do",
+                  "body": {
+                    "$type": "body",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "unary": {
+                          "$type": "unary",
+                          "name": "k",
+                          "op": {
+                            "$type": "op",
+                            "increment": true,
+                            "text": "++"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "condition": {
+                    "$type": "condition",
+                    "expression": {
+                      "$type": "expression",
+                      "binary": {
+                        "$type": "binary",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "k"
+                          }
+                        },
+                        "op": {
+                          "$type": "op",
+                          "compare": true,
+                          "less": true,
+                          "text": "<"
+                        },
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "int": "3"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "void": true,
+                "name": "void"
+              }
+            },
+            "name": "resources",
+            "throws": [
+              {
+                "$type": "throws",
+                "type": {
+                  "$type": "type",
+                  "name": "Exception"
+                }
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "try": [
+                {
+                  "$type": "try",
+                  "resource": true,
+                  "variable": {
+                    "$type": "variable",
+                    "path": {
+                      "$type": "path",
+                      "name": [
+                        "java",
+                        "io",
+                        "InputStream"
+                      ]
+                    },
+                    "name": "s",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "null": "null"
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "if": [
+                      {
+                        "$type": "if",
+                        "condition": {
+                          "$type": "condition",
+                          "expression": {
+                            "$type": "expression",
+                            "binary": {
+                              "$type": "binary",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "name": "s"
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "equals": true,
+                                "text": "=="
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "null": "null"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "then": {
+                          "$type": "then",
+                          "throw": {
+                            "$type": "throw",
+                            "new": {
+                              "$type": "new",
+                              "path": {
+                                "$type": "path",
+                                "name": [
+                                  "java",
+                                  "io",
+                                  "IOException"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "catch": {
+                    "$type": "catch",
+                    "parameter": {
+                      "$type": "parameter",
+                      "path": {
+                        "$type": "path",
+                        "name": [
+                          "java",
+                          "io",
+                          "IOException"
+                        ]
+                      },
+                      "type": {
+                        "$type": "type",
+                        "name": "RuntimeException"
+                      },
+                      "name": "e"
+                    },
+                    "body": {
+                      "$type": "body",
+                      "throw": [
+                        {
+                          "$type": "throw",
+                          "name": "e"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "synchronized": [
+                {
+                  "$type": "synchronized",
+                  "this": "this",
+                  "body": {
+                    "$type": "body",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "name": "SEED"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "$type": "method",
+            "package": true,
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "int"
+              }
+            },
+            "name": "yieldDemo",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "Object"
+                },
+                "name": "o"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "variable": [
+                {
+                  "$type": "variable",
+                  "type": {
+                    "$type": "type",
+                    "name": "int"
+                  },
+                  "declarator": {
+                    "$type": "declarator",
+                    "name": "v",
+                    "value": {
+                      "$type": "value",
+                      "expression": {
+                        "$type": "expression",
+                        "switch": {
+                          "$type": "switch",
+                          "condition": {
+                            "$type": "condition",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "o"
+                            }
+                          },
+                          "body": {
+                            "$type": "body",
+                            "arm": [
+                              {
+                                "$type": "arm",
+                                "label": {
+                                  "$type": "label",
+                                  "pattern": {
+                                    "$type": "pattern",
+                                    "pattern": {
+                                      "$type": "pattern",
+                                      "type": true,
+                                      "name": "i",
+                                      "children": [
+                                        {
+                                          "$type": "type",
+                                          "name": "Integer"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "expression": {
+                                  "$type": "expression",
+                                  "name": "i"
+                                }
+                              },
+                              {
+                                "$type": "arm",
+                                "label": {
+                                  "$type": "label",
+                                  "default": true
+                                },
+                                "yield": {
+                                  "$type": "yield",
+                                  "int": "0"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "name": "v"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

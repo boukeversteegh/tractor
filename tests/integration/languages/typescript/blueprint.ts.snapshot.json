@@ -1,0 +1,4401 @@
+{
+  "$type": "program",
+  "alias": [
+    {
+      "$type": "alias",
+      "name": "Builder",
+      "type": {
+        "$type": "type",
+        "constructor": true,
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "input",
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
+          }
+        ],
+        "type": {
+          "$type": "type",
+          "name": "Status"
+        }
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "Identity",
+      "generics": [
+        {
+          "$type": "generic",
+          "name": "T"
+        }
+      ],
+      "type": {
+        "$type": "type",
+        "conditional": true,
+        "left": {
+          "$type": "left",
+          "type": {
+            "$type": "type",
+            "typeof": true,
+            "name": "globalThis"
+          }
+        },
+        "right": {
+          "$type": "right",
+          "type": {
+            "$type": "type",
+            "name": "T"
+          }
+        },
+        "then": {
+          "$type": "then",
+          "type": {
+            "$type": "type",
+            "name": "T"
+          }
+        },
+        "else": {
+          "$type": "else",
+          "type": {
+            "$type": "type",
+            "name": "never"
+          }
+        }
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "Reflective",
+      "type": {
+        "$type": "type",
+        "object": true,
+        "method": {
+          "$type": "method",
+          "name": "copy",
+          "returns": {
+            "$type": "returns",
+            "type": {
+              "$type": "type",
+              "this": true,
+              "text": "this"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "RestArgs",
+      "type": {
+        "$type": "type",
+        "tuple": true,
+        "type": {
+          "$type": "type",
+          "name": "number"
+        },
+        "children": [
+          {
+            "$type": "type",
+            "rest": true,
+            "type": {
+              "$type": "type",
+              "array": true,
+              "type": {
+                "$type": "type",
+                "name": "string"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "OptionalSlot",
+      "type": {
+        "$type": "type",
+        "tuple": true,
+        "parameter": {
+          "$type": "parameter",
+          "required": true,
+          "name": "head",
+          "type": {
+            "$type": "type",
+            "name": "number"
+          }
+        },
+        "children": [
+          {
+            "$type": "parameter",
+            "optional": true,
+            "name": "tail",
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "NestedTy",
+      "type": {
+        "$type": "type",
+        "lookup": true,
+        "type": {
+          "$type": "type",
+          "name": "StaticBlock"
+        },
+        "children": [
+          {
+            "$type": "type",
+            "literal": true,
+            "string": "\"counter\""
+          }
+        ]
+      }
+    }
+  ],
+  "import": [
+    {
+      "$type": "import",
+      "group": true,
+      "path": "./barrel",
+      "name": "defaultExport",
+      "import": {
+        "$type": "import",
+        "name": "namedA"
+      },
+      "children": [
+        {
+          "$type": "import",
+          "name": "namedB",
+          "alias": true,
+          "children": [
+            {
+              "$type": "alias",
+              "name": "aliasedB"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$type": "import",
+      "namespace": true,
+      "path": "./namespace",
+      "alias": {
+        "$type": "alias",
+        "name": "ns"
+      }
+    },
+    {
+      "$type": "import",
+      "group": true,
+      "path": "./types",
+      "import": {
+        "$type": "import",
+        "name": "OnlyAtCompileTime"
+      }
+    },
+    {
+      "$type": "import",
+      "name": "legacy",
+      "path": "./legacy"
+    }
+  ],
+  "function": [
+    {
+      "$type": "function",
+      "name": "isShape",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "v",
+          "type": {
+            "$type": "type",
+            "name": "unknown"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "predicate": {
+          "$type": "predicate",
+          "name": "v",
+          "type": {
+            "$type": "type",
+            "name": "Shape"
+          }
+        }
+      },
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "return": [
+              {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "unary": {
+                                      "$type": "unary",
+                                      "op": {
+                                        "$type": "op",
+                                        "typeof": true,
+                                        "text": "typeof"
+                                      },
+                                      "name": "v"
+                                    }
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "equals": true,
+                                  "strict": true,
+                                  "text": "==="
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "string": "\"object\""
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "logical": true,
+                            "and": true,
+                            "text": "&&"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "v"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "inequality": true,
+                                  "strict": true,
+                                  "text": "!=="
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "null": "null"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "logical": true,
+                      "and": true,
+                      "text": "&&"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "string": "\"id\""
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "contains": true,
+                            "text": "in"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "v"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "async": true,
+      "name": "compute",
+      "generics": [
+        {
+          "$type": "generic",
+          "name": "T",
+          "extends": [
+            {
+              "$type": "extends",
+              "type": {
+                "$type": "type",
+                "union": true,
+                "type": {
+                  "$type": "type",
+                  "name": "number"
+                },
+                "children": [
+                  {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "input",
+          "type": {
+            "$type": "type",
+            "name": "T"
+          }
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "pattern": {
+            "$type": "pattern",
+            "object": true,
+            "pattern": {
+              "$type": "pattern",
+              "default": true,
+              "left": {
+                "$type": "left",
+                "expression": {
+                  "$type": "expression",
+                  "name": "scale"
+                }
+              },
+              "right": {
+                "$type": "right",
+                "expression": {
+                  "$type": "expression",
+                  "number": "1"
+                }
+              }
+            },
+            "name": "label"
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": {
+              "$type": "property",
+              "name": "scale",
+              "type": {
+                "$type": "type",
+                "name": "number"
+              }
+            },
+            "children": [
+              {
+                "$type": "property",
+                "name": "label",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                }
+              }
+            ]
+          },
+          "value": {
+            "$type": "value",
+            "expression": {
+              "$type": "expression",
+              "object": "{}"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "type",
+          "generic": true,
+          "name": "Promise",
+          "arguments": [
+            {
+              "$type": "type",
+              "name": "Greeting"
+            }
+          ]
+        }
+      },
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "comment": [
+              {
+                "$type": "comment",
+                "trailing": true,
+                "text": "// array destructure + rest"
+              }
+            ],
+            "variable": [
+              {
+                "$type": "variable",
+                "const": true,
+                "pattern": {
+                  "$type": "pattern",
+                  "array": true,
+                  "name": "head",
+                  "rest": {
+                    "$type": "rest",
+                    "name": "rest"
+                  }
+                },
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "call": {
+                      "$type": "call",
+                      "callee": {
+                        "$type": "callee",
+                        "member": {
+                          "$type": "member",
+                          "object": {
+                            "$type": "object",
+                            "call": {
+                              "$type": "call",
+                              "callee": {
+                                "$type": "callee",
+                                "name": "String"
+                              },
+                              "arguments": [
+                                "input"
+                              ]
+                            }
+                          },
+                          "property": {
+                            "$type": "property",
+                            "name": "split"
+                          }
+                        }
+                      },
+                      "arguments": [
+                        "\"\""
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "$type": "variable",
+                "const": true,
+                "name": "spread",
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "object": {
+                      "$type": "object",
+                      "spread": {
+                        "$type": "spread",
+                        "object": {
+                          "$type": "object",
+                          "pair": {
+                            "$type": "pair",
+                            "name": "scale"
+                          }
+                        }
+                      },
+                      "pair": {
+                        "$type": "pair",
+                        "name": "label"
+                      },
+                      "children": [
+                        {
+                          "$type": "pair",
+                          "name": "head"
+                        },
+                        {
+                          "$type": "pair",
+                          "name": "rest"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "$type": "variable",
+                "const": true,
+                "name": "msg",
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "as": {
+                      "$type": "as",
+                      "call": {
+                        "$type": "call",
+                        "callee": {
+                          "$type": "callee",
+                          "name": "tag"
+                        },
+                        "template": {
+                          "$type": "template",
+                          "interpolation": {
+                            "$type": "interpolation",
+                            "binary": {
+                              "$type": "binary",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "name": "label"
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "nullish": true,
+                                "text": "??"
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "string": "\"world\""
+                                }
+                              }
+                            }
+                          },
+                          "children": [
+                            {
+                              "$type": "interpolation",
+                              "member": {
+                                "$type": "member",
+                                "object": {
+                                  "$type": "object",
+                                  "name": "spread"
+                                },
+                                "property": {
+                                  "$type": "property",
+                                  "name": "scale"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "type": {
+                        "$type": "type",
+                        "name": "Greeting"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "return": [
+              {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "satisfies": {
+                    "$type": "satisfies",
+                    "name": "msg",
+                    "type": {
+                      "$type": "type",
+                      "name": "Greeting"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "name": "isNumber",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "x",
+          "type": {
+            "$type": "type",
+            "name": "unknown"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "predicate": {
+          "$type": "predicate",
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "$type": "type",
+            "name": "number"
+          }
+        }
+      },
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "if": [
+              {
+                "$type": "if",
+                "condition": {
+                  "$type": "condition",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "unary": {
+                            "$type": "unary",
+                            "op": {
+                              "$type": "op",
+                              "typeof": true,
+                              "text": "typeof"
+                            },
+                            "name": "x"
+                          }
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "inequality": true,
+                        "strict": true,
+                        "text": "!=="
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "string": "\"number\""
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "$type": "then",
+                  "throw": {
+                    "$type": "throw",
+                    "new": {
+                      "$type": "new",
+                      "name": "Error",
+                      "arguments": [
+                        "\"not a number\""
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "name": "MetaCtor",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "this": "this",
+          "type": {
+            "$type": "type",
+            "name": "unknown"
+          }
+        }
+      ],
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "return": [
+              {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "member": {
+                          "$type": "member",
+                          "object": {
+                            "$type": "object",
+                            "member": "new.target"
+                          },
+                          "member": {
+                            "$type": "member",
+                            "optional": true,
+                            "text": "?."
+                          },
+                          "property": {
+                            "$type": "property",
+                            "name": "name"
+                          }
+                        }
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "nullish": true,
+                      "text": "??"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "string": "\"\""
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "name": "controlOdds",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "name": "value",
+          "type": {
+            "$type": "type",
+            "name": "number"
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "type",
+          "name": "number"
+        }
+      },
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "label": [
+              {
+                "$type": "label",
+                "name": "outer",
+                "body": {
+                  "$type": "body",
+                  "for": [
+                    {
+                      "$type": "for",
+                      "variable": {
+                        "$type": "variable",
+                        "let": true,
+                        "name": "i",
+                        "value": {
+                          "$type": "value",
+                          "expression": {
+                            "$type": "expression",
+                            "number": "0"
+                          }
+                        },
+                        "children": [
+                          "j",
+                          {
+                            "$type": "value",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "100"
+                            }
+                          }
+                        ]
+                      },
+                      "condition": {
+                        "$type": "condition",
+                        "expression": {
+                          "$type": "expression",
+                          "binary": {
+                            "$type": "binary",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "name": "i"
+                              }
+                            },
+                            "op": {
+                              "$type": "op",
+                              "compare": true,
+                              "less": true,
+                              "text": "<"
+                            },
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "number": "5"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "unary": {
+                        "$type": "unary",
+                        "name": "i",
+                        "op": {
+                          "$type": "op",
+                          "increment": true,
+                          "text": "++"
+                        }
+                      },
+                      "body": {
+                        "$type": "body",
+                        "block": [
+                          {
+                            "$type": "block",
+                            "if": [
+                              {
+                                "$type": "if",
+                                "condition": {
+                                  "$type": "condition",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "binary": {
+                                      "$type": "binary",
+                                      "left": {
+                                        "$type": "left",
+                                        "expression": {
+                                          "$type": "expression",
+                                          "name": "i"
+                                        }
+                                      },
+                                      "op": {
+                                        "$type": "op",
+                                        "equals": true,
+                                        "strict": true,
+                                        "text": "==="
+                                      },
+                                      "right": {
+                                        "$type": "right",
+                                        "expression": {
+                                          "$type": "expression",
+                                          "number": "2"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "then": {
+                                  "$type": "then",
+                                  "continue": {
+                                    "$type": "continue",
+                                    "name": "outer"
+                                  }
+                                }
+                              },
+                              {
+                                "$type": "if",
+                                "condition": {
+                                  "$type": "condition",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "binary": {
+                                      "$type": "binary",
+                                      "left": {
+                                        "$type": "left",
+                                        "expression": {
+                                          "$type": "expression",
+                                          "name": "i"
+                                        }
+                                      },
+                                      "op": {
+                                        "$type": "op",
+                                        "equals": true,
+                                        "strict": true,
+                                        "text": "==="
+                                      },
+                                      "right": {
+                                        "$type": "right",
+                                        "expression": {
+                                          "$type": "expression",
+                                          "number": "4"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "then": {
+                                  "$type": "then",
+                                  "break": {
+                                    "$type": "break",
+                                    "name": "outer"
+                                  }
+                                }
+                              }
+                            ],
+                            "expression": [
+                              {
+                                "$type": "expression",
+                                "assign": {
+                                  "$type": "assign",
+                                  "left": {
+                                    "$type": "left",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "name": "total"
+                                    }
+                                  },
+                                  "op": "=",
+                                  "right": {
+                                    "$type": "right",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "assign": {
+                                        "$type": "assign",
+                                        "left": {
+                                          "$type": "left",
+                                          "expression": {
+                                            "$type": "expression",
+                                            "name": "total"
+                                          }
+                                        },
+                                        "op": {
+                                          "$type": "op",
+                                          "assign": true,
+                                          "plus": true,
+                                          "text": "+="
+                                        },
+                                        "right": {
+                                          "$type": "right",
+                                          "expression": {
+                                            "$type": "expression",
+                                            "name": "i"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "children": [
+                                      {
+                                        "$type": "expression",
+                                        "binary": {
+                                          "$type": "binary",
+                                          "left": {
+                                            "$type": "left",
+                                            "expression": {
+                                              "$type": "expression",
+                                              "name": "total"
+                                            }
+                                          },
+                                          "op": {
+                                            "$type": "op",
+                                            "multiply": true,
+                                            "text": "*"
+                                          },
+                                          "right": {
+                                            "$type": "right",
+                                            "expression": {
+                                              "$type": "expression",
+                                              "number": "2"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "$type": "unary",
+                          "name": "j",
+                          "op": {
+                            "$type": "op",
+                            "decrement": true,
+                            "text": "--"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "variable": [
+              {
+                "$type": "variable",
+                "let": true,
+                "name": "total",
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "number": "0"
+                  }
+                }
+              },
+              {
+                "$type": "variable",
+                "let": true,
+                "name": "n",
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "number": "0"
+                  }
+                }
+              }
+            ],
+            "do": [
+              {
+                "$type": "do",
+                "body": {
+                  "$type": "body",
+                  "block": [
+                    {
+                      "$type": "block",
+                      "expression": [
+                        {
+                          "$type": "expression",
+                          "unary": {
+                            "$type": "unary",
+                            "name": "n",
+                            "op": {
+                              "$type": "op",
+                              "increment": true,
+                              "text": "++"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "condition": {
+                  "$type": "condition",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "n"
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "compare": true,
+                        "less": true,
+                        "text": "<"
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "number": "3"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "if": [
+              {
+                "$type": "if",
+                "condition": {
+                  "$type": "condition",
+                  "expression": {
+                    "$type": "expression",
+                    "bool": "false"
+                  }
+                },
+                "then": {
+                  "$type": "then",
+                  "debugger": "debugger;"
+                }
+              }
+            ],
+            "return": [
+              {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "total"
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "plus": true,
+                      "text": "+"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "n"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "name": "destructure",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "required": true,
+          "pattern": {
+            "$type": "pattern",
+            "object": true,
+            "pair": {
+              "$type": "pair",
+              "name": "a",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "pattern": {
+                    "$type": "pattern",
+                    "default": true,
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "name": "aa"
+                      }
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "number": "1"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "children": [
+              {
+                "$type": "pair",
+                "name": "b",
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "name": "bb"
+                  }
+                }
+              }
+            ]
+          },
+          "type": {
+            "$type": "type",
+            "object": true,
+            "property": {
+              "$type": "property",
+              "name": "a",
+              "type": {
+                "$type": "type",
+                "name": "number"
+              }
+            },
+            "children": [
+              {
+                "$type": "property",
+                "name": "b",
+                "type": {
+                  "$type": "type",
+                  "name": "number"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "$type": "parameter",
+          "required": true,
+          "pattern": {
+            "$type": "pattern",
+            "array": true,
+            "pattern": {
+              "$type": "pattern",
+              "default": true,
+              "left": {
+                "$type": "left",
+                "expression": {
+                  "$type": "expression",
+                  "name": "c"
+                }
+              },
+              "right": {
+                "$type": "right",
+                "expression": {
+                  "$type": "expression",
+                  "number": "0"
+                }
+              }
+            },
+            "rest": {
+              "$type": "rest",
+              "name": "rest"
+            }
+          },
+          "type": {
+            "$type": "type",
+            "array": true,
+            "type": {
+              "$type": "type",
+              "name": "number"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "$type": "returns",
+        "type": {
+          "$type": "type",
+          "name": "number"
+        }
+      },
+      "body": {
+        "$type": "body",
+        "block": [
+          {
+            "$type": "block",
+            "return": [
+              {
+                "$type": "return",
+                "expression": {
+                  "$type": "expression",
+                  "binary": {
+                    "$type": "binary",
+                    "left": {
+                      "$type": "left",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "binary": {
+                                "$type": "binary",
+                                "left": {
+                                  "$type": "left",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "aa"
+                                  }
+                                },
+                                "op": {
+                                  "$type": "op",
+                                  "plus": true,
+                                  "text": "+"
+                                },
+                                "right": {
+                                  "$type": "right",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "name": "bb"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "c"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": {
+                      "$type": "op",
+                      "plus": true,
+                      "text": "+"
+                    },
+                    "right": {
+                      "$type": "right",
+                      "expression": {
+                        "$type": "expression",
+                        "member": {
+                          "$type": "member",
+                          "object": {
+                            "$type": "object",
+                            "name": "rest"
+                          },
+                          "property": {
+                            "$type": "property",
+                            "name": "length"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "export": [
+    {
+      "$type": "export",
+      "spec": {
+        "$type": "spec",
+        "name": "namedA"
+      },
+      "string": "\"./barrel\""
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Re",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T"
+          }
+        ],
+        "type": {
+          "$type": "type",
+          "conditional": true,
+          "left": {
+            "$type": "left",
+            "type": {
+              "$type": "type",
+              "name": "T"
+            }
+          },
+          "right": {
+            "$type": "right",
+            "type": {
+              "$type": "type",
+              "generic": true,
+              "name": "Array",
+              "arguments": [
+                {
+                  "$type": "type",
+                  "infer": true,
+                  "type": {
+                    "$type": "type",
+                    "name": "U"
+                  }
+                }
+              ]
+            }
+          },
+          "then": {
+            "$type": "then",
+            "type": {
+              "$type": "type",
+              "name": "U"
+            }
+          },
+          "else": {
+            "$type": "else",
+            "type": {
+              "$type": "type",
+              "name": "never"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "interface": {
+        "$type": "interface",
+        "name": "Shape",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T",
+            "type": {
+              "$type": "type",
+              "default": true,
+              "type": {
+                "$type": "type",
+                "name": "number"
+              }
+            }
+          }
+        ],
+        "body": {
+          "$type": "body",
+          "property": [
+            {
+              "$type": "property",
+              "readonly": true,
+              "name": "id",
+              "type": {
+                "$type": "type",
+                "name": "string"
+              }
+            },
+            {
+              "$type": "property",
+              "name": "label",
+              "type": {
+                "$type": "type",
+                "name": "string"
+              }
+            },
+            {
+              "$type": "property",
+              "name": "value",
+              "type": {
+                "$type": "type",
+                "name": "T"
+              }
+            }
+          ],
+          "method": [
+            {
+              "$type": "method",
+              "name": "describe",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "prefix",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Point",
+        "type": {
+          "$type": "type",
+          "object": true,
+          "property": {
+            "$type": "property",
+            "name": "x",
+            "type": {
+              "$type": "type",
+              "name": "number"
+            }
+          },
+          "children": [
+            {
+              "$type": "property",
+              "name": "y",
+              "type": {
+                "$type": "type",
+                "name": "number"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Pair",
+        "type": {
+          "$type": "type",
+          "tuple": true,
+          "type": {
+            "$type": "type",
+            "name": "string"
+          },
+          "children": [
+            {
+              "$type": "type",
+              "name": "number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Status",
+        "type": {
+          "$type": "type",
+          "union": true,
+          "type": {
+            "$type": "type",
+            "union": true,
+            "type": {
+              "$type": "type",
+              "union": true,
+              "type": {
+                "$type": "type",
+                "literal": true,
+                "string": "\"idle\""
+              },
+              "children": [
+                {
+                  "$type": "type",
+                  "literal": true,
+                  "string": "\"loading\""
+                }
+              ]
+            },
+            "children": [
+              {
+                "$type": "type",
+                "literal": true,
+                "string": "\"ready\""
+              }
+            ]
+          },
+          "children": [
+            {
+              "$type": "type",
+              "literal": true,
+              "string": "\"error\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Mapper",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T"
+          }
+        ],
+        "type": {
+          "$type": "type",
+          "function": true,
+          "parameters": [
+            {
+              "$type": "parameter",
+              "required": true,
+              "name": "input",
+              "type": {
+                "$type": "type",
+                "name": "T"
+              }
+            }
+          ],
+          "returns": {
+            "$type": "returns",
+            "type": {
+              "$type": "type",
+              "name": "T"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Partialized",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T"
+          }
+        ],
+        "type": {
+          "$type": "type",
+          "object": true,
+          "indexer": {
+            "$type": "indexer",
+            "name": "K",
+            "type": {
+              "$type": "type",
+              "keyof": true,
+              "type": {
+                "$type": "type",
+                "name": "T"
+              }
+            },
+            "annotation": {
+              "$type": "annotation",
+              "type": {
+                "$type": "type",
+                "lookup": true,
+                "type": {
+                  "$type": "type",
+                  "name": "T"
+                },
+                "children": [
+                  {
+                    "$type": "type",
+                    "name": "K"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "alias": {
+        "$type": "alias",
+        "name": "Greeting",
+        "type": {
+          "$type": "type",
+          "template": true,
+          "type": {
+            "$type": "type",
+            "template": true,
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "enum": {
+        "$type": "enum",
+        "name": "Color",
+        "body": {
+          "$type": "body",
+          "constant": [
+            {
+              "$type": "constant",
+              "name": "Red",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "string": "\"RED\""
+                }
+              }
+            },
+            {
+              "$type": "constant",
+              "name": "Green",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "string": "\"GREEN\""
+                }
+              }
+            },
+            {
+              "$type": "constant",
+              "name": "Blue",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "string": "\"BLUE\""
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "class": {
+        "$type": "class",
+        "abstract": true,
+        "name": "Base",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T",
+            "extends": [
+              {
+                "$type": "extends",
+                "type": {
+                  "$type": "type",
+                  "name": "Shape"
+                }
+              }
+            ]
+          }
+        ],
+        "body": {
+          "$type": "body",
+          "field": [
+            {
+              "$type": "field",
+              "static": true,
+              "public": true,
+              "name": "kind",
+              "type": {
+                "$type": "type",
+                "name": "string"
+              },
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "string": "\"base\""
+                }
+              }
+            },
+            {
+              "$type": "field",
+              "readonly": true,
+              "protected": true,
+              "name": "createdAt",
+              "type": {
+                "$type": "type",
+                "name": "number"
+              },
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "call": {
+                    "$type": "call",
+                    "callee": {
+                      "$type": "callee",
+                      "member": {
+                        "$type": "member",
+                        "object": {
+                          "$type": "object",
+                          "name": "Date"
+                        },
+                        "property": {
+                          "$type": "property",
+                          "name": "now"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "$type": "field",
+              "private": true,
+              "name": "_cache",
+              "type": {
+                "$type": "type",
+                "generic": true,
+                "name": "Map",
+                "arguments": [
+                  {
+                    "$type": "type",
+                    "name": "string"
+                  },
+                  {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                ]
+              },
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "new": {
+                    "$type": "new",
+                    "name": "Map"
+                  }
+                }
+              }
+            }
+          ],
+          "method": [
+            {
+              "$type": "method",
+              "public": true,
+              "name": "constructor",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "public": true,
+                  "name": "name",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "optional": true,
+                  "readonly": true,
+                  "private": true,
+                  "name": "seed",
+                  "type": {
+                    "$type": "type",
+                    "name": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "$type": "method",
+              "abstract": true,
+              "public": true,
+              "name": "render",
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                }
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "get": true,
+              "name": "cacheSize",
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "number"
+                }
+              },
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "return": [
+                      {
+                        "$type": "return",
+                        "expression": {
+                          "$type": "expression",
+                          "member": {
+                            "$type": "member",
+                            "object": {
+                              "$type": "object",
+                              "member": {
+                                "$type": "member",
+                                "object": {
+                                  "$type": "object",
+                                  "this": "this"
+                                },
+                                "property": {
+                                  "$type": "property",
+                                  "name": "_cache"
+                                }
+                              }
+                            },
+                            "property": {
+                              "$type": "property",
+                              "name": "size"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "set": true,
+              "name": "primary",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                }
+              ],
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "call": {
+                          "$type": "call",
+                          "callee": {
+                            "$type": "callee",
+                            "member": {
+                              "$type": "member",
+                              "object": {
+                                "$type": "object",
+                                "member": {
+                                  "$type": "member",
+                                  "object": {
+                                    "$type": "object",
+                                    "this": "this"
+                                  },
+                                  "property": {
+                                    "$type": "property",
+                                    "name": "_cache"
+                                  }
+                                }
+                              },
+                              "property": {
+                                "$type": "property",
+                                "name": "set"
+                              }
+                            }
+                          },
+                          "arguments": [
+                            "\"primary\"",
+                            "value"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "name": "store",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "key",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "value",
+                  "type": {
+                    "$type": "type",
+                    "name": "T"
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "void"
+                }
+              },
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "call": {
+                          "$type": "call",
+                          "callee": {
+                            "$type": "callee",
+                            "member": {
+                              "$type": "member",
+                              "object": {
+                                "$type": "object",
+                                "member": {
+                                  "$type": "member",
+                                  "object": {
+                                    "$type": "object",
+                                    "this": "this"
+                                  },
+                                  "property": {
+                                    "$type": "property",
+                                    "name": "_cache"
+                                  }
+                                }
+                              },
+                              "property": {
+                                "$type": "property",
+                                "name": "set"
+                              }
+                            }
+                          },
+                          "arguments": [
+                            "key",
+                            "value"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "class": {
+        "$type": "class",
+        "name": "Widget",
+        "generics": [
+          {
+            "$type": "generic",
+            "name": "T",
+            "extends": [
+              {
+                "$type": "extends",
+                "type": {
+                  "$type": "type",
+                  "name": "Shape"
+                }
+              }
+            ],
+            "type": {
+              "$type": "type",
+              "default": true,
+              "type": {
+                "$type": "type",
+                "generic": true,
+                "name": "Shape",
+                "arguments": [
+                  {
+                    "$type": "type",
+                    "name": "number"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "extends": [
+          {
+            "$type": "extends",
+            "type": {
+              "$type": "type",
+              "generic": true,
+              "name": "Base",
+              "arguments": [
+                {
+                  "$type": "type",
+                  "name": "T"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "$type": "body",
+          "field": [
+            {
+              "$type": "field",
+              "private": true,
+              "static": true,
+              "name": "counter",
+              "value": {
+                "$type": "value",
+                "expression": {
+                  "$type": "expression",
+                  "number": "0"
+                }
+              }
+            }
+          ],
+          "method": [
+            {
+              "$type": "method",
+              "public": true,
+              "name": "constructor",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "name",
+                  "type": {
+                    "$type": "type",
+                    "name": "string"
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "private": true,
+                  "name": "items",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "type": {
+                      "$type": "type",
+                      "name": "T"
+                    }
+                  },
+                  "value": {
+                    "$type": "value",
+                    "expression": {
+                      "$type": "expression",
+                      "array": "[]"
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "call": {
+                          "$type": "call",
+                          "callee": {
+                            "$type": "callee",
+                            "super": "super"
+                          },
+                          "arguments": [
+                            "name"
+                          ]
+                        }
+                      },
+                      {
+                        "$type": "expression",
+                        "unary": {
+                          "$type": "unary",
+                          "member": {
+                            "$type": "member",
+                            "object": {
+                              "$type": "object",
+                              "name": "Widget"
+                            },
+                            "property": {
+                              "$type": "property",
+                              "name": "#counter"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "increment": true,
+                            "text": "++"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "override": true,
+              "name": "render",
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                }
+              },
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "variable": [
+                      {
+                        "$type": "variable",
+                        "const": true,
+                        "name": "first",
+                        "value": {
+                          "$type": "value",
+                          "expression": {
+                            "$type": "expression",
+                            "binary": {
+                              "$type": "binary",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "member": {
+                                    "$type": "member",
+                                    "object": {
+                                      "$type": "object",
+                                      "index": {
+                                        "$type": "index",
+                                        "object": {
+                                          "$type": "object",
+                                          "member": {
+                                            "$type": "member",
+                                            "object": {
+                                              "$type": "object",
+                                              "this": "this"
+                                            },
+                                            "property": {
+                                              "$type": "property",
+                                              "name": "items"
+                                            }
+                                          }
+                                        },
+                                        "number": "0"
+                                      }
+                                    },
+                                    "member": {
+                                      "$type": "member",
+                                      "optional": true,
+                                      "text": "?."
+                                    },
+                                    "property": {
+                                      "$type": "property",
+                                      "name": "label"
+                                    }
+                                  }
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "nullish": true,
+                                "text": "??"
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "string": "\"unnamed\""
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "return": [
+                      {
+                        "$type": "return",
+                        "expression": {
+                          "$type": "expression",
+                          "template": {
+                            "$type": "template",
+                            "interpolation": {
+                              "$type": "interpolation",
+                              "expression": {
+                                "$type": "expression",
+                                "non_null": true,
+                                "name": "first"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "generator": true,
+              "name": "entries",
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "generic": true,
+                  "name": "Generator",
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "tuple": true,
+                      "type": {
+                        "$type": "type",
+                        "name": "number"
+                      },
+                      "children": [
+                        {
+                          "$type": "type",
+                          "name": "T"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "for": [
+                      {
+                        "$type": "for",
+                        "variable": {
+                          "$type": "variable",
+                          "let": true,
+                          "name": "i",
+                          "value": {
+                            "$type": "value",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "0"
+                            }
+                          }
+                        },
+                        "condition": {
+                          "$type": "condition",
+                          "expression": {
+                            "$type": "expression",
+                            "binary": {
+                              "$type": "binary",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "name": "i"
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "compare": true,
+                                "less": true,
+                                "text": "<"
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "member": {
+                                    "$type": "member",
+                                    "object": {
+                                      "$type": "object",
+                                      "member": {
+                                        "$type": "member",
+                                        "object": {
+                                          "$type": "object",
+                                          "this": "this"
+                                        },
+                                        "property": {
+                                          "$type": "property",
+                                          "name": "items"
+                                        }
+                                      }
+                                    },
+                                    "property": {
+                                      "$type": "property",
+                                      "name": "length"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "unary": {
+                          "$type": "unary",
+                          "name": "i",
+                          "op": {
+                            "$type": "op",
+                            "increment": true,
+                            "text": "++"
+                          }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "expression": [
+                            {
+                              "$type": "expression",
+                              "yield": {
+                                "$type": "yield",
+                                "array": {
+                                  "$type": "array",
+                                  "name": "i",
+                                  "index": {
+                                    "$type": "index",
+                                    "object": {
+                                      "$type": "object",
+                                      "member": {
+                                        "$type": "member",
+                                        "object": {
+                                          "$type": "object",
+                                          "this": "this"
+                                        },
+                                        "property": {
+                                          "$type": "property",
+                                          "name": "items"
+                                        }
+                                      }
+                                    },
+                                    "name": "i"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "method",
+              "public": true,
+              "async": true,
+              "name": "loadAll",
+              "parameters": [
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "name": "urls",
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "type": {
+                      "$type": "type",
+                      "name": "string"
+                    }
+                  }
+                },
+                {
+                  "$type": "parameter",
+                  "required": true,
+                  "rest": {
+                    "$type": "rest",
+                    "name": "extra"
+                  },
+                  "type": {
+                    "$type": "type",
+                    "array": true,
+                    "type": {
+                      "$type": "type",
+                      "name": "string"
+                    }
+                  }
+                }
+              ],
+              "returns": {
+                "$type": "returns",
+                "type": {
+                  "$type": "type",
+                  "generic": true,
+                  "name": "Promise",
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "array": true,
+                      "type": {
+                        "$type": "type",
+                        "name": "T"
+                      }
+                    }
+                  ]
+                }
+              },
+              "body": {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "try": [
+                      {
+                        "$type": "try",
+                        "body": {
+                          "$type": "body",
+                          "block": [
+                            {
+                              "$type": "block",
+                              "variable": [
+                                {
+                                  "$type": "variable",
+                                  "const": true,
+                                  "name": "merged",
+                                  "value": {
+                                    "$type": "value",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "array": {
+                                        "$type": "array",
+                                        "spread": {
+                                          "$type": "spread",
+                                          "name": "urls"
+                                        },
+                                        "children": [
+                                          {
+                                            "$type": "spread",
+                                            "name": "extra"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              ],
+                              "for": [
+                                {
+                                  "$type": "for",
+                                  "left": {
+                                    "$type": "left",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "name": "u"
+                                    }
+                                  },
+                                  "right": {
+                                    "$type": "right",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "name": "merged"
+                                    }
+                                  },
+                                  "body": {
+                                    "$type": "body",
+                                    "block": [
+                                      {
+                                        "$type": "block",
+                                        "expression": [
+                                          {
+                                            "$type": "expression",
+                                            "await": true,
+                                            "call": {
+                                              "$type": "call",
+                                              "callee": {
+                                                "$type": "callee",
+                                                "name": "fetch"
+                                              },
+                                              "arguments": [
+                                                "u"
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                }
+                              ],
+                              "return": [
+                                {
+                                  "$type": "return",
+                                  "expression": {
+                                    "$type": "expression",
+                                    "member": {
+                                      "$type": "member",
+                                      "object": {
+                                        "$type": "object",
+                                        "this": "this"
+                                      },
+                                      "property": {
+                                        "$type": "property",
+                                        "name": "items"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "catch": {
+                          "$type": "catch",
+                          "name": "e",
+                          "body": {
+                            "$type": "body",
+                            "block": [
+                              {
+                                "$type": "block",
+                                "throw": [
+                                  {
+                                    "$type": "throw",
+                                    "as": {
+                                      "$type": "as",
+                                      "name": "e",
+                                      "type": {
+                                        "$type": "type",
+                                        "name": "Error"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "finally": {
+                          "$type": "finally",
+                          "body": {
+                            "$type": "body",
+                            "block": [
+                              {
+                                "$type": "block",
+                                "expression": [
+                                  {
+                                    "$type": "expression",
+                                    "member": {
+                                      "$type": "member",
+                                      "object": {
+                                        "$type": "object",
+                                        "member": {
+                                          "$type": "member",
+                                          "object": {
+                                            "$type": "object",
+                                            "this": "this"
+                                          },
+                                          "property": {
+                                            "$type": "property",
+                                            "name": "items"
+                                          }
+                                        }
+                                      },
+                                      "property": {
+                                        "$type": "property",
+                                        "name": "length"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "export",
+      "function": {
+        "$type": "function",
+        "name": "controlFlow",
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "n",
+            "type": {
+              "$type": "type",
+              "name": "number"
+            }
+          }
+        ],
+        "returns": {
+          "$type": "returns",
+          "type": {
+            "$type": "type",
+            "name": "Status"
+          }
+        },
+        "body": {
+          "$type": "body",
+          "block": [
+            {
+              "$type": "block",
+              "switch": [
+                {
+                  "$type": "switch",
+                  "value": {
+                    "$type": "value",
+                    "expression": {
+                      "$type": "expression",
+                      "name": "status"
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "case": [
+                      {
+                        "$type": "case",
+                        "value": {
+                          "$type": "value",
+                          "expression": {
+                            "$type": "expression",
+                            "string": "\"ready\""
+                          }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "break": true
+                        }
+                      },
+                      {
+                        "$type": "case",
+                        "value": {
+                          "$type": "value",
+                          "expression": {
+                            "$type": "expression",
+                            "string": "\"error\""
+                          }
+                        },
+                        "body": {
+                          "$type": "body",
+                          "throw": [
+                            {
+                              "$type": "throw",
+                              "new": {
+                                "$type": "new",
+                                "name": "Error",
+                                "arguments": [
+                                  "\"bad\""
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "default": [
+                      {
+                        "$type": "default",
+                        "comment": "/* fallthrough */",
+                        "body": {
+                          "$type": "body",
+                          "break": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "if": [
+                {
+                  "$type": "if",
+                  "condition": {
+                    "$type": "condition",
+                    "expression": {
+                      "$type": "expression",
+                      "binary": {
+                        "$type": "binary",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "n"
+                          }
+                        },
+                        "op": {
+                          "$type": "op",
+                          "compare": true,
+                          "less": true,
+                          "text": "<"
+                        },
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "number": "0"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "then": {
+                    "$type": "then",
+                    "expression": {
+                      "$type": "expression",
+                      "assign": {
+                        "$type": "assign",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "status"
+                          }
+                        },
+                        "op": "=",
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "string": "\"error\""
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else_if": {
+                    "$type": "else_if",
+                    "condition": {
+                      "$type": "condition",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "n"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "equals": true,
+                            "strict": true,
+                            "text": "==="
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "0"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "then": {
+                      "$type": "then",
+                      "expression": {
+                        "$type": "expression",
+                        "assign": {
+                          "$type": "assign",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "status"
+                            }
+                          },
+                          "op": "=",
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "string": "\"idle\""
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "$type": "else",
+                    "expression": {
+                      "$type": "expression",
+                      "assign": {
+                        "$type": "assign",
+                        "left": {
+                          "$type": "left",
+                          "expression": {
+                            "$type": "expression",
+                            "name": "status"
+                          }
+                        },
+                        "op": "=",
+                        "right": {
+                          "$type": "right",
+                          "expression": {
+                            "$type": "expression",
+                            "string": "\"ready\""
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "$type": "else_if",
+                      "condition": {
+                        "$type": "condition",
+                        "expression": {
+                          "$type": "expression",
+                          "binary": {
+                            "$type": "binary",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "$type": "op",
+                              "compare": true,
+                              "less": true,
+                              "text": "<"
+                            },
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "number": "10"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "then": {
+                        "$type": "then",
+                        "expression": {
+                          "$type": "expression",
+                          "assign": {
+                            "$type": "assign",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "name": "status"
+                              }
+                            },
+                            "op": "=",
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "string": "\"loading\""
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "variable": [
+                {
+                  "$type": "variable",
+                  "let": true,
+                  "name": "status",
+                  "type": {
+                    "$type": "type",
+                    "name": "Status"
+                  },
+                  "value": {
+                    "$type": "value",
+                    "expression": {
+                      "$type": "expression",
+                      "string": "\"idle\""
+                    }
+                  }
+                },
+                {
+                  "$type": "variable",
+                  "const": true,
+                  "name": "obj",
+                  "type": {
+                    "$type": "type",
+                    "generic": true,
+                    "name": "Record",
+                    "arguments": [
+                      {
+                        "$type": "type",
+                        "name": "string"
+                      },
+                      {
+                        "$type": "type",
+                        "name": "number"
+                      }
+                    ]
+                  },
+                  "value": {
+                    "$type": "value",
+                    "expression": {
+                      "$type": "expression",
+                      "object": {
+                        "$type": "object",
+                        "pair": {
+                          "$type": "pair",
+                          "name": "a",
+                          "value": {
+                            "$type": "value",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "1"
+                            }
+                          }
+                        },
+                        "children": [
+                          {
+                            "$type": "pair",
+                            "name": "b",
+                            "value": {
+                              "$type": "value",
+                              "expression": {
+                                "$type": "expression",
+                                "number": "2"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              "for": [
+                {
+                  "$type": "for",
+                  "left": {
+                    "$type": "left",
+                    "expression": {
+                      "$type": "expression",
+                      "name": "k"
+                    }
+                  },
+                  "right": {
+                    "$type": "right",
+                    "expression": {
+                      "$type": "expression",
+                      "name": "obj"
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "block": [
+                      {
+                        "$type": "block",
+                        "expression": [
+                          {
+                            "$type": "expression",
+                            "assign": {
+                              "$type": "assign",
+                              "left": {
+                                "$type": "left",
+                                "expression": {
+                                  "$type": "expression",
+                                  "non_null": true,
+                                  "index": {
+                                    "$type": "index",
+                                    "object": {
+                                      "$type": "object",
+                                      "name": "obj"
+                                    },
+                                    "name": "k"
+                                  }
+                                }
+                              },
+                              "op": {
+                                "$type": "op",
+                                "assign": true,
+                                "plus": true,
+                                "text": "+="
+                              },
+                              "right": {
+                                "$type": "right",
+                                "expression": {
+                                  "$type": "expression",
+                                  "number": "1"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "$type": "for",
+                  "left": {
+                    "$type": "left",
+                    "expression": {
+                      "$type": "expression",
+                      "pattern": {
+                        "$type": "pattern",
+                        "array": true,
+                        "name": "v"
+                      }
+                    }
+                  },
+                  "right": {
+                    "$type": "right",
+                    "expression": {
+                      "$type": "expression",
+                      "call": {
+                        "$type": "call",
+                        "callee": {
+                          "$type": "callee",
+                          "member": {
+                            "$type": "member",
+                            "object": {
+                              "$type": "object",
+                              "name": "Object"
+                            },
+                            "property": {
+                              "$type": "property",
+                              "name": "entries"
+                            }
+                          }
+                        },
+                        "arguments": [
+                          "obj"
+                        ]
+                      }
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "block": [
+                      {
+                        "$type": "block",
+                        "expression": [
+                          {
+                            "$type": "expression",
+                            "unary": {
+                              "$type": "unary",
+                              "op": {
+                                "$type": "op",
+                                "void": true,
+                                "text": "void"
+                              },
+                              "name": "v"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "while": [
+                {
+                  "$type": "while",
+                  "condition": {
+                    "$type": "condition",
+                    "expression": {
+                      "$type": "expression",
+                      "bool": "false"
+                    }
+                  },
+                  "body": {
+                    "$type": "body",
+                    "block": [
+                      {
+                        "$type": "block",
+                        "comment": [
+                          "/* never */"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "return": [
+                {
+                  "$type": "return",
+                  "expression": {
+                    "$type": "expression",
+                    "ternary": {
+                      "$type": "ternary",
+                      "condition": {
+                        "$type": "condition",
+                        "expression": {
+                          "$type": "expression",
+                          "binary": {
+                            "$type": "binary",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "$type": "op",
+                              "compare": true,
+                              "greater": true,
+                              "text": ">"
+                            },
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "number": "0"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "then": {
+                        "$type": "then",
+                        "name": "status"
+                      },
+                      "else": {
+                        "$type": "else",
+                        "string": "\"idle\""
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "comment": [
+    "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/** A shape with an optional label and readonly id. */"
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/** Abstract base using visibility + readonly + static. */"
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "/* A block comment describing control flow demos. */"
+    },
+    "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Ambient `declare` declarations."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// `T?` only appears inside tuple element annotations."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Old-style cast (`<T>expr`) — type assertion."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Class with static initializer block."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Asserts / type predicate annotations."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// `Foo<T>` instantiation expression."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Old-style `import x = require(y)` form."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// `import.meta` / `new.target` meta-properties."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Nested type / value identifiers."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Regex literal + flags."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
+    },
+    {
+      "$type": "comment",
+      "leading": true,
+      "text": "// Pair pattern + assignment pattern in destructure with defaults."
+    }
+  ],
+  "declare": [
+    {
+      "$type": "declare",
+      "variable": {
+        "$type": "variable",
+        "const": true,
+        "name": "__DEV__",
+        "type": {
+          "$type": "type",
+          "name": "boolean"
+        }
+      }
+    },
+    {
+      "$type": "declare",
+      "signature": {
+        "$type": "signature",
+        "name": "externalThing",
+        "parameters": [
+          {
+            "$type": "parameter",
+            "required": true,
+            "name": "name",
+            "type": {
+              "$type": "type",
+              "name": "string"
+            }
+          }
+        ],
+        "returns": {
+          "$type": "returns",
+          "type": {
+            "$type": "type",
+            "name": "void"
+          }
+        }
+      }
+    },
+    {
+      "$type": "declare",
+      "namespace": {
+        "$type": "namespace",
+        "name": "SideEffect",
+        "body": {
+          "$type": "body",
+          "block": [
+            {
+              "$type": "block",
+              "signature": [
+                {
+                  "$type": "signature",
+                  "name": "init",
+                  "returns": {
+                    "$type": "returns",
+                    "type": {
+                      "$type": "type",
+                      "name": "void"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "tag",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "arrow": {
+            "$type": "arrow",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "required": true,
+                "name": "parts",
+                "type": {
+                  "$type": "type",
+                  "name": "TemplateStringsArray"
+                }
+              },
+              {
+                "$type": "parameter",
+                "required": true,
+                "rest": {
+                  "$type": "rest",
+                  "name": "vals"
+                },
+                "type": {
+                  "$type": "type",
+                  "array": true,
+                  "type": {
+                    "$type": "type",
+                    "name": "unknown"
+                  }
+                }
+              }
+            ],
+            "value": {
+              "$type": "value",
+              "expression": {
+                "$type": "expression",
+                "call": {
+                  "$type": "call",
+                  "callee": {
+                    "$type": "callee",
+                    "member": {
+                      "$type": "member",
+                      "object": {
+                        "$type": "object",
+                        "name": "parts"
+                      },
+                      "property": {
+                        "$type": "property",
+                        "name": "reduce"
+                      }
+                    }
+                  },
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "name": "string"
+                    },
+                    {
+                      "$type": "arrow",
+                      "parameters": [
+                        {
+                          "$type": "parameter",
+                          "required": true,
+                          "name": "acc"
+                        },
+                        {
+                          "$type": "parameter",
+                          "required": true,
+                          "name": "p"
+                        },
+                        {
+                          "$type": "parameter",
+                          "required": true,
+                          "name": "i"
+                        }
+                      ],
+                      "value": {
+                        "$type": "value",
+                        "expression": {
+                          "$type": "expression",
+                          "binary": {
+                            "$type": "binary",
+                            "left": {
+                              "$type": "left",
+                              "expression": {
+                                "$type": "expression",
+                                "binary": {
+                                  "$type": "binary",
+                                  "left": {
+                                    "$type": "left",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "name": "acc"
+                                    }
+                                  },
+                                  "op": {
+                                    "$type": "op",
+                                    "plus": true,
+                                    "text": "+"
+                                  },
+                                  "right": {
+                                    "$type": "right",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "name": "p"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "op": {
+                              "$type": "op",
+                              "plus": true,
+                              "text": "+"
+                            },
+                            "right": {
+                              "$type": "right",
+                              "expression": {
+                                "$type": "expression",
+                                "binary": {
+                                  "$type": "binary",
+                                  "left": {
+                                    "$type": "left",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "index": {
+                                        "$type": "index",
+                                        "object": {
+                                          "$type": "object",
+                                          "name": "vals"
+                                        },
+                                        "name": "i"
+                                      }
+                                    }
+                                  },
+                                  "op": {
+                                    "$type": "op",
+                                    "nullish": true,
+                                    "text": "??"
+                                  },
+                                  "right": {
+                                    "$type": "right",
+                                    "expression": {
+                                      "$type": "expression",
+                                      "string": "\"\""
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "\"\""
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "arrow",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "arrow": {
+            "$type": "arrow",
+            "generics": [
+              {
+                "$type": "generic",
+                "name": "U"
+              }
+            ],
+            "parameters": [
+              {
+                "$type": "parameter",
+                "required": true,
+                "name": "xs",
+                "type": {
+                  "$type": "type",
+                  "array": true,
+                  "type": {
+                    "$type": "type",
+                    "name": "U"
+                  }
+                }
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "union": true,
+                "type": {
+                  "$type": "type",
+                  "name": "U"
+                },
+                "children": [
+                  {
+                    "$type": "type",
+                    "literal": true,
+                    "undefined": "undefined"
+                  }
+                ]
+              }
+            },
+            "value": {
+              "$type": "value",
+              "expression": {
+                "$type": "expression",
+                "index": {
+                  "$type": "index",
+                  "object": {
+                    "$type": "object",
+                    "name": "xs"
+                  },
+                  "number": "0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "doubled",
+      "type": {
+        "$type": "type",
+        "array": true,
+        "type": {
+          "$type": "type",
+          "name": "number"
+        }
+      },
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "call": {
+            "$type": "call",
+            "callee": {
+              "$type": "callee",
+              "member": {
+                "$type": "member",
+                "object": {
+                  "$type": "object",
+                  "array": {
+                    "$type": "array",
+                    "number": "1",
+                    "children": [
+                      "2",
+                      "3"
+                    ]
+                  }
+                },
+                "property": {
+                  "$type": "property",
+                  "name": "map"
+                }
+              }
+            },
+            "arguments": [
+              {
+                "$type": "arrow",
+                "parameters": [
+                  {
+                    "$type": "parameter",
+                    "required": true,
+                    "name": "x"
+                  }
+                ],
+                "returns": {
+                  "$type": "returns",
+                  "type": {
+                    "$type": "type",
+                    "name": "number"
+                  }
+                },
+                "value": {
+                  "$type": "value",
+                  "expression": {
+                    "$type": "expression",
+                    "binary": {
+                      "$type": "binary",
+                      "left": {
+                        "$type": "left",
+                        "expression": {
+                          "$type": "expression",
+                          "name": "x"
+                        }
+                      },
+                      "op": {
+                        "$type": "op",
+                        "multiply": true,
+                        "text": "*"
+                      },
+                      "right": {
+                        "$type": "right",
+                        "expression": {
+                          "$type": "expression",
+                          "number": "2"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "arrowBlock",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "arrow": {
+            "$type": "arrow",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "required": true,
+                "name": "x",
+                "type": {
+                  "$type": "type",
+                  "name": "number"
+                }
+              }
+            ],
+            "returns": {
+              "$type": "returns",
+              "type": {
+                "$type": "type",
+                "name": "number"
+              }
+            },
+            "body": {
+              "$type": "body",
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "x"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "multiply": true,
+                            "text": "*"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "2"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "maybe",
+      "type": {
+        "$type": "type",
+        "union": true,
+        "type": {
+          "$type": "type",
+          "name": "string"
+        },
+        "children": [
+          {
+            "$type": "type",
+            "literal": true,
+            "null": "null"
+          }
+        ]
+      },
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "null": "null"
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "fallback",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "binary": {
+            "$type": "binary",
+            "left": {
+              "$type": "left",
+              "expression": {
+                "$type": "expression",
+                "name": "maybe"
+              }
+            },
+            "op": {
+              "$type": "op",
+              "nullish": true,
+              "text": "??"
+            },
+            "right": {
+              "$type": "right",
+              "expression": {
+                "$type": "expression",
+                "string": "\"default\""
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "nonNull",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "non_null": true,
+          "as": {
+            "$type": "as",
+            "name": "maybe",
+            "type": {
+              "$type": "type",
+              "union": true,
+              "type": {
+                "$type": "type",
+                "name": "string"
+              },
+              "children": [
+                {
+                  "$type": "type",
+                  "literal": true,
+                  "null": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "asserted",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "as": {
+            "$type": "as",
+            "arguments": [
+              {
+                "$type": "type",
+                "name": "number"
+              }
+            ],
+            "as": {
+              "$type": "as",
+              "arguments": [
+                {
+                  "$type": "type",
+                  "name": "unknown"
+                }
+              ],
+              "string": "\"42\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "arrayOf",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "type": {
+            "$type": "type",
+            "generic": true,
+            "name": "Array",
+            "arguments": [
+              {
+                "$type": "type",
+                "name": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "fixed",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "call": {
+            "$type": "call",
+            "callee": {
+              "$type": "callee",
+              "name": "arrayOf"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "url",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "member": {
+            "$type": "member",
+            "object": {
+              "$type": "object",
+              "member": "import.meta"
+            },
+            "property": {
+              "$type": "property",
+              "name": "url"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "nestedVal",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "member": {
+            "$type": "member",
+            "object": {
+              "$type": "object",
+              "name": "StaticBlock"
+            },
+            "property": {
+              "$type": "property",
+              "name": "counter"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$type": "variable",
+      "const": true,
+      "name": "pattern",
+      "value": {
+        "$type": "value",
+        "expression": {
+          "$type": "expression",
+          "regex": {
+            "$type": "regex",
+            "flags": "giu"
+          }
+        }
+      }
+    }
+  ],
+  "class": [
+    {
+      "$type": "class",
+      "name": "StaticBlock",
+      "body": {
+        "$type": "body",
+        "field": [
+          {
+            "$type": "field",
+            "static": true,
+            "public": true,
+            "name": "counter",
+            "value": {
+              "$type": "value",
+              "expression": {
+                "$type": "expression",
+                "number": "0"
+              }
+            }
+          }
+        ],
+        "block": [
+          {
+            "$type": "block",
+            "static": true,
+            "body": [
+              {
+                "$type": "body",
+                "block": [
+                  {
+                    "$type": "block",
+                    "expression": [
+                      {
+                        "$type": "expression",
+                        "assign": {
+                          "$type": "assign",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "member": {
+                                "$type": "member",
+                                "object": {
+                                  "$type": "object",
+                                  "name": "StaticBlock"
+                                },
+                                "property": {
+                                  "$type": "property",
+                                  "name": "counter"
+                                }
+                              }
+                            }
+                          },
+                          "op": "=",
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "number": "7"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "expression": [
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "arrow"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "doubled"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "fallback"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "nonNull"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "ns"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "defaultExport"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "aliasedB"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "controlOdds"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "destructure"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "asserted"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "fixed"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "url"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "nestedVal"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "pattern"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "MetaCtor"
+      }
+    },
+    {
+      "$type": "expression",
+      "unary": {
+        "$type": "unary",
+        "op": {
+          "$type": "op",
+          "void": true,
+          "text": "void"
+        },
+        "name": "legacy"
+      }
+    }
+  ]
+}
