@@ -180,7 +180,14 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::BreakExpression          => Rename(Break),
         RustKind::CallExpression           => Rename(Call),
         RustKind::CharLiteral              => Rename(Char),
-        RustKind::ClosureExpression        => Rename(Closure),
+        // `|x| x` / `|x| { ... }` — closure. Custom handler renames
+        // the `<body>` wrapper (from tree-sitter `field="body"`) to
+        // `<value>` so `wrap_expression_positions` treats the body
+        // as an expression slot. Without this, single-expression
+        // bodies like `|x| x` ended up with `body/name[@list="name"]="x"`
+        // — the `list="name"` was misleading (closure body is one
+        // value, not a list of names).
+        RustKind::ClosureExpression        => Custom(transformations::closure_expression),
         // `|x|` bare-name closure params flatten the inner identifier
         // into a bare `<name>`; typed forms (`|x: i32|`) already
         // produce `<parameter>{name, type}`. Wrap bare names in

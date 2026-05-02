@@ -131,26 +131,16 @@ member-access receiver). But several transform sites still
 
 ### Rust closure body single-name over-tagged
 
-- [ ] **Rust closure trailing-expression `body` of `|x| x` form
-  emits `<body><name list="name">x</name></body>`** — but this is
-  a single value (the closure's return), not a list of statements.
-  - **Concrete sites**: `tests/integration/languages/rust/blueprint.rs.snapshot.txt:315`
-    and `:569` (trailing closure bodies).
-  - **Current shape (snapshot)**: `body[name="..."]/name[@list="name"]="x"`
-    where the closure is `|x| x`.
-  - **Desired shape**: closure body that is a single expression
-    should emit `body[name="..."]/expression/name="x"` (wrapped
-    in `<expression>` host) OR just `body/name="x"` without
-    `list="name"`. The list tag implies multi, but trailing-expr
-    is single by definition.
-  - **Fix**: extend `distribute_member_list_attrs` to skip when
-    the container has only one element child OR exclude closure
-    bodies from the Rust container_names list.
-  - **Principle**: #15 (stable expression hosts — closure tail
-    expression is an expression position) and content-determinism
-    (single-vs-list shape mismatch).
-  - **Effort**: 30-60 minutes; choice between two approaches.
-  - **Source**: iters 138-140 review.
+- [x] **Rust closure body single-name over-tagged** — closed iter 161.
+  Custom handler for `closure_expression` re-tags the inner
+  `<body>` (from tree-sitter `field="body"` wrapping) as `<value>`
+  before the post-pass `wrap_expression_positions` runs. The
+  body's content gets wrapped in `<expression>` host (Principle
+  #15), and `distribute_member_list_attrs` skips `<value>` since
+  it's not in the container list. `body/name[@list="name"]="x"`
+  → `value/expression/name="x"` (single-expr) or
+  `value/expression/binary/...` (block-body, with block flattened
+  by Pure Flatten rule).
 
 ### `Rule::Flatten` field rename
 

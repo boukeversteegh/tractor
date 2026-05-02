@@ -311,7 +311,7 @@ file/
   │       │   ├─ name = "id"
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/name = "x"
-  │       │       └─ body/name[@list="name"] = "x"
+  │       │       └─ value/expression/name = "x"
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "add"
   │       │   ├─ type[function]/
@@ -321,7 +321,7 @@ file/
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
-  │       │       └─ body/binary[@list="binary"]/
+  │       │       └─ value/expression/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
@@ -339,7 +339,7 @@ file/
   │       │       │   ├─ name = "x"
   │       │       │   └─ type/name = "i32"
   │       │       ├─ returns/type/name = "String"
-  │       │       └─ body/macro[@list="macro"]/
+  │       │       └─ value/expression/macro/
   │       │           ├─ name = "format"
   │       │           ├─ string = "\"{}-{}\""
   │       │           ├─ name = "s"
