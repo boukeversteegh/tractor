@@ -26,7 +26,7 @@ pub enum TractorNode {
     // Control-flow keyword leaves
     Next, Redo, Retry, Return,
     // Rescue / class header metadata
-    Exceptions, Superclass,
+    Exceptions, Extends,
     // Collections / atoms (Array, Hash, String, Symbol dual-use after iter 15)
     Array, Hash, Pair, String, Interpolation, Symbol, Int, Float, Regex,
     // Literal atoms (Nil dual-use after iter 15: container + `<spread[nil]>` marker)

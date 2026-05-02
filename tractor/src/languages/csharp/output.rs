@@ -82,10 +82,8 @@ pub enum TractorNode {
     Notnull, Unmanaged,
     // Constructor-call target marker — `[base]` on `<call>` for
     // `: base(...)` (the `[this]` form reuses the existing This marker).
-    // ALSO container for `<base>` entries in the class base list
-    // (`class Foo : A, B` → `<base>A</base><base>B</base>` siblings).
-    // C# has no `extends`/`implements` keyword; "base list" is the MS
-    // term. Dual-use: marker on `<call>` + container element.
+    // The `base` keyword appears literally in C# source so the
+    // marker name matches it (Principle #1).
     Base,
 }
 
@@ -113,11 +111,8 @@ impl TractorNode {
             | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
-            | Self::Anonymous | Self::Stackalloc | Self::File                   => (true, false, Default),
-            // `Base` is dual-use: `[base]` marker on `<call>` for
-            // `: base(...)` constructor invocation, AND structural
-            // container for `<base>` entries in the class base list.
-            Self::Base                                                          => (true, true, Keyword),
+            | Self::Anonymous | Self::Stackalloc | Self::File
+            | Self::Base                                                        => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),

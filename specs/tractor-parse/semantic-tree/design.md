@@ -691,6 +691,81 @@ Principle #5 (unified concepts), Principle #7 (modifiers as
 markers), Principle #11 (specific names, not type hierarchies),
 Principle #12 (flat lists over wrapper elements).
 
+### 18. Name Relationships After the Operator, Not the Target
+
+When a syntactic construct expresses a relationship between a host
+element and one or more target types or values (`extends`,
+`implements`, `throws`, `where`, type bounds, etc.), name the
+relationship element after the **operator** that introduces it,
+never after the target's role.
+
+This guarantees **structural consistency across languages** even
+when names vary — every language uses multiple sibling elements
+keyed by operator name, never a list wrapper around target-named
+children.
+
+**Two cases:**
+
+1. **Source has a keyword for each relationship variant** (Java
+   `extends`/`implements`, TS `extends`/`implements`, PHP
+   `extends`/`implements`). Use the keyword as the element name;
+   each target gets its own sibling.
+   ```xml
+   <!-- Java: class Foo extends A implements B, C -->
+   <class>
+     <name>Foo</name>
+     <extends>A</extends>
+     <implements>B</implements>
+     <implements>C</implements>
+   </class>
+   ```
+
+2. **Source uses only punctuation** (C# `:`, Python `class Foo(…)`,
+   Ruby `class Foo < Base`, Kotlin `:`). Pick the most
+   cross-language idiomatic operator name — `<extends>` for
+   class-hierarchy relationships — and use it for ALL targets,
+   even when we can't syntactically distinguish base classes from
+   interface implementations. **Don't switch to a target name like
+   `<base>` or `<superclass>`** — that breaks operator-naming
+   consistency across languages.
+   ```xml
+   <!-- C#: class Foo : A, B   (we can't tell if A is a class or interface) -->
+   <class>
+     <name>Foo</name>
+     <extends>A</extends>
+     <extends>B</extends>
+   </class>
+   ```
+
+**Why `<extends>` for the punctuation case?** It's the most common
+keyword for type-hierarchy operations across languages with
+explicit syntax (Java, TS, PHP, Kotlin, Scala, Dart, Swift's
+`extension`), so a developer landing in a C#/Python/Ruby snapshot
+will recognize it. The alternative (`<base>` / `<superclass>` /
+`<bases>`) shifts to target naming and creates a per-language
+naming patchwork that breaks cross-language queries.
+
+**Trade-off:** C#/Python/Ruby lose the ability to distinguish a
+base class from an interface implementation at the syntactic
+level. That's acceptable — the source itself doesn't make the
+distinction either, so a query that needs it has to do a name
+lookup anyway. Better to be honest about the ambiguity than to
+fabricate a target-name that hides it.
+
+**Multiple targets ⇒ multiple siblings**, never a list container —
+this is just Principle #12 applied to relationships.
+
+**Single-target relationships** (Ruby `class < Base`, Java
+`extends X`, Java method `throws E`) still get the same element
+name — just one sibling instead of N.
+
+**Cites:** Goal #1 (intuitive queries — single name covers all
+variants), Goal #5 (developer mental model — operators are the
+mental abstraction, not target labels), Principle #1 (use
+language keywords when source has them), Principle #5 (unified
+concepts — operator names unify across syntax variations),
+Principle #12 (no list containers).
+
 ---
 
 ## Decisions

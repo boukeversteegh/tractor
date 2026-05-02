@@ -68,7 +68,7 @@ program/
   │       │                   └─ right/expression/name = "@name"
   │       └─ class/
   │           ├─ name = "User"
-  │           ├─ superclass/name = "Base"
+  │           ├─ extends/name = "Base"
   │           └─ body/
   │               ├─ expression/call/
   │               │   ├─ name = "include"

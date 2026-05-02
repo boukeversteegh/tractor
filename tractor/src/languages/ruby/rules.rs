@@ -151,7 +151,6 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Range
         | RubyKind::Regex
         | RubyKind::Self_
-        | RubyKind::Superclass
         | RubyKind::Then
         | RubyKind::True
         | RubyKind::When => Passthrough,
@@ -202,6 +201,14 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // Adjacent string literals `"a" "b"` join under <string[concatenated]>
         // (matches Python's iter-13 shape for `"a" "b"`).
         RubyKind::ChainedString => RenameWithMarker(String, Concatenated),
+
+        // `class Foo < Base` — Ruby's `<` is the inheritance operator
+        // (no keyword in source). Per Principle #18, name the
+        // relationship after the most cross-language idiomatic
+        // operator name: `<extends>` (single sibling — Ruby has
+        // single inheritance via `<`; mixins use `include`/`extend`
+        // which are method calls, separate shape).
+        RubyKind::Superclass => Rename(Extends),
 
         // Numeric / literal kinds — single-word grammar names, fine
         // as raw passthrough. Could pick up proper Rename targets if

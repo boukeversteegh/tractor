@@ -50,9 +50,9 @@ pub enum TractorNode {
     // `**kwargs` are the universal Python conventions, so the
     // markers use those exact terms (Goal #5: developer mental model).
     Args, Kwargs,
-    // Class base — `class Foo(Base, Other)` produces `<base>` siblings
-    // (Principle #12 — no list container; Python devs say "base class").
-    Base,
+    // Class hierarchy — `class Foo(Base, Other)` produces `<extends>`
+    // siblings (Principle #18: name after operator, not target).
+    Extends,
     // Import-shape (Path container; Relative marker for `from . import`)
     Path, Relative,
 }

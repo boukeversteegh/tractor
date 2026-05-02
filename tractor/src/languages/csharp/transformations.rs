@@ -27,20 +27,23 @@ use super::output::TractorNode::{
 /// both forms (block-scoped and file-scoped) share the same shape.
 /// Closes todo/34.
 /// `base_list` — C# `: A, B, C` after a class/struct/interface
-/// declaration. C# uses `:` (not `extends`/`implements`); the
-/// MS docs call it the "base list" / "base types." Per Principle
-/// #12, produce multiple `<base>` siblings (one per type) rather
-/// than a single `<extends>` list container.
+/// declaration. C# uses `:` (no `extends`/`implements` keyword), so
+/// per Principle #18 we name the relationship after the most
+/// cross-language idiomatic operator name: `<extends>`. Per
+/// Principle #12 (no list containers), each entry becomes its own
+/// `<extends>` sibling — accepting the syntactic ambiguity that
+/// we can't tell a base class from an interface at this level.
 pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
     for child in elem_children {
-        let base_elt = xot.add_name(Base.as_str());
-        let base_node = xot.new_element(base_elt);
-        xot.insert_before(child, base_node)?;
+        let extends_elt = xot.add_name(Extends.as_str());
+        let extends_node = xot.new_element(extends_elt);
+        xot.insert_before(child, extends_node)?;
         xot.detach(child)?;
-        xot.append(base_node, child)?;
+        xot.append(extends_node, child)?;
     }
     Ok(TransformAction::Flatten)
 }

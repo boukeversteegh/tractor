@@ -321,10 +321,10 @@ pub fn dictionary_comprehension(
 }
 
 /// `argument_list` — context-aware. In a class's superclasses
-/// position, wrap each positional element in `<base>` (Principle #12
-/// — no list container, Goal #5 — Python devs say "base class").
-/// In a regular call context, distribute `field="arguments"` and
-/// flatten as before.
+/// position, wrap each positional element in `<extends>` (Principle
+/// #18: name relationships after the operator; Principle #12: no
+/// list container). In a regular call context, distribute
+/// `field="arguments"` and flatten as before.
 pub fn argument_list(
     xot: &mut Xot,
     node: XotNode,
@@ -334,7 +334,6 @@ pub fn argument_list(
         .and_then(|k| k.parse::<PyKind>().ok())
         == Some(PyKind::ClassDefinition);
     if in_class {
-        // Wrap each non-keyword element child in `<base>`.
         let elem_children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .filter(|&c| {
@@ -345,11 +344,11 @@ pub fn argument_list(
             })
             .collect();
         for child in elem_children {
-            let base_elt = xot.add_name("base");
-            let base_node = xot.new_element(base_elt);
-            xot.insert_before(child, base_node)?;
+            let extends_elt = xot.add_name("extends");
+            let extends_node = xot.new_element(extends_elt);
+            xot.insert_before(child, extends_node)?;
             xot.detach(child)?;
-            xot.append(base_node, child)?;
+            xot.append(extends_node, child)?;
         }
     } else {
         distribute_field_to_children(xot, node, "arguments");
