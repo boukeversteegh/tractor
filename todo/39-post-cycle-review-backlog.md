@@ -38,6 +38,22 @@ before committing a non-trivial change.
   reviewer found this is false (renderer filters them). Lesson:
   when a commit message states a side-property, run the actual
   command first (e.g. `--meta` output) and confirm.
+- **Reviewer "likely dead" claims are hypotheses, not facts.**
+  Iter 157 deleted JSON/YAML `data_pair` `field=` writes on a
+  reviewer's "likely dead" tip and broke 10+ mutation tests.
+  Mutation/upsert logic depended on the attribute. Lesson: when a
+  reviewer says "likely dead" / "probably unused", treat as a
+  hypothesis to test (delete + run tests) before treating as fact.
+  Reverted the deletion and added explanatory comments.
+- **When a structural fix lands for one language, scan all
+  language analogues in the same iter.** Iter 161 fixed Rust
+  closure body single-name over-tagging; iter 162 had to follow
+  up for TS arrow + Python lambda when a post-cycle review caught
+  the parallels. Lesson: when fixing a node-shape archetype
+  (closure / arrow / lambda / member-access / path / etc.),
+  immediately grep blueprints for the same shape across all PLs
+  and apply the fix in the same commit (or split deliberately
+  per-language for blast radius reasons).
 - **Skipping fixtures hides regressions.** Iter 130 fixed a C#
   primary-ctor bug but didn't add a fixture; iter 134 added one and
   immediately surfaced a regression that iter 130 had introduced.
@@ -225,6 +241,16 @@ member-access receiver). But several transform sites still
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 162: TS arrow + Python lambda body re-tag (cross-language
+  follow-up to iter 161 — closure-shape archetype fix applied to
+  all single-expression-body languages).
+- [x] iter 161: Rust closure body re-tagged as `<value>`.
+- [x] iter 160: design.md decision — paths always emit JSON array.
+- [x] iter 159: stale doc-comment sweep round 2.
+- [x] iter 158: rename Rule::Flatten distribute_field → distribute_list.
+- [x] iter 157: documented JSON/YAML data_pair field= as load-bearing.
+- [x] iter 156: backlog format upgrade — checkboxes + lessons +
+  post-compaction precision.
 - [x] iter 155: persistent backlog file (this file).
 - [x] iter 154: C# import path-segment tagging + stale-doc sweep batch 1
   + drop unused `append_marker` import.

@@ -339,7 +339,7 @@ file/
   │       │       │   ├─ name = "x"
   │       │       │   └─ type/name = "i32"
   │       │       ├─ returns/type/name = "String"
-  │       │       └─ value/expression/macro/
+  │       │       └─ body/macro[@list="macro"]/
   │       │           ├─ name = "format"
   │       │           ├─ string = "\"{}-{}\""
   │       │           ├─ name = "s"

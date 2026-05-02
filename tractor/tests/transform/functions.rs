@@ -21,7 +21,7 @@ fn typescript_arrow() {
                 [parameter[name='x']
                     [required]
                     [type/name='number']]
-                [body/binary]
+                [value/expression/binary]
         "#),
         1);
 }

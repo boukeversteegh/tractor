@@ -20,22 +20,37 @@ use super::output::TractorNode::{
 
 /// `closure_expression` — `|x| x` or `|x| { ... }`. Tree-sitter wraps
 /// the body in a `<body>` element (from `field="body"`). For
-/// closures, the body is conceptually an expression position (one
-/// value, not a statement list), so re-tag it as `<value>` so the
-/// post-pass `wrap_expression_positions` wraps the body's content
-/// in `<expression>` host (Principle #15). `distribute_member_list_attrs`
-/// then skips `<value>` since it's not in the container list, so
-/// `body/name[@list="name"]="x"` (over-tagged single name) becomes
-/// `value/expression/name="x"` (clean expression position).
+/// **single-expression** closure bodies, the body is an expression
+/// position; re-tag it as `<value>` so the post-pass
+/// `wrap_expression_positions` wraps the body's content in
+/// `<expression>` host (Principle #15) and `distribute_member_list_attrs`
+/// skips `<value>` (not in the container list).
+///
+/// For **block bodies** (`|x| { let y = x; y }`), keep `<body>` as-is
+/// — the block contains statements (`<let>`, etc.) that are NOT
+/// value-producing and shouldn't be wrapped in `<expression>`. The
+/// distribute_member_list_attrs pass already handles `<body>` →
+/// per-statement `list="<element-name>"` correctly.
+///
+/// Discriminator: the body's only element child is a `block` /
+/// `<block>` → block-body case (keep `<body>`); otherwise →
+/// single-expression case (re-tag to `<value>`).
 pub fn closure_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Closure;
     let body_child = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
     if let Some(body) = body_child {
-        let value_id = xot.add_name("value");
-        if let Some(elem) = xot.element_mut(body) {
-            elem.set_name(value_id);
+        let inner_kind = xot.children(body)
+            .filter(|&c| xot.element(c).is_some())
+            .next()
+            .and_then(|c| get_kind(xot, c));
+        let is_block = inner_kind.as_deref() == Some("block");
+        if !is_block {
+            let value_id = xot.add_name("value");
+            if let Some(elem) = xot.element_mut(body) {
+                elem.set_name(value_id);
+            }
         }
     }
     xot.with_renamed(node, Closure);

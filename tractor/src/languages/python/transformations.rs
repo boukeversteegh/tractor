@@ -19,6 +19,26 @@ use super::output::TractorNode::{
     Generic, Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
 };
 
+/// `lambda` — `lambda x: x + 1`. Body is always a single expression
+/// in Python lambdas (no block bodies — that's `def`). Re-tag the
+/// `<body>` wrapper to `<value>` so `wrap_expression_positions` treats
+/// it as an expression position (Principle #15). Mirrors the Rust
+/// closure / TS arrow fix from iters 161/162.
+pub fn lambda(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Lambda;
+    let body_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+    if let Some(body) = body_child {
+        let value_id = xot.add_name("value");
+        if let Some(elem) = xot.element_mut(body) {
+            elem.set_name(value_id);
+        }
+    }
+    xot.with_renamed(node, Lambda);
+    Ok(TransformAction::Continue)
+}
+
 /// `attribute` — `obj.attr`. Wraps the object and attribute names in
 /// role-named containers (`<object>` / `<property>`) so the two
 /// `<name>` siblings under `<member>` no longer collide on element

@@ -545,7 +545,7 @@ module/
   │       │           ├─ name = "map"
   │       │           ├─ lambda[@list="arguments"]/
   │       │           │   ├─ name = "v"
-  │       │           │   └─ body/binary[@list="binary"]/
+  │       │           │   └─ value/expression/binary/
   │       │           │       ├─ left/expression/name = "v"
   │       │           │       ├─ op[multiply] = "*"
   │       │           │       └─ right/expression/int = "2"

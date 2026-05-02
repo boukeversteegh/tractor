@@ -147,7 +147,13 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         // matches the dict-pattern shape (`<pattern[dict]>{string}{value}`).
         PyKind::KeywordPattern        => Custom(transformations::keyword_pattern),
         PyKind::KeywordSeparator      => Rename(Keyword),
-        PyKind::Lambda                => Rename(Lambda),
+        // `lambda x: x + 1` — body is always a single expression in
+        // Python lambdas. Re-tag `<body>` as `<value>` so
+        // `wrap_expression_positions` treats it as an expression
+        // position (Principle #15) and `distribute_member_list_attrs`
+        // skips the over-tagging the iter-140 generic pass would have
+        // applied.
+        PyKind::Lambda                => Custom(transformations::lambda),
         PyKind::MatchStatement        => Rename(Match),
         PyKind::Module                => Rename(Module),
         // `name := value` (PEP 572 walrus). Extract the `:=` operator

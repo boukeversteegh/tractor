@@ -328,7 +328,7 @@ program/
   │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ rest/name = "vals"
   │       │   └─ type[array]/type/name = "unknown"
-  │       └─ body/call[@list="call"]/
+  │       └─ value/expression/call/
   │           ├─ callee/member/
   │           │   ├─ object/name = "parts"
   │           │   └─ property/name = "reduce"
@@ -337,7 +337,7 @@ program/
   │           │   ├─ parameter[required and @list="parameters"]/name = "acc"
   │           │   ├─ parameter[required and @list="parameters"]/name = "p"
   │           │   ├─ parameter[required and @list="parameters"]/name = "i"
-  │           │   └─ body/binary[@list="binary"]/
+  │           │   └─ value/expression/binary/
   │           │       ├─ left/expression/binary/
   │           │       │   ├─ left/expression/name = "acc"
   │           │       │   ├─ op[plus] = "+"
@@ -523,7 +523,7 @@ program/
   │       ├─ returns/type[union]/
   │       │   ├─ type/name = "U"
   │       │   └─ type[literal]/undefined = "undefined"
-  │       └─ body/index[@list="index"]/
+  │       └─ value/expression/index/
   │           ├─ object/name = "xs"
   │           └─ number = "0"
   ├─ variable[const and @list="variable"]/
@@ -539,7 +539,7 @@ program/
   │       └─ arrow[@list="arguments"]/
   │           ├─ parameter[required and @list="parameters"]/name = "x"
   │           ├─ returns/type/name = "number"
-  │           └─ body/binary[@list="binary"]/
+  │           └─ value/expression/binary/
   │               ├─ left/expression/name = "x"
   │               ├─ op[multiply] = "*"
   │               └─ right/expression/number = "2"

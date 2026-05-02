@@ -514,8 +514,39 @@ pub fn function_expression(xot: &mut Xot, node: XotNode) -> Result<TransformActi
     function_with_markers(xot, node, Function)
 }
 
+/// `arrow_function` — `(x) => x` or `(x) => { ... }`. For
+/// single-expression bodies, re-tag the `<body>` wrapper to
+/// `<value>` so `wrap_expression_positions` wraps the body's
+/// content in `<expression>` host. Block bodies keep `<body>` so
+/// per-statement `list=` distribution works correctly. Mirrors the
+/// Rust `closure_expression` fix from iter 161.
 pub fn arrow_function(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    retag_single_expr_body_as_value(xot, node);
     function_with_markers(xot, node, Arrow)
+}
+
+/// Helper: if `node` has a `<body>` child whose only element child
+/// is NOT a statement block, rename `<body>` to `<value>`. Used by
+/// arrow/closure-style handlers that have single-expression body
+/// forms which need to be expression positions (Principle #15).
+fn retag_single_expr_body_as_value(xot: &mut Xot, node: XotNode) {
+    let body_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+    let body = match body_child { Some(b) => b, None => return };
+    let inner_kind = xot.children(body)
+        .filter(|&c| xot.element(c).is_some())
+        .next()
+        .and_then(|c| get_kind(xot, c));
+    let is_block = matches!(
+        inner_kind.as_deref(),
+        Some("statement_block" | "block" | "block_statement")
+    );
+    if is_block { return; }
+    let value_id = xot.add_name("value");
+    if let Some(elem) = xot.element_mut(body) {
+        elem.set_name(value_id);
+    }
 }
 
 pub fn generator_function(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
