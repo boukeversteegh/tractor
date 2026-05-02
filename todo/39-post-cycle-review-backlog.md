@@ -80,19 +80,17 @@ we preserve as input metadata for transform-time lookups (e.g.
 member-access receiver). But several transform sites still
 *write* `field=` to wrappers — that output is dead.
 
-- [ ] **Drop `field=` writes in JSON / YAML data-pair handlers.**
-  The attribute is unused in data-tree rendering (data trees go
-  through a different output path entirely per Principle #19's
-  scope note).
-  - **File 1**: `tractor/src/languages/json/transformations.rs:118` —
-    contains `xot.with_attr(node, "field", &safe_name);` inside
-    the `data_pair` Custom handler. Verify the attribute isn't
-    consumed by JSON-data-output, then drop the line.
-  - **File 2**: `tractor/src/languages/yaml/transformations.rs:126` —
-    same pattern, same fix.
-  - **Effort**: 5 minutes if dead; 30 minutes if it has a consumer
-    that needs adapting.
-  - **Source**: iters 138-140 review.
+- [x] **`field=` writes in JSON / YAML data-pair handlers** — iter 157
+  investigated; attribute is **NOT dead**. The mutation/upsert logic
+  in `tractor/src/mutation/xpath_upsert.rs` reads `field=` to identify
+  data-pair elements during JSON/YAML write-path operations.
+  Removing the writes broke 10+ mutation tests
+  (`insert_simple_property`, `insert_nested_property`,
+  `yaml_insert_*`, `declarative_set_json_nested`, etc.). Iter 157
+  added a comment to both handlers documenting the attribute's
+  load-bearing role for the data-tree write path. Validates Lesson:
+  "Don't trust commit-message / review claims without verifying" —
+  the reviewer's "likely dead" was wrong.
 
 - [ ] **Drop `field=` writes in three internal helpers** in
   `tractor/src/transform/mod.rs` (likely dead post-iter-139 since

@@ -123,6 +123,11 @@ pub fn data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     if let Some(key) = extract_pair_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key);
 
+        // The `field=` attribute is consumed by the mutation/upsert
+        // logic (see `tractor/src/mutation/xpath_upsert.rs`) to
+        // identify data-pair elements. NOT consumed by JSON output
+        // post-iter-139, but the attribute is load-bearing for
+        // data-tree write paths.
         xot.with_attr(node, "field", &safe_name);
 
         // Copy the value child's source span onto the renamed pair.
