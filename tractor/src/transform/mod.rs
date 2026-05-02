@@ -455,17 +455,32 @@ fn collect_expression_position_targets(
             if child_name.as_deref() == Some("expression") {
                 continue;
             }
-            // Skip if the child is a <type> element — type-namespace
-            // values shouldn't be wrapped in a value-namespace
-            // <expression> host (Principle #14). Examples:
-            //   Rust where-bound LHS: `where T: Clone` (T is a type)
-            //   Go map value-type slot: `map[string]int` (int is a type)
-            //   TS conditional-type extends-clause LHS/RHS (already type)
-            // Languages that need a value-namespace `<typeof T>` shape
-            // wrap the type in their own `<typeof>` / `<sizeof>` /
-            // `<call><type/>` host before this pass runs.
+            // Skip if the child is a `<type>` element AND the
+            // surrounding slot sits inside a known type-only context
+            // (Principle #14). The slot's grandparent kind
+            // distinguishes type-only contexts (where T: Clone, alias
+            // body, chan value-type, conditional-type LHS/RHS) from
+            // value-position uses where the expression happens to
+            // render as a type (TS `Array<number>` instantiation,
+            // Java `String.class`). A bare `<type>` child only loses
+            // its expression host when its grandparent confirms the
+            // type-only context.
             if child_name.as_deref() == Some("type") {
-                continue;
+                let grandparent_name = xot.parent(node)
+                    .filter(|&p| xot.element(p).is_some())
+                    .and_then(|p| get_element_name(xot, p));
+                let in_type_context = matches!(
+                    grandparent_name.as_deref(),
+                    Some("bound")     // Rust where T: ...
+                  | Some("alias")     // Python type alias body
+                  | Some("chan")      // Go chan value-type
+                  | Some("map")       // Go map value-type
+                  | Some("type")      // TS conditional-type slots (grandparent is type[conditional])
+                  | Some("instanceof") // Java instanceof RHS (the type checked against)
+                );
+                if in_type_context {
+                    continue;
+                }
             }
             out.push(child);
         }

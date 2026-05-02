@@ -679,7 +679,7 @@ program/
   ├─ comment[leading] = "// `Foo<T>` instantiation expression."
   ├─ variable[const]/
   │   ├─ name = "arrayOf"
-  │   └─ value/type[generic]/
+  │   └─ value/expression/type[generic]/
   │       ├─ name = "Array"
   │       └─ type[@list="true"]/name = "number"
   ├─ variable[const]/

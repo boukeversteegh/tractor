@@ -373,7 +373,7 @@ file/
   │       │       └─ nil = "nil"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "mapper"
-  │       │   └─ right/type[generic]/
+  │       │   └─ right/expression/type[generic]/
   │       │       ├─ type/name = "Map"
   │       │       ├─ type[@list="true"]/name = "int"
   │       │       └─ type[@list="true"]/name = "string"

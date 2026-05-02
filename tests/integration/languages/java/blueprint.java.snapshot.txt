@@ -326,7 +326,7 @@ program/
           │       │   │   └─ wildcard[@list="true"]
           │       │   └─ declarator/
           │       │       ├─ name = "cls"
-          │       │       └─ value/type[class]/type/name = "String"
+          │       │       └─ value/expression/type[class]/type/name = "String"
           │       └─ variable/
           │           ├─ type[generic]/
           │           │   ├─ name = "java.util.function.Function"
