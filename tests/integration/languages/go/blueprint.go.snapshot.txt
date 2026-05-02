@@ -76,8 +76,9 @@ file/
   │       └─ returns/type/name = "error"
   ├─ struct[exported]/
   │   ├─ name = "Container"
-  │   ├─ name = "T"
-  │   ├─ type/name = "any"
+  │   ├─ generics/
+  │   │   ├─ name = "T"
+  │   │   └─ type/name = "any"
   │   └─ field[unexported]/
   │       ├─ name = "items"
   │       └─ slice/type/name = "T"
@@ -203,9 +204,10 @@ file/
   │       └─ expression/name = "ErrNotFound"
   ├─ function[exported]/
   │   ├─ name = "Map"
-  │   ├─ name = "T"
-  │   ├─ name = "U"
-  │   ├─ type/name = "any"
+  │   ├─ generics/
+  │   │   ├─ name = "T"
+  │   │   ├─ name = "U"
+  │   │   └─ type/name = "any"
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
@@ -242,8 +244,9 @@ file/
   │       └─ return/expression/name = "out"
   ├─ function[exported]/
   │   ├─ name = "Sum"
-  │   ├─ name = "T"
-  │   ├─ type/name = "Number"
+  │   ├─ generics/
+  │   │   ├─ name = "T"
+  │   │   └─ type/name = "Number"
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
@@ -259,8 +262,9 @@ file/
   │           └─ right/expression/name = "x"
   ├─ function[exported]/
   │   ├─ name = "Uniq"
-  │   ├─ name = "T"
-  │   ├─ type/name = "comparable"
+  │   ├─ generics/
+  │   │   ├─ name = "T"
+  │   │   └─ type/name = "comparable"
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"

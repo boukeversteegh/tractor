@@ -1792,6 +1792,11 @@ const GO_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("condition", "condition"),
     ("consequence", "then"),
     ("result", "returns"),
+    // `type Container[T any] struct { ... }` — wrap the type
+    // parameters in `<generics>` so the struct's own name is
+    // distinguishable from generic-param names. Matches Java/TS
+    // generic shape (`<generics><generic><name>T</name>...</generic></generics>`).
+    ("type_parameters", "generics"),
 ];
 
 const CSHARP_FIELD_WRAPPINGS: &[(&str, &str)] = &[
