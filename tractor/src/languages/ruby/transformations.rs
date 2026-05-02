@@ -54,7 +54,7 @@ pub fn parameters(
         }
     }
     if let Some(field) = distribute_field {
-        distribute_field_to_children(xot, node, field);
+        distribute_list_to_children(xot, node, field);
     }
     Ok(TransformAction::Flatten)
 }

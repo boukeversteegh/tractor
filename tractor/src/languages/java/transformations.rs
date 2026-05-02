@@ -397,7 +397,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// "generics"` to each child, rename to `<generics>`, then flatten so
 /// the children land directly under the enclosing declaration.
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    distribute_field_to_children(xot, node, "generics");
+    distribute_list_to_children(xot, node, "generics");
     xot.with_renamed(node, Generics);
     Ok(TransformAction::Flatten)
 }

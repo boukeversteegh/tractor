@@ -207,7 +207,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// (matches the original transform's behavior; the rename before
 /// flatten is preserved for parity).
 pub fn type_parameters(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    distribute_field_to_children(xot, node, "generics");
+    distribute_list_to_children(xot, node, "generics");
     xot.with_renamed(node, Generics);
     Ok(TransformAction::Flatten)
 }

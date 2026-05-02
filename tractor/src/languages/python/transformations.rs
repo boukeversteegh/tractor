@@ -203,7 +203,7 @@ pub fn parameters(
             xot.append(param, child)?;
         }
     }
-    distribute_field_to_children(xot, node, "parameters");
+    distribute_list_to_children(xot, node, "parameters");
     Ok(TransformAction::Flatten)
 }
 
@@ -352,7 +352,7 @@ pub fn argument_list(
             xot.with_attr(extends_node, "list", "extends");
         }
     } else {
-        distribute_field_to_children(xot, node, "arguments");
+        distribute_list_to_children(xot, node, "arguments");
     }
     Ok(TransformAction::Flatten)
 }

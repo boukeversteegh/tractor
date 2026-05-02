@@ -228,7 +228,7 @@ pub fn formal_parameters(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     wrap_bare_identifier_params(xot, node)?;
-    distribute_field_to_children(xot, node, "parameters");
+    distribute_list_to_children(xot, node, "parameters");
     Ok(TransformAction::Flatten)
 }
 

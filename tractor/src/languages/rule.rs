@@ -30,7 +30,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::TransformAction;
 use crate::transform::helpers::{
-    distribute_field_to_children, XotWithExt,
+    distribute_list_to_children, XotWithExt,
 };
 use crate::transform::operators::extract_operator;
 
@@ -159,7 +159,7 @@ where
         }
         Rule::Flatten { distribute_field } => {
             if let Some(field) = distribute_field {
-                distribute_field_to_children(xot, node, field);
+                distribute_list_to_children(xot, node, field);
             }
             Ok(TransformAction::Flatten)
         }

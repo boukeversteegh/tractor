@@ -67,7 +67,7 @@ pub fn type_arguments(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
         }
         xot.detach(child)?;
     }
-    distribute_field_to_children(xot, node, "arguments");
+    distribute_list_to_children(xot, node, "arguments");
     Ok(TransformAction::Flatten)
 }
 
@@ -91,7 +91,7 @@ pub fn parameter_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     if in_returns {
         collapse_return_param_list(xot, node)?;
     } else {
-        distribute_field_to_children(xot, node, "parameters");
+        distribute_list_to_children(xot, node, "parameters");
     }
     Ok(TransformAction::Flatten)
 }
