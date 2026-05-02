@@ -251,17 +251,15 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/type/name = "T"
-  │   └─ body/
-  │       ├─ for[@list="for"]/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "x"
-  │       │   │   └─ right/expression/name = "xs"
-  │       │   └─ body/assign[@list="assign"]/
-  │       │       ├─ left/expression/name = "total"
-  │       │       └─ right/expression/name = "x"
-  │       └─ return[@list="return"]
+  │   └─ body[return]/for[@list="for"]/
+  │       ├─ range/
+  │       │   ├─ left/
+  │       │   │   ├─ expression/name = "_"
+  │       │   │   └─ expression/name = "x"
+  │       │   └─ right/expression/name = "xs"
+  │       └─ body/assign[@list="assign"]/
+  │           ├─ left/expression/name = "total"
+  │           └─ right/expression/name = "x"
   ├─ function[exported and @list="function"]/
   │   ├─ name = "Uniq"
   │   ├─ generic[@list="generics"]/
@@ -271,42 +269,41 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/slice/type/name = "T"
-  │   └─ body/
+  │   └─ body[return]/
   │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "seen"
   │       │   └─ right/expression/literal/map/
   │       │       ├─ type/name = "T"
   │       │       └─ value/expression/struct = "struct{}"
-  │       ├─ for[@list="for"]/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "x"
-  │       │   │   └─ right/expression/name = "xs"
-  │       │   └─ body/if[@list="if"]/
-  │       │       ├─ variable[short]/
-  │       │       │   ├─ left/
-  │       │       │   │   ├─ expression/name = "_"
-  │       │       │   │   └─ expression/name = "ok"
-  │       │       │   └─ right/expression/index/
-  │       │       │       ├─ name = "seen"
-  │       │       │       └─ name = "x"
-  │       │       ├─ condition/expression/unary/
-  │       │       │   ├─ op[logical and not] = "!"
-  │       │       │   └─ name = "ok"
-  │       │       └─ then/
-  │       │           ├─ assign/
-  │       │           │   ├─ left/expression/index/
-  │       │           │   │   ├─ name = "seen"
-  │       │           │   │   └─ name = "x"
-  │       │           │   └─ right/expression/literal/struct = "struct{}"
-  │       │           └─ assign/
-  │       │               ├─ left/expression/name = "out"
-  │       │               └─ right/expression/call/
-  │       │                   ├─ name = "append"
-  │       │                   ├─ name[@list="arguments"] = "out"
-  │       │                   └─ name[@list="arguments"] = "x"
-  │       └─ return[@list="return"]
+  │       └─ for[@list="for"]/
+  │           ├─ range/
+  │           │   ├─ left/
+  │           │   │   ├─ expression/name = "_"
+  │           │   │   └─ expression/name = "x"
+  │           │   └─ right/expression/name = "xs"
+  │           └─ body/if[@list="if"]/
+  │               ├─ variable[short]/
+  │               │   ├─ left/
+  │               │   │   ├─ expression/name = "_"
+  │               │   │   └─ expression/name = "ok"
+  │               │   └─ right/expression/index/
+  │               │       ├─ name = "seen"
+  │               │       └─ name = "x"
+  │               ├─ condition/expression/unary/
+  │               │   ├─ op[logical and not] = "!"
+  │               │   └─ name = "ok"
+  │               └─ then/
+  │                   ├─ assign/
+  │                   │   ├─ left/expression/index/
+  │                   │   │   ├─ name = "seen"
+  │                   │   │   └─ name = "x"
+  │                   │   └─ right/expression/literal/struct = "struct{}"
+  │                   └─ assign/
+  │                       ├─ left/expression/name = "out"
+  │                       └─ right/expression/call/
+  │                           ├─ name = "append"
+  │                           ├─ name[@list="arguments"] = "out"
+  │                           └─ name[@list="arguments"] = "x"
   ├─ function[unexported and @list="function"]/
   │   ├─ name = "variadic"
   │   ├─ parameter[@list="parameters"]/
@@ -318,7 +315,7 @@ file/
   │   ├─ returns/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
-  │   └─ body/
+  │   └─ body[return]/
   │       ├─ defer[@list="defer"]/call/closure/body/assign[@list="assign"]/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/name = "recover"
@@ -327,16 +324,15 @@ file/
   │       │   └─ right/expression/call/
   │       │       ├─ name = "ToUpper"
   │       │       └─ name[@list="arguments"] = "prefix"
-  │       ├─ for[@list="for"]/
-  │       │   ├─ range/
-  │       │   │   ├─ left/
-  │       │   │   │   ├─ expression/name = "_"
-  │       │   │   │   └─ expression/name = "v"
-  │       │   │   └─ right/expression/name = "vals"
-  │       │   └─ body/assign[@list="assign"]/
-  │       │       ├─ left/expression/name = "sum"
-  │       │       └─ right/expression/name = "v"
-  │       └─ return[@list="return"]
+  │       └─ for[@list="for"]/
+  │           ├─ range/
+  │           │   ├─ left/
+  │           │   │   ├─ expression/name = "_"
+  │           │   │   └─ expression/name = "v"
+  │           │   └─ right/expression/name = "vals"
+  │           └─ body/assign[@list="assign"]/
+  │               ├─ left/expression/name = "sum"
+  │               └─ right/expression/name = "v"
   ├─ comment[leading and @list="comment"] = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
   ├─ function[unexported and @list="function"]/
   │   ├─ name = "arraysAndCasts"

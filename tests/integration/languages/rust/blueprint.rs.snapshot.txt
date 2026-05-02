@@ -94,8 +94,7 @@ file/
   ├─ struct[pub and @list="struct"]/
   │   ├─ name = "Pair"
   │   ├─ generic[@list="generics"]/name = "T"
-  │   └─ body/
-  │       ├─ pub[@list="pub"]
+  │   └─ body[pub]/
   │       ├─ type[@list="type"]/name = "T"
   │       └─ type[@list="type"]/name = "T"
   ├─ comment[leading and @list="comment"] = "/// A unit struct."
@@ -666,12 +665,10 @@ file/
   │   └─ body/
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "block"
-  │       │   └─ value/expression/block/
-  │       │       ├─ async[@list="async"]
-  │       │       └─ binary[@list="binary"]/
-  │       │           ├─ left/expression/int = "1u32"
-  │       │           ├─ op[plus] = "+"
-  │       │           └─ right/expression/int = "2"
+  │       │   └─ value/expression/block[async]/binary[@list="binary"]/
+  │       │       ├─ left/expression/int = "1u32"
+  │       │       ├─ op[plus] = "+"
+  │       │       └─ right/expression/int = "2"
   │       └─ expression[await and @list="expression"]/name = "block"
   ├─ function[pub and @list="function"]/
   │   ├─ name = "unsafe_block"

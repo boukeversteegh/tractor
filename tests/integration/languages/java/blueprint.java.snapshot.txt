@@ -298,12 +298,10 @@ program/
           ├─ field[package and static and final and @list="field"]/
           │   ├─ type/name = "int"
           │   └─ declarator/name = "SEED"
-          ├─ block[@list="block"]/
-          │   ├─ static[@list="static"]
-          │   └─ expression[@list="expression"]/assign/
-          │       ├─ left/expression/name = "SEED"
-          │       ├─ op = "="
-          │       └─ right/expression/int = "42"
+          ├─ block[static and @list="block"]/expression[@list="expression"]/assign/
+          │   ├─ left/expression/name = "SEED"
+          │   ├─ op = "="
+          │   └─ right/expression/int = "42"
           ├─ comment[leading and @list="comment"] = "/** Array initializer, char literal, class literal, method reference. */"
           ├─ method[package and @list="method"]/
           │   ├─ returns/type[void]/name = "void"

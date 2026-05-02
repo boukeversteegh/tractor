@@ -473,22 +473,21 @@ unit/
   │               ├─ switch[@list="switch"]/
   │               │   ├─ value/expression/name = "token"
   │               │   └─ body/
-  │               │       ├─ section[@list="section"]/
+  │               │       ├─ section[break and @list="section"]/
   │               │       │   ├─ pattern[declaration and @list="pattern"]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   ├─ expression[@list="expression"]/call/
-  │               │       │   │   ├─ member[instance]/
-  │               │       │   │   │   ├─ name = "Console"
-  │               │       │   │   │   └─ name = "WriteLine"
-  │               │       │   │   └─ argument[@list="arguments"]/call/member[instance]/
-  │               │       │   │       ├─ name = "w"
-  │               │       │   │       └─ name = "Describe"
-  │               │       │   └─ break[@list="break"]
+  │               │       │   └─ expression[@list="expression"]/call/
+  │               │       │       ├─ member[instance]/
+  │               │       │       │   ├─ name = "Console"
+  │               │       │       │   └─ name = "WriteLine"
+  │               │       │       └─ argument[@list="arguments"]/call/member[instance]/
+  │               │       │           ├─ name = "w"
+  │               │       │           └─ name = "Describe"
   │               │       ├─ section[@list="section"]/
   │               │       │   ├─ pattern[constant and @list="pattern"]/null = "null"
   │               │       │   └─ throw[@list="throw"]/new/type/name = "InvalidOperationException"
-  │               │       └─ section[@list="section"]/break[@list="break"]
+  │               │       └─ section[break and @list="section"] = "default: break"
   │               ├─ if[@list="if"]/
   │               │   ├─ condition/expression/is/
   │               │   │   ├─ name = "token"
@@ -698,7 +697,7 @@ unit/
   │               │   │           └─ name = "Message"
   │               │   ├─ catch/
   │               │   │   ├─ declaration/type/name = "Exception"
-  │               │   │   └─ body/block[@list="block"]/throw[@list="throw"]
+  │               │   │   └─ body/block[throw and @list="block"]
   │               │   └─ finally/block/expression[@list="expression"]/call/member[instance]/
   │               │       ├─ name = "scope"
   │               │       └─ name = "Flush"
@@ -817,9 +816,8 @@ unit/
   │                   └─ right/expression/member[instance]/
   │                       ├─ name = "shouted"
   │                       └─ name = "Length"
-  └─ namespace[@list="namespace"]/
+  └─ namespace[file and @list="namespace"]/
       ├─ name[@list="name"] = "Tractor.Fixtures.FileScoped"
-      ├─ file[@list="file"]
       ├─ import[@list="import"]/name = "System"
       ├─ class[internal and file and sealed and @list="class"]/
       │   ├─ name = "Hidden"

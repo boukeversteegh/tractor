@@ -334,7 +334,16 @@ pub fn distribute_member_list_attrs(
             .filter(|&c| xot.element(c).is_some())
             .collect();
         for child in elem_children {
+            // Skip if already tagged.
             if get_attr(xot, child, "list").is_some() {
+                continue;
+            }
+            // Skip self-closing markers — they're presence flags, not
+            // list members. JSON serializes them as boolean properties
+            // regardless of `list=`. Tagging them adds attribute noise
+            // and produces misleading XPath signals like
+            // `static[@list="static"]`.
+            if !xot.children(child).any(|c| xot.element(c).is_some() || xot.text_str(c).is_some()) {
                 continue;
             }
             let element_name = match get_element_name(xot, child) {

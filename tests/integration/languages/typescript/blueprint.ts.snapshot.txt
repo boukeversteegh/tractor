@@ -462,7 +462,7 @@ program/
   │       │   └─ body/
   │       │       ├─ case[@list="case"]/
   │       │       │   ├─ value/expression/string = "\"ready\""
-  │       │       │   └─ body/break[@list="break"]
+  │       │       │   └─ body[break]
   │       │       ├─ case[@list="case"]/
   │       │       │   ├─ value/expression/string = "\"error\""
   │       │       │   └─ body/throw[@list="throw"]/new/
@@ -470,7 +470,7 @@ program/
   │       │       │       └─ string[@list="arguments"] = "\"bad\""
   │       │       └─ default[@list="default"]/
   │       │           ├─ comment = "/* fallthrough */"
-  │       │           └─ body/break[@list="break"]
+  │       │           └─ body[break]
   │       ├─ variable[const and @list="variable"]/
   │       │   ├─ name = "obj"
   │       │   ├─ type[generic]/
@@ -651,14 +651,12 @@ program/
   │       ├─ field[static and public and @list="field"]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
-  │       └─ block[@list="block"]/
-  │           ├─ static[@list="static"]
-  │           └─ body[@list="body"]/block[@list="block"]/expression[@list="expression"]/assign/
-  │               ├─ left/expression/member/
-  │               │   ├─ object/name = "StaticBlock"
-  │               │   └─ property/name = "counter"
-  │               ├─ op = "="
-  │               └─ right/expression/number = "7"
+  │       └─ block[static and @list="block"]/body[@list="body"]/block[@list="block"]/expression[@list="expression"]/assign/
+  │           ├─ left/expression/member/
+  │           │   ├─ object/name = "StaticBlock"
+  │           │   └─ property/name = "counter"
+  │           ├─ op = "="
+  │           └─ right/expression/number = "7"
   ├─ comment[leading and @list="comment"] = "// Asserts / type predicate annotations."
   ├─ function[@list="function"]/
   │   ├─ name = "isNumber"

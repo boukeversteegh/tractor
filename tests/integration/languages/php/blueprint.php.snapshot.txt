@@ -194,7 +194,7 @@ program/
   │       │       │       │   │   ├─ left/expression/variable/name = "item"
   │       │       │       │   │   ├─ op[equals and strict] = "==="
   │       │       │       │   │   └─ right/expression/null = "null"
-  │       │       │       │   └─ body/continue[@list="continue"]
+  │       │       │       │   └─ body[continue]
   │       │       │       └─ try[@list="try"]/
   │       │       │           ├─ body/expression[@list="expression"]/assign/
   │       │       │           │   ├─ left/expression/index/
@@ -208,7 +208,7 @@ program/
   │       │       │           └─ catch/
   │       │       │               ├─ types/type/name = "Throwable"
   │       │       │               ├─ name = "$e"
-  │       │       │               └─ body/continue[@list="continue"]
+  │       │       │               └─ body[continue]
   │       │       └─ return[@list="return"]/expression/variable/name = "results"
   │       └─ method[private and @list="method"]/
   │           ├─ name = "transform"

@@ -92,7 +92,7 @@ module/
   ├─ class[@list="class"]/
   │   ├─ name = "Box"
   │   ├─ generic/type/name = "T"
-  │   └─ body/pass[@list="pass"]
+  │   └─ body[pass]
   ├─ alias[@list="alias"]/
   │   ├─ left/type[generic]/
   │   │   ├─ name = "Vec"
@@ -228,7 +228,7 @@ module/
   │   │   ├─ name = "repeat"
   │   │   └─ int[@list="arguments"] = "3"
   │   ├─ name = "stacked"
-  │   └─ body/pass[@list="pass"]
+  │   └─ body[pass]
   ├─ class[@list="class"]/
   │   ├─ decorator/name = "dataclass"
   │   ├─ name = "Point"
@@ -254,11 +254,11 @@ module/
   │                   └─ value/expression/name = "list"
   ├─ class[@list="class"]/
   │   ├─ name = "Base"
-  │   └─ body/pass[@list="pass"]
+  │   └─ body[pass]
   ├─ class[@list="class"]/
   │   ├─ name = "Meta"
   │   ├─ extends[@list="extends"]/type/name = "type"
-  │   └─ body/pass[@list="pass"]
+  │   └─ body[pass]
   ├─ class[@list="class"]/
   │   ├─ name = "Derived"
   │   ├─ extends[@list="extends"]/type/name = "Base"
@@ -347,7 +347,7 @@ module/
   │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op[assign and plus] = "+="
   │       │   │   └─ right/expression/int = "1"
-  │       │   └─ else/body/pass[@list="pass"]
+  │       │   └─ else/body[pass]
   │       ├─ try[@list="try"]/
   │       │   ├─ body/expression[@list="expression"]/call/name = "risky"
   │       │   ├─ except/
