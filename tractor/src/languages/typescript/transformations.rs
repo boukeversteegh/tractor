@@ -232,13 +232,58 @@ pub fn formal_parameters(
     Ok(TransformAction::Flatten)
 }
 
-/// `extends_clause` — `class Foo extends Bar`. Tree-sitter tags the
-/// base-class identifier as `field="value"`; retag as `<type>` for
-/// the uniform namespace vocabulary.
+/// `extends_clause` — `class Foo extends Bar`. TS classes only allow
+/// one extends so this is always single-target. Tree-sitter tags
+/// the base-class identifier as `field="value"`; retag as `<type>`
+/// for the uniform namespace vocabulary, then add `field="extends"`
+/// for JSON array consistency.
 pub fn extends_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     retag_value_as_type(xot, node)?;
-    xot.with_renamed(node, Extends);
+    xot.with_renamed(node, Extends)
+        .with_attr(node, "field", "extends");
     Ok(TransformAction::Continue)
+}
+
+/// `extends_type_clause` — `interface I extends A, B, C`. Multiple
+/// targets allowed; produce flat `<extends>` siblings (Principle
+/// #12 + #18) with `field="extends"`.
+pub fn extends_type_clause(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let extends_elt = xot.add_name(Extends.as_str());
+        let extends_node = xot.new_element(extends_elt);
+        xot.insert_before(child, extends_node)?;
+        xot.detach(child)?;
+        xot.append(extends_node, child)?;
+        xot.with_attr(extends_node, "field", "extends");
+    }
+    Ok(TransformAction::Flatten)
+}
+
+/// `implements_clause` — `class Foo implements A, B, C`. Multiple
+/// `<implements>` siblings with `field="implements"`.
+pub fn implements_clause(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Implements;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let impl_elt = xot.add_name(Implements.as_str());
+        let impl_node = xot.new_element(impl_elt);
+        xot.insert_before(child, impl_node)?;
+        xot.detach(child)?;
+        xot.append(impl_node, child)?;
+        xot.with_attr(impl_node, "field", "implements");
+    }
+    Ok(TransformAction::Flatten)
 }
 
 /// `type_alias_declaration` — `type Foo = …`. Drop the `<value>`

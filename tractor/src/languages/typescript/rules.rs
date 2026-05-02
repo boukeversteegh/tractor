@@ -139,7 +139,9 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::ForInStatement            => Rename(For),
         TsKind::ForStatement              => Rename(For),
         TsKind::IfStatement               => Rename(If),
-        TsKind::ImplementsClause          => Rename(Implements),
+        // `implements A, B, C` — Principle #12 + #18: multiple
+        // `<implements>` siblings, not a list container.
+        TsKind::ImplementsClause          => Custom(transformations::implements_clause),
         TsKind::ImportClause              => Rename(Clause),
         TsKind::ImportSpecifier           => Rename(Spec),
         TsKind::ImportStatement           => Rename(Import),
@@ -219,7 +221,9 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // `Foo.Bar` value reference (scoped value identifier).
         TsKind::NestedIdentifier          => Rename(Member),
         // `extends Type` clause inside a type alias / mapped type.
-        TsKind::ExtendsTypeClause         => Rename(Extends),
+        // `interface I extends A, B, C` — multiple targets per
+        // Principle #18 + #12: `<extends>` siblings, not list wrapper.
+        TsKind::ExtendsTypeClause         => Custom(transformations::extends_type_clause),
         // `import { x } with { type: 'json' }` import attributes.
         TsKind::ImportAttribute           => Rename(Attribute),
         // `key: pattern` — pair pattern in object destructure.
