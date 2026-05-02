@@ -131,10 +131,10 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::CatchDeclaration               => Rename(Declaration),
         CsKind::CatchFilterClause              => Rename(Filter),
         CsKind::CompilationUnit                => Rename(Unit),
-        // `: this(...)` / `: base(...)` constructor chain. Detect the
-        // keyword and lift it as `[this]` / `[base]` marker so the
-        // chain target is queryable. Strip the bare `: this(` /
-        // `: base(` text leaks.
+        // `: this(...)` / `: base(...)` constructor invocation. Renames
+        // to `<call>` with `[this]` / `[base]` marker — matches Java's
+        // `<call[super]>` shape for the parallel construct so
+        // cross-language `//call[base]` and `//call[this]` work.
         CsKind::ConstructorInitializer         => Custom(transformations::constructor_initializer),
         CsKind::ContinueStatement              => RenameStripKeyword(Continue, "continue"),
         CsKind::DelegateDeclaration            => Rename(Delegate),

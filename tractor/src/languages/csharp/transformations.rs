@@ -15,7 +15,7 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Base, Chain, Else, Expression, File, Generic, If, Instance, Internal,
+    self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Instance, Internal,
     Leading, Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public, Protected,
     String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
@@ -26,10 +26,12 @@ use super::output::TractorNode::{
 /// the trailing siblings under `<unit>` into a `<body>` child, so
 /// both forms (block-scoped and file-scoped) share the same shape.
 /// Closes todo/34.
-/// `constructor_initializer` — `: this(args)` / `: base(args)` chain
-/// in a constructor declaration. Renames to `<chain>` with a
-/// `[this]` or `[base]` marker indicating which form. Strips the
-/// bare `: this(` / `: base(` text leaks.
+/// `constructor_initializer` — `: this(args)` / `: base(args)` in a
+/// constructor declaration. Renames to `<call>` with a `[this]` or
+/// `[base]` marker — matches Java's `<call[super]>` / `<call[this]>`
+/// shape for the parallel `super(...)` / `this(...)` construct
+/// inside Java constructors. Strips the bare `: this(` / `: base(`
+/// text leaks (the markers carry the keyword).
 pub fn constructor_initializer(
     xot: &mut Xot,
     node: XotNode,
@@ -42,13 +44,12 @@ pub fn constructor_initializer(
             }
         }
     }
-    // Strip text leaves (`:`, `this`, `base`, `(`, `)`).
     for child in xot.children(node).collect::<Vec<_>>() {
         if xot.text_str(child).is_some() {
             xot.detach(child)?;
         }
     }
-    xot.with_renamed(node, Chain);
+    xot.with_renamed(node, Call);
     let marker = if is_base { Base } else { This };
     xot.with_prepended_marker(node, marker)?;
     Ok(TransformAction::Continue)

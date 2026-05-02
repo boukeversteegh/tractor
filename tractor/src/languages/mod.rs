@@ -326,9 +326,11 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     )?;
     // Strip braces from C# block/body containers. `<block>` is the
     // statement-block variant; `<section>` is the switch-section
-    // wrapper; `<chain>` carries the leftover `(`/`)` from
-    // constructor_initializer flatten.
-    crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "chain"])?;
+    // wrapper. `<call>` here catches the `(`/`)` parens that the
+    // argument_list flatten promotes into the renamed
+    // constructor_initializer (`<call[this]>`/`<call[base]>`) after
+    // its handler ran.
+    crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "call"])?;
     Ok(())
 }
 

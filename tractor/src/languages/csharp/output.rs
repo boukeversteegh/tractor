@@ -32,7 +32,7 @@ pub enum TractorNode {
     // Shared children
     Name, Type, Accessors, Accessor, Attributes, Attribute, Arguments, Argument,
     Parameters, Parameter, Variable, Declarator, Extends, Properties, Element, Section, Arm,
-    Label, Chain, Filter, When, Where,
+    Label, Filter, When, Where,
     // Statements / control flow
     Return, If, Else, ElseIf, For, Foreach, While, Do, Try, Catch, Finally, Throw,
     Using, Break, Continue, Switch, Block, Expression, Range,
@@ -80,8 +80,10 @@ pub enum TractorNode {
     Get, Set, Init, Add, Remove,
     // Generic-constraint markers
     Notnull, Unmanaged,
-    // Constructor-chain target marker — `[base]` on `<chain>` for
+    // Constructor-call target marker — `[base]` on `<call>` for
     // `: base(...)` (the `[this]` form reuses the existing This marker).
+    // Mirrors Java's `<call[super]>` / `<call[this]>` for the
+    // `super(...)` / `this(...)` constructor invocations.
     Base,
 }
 
