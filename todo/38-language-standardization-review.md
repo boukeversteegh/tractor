@@ -230,6 +230,12 @@ findings:
 - iter 96: Ruby `simple_symbol` becomes `<symbol>` (was bare text).
 - iter 97: C# constructor chain `: this(0)` / `: base(...)` uses
   `[this]` / `[base]` markers (introduces `Base` enum variant).
+- iter 99: body-brace-strip extended to `block`/`then`/`else`/
+  `section`/`chain` per language; reverse iteration so child
+  bodies process before parents (so empty parent bodies detach
+  cleanly).
+- iter 100: Java `default ->` switch label uses `[default]` marker
+  (introduces `Default` dual-use enum variant).
 
 Decisions queued for review (renames are mechanical):
 - `[keyword]` marker name on pattern (vs `kwarg`, `kw`) — kept
