@@ -125,25 +125,25 @@ member-access receiver). But several transform sites still
 
 ### `field=` claim about `--meta` is misleading
 
-- [ ] **iter 139 commit message claims tree-sitter `field=` survives
-  for `--meta` debug output**, but it doesn't — the field-wrapper
-  pass + name_wrapper Customs inline the inner identifier text and
-  the `field=` evaporates with it.
-  - **Verify**: `echo 'class Foo {}' | ./target/release/tractor.exe --lang java --format xml --meta`.
-    The `<name>` element will NOT show `@field=` even though the
-    underlying tree-sitter `identifier` had `field="name"`.
-  - **Two fixes possible**:
-    1. Have the renderer copy `field=` from inlined-away inner
-       identifiers onto the wrapper before inlining (preserves the
-       claim).
-    2. Drop the rationale from iter 139's commit message and accept
-       that synthetic wrappers don't carry tree-sitter metadata.
-  - **File for fix #1**: `tractor/src/output/xml_renderer.rs:443-455`
-    is the meta-attribute filter; the actual `field=` loss happens
-    earlier in the transform pipeline (per-language `name_wrapper`
-    handlers — search `with_only_text` calls).
-  - **Effort**: 30 minutes for option 2; 1-2 hours for option 1.
-  - **Source**: iters 138-140 review.
+- [x] **iter 139 `--meta field=` claim verified iter 163** — the
+  claim is *partially* accurate, not blatantly false. Verified
+  with `echo 'class Foo { void m(int x) {} }' | tractor --lang
+  java --format xml --meta`:
+  - field= IS preserved on elements whose subtree wasn't
+    text-inlined (parameters, returned types, etc. — `<type
+    field="type">`, `<name field="name">int</name>`).
+  - field= is LOST on elements where text-inlining replaced the
+    inner identifier with raw text (class/method/parameter
+    `<name>` wrappers, where `<name><identifier>X</identifier></name>`
+    collapsed to `<name>X</name>` and the identifier with field=
+    is gone).
+  - The reviewer's "false" verdict was overstated; the iter 139
+    framing of "available for --meta debug" is accurate for the
+    cases where field= survives. Low priority — fixing the
+    text-inlined case to copy field= would help debug round-trip
+    but isn't structurally necessary.
+  - Closing without code change. Lesson: "verify before acting"
+    catches both false-claims AND overstated-claims.
 
 ### Rust closure body single-name over-tagged
 
