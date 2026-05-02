@@ -123,7 +123,7 @@ pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
 }
 
 /// `generic_type` — rewrite `List[X]` as
-///   `<type><generic/>List<type field="arguments">X</type></type>`
+///   `<type><generic/>List<type list="arguments">X</type></type>`
 /// matching the cross-language pattern used by C# / Java / TS.
 pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     rewrite_generic_type(xot, node, &["identifier", "type_identifier"])?;
@@ -349,7 +349,7 @@ pub fn dictionary_comprehension(
 /// position, wrap each positional element in `<extends>` (Principle
 /// #18: name relationships after the operator; Principle #12: no
 /// list container). In a regular call context, distribute
-/// `field="arguments"` and flatten as before.
+/// `list="arguments"` and flatten as before.
 pub fn argument_list(
     xot: &mut Xot,
     node: XotNode,

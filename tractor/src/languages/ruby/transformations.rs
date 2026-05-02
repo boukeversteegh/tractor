@@ -105,7 +105,7 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 }
 
 /// `superclass` — `class Foo < Base`. Renames to `<extends>` with
-/// `field="extends"` so JSON serializers produce a uniform
+/// `list="extends"` so JSON serializers produce a uniform
 /// `extends: [...]` array (Principle #12 + #18).
 pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;

@@ -91,7 +91,7 @@ pub fn field_access(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 }
 
 /// `superclass` — `class Foo extends Bar` (Java allows only one).
-/// Renames to `<extends>` and adds `field="extends"` for JSON-array
+/// Renames to `<extends>` and adds `list="extends"` for JSON-array
 /// consistency (Principle #12 — field attribute on collapsed-list
 /// children, even single).
 pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -102,7 +102,7 @@ pub fn superclass(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 }
 
 /// `throws_clause` — `throws E1, E2, E3`. Wrap each thrown type in
-/// its own `<throws>` element with `field="throws"` (Principle #18
+/// its own `<throws>` element with `list="throws"` (Principle #18
 /// — name after operator; Principle #12 — multiple siblings, not
 /// list wrapper, with field attribute for JSON array recovery).
 pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -372,7 +372,7 @@ pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 
 /// `generic_type` — apply the cross-language pattern:
 ///   `generic_type(<type_identifier>Foo</type_identifier>, type_arguments)`
-///     → `<type><generic/>Foo <type field="arguments">Bar</type>...</type>`
+///     → `<type><generic/>Foo <type list="arguments">Bar</type>...</type>`
 pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;
     Ok(TransformAction::Continue)

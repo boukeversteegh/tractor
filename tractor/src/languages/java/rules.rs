@@ -137,7 +137,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         // Drops the literal `implements` keyword text leaf.
         JavaKind::SuperInterfaces             => Custom(transformations::super_interfaces),
         // `class Foo extends Bar` — Java allows only one parent class.
-        // Wrap in `<extends field="extends">` for JSON-array
+        // Wrap in `<extends list="extends">` for JSON-array
         // consistency (Principle #12).
         JavaKind::Superclass                  => Custom(transformations::superclass),
         // `switch_expression.body` field already wraps this in <body>;

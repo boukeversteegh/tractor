@@ -221,7 +221,7 @@ pub fn asserts_annotation(
 }
 
 /// `formal_parameters` — wrap bare identifier params (JS shape) in
-/// `<param>`, distribute `field="parameters"` to children, then
+/// `<param>`, distribute `list="parameters"` to children, then
 /// flatten so each parameter becomes a direct sibling of the function.
 pub fn formal_parameters(
     xot: &mut Xot,
@@ -281,7 +281,7 @@ pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// Tree-sitter wraps the `extends` keyword + bound type. Strip the
 /// keyword text (the element name carries the meaning), rename to
 /// `<extends>` per Principle #18 (name after operator), and add
-/// `field="extends" list="true"` to match the cross-language
+/// `list="extends"` to match the cross-language
 /// relationship shape (Java type_bound, Rust trait_bounds).
 pub fn constraint(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     for child in xot.children(node).collect::<Vec<_>>() {
@@ -309,7 +309,7 @@ pub fn constraint(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 ///
 /// After the synthetic wrap, retag the `<value>` field-wrapper (used
 /// for non-generic forms) as `<type>` for the uniform namespace
-/// vocabulary, then add `field="extends"` and `list="true"` for JSON
+/// vocabulary, then add `list="extends"` and `list="true"` for JSON
 /// array consistency.
 pub fn extends_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     synthesize_generic_type_in_extends(xot, node)?;
@@ -364,7 +364,7 @@ fn synthesize_generic_type_in_extends(
 
 /// `extends_type_clause` — `interface I extends A, B, C`. Multiple
 /// targets allowed; produce flat `<extends>` siblings (Principle
-/// #12 + #18) with `field="extends"`.
+/// #12 + #18) with `list="extends"`.
 pub fn extends_type_clause(
     xot: &mut Xot,
     node: XotNode,
@@ -384,7 +384,7 @@ pub fn extends_type_clause(
 }
 
 /// `implements_clause` — `class Foo implements A, B, C`. Multiple
-/// `<implements>` siblings with `field="implements"`.
+/// `<implements>` siblings with `list="implements"`.
 pub fn implements_clause(
     xot: &mut Xot,
     node: XotNode,
@@ -435,7 +435,7 @@ pub fn ternary_expression(
 }
 
 /// `generic_type` — rewrite `Promise<T>` as
-///   `<type><generic/>Promise<type field="arguments">T</type></type>`
+///   `<type><generic/>Promise<type list="arguments">T</type></type>`
 /// matching the cross-language pattern.
 pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     rewrite_generic_type(xot, node, &["type_identifier", "identifier"])?;

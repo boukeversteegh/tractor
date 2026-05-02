@@ -206,7 +206,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // (no keyword in source). Per Principle #18, name after the
         // most cross-language idiomatic operator: `<extends>`.
         // Always single (Ruby has single inheritance), but adds
-        // `field="extends"` for JSON-array consistency
+        // `list="extends"` for JSON-array consistency
         // (Principle #12).
         RubyKind::Superclass => Custom(transformations::superclass),
 

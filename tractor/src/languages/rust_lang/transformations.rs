@@ -187,7 +187,7 @@ pub fn match_pattern(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 }
 
 /// `generic_type` — rewrite `Vec<T>` as
-///   `<type><generic/>Vec<type field="arguments">T</type></type>`
+///   `<type><generic/>Vec<type list="arguments">T</type></type>`
 /// matching the cross-language pattern.
 pub fn generic_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;

@@ -186,15 +186,14 @@ member-access receiver). But several transform sites still
 
 ### Stale doc-comment sweep — round 2
 
-- [ ] **iter 149 + iter 154 swept many `field="X" list="true"` doc
-  references but missed several alternate phrasings.**
-  - **Action**: run `grep -rn 'field="extends"\|field="implements"\|field="parameters"\|field="arguments"\|field="generics"\|field="throws"\|field="underlying"' tractor/src/languages/ specs/`
-    and update each prose reference to the modern `list="X"` form.
-  - **Skip when**: the `field="..."` is in code reading a tree-sitter
-    input attribute (e.g. `get_attr(child, "field") == Some("object")`).
-    Those are legit input-side reads — keep them.
-  - **Effort**: 15-30 minutes.
-  - **Source**: iters 149-153 review.
+- [x] **Stale doc-comment sweep round 2** — closed iter 159. Bulk
+  sed across 8+ files: `<extends field="extends">` →
+  `<extends list="extends">`, `<type field="arguments">` →
+  `<type list="arguments">`, removed dead `field="underlying"`
+  references from PHP rules + transformations (the underlying
+  marker is just `[underlying]` now, no field= companion). Tree-
+  sitter input field= reads (e.g. `get_attr(child, "field") ==
+  Some("object")` for member-access dispatch) preserved as-is.
 
 ### Single-segment paths render as 1-element arrays
 

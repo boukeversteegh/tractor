@@ -143,7 +143,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::ArrayCreationExpression   => Rename(Array),
         PhpKind::Attribute                 => Rename(Attribute),
         // `class Foo extends Bar` — PHP allows only one parent class.
-        // Wrap in `<extends field="extends">` so JSON serializers
+        // Wrap in `<extends list="extends">` so JSON serializers
         // produce a uniform `extends: [...]` array regardless of
         // single/multi (Principle #12 — field attribute on
         // collapsed-list children).
@@ -171,9 +171,9 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::EnumCase                  => Rename(Constant),
         // `enum Status: string { ... }` — backed enum. The `: string`
         // declares the underlying integral storage type (PHP enums
-        // can't inherit). Mark the type child with `[underlying]` +
-        // `field="underlying"` so cross-language `//enum/type[underlying]`
-        // queries work uniformly with C# (iter 125).
+        // can't inherit). Mark the type child with `[underlying]` so
+        // cross-language `//enum/type[underlying]` queries work
+        // uniformly with C# (iter 125).
         PhpKind::EnumDeclaration           => Custom(transformations::enum_declaration),
         PhpKind::ExitStatement             => Rename(Exit),
         PhpKind::FinallyClause             => Rename(Finally),

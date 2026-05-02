@@ -65,7 +65,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
 
         // `[T any, U comparable]` — generic parameter list. Per
         // Principle #12 (no list containers): flatten with
-        // `field="generics"` distribution so each parameter becomes
+        // `list="generics"` distribution so each parameter becomes
         // a flat `<generic>` sibling of the enclosing declaration.
         // Matches Java / Rust / TS shape.
         GoKind::TypeParameterList        => Flatten { distribute_list: Some("generics") },

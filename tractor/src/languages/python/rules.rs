@@ -51,7 +51,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         // Context-aware argument_list: positional args inside a
         // class's superclasses become `<base>` siblings (Principle
         // #12 — no list container). Other contexts (regular calls)
-        // distribute `field="arguments"` and flatten as before.
+        // distribute `list="arguments"` and flatten as before.
         PyKind::ArgumentList  => Custom(transformations::argument_list),
         PyKind::Parameters    => Custom(transformations::parameters),
         // `type_parameter` serves DOUBLE DUTY in tree-sitter Python:

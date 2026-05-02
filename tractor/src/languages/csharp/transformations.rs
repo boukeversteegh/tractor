@@ -40,7 +40,7 @@ use super::output::TractorNode::{
 ///    (`enum Color : uint`). C# enums cannot inherit; this is *not*
 ///    a parent-type relationship. Naming it `<extends>` would
 ///    pollute `//enum/extends/type` queries with a non-inheritance
-///    construct, so we use `<type[underlying] field="underlying">`
+///    construct, so we use `<type[underlying]>`
 ///    instead — a distinct slot that surfaces `//enum/type[underlying]`
 ///    as the canonical query.
 pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

@@ -28,10 +28,10 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 
 /// `enum_declaration` — `enum Status: string { ... }` (backed enum).
 /// Tree-sitter emits the storage type as a `primitive_type` child of
-/// the enum_declaration. Tag it with `[underlying]` + `field="underlying"`
-/// so cross-language `//enum/type[underlying]` works uniformly with C#
-/// (iter 125). Plain (non-backed) enums have no primitive_type child
-/// and are unaffected.
+/// the enum_declaration. Tag it with `[underlying]` so cross-language
+/// `//enum/type[underlying]` works uniformly with C# (iter 125).
+/// Plain (non-backed) enums have no primitive_type child and are
+/// unaffected.
 pub fn enum_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Underlying;
     let elem_children: Vec<XotNode> = xot.children(node)
@@ -225,7 +225,7 @@ pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 }
 
 /// `base_clause` — `class Foo extends Bar` (PHP allows only one).
-/// Renames to `<extends>` and adds `field="extends"` so JSON output
+/// Renames to `<extends>` and adds `list="extends"` so JSON output
 /// is consistently an array regardless of count.
 pub fn base_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     use super::output::TractorNode::Extends;
@@ -236,7 +236,7 @@ pub fn base_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
 
 /// `class_interface_clause` — `implements A, B, C`. Wrap each
 /// interface name in its own `<implements>` sibling with
-/// `field="implements"` so JSON serializers reconstruct as an
+/// `list="implements"` so JSON serializers reconstruct as an
 /// `implements` array (Principle #12 — flat siblings + field attr).
 pub fn class_interface_clause(
     xot: &mut Xot,

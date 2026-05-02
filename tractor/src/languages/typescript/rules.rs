@@ -208,7 +208,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // `<T, U>` generic parameter list. Per Principle #12 (no list
         // containers): flatten the wrapper so each `<generic>` becomes
         // a direct sibling of the enclosing declaration with
-        // `field="generics" list="true"` for JSON-array recovery.
+        // `list="generics"` for JSON-array recovery.
         // Matches Java / Rust shape.
         TsKind::TypeParameters            => Flatten { distribute_list: Some("generics") },
         TsKind::TypePredicate             => Rename(Predicate),
@@ -272,7 +272,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // `<T extends Shape>` — generic constraint. Per Principle #18,
         // name the relationship after the source keyword. TS source
         // uses `extends`, so the element becomes `<extends>` matching
-        // Java/Rust shape, with `field="extends" list="true"` for
+        // Java/Rust shape, with `list="extends"` for
         // JSON-array consistency.
         TsKind::Constraint                => Custom(transformations::constraint),
 
