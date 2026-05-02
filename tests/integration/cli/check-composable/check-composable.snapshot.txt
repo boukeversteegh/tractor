@@ -19,6 +19,6 @@ class[public]/
       ├─ method[public]/
       │   └─ ... (22 children)
       └─ method[public]/
-          └─ ... (7 children)
+          └─ ... (5 children)
 error: class found
 2 errors in 1 file

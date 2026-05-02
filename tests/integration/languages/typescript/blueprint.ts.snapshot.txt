@@ -132,10 +132,9 @@ program/
   │       │   ├─ parameter[required and public]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   ├─ parameter[optional and readonly and private]/
-  │       │   │   ├─ name = "seed"
-  │       │   │   └─ type/name = "number"
-  │       │   └─ body/block = "{}"
+  │       │   └─ parameter[optional and readonly and private]/
+  │       │       ├─ name = "seed"
+  │       │       └─ type/name = "number"
   │       ├─ method[abstract and public]/
   │       │   ├─ name = "render"
   │       │   └─ returns/type/name = "string"

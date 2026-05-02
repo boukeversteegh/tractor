@@ -260,6 +260,11 @@ pub fn strip_body_braces(
         }
     }
     collect(xot, root, body_names, &mut bodies);
+    // Reverse document order so children are processed before
+    // parents — that way, when `<body>` contains `<block>` and the
+    // block strips to empty, the body sees an empty child set and
+    // detaches itself.
+    bodies.reverse();
     for body in bodies {
         // Build a set of element-child names — any text content that
         // exactly matches a sibling marker name is a keyword leak and

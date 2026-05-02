@@ -344,10 +344,7 @@
                 "name": "void"
               }
             },
-            "name": "Reset",
-            "body": {
-              "block": "{ }"
-            }
+            "name": "Reset"
           }
         ]
       }

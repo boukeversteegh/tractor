@@ -245,8 +245,7 @@ unit/
   │   │       │   └─ declarator/name = "Changed"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
-  │   │       │   ├─ chain[this]/argument/int = "0"
-  │   │       │   └─ body/block = "{ }"
+  │   │       │   └─ chain[this]/argument/int = "0"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   ├─ parameter/
@@ -285,8 +284,7 @@ unit/
   │   │       │   └─ declarator/name = "Added"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
-  │   │       │   ├─ chain[base]/argument/int = "0"
-  │   │       │   └─ body/block = "{ }"
+  │   │       │   └─ chain[base]/argument/int = "0"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
   │   │       │   ├─ parameter/
@@ -610,14 +608,12 @@ unit/
   │               │   └─ declarator/
   │               │       ├─ name = "j"
   │               │       └─ int = "0"
-  │               ├─ while/
-  │               │   ├─ condition/expression/binary/
-  │               │   │   ├─ left/expression/unary/
-  │               │   │   │   ├─ name = "j"
-  │               │   │   │   └─ op[increment] = "++"
-  │               │   │   ├─ op/compare[less]
-  │               │   │   └─ right/expression/int = "2"
-  │               │   └─ body/block = "{ }"
+  │               ├─ while/condition/expression/binary/
+  │               │   ├─ left/expression/unary/
+  │               │   │   ├─ name = "j"
+  │               │   │   └─ op[increment] = "++"
+  │               │   ├─ op/compare[less]
+  │               │   └─ right/expression/int = "2"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
   │               │   └─ declarator/
@@ -687,9 +683,7 @@ unit/
   │               │   │           └─ name = "Message"
   │               │   ├─ catch/
   │               │   │   ├─ declaration/type/name = "Exception"
-  │               │   │   └─ body/block[throw]/
-  │               │   │       ├─ "{ throw"
-  │               │   │       └─ "}"
+  │               │   │   └─ body/block[throw]
   │               │   └─ finally/block/expression/call/member[instance]/
   │               │       ├─ name = "scope"
   │               │       └─ name = "Flush"

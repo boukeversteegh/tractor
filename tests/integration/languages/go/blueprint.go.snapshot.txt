@@ -490,9 +490,7 @@ file/
           │       │   ├─ left/expression/name = "i"
           │       │   ├─ op[equals] = "=="
           │       │   └─ right/expression/int = "5"
-          │       └─ then[continue]/
-          │           ├─ "{\n\t\t\tcontinue"
-          │           └─ "}"
+          │       └─ then[continue]
           ├─ for/
           │   ├─ range/
           │   │   ├─ left/expression/name = "i"

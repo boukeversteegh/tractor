@@ -15,7 +15,7 @@ unit/                                                                           
       ├─ "public class"                                                                      ┤  9 ├ public class Greeter
       ├─ name = "Greeter"                                                                    ┤    │ 
       └─ body/                                                                               ┤    │ 
-          └─ ... (54 children)                                                               ┤    │ 
+          └─ ... (52 children)                                                               ┤    │ 
                                                                                              │ 10 ├ {
                                                                                              │ 11 ├     public string Hello(string name) { return "Hello, " + name; }
                                                                                              │ 12 ├     public string Goodbye(string name) { return "Goodbye, " + name; }

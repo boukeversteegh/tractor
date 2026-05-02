@@ -12,4 +12,4 @@ class[@kind="class_declaration" and @line="9" and @column="1" and @end_line="14"
   ├─ "public class"
   ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21" and @field="name"] = "Greeter"
   └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2" and @field="body"]/
-      └─ ... (54 children)
+      └─ ... (52 children)
