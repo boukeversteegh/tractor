@@ -10,8 +10,55 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
 use super::output::TractorNode::{
-    self, Call, Comment as CommentName, Leading, Name, Optional, Parameter, Trailing,
+    self, Block as RubyBlock, Call, Comment as CommentName, Do, Leading, Name, Optional, Parameter,
+    Trailing,
 };
+
+/// `block` (`{ |x| ... }`) and `do_block` (`do |x| ... end`) — both
+/// are call-attached closures in Ruby. Re-tag the `<body>` wrapper
+/// to `<value>` for single-statement bodies so cross-language
+/// `//block/value/expression/...` works (Principle #15; mirrors iter
+/// 161/162/167/168 closure archetype).
+///
+/// Multi-statement bodies keep `<body>` so per-statement `list=`
+/// distribution remains visible (multiple peer children with
+/// `list="expression"` etc.). The discriminator: a single element
+/// child under `<body>` whose kind isn't itself a `block` →
+/// re-tag; otherwise keep.
+fn retag_single_stmt_body_as_value(xot: &mut Xot, node: XotNode) {
+    let body_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+    let body = match body_child { Some(b) => b, None => return };
+    let elem_children: Vec<XotNode> = xot.children(body)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    if elem_children.len() != 1 { return; }
+    let inner_kind = get_kind(xot, elem_children[0]);
+    // Skip if the inner element is a nested closure (the lambda case
+    // with a doubled body wrapper). `block_body` / `body_statement`
+    // are just statement-list intermediates that flatten away later
+    // in the walk; treating them as "single-statement" is correct.
+    if matches!(inner_kind.as_deref(), Some("block" | "do_block")) {
+        return;
+    }
+    let value_id = xot.add_name("value");
+    if let Some(elem) = xot.element_mut(body) {
+        elem.set_name(value_id);
+    }
+}
+
+pub fn block(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    retag_single_stmt_body_as_value(xot, node);
+    Ok(TransformAction::Continue)
+}
+
+pub fn do_block(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    retag_single_stmt_body_as_value(xot, node);
+    xot.with_renamed(node, RubyBlock)
+        .with_prepended_marker(node, Do)?;
+    Ok(TransformAction::Continue)
+}
 
 /// `call` — `obj.method(...)` or `obj&.method(...)` (safe-navigation).
 /// Tree-sitter Ruby uses ONE kind for both; the only difference is

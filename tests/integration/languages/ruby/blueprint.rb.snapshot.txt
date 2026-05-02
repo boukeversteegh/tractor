@@ -176,7 +176,7 @@ program/
   │               │       │   └─ block/
   │               │       │       ├─ parameter[@list="parameters"]/name = "it"
   │               │       │       ├─ parameter[@list="parameters"]/name = "i"
-  │               │       │       └─ body/expression[@list="expression"]/string/
+  │               │       │       └─ value/expression/string/
   │               │       │           ├─ interpolation/name = "i"
   │               │       │           └─ interpolation/name = "it"
   │               │       ├─ op[plus] = "+"
@@ -276,7 +276,7 @@ program/
   │       │   ├─ name = "each"
   │       │   └─ block[do]/
   │       │       ├─ parameter[@list="parameters"]/name = "x"
-  │       │       └─ body/if[@list="if"]/
+  │       │       └─ value/expression/if/
   │       │           ├─ condition/expression/call/
   │       │           │   ├─ name = "x"
   │       │           │   └─ name = "nil?"
@@ -323,7 +323,7 @@ program/
   │       │       └─ right/expression/name = "j"
   │       ├─ expression[@list="expression"]/call/
   │       │   ├─ name = "loop"
-  │       │   └─ block/body[break]
+  │       │   └─ block/value/expression[break]
   │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/name = "result"
   │       │   └─ right/expression/begin/
@@ -363,7 +363,7 @@ program/
   │       │   └─ right/expression/lambda/
   │       │       ├─ parameter[@list="parameters"]/name = "a"
   │       │       ├─ parameter[@list="parameters"]/name = "b"
-  │       │       └─ body/block[@list="block"]/body/expression[@list="expression"]/binary/
+  │       │       └─ body/block[@list="block"]/value/expression/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
@@ -373,7 +373,7 @@ program/
   │       │       ├─ name = "proc"
   │       │       └─ block/
   │       │           ├─ parameter[@list="parameters"]/name = "n"
-  │       │           └─ body/expression[@list="expression"]/binary/
+  │       │           └─ value/expression/binary/
   │       │               ├─ left/expression/name = "n"
   │       │               ├─ op[multiply] = "*"
   │       │               └─ right/expression/int = "2"

@@ -222,21 +222,32 @@ member-access receiver). But several transform sites still
   - **Effort**: 1 iter per language (~7 iters total) once decided.
   - **Source**: long-pending; flagged in multiple cycles.
 
-### Closure/arrow/lambda body unification — round 2 (Ruby remaining)
+### Closure/arrow/lambda body unification — round 2 (Ruby — Lambda outer body remaining)
 
-C# closed iter 167; PHP closed iter 168.
+C# closed iter 167; PHP closed iter 168; Ruby Block/DoBlock closed iter 169.
 
-- [ ] **Ruby lambda body unification** —
-  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:363-369`.
-  Current: `lambda/.../body/block[@list="block"]/body/expression[@list="expression"]/...`
-  (doubled `body` shape — extra peel needed). Ruby blocks/lambdas
-  may have multiple statements as well as single-expression
-  semantics; needs careful handling. Effort: medium. Likely needs a
-  subagent design review since the doubled-body shape is
-  Ruby-specific.
+- [ ] **Ruby Lambda outer-body shell** — iter 169 fixed all
+  `<block>` and `<do_block>` body wrappers (call-attached closures
+  now produce `block/value/expression/...`) and partially fixed
+  Lambda (the inner block's body re-tagged). Lambda still has
+  doubled-body residue: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:366`
+  shows `lambda/.../body/block[@list="block"]/value/expression/binary/...`.
+  - **Concrete site**: `adder = ->(a, b) { a + b }`.
+  - **Current**: `lambda/parameter/parameter/body/block[@list="block"]/value/expression/binary/...`.
+  - **Expected**: `lambda/parameter/parameter/value/expression/binary/...`
+    (peel the inner `<block>` shell + re-tag outer body).
+  - **Implementation**: custom handler for `RubyKind::Lambda` that
+    flattens the inner `<block>` shell (lifting its element children
+    into the outer `<body>`), then re-tags `<body>` as `<value>`.
+  - **Effort**: 1 iter. Subagent investigation already done — see
+    iters 169/170 review thread.
+  - **Source**: post-cycle review of iters 161-164 + iter 169 partial fix.
 
 - [x] C# lambda body unification — closed iter 167.
 - [x] PHP arrow function body unification — closed iter 168.
+- [x] Ruby Block/DoBlock body unification — closed iter 169 (partial:
+  call-attached closures fully fixed; Lambda's inner block also
+  fixed; Lambda's outer body shell still pending — see above).
 
 ### TS arrow block-body fixture missing
 
@@ -277,6 +288,15 @@ C# closed iter 167; PHP closed iter 168.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 169: Ruby Block + DoBlock body re-tag — call-attached
+  closures (`each {}`, `proc {}`, `each do...end`, `loop {}`, etc.)
+  now produce `block/value/expression/...` matching the
+  iter-161-168 archetype. Custom handler with discriminator that
+  skips early-return on `block_body`/`body_statement`
+  intermediates (those flatten away later in the walk) and only
+  bails on real nested closures (`block`/`do_block`). Lambda's
+  inner block also benefits (partial fix; outer body shell still
+  needs iter 170).
 - [x] iter 168: PHP arrow function body unification — single-expr
   arrow `fn(...) => expr` retags `<body>` as `<value>` (matches
   C#/Rust/TS/Python archetype). PHP arrow is syntactically always
