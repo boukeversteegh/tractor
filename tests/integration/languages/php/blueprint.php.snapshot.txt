@@ -561,9 +561,9 @@ program/
   └─ echo/binary/
       ├─ left/expression/binary/
       │   ├─ left/expression/string = "\"result: \""
-      │   ├─ op = "."
+      │   ├─ op[concat] = "."
       │   └─ right/expression/call/
       │       ├─ variable/name = "closure"
       │       └─ argument/int = "5"
-      ├─ op = "."
+      ├─ op[concat] = "."
       └─ right/expression/string = "\"\\n\""

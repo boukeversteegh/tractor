@@ -215,6 +215,10 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     // Java/C# source: `instanceof` / `is`, Ruby `is_a?`/`kind_of?`
     // are method-style — only the keyword form is in this table).
     OperatorSpec { text: "instanceof", primary: Some("instanceof"), children: &[], nested: None },
+    // PHP string concatenation. Compound form `.=` extracts via the
+    // generic assign rule so name `concat` here mirrors the family.
+    OperatorSpec { text: ".",  primary: Some("concat"), children: &[],            nested: None },
+    OperatorSpec { text: ".=", primary: Some("assign"), children: &["concat"],    nested: None },
     // Go channel receive (binary form is a separate `<send>` shape)
     OperatorSpec { text: "<-", primary: Some("receive"), children: &[], nested: None },
     // Unary prefix / postfix
