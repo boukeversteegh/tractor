@@ -41,6 +41,29 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `method_invocation` — `obj.method(args)`. Wrap the receiver in
+/// `<object>` so the receiver's `<name>` and the method's `<name>`
+/// don't collide on element name. Method name stays as a bare
+/// `<name>` (canonical singleton property of any call/declaration).
+pub fn method_invocation(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Object;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_attr(xot, child, "field").as_deref() != Some("object") {
+            continue;
+        }
+        let wrapper_id = xot.add_name(Object.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+        break;
+    }
+    xot.with_renamed(node, Call);
+    Ok(TransformAction::Continue)
+}
+
 /// `field_access` — `obj.field`. Wraps the object identifier and the
 /// accessed-field identifier in role-named containers (`<object>` /
 /// `<property>`) so the two `<name>` siblings under `<member>` no

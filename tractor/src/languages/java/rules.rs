@@ -116,7 +116,11 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::LambdaExpression            => Rename(Lambda),
         JavaKind::LocalVariableDeclaration    => Rename(Variable),
         JavaKind::MarkerAnnotation            => Rename(Annotation),
-        JavaKind::MethodInvocation            => Rename(Call),
+        // `obj.method(args)` — receiver and method-name play different
+        // roles. Wrap the receiver in `<object>`; the method-name
+        // stays as `<name>` (the canonical singleton property of any
+        // declaration / call). Per Principle #19 (iter 147).
+        JavaKind::MethodInvocation            => Custom(transformations::method_invocation),
         JavaKind::NullLiteral                 => Rename(Null),
         JavaKind::ObjectCreationExpression    => Rename(New),
         JavaKind::OctalIntegerLiteral         => Rename(Int),

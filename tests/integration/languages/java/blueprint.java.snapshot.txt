@@ -97,7 +97,7 @@ program/
   │       │   │   │   └─ type[@list="arguments"]/name = "R"
   │       │   │   └─ name = "mapper"
   │       │   └─ body/return[@list="return"]/expression/call/
-  │       │       ├─ name = "mapper"
+  │       │       ├─ object/name = "mapper"
   │       │       ├─ name = "apply"
   │       │       └─ string[@list="arguments"] = "\"hello\""
   │       ├─ method[public and synchronized and @list="method"]/
@@ -204,7 +204,7 @@ program/
   │       │           │   │   └─ guard/unary/
   │       │           │   │       ├─ op[logical and not] = "!"
   │       │           │   │       └─ call/
-  │       │           │   │           ├─ name = "s"
+  │       │           │   │           ├─ object/name = "s"
   │       │           │   │           └─ name = "isEmpty"
   │       │           │   └─ expression/binary/
   │       │           │       ├─ left/expression/string = "\"non-empty: \""
@@ -272,11 +272,11 @@ program/
   │       ├─ returns/type/name = "String"
   │       ├─ name = "greet"
   │       └─ body/return[@list="return"]/expression/call/
-  │           ├─ name = "String"
+  │           ├─ object/name = "String"
   │           ├─ name = "format"
   │           ├─ string[@list="arguments"] = "\"hello from %s\""
   │           └─ call[@list="arguments"]/
-  │               ├─ call/name = "getClass"
+  │               ├─ object/call/name = "getClass"
   │               └─ name = "getSimpleName"
   ├─ comment[@list="comment"] = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
   ├─ comment[leading and @list="comment"] = "/** @interface (annotation type) with a constant. */"
