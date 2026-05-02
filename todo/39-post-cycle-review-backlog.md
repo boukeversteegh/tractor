@@ -222,6 +222,59 @@ member-access receiver). But several transform sites still
   - **Effort**: 1 iter per language (~7 iters total) once decided.
   - **Source**: long-pending; flagged in multiple cycles.
 
+### Closure/arrow/lambda body unification — round 2 (C#, PHP, Ruby)
+
+- [ ] **Extend iter 161/162 archetype to C#, PHP, Ruby** — Rust
+  closure / TS arrow / Python lambda all now produce
+  `value/expression/<kind>/...` for single-expression bodies, but
+  C#, PHP, and Ruby still emit `body/<kind>[@list="<kind>"]/...`.
+  - **Concrete sites**:
+    - C# `lambda` single-expr body: `tests/integration/languages/csharp/blueprint.cs.snapshot.txt:536-538`
+      (also :546, :573, :588). Current: `lambda/.../body/binary[@list="binary"]/...`.
+    - PHP `function[arrow]` single-expr body:
+      `tests/integration/languages/php/blueprint.php.snapshot.txt:296`.
+      Current: `function[arrow]/.../body/binary[@list="binary"]/...`.
+    - Ruby `lambda`: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:363-369`.
+      Current: `lambda/.../body/block[@list="block"]/body/expression[@list="expression"]/...`
+      (doubled `body` shape — extra peel needed).
+  - **Expected**: `value/expression/<kind>/...`, matching iter 161/162.
+  - **Effort**: 1 iter per language (3 iters total). The Ruby case
+    needs an extra peel step for the doubled body wrapper.
+  - **Source**: post-cycle review of iters 161-164.
+
+### TS arrow block-body fixture missing
+
+- [ ] **Add a block-bodied TS arrow to the blueprint** — iter 162
+  added an `is_block` discriminator at
+  `tractor/src/languages/typescript/transformations.rs:533-541`
+  (matches `"statement_block" | "block" | "block_statement"`) but
+  no TS blueprint covers the block-body branch.
+  - **Action**: append a line like `const f = (x) => { return x*2; };`
+    to `tests/integration/languages/typescript/blueprint.ts`,
+    regenerate snapshot, confirm `<body>` is preserved (not retagged
+    to `<value>`).
+  - **Effort**: small (5 minutes).
+  - **Source**: post-cycle review iter 161-164. Per Lessons §"Skipping
+    fixtures hides regressions".
+
+### Stale doc-comment sweep round 3
+
+- [x] **Three doc-comment sites updated** — closed iter 165.
+  `apply_field_wrappings` doc, `replace_identifier_with_name_child`
+  doc, and `Rule::Flatten` doc all corrected to match post-iter-164
+  / post-iter-145 reality. Bonus: removed unused `Lambda` import in
+  `python/rules.rs` (orphaned by iter 162 closure work).
+
+### Ruby member-access role-wrap (fold into call-shape backlog)
+
+- [ ] **Ruby `obj.method(arg)` adds a 4th call-shape variant** —
+  flat `call[optional]/<name><name>...` at
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:554-557`.
+  Already-tracked Java method-call divergence backlog item lists
+  3 distinct shapes; Ruby is a 4th. Fold into that item when the
+  cross-language alignment design call is made. (severity: med;
+  effort: small once decided)
+
 ### Standing items (re-flag every cycle)
 
 - [ ] Snapshot cold-read pass every ~5 cycles — fresh eyes on every
@@ -234,6 +287,10 @@ member-access receiver). But several transform sites still
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 165: stale doc-comment sweep round 3 — `apply_field_wrappings`
+  + `replace_identifier_with_name_child` + `Rule::Flatten` docs aligned
+  to post-iter-164 / post-iter-145 reality; bonus dropped orphaned
+  `Lambda` import in `python/rules.rs`.
 - [x] iter 164: drop dead `field=` writes from three transform/mod.rs
   helpers (`promote_field_to_wrapper` deleted entirely;
   `replace_identifier_with_name_child` + `wrap_text_in_name`

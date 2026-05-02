@@ -14,7 +14,7 @@ use super::output::TractorNode::{
     self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
     ElseIf, Escape, Except, Exec, False, Finally, Float, Format, From, Future,
-    Args, Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwargs, Lambda, List,
+    Args, Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwargs, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
     Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
     Union, While, Wildcard, Yield, None as PyNone,

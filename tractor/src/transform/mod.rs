@@ -99,9 +99,9 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
 /// `<returns>`). `wrappings` is a slice of `(tree_sitter_field,
 /// wrapper_element_name)` pairs; elements with `field=X` matching a
 /// pair are moved inside a new `<Y>` wrapper that inherits the element's
-/// source location and carries `field="Y"` itself. The inner element's
-/// `field` attribute is rewritten to its own local-name so the JSON
-/// serializer can reach it as a property of the wrapper.
+/// source location. The wrapper's *element name* is the JSON key
+/// (Principle #19); no `field=` is written on the wrapper or the inner
+/// element by this pass.
 pub fn apply_field_wrappings(
     xot: &mut Xot,
     root: XotNode,
@@ -1168,8 +1168,8 @@ pub mod helpers {
     }
 
     /// Replace the first child of `parent` whose tree-sitter `kind`
-    /// matches one of `kinds` with a `<name field="name">TEXT</name>`
-    /// element holding that child's text. Siblings are untouched.
+    /// matches one of `kinds` with a `<name>TEXT</name>` element
+    /// holding that child's text. Siblings are untouched.
     ///
     /// Used to normalise the declared name of a generic-parameter-like
     /// construct (`type_parameter` in Java / TS / Rust) where the

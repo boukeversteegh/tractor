@@ -51,9 +51,9 @@ pub enum Rule<N> {
     /// preserved.
     RenameStripKeyword(N, &'static str),
     /// Drop the wrapper, promote children to siblings. If
-    /// `distribute_list` is `Some`, set `field=<name>` on every child
+    /// `distribute_list` is `Some`, set `list=<name>` on every child
     /// before flattening (so the children are still grouped under a
-    /// uniform field).
+    /// uniform list slot per Principle #19).
     Flatten {
         distribute_list: Option<&'static str>,
     },
