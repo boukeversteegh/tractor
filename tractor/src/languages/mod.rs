@@ -1123,6 +1123,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     python_restructure_imports(xot, root)?;
+    crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
@@ -1375,6 +1376,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     java_unwrap_type_in_path(xot, root)?;
+    crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(
         xot, root,
         &["body", "block", "then", "else", "call"],

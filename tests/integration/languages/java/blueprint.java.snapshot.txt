@@ -1,34 +1,27 @@
 program/
   ├─ comment[@list="comment"] = "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot."
   ├─ package[@list="package"]/path/
-  │   ├─ path/
-  │   │   ├─ name = "com"
-  │   │   └─ name = "example"
-  │   └─ name = "blueprint"
+  │   ├─ name[@list="name"] = "com"
+  │   ├─ name[@list="name"] = "example"
+  │   └─ name[@list="name"] = "blueprint"
   ├─ import[@list="import"]/path/
-  │   ├─ path/
-  │   │   ├─ name = "java"
-  │   │   └─ name = "util"
-  │   └─ name = "List"
+  │   ├─ name[@list="name"] = "java"
+  │   ├─ name[@list="name"] = "util"
+  │   └─ name[@list="name"] = "List"
   ├─ import[@list="import"]/path/
-  │   ├─ path/
-  │   │   ├─ name = "java"
-  │   │   └─ name = "util"
-  │   └─ name = "Map"
+  │   ├─ name[@list="name"] = "java"
+  │   ├─ name[@list="name"] = "util"
+  │   └─ name[@list="name"] = "Map"
   ├─ import[@list="import"]/path/
-  │   ├─ path/
-  │   │   ├─ path/
-  │   │   │   ├─ name = "java"
-  │   │   │   └─ name = "util"
-  │   │   └─ name = "function"
-  │   └─ name = "Function"
+  │   ├─ name[@list="name"] = "java"
+  │   ├─ name[@list="name"] = "util"
+  │   ├─ name[@list="name"] = "function"
+  │   └─ name[@list="name"] = "Function"
   ├─ import[static and @list="import"]/path/
-  │   ├─ path/
-  │   │   ├─ path/
-  │   │   │   ├─ name = "java"
-  │   │   │   └─ name = "util"
-  │   │   └─ name = "Collections"
-  │   └─ name = "emptyList"
+  │   ├─ name[@list="name"] = "java"
+  │   ├─ name[@list="name"] = "util"
+  │   ├─ name[@list="name"] = "Collections"
+  │   └─ name[@list="name"] = "emptyList"
   ├─ comment[leading and @list="comment"] = "/** Javadoc comment on the class. */"
   ├─ class[public and final and @list="class"]/
   │   ├─ annotation/
@@ -415,10 +408,9 @@ program/
           │       ├─ try[resource and @list="try"]/
           │       │   ├─ variable/
           │       │   │   ├─ path/
-          │       │   │   │   ├─ path/
-          │       │   │   │   │   ├─ name = "java"
-          │       │   │   │   │   └─ name = "io"
-          │       │   │   │   └─ name = "InputStream"
+          │       │   │   │   ├─ name[@list="name"] = "java"
+          │       │   │   │   ├─ name[@list="name"] = "io"
+          │       │   │   │   └─ name[@list="name"] = "InputStream"
           │       │   │   ├─ name = "s"
           │       │   │   └─ value/expression/null = "null"
           │       │   ├─ body/if[@list="if"]/
@@ -427,17 +419,15 @@ program/
           │       │   │   │   ├─ op[equals] = "=="
           │       │   │   │   └─ right/expression/null = "null"
           │       │   │   └─ then/throw/new/path/
-          │       │   │       ├─ path/
-          │       │   │       │   ├─ name = "java"
-          │       │   │       │   └─ name = "io"
-          │       │   │       └─ name = "IOException"
+          │       │   │       ├─ name[@list="name"] = "java"
+          │       │   │       ├─ name[@list="name"] = "io"
+          │       │   │       └─ name[@list="name"] = "IOException"
           │       │   └─ catch/
           │       │       ├─ parameter/
           │       │       │   ├─ path/
-          │       │       │   │   ├─ path/
-          │       │       │   │   │   ├─ name = "java"
-          │       │       │   │   │   └─ name = "io"
-          │       │       │   │   └─ name = "IOException"
+          │       │       │   │   ├─ name[@list="name"] = "java"
+          │       │       │   │   ├─ name[@list="name"] = "io"
+          │       │       │   │   └─ name[@list="name"] = "IOException"
           │       │       │   ├─ type/name = "RuntimeException"
           │       │       │   └─ name = "e"
           │       │       └─ body/throw[@list="throw"]/name = "e"

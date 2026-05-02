@@ -106,13 +106,12 @@ fn java_import_and_package() {
         "#),
         1);
 
-    claim("Java import declaration renders as <import> with a nested-path target",
+    claim("Java import declaration renders as <import> with a flat-segment path",
         &mut tree,
         &multi_xpath(r#"
             //import/path
-                [path
-                    [name='java']
-                    [name='util']]
+                [name='java']
+                [name='util']
                 [name='List']
         "#),
         1);

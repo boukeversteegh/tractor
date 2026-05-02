@@ -68,13 +68,12 @@ fn csharp_member() {
 /// <path> wrapping a previous <path> plus the new <name> leaf.
 #[test]
 fn java_scoped_path() {
-    claim("Java import target keeps com.example.Foo as a nested path of names",
+    claim("Java import target flattens com.example.Foo into a single path of name segments",
         &mut parse_src("java", "import com.example.Foo;\n"),
         &multi_xpath(r#"
             //import/path
-                [path
-                    [name='com']
-                    [name='example']]
+                [name='com']
+                [name='example']
                 [name='Foo']
         "#),
         1);

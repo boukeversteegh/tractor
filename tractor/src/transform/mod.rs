@@ -286,6 +286,98 @@ pub fn wrap_relationship_targets_in_type(
     Ok(())
 }
 
+/// Flatten nested `<path>` elements: when a `<path>` contains another
+/// `<path>` as a direct child, lift the inner `<path>`'s children up
+/// into the outer one and detach the inner wrapper. Repeated until no
+/// nesting remains, so right-deep grammar shapes
+/// (`scoped_identifier(scoped_identifier(scoped_identifier(...)), name)`)
+/// collapse to a single `<path>` with flat `<name>` segments. Each
+/// `<name>` segment also gains `list="name"` so JSON renders the
+/// path as `path.name: ["com", "example", "foo"]` instead of the
+/// scalar-vs-children fallback.
+///
+/// Without this pass, dotted paths like `com.example.foo` render
+/// right-deep in XML and produce ugly JSON
+/// (`path.path.path.name` collisions). With it, every path is a flat
+/// list of segments — `//path/name[1]='com'`,
+/// `//path/name[last()]='foo'` work positionally.
+pub fn flatten_nested_paths(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use helpers::*;
+    let root = find_content_root(xot, root);
+    loop {
+        let mut targets: Vec<XotNode> = Vec::new();
+        fn collect(
+            xot: &Xot,
+            node: XotNode,
+            out: &mut Vec<XotNode>,
+        ) {
+            if xot.element(node).is_some()
+                && get_element_name(xot, node).as_deref() == Some("path")
+            {
+                let has_inner_path = xot.children(node).any(|c| {
+                    xot.element(c).is_some()
+                        && get_element_name(xot, c).as_deref() == Some("path")
+                });
+                if has_inner_path {
+                    out.push(node);
+                }
+            }
+            for c in xot.children(node) {
+                collect(xot, c, out);
+            }
+        }
+        collect(xot, root, &mut targets);
+        if targets.is_empty() {
+            break;
+        }
+        for outer in targets {
+            let inner_paths: Vec<XotNode> = xot.children(outer)
+                .filter(|&c| {
+                    xot.element(c).is_some()
+                        && get_element_name(xot, c).as_deref() == Some("path")
+                })
+                .collect();
+            for inner in inner_paths {
+                let inner_children: Vec<XotNode> = xot.children(inner).collect();
+                for child in inner_children {
+                    xot.detach(child)?;
+                    xot.insert_before(inner, child)?;
+                }
+                xot.detach(inner)?;
+            }
+        }
+    }
+    // Tag every `<name>` child of every `<path>` with `list="name"`
+    // so JSON renders the path as a list of segments rather than
+    // collapsing to scalar+children.
+    let mut all_paths: Vec<XotNode> = Vec::new();
+    fn collect_paths(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("path")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect_paths(xot, c, out);
+        }
+    }
+    collect_paths(xot, root, &mut all_paths);
+    for path in all_paths {
+        let name_children: Vec<XotNode> = xot.children(path)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("name")
+            })
+            .collect();
+        for name in name_children {
+            if get_attr(xot, name, "list").is_none() {
+                xot.with_attr(name, "list", "name");
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Distribute `list="<element-name>"` to every direct element child of
 /// every node whose element name is a statement-container (`body`,
 /// `block`, `unit`, `file`, `program`, `module`, etc.). The container's

@@ -1,23 +1,23 @@
 module/
   ├─ expression[@list="expression"]/string = "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
-  ├─ import[@list="import"]/path/name = "os"
+  ├─ import[@list="import"]/path/name[@list="name"] = "os"
   ├─ import[alias and @list="import"]/
-  │   ├─ path/name = "sys"
+  │   ├─ path/name[@list="name"] = "sys"
   │   └─ alias/name = "system"
   ├─ from[@list="from"]/
-  │   ├─ path/name = "collections"
+  │   ├─ path/name[@list="name"] = "collections"
   │   └─ import/name = "OrderedDict"
   ├─ from[@list="from"]/
-  │   ├─ path/name = "typing"
+  │   ├─ path/name[@list="name"] = "typing"
   │   ├─ import/name = "Optional"
   │   └─ import/name = "Union"
   ├─ from[@list="from"]/
-  │   ├─ path/name = "dataclasses"
+  │   ├─ path/name[@list="name"] = "dataclasses"
   │   ├─ import/name = "dataclass"
   │   └─ import/name = "field"
   ├─ from[relative and @list="from"]/import/name = "sibling"
   ├─ from[relative and @list="from"]/
-  │   ├─ path/name = "utils"
+  │   ├─ path/name[@list="name"] = "utils"
   │   └─ import[alias]/
   │       ├─ name = "helper"
   │       └─ alias/name = "h"
@@ -601,10 +601,10 @@ module/
   │       ├─ delete[@list="delete"]/name = "counter"
   │       └─ return[@list="return"]/expression/name = "inc"
   ├─ comment[leading and @list="comment"] = "# `from __future__ import …`; module-level so it parses as\n# future_import_statement (a separate kind from import_from_statement)."
-  ├─ import[future and @list="import"]/path/name = "annotations"
+  ├─ import[future and @list="import"]/path/name[@list="name"] = "annotations"
   ├─ comment[leading and @list="comment"] = "# Wildcard import (`from x import *`)."
   ├─ from[@list="from"]/
-  │   ├─ path/name = "os"
+  │   ├─ path/name[@list="name"] = "os"
   │   ├─ import/name = "path"
   │   └─ import[wildcard] = "*"
   ├─ comment[leading and @list="comment"] = "# Python 3.12 type-alias statement and PEP 695 generics with constraints,\n# member-types, and splat-types."
