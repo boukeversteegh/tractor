@@ -280,13 +280,13 @@ program/
   │       │           ├─ condition/expression/call/
   │       │           │   ├─ name = "x"
   │       │           │   └─ name = "nil?"
-  │       │           ├─ then[next] = "next"
+  │       │           ├─ then[next]
   │       │           ├─ else_if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "x"
   │       │           │   │   ├─ op[equals] = "=="
   │       │           │   │   └─ right/expression/symbol = ":stop"
-  │       │           │   └─ then[break] = "break"
+  │       │           │   └─ then[break]
   │       │           └─ else/
   │       │               ├─ assign/
   │       │               │   ├─ left/expression/name = "total"

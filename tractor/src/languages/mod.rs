@@ -1568,7 +1568,7 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         RUBY_VALUE_KINDS,
     )?;
     ruby_extract_pair_keys(xot, root)?;
-    crate::transform::strip_body_braces(xot, root, &["body"])?;
+    crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     Ok(())
 }
 
