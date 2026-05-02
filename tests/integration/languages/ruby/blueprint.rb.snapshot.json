@@ -616,6 +616,58 @@
           {
             "right": {
               "expression": {
+                "call": {
+                  "block": {
+                    "body": {
+                      "expression": [
+                        {
+                          "call": {
+                            "arguments": [
+                              "n"
+                            ],
+                            "name": "puts"
+                          }
+                        },
+                        {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "int": "1"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "parameters": [
+                      {
+                        "$type": "parameter",
+                        "name": "n"
+                      }
+                    ]
+                  },
+                  "name": "proc"
+                }
+              }
+            },
+            "left": {
+              "expression": {
+                "name": "multi_stmt"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
                 "conditional": {
                   "children": [
                     ":filled"

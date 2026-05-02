@@ -315,6 +315,23 @@ C# closed iter 167; PHP closed iter 168; Ruby Block/DoBlock closed iter 169.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 173: fix iter-169 Ruby Block retag bug. Iter 169's
+  body→value retag ran at walk-time before `block_body` flattened,
+  always seeing "1 element child" (the unflattened block_body
+  wrapper) and retagging multi-statement bodies wrongly. Moved to
+  a post-pass `ruby_retag_singleton_block_body` that runs after
+  `wrap_body_value_children` (so the count is post-flatten,
+  post-expression-wrap). Reverted Block to Passthrough and
+  DoBlock to RenameWithMarker(Block, Do). Added `multi_stmt`
+  fixture (`proc { |n| puts n; n + 1 }`) to expose both shapes:
+  - single-stmt: `block/value/expression/...` ✓
+  - multi-stmt: `block/body/expression/.../expression/...` ✓
+  In JSON: `block.value.expression.binary` (object) vs
+  `block.body.expression: [...]` (array). The post-pass also
+  wraps non-value-producing single statements (`<if>`, `<break>`,
+  …) in `<expression>` to maintain a uniform `value/expression/X`
+  shape (since `wrap_body_value_children` only wraps
+  RUBY_VALUE_KINDS).
 - [x] iter 172: hide `list=` from tree-text + XML rendering. Treated
   as a renderer-internal cardinality signal (parallel to `field=`
   iter 139 decision). `list=` still surfaces with `--meta` for

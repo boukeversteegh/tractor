@@ -378,6 +378,20 @@ program/
   │       │               ├─ op[multiply] = "*"
   │       │               └─ right/expression/int = "2"
   │       ├─ assign/
+  │       │   ├─ left/expression/name = "multi_stmt"
+  │       │   └─ right/expression/call/
+  │       │       ├─ name = "proc"
+  │       │       └─ block/
+  │       │           ├─ parameter/name = "n"
+  │       │           └─ body/
+  │       │               ├─ expression/call/
+  │       │               │   ├─ name = "puts"
+  │       │               │   └─ name = "n"
+  │       │               └─ expression/binary/
+  │       │                   ├─ left/expression/name = "n"
+  │       │                   ├─ op[plus] = "+"
+  │       │                   └─ right/expression/int = "1"
+  │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
   │       │   └─ right/expression/conditional/
   │       │       ├─ condition/expression/call/

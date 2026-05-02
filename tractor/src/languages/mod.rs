@@ -1646,12 +1646,81 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["body", "then", "else"],
         RUBY_VALUE_KINDS,
     )?;
+    ruby_retag_singleton_block_body(xot, root)?;
     ruby_extract_pair_keys(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "program"],
     )?;
+    Ok(())
+}
+
+/// Re-tag a `<body>` wrapper as `<value>` when its parent is a
+/// `<block>` (call-attached closure: `arr.each { |x| ... }`,
+/// `proc { ... }`, `arr.each do |x| ... end`) AND the body has
+/// exactly one element child. This brings call-attached closures
+/// into the iter 161/162/167/168 closure-body archetype:
+/// `block/value/expression/...` for single-statement bodies;
+/// multi-statement bodies keep `<body>` so per-statement `list=`
+/// distribution remains visible.
+///
+/// Runs as a post-pass (not in a per-kind Custom handler) because
+/// the count must be taken AFTER `block_body` / `body_statement`
+/// flatten and AFTER `wrap_body_value_children` wraps value-
+/// producing kids in `<expression>`. Doing this at walk-time would
+/// always see "1 element child" (the unflattened block_body
+/// wrapper), retagging multi-statement blocks too — bug fixed in
+/// this iter (was iter 169).
+///
+/// Lambda's outer `<body>` (whose parent is `<lambda>`, not
+/// `<block>`) is NOT touched here — see backlog item for Lambda
+/// outer-body collapse.
+fn ruby_retag_singleton_block_body(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("block")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+
+    let value_id = xot.add_name("value");
+    let expr_id = xot.add_name("expression");
+    for block in targets {
+        let body_child = xot.children(block)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+        let body = match body_child { Some(b) => b, None => continue };
+        let elem_children: Vec<XotNode> = xot.children(body)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        if elem_children.len() != 1 { continue; }
+        let only_child = elem_children[0];
+        if let Some(elem) = xot.element_mut(body) {
+            elem.set_name(value_id);
+        }
+        // wrap_body_value_children handled value-producing kinds at step 3
+        // (they're already inside `<expression>`). Non-value-producing
+        // single statements (`<if>`, `<break>`, `<while>`, …) need an
+        // `<expression>` host now that they live in a `<value>` slot
+        // (Principle #15). Idempotent: skip when already an expression.
+        if get_element_name(xot, only_child).as_deref() != Some("expression") {
+            let host = xot.new_element(expr_id);
+            xot.with_wrap_child(only_child, host)?;
+        }
+    }
     Ok(())
 }
 

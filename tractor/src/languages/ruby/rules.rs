@@ -19,10 +19,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::BeginBlock         => RenameWithMarker(Block, Begin),
         RubyKind::BlockParameter     => RenameWithMarker(Parameter, Block),
         RubyKind::DelimitedSymbol    => RenameWithMarker(Symbol, Delimited),
-        // `do_block` — re-tag `<body>` as `<value>` for single-statement
-        // bodies (closure archetype iter 161/162/167/168) and prepend
-        // the `[do]` marker.
-        RubyKind::DoBlock            => Custom(transformations::do_block),
+        RubyKind::DoBlock            => RenameWithMarker(Block, Do),
         RubyKind::HashSplatArgument  => RenameWithMarker(Spread, Dict),
         // `**kwargs` parameter — wrap in `<parameter[kwsplat]>` so
         // cross-language `//parameter` finds it (Principle #5;
@@ -139,13 +136,9 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // The case/in clause uses `InClause` → `<in>` instead.
         RubyKind::In => Flatten { distribute_list: None },
 
-        // `block` (`{ |x| ... }`) — re-tag `<body>` as `<value>` for
-        // single-statement bodies so cross-language `//block/value/expression`
-        // works (closure archetype iter 161/162/167/168).
-        RubyKind::Block => Custom(transformations::block),
-
         // Already matches our vocabulary (no text leak in current snapshots).
-        RubyKind::Conditional
+        RubyKind::Block
+        | RubyKind::Conditional
         | RubyKind::Do
         | RubyKind::Exceptions
         | RubyKind::False

@@ -132,6 +132,7 @@ def control(items)
 
   adder = ->(a, b) { a + b }
   doubler = proc { |n| n * 2 }
+  multi_stmt = proc { |n| puts n; n + 1 }
   ternary = total.zero? ? :empty : :filled
   total ||= 0
   total &&= total + 1
