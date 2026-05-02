@@ -10,9 +10,42 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
 use super::output::TractorNode::{
-    self, Call, Comment as CommentName, Else, Leading, Name, Optional, Parameter, Ternary, Then,
-    Trailing,
+    self, Call, Comment as CommentName, Else, Exclusive, From, Inclusive, Leading, Name, Optional,
+    Parameter, Range as RangeNode, Ternary, Then, To, Trailing,
 };
+
+/// `range` — `1..9` (inclusive) / `1...9` (exclusive). Adds
+/// `<inclusive/>` or `<exclusive/>` marker (Principle #8: source
+/// must be reconstructable; the operator distinguishes two
+/// semantically distinct constructs) and wraps `field="begin"`
+/// child in `<from>`, `field="end"` in `<to>`. Open-ended ranges
+/// (`(1..)` or `(..9)`) lack the corresponding field; their wrapper
+/// is simply absent.
+pub fn range(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    let is_exclusive = texts.iter().any(|t| t.contains("..."));
+    let marker = if is_exclusive { Exclusive } else { Inclusive };
+    xot.with_prepended_marker(node, marker)?;
+
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        // Skip the marker we just prepended — it has no `field=`.
+        let wrapper = match field.as_deref() {
+            Some("begin") => From,
+            Some("end") => To,
+            _ => continue,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, RangeNode);
+    Ok(TransformAction::Continue)
+}
 
 /// `conditional` — `cond ? consequence : alternative` ternary. Wraps
 /// the arms in `<then>` / `<else>` (mirroring the role-named slots

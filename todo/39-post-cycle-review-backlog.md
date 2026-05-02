@@ -330,15 +330,14 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   `ternary.then`, `ternary.else` — uniform with other PLs; no more
   `symbol`/`children` collision.
 
-- [ ] **Ruby `range`: marker dropped + role-mixed begin/end**
-  *(severity HIGH; Principle #8 + #19 violations)*. Sites:
-  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:102-104`
-  and `:107-109` show `range/{int="1", int="10"}` for BOTH `1..10`
-  (inclusive) and `1...10` (exclusive) — marker dropped, can't
-  reconstruct source. JSON: `{"range": {"int": "1", "children":
-  ["10"]}}` — begin/end role-mixed. Expected: `<range>` with
-  `<inclusive>/<exclusive>` marker (or `<closed>/<open>`) AND
-  `<from>/<to>` wrappers. Effort: small.
+- [x] **Ruby `range`** — closed iter 180. Custom handler `range`
+  inspects text leaves to detect `..` (inclusive) vs `...` (exclusive),
+  prepends the corresponding marker, and wraps `field="begin"` /
+  `field="end"` children in `<from>` / `<to>` slots. Open-ended
+  ranges (`1..`, `..9`) handled naturally (the absent field
+  produces no wrapper). JSON: `{range: {inclusive: true, from:
+  {int: "1"}, to: {int: "9"}}}` — Principle #8 (round-trip)
+  satisfied; role-mix resolved.
 
 - [x] **Ruby `case`/`when`/`pattern` list distribution** — closed
   iter 177. New post-pass `ruby_tag_case_when_lists` tags
@@ -377,6 +376,14 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 180: Ruby `<range>` — adds `[inclusive]`/`[exclusive]`
+  marker (Principle #8: source must be reconstructable; `..` vs
+  `...` are semantically distinct) and wraps begin/end ints in
+  `<from>`/`<to>` slots. Open-ended ranges work naturally (absent
+  field → no wrapper). Forgot to declare new variants
+  (`Inclusive`/`Exclusive`) as markers in `node_spec` first time;
+  caught by `containers_have_content_or_are_absent` invariant —
+  fixed in same iter.
 - [x] iter 179: Ruby ternary `<conditional>` → `<ternary>` rename
   + `<then>`/`<else>` role wrappers via Custom handler. Lessons:
   almost shipped via field-wrap entries `("alternative", "else")` —

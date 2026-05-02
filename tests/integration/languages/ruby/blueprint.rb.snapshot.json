@@ -77,10 +77,13 @@
                 "pattern": [
                   {
                     "range": {
-                      "children": [
-                        "9"
-                      ],
-                      "int": "1"
+                      "to": {
+                        "int": "9"
+                      },
+                      "inclusive": true,
+                      "from": {
+                        "int": "1"
+                      }
                     }
                   }
                 ]
@@ -368,10 +371,13 @@
             "value": {
               "expression": {
                 "range": {
-                  "children": [
-                    "3"
-                  ],
-                  "int": "1"
+                  "to": {
+                    "int": "3"
+                  },
+                  "inclusive": true,
+                  "from": {
+                    "int": "1"
+                  }
                 }
               }
             }
@@ -2080,10 +2086,13 @@
                   "right": {
                     "expression": {
                       "range": {
-                        "children": [
-                          "10"
-                        ],
-                        "int": "1"
+                        "to": {
+                          "int": "10"
+                        },
+                        "inclusive": true,
+                        "from": {
+                          "int": "1"
+                        }
                       }
                     }
                   },
@@ -2097,10 +2106,13 @@
                   "right": {
                     "expression": {
                       "range": {
-                        "children": [
-                          "10"
-                        ],
-                        "int": "1"
+                        "to": {
+                          "int": "10"
+                        },
+                        "exclusive": true,
+                        "from": {
+                          "int": "1"
+                        }
                       }
                     }
                   },

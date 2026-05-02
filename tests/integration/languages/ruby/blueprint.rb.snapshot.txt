@@ -99,14 +99,14 @@ program/
   │               │   └─ right/expression/regex = "/\\A[a-z]+\\z/i"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "RANGE_INCL"
-  │               │   └─ right/expression/range/
-  │               │       ├─ int = "1"
-  │               │       └─ int = "10"
+  │               │   └─ right/expression/range[inclusive]/
+  │               │       ├─ from/int = "1"
+  │               │       └─ to/int = "10"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "RANGE_EXCL"
-  │               │   └─ right/expression/range/
-  │               │       ├─ int = "1"
-  │               │       └─ int = "10"
+  │               │   └─ right/expression/range[exclusive]/
+  │               │       ├─ from/int = "1"
+  │               │       └─ to/int = "10"
   │               ├─ method[singleton]/
   │               │   ├─ self = "self"
   │               │   ├─ name = "build"
@@ -247,9 +247,9 @@ program/
   │       │   ├─ pattern/name = "Float"
   │       │   └─ body/then/expression/symbol = ":number"
   │       ├─ when/
-  │       │   ├─ pattern/range/
-  │       │   │   ├─ int = "1"
-  │       │   │   └─ int = "9"
+  │       │   ├─ pattern/range[inclusive]/
+  │       │   │   ├─ from/int = "1"
+  │       │   │   └─ to/int = "9"
   │       │   └─ body/then/expression/symbol = ":digit"
   │       ├─ when/
   │       │   ├─ pattern/name = "String"
@@ -315,9 +315,9 @@ program/
   │       │       └─ right/expression/int = "1"
   │       ├─ for/
   │       │   ├─ name = "j"
-  │       │   ├─ value/expression/range/
-  │       │   │   ├─ int = "1"
-  │       │   │   └─ int = "3"
+  │       │   ├─ value/expression/range[inclusive]/
+  │       │   │   ├─ from/int = "1"
+  │       │   │   └─ to/int = "3"
   │       │   └─ body/do/assign/
   │       │       ├─ left/expression/name = "total"
   │       │       └─ right/expression/name = "j"

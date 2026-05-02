@@ -136,6 +136,14 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // The case/in clause uses `InClause` → `<in>` instead.
         RubyKind::In => Flatten { distribute_list: None },
 
+        // `1..9` (inclusive) / `1...9` (exclusive) — Custom handler
+        // adds the `<inclusive/>` or `<exclusive/>` marker (Principle
+        // #8: round-trip — drop nothing reconstructable) and wraps
+        // `field="begin"`/`field="end"` children in `<from>`/`<to>`
+        // role slots so JSON consumers see role-named singletons
+        // instead of role-mixed bare `<int>` siblings.
+        RubyKind::Range              => Custom(transformations::range),
+
         // `cond ? a : b` ternary — Custom handler renames to `<ternary>`
         // (Principle #5: matches C# / Java / Python / PHP / TS) AND
         // wraps the consequence/alternative arms in `<then>`/`<else>`
@@ -156,7 +164,6 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::Operator
         | RubyKind::Pair
         | RubyKind::Pattern
-        | RubyKind::Range
         | RubyKind::Regex
         | RubyKind::Self_
         | RubyKind::Then

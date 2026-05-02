@@ -53,6 +53,8 @@ pub enum TractorNode {
     Alternative, As, Find, Test, Forward, Destructured, Concatenated, Static, End,
     // Safe-navigation marker on `<call>` / `<member>` for `a&.b`.
     Optional,
+    // Range role wrappers (`(1..9)` / `(1...9)`) and bound-style markers.
+    From, To, Inclusive, Exclusive,
 }
 
 impl TractorNode {
@@ -79,7 +81,8 @@ impl TractorNode {
             Self::Keyword | Self::Default | Self::Splat | Self::Kwsplat             => (true, false, Default),
             Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward
             | Self::Destructured | Self::Concatenated | Self::Static
-            | Self::Optional                                                        => (true, false, Default),
+            | Self::Optional
+            | Self::Inclusive | Self::Exclusive                                     => (true, false, Default),
             // `End` is dual-use: marker form `<block[end]>` for the
             // `END { ... }` at-exit hook, AND a syntactic block-closer
             // keyword that legitimately appears as bare text inside
