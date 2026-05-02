@@ -1087,9 +1087,9 @@
           {
             "call": {
               "closure": {
-                "body": {
-                  "assign": [
-                    {
+                "value": {
+                  "expression": {
+                    "assign": {
                       "right": {
                         "expression": {
                           "call": {
@@ -1103,13 +1103,114 @@
                         }
                       }
                     }
-                  ]
+                  }
                 }
               }
             }
           }
         ],
+        "variable": [
+          {
+            "right": {
+              "expression": {
+                "closure": {
+                  "body": {
+                    "return": [
+                      {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "int": "2"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "x"
+                              }
+                            },
+                            "op": {
+                              "text": "*",
+                              "multiply": true
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "variable": [
+                      {
+                        "right": {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "int": "1"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "n"
+                                }
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              }
+                            }
+                          }
+                        },
+                        "short": true,
+                        "left": {
+                          "expression": {
+                            "name": "x"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "n",
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  ],
+                  "returns": {
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "multiStmt"
+              }
+            }
+          }
+        ],
         "assign": [
+          {
+            "right": {
+              "expression": {
+                "call": {
+                  "arguments": [
+                    "3"
+                  ],
+                  "name": "multiStmt"
+                }
+              }
+            },
+            "left": {
+              "expression": {
+                "name": "_"
+              }
+            }
+          },
           {
             "right": {
               "expression": {
@@ -1804,24 +1905,22 @@
           {
             "call": {
               "closure": {
-                "body": {
-                  "expression": [
-                    {
-                      "call": {
-                        "arguments": [
-                          "\"bg\""
-                        ],
-                        "member": {
-                          "property": {
-                            "name": "Println"
-                          },
-                          "object": {
-                            "name": "fmt"
-                          }
+                "value": {
+                  "expression": {
+                    "call": {
+                      "arguments": [
+                        "\"bg\""
+                      ],
+                      "member": {
+                        "property": {
+                          "name": "Println"
+                        },
+                        "object": {
+                          "name": "fmt"
                         }
                       }
                     }
-                  ]
+                  }
                 }
               }
             }

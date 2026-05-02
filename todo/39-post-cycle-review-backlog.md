@@ -308,13 +308,11 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   extension of iter 147 to C#'s `MemberAccessExpression`). Rust
   may have the same gap on `field_expression` — verify in same iter.
 
-- [ ] **Go closure body archetype unmigrated** *(severity MED;
-  iter-174 "all 8 PLs" claim was wrong — Go was missed)*. Sites:
-  `tests/integration/languages/go/blueprint.go.snapshot.txt:319, 539`.
-  Current: `closure/body/...`. Expected: `closure/value/expression/...`
-  for single-stmt (matches Rust closure / TS arrow / C# lambda /
-  PHP arrow / Python lambda / Ruby Block / Ruby Lambda from iters
-  161/162/167/168/173/174). Effort: small.
+- [x] **Go closure body archetype** — closed iter 176. Post-pass
+  `go_retag_singleton_closure_body` retags `<body>` to `<value>` for
+  single-statement closures and strips stray `{`/`}` text leaves;
+  multi-stmt bodies keep `<body>`. Closes the iter-174 missed-language
+  gap. Added `multiStmt` blueprint fixture for the multi-stmt case.
 
 - [ ] **Ruby ternary uses `<conditional>` element + role-mixed
   bare-leaf branches** *(severity HIGH)*. Site:
@@ -383,6 +381,11 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 176: Go closure body archetype — closes iter-174's
+  missed-language gap. `closure/body/...` → `closure/value/expression/...`
+  (single-stmt) or `closure/body/...` (multi-stmt). Cross-language
+  `//closure/value/expression/...` (Go) now parallels `//lambda/value/...`
+  (other PLs).
 - [x] iter 174: Ruby Lambda outer-body collapse. Stabby lambdas
   `->(x) { ... }` produced a doubled-body shape
   (`lambda/body/block/value/expression/...`) due to two field-wraps

@@ -1422,6 +1422,7 @@ fn java_unwrap_type_in_path(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
 /// positions in `<expression>` hosts (Principle #15).
 fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     collapse_conditionals(xot, root)?;
+    go_retag_singleton_closure_body(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
         root,
@@ -1433,6 +1434,71 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "file"],
     )?;
+    Ok(())
+}
+
+/// Re-tag a `<closure>`'s `<body>` wrapper as `<value>` for
+/// single-statement bodies so Go closures match the closure
+/// archetype unification (Rust closure / TS arrow / C# lambda /
+/// PHP arrow / Python lambda / Ruby Block / Ruby Lambda from iters
+/// 161-174). Multi-statement bodies keep `<body>`.
+///
+/// Runs as a post-pass (not a per-kind Custom handler) because
+/// Go's `block` rule is Pure Flatten, which runs DURING the walk —
+/// at FuncLiteral-handler time, body still wraps the unflattened
+/// block. By post-transform time, body's element children are
+/// the actual statements.
+///
+/// Run BEFORE `wrap_expression_positions` so the new `<value>`
+/// slot's first child gets wrapped in `<expression>` automatically
+/// (closing iter 174's "all 8 PLs" claim — Go was missed).
+fn go_retag_singleton_closure_body(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut closures: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("closure")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut closures);
+
+    let value_id = xot.add_name("value");
+    for closure in closures {
+        let body = xot.children(closure)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+        let body = match body { Some(b) => b, None => continue };
+        let elem_count = xot.children(body)
+            .filter(|&c| xot.element(c).is_some())
+            .count();
+        if elem_count != 1 { continue; }
+        if let Some(elem) = xot.element_mut(body) {
+            elem.set_name(value_id);
+        }
+        // Strip stray `{`/`}` text leaves: `strip_body_braces` later
+        // in the pipeline only fires on `<body>`-named containers;
+        // we just renamed body→value, so handle it here.
+        let text_targets: Vec<XotNode> = xot.children(body)
+            .filter(|&c| {
+                xot.text_str(c)
+                    .map(|s| matches!(s.trim(), "{" | "}"))
+                    .unwrap_or(false)
+            })
+            .collect();
+        for t in text_targets {
+            xot.detach(t)?;
+        }
+    }
     Ok(())
 }
 

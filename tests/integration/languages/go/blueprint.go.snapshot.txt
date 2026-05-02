@@ -316,9 +316,32 @@ file/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
   │   └─ body[return]/
-  │       ├─ defer/call/closure/body/assign/
+  │       ├─ defer/call/closure/value/expression/assign/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/name = "recover"
+  │       ├─ variable[short]/
+  │       │   ├─ left/expression/name = "multiStmt"
+  │       │   └─ right/expression/closure/
+  │       │       ├─ parameter/
+  │       │       │   ├─ name = "n"
+  │       │       │   └─ type/name = "int"
+  │       │       ├─ returns/type/name = "int"
+  │       │       └─ body/
+  │       │           ├─ variable[short]/
+  │       │           │   ├─ left/expression/name = "x"
+  │       │           │   └─ right/expression/binary/
+  │       │           │       ├─ left/expression/name = "n"
+  │       │           │       ├─ op[plus] = "+"
+  │       │           │       └─ right/expression/int = "1"
+  │       │           └─ return/expression/binary/
+  │       │               ├─ left/expression/name = "x"
+  │       │               ├─ op[multiply] = "*"
+  │       │               └─ right/expression/int = "2"
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "_"
+  │       │   └─ right/expression/call/
+  │       │       ├─ name = "multiStmt"
+  │       │       └─ int = "3"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/
@@ -536,7 +559,7 @@ file/
           │   └─ body/unary/
           │       ├─ name = "n"
           │       └─ op[increment] = "++"
-          ├─ go/call/closure/body/expression/call/
+          ├─ go/call/closure/value/expression/call/
           │   ├─ member/
           │   │   ├─ object/name = "fmt"
           │   │   └─ property/name = "Println"

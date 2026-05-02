@@ -87,6 +87,8 @@ func Uniq[T comparable](xs []T) (out []T) {
 
 func variadic(prefix string, vals ...int) (sum int, err error) {
 	defer func() { _ = recover() }()
+	multiStmt := func(n int) int { x := n + 1; return x * 2 }
+	_ = multiStmt(3)
 	_ = ToUpper(prefix)
 	for _, v := range vals {
 		sum += v
