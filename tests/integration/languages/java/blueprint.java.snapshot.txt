@@ -211,7 +211,7 @@ program/
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "s"
   │       │           └─ arm/
-  │       │               ├─ label = "default"
+  │       │               ├─ label[default]
   │       │               └─ expression/string = "\"other\""
   │       ├─ interface[private]/
   │       │   ├─ name = "Handler"
@@ -463,6 +463,6 @@ program/
                   │               │   │   └─ name = "i"
                   │               │   └─ expression/name = "i"
                   │               └─ arm/
-                  │                   ├─ label = "default"
+                  │                   ├─ label[default]
                   │                   └─ yield/int = "0"
                   └─ return/expression/name = "v"

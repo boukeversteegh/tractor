@@ -51,6 +51,9 @@ pub enum TractorNode {
     Void, This, Super, Array, Variadic, Compact,
     // New markers
     Receiver, Resource, Wildcard,
+    // Switch-label marker — `[default]` on `<label>` for `default ->`
+    // (vs the regular `case X:` form which uses content).
+    Default,
     // Unary-shape marker
     Prefix,
 }
@@ -92,6 +95,10 @@ impl TractorNode {
             // for bare `<?>` generic; container for bounded
             // `<? extends T>` / `<? super T>` (keeps the bound).
             Self::Wildcard                                                          => (true, true, Default),
+            // `Default` is dual-use: marker on `<label>` for `default ->`
+            // arms AND container for the (deprecated) Java
+            // `default` switch label arm-body shape.
+            Self::Default                                                           => (true, true, Keyword),
             // Array: marker on <type> / <pattern> + container for array_initializer
             Self::Array                                                             => (true, true, Type),
             // Template: container for template_expression + marker (dual-use like TS)

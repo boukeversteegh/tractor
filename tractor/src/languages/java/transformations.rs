@@ -41,6 +41,28 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `switch_label` — `case X:` / `default:`. The `default` form has
+/// just the bare keyword text. Detect it and lift to a `[default]`
+/// marker so the shape is `<label[default]/>`. The `case X` form
+/// keeps its content as-is.
+pub fn switch_label(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Default as DefaultMarker, Label};
+    let mut is_default = false;
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            if text.trim() == "default" {
+                is_default = true;
+                xot.detach(child)?;
+            }
+        }
+    }
+    xot.with_renamed(node, Label);
+    if is_default {
+        xot.with_prepended_marker(node, DefaultMarker)?;
+    }
+    Ok(TransformAction::Continue)
+}
+
 /// `wildcard` — Java generic wildcard `<?>` / `<? extends T>` /
 /// `<? super T>`. Bare `?` becomes an empty `<wildcard/>` marker.
 /// Bounded forms keep the `extends` / `super` text + bound type

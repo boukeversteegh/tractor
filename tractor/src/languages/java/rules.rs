@@ -129,7 +129,11 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::SwitchBlock                 => Flatten { distribute_field: None },
         JavaKind::SwitchBlockStatementGroup   => Rename(Case),
         JavaKind::SwitchExpression            => Rename(Switch),
-        JavaKind::SwitchLabel                 => Rename(Label),
+        // `case X:` / `default:` switch label. The `default` form has
+        // just bare `default` keyword text; convert to a `[default]`
+        // marker so the shape is `<label[default]/>` for the default
+        // arm, `<label>...</label>` (with case expression) otherwise.
+        JavaKind::SwitchLabel                 => Custom(transformations::switch_label),
         JavaKind::SwitchRule                  => Rename(Arm),
         JavaKind::ThrowStatement              => Rename(Throw),
         JavaKind::True                        => Rename(True),
