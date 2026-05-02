@@ -198,7 +198,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
         ids: &["tsql", "mssql", "sql"],
         transform: tsql::transform,
-        post_transform: None,
+        post_transform: Some(tsql_post_transform),
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(tsql::output::spec),
@@ -1499,6 +1499,27 @@ fn go_retag_singleton_closure_body(xot: &mut Xot, root: XotNode) -> Result<(), x
             xot.detach(t)?;
         }
     }
+    Ok(())
+}
+
+/// TSQL post-transform: pre-iter-182 had `post_transform: None`,
+/// which left every container with multiple uniform-role children
+/// overflowing into the anonymous `children: [...]` JSON array.
+/// Adds `distribute_member_list_attrs` for the role-uniform
+/// containers (every direct element child shares a role): file
+/// scripts, transaction blocks, union arms, explicit value lists,
+/// columns lists, statement bodies (DDL/DML body containers).
+///
+/// Role-MIXED containers (`<select>`, `<insert>`, `<from>`,
+/// `<call>`, `<case>`, `<compare>`, `<between>`, `<assign>`) need
+/// targeted handlers that tag only the multi-instance child role —
+/// out of scope for this iter.
+fn tsql_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    crate::transform::distribute_member_list_attrs(
+        xot,
+        root,
+        &["file", "transaction", "union", "columns", "list"],
+    )?;
     Ok(())
 }
 

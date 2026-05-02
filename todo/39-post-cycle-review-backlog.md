@@ -368,16 +368,28 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 **Top causes by language:**
 
-- [ ] **TSQL `<file>`/`<transaction>`/`<select>`/`<insert>` lack
-  `list=` distribution** — tsql has `post_transform: None`, so no
-  `distribute_member_list_attrs` runs. 34 of 34 TSQL overflow sites
-  trace to this single root cause. Fix: add a `tsql_post_transform`
-  with at minimum `distribute_member_list_attrs(["file",
-  "transaction", "select", "insert"])`. Verify list="X"
-  doesn't over-broaden role-mixed containers (case/when problem
-  from iter 177 — likely none in tsql since it's mostly statement-
-  list shaped). Effort: 1 iter. Severity: HIGH (closes 12% of total
-  audit findings in one fix).
+- [x] **TSQL post-transform partial** — closed iter 182. Added
+  `tsql_post_transform` with `distribute_member_list_attrs` for
+  role-uniform containers (`file`, `transaction`, `union`,
+  `columns`, `list`). Closed 8 of 34 TSQL overflow sites
+  (34 → 26). Remaining 26 are role-MIXED parents (`select`,
+  `insert`, `from`, `case`, `compare`, `between`, `assign`)
+  needing targeted handlers — see new entry below.
+
+- [ ] **TSQL role-mixed parents need targeted list= tagging**
+  *(severity MED)*. Remaining audit sites after iter 182:
+  - `<select>` ~6 sites: contains multiple `<column>` siblings
+    (the SELECT list) plus singleton clauses (`<from>`, `<where>`,
+    `<order>`, `<alias>`). Tag the multiple-instance role
+    (`<column>`) with `list="column"`.
+  - `<compare>` ~6 sites: contains operands like `<literal>`,
+    `<column>`, `<call>` siblings — but compare is role-mixed
+    (left/right/op). Investigate why `<compare>` has overflow
+    (probably operand-list collisions).
+  - `<insert>` 1 site, `<between>` 1, `<assign>` 1, `<from>` 1,
+    `<case>` 1: each needs investigation.
+  - Effort: medium (1-3 iters; one targeted handler per parent
+    or a shared list-name-by-parent table).
 
 - [ ] **Rust `<use>` aliased imports collide with `<alias>` marker**
   — `tests/integration/languages/rust/blueprint.rs.snapshot.json`
@@ -433,6 +445,12 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 182: TSQL post-transform — added
+  `distribute_member_list_attrs(["file", "transaction", "union",
+  "columns", "list"])` for role-uniform containers. Closed 8 of
+  34 TSQL overflow sites (-24%); remaining 26 in role-mixed
+  parents (select/insert/compare/etc.) need targeted handlers
+  (queued as separate backlog item).
 - [x] iter 181: cross-language role-mix audit — discovery iter (no
   code change). 283 `"children": [` overflow sites swept across 9
   JSON blueprints; categorized into 7 distinct patterns. Top
