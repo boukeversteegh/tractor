@@ -19,6 +19,33 @@ use super::output::TractorNode::{
     Unexported, Variable,
 };
 
+/// `type_arguments` — `[T, string]` after a generic type. Tree-sitter
+/// nests each argument under a transparent `type_elem` wrapper; lift
+/// each `type_elem`'s element child up first so the subsequent flatten
+/// + `distribute_field("arguments")` lands the field attribute on the
+/// real type child (otherwise it sits on the `type_elem` wrapper and
+/// gets lost in flatten).
+pub fn type_arguments(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_kind(xot, child).as_deref() != Some("type_elem") {
+            continue;
+        }
+        let inner: Vec<XotNode> = xot.children(child)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for inner_child in inner {
+            xot.detach(inner_child)?;
+            xot.insert_before(child, inner_child)?;
+        }
+        xot.detach(child)?;
+    }
+    distribute_field_to_children(xot, node, "arguments");
+    Ok(TransformAction::Flatten)
+}
+
 /// `expression_statement` is a pure grammar wrapper around a single
 /// expression. Skip its subtree so the inner expression's transform
 /// drives the output (matches the previous behavior of returning

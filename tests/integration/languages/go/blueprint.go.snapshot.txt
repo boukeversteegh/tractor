@@ -76,7 +76,7 @@ file/
   │       └─ returns/type/name = "error"
   ├─ struct[exported]/
   │   ├─ name = "Container"
-  │   ├─ generics/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "any"
   │   └─ field[unexported]/
@@ -117,7 +117,7 @@ file/
   │   │   ├─ name = "c"
   │   │   └─ pointer/type[generic]/
   │   │       ├─ type/name = "Container"
-  │   │       └─ arguments/type/name = "T"
+  │   │       └─ type[@list="true"]/name = "T"
   │   ├─ name = "Push"
   │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "v"
@@ -204,7 +204,7 @@ file/
   │       └─ expression/name = "ErrNotFound"
   ├─ function[exported]/
   │   ├─ name = "Map"
-  │   ├─ generics/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   ├─ name = "U"
   │   │   └─ type/name = "any"
@@ -244,7 +244,7 @@ file/
   │       └─ return/expression/name = "out"
   ├─ function[exported]/
   │   ├─ name = "Sum"
-  │   ├─ generics/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "Number"
   │   ├─ parameter[@list="true"]/
@@ -262,7 +262,7 @@ file/
   │           └─ right/expression/name = "x"
   ├─ function[exported]/
   │   ├─ name = "Uniq"
-  │   ├─ generics/
+  │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   └─ type/name = "comparable"
   │   ├─ parameter[@list="true"]/

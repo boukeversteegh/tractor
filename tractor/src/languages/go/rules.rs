@@ -45,13 +45,19 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         | GoKind::KeyedElement
         | GoKind::LiteralValue
         | GoKind::ForClause
-        | GoKind::TypeParameterList
-        | GoKind::TypeParameterDeclaration
         | GoKind::TypeElem
         | GoKind::TypeConstraint
         | GoKind::InterpretedStringLiteralContent
         | GoKind::RawStringLiteralContent
         | GoKind::EscapeSequence => Flatten { distribute_field: None },
+
+        // `[T any, U comparable]` — generic parameter list. Per
+        // Principle #12 (no list containers): flatten with
+        // `field="generics"` distribution so each parameter becomes
+        // a flat `<generic>` sibling of the enclosing declaration.
+        // Matches Java / Rust / TS shape.
+        GoKind::TypeParameterList        => Flatten { distribute_field: Some("generics") },
+        GoKind::TypeParameterDeclaration => Rename(Generic),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         GoKind::ExpressionStatement   => Custom(transformations::expression_statement),
@@ -130,7 +136,13 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::SourceFile               => Rename(File),
         GoKind::StructType               => Rename(Struct),
         GoKind::True                     => Rename(True),
-        GoKind::TypeArguments            => Rename(Arguments),
+        // `[T, string]` — generic type arguments. Per Principle #12,
+        // each argument becomes a flat `<type>` sibling under
+        // `<type[generic]>` with `field="arguments" list="true"` for
+        // JSON-array recovery. The Custom handler also lifts the
+        // inner `type_elem` wrappers so the field attribute lands on
+        // the real type, not on the disappearing wrapper.
+        GoKind::TypeArguments            => Custom(transformations::type_arguments),
         GoKind::TypeAssertionExpression  => Rename(Assert),
         GoKind::VarDeclaration           => Custom(transformations::const_or_var_declaration),
         GoKind::VarSpec                  => Rename(Var),

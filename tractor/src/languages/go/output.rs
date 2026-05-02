@@ -68,9 +68,13 @@ impl TractorNode {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
-            | Self::Raw | Self::Short | Self::Negated | Self::Generic
+            | Self::Raw | Self::Short | Self::Negated
             | Self::Implicit
             | Self::Blank | Self::Dot                                              => (true, false, Default),
+            // `Generic` is dual-use: marker `[generic]` on `<type>`
+            // for generic-type instantiations AND container `<generic>`
+            // for type-parameter declarations.
+            Self::Generic                                                           => (true, true, Default),
             Self::Exported | Self::Unexported                                      => (true, false, Keyword),
 
             // ---- Dual-use (marker AND container) -----------------------------
