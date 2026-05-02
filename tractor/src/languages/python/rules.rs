@@ -14,7 +14,7 @@ use super::output::TractorNode::{
     self, Alias, Argument, Arm, As, Assert, Assign, Binary, Break, Call, Cast, Class,
     Compare, Complex, Concatenated, Constrained, Continue, Decorator, Delete, Dict, Else,
     ElseIf, Escape, Except, Exec, False, Finally, Float, Format, From, Future,
-    Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwsplat, Lambda, List,
+    Args, Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwargs, Lambda, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
     Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
     Union, While, Wildcard, Yield, None as PyNone,
@@ -37,18 +37,22 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::DictionarySplat          => RenameWithMarker(Spread, Dict),
         // `**kwargs` parameter — wrap in `<parameter[kwsplat]>` so
         // cross-language `//parameter` finds it (Principle #5).
-        PyKind::DictionarySplatPattern   => RenameWithMarker(Parameter, Kwsplat),
+        PyKind::DictionarySplatPattern   => RenameWithMarker(Parameter, Kwargs),
         PyKind::ListPattern              => RenameWithMarker(Pattern, List),
         PyKind::ListSplat                => RenameWithMarker(Spread, List),
         // `*args` parameter — wrap in `<parameter[splat]>` so
         // cross-language `//parameter` finds it (Principle #5).
-        PyKind::ListSplatPattern         => RenameWithMarker(Parameter, Splat),
+        PyKind::ListSplatPattern         => RenameWithMarker(Parameter, Args),
         PyKind::SplatPattern             => RenameWithMarker(Pattern, Splat),
         PyKind::UnionPattern             => RenameWithMarker(Pattern, Union),
         PyKind::UnionType                => RenameWithMarker(Type, Union),
 
         // ---- Flatten with field distribution ---------------------------
-        PyKind::ArgumentList  => Flatten { distribute_field: Some("arguments") },
+        // Context-aware argument_list: positional args inside a
+        // class's superclasses become `<base>` siblings (Principle
+        // #12 — no list container). Other contexts (regular calls)
+        // distribute `field="arguments"` and flatten as before.
+        PyKind::ArgumentList  => Custom(transformations::argument_list),
         PyKind::Parameters    => Custom(transformations::parameters),
         // `type_parameter` serves DOUBLE DUTY in tree-sitter Python:
         //   1. PEP 695 declaration param list — `def f[T, U]()` /

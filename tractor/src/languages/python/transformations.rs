@@ -320,6 +320,43 @@ pub fn dictionary_comprehension(
     Ok(TransformAction::Continue)
 }
 
+/// `argument_list` — context-aware. In a class's superclasses
+/// position, wrap each positional element in `<base>` (Principle #12
+/// — no list container, Goal #5 — Python devs say "base class").
+/// In a regular call context, distribute `field="arguments"` and
+/// flatten as before.
+pub fn argument_list(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let in_class = get_parent(xot, node)
+        .and_then(|p| get_kind(xot, p))
+        .and_then(|k| k.parse::<PyKind>().ok())
+        == Some(PyKind::ClassDefinition);
+    if in_class {
+        // Wrap each non-keyword element child in `<base>`.
+        let elem_children: Vec<XotNode> = xot.children(node)
+            .filter(|&c| xot.element(c).is_some())
+            .filter(|&c| {
+                !matches!(
+                    get_kind(xot, c).and_then(|k| k.parse::<PyKind>().ok()),
+                    Some(PyKind::KeywordArgument)
+                )
+            })
+            .collect();
+        for child in elem_children {
+            let base_elt = xot.add_name("base");
+            let base_node = xot.new_element(base_elt);
+            xot.insert_before(child, base_node)?;
+            xot.detach(child)?;
+            xot.append(base_node, child)?;
+        }
+    } else {
+        distribute_field_to_children(xot, node, "arguments");
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `set_comprehension` — `{x for x in xs}`. Prepend `<comprehension/>`
 /// marker, then rename to `<set>`.
 pub fn set_comprehension(

@@ -45,11 +45,11 @@ module/
   │   ├─ parameter/
   │   │   ├─ name = "b"
   │   │   └─ value/expression/int = "1"
-  │   ├─ parameter[splat]/name = "args"
+  │   ├─ parameter[args]/name = "args"
   │   ├─ parameter/
   │   │   ├─ name = "kw_only"
   │   │   └─ value/expression/int = "2"
-  │   ├─ parameter[kwsplat]/name = "kwargs"
+  │   ├─ parameter[kwargs]/name = "kwargs"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
   │       └─ return/expression/binary/
@@ -209,8 +209,8 @@ module/
   │       │   └─ body/
   │       │       ├─ function/
   │       │       │   ├─ name = "wrapper"
-  │       │       │   ├─ parameter[splat]/name = "a"
-  │       │       │   ├─ parameter[kwsplat]/name = "kw"
+  │       │       │   ├─ parameter[args]/name = "a"
+  │       │       │   ├─ parameter[kwargs]/name = "kw"
   │       │       │   └─ body/for/
   │       │       │       ├─ left/expression/name = "_"
   │       │       │       ├─ right/expression/call/
@@ -257,15 +257,14 @@ module/
   │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Meta"
-  │   ├─ extends/name = "type"
+  │   ├─ base/name = "type"
   │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Derived"
-  │   ├─ extends/
-  │   │   ├─ name = "Base"
-  │   │   └─ argument/
-  │   │       ├─ name = "metaclass"
-  │   │       └─ value/expression/name = "Meta"
+  │   ├─ base/name = "Base"
+  │   ├─ argument/
+  │   │   ├─ name = "metaclass"
+  │   │   └─ value/expression/name = "Meta"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Class with inheritance and metaclass kwarg.\"\"\""
   │       ├─ class/
@@ -554,7 +553,7 @@ module/
   │       ├─ assign/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "head"
-  │       │   │   ├─ expression/parameter[splat]/name = "mid"
+  │       │   │   ├─ expression/parameter[args]/name = "mid"
   │       │   │   └─ expression/name = "tail"
   │       │   └─ right/expression/name = "items"
   │       ├─ assign/

@@ -60,14 +60,14 @@ fn ruby() {
 /// on `*` / `**` operator text.
 #[test]
 fn python_spread() {
-    claim("parameter splats carry splat/kwsplat markers; call spreads keep list/dict",
+    claim("parameter splats carry args/kwargs markers (Python idiom); call spreads keep list/dict",
         &mut parse_src("python", r#"
 def f(*args, **kwargs): pass
 "#),
         &multi_xpath(r#"
             //function[name='f']
-                [parameter[splat][name='args']]
-                [parameter[kwsplat][name='kwargs']]
+                [parameter[args][name='args']]
+                [parameter[kwargs][name='kwargs']]
         "#),
         1);
 

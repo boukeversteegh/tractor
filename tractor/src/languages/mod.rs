@@ -1750,11 +1750,6 @@ const PYTHON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("condition", "condition"),
     ("consequence", "then"),
     ("return_type", "returns"),
-    // `class Foo(Base, metaclass=Meta)` — superclasses field wraps
-    // the (positional bases + kwargs) into `<extends>` so they're
-    // queryable as `//class/extends/name='Base'` rather than mixed
-    // with the class's own `<name>`.
-    ("superclasses", "extends"),
 ];
 
 const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[

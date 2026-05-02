@@ -241,6 +241,52 @@ findings:
   `<call[this]>argument...</call>`.
 - iter 103: Go `type Container[T any]` wraps generic params in
   `<generics>` (via `type_parameters` field-wrap config).
+- iter 106: C# `<chain>` → `<call>` (matches Java's
+  `<call[super]>` / `<call[this]>`; nobody calls `:` "chain").
+- iter 107: heuristic-driven name fixes — Ruby `op[spaceship]` (was
+  `compare-three-way`), PHP/Java multiple `<implements>` siblings,
+  C# multiple `<base>` siblings (was `<extends>` list container).
+- iter 108: Python class bases use `<base>` siblings (no list
+  container); `parameter[args]` / `parameter[kwargs]` for `*args`
+  / `**kwargs` (Python community names, Goal #5 — was `[splat]`/
+  `[kwsplat]` which is Ruby-native vocabulary).
+
+### Heuristics for naming (settled iter 107-108 per user)
+
+These are the principled rules to apply when picking marker /
+element names. Applies retroactively to evaluate existing picks.
+
+1. **Operator without keyword** → use the language's idiomatic
+   community name. Examples:
+   - Ruby `<=>` → `op[spaceship]` (community standard).
+   - PHP `.` → `op[concat]` (PHP idiom).
+   - Python `:=` → `op[walrus]` (PEP 572 / community).
+
+2. **Keyword or literal text in source** → use that text.
+   Examples:
+   - `**kwargs` → `[kwargs]` (Python convention text).
+   - `*args` → `[args]` (Python convention text).
+   - Ruby `*args` → `[splat]` (Ruby community name).
+
+3. **Multi-target construct** (Principle #12 — no list containers):
+   - **If source has a keyword** (Java/PHP/TS `extends`/`implements`,
+     Python's effective `__bases__` accessed via `(...)` syntax):
+     use the keyword as element name; multiple targets → multiple
+     sibling elements (NEVER one wrapper around a list).
+   - **If source has only punctuation** (C# `:`, Ruby `<`): name
+     the *targets* using the language's idiomatic dev term.
+     Multiple targets → multiple siblings.
+
+   Examples:
+   - Java `class Foo extends A implements B, C`:
+     `<extends>A</extends><implements>B</implements><implements>C</implements>`.
+   - PHP same as Java.
+   - C# `class Foo : A, B`: `<base>A</base><base>B</base>` (no
+     keyword in source; "base list" is the MS dev term).
+   - Python `class Foo(A, B)`: `<base>A</base><base>B</base>`.
+   - Ruby `class Foo < Base`: `<superclass>Base</superclass>`
+     (single-target so no list issue; `superclass` is the Ruby
+     idiomatic term).
 
 Decisions queued for review (renames are mechanical):
 - `[keyword]` marker name on pattern (vs `kwarg`, `kw`) — kept

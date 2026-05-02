@@ -46,6 +46,13 @@ pub enum TractorNode {
     Literal, Comprehension,
     // Pattern / type / import / string shape markers
     Union, Splat, Kwsplat, Constrained, Complex, Group, Future, Wildcard, Concatenated, Escape,
+    // Parameter-shape markers — Python community names. `*args` /
+    // `**kwargs` are the universal Python conventions, so the
+    // markers use those exact terms (Goal #5: developer mental model).
+    Args, Kwargs,
+    // Class base — `class Foo(Base, Other)` produces `<base>` siblings
+    // (Principle #12 — no list container; Python devs say "base class").
+    Base,
     // Import-shape (Path container; Relative marker for `from . import`)
     Path, Relative,
 }
@@ -65,6 +72,7 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::Union | Self::Splat | Self::Kwsplat
+            | Self::Args | Self::Kwargs
             | Self::Constrained | Self::Complex | Self::Group | Self::Future
             | Self::Wildcard | Self::Concatenated | Self::Escape
             | Self::Relative                                                      => (true, false, Default),
