@@ -202,3 +202,38 @@ Each `const_spec` / `var_spec` becomes its own `<const>` /
 `<var>` sibling. The block `const (A = 1; B = 2)` no longer
 merges everything into one element — per binding is per element,
 matching the iter-70 import handling.
+
+### Snapshot cold-read iters 78-92
+
+Iter 77 spawned a snapshot cold-read pass; iters 78-92 closed
+findings:
+
+- iter 78: Java path segments use `<name>`, not `<type>`.
+- iter 80: PHP `op[instanceof]` (added to OPERATOR_MARKERS).
+- iter 81: Java `dimensions` `[]` detached; `wildcard` `?` becomes
+  `[wildcard]` marker.
+- iter 82: Ruby pair keys extracted from text leaks (three forms).
+- iter 83: C-family body braces stripped; keyword-statement bodies
+  no longer leak text matching the marker.
+- iter 84: Go qualified types wrap in `<type>`.
+- iter 85: Python class-pattern keyword args distinguished by
+  `[keyword]` marker.
+- iter 86: PHP `variable[static]` / `variable[global]` de-duplicated.
+- iter 87: TS object literal shorthand wraps in `<pair>`.
+- iter 88: Ruby for-loop drops the noise `<in>` wrapper.
+- iter 89: keyword text inside body matching marker siblings stripped.
+- iter 90: empty body elements detached after brace strip.
+- iter 91: Python class bases wrap in `<extends>` via field config.
+- iter 92: Rust closure params uniformly wrapped in `<parameter>`.
+
+Decisions queued for review (renames are mechanical):
+- `[keyword]` marker name on pattern (vs `kwarg`, `kw`) — kept
+  for cross-language uniformity with `parameter[keyword]`.
+- `[wildcard]` for Java generic `?` (vs `[any]`) — kept; matches
+  Java terminology.
+- `[relative]` marker for Python `from . import` — kept; matches
+  Python terminology.
+- `[group]` marker on `<use>`/`<import>` for braced multi-imports —
+  kept.
+- `<extends>` for Python superclasses — matches Java/PHP; reverses
+  on Ruby's `<superclass>` which is preserved (within-language).
