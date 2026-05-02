@@ -310,13 +310,15 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("`name!` is NOT classified as a unary not-operator",
         &mut tree, "//unary[op[logical[not]]]", 0);
 
+    // Iter 178: C# member-access wraps receiver in <object> and
+    // property in <property>. XPaths updated to reflect that.
     claim("simple `name!.Length` exposes <member> with non-null host on the receiver",
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='simple']
                 /declarator/member
-                    [expression[non_null]/name='nullable']
-                    [name='Length']
+                    [object/expression[non_null]/name='nullable']
+                    [property/name='Length']
         "#),
         1);
 
@@ -325,8 +327,8 @@ fn csharp_null_forgiving_postfix_unary() {
         &multi_xpath(r#"
             //variable[declarator/name='chained']
                 /declarator/member
-                    [call/member/expression[non_null]/name='nullable']
-                    [name='Length']
+                    [object/call/member/object/expression[non_null]/name='nullable']
+                    [property/name='Length']
         "#),
         1);
 
@@ -336,8 +338,8 @@ fn csharp_null_forgiving_postfix_unary() {
             //variable[declarator/name='combined']
                 /declarator/binary
                     [op[plus]]
-                    [left/expression/member[expression[non_null]/name='first'][name='Length']]
-                    [right/expression/member[expression[non_null]/name='second'][name='Length']]
+                    [left/expression/member[object/expression[non_null]/name='first'][property/name='Length']]
+                    [right/expression/member[object/expression[non_null]/name='second'][property/name='Length']]
         "#),
         1);
 }

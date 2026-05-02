@@ -45,7 +45,7 @@ fn typescript_callee() {
 /// (`member_access_expression`, `field_access`, `member_expression`).
 #[test]
 fn csharp_member() {
-    claim("C# member access is a <member> with name children for receiver and property",
+    claim("C# member access wraps receiver in <object> and property in <property> (iter 178)",
         &mut parse_src("csharp", r#"
         class X {
             void f() {
@@ -55,8 +55,8 @@ fn csharp_member() {
     "#),
         &multi_xpath(r#"
             //call/member
-                [name='obj']
-                [name='Method']
+                [object/name='obj']
+                [property/name='Method']
         "#),
         1);
 }

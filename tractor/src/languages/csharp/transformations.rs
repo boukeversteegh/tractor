@@ -16,8 +16,8 @@ use crate::transform::operators::extract_operator;
 use super::input::CsKind;
 use super::output::TractorNode::{
     self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Instance, Internal,
-    Lambda, Leading, Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public,
-    Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
+    Lambda, Leading, Member, Name, Namespace, NonNull, Nullable, Object, Optional, Private,
+    Property, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
 
 /// `file_scoped_namespace_declaration` — `namespace Foo;`. Rename
@@ -213,6 +213,37 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
     }
     xot.with_renamed(node, Expression)
         .with_prepended_marker(node, Await)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `member_access_expression` — `obj.Prop`. Wraps the receiver and
+/// property names in role-named containers (`<object>` / `<property>`)
+/// so the two `<name>` siblings under `<member>` no longer collide
+/// on the same JSON key. Mirrors iter 147 (Java/Python/Go).
+///
+/// Discriminator: tree-sitter tags the receiver child with
+/// `field="expression"`. The property is the other element child
+/// (no `field=` after the field-wrap pass synthesizes its `<name>`
+/// wrapper). Renames the node to `<member>` and prepends the
+/// `<instance/>` marker (mirroring the previous
+/// `RenameWithMarker(Member, Instance)` semantics).
+pub fn member_access_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        let wrapper = match field.as_deref() {
+            Some("expression") => Object,
+            _ => Property,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Member)
+        .with_prepended_marker(node, Instance)?;
     Ok(TransformAction::Continue)
 }
 

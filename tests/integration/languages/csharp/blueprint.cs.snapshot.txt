@@ -100,20 +100,20 @@ unit/
   │   │       │   └─ body/new/
   │   │       │       ├─ argument/binary/
   │   │       │       │   ├─ left/expression/member[instance]/
-  │   │       │       │   │   ├─ name = "a"
-  │   │       │       │   │   └─ name = "X"
+  │   │       │       │   │   ├─ object/name = "a"
+  │   │       │       │   │   └─ property/name = "X"
   │   │       │       │   ├─ op[plus] = "+"
   │   │       │       │   └─ right/expression/member[instance]/
-  │   │       │       │       ├─ name = "b"
-  │   │       │       │       └─ name = "X"
+  │   │       │       │       ├─ object/name = "b"
+  │   │       │       │       └─ property/name = "X"
   │   │       │       └─ argument/binary/
   │   │       │           ├─ left/expression/member[instance]/
-  │   │       │           │   ├─ name = "a"
-  │   │       │           │   └─ name = "Y"
+  │   │       │           │   ├─ object/name = "a"
+  │   │       │           │   └─ property/name = "Y"
   │   │       │           ├─ op[plus] = "+"
   │   │       │           └─ right/expression/member[instance]/
-  │   │       │               ├─ name = "b"
-  │   │       │               └─ name = "Y"
+  │   │       │               ├─ object/name = "b"
+  │   │       │               └─ property/name = "Y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -125,21 +125,21 @@ unit/
   │   │       │   └─ body/binary/
   │   │       │       ├─ left/expression/binary/
   │   │       │       │   ├─ left/expression/member[instance]/
-  │   │       │       │   │   ├─ name = "a"
-  │   │       │       │   │   └─ name = "X"
+  │   │       │       │   │   ├─ object/name = "a"
+  │   │       │       │   │   └─ property/name = "X"
   │   │       │       │   ├─ op[equals] = "=="
   │   │       │       │   └─ right/expression/member[instance]/
-  │   │       │       │       ├─ name = "b"
-  │   │       │       │       └─ name = "X"
+  │   │       │       │       ├─ object/name = "b"
+  │   │       │       │       └─ property/name = "X"
   │   │       │       ├─ op[logical and and] = "&&"
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/member[instance]/
-  │   │       │           │   ├─ name = "a"
-  │   │       │           │   └─ name = "Y"
+  │   │       │           │   ├─ object/name = "a"
+  │   │       │           │   └─ property/name = "Y"
   │   │       │           ├─ op[equals] = "=="
   │   │       │           └─ right/expression/member[instance]/
-  │   │       │               ├─ name = "b"
-  │   │       │               └─ name = "Y"
+  │   │       │               ├─ object/name = "b"
+  │   │       │               └─ property/name = "Y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter/
@@ -175,8 +175,8 @@ unit/
   │   │           ├─ name = "GetHashCode"
   │   │           └─ body/call/
   │   │               ├─ member[instance]/
-  │   │               │   ├─ name = "HashCode"
-  │   │               │   └─ name = "Combine"
+  │   │               │   ├─ object/name = "HashCode"
+  │   │               │   └─ property/name = "Combine"
   │   │               ├─ argument/name = "X"
   │   │               └─ argument/name = "Y"
   │   ├─ record[public]/
@@ -243,16 +243,16 @@ unit/
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set[protected] = "protected set;"
   │   │       │   └─ value/expression/member[instance]/
-  │   │       │       ├─ name = "Priority"
-  │   │       │       └─ name = "Low"
+  │   │       │       ├─ object/name = "Priority"
+  │   │       │       └─ property/name = "Low"
   │   │       ├─ indexer[public]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ parameter/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "key"
   │   │       │   └─ value/expression/member[instance]/
-  │   │       │       ├─ name = "key"
-  │   │       │       └─ name = "Length"
+  │   │       │       ├─ object/name = "key"
+  │   │       │       └─ property/name = "Length"
   │   │       ├─ event[public]/variable/
   │   │       │   ├─ type/type[generic]/
   │   │       │   │   ├─ name = "Action"
@@ -315,9 +315,9 @@ unit/
   │   │       ├─ property[public and override]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get/body/member[instance]/name = "Priority"
+  │   │       │   ├─ get/body/member[instance]/property/name = "Priority"
   │   │       │   └─ set[protected]/body/assign/
-  │   │       │       ├─ left/expression/member[instance]/name = "Priority"
+  │   │       │       ├─ left/expression/member[instance]/property/name = "Priority"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "value"
   │   │       ├─ method[public and override]/
@@ -348,8 +348,8 @@ unit/
   │   │       │   └─ body/block/
   │   │       │       ├─ expression[await]/call/
   │   │       │       │   ├─ member[instance]/
-  │   │       │       │   │   ├─ name = "Task"
-  │   │       │       │   │   └─ name = "Delay"
+  │   │       │       │   │   ├─ object/name = "Task"
+  │   │       │       │   │   └─ property/name = "Delay"
   │   │       │       │   └─ argument/int = "1"
   │   │       │       └─ return/expression/index/argument = "this"
   │   │       └─ method[public and static]/
@@ -379,10 +379,10 @@ unit/
   │   │       │   └─ name = "w"
   │   │       └─ body/binary/
   │   │           ├─ left/expression/call/member[instance]/
-  │   │           │   ├─ member[instance]/
-  │   │           │   │   ├─ name = "w"
-  │   │           │   │   └─ name = "Name"
-  │   │           │   └─ name = "ToUpperInvariant"
+  │   │           │   ├─ object/member[instance]/
+  │   │           │   │   ├─ object/name = "w"
+  │   │           │   │   └─ property/name = "Name"
+  │   │           │   └─ property/name = "ToUpperInvariant"
   │   │           ├─ op[plus] = "+"
   │   │           └─ right/expression/string = "\"!\""
   │   └─ class[internal and static]/
@@ -431,8 +431,8 @@ unit/
   │               │           │   ├─ name = "widget"
   │               │           │   └─ pattern[recursive]/properties/subpattern/
   │               │           │       ├─ member[instance]/
-  │               │           │       │   ├─ name = "Name"
-  │               │           │       │   └─ name = "Length"
+  │               │           │       │   ├─ object/name = "Name"
+  │               │           │       │   └─ property/name = "Length"
   │               │           │       └─ pattern[relational]/int = "0"
   │               │           ├─ then/string = "\"named\""
   │               │           └─ else/string = "\"blank\""
@@ -447,8 +447,8 @@ unit/
   │               │           │   ├─ pattern[recursive]/properties/subpattern/
   │               │           │   │   ├─ name = "Priority"
   │               │           │   │   └─ pattern[constant]/member[instance]/
-  │               │           │   │       ├─ name = "Priority"
-  │               │           │   │       └─ name = "High"
+  │               │           │   │       ├─ object/name = "Priority"
+  │               │           │   │       └─ property/name = "High"
   │               │           │   └─ string = "\"hot\""
   │               │           ├─ arm/
   │               │           │   ├─ pattern[declaration]/
@@ -456,8 +456,8 @@ unit/
   │               │           │   │   └─ name = "w"
   │               │           │   ├─ when/binary/
   │               │           │   │   ├─ left/expression/member[instance]/
-  │               │           │   │   │   ├─ name = "w"
-  │               │           │   │   │   └─ name = "Id"
+  │               │           │   │   │   ├─ object/name = "w"
+  │               │           │   │   │   └─ property/name = "Id"
   │               │           │   │   ├─ op[compare and greater] = ">"
   │               │           │   │   └─ right/expression/int = "100"
   │               │           │   └─ string = "\"big\""
@@ -479,11 +479,11 @@ unit/
   │               │       │   │   └─ name = "w"
   │               │       │   └─ expression/call/
   │               │       │       ├─ member[instance]/
-  │               │       │       │   ├─ name = "Console"
-  │               │       │       │   └─ name = "WriteLine"
+  │               │       │       │   ├─ object/name = "Console"
+  │               │       │       │   └─ property/name = "WriteLine"
   │               │       │       └─ argument/call/member[instance]/
-  │               │       │           ├─ name = "w"
-  │               │       │           └─ name = "Describe"
+  │               │       │           ├─ object/name = "w"
+  │               │       │           └─ property/name = "Describe"
   │               │       ├─ section/
   │               │       │   ├─ pattern[constant]/null = "null"
   │               │       │   └─ throw/new/type/name = "InvalidOperationException"
@@ -496,11 +496,11 @@ unit/
   │               │   │       └─ name = "probe"
   │               │   └─ then/expression/call/
   │               │       ├─ member[instance]/
-  │               │       │   ├─ name = "Console"
-  │               │       │   └─ name = "WriteLine"
+  │               │       │   ├─ object/name = "Console"
+  │               │       │   └─ property/name = "WriteLine"
   │               │       └─ argument/member[instance]/
-  │               │           ├─ name = "probe"
-  │               │           └─ name = "Id"
+  │               │           ├─ object/name = "probe"
+  │               │           └─ property/name = "Id"
   │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -527,12 +527,12 @@ unit/
   │               │   └─ declarator/
   │               │       ├─ name = "odds"
   │               │       └─ call/member[instance]/
-  │               │           ├─ call/
+  │               │           ├─ object/call/
   │               │           │   ├─ member[instance]/
-  │               │           │   │   ├─ call/
+  │               │           │   │   ├─ object/call/
   │               │           │   │   │   ├─ member[instance]/
-  │               │           │   │   │   │   ├─ name = "numbers"
-  │               │           │   │   │   │   └─ name = "Where"
+  │               │           │   │   │   │   ├─ object/name = "numbers"
+  │               │           │   │   │   │   └─ property/name = "Where"
   │               │           │   │   │   └─ argument/lambda/
   │               │           │   │   │       ├─ parameter = "n"
   │               │           │   │   │       └─ value/expression/binary/
@@ -542,14 +542,14 @@ unit/
   │               │           │   │   │           │   └─ right/expression/int = "2"
   │               │           │   │   │           ├─ op[inequality] = "!="
   │               │           │   │   │           └─ right/expression/int = "0"
-  │               │           │   │   └─ name = "Select"
+  │               │           │   │   └─ property/name = "Select"
   │               │           │   └─ argument/lambda/
   │               │           │       ├─ parameter = "n"
   │               │           │       └─ value/expression/binary/
   │               │           │           ├─ left/expression/name = "n"
   │               │           │           ├─ op[plus] = "+"
   │               │           │           └─ right/expression/int = "1"
-  │               │           └─ name = "ToList"
+  │               │           └─ property/name = "ToList"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
   │               │   ├─ type/name = "int"
@@ -600,15 +600,15 @@ unit/
   │               │           ├─ parameter = "msg"
   │               │           └─ value/expression/call/
   │               │               ├─ member[instance]/
-  │               │               │   ├─ name = "Console"
-  │               │               │   └─ name = "WriteLine"
+  │               │               │   ├─ object/name = "Console"
+  │               │               │   └─ property/name = "WriteLine"
   │               │               └─ argument/name = "msg"
   │               ├─ expression/call/
   │               │   ├─ name = "log"
   │               │   └─ argument/string/
   │               │       ├─ interpolation/call/member[instance]/
-  │               │       │   ├─ name = "evens"
-  │               │       │   └─ name = "Sum"
+  │               │       │   ├─ object/name = "evens"
+  │               │       │   └─ property/name = "Sum"
   │               │       ├─ interpolation/call/
   │               │       │   ├─ name = "cube"
   │               │       │   └─ argument/int = "3"
@@ -661,8 +661,8 @@ unit/
   │               │   └─ body/expression/call/
   │               │       ├─ name = "log"
   │               │       └─ argument/call/member[instance]/
-  │               │           ├─ name = "n"
-  │               │           └─ name = "ToString"
+  │               │           ├─ object/name = "n"
+  │               │           └─ property/name = "ToString"
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -685,8 +685,8 @@ unit/
   │               │   │   │   │           └─ name = "MemoryStream"
   │               │   │   │   └─ body/block/expression/call/
   │               │   │   │       ├─ member[instance]/
-  │               │   │   │       │   ├─ name = "inner"
-  │               │   │   │       │   └─ name = "WriteByte"
+  │               │   │   │       │   ├─ object/name = "inner"
+  │               │   │   │       │   └─ property/name = "WriteByte"
   │               │   │   │       └─ argument/int = "1"
   │               │   │   └─ throw/new/
   │               │   │       ├─ type/name = "InvalidOperationException"
@@ -697,23 +697,23 @@ unit/
   │               │   │   │   └─ name = "ex"
   │               │   │   ├─ filter/binary/
   │               │   │   │   ├─ left/expression/member[instance]/
-  │               │   │   │   │   ├─ member[instance]/
-  │               │   │   │   │   │   ├─ name = "ex"
-  │               │   │   │   │   │   └─ name = "Message"
-  │               │   │   │   │   └─ name = "Length"
+  │               │   │   │   │   ├─ object/member[instance]/
+  │               │   │   │   │   │   ├─ object/name = "ex"
+  │               │   │   │   │   │   └─ property/name = "Message"
+  │               │   │   │   │   └─ property/name = "Length"
   │               │   │   │   ├─ op[compare and greater] = ">"
   │               │   │   │   └─ right/expression/int = "0"
   │               │   │   └─ body/block/expression/call/
   │               │   │       ├─ name = "log"
   │               │   │       └─ argument/member[instance]/
-  │               │   │           ├─ name = "ex"
-  │               │   │           └─ name = "Message"
+  │               │   │           ├─ object/name = "ex"
+  │               │   │           └─ property/name = "Message"
   │               │   ├─ catch/
   │               │   │   ├─ declaration/type/name = "Exception"
   │               │   │   └─ body/block[throw]
   │               │   └─ finally/block/expression/call/member[instance]/
-  │               │       ├─ name = "scope"
-  │               │       └─ name = "Flush"
+  │               │       ├─ object/name = "scope"
+  │               │       └─ property/name = "Flush"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
   │               │   ├─ type[tuple]/
@@ -727,8 +727,8 @@ unit/
   │               │       ├─ name = "pair"
   │               │       └─ tuple/
   │               │           ├─ argument/member[instance]/
-  │               │           │   ├─ name = "odds"
-  │               │           │   └─ name = "Count"
+  │               │           │   ├─ object/name = "odds"
+  │               │           │   └─ property/name = "Count"
   │               │           └─ argument/string = "\"odd\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -795,28 +795,28 @@ unit/
   │                   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   ├─ left/expression/binary/
   │                   │   │   │   │   │   │   ├─ left/expression/member[instance]/
-  │                   │   │   │   │   │   │   │   ├─ name = "list"
-  │                   │   │   │   │   │   │   │   └─ name = "Count"
+  │                   │   │   │   │   │   │   │   ├─ object/name = "list"
+  │                   │   │   │   │   │   │   │   └─ property/name = "Count"
   │                   │   │   │   │   │   │   ├─ op[plus] = "+"
   │                   │   │   │   │   │   │   └─ right/expression/member[instance]/
-  │                   │   │   │   │   │   │       ├─ name = "map"
-  │                   │   │   │   │   │   │       └─ name = "Count"
+  │                   │   │   │   │   │   │       ├─ object/name = "map"
+  │                   │   │   │   │   │   │       └─ property/name = "Count"
   │                   │   │   │   │   │   ├─ op[plus] = "+"
   │                   │   │   │   │   │   └─ right/expression/member[instance]/
-  │                   │   │   │   │   │       ├─ name = "plain"
-  │                   │   │   │   │   │       └─ name = "Length"
+  │                   │   │   │   │   │       ├─ object/name = "plain"
+  │                   │   │   │   │   │       └─ property/name = "Length"
   │                   │   │   │   │   ├─ op[plus] = "+"
   │                   │   │   │   │   └─ right/expression/member[instance]/
-  │                   │   │   │   │       ├─ name = "verbatim"
-  │                   │   │   │   │       └─ name = "Length"
+  │                   │   │   │   │       ├─ object/name = "verbatim"
+  │                   │   │   │   │       └─ property/name = "Length"
   │                   │   │   │   ├─ op[plus] = "+"
   │                   │   │   │   └─ right/expression/member[instance]/
-  │                   │   │   │       ├─ name = "interp"
-  │                   │   │   │       └─ name = "Length"
+  │                   │   │   │       ├─ object/name = "interp"
+  │                   │   │   │       └─ property/name = "Length"
   │                   │   │   ├─ op[plus] = "+"
   │                   │   │   └─ right/expression/member[instance]/
-  │                   │   │       ├─ name = "raw"
-  │                   │   │       └─ name = "Length"
+  │                   │   │       ├─ object/name = "raw"
+  │                   │   │       └─ property/name = "Length"
   │                   │   ├─ op[plus] = "+"
   │                   │   └─ right/expression/ternary/
   │                   │       ├─ condition/expression/binary/
@@ -827,8 +827,8 @@ unit/
   │                   │       └─ else/int = "1"
   │                   ├─ op[plus] = "+"
   │                   └─ right/expression/member[instance]/
-  │                       ├─ name = "shouted"
-  │                       └─ name = "Length"
+  │                       ├─ object/name = "shouted"
+  │                       └─ property/name = "Length"
   └─ namespace[file]/
       ├─ name = "Tractor.Fixtures.FileScoped"
       ├─ import/name = "System"
@@ -844,8 +844,8 @@ unit/
       │       ├─ returns/type/name = "int"
       │       ├─ name = "Get"
       │       └─ body/member[instance]/
-      │           ├─ name = "Hidden"
-      │           └─ name = "Answer"
+      │           ├─ object/name = "Hidden"
+      │           └─ property/name = "Answer"
       ├─ comment = "// Iter 20: new shapes — statements, expressions, patterns, literals."
       ├─ comment[leading] = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
       └─ class[public and static]/
@@ -1026,5 +1026,5 @@ unit/
                           │   ├─ type/name = "var"
                           │   └─ name = "x"
                           └─ call/member[instance]/
-                              ├─ expression[non_null]/name = "x"
-                              └─ name = "ToString"
+                              ├─ object/expression[non_null]/name = "x"
+                              └─ property/name = "ToString"

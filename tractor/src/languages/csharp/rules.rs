@@ -46,7 +46,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::ConstantPattern             => RenameWithMarker(Pattern, Constant),
         CsKind::DeclarationPattern          => RenameWithMarker(Pattern, Declaration),
         CsKind::FunctionPointerType         => RenameWithMarker(Type, Function),
-        CsKind::MemberAccessExpression      => RenameWithMarker(Member, Instance),
+        // `member_access_expression` — wrap receiver + property in
+        // role-named `<object>`/`<property>` so the two `<name>`s no
+        // longer collide on JSON `name` key (Principle #19; mirrors
+        // iter 147 Java/Python/Go member-access role-wrap).
+        CsKind::MemberAccessExpression      => Custom(transformations::member_access_expression),
         CsKind::MemberBindingExpression     => RenameWithMarker(Member, Optional),
         CsKind::PointerType                 => RenameWithMarker(Type, Pointer),
         CsKind::PrefixUnaryExpression       => Custom(transformations::prefix_unary_expression),

@@ -39,7 +39,7 @@ pub enum TractorNode {
     // Statement additions
     Yield, Checked, Fixed, Goto, Lock, Default, With,
     // Expressions
-    Call, Member, New, Assign, Binary, Unary, Lambda, Await, Ternary, Index, Is,
+    Call, Member, Object, New, Assign, Binary, Unary, Lambda, Await, Ternary, Index, Is,
     Tuple, Literal, Pattern, NonNull,
     // Expression additions
     Cast, Typeof, Sizeof,

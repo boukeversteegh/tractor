@@ -176,10 +176,11 @@ fn test_csharp_null_forgiving_operator() {
     assert_eq!(errors.len(), 0, "Should have no ERROR nodes - null-forgiving operator should parse correctly");
 
     // Can query for member access on null-forgiving expression.
+    // Post-iter-178: receiver is wrapped in <object> per Principle #19.
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//member[expression[non_null]]",
+        "//member[object/expression[non_null]]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");

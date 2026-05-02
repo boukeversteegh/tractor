@@ -298,15 +298,12 @@ member-access receiver). But several transform sites still
 
 Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
-- [ ] **C# member-access still uses bare `<name>/<name>` siblings**
-  *(severity HIGH; iter-147 sweep missed C#)*. Sites: `tests/integration/languages/csharp/blueprint.cs.snapshot.txt:283-285`
-  and ~43 other lines. Current: `<member[instance]>/<name>="a"/<name>="X"`.
-  In JSON: `{"member": {"name": "a", "children": ["X"]}}` — the
-  receiver and property collide on `name`, the property falls through
-  to `children`. Expected: `<object>/<property>` wrappers like
-  Java/Python/Go from iter 147-148. Effort: small (mechanical
-  extension of iter 147 to C#'s `MemberAccessExpression`). Rust
-  may have the same gap on `field_expression` — verify in same iter.
+- [x] **C# member-access role-wrap** — closed iter 178. Mechanical
+  port of iter 147 (Java/Python/Go) to C# `MemberAccessExpression`.
+  Custom handler tags receiver (field=expression) as `<object>` and
+  property as `<property>`. Tracker-test xpaths updated. Rust
+  `<field_expression>` still pending (separate item — verify if it
+  has the same shape gap).
 
 - [x] **Go closure body archetype** — closed iter 176. Post-pass
   `go_retag_singleton_closure_body` retags `<body>` to `<value>` for
@@ -374,6 +371,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 178: C# member-access role-wrap (port iter-147 to C#).
+  `MemberAccessExpression` Custom handler wraps receiver in
+  `<object>` and property in `<property>`. JSON
+  `{member: {object: {...}, property: {name: "X"}}}` — no more
+  `name`/`children` collision. 2 transform-test xpaths + 1
+  integration test xpath updated. Iter-175 review's "iter 147
+  missed C#" now closed.
 - [x] iter 177: Ruby `<case>` / `<when>` list distribution — closes
   2 backlog items: `case.when: [...]` array (no more children
   overflow on multi-when cases) AND `when.pattern: [...]` for
