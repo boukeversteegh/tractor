@@ -1745,11 +1745,14 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     Ok(())
 }
 
-/// Tag the multi-instance role children of `<case>` and `<when>`
-/// with `list=` so JSON consumers see them as arrays:
-/// - `<case>`'s `<when>` children → `list="when"` (case branches; multi).
-/// - `<when>`'s `<pattern>` children → `list="pattern"` (multi-pattern
+/// Tag the multi-instance role children of Ruby's pattern-match
+/// constructs (`<case>`, `<when>`, `<match>`) with `list=` so JSON
+/// consumers see them as arrays:
+/// - `<case>` → `<when>` children → `list="when"` (case branches; multi).
+/// - `<when>` → `<pattern>` children → `list="pattern"` (multi-pattern
 ///   `when X, Y` lifts each as a sibling).
+/// - `<match>` → `<in>` children → `list="in"` (Ruby 3.0+
+///   pattern-match `case x in ... in ... end`; multi-arm).
 ///
 /// `distribute_member_list_attrs` would over-tag siblings that are
 /// role-MIXED (e.g. `<case>`'s `<value>` discriminant and `<else>`,
@@ -1803,6 +1806,24 @@ fn ruby_tag_case_when_lists(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
         for p in patterns {
             if get_attr(xot, p, "list").is_none() {
                 xot.with_attr(p, "list", "pattern");
+            }
+        }
+    }
+
+    // `<match>` → tag `<in>` children with list="in" (Ruby 3.0+
+    // `case x in pat1 then ... in pat2 then ... end` pattern-match).
+    let mut matches: Vec<XotNode> = Vec::new();
+    collect(xot, root, "match", &mut matches);
+    for m in matches {
+        let ins: Vec<XotNode> = xot.children(m)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("in")
+            })
+            .collect();
+        for i in ins {
+            if get_attr(xot, i, "list").is_none() {
+                xot.with_attr(i, "list", "in");
             }
         }
     }

@@ -998,32 +998,23 @@
             "right": {
               "expression": {
                 "match": {
-                  "children": [
+                  "in": [
                     {
-                      "$type": "in",
-                      "pattern": {
-                        "parameter": {
-                          "name": "tail",
-                          "splat": true
-                        },
-                        "array": true,
-                        "name": "head"
-                      },
-                      "if": {
-                        "condition": {
-                          "expression": {
-                            "call": {
-                              "children": [
-                                "is_a?"
-                              ],
-                              "name": "head",
-                              "arguments": [
-                                "Integer"
-                              ]
+                      "body": {
+                        "then": [
+                          {
+                            "expression": {
+                              "symbol": ":empty"
                             }
                           }
-                        }
+                        ]
                       },
+                      "pattern": {
+                        "text": "[]",
+                        "array": true
+                      }
+                    },
+                    {
                       "body": {
                         "then": [
                           {
@@ -1052,10 +1043,41 @@
                             }
                           }
                         ]
+                      },
+                      "pattern": {
+                        "parameter": {
+                          "name": "tail",
+                          "splat": true
+                        },
+                        "array": true,
+                        "name": "head"
+                      },
+                      "if": {
+                        "condition": {
+                          "expression": {
+                            "call": {
+                              "children": [
+                                "is_a?"
+                              ],
+                              "name": "head",
+                              "arguments": [
+                                "Integer"
+                              ]
+                            }
+                          }
+                        }
                       }
                     },
                     {
-                      "$type": "in",
+                      "body": {
+                        "then": [
+                          {
+                            "expression": {
+                              "symbol": ":find_pattern"
+                            }
+                          }
+                        ]
+                      },
                       "pattern": {
                         "children": [
                           "last"
@@ -1088,19 +1110,18 @@
                             }
                           }
                         }
-                      },
+                      }
+                    },
+                    {
                       "body": {
                         "then": [
                           {
                             "expression": {
-                              "symbol": ":find_pattern"
+                              "name": "k"
                             }
                           }
                         ]
-                      }
-                    },
-                    {
-                      "$type": "in",
+                      },
                       "pattern": {
                         "pattern": {
                           "value": {
@@ -1119,27 +1140,9 @@
                           "keyword": true
                         },
                         "hash": true
-                      },
-                      "body": {
-                        "then": [
-                          {
-                            "expression": {
-                              "name": "k"
-                            }
-                          }
-                        ]
                       }
                     },
                     {
-                      "$type": "in",
-                      "pattern": {
-                        "children": [
-                          "2",
-                          "3"
-                        ],
-                        "alternative": true,
-                        "int": "1"
-                      },
                       "body": {
                         "then": [
                           {
@@ -1148,19 +1151,17 @@
                             }
                           }
                         ]
+                      },
+                      "pattern": {
+                        "children": [
+                          "2",
+                          "3"
+                        ],
+                        "alternative": true,
+                        "int": "1"
                       }
                     },
                     {
-                      "$type": "in",
-                      "pattern": {
-                        "name": "n",
-                        "as": true,
-                        "value": {
-                          "expression": {
-                            "name": "Integer"
-                          }
-                        }
-                      },
                       "body": {
                         "then": [
                           {
@@ -1169,27 +1170,21 @@
                             }
                           }
                         ]
+                      },
+                      "pattern": {
+                        "name": "n",
+                        "as": true,
+                        "value": {
+                          "expression": {
+                            "name": "Integer"
+                          }
+                        }
                       }
                     }
                   ],
                   "value": {
                     "expression": {
                       "name": "values"
-                    }
-                  },
-                  "in": {
-                    "body": {
-                      "then": [
-                        {
-                          "expression": {
-                            "symbol": ":empty"
-                          }
-                        }
-                      ]
-                    },
-                    "pattern": {
-                      "text": "[]",
-                      "array": true
                     }
                   }
                 }

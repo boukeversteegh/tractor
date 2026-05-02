@@ -400,12 +400,11 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   to `<aliased>` (or `<as>`), keep the marker as `<alias/>`.
   Effort: small. ~5 sites in Rust.
 
-- [ ] **Ruby `<match>` with multiple `<in>` clauses** — same
-  pattern as case/when (closed iter 177). Multiple `<in>` siblings
-  under `<match>` overflow into `children: [...]`. Fix: extend
-  `ruby_tag_case_when_lists` (or rename to e.g.
-  `ruby_tag_pattern_match_lists`) to also tag `<in>` children of
-  `<match>` with `list="in"`. Effort: small.
+- [x] **Ruby `<match>` with multiple `<in>` clauses** — closed
+  iter 183. Extended `ruby_tag_case_when_lists` to also tag
+  `<in>` children of `<match>` with `list="in"`. JSON now:
+  `match.in: [{...}, {...}]` array (was `match.children: [...]`
+  overflow).
 
 - [ ] **Rust/Python/PHP `<parameter>` overflow** — multiple
   parameters in some contexts (typeparams? closures?) overflow.
@@ -445,6 +444,10 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 183: Ruby `<match>`/`<in>` list distribution — extended
+  iter-177's `ruby_tag_case_when_lists` to also tag `<in>` children
+  of `<match>` with `list="in"`. JSON `match.in: [...]` array now
+  uniform (was `match.children: [...]` overflow).
 - [x] iter 182: TSQL post-transform — added
   `distribute_member_list_attrs(["file", "transaction", "union",
   "columns", "list"])` for role-uniform containers. Closed 8 of
