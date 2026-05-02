@@ -8,71 +8,75 @@
       "name": "Calculator",
       "body": {
         "$type": "body",
-        "method": {
-          "$type": "method",
-          "public": true,
-          "returns": {
-            "$type": "returns",
-            "type": {
-              "$type": "type",
-              "name": "int"
-            }
-          },
-          "name": "Add",
-          "parameters": [
-            {
-              "$type": "parameter",
+        "method": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "$type": "returns",
               "type": {
                 "$type": "type",
                 "name": "int"
-              },
-              "name": "a"
+              }
             },
-            {
-              "$type": "parameter",
-              "type": {
-                "$type": "type",
-                "name": "int"
+            "name": "Add",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "a"
               },
-              "name": "b"
-            }
-          ],
-          "body": {
-            "$type": "body",
-            "block": {
-              "$type": "block",
-              "return": {
-                "$type": "return",
-                "expression": {
-                  "$type": "expression",
-                  "binary": {
-                    "$type": "binary",
-                    "left": {
-                      "$type": "left",
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
                       "expression": {
                         "$type": "expression",
-                        "name": "a"
-                      }
-                    },
-                    "op": {
-                      "$type": "op",
-                      "plus": true,
-                      "text": "+"
-                    },
-                    "right": {
-                      "$type": "right",
-                      "expression": {
-                        "$type": "expression",
-                        "name": "b"
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "a"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "b"
+                            }
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             }
-          }
-        },
-        "children": [
+          },
           {
             "$type": "method",
             "public": true,
@@ -104,37 +108,41 @@
             ],
             "body": {
               "$type": "body",
-              "block": {
-                "$type": "block",
-                "return": {
-                  "$type": "return",
-                  "expression": {
-                    "$type": "expression",
-                    "binary": {
-                      "$type": "binary",
-                      "left": {
-                        "$type": "left",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "a"
-                        }
-                      },
-                      "op": {
-                        "$type": "op",
-                        "minus": true,
-                        "text": "-"
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "b"
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "a"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "minus": true,
+                            "text": "-"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "b"
+                            }
+                          }
                         }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             }
           },
           {
@@ -168,37 +176,41 @@
             ],
             "body": {
               "$type": "body",
-              "block": {
-                "$type": "block",
-                "return": {
-                  "$type": "return",
-                  "expression": {
-                    "$type": "expression",
-                    "binary": {
-                      "$type": "binary",
-                      "left": {
-                        "$type": "left",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "a"
-                        }
-                      },
-                      "op": {
-                        "$type": "op",
-                        "multiply": true,
-                        "text": "*"
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "b"
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "a"
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "multiply": true,
+                            "text": "*"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "b"
+                            }
+                          }
                         }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             }
           }
         ]
@@ -215,63 +227,67 @@
       "name": "Greeter",
       "body": {
         "$type": "body",
-        "method": {
-          "$type": "method",
-          "public": true,
-          "returns": {
-            "$type": "returns",
-            "type": {
-              "$type": "type",
-              "name": "string"
-            }
-          },
-          "name": "Hello",
-          "parameters": [
-            {
-              "$type": "parameter",
+        "method": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "$type": "returns",
               "type": {
                 "$type": "type",
                 "name": "string"
-              },
-              "name": "name"
-            }
-          ],
-          "body": {
-            "$type": "body",
-            "block": {
-              "$type": "block",
-              "return": {
-                "$type": "return",
-                "expression": {
-                  "$type": "expression",
-                  "binary": {
-                    "$type": "binary",
-                    "left": {
-                      "$type": "left",
+              }
+            },
+            "name": "Hello",
+            "parameters": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "$type": "type",
+                  "name": "string"
+                },
+                "name": "name"
+              }
+            ],
+            "body": {
+              "$type": "body",
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
                       "expression": {
                         "$type": "expression",
-                        "string": "\"Hello, \""
-                      }
-                    },
-                    "op": {
-                      "$type": "op",
-                      "plus": true,
-                      "text": "+"
-                    },
-                    "right": {
-                      "$type": "right",
-                      "expression": {
-                        "$type": "expression",
-                        "name": "name"
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "string": "\"Hello, \""
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "name"
+                            }
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             }
-          }
-        },
-        "children": [
+          },
           {
             "$type": "method",
             "public": true,
@@ -295,37 +311,41 @@
             ],
             "body": {
               "$type": "body",
-              "block": {
-                "$type": "block",
-                "return": {
-                  "$type": "return",
-                  "expression": {
-                    "$type": "expression",
-                    "binary": {
-                      "$type": "binary",
-                      "left": {
-                        "$type": "left",
-                        "expression": {
-                          "$type": "expression",
-                          "string": "\"Goodbye, \""
-                        }
-                      },
-                      "op": {
-                        "$type": "op",
-                        "plus": true,
-                        "text": "+"
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "name"
+              "block": [
+                {
+                  "$type": "block",
+                  "return": [
+                    {
+                      "$type": "return",
+                      "expression": {
+                        "$type": "expression",
+                        "binary": {
+                          "$type": "binary",
+                          "left": {
+                            "$type": "left",
+                            "expression": {
+                              "$type": "expression",
+                              "string": "\"Goodbye, \""
+                            }
+                          },
+                          "op": {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          },
+                          "right": {
+                            "$type": "right",
+                            "expression": {
+                              "$type": "expression",
+                              "name": "name"
+                            }
+                          }
                         }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             }
           },
           {

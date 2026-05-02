@@ -286,6 +286,67 @@ pub fn wrap_relationship_targets_in_type(
     Ok(())
 }
 
+/// Distribute `list="<element-name>"` to every direct element child of
+/// every node whose element name is a statement-container (`body`,
+/// `block`, `unit`, `file`, `program`, `module`, etc.). The container's
+/// children are role-mixed by element name (methods, fields, properties,
+/// statements) but role-uniform within each name — i.e. multiple
+/// `<method>` siblings under `<body>` should JSON-serialize as
+/// `body.method: [{...}, {...}]` regardless of count, never collapsing
+/// to a scalar for the 1-method case.
+///
+/// Without this pass, a 1-method body produces `body.method: {...}`
+/// (scalar) while a 2-method body produces `body.method` collision +
+/// fallback-children — content-dependent shape, contrary to Principle
+/// #12 / #19. With this pass, every body member carries
+/// `list="<element-name>"` so JSON always emits an array under that
+/// element-name key.
+///
+/// Idempotent: skips children that already have `list=`.
+pub fn distribute_member_list_attrs(
+    xot: &mut Xot,
+    root: XotNode,
+    container_names: &[&str],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    let root = find_content_root(xot, root);
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(
+        xot: &Xot,
+        node: XotNode,
+        container_names: &[&str],
+        out: &mut Vec<XotNode>,
+    ) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if container_names.contains(&name.as_str()) {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, container_names, out);
+        }
+    }
+    collect(xot, root, container_names, &mut targets);
+    for container in targets {
+        let elem_children: Vec<XotNode> = xot.children(container)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for child in elem_children {
+            if get_attr(xot, child, "list").is_some() {
+                continue;
+            }
+            let element_name = match get_element_name(xot, child) {
+                Some(n) => n,
+                None => continue,
+            };
+            xot.with_attr(child, "list", &element_name);
+        }
+    }
+    Ok(())
+}
+
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
 /// elements (and any other element name in `body_names`) recursively
 /// across the tree. C-family languages emit braces as anonymous text

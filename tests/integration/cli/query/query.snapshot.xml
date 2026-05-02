@@ -3,18 +3,18 @@
   <results>
     <match file="tests/integration/sample.cs" line="2" column="1" end_line="7" end_column="2">
       <tree>
-        <class>
+        <class list="class">
           <public/>
           public class
           <name>Calculator</name>
           <body>
-            <method>
+            <method list="method">
               <!-- ... (26 children) -->
             </method>
-            <method>
+            <method list="method">
               <!-- ... (26 children) -->
             </method>
-            <method>
+            <method list="method">
               <!-- ... (26 children) -->
             </method>
           </body>
@@ -23,18 +23,18 @@
     </match>
     <match file="tests/integration/sample.cs" line="9" column="1" end_line="14" end_column="2">
       <tree>
-        <class>
+        <class list="class">
           <public/>
           public class
           <name>Greeter</name>
           <body>
-            <method>
+            <method list="method">
               <!-- ... (22 children) -->
             </method>
-            <method>
+            <method list="method">
               <!-- ... (22 children) -->
             </method>
-            <method>
+            <method list="method">
               <!-- ... (5 children) -->
             </method>
           </body>

@@ -332,6 +332,10 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // its handler ran.
     crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "call"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root,
+        &["body", "block", "unit", "namespace", "section"],
+    )?;
     Ok(())
 }
 
@@ -643,6 +647,9 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     rust_restructure_use(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "block", "file"],
+    )?;
     Ok(())
 }
 
@@ -938,6 +945,9 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     )?;
     typescript_restructure_import(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "block", "program"],
+    )?;
     Ok(())
 }
 
@@ -1115,6 +1125,9 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     python_restructure_imports(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "module"],
+    )?;
     Ok(())
 }
 
@@ -1366,6 +1379,9 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         xot, root,
         &["body", "block", "then", "else", "call"],
     )?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "block", "program"],
+    )?;
     Ok(())
 }
 
@@ -1410,6 +1426,9 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "file"],
+    )?;
     Ok(())
 }
 
@@ -1426,6 +1445,9 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     php_restructure_use(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "namespace", "program"],
+    )?;
     Ok(())
 }
 
@@ -1622,6 +1644,9 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     ruby_extract_pair_keys(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    crate::transform::distribute_member_list_attrs(
+        xot, root, &["body", "program"],
+    )?;
     Ok(())
 }
 

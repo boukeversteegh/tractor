@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<class>
+<class list="class">
   <public/>
   public class
   <name>Calculator</name>
   <body>
-    <method>
+    <method list="method">
       <!-- ... (26 children) -->
     </method>
-    <method>
+    <method list="method">
       <!-- ... (26 children) -->
     </method>
-    <method>
+    <method list="method">
       <!-- ... (26 children) -->
     </method>
   </body>

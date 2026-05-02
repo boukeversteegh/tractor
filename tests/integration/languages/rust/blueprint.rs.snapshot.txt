@@ -1,12 +1,12 @@
 file/
-  ├─ comment[leading] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n\n//! by tractor's snapshot tests to catch design-principle regressions."
-  ├─ attribute[inner]/
+  ├─ comment[leading and @list="comment"] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n\n//! by tractor's snapshot tests to catch design-principle regressions."
+  ├─ attribute[inner and @list="attribute"]/
   │   ├─ name = "allow"
   │   ├─ name = "dead_code"
   │   ├─ name = "unused_variables"
   │   ├─ name = "unused_imports"
   │   └─ name = "unused_mut"
-  ├─ use[group]/
+  ├─ use[group and @list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "collections"
@@ -14,29 +14,29 @@ file/
   │   └─ use[alias]/
   │       ├─ name = "HashSet"
   │       └─ alias/name = "Set"
-  ├─ use[group]/
+  ├─ use[group and @list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "fmt"
   │   ├─ use/name = "Debug"
   │   ├─ use/name = "Display"
   │   └─ use[self]
-  ├─ use/
+  ├─ use[@list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "rc"
   │   └─ name = "Rc"
-  ├─ use/
+  ├─ use[@list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "sync"
   │   └─ name = "Arc"
-  ├─ use/
+  ├─ use[@list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "cell"
   │   └─ name = "RefCell"
-  ├─ use[group]/
+  ├─ use[group and @list="use"]/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "io"
@@ -46,29 +46,29 @@ file/
   │   └─ use[alias]/
   │       ├─ name = "Write"
   │       └─ alias/name = "IoWrite"
-  ├─ use[wildcard]/path/
+  ├─ use[wildcard and @list="use"]/path/
   │   ├─ name = "std"
   │   └─ name = "vec"
-  ├─ mod[pub]/
+  ├─ mod[pub and @list="mod"]/
   │   ├─ name = "outer"
-  │   └─ body/mod/
+  │   └─ body/mod[@list="mod"]/
   │       ├─ pub[crate]
   │       ├─ name = "inner"
   │       └─ body/
-  │           ├─ const/
+  │           ├─ const[@list="const"]/
   │           │   ├─ pub[super]
   │           │   ├─ name = "INNER_CONST"
   │           │   ├─ type/name = "u32"
   │           │   └─ value/expression/int = "7"
-  │           └─ function/
+  │           └─ function[@list="function"]/
   │               ├─ pub/in = "crate::outer"
   │               └─ name = "path_vis"
-  ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
-  ├─ attribute/
+  ├─ comment[leading and @list="comment"] = "/// A named-field struct with generics, lifetimes, and a where clause."
+  ├─ attribute[@list="attribute"]/
   │   ├─ name = "derive"
   │   ├─ name = "Debug"
   │   └─ name = "Clone"
-  ├─ struct[pub]/
+  ├─ struct[pub and @list="struct"]/
   │   ├─ name = "Point"
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   ├─ generic[@list="generics"]/name = "T"
@@ -78,66 +78,67 @@ file/
   │   │   ├─ extends[@list="extends"]/type/name = "Send"
   │   │   └─ extends[@list="extends"]/lifetime/name = "static"
   │   └─ body/
-  │       ├─ field[pub]/
+  │       ├─ field[pub and @list="field"]/
   │       │   ├─ name = "x"
   │       │   └─ type/name = "T"
-  │       ├─ field/
+  │       ├─ field[@list="field"]/
   │       │   ├─ pub[crate]
   │       │   ├─ name = "y"
   │       │   └─ type/name = "T"
-  │       └─ field/
+  │       └─ field[@list="field"]/
   │           ├─ name = "label"
   │           └─ type[borrowed]/
   │               ├─ lifetime/name = "a"
   │               └─ type/name = "str"
-  ├─ comment[leading] = "/// A tuple struct."
-  ├─ struct[pub]/
+  ├─ comment[leading and @list="comment"] = "/// A tuple struct."
+  ├─ struct[pub and @list="struct"]/
   │   ├─ name = "Pair"
   │   ├─ generic[@list="generics"]/name = "T"
-  │   └─ body[pub]/
-  │       ├─ type/name = "T"
-  │       └─ type/name = "T"
-  ├─ comment[leading] = "/// A unit struct."
-  ├─ struct[pub]/name = "Marker"
-  ├─ comment[leading] = "/// An enum with every variant flavor and explicit discriminants."
-  ├─ attribute/
+  │   └─ body/
+  │       ├─ pub[@list="pub"]
+  │       ├─ type[@list="type"]/name = "T"
+  │       └─ type[@list="type"]/name = "T"
+  ├─ comment[leading and @list="comment"] = "/// A unit struct."
+  ├─ struct[pub and @list="struct"]/name = "Marker"
+  ├─ comment[leading and @list="comment"] = "/// An enum with every variant flavor and explicit discriminants."
+  ├─ attribute[@list="attribute"]/
   │   ├─ name = "derive"
   │   └─ name = "Debug"
-  ├─ enum[pub]/
+  ├─ enum[pub and @list="enum"]/
   │   ├─ name = "Shape"
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   └─ body/
-  │       ├─ variant/name = "Nothing"
-  │       ├─ variant/
+  │       ├─ variant[@list="variant"]/name = "Nothing"
+  │       ├─ variant[@list="variant"]/
   │       │   ├─ name = "Dot"
   │       │   └─ body/
-  │       │       ├─ type/name = "i32"
-  │       │       └─ type/name = "i32"
-  │       ├─ variant/
+  │       │       ├─ type[@list="type"]/name = "i32"
+  │       │       └─ type[@list="type"]/name = "i32"
+  │       ├─ variant[@list="variant"]/
   │       │   ├─ name = "Rect"
   │       │   └─ body/
-  │       │       ├─ field/
+  │       │       ├─ field[@list="field"]/
   │       │       │   ├─ name = "w"
   │       │       │   └─ type/name = "u32"
-  │       │       └─ field/
+  │       │       └─ field[@list="field"]/
   │       │           ├─ name = "h"
   │       │           └─ type/name = "u32"
-  │       └─ variant/
+  │       └─ variant[@list="variant"]/
   │           ├─ name = "Labeled"
-  │           ├─ body/type[borrowed]/
+  │           ├─ body/type[borrowed and @list="type"]/
   │           │   ├─ lifetime/name = "a"
   │           │   └─ type/name = "str"
   │           └─ value/expression/int = "10"
-  ├─ trait[pub]/
+  ├─ trait[pub and @list="trait"]/
   │   ├─ name = "Drawable"
   │   ├─ extends[@list="extends"]/type/name = "Debug"
   │   └─ body/
-  │       ├─ type[associated]/name = "Canvas"
-  │       ├─ const[private]/
+  │       ├─ type[associated and @list="type"]/name = "Canvas"
+  │       ├─ const[private and @list="const"]/
   │       │   ├─ name = "MAX"
   │       │   ├─ type/name = "usize"
   │       │   └─ value/expression/int = "64"
-  │       ├─ signature/
+  │       ├─ signature[@list="signature"]/
   │       │   ├─ name = "draw"
   │       │   ├─ parameter[self and @list="parameters"]/self = "self"
   │       │   └─ parameter[@list="parameters"]/
@@ -145,16 +146,16 @@ file/
   │       │       └─ type[borrowed and mut]/path/
   │       │           ├─ name = "Self"
   │       │           └─ name = "Canvas"
-  │       └─ function[private]/
+  │       └─ function[private and @list="function"]/
   │           ├─ name = "name"
   │           ├─ parameter[self and @list="parameters"]/self = "self"
   │           ├─ returns/type/name = "String"
-  │           └─ body/call/
+  │           └─ body/call[@list="call"]/
   │               ├─ path/
   │               │   ├─ name = "String"
   │               │   └─ name = "from"
   │               └─ string[@list="arguments"] = "\"drawable\""
-  ├─ impl/
+  ├─ impl[@list="impl"]/
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -166,13 +167,13 @@ file/
   │   │   ├─ lifetime[@list="arguments"]/name = "a"
   │   │   └─ type[@list="arguments"]/name = "T"
   │   └─ body/
-  │       ├─ const[pub]/
+  │       ├─ const[pub and @list="const"]/
   │       │   ├─ name = "ORIGIN_LABEL"
   │       │   ├─ type[borrowed]/
   │       │   │   ├─ lifetime/name = "static"
   │       │   │   └─ type/name = "str"
   │       │   └─ value/expression/string = "\"origin\""
-  │       ├─ function[pub]/
+  │       ├─ function[pub and @list="function"]/
   │       │   ├─ name = "new"
   │       │   ├─ parameter[@list="parameters"]/
   │       │   │   ├─ name = "x"
@@ -186,35 +187,35 @@ file/
   │       │   │       ├─ lifetime/name = "a"
   │       │   │       └─ type/name = "str"
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/literal/
+  │       │   └─ body/literal[@list="literal"]/
   │       │       ├─ name = "Self"
   │       │       └─ body/
-  │       │           ├─ field/name = "x"
-  │       │           ├─ field/name = "y"
-  │       │           └─ field/name = "label"
-  │       ├─ function[pub and async]/
+  │       │           ├─ field[@list="field"]/name = "x"
+  │       │           ├─ field[@list="field"]/name = "y"
+  │       │           └─ field[@list="field"]/name = "label"
+  │       ├─ function[pub and async and @list="function"]/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self and @list="parameters"]/self = "self"
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/call/field/
+  │       │   └─ body/call[@list="call"]/field/
   │       │       ├─ value/expression/self = "self"
   │       │       └─ name = "clone"
-  │       ├─ function[pub and const]/
+  │       ├─ function[pub and const and @list="function"]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
-  │       │   └─ body/int = "42"
-  │       └─ function[pub and unsafe]/
+  │       │   └─ body/int[@list="int"] = "42"
+  │       └─ function[pub and unsafe and @list="function"]/
   │           ├─ name = "unsafe_read"
   │           ├─ parameter[@list="parameters"]/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/type/name = "T"
   │           ├─ returns/type/name = "T"
-  │           └─ body/call/field/
+  │           └─ body/call[@list="call"]/field/
   │               ├─ value/expression/unary/
   │               │   ├─ op[multiply] = "*"
   │               │   └─ name = "ptr"
   │               └─ name = "clone"
-  ├─ impl/
+  ├─ impl[@list="impl"]/
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   ├─ generic[@list="generics"]/name = "T"
   │   ├─ type/name = "Drawable"
@@ -229,12 +230,12 @@ file/
   │   │   ├─ extends[@list="extends"]/type/name = "Debug"
   │   │   └─ extends[@list="extends"]/lifetime/name = "static"
   │   └─ body/
-  │       ├─ alias[private]/
+  │       ├─ alias[private and @list="alias"]/
   │       │   ├─ name = "Canvas"
   │       │   └─ type[generic]/
   │       │       ├─ name = "Vec"
   │       │       └─ type[@list="arguments"]/name = "u8"
-  │       └─ function[private]/
+  │       └─ function[private and @list="function"]/
   │           ├─ name = "draw"
   │           ├─ parameter[self and @list="parameters"]/self = "self"
   │           └─ parameter[@list="parameters"]/
@@ -242,7 +243,7 @@ file/
   │               └─ type[borrowed and mut]/path/
   │                   ├─ name = "Self"
   │                   └─ name = "Canvas"
-  ├─ alias[pub]/
+  ├─ alias[pub and @list="alias"]/
   │   ├─ name = "BoxedDraw"
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   └─ type[generic]/
@@ -255,24 +256,24 @@ file/
   │           │       ├─ name = "Vec"
   │           │       └─ type[@list="arguments"]/name = "u8"
   │           └─ lifetime/name = "a"
-  ├─ alias[pub]/
+  ├─ alias[pub and @list="alias"]/
   │   ├─ name = "Callback"
   │   └─ type[function]/
   │       ├─ type[@list="parameters"]/name = "i32"
   │       └─ returns/type/name = "i32"
-  ├─ const[pub]/
+  ├─ const[pub and @list="const"]/
   │   ├─ name = "PI"
   │   ├─ type/name = "f64"
   │   └─ value/expression/float = "3.141_592_653_589f64"
-  ├─ static[pub]/
+  ├─ static[pub and @list="static"]/
   │   ├─ name = "GREETING"
   │   ├─ type[borrowed]/type/name = "str"
   │   └─ value/expression/string = "\"hello\""
-  ├─ static[mut and private]/
+  ├─ static[mut and private and @list="static"]/
   │   ├─ name = "COUNTER"
   │   ├─ type/name = "u32"
   │   └─ value/expression/int = "0"
-  ├─ function[private]/
+  ├─ function[private and @list="function"]/
   │   ├─ name = "numeric_zoo"
   │   ├─ returns/type[tuple]/
   │   │   ├─ type/name = "u32"
@@ -280,39 +281,39 @@ file/
   │   │   ├─ type/name = "i32"
   │   │   ├─ type/name = "i32"
   │   │   └─ type/name = "i32"
-  │   └─ body/tuple/
+  │   └─ body/tuple[@list="tuple"]/
   │       ├─ int = "1u32"
   │       ├─ float = "1.0f64"
   │       ├─ int = "0x1F"
   │       ├─ int = "0b101"
   │       └─ int = "1_000"
-  ├─ function[private]/
+  ├─ function[private and @list="function"]/
   │   ├─ name = "strings_zoo"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "plain"
   │       │   └─ value/expression/string = "\"hello\""
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "raw"
   │       │   └─ value/expression/string[raw] = "r\"C:\\path\""
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "raw_hash"
   │       │   └─ value/expression/string[raw] = "r#\"she said \"hi\"\"#"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "bytes"
   │       │   └─ value/expression/string = "b\"raw bytes\""
-  │       └─ let/
+  │       └─ let[@list="let"]/
   │           ├─ name = "chr"
   │           └─ value/expression/char = "'z'"
-  ├─ function[private]/
+  ├─ function[private and @list="function"]/
   │   ├─ name = "closures_and_refs"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "id"
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/name = "x"
-  │       │       └─ body/name = "x"
-  │       ├─ let/
+  │       │       └─ body/name[@list="name"] = "x"
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "add"
   │       │   ├─ type[function]/
   │       │   │   ├─ type[@list="parameters"]/name = "i32"
@@ -321,37 +322,37 @@ file/
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
-  │       │       └─ body/binary/
+  │       │       └─ body/binary[@list="binary"]/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "s"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
   │       │       │   ├─ name = "String"
   │       │       │   └─ name = "from"
   │       │       └─ string[@list="arguments"] = "\"owned\""
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "moved"
   │       │   └─ value/expression/closure/
   │       │       ├─ parameter/
   │       │       │   ├─ name = "x"
   │       │       │   └─ type/name = "i32"
   │       │       ├─ returns/type/name = "String"
-  │       │       └─ body/macro/
+  │       │       └─ body/macro[@list="macro"]/
   │       │           ├─ name = "format"
   │       │           ├─ string = "\"{}-{}\""
   │       │           ├─ name = "s"
   │       │           └─ name = "x"
-  │       └─ let/
+  │       └─ let[@list="let"]/
   │           ├─ name = "r"
   │           ├─ type[borrowed]/type/name = "i32"
   │           └─ value/expression/ref/value/expression/int = "5"
-  ├─ function[pub]/
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "smart_pointers"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "b"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Box"
@@ -361,7 +362,7 @@ file/
   │       │       │   ├─ name = "Box"
   │       │       │   └─ name = "new"
   │       │       └─ int[@list="arguments"] = "1"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "rc"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Rc"
@@ -375,7 +376,7 @@ file/
   │       │           │   ├─ name = "String"
   │       │           │   └─ name = "from"
   │       │           └─ string[@list="arguments"] = "\"rc\""
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "arc"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Arc"
@@ -385,7 +386,7 @@ file/
   │       │       │   ├─ name = "Arc"
   │       │       │   └─ name = "new"
   │       │       └─ int[@list="arguments"] = "9"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "cell"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "RefCell"
@@ -401,7 +402,7 @@ file/
   │       │           ├─ int = "1"
   │       │           ├─ int = "2"
   │       │           └─ int = "3"
-  │       └─ let/
+  │       └─ let[@list="let"]/
   │           ├─ name = "parsed"
   │           └─ value/expression/call/
   │               ├─ field/
@@ -412,14 +413,14 @@ file/
   │               │   │   └─ type[@list="arguments"]/name = "i32"
   │               │   └─ name = "unwrap_or"
   │               └─ int[@list="arguments"] = "0"
-  ├─ function[pub]/
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "patterns"
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "s"
   │   │   └─ type/name = "Shape"
   │   ├─ returns/type/name = "i32"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "p"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
@@ -428,31 +429,31 @@ file/
   │       │       ├─ int[@list="arguments"] = "1"
   │       │       ├─ int[@list="arguments"] = "2"
   │       │       └─ string[@list="arguments"] = "\"p\""
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "q"
   │       │   └─ value/expression/literal/
   │       │       ├─ name = "Point"
   │       │       └─ body/
-  │       │           ├─ field/
+  │       │           ├─ field[@list="field"]/
   │       │           │   ├─ name = "x"
   │       │           │   └─ value/expression/int = "10"
-  │       │           ├─ field/
+  │       │           ├─ field[@list="field"]/
   │       │           │   ├─ name = "y"
   │       │           │   └─ value/expression/int = "20"
-  │       │           └─ field[base]/call/field/
+  │       │           └─ field[base and @list="field"]/call/field/
   │       │               ├─ value/expression/name = "p"
   │       │               └─ name = "clone"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "result"
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/name = "s"
   │       │       └─ body/
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/path/
   │       │           │   │   ├─ name = "Shape"
   │       │           │   │   └─ name = "Nothing"
   │       │           │   └─ value/expression/int = "0"
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/pattern[or]/
   │       │           │   │   ├─ path/
   │       │           │   │   │   ├─ name = "Shape"
@@ -465,7 +466,7 @@ file/
   │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ int = "0"
   │       │           │   └─ value/expression/name = "y"
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
   │       │           │   │   │   ├─ name = "Shape"
@@ -480,7 +481,7 @@ file/
   │       │           │       ├─ left/expression/name = "x"
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "y"
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ pattern[struct]/
   │       │           │   │   │   ├─ path/
@@ -498,7 +499,7 @@ file/
   │       │           │       │   ├─ op[multiply] = "*"
   │       │           │       │   └─ right/expression/name = "h"
   │       │           │       └─ type/name = "i32"
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
   │       │           │   │   │   ├─ name = "Shape"
@@ -509,30 +510,30 @@ file/
   │       │           │       │   ├─ value/expression/name = "name"
   │       │           │       │   └─ name = "len"
   │       │           │       └─ type/name = "i32"
-  │       │           └─ arm/
+  │       │           └─ arm[@list="arm"]/
   │       │               ├─ pattern = "_"
   │       │               └─ value/expression/unary/
   │       │                   ├─ op[minus] = "-"
   │       │                   └─ int = "99"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "bucket"
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/int = "5"
   │       │       └─ body/
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/range/
   │       │           │   │   ├─ left/expression/int = "0"
   │       │           │   │   └─ right/expression/int = "9"
   │       │           │   └─ value/expression/string = "\"single\""
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/range/
   │       │           │   │   ├─ left/expression/int = "10"
   │       │           │   │   └─ right/expression/int = "99"
   │       │           │   └─ value/expression/string = "\"double\""
-  │       │           └─ arm/
+  │       │           └─ arm[@list="arm"]/
   │       │               ├─ pattern = "_"
   │       │               └─ value/expression/string = "\"many\""
-  │       ├─ if/
+  │       ├─ if[@list="if"]/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "v"
@@ -540,7 +541,7 @@ file/
   │       │   │       ├─ name = "Some"
   │       │   │       └─ int[@list="arguments"] = "10"
   │       │   └─ then/let/value/expression/name = "v"
-  │       ├─ let[mut]/
+  │       ├─ let[mut and @list="let"]/
   │       │   ├─ name = "it"
   │       │   └─ value/expression/call/field/
   │       │       ├─ value/expression/macro/
@@ -549,7 +550,7 @@ file/
   │       │       │   ├─ int = "2"
   │       │       │   └─ int = "3"
   │       │       └─ name = "into_iter"
-  │       ├─ while/
+  │       ├─ while[@list="while"]/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "x"
@@ -557,31 +558,31 @@ file/
   │       │   │       ├─ value/expression/name = "it"
   │       │   │       └─ name = "next"
   │       │   └─ body/
-  │       │       ├─ let/
+  │       │       ├─ let[@list="let"]/
   │       │       │   ├─ name = "_shadow"
   │       │       │   └─ value/expression/name = "x"
-  │       │       └─ let/
+  │       │       └─ let[@list="let"]/
   │       │           ├─ name = "_shadow"
   │       │           └─ value/expression/cast/
   │       │               ├─ value/expression/name = "x"
   │       │               └─ type/name = "f64"
-  │       └─ name = "result"
-  ├─ function[pub]/
+  │       └─ name[@list="name"] = "result"
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "loops_and_flow"
   │   ├─ returns/type/name = "i32"
   │   └─ body/
-  │       ├─ for/
+  │       ├─ for[@list="for"]/
   │       │   ├─ label/name = "outer"
   │       │   ├─ name = "i"
   │       │   ├─ value/expression/range/
   │       │   │   ├─ int = "0"
   │       │   │   └─ int = "10"
-  │       │   └─ body/for/
+  │       │   └─ body/for[@list="for"]/
   │       │       ├─ name = "j"
   │       │       ├─ value/expression/range/
   │       │       │   ├─ int = "0"
   │       │       │   └─ int = "10"
-  │       │       └─ body/if/
+  │       │       └─ body/if[@list="if"]/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
@@ -590,22 +591,22 @@ file/
   │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "20"
   │       │           └─ then/break/label/name = "outer"
-  │       ├─ let[mut]/
+  │       ├─ let[mut and @list="let"]/
   │       │   ├─ name = "n"
   │       │   └─ value/expression/int = "0"
-  │       ├─ while/
+  │       ├─ while[@list="while"]/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/int = "3"
-  │       │   └─ body/expression/assign/
+  │       │   └─ body/expression[@list="expression"]/assign/
   │       │       ├─ left/expression/name = "n"
   │       │       └─ right/expression/int = "1"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "found"
-  │       │   └─ value/expression/loop/body/break/int = "42"
-  │       └─ name = "found"
-  ├─ function[pub]/
+  │       │   └─ value/expression/loop/body/break[@list="break"]/int = "42"
+  │       └─ name[@list="name"] = "found"
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "try_and_cast"
   │   ├─ returns/type[generic]/
   │   │   ├─ name = "Result"
@@ -616,23 +617,23 @@ file/
   │   │       │   └─ name = "num"
   │   │       └─ name = "ParseIntError"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "parsed"
   │       │   ├─ type/name = "i32"
   │       │   └─ value/expression[try]/call/field/
   │       │       ├─ value/expression/string = "\"10\""
   │       │       └─ name = "parse"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "casted"
   │       │   └─ value/expression/cast/
   │       │       ├─ value/expression/cast/
   │       │       │   ├─ value/expression/name = "parsed"
   │       │       │   └─ type/name = "u8"
   │       │       └─ type/name = "i32"
-  │       └─ call/
+  │       └─ call[@list="call"]/
   │           ├─ name = "Ok"
   │           └─ name[@list="arguments"] = "casted"
-  ├─ function[pub]/
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "trait_object_and_impl"
   │   ├─ lifetime[@list="generics"]/name = "a"
   │   ├─ parameter[@list="parameters"]/
@@ -648,69 +649,71 @@ file/
   │   ├─ returns/type[bounded]/
   │   │   ├─ type[abstract]/type/name = "Display"
   │   │   └─ lifetime/name = "a"
-  │   └─ body/macro/
+  │   └─ body/macro[@list="macro"]/
   │       ├─ name = "format"
   │       ├─ string = "\"name={}\""
   │       ├─ name = "d"
   │       └─ name = "name"
-  ├─ function[pub]/
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "diverges"
   │   ├─ returns/type[never] = "!"
-  │   └─ body/expression/macro/
+  │   └─ body/expression[@list="expression"]/macro/
   │       ├─ name = "panic"
   │       └─ string = "\"never returns\""
-  ├─ function[pub and async]/
+  ├─ function[pub and async and @list="function"]/
   │   ├─ name = "async_demo"
   │   ├─ returns/type/name = "u32"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "block"
-  │       │   └─ value/expression/block[async]/binary/
-  │       │       ├─ left/expression/int = "1u32"
-  │       │       ├─ op[plus] = "+"
-  │       │       └─ right/expression/int = "2"
-  │       └─ expression[await]/name = "block"
-  ├─ function[pub]/
+  │       │   └─ value/expression/block/
+  │       │       ├─ async[@list="async"]
+  │       │       └─ binary[@list="binary"]/
+  │       │           ├─ left/expression/int = "1u32"
+  │       │           ├─ op[plus] = "+"
+  │       │           └─ right/expression/int = "2"
+  │       └─ expression[await and @list="expression"]/name = "block"
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "unsafe_block"
   │   └─ body/
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "x"
   │       │   └─ value/expression/int = "5"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "r"
   │       │   └─ value/expression/cast/
   │       │       ├─ value/expression/ref/value/expression/name = "x"
   │       │       └─ type[pointer]/type/name = "i32"
-  │       └─ unsafe/
+  │       └─ unsafe[@list="unsafe"]/
   │           ├─ let/value/expression/unary/
   │           │   ├─ op[multiply] = "*"
   │           │   └─ name = "r"
   │           └─ expression/assign/
   │               ├─ left/expression/name = "COUNTER"
   │               └─ right/expression/int = "1"
-  ├─ comment[leading] = "// `extern crate` declaration — legacy import form for the 2015 edition."
-  ├─ use[extern]/name = "alloc"
-  ├─ comment[leading] = "// Foreign module / extern modifier — FFI block with variadic parameter."
-  ├─ mod[extern and foreign]/
+  ├─ comment[leading and @list="comment"] = "// `extern crate` declaration — legacy import form for the 2015 edition."
+  ├─ use[extern and @list="use"]/name = "alloc"
+  ├─ comment[leading and @list="comment"] = "// Foreign module / extern modifier — FFI block with variadic parameter."
+  ├─ mod[extern and foreign and @list="mod"]/
   │   ├─ string = "\"C\""
-  │   └─ body/signature[pub]/
+  │   └─ body/signature[pub and @list="signature"]/
   │       ├─ name = "printf"
   │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "fmt"
   │       │   └─ type[pointer]/type/name = "u8"
   │       └─ parameter[variadic and @list="parameters"] = "..."
-  ├─ comment[leading] = "// Union — same shape family as struct/enum."
-  ├─ union[pub]/
+  ├─ comment[leading and @list="comment"] = "// Union — same shape family as struct/enum."
+  ├─ union[pub and @list="union"]/
   │   ├─ name = "Either"
   │   └─ body/
-  │       ├─ field[pub]/
+  │       ├─ field[pub and @list="field"]/
   │       │   ├─ name = "i"
   │       │   └─ type/name = "i32"
-  │       └─ field[pub]/
+  │       └─ field[pub and @list="field"]/
   │           ├─ name = "f"
   │           └─ type/name = "f32"
-  ├─ comment[leading] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
-  ├─ function[pub]/
+  ├─ comment[leading and @list="comment"] = "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "hrtb_demo"
   │   ├─ generic[@list="generics"]/name = "F"
   │   ├─ generic[@list="generics"]/
@@ -734,19 +737,19 @@ file/
   │               └─ returns/type[borrowed]/
   │                   ├─ lifetime/name = "a"
   │                   └─ type/name = "i32"
-  ├─ comment[leading] = "// Const generic parameter — `<const N: usize>`."
-  ├─ struct[pub]/
+  ├─ comment[leading and @list="comment"] = "// Const generic parameter — `<const N: usize>`."
+  ├─ struct[pub and @list="struct"]/
   │   ├─ name = "FixedArray"
   │   ├─ parameter[const and @list="generics"]/
   │   │   ├─ name = "N"
   │   │   └─ type/name = "usize"
-  │   └─ body/field/
+  │   └─ body/field[@list="field"]/
   │       ├─ name = "items"
   │       └─ type[array]/
   │           ├─ type/name = "u32"
   │           └─ name = "N"
-  ├─ comment[leading] = "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /\n// token_binding_pattern / fragment_specifier / token_repetition."
-  ├─ macro[definition]/
+  ├─ comment[leading and @list="comment"] = "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /\n// token_binding_pattern / fragment_specifier / token_repetition."
+  ├─ macro[definition and @list="macro"]/
   │   ├─ name = "collect_pairs"
   │   ├─ arm/
   │   │   ├─ left/
@@ -769,7 +772,7 @@ file/
   │       └─ right/
   │           ├─ expression/name = "Vec"
   │           └─ expression/name = "new"
-  ├─ function[pub]/
+  ├─ function[pub and @list="function"]/
   │   ├─ name = "pattern_zoo"
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
@@ -787,26 +790,26 @@ file/
   │   │           └─ type[@list="arguments"]/name = "i32"
   │   ├─ returns/type/name = "i32"
   │   └─ body/
-  │       ├─ comment[leading] = "// remaining_field_pattern — `..`."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// remaining_field_pattern — `..`."
+  │       ├─ let[@list="let"]/
   │       │   ├─ pattern[struct]/
   │       │   │   ├─ type/name = "Point"
   │       │   │   ├─ pattern[field]/name = "x"
   │       │   │   └─ pattern[rest] = ".."
   │       │   └─ value/expression/name = "p"
-  │       ├─ comment[leading] = "// tuple_pattern + reference_pattern + captured_pattern."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// tuple_pattern + reference_pattern + captured_pattern."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "tuple"
   │       │   └─ value/expression/tuple/
   │       │       ├─ int = "1"
   │       │       ├─ int = "2"
   │       │       └─ int = "3"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "total"
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/ref/value/expression/name = "tuple"
   │       │       └─ body/
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/pattern[ref]/pattern[tuple]/
   │       │           │   │   ├─ pattern[capture]/
   │       │           │   │   │   ├─ name = "a"
@@ -819,7 +822,7 @@ file/
   │       │           │       ├─ left/expression/name = "a"
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "b"
-  │       │           └─ arm/
+  │       │           └─ arm[@list="arm"]/
   │       │               ├─ pattern/pattern[tuple]/
   │       │               │   ├─ name = "a"
   │       │               │   ├─ name = "b"
@@ -831,8 +834,8 @@ file/
   │       │                   │   └─ right/expression/name = "b"
   │       │                   ├─ op[plus] = "+"
   │       │                   └─ right/expression/name = "c"
-  │       ├─ comment[leading] = "// slice_pattern."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// slice_pattern."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "arr"
   │       │   └─ value/expression/array/
   │       │       ├─ int = "1"
@@ -840,14 +843,14 @@ file/
   │       │       ├─ int = "3"
   │       │       ├─ int = "4"
   │       │       └─ int = "5"
-  │       ├─ let/
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "head_tail"
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/ref/value/expression/index/
   │       │       │   ├─ name = "arr"
   │       │       │   └─ range = ".."
   │       │       └─ body/
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/pattern[slice]/
   │       │           │   │   ├─ name = "first"
   │       │           │   │   ├─ pattern[rest] = ".."
@@ -856,27 +859,27 @@ file/
   │       │           │       ├─ left/expression/name = "first"
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "last"
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/pattern[slice]/name = "only"
   │       │           │   └─ value/expression/unary/
   │       │           │       ├─ op[multiply] = "*"
   │       │           │       └─ name = "only"
-  │       │           └─ arm/
+  │       │           └─ arm[@list="arm"]/
   │       │               ├─ pattern/pattern[slice] = "[]"
   │       │               └─ value/expression/int = "0"
-  │       ├─ comment[leading] = "// assignment_expression (non-compound)."
-  │       ├─ let[mut]/
+  │       ├─ comment[leading and @list="comment"] = "// assignment_expression (non-compound)."
+  │       ├─ let[mut and @list="let"]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/int = "0"
-  │       ├─ expression/assign/
+  │       ├─ expression[@list="expression"]/assign/
   │       │   ├─ left/expression/name = "counter"
   │       │   ├─ op = "="
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/name = "total"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "head_tail"
-  │       ├─ comment[leading] = "// array_expression."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// array_expression."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "triples"
   │       │   └─ value/expression/array/
   │       │       ├─ name = "counter"
@@ -888,13 +891,13 @@ file/
   │       │           ├─ left/expression/name = "counter"
   │       │           ├─ op[multiply] = "*"
   │       │           └─ right/expression/int = "3"
-  │       ├─ comment[leading] = "// unit_expression as value."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// unit_expression as value."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "unit_val"
   │       │   └─ value/expression/literal[unit] = "()"
-  │       ├─ let/value/expression/name = "unit_val"
-  │       ├─ comment[leading] = "// let-chain."
-  │       ├─ if/
+  │       ├─ let[@list="let"]/value/expression/name = "unit_val"
+  │       ├─ comment[leading and @list="comment"] = "// let-chain."
+  │       ├─ if[@list="if"]/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "inner"
@@ -914,33 +917,33 @@ file/
   │       │       ├─ left/expression/name = "ix"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "x"
-  │       ├─ comment[leading] = "// negative_literal in pattern position."
-  │       ├─ let/
+  │       ├─ comment[leading and @list="comment"] = "// negative_literal in pattern position."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "signed"
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/unary/
   │       │       │   ├─ op[minus] = "-"
   │       │       │   └─ int = "1i32"
   │       │       └─ body/
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/literal[negative]/int = "1"
   │       │           │   └─ value/expression/string = "\"neg\""
-  │       │           ├─ arm/
+  │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/int = "0"
   │       │           │   └─ value/expression/string = "\"zero\""
-  │       │           └─ arm/
+  │       │           └─ arm[@list="arm"]/
   │       │               ├─ pattern = "_"
   │       │               └─ value/expression/string = "\"pos\""
-  │       ├─ let/value/expression/name = "signed"
-  │       ├─ comment[leading] = "// turbofish expression — `parse::<i32>` is generic_function but\n// type-position turbofish like `Vec::<i32>::new` exercises\n// generic_type_with_turbofish."
-  │       ├─ let/
+  │       ├─ let[@list="let"]/value/expression/name = "signed"
+  │       ├─ comment[leading and @list="comment"] = "// turbofish expression — `parse::<i32>` is generic_function but\n// type-position turbofish like `Vec::<i32>::new` exercises\n// generic_type_with_turbofish."
+  │       ├─ let[@list="let"]/
   │       │   ├─ name = "v"
   │       │   └─ value/expression/call/path/
   │       │       ├─ type[generic]/
   │       │       │   ├─ name = "Vec"
   │       │       │   └─ type[@list="arguments"]/name = "i32"
   │       │       └─ name = "new"
-  │       └─ binary/
+  │       └─ binary[@list="binary"]/
   │           ├─ left/expression/cast/
   │           │   ├─ value/expression/call/field/
   │           │   │   ├─ value/expression/name = "v"
@@ -950,21 +953,21 @@ file/
   │           └─ right/expression/index/
   │               ├─ name = "triples"
   │               └─ int = "0"
-  └─ function[private]/
+  └─ function[private and @list="function"]/
       ├─ name = "main"
       └─ body/
-          ├─ expression/macro/
+          ├─ expression[@list="expression"]/macro/
           │   ├─ name = "println"
           │   ├─ string = "\"hello, {}\""
           │   └─ name = "GREETING"
-          ├─ let/
+          ├─ let[@list="let"]/
           │   ├─ name = "v"
           │   └─ value/expression/macro/
           │       ├─ name = "vec"
           │       ├─ int = "1"
           │       ├─ int = "2"
           │       └─ int = "3"
-          ├─ let/value/expression/call/
+          ├─ let[@list="let"]/value/expression/call/
           │   ├─ name = "patterns"
           │   └─ call[@list="arguments"]/
           │       ├─ path/
@@ -972,8 +975,8 @@ file/
           │       │   └─ name = "Dot"
           │       ├─ int[@list="arguments"] = "1"
           │       └─ int[@list="arguments"] = "1"
-          ├─ let/value/expression/call/name = "loops_and_flow"
-          ├─ let/value/expression/call/
+          ├─ let[@list="let"]/value/expression/call/name = "loops_and_flow"
+          ├─ let[@list="let"]/value/expression/call/
           │   ├─ name = "pattern_zoo"
           │   ├─ call[@list="arguments"]/
           │   │   ├─ path/
@@ -983,7 +986,7 @@ file/
           │   │   ├─ int[@list="arguments"] = "2"
           │   │   └─ string[@list="arguments"] = "\"p\""
           │   └─ name[@list="arguments"] = "None"
-          └─ let/
+          └─ let[@list="let"]/
               ├─ type[generic]/
               │   ├─ name = "Vec"
               │   └─ type[tuple and @list="arguments"]/

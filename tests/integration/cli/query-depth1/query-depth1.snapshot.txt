@@ -1,12 +1,12 @@
 tests/integration/sample.cs:2
-class[public]/
+class[public and @list="class"]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
       └─ ... (81 children)
 
 tests/integration/sample.cs:9
-class[public]/
+class[public and @list="class"]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/

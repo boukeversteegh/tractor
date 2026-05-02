@@ -1,23 +1,23 @@
 unit/
-  ├─ comment = "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
-  ├─ import/name = "System"
-  ├─ import/
+  ├─ comment[@list="comment"] = "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
+  ├─ import[@list="import"]/name = "System"
+  ├─ import[@list="import"]/
   │   ├─ name = "System"
   │   ├─ name = "Collections"
   │   └─ name = "Generic"
-  ├─ import/
+  ├─ import[@list="import"]/
   │   ├─ name = "System"
   │   └─ name = "Linq"
-  ├─ import/
+  ├─ import[@list="import"]/
   │   ├─ name = "System"
   │   ├─ name = "Threading"
   │   └─ name = "Tasks"
-  ├─ import/
+  ├─ import[@list="import"]/
   │   ├─ name = "System"
   │   └─ name = "Math"
-  ├─ namespace/
-  │   ├─ name = "Tractor.Fixtures.Traditional"
-  │   ├─ delegate[public]/
+  ├─ namespace[@list="namespace"]/
+  │   ├─ name[@list="name"] = "Tractor.Fixtures.Traditional"
+  │   ├─ delegate[public and @list="delegate"]/
   │   │   ├─ type/name = "TResult"
   │   │   ├─ name = "Transformer"
   │   │   ├─ generic[@list="generics"]/name = "T"
@@ -25,52 +25,52 @@ unit/
   │   │   └─ parameter[@list="parameters"]/
   │   │       ├─ type/name = "T"
   │   │       └─ name = "value"
-  │   ├─ enum[public]/
+  │   ├─ enum[public and @list="enum"]/
   │   │   ├─ name = "Priority"
   │   │   └─ body/
-  │   │       ├─ constant/name = "Low"
-  │   │       ├─ constant/name = "Medium"
-  │   │       └─ constant/name = "High"
-  │   ├─ enum[public]/
+  │   │       ├─ constant[@list="constant"]/name = "Low"
+  │   │       ├─ constant[@list="constant"]/name = "Medium"
+  │   │       └─ constant[@list="constant"]/name = "High"
+  │   ├─ enum[public and @list="enum"]/
   │   │   ├─ attribute[@list="attributes"]/name = "Flags"
   │   │   ├─ name = "Trait"
   │   │   ├─ type[underlying]/name = "uint"
   │   │   └─ body/
-  │   │       ├─ constant/
+  │   │       ├─ constant[@list="constant"]/
   │   │       │   ├─ name = "None"
   │   │       │   └─ value/expression/int = "0"
-  │   │       ├─ constant/
+  │   │       ├─ constant[@list="constant"]/
   │   │       │   ├─ name = "Fast"
   │   │       │   └─ value/expression/int = "1"
-  │   │       ├─ constant/
+  │   │       ├─ constant[@list="constant"]/
   │   │       │   ├─ name = "Safe"
   │   │       │   └─ value/expression/int = "2"
-  │   │       └─ constant/
+  │   │       └─ constant[@list="constant"]/
   │   │           ├─ name = "Cheap"
   │   │           └─ value/expression/int = "4"
-  │   ├─ interface[public]/
+  │   ├─ interface[public and @list="interface"]/
   │   │   ├─ name = "IRepository"
   │   │   ├─ generic[class and new and @list="generics"]/name = "T"
   │   │   └─ body/
-  │   │       ├─ method[public]/
+  │   │       ├─ method[public and @list="method"]/
   │   │       │   ├─ returns/type[nullable] = "T"
   │   │       │   ├─ name = "Find"
   │   │       │   └─ parameter[@list="parameters"]/
   │   │       │       ├─ type/name = "int"
   │   │       │       └─ name = "id"
-  │   │       ├─ method[public]/
+  │   │       ├─ method[public and @list="method"]/
   │   │       │   ├─ returns/type[generic]/
   │   │       │   │   ├─ name = "Task"
   │   │       │   │   └─ type[generic and @list="arguments"]/
   │   │       │   │       ├─ name = "IReadOnlyList"
   │   │       │   │       └─ type[@list="arguments"]/name = "T"
   │   │       │   └─ name = "AllAsync"
-  │   │       └─ event/variable/
+  │   │       └─ event[@list="event"]/variable/
   │   │           ├─ type/type[generic]/
   │   │           │   ├─ name = "EventHandler"
   │   │           │   └─ type[@list="arguments"]/name = "T"
   │   │           └─ declarator/name = "Added"
-  │   ├─ struct[public and readonly]/
+  │   ├─ struct[public and readonly and @list="struct"]/
   │   │   ├─ name = "Point"
   │   │   ├─ parameter[@list="parameters"]/
   │   │   │   ├─ type/name = "double"
@@ -79,17 +79,17 @@ unit/
   │   │   │   ├─ type/name = "double"
   │   │   │   └─ name = "y"
   │   │   └─ body/
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and @list="property"]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
   │   │       │   ├─ get[@list="accessors"] = "get;"
   │   │       │   └─ value/expression/name = "x"
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and @list="property"]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
   │   │       │   ├─ get[@list="accessors"] = "get;"
   │   │       │   └─ value/expression/name = "y"
-  │   │       ├─ operator[public and static]/
+  │   │       ├─ operator[public and static and @list="operator"]/
   │   │       │   ├─ type/name = "Point"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
@@ -97,7 +97,7 @@ unit/
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
-  │   │       │   └─ body/new/
+  │   │       │   └─ body/new[@list="new"]/
   │   │       │       ├─ argument[@list="arguments"]/binary/
   │   │       │       │   ├─ left/expression/member[instance]/
   │   │       │       │   │   ├─ name = "a"
@@ -114,7 +114,7 @@ unit/
   │   │       │           └─ right/expression/member[instance]/
   │   │       │               ├─ name = "b"
   │   │       │               └─ name = "Y"
-  │   │       ├─ operator[public and static]/
+  │   │       ├─ operator[public and static and @list="operator"]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
@@ -122,7 +122,7 @@ unit/
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
-  │   │       │   └─ body/binary/
+  │   │       │   └─ body/binary[@list="binary"]/
   │   │       │       ├─ left/expression/binary/
   │   │       │       │   ├─ left/expression/member[instance]/
   │   │       │       │   │   ├─ name = "a"
@@ -140,7 +140,7 @@ unit/
   │   │       │           └─ right/expression/member[instance]/
   │   │       │               ├─ name = "b"
   │   │       │               └─ name = "Y"
-  │   │       ├─ operator[public and static]/
+  │   │       ├─ operator[public and static and @list="operator"]/
   │   │       │   ├─ type/name = "bool"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
@@ -148,19 +148,19 @@ unit/
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "Point"
   │   │       │   │   └─ name = "b"
-  │   │       │   └─ body/unary/
+  │   │       │   └─ body/unary[@list="unary"]/
   │   │       │       ├─ op[logical and not] = "!"
   │   │       │       └─ binary/
   │   │       │           ├─ left/expression/name = "a"
   │   │       │           ├─ op[equals] = "=="
   │   │       │           └─ right/expression/name = "b"
-  │   │       ├─ method[public and override]/
+  │   │       ├─ method[public and override and @list="method"]/
   │   │       │   ├─ returns/type/name = "bool"
   │   │       │   ├─ name = "Equals"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type[nullable] = "object"
   │   │       │   │   └─ name = "o"
-  │   │       │   └─ body/binary/
+  │   │       │   └─ body/binary[@list="binary"]/
   │   │       │       ├─ left/expression/is/
   │   │       │       │   ├─ name = "o"
   │   │       │       │   └─ pattern[declaration]/
@@ -170,16 +170,16 @@ unit/
   │   │       │       └─ right/expression/binary/
   │   │       │           ├─ left/expression/name = "p"
   │   │       │           └─ op[equals] = "=="
-  │   │       └─ method[public and override]/
+  │   │       └─ method[public and override and @list="method"]/
   │   │           ├─ returns/type/name = "int"
   │   │           ├─ name = "GetHashCode"
-  │   │           └─ body/call/
+  │   │           └─ body/call[@list="call"]/
   │   │               ├─ member[instance]/
   │   │               │   ├─ name = "HashCode"
   │   │               │   └─ name = "Combine"
   │   │               ├─ argument[@list="arguments"]/name = "X"
   │   │               └─ argument[@list="arguments"]/name = "Y"
-  │   ├─ record[public]/
+  │   ├─ record[public and @list="record"]/
   │   │   ├─ name = "Money"
   │   │   ├─ parameter[@list="parameters"]/
   │   │   │   ├─ type/name = "decimal"
@@ -187,7 +187,7 @@ unit/
   │   │   └─ parameter[@list="parameters"]/
   │   │       ├─ type/name = "string"
   │   │       └─ name = "Currency"
-  │   ├─ record[public]/
+  │   ├─ record[public and @list="record"]/
   │   │   ├─ name = "TaxedMoney"
   │   │   ├─ parameter[@list="parameters"]/
   │   │   │   ├─ type/name = "decimal"
@@ -202,7 +202,7 @@ unit/
   │   │       ├─ type/name = "Money"
   │   │       ├─ argument[@list="arguments"]/name = "Amount"
   │   │       └─ argument[@list="arguments"]/name = "Currency"
-  │   ├─ class[public and abstract and partial]/
+  │   ├─ class[public and abstract and partial and @list="class"]/
   │   │   ├─ attribute[@list="attributes"]/name = "Serializable"
   │   │   ├─ attribute[@list="attributes"]/
   │   │   │   ├─ name = "Obsolete"
@@ -210,12 +210,12 @@ unit/
   │   │   │   └─ argument[@list="arguments"]/bool = "false"
   │   │   ├─ name = "EntityBase"
   │   │   └─ body/
-  │   │       ├─ field[public and const]/
+  │   │       ├─ field[public and const and @list="field"]/
   │   │       │   ├─ type/name = "int"
   │   │       │   └─ declarator/
   │   │       │       ├─ name = "MaxNameLength"
   │   │       │       └─ int = "128"
-  │   │       ├─ field[protected and internal and static and readonly]/
+  │   │       ├─ field[protected and internal and static and readonly and @list="field"]/
   │   │       │   ├─ type/name = "DateTime"
   │   │       │   └─ declarator/
   │   │       │       ├─ name = "Epoch"
@@ -223,21 +223,21 @@ unit/
   │   │       │           ├─ argument[@list="arguments"]/int = "1970"
   │   │       │           ├─ argument[@list="arguments"]/int = "1"
   │   │       │           └─ argument[@list="arguments"]/int = "1"
-  │   │       ├─ field[private]/
+  │   │       ├─ field[private and @list="field"]/
   │   │       │   ├─ type/name = "int"
   │   │       │   └─ declarator/name = "_version"
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and @list="property"]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ name = "Id"
   │   │       │   ├─ get[@list="accessors"] = "get;"
   │   │       │   └─ init[@list="accessors"] = "init;"
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and @list="property"]/
   │   │       │   ├─ type/name = "string"
   │   │       │   ├─ name = "Name"
   │   │       │   ├─ get[@list="accessors"] = "get;"
   │   │       │   ├─ set[@list="accessors"] = "set;"
   │   │       │   └─ value/expression/string = "\"\""
-  │   │       ├─ property[public and virtual]/
+  │   │       ├─ property[public and virtual and @list="property"]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get[@list="accessors"] = "get;"
@@ -245,7 +245,7 @@ unit/
   │   │       │   └─ value/expression/member[instance]/
   │   │       │       ├─ name = "Priority"
   │   │       │       └─ name = "Low"
-  │   │       ├─ indexer[public]/
+  │   │       ├─ indexer[public and @list="indexer"]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "string"
@@ -253,53 +253,53 @@ unit/
   │   │       │   └─ value/expression/member[instance]/
   │   │       │       ├─ name = "key"
   │   │       │       └─ name = "Length"
-  │   │       ├─ event[public]/variable/
+  │   │       ├─ event[public and @list="event"]/variable/
   │   │       │   ├─ type/type[generic]/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ type[@list="arguments"]/name = "EntityBase"
   │   │       │   └─ declarator/name = "Changed"
-  │   │       ├─ constructor[protected]/
+  │   │       ├─ constructor[protected and @list="constructor"]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   └─ call[this]/argument[@list="arguments"]/int = "0"
-  │   │       ├─ constructor[protected]/
+  │   │       ├─ constructor[protected and @list="constructor"]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "int"
   │   │       │   │   └─ name = "id"
-  │   │       │   └─ body/block/expression/assign/
+  │   │       │   └─ body/block[@list="block"]/expression[@list="expression"]/assign/
   │   │       │       ├─ left/expression/name = "Id"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "id"
-  │   │       ├─ destructor/
+  │   │       ├─ destructor[@list="destructor"]/
   │   │       │   ├─ name = "EntityBase"
-  │   │       │   └─ body/block/comment = "/* finalizer */"
-  │   │       ├─ method[public and abstract]/
+  │   │       │   └─ body/block[@list="block"]/comment[@list="comment"] = "/* finalizer */"
+  │   │       ├─ method[public and abstract and @list="method"]/
   │   │       │   ├─ returns/type/name = "string"
   │   │       │   └─ name = "Describe"
-  │   │       └─ method[protected and virtual]/
+  │   │       └─ method[protected and virtual and @list="method"]/
   │   │           ├─ returns/type/name = "void"
   │   │           ├─ name = "OnChanged"
-  │   │           └─ body/call/
+  │   │           └─ body/call[@list="call"]/
   │   │               ├─ member[instance and optional]/
   │   │               │   ├─ condition/expression/name = "Changed"
   │   │               │   └─ name = "Invoke"
   │   │               └─ argument[@list="arguments"] = "this"
-  │   ├─ class[public and sealed and partial]/
+  │   ├─ class[public and sealed and partial and @list="class"]/
   │   │   ├─ name = "Widget"
   │   │   ├─ extends[@list="extends"]/type/name = "EntityBase"
   │   │   ├─ extends[@list="extends"]/type[generic]/
   │   │   │   ├─ name = "IRepository"
   │   │   │   └─ type[@list="arguments"]/name = "Widget"
   │   │   └─ body/
-  │   │       ├─ event[public]/variable/
+  │   │       ├─ event[public and @list="event"]/variable/
   │   │       │   ├─ type/type[generic]/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ type[@list="arguments"]/name = "Widget"
   │   │       │   └─ declarator/name = "Added"
-  │   │       ├─ constructor[public]/
+  │   │       ├─ constructor[public and @list="constructor"]/
   │   │       │   ├─ name = "Widget"
   │   │       │   └─ call[base]/argument[@list="arguments"]/int = "0"
-  │   │       ├─ constructor[public]/
+  │   │       ├─ constructor[public and @list="constructor"]/
   │   │       │   ├─ name = "Widget"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "int"
@@ -308,51 +308,51 @@ unit/
   │   │       │   │   ├─ type/name = "string"
   │   │       │   │   └─ name = "name"
   │   │       │   ├─ call[base]/argument[@list="arguments"]/name = "id"
-  │   │       │   └─ body/block/expression/assign/
+  │   │       │   └─ body/block[@list="block"]/expression[@list="expression"]/assign/
   │   │       │       ├─ left/expression/name = "Name"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "name"
-  │   │       ├─ property[public and override]/
+  │   │       ├─ property[public and override and @list="property"]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get[@list="accessors"]/body/member[instance]/name = "Priority"
-  │   │       │   └─ set[protected and @list="accessors"]/body/assign/
+  │   │       │   ├─ get[@list="accessors"]/body/member[instance and @list="member"]/name = "Priority"
+  │   │       │   └─ set[protected and @list="accessors"]/body/assign[@list="assign"]/
   │   │       │       ├─ left/expression/member[instance]/name = "Priority"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "value"
-  │   │       ├─ method[public and override]/
+  │   │       ├─ method[public and override and @list="method"]/
   │   │       │   ├─ returns/type/name = "string"
   │   │       │   ├─ name = "Describe"
-  │   │       │   └─ body/string/
+  │   │       │   └─ body/string[@list="string"]/
   │   │       │       ├─ interpolation/name = "Id"
   │   │       │       └─ interpolation/expression[non_null]/name = "Name"
-  │   │       ├─ method[public]/
+  │   │       ├─ method[public and @list="method"]/
   │   │       │   ├─ returns/type[nullable] = "Widget"
   │   │       │   ├─ name = "Find"
   │   │       │   ├─ parameter[@list="parameters"]/
   │   │       │   │   ├─ type/name = "int"
   │   │       │   │   └─ name = "id"
-  │   │       │   └─ body/ternary/
+  │   │       │   └─ body/ternary[@list="ternary"]/
   │   │       │       ├─ condition/expression/binary/
   │   │       │       │   ├─ left/expression/name = "id"
   │   │       │       │   ├─ op[equals] = "=="
   │   │       │       │   └─ right/expression/name = "Id"
   │   │       │       └─ else/null = "null"
-  │   │       ├─ method[public and async]/
+  │   │       ├─ method[public and async and @list="method"]/
   │   │       │   ├─ returns/type[generic]/
   │   │       │   │   ├─ name = "Task"
   │   │       │   │   └─ type[generic and @list="arguments"]/
   │   │       │   │       ├─ name = "IReadOnlyList"
   │   │       │   │       └─ type[@list="arguments"]/name = "Widget"
   │   │       │   ├─ name = "AllAsync"
-  │   │       │   └─ body/block/
-  │   │       │       ├─ expression[await]/call/
+  │   │       │   └─ body/block[@list="block"]/
+  │   │       │       ├─ expression[await and @list="expression"]/call/
   │   │       │       │   ├─ member[instance]/
   │   │       │       │   │   ├─ name = "Task"
   │   │       │       │   │   └─ name = "Delay"
   │   │       │       │   └─ argument[@list="arguments"]/int = "1"
-  │   │       │       └─ return/expression/index/argument = "this"
-  │   │       └─ method[public and static]/
+  │   │       │       └─ return[@list="return"]/expression/index/argument = "this"
+  │   │       └─ method[public and static and @list="method"]/
   │   │           ├─ returns/type/name = "TResult"
   │   │           ├─ name = "Pipe"
   │   │           ├─ generic[@list="generics"]/name = "T"
@@ -366,18 +366,18 @@ unit/
   │   │           │   │   ├─ type[@list="arguments"]/name = "T"
   │   │           │   │   └─ type[@list="arguments"]/name = "TResult"
   │   │           │   └─ name = "fn"
-  │   │           └─ body/call/
+  │   │           └─ body/call[@list="call"]/
   │   │               ├─ name = "fn"
   │   │               └─ argument[@list="arguments"]/name = "input"
-  │   ├─ class[public and static]/
+  │   ├─ class[public and static and @list="class"]/
   │   │   ├─ name = "WidgetExtensions"
-  │   │   └─ body/method[public and static]/
+  │   │   └─ body/method[public and static and @list="method"]/
   │   │       ├─ returns/type/name = "string"
   │   │       ├─ name = "Shout"
   │   │       ├─ parameter[this and @list="parameters"]/
   │   │       │   ├─ type/name = "Widget"
   │   │       │   └─ name = "w"
-  │   │       └─ body/binary/
+  │   │       └─ body/binary[@list="binary"]/
   │   │           ├─ left/expression/call/member[instance]/
   │   │           │   ├─ member[instance]/
   │   │           │   │   ├─ name = "w"
@@ -385,9 +385,9 @@ unit/
   │   │           │   └─ name = "ToUpperInvariant"
   │   │           ├─ op[plus] = "+"
   │   │           └─ right/expression/string = "\"!\""
-  │   └─ class[internal and static]/
+  │   └─ class[internal and static and @list="class"]/
   │       ├─ name = "Demo"
-  │       └─ body/method[public and static and async]/
+  │       └─ body/method[public and static and async and @list="method"]/
   │           ├─ returns/type[generic]/
   │           │   ├─ name = "Task"
   │           │   └─ type[@list="arguments"]/name = "int"
@@ -400,8 +400,8 @@ unit/
   │           │   │   ├─ name = "IEnumerable"
   │           │   │   └─ type[@list="arguments"]/name = "int"
   │           │   └─ name = "numbers"
-  │           └─ body/block/
-  │               ├─ variable/
+  │           └─ body/block[@list="block"]/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "widget"
@@ -412,7 +412,7 @@ unit/
   │               │               ├─ type/name = "Widget"
   │               │               ├─ argument[@list="arguments"]/int = "1"
   │               │               └─ argument[@list="arguments"]/string = "\"alpha\""
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "shouted"
@@ -422,7 +422,7 @@ unit/
   │               │           │   └─ name = "Shout"
   │               │           ├─ op[nullish-coalescing] = "??"
   │               │           └─ right/expression/string = "\"n/a\""
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "label"
@@ -436,8 +436,8 @@ unit/
   │               │           │       └─ pattern[relational]/int = "0"
   │               │           ├─ then/string = "\"named\""
   │               │           └─ else/string = "\"blank\""
-  │               ├─ comment[leading] = "// switch expression + pattern matching"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// switch expression + pattern matching"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "string"
   │               │   └─ declarator/
   │               │       ├─ name = "kind"
@@ -464,31 +464,32 @@ unit/
   │               │           └─ arm/
   │               │               ├─ discard = "_"
   │               │               └─ string = "\"plain\""
-  │               ├─ comment[leading] = "// switch statement + is-type-pattern"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// switch statement + is-type-pattern"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "object"
   │               │   └─ declarator/
   │               │       ├─ name = "token"
   │               │       └─ expression[non_null]/name = "widget"
-  │               ├─ switch/
+  │               ├─ switch[@list="switch"]/
   │               │   ├─ value/expression/name = "token"
   │               │   └─ body/
-  │               │       ├─ section[break]/
-  │               │       │   ├─ pattern[declaration]/
+  │               │       ├─ section[@list="section"]/
+  │               │       │   ├─ pattern[declaration and @list="pattern"]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   └─ expression/call/
-  │               │       │       ├─ member[instance]/
-  │               │       │       │   ├─ name = "Console"
-  │               │       │       │   └─ name = "WriteLine"
-  │               │       │       └─ argument[@list="arguments"]/call/member[instance]/
-  │               │       │           ├─ name = "w"
-  │               │       │           └─ name = "Describe"
-  │               │       ├─ section/
-  │               │       │   ├─ pattern[constant]/null = "null"
-  │               │       │   └─ throw/new/type/name = "InvalidOperationException"
-  │               │       └─ section[break] = "default: break"
-  │               ├─ if/
+  │               │       │   ├─ expression[@list="expression"]/call/
+  │               │       │   │   ├─ member[instance]/
+  │               │       │   │   │   ├─ name = "Console"
+  │               │       │   │   │   └─ name = "WriteLine"
+  │               │       │   │   └─ argument[@list="arguments"]/call/member[instance]/
+  │               │       │   │       ├─ name = "w"
+  │               │       │   │       └─ name = "Describe"
+  │               │       │   └─ break[@list="break"]
+  │               │       ├─ section[@list="section"]/
+  │               │       │   ├─ pattern[constant and @list="pattern"]/null = "null"
+  │               │       │   └─ throw[@list="throw"]/new/type/name = "InvalidOperationException"
+  │               │       └─ section[@list="section"]/break[@list="break"]
+  │               ├─ if[@list="if"]/
   │               │   ├─ condition/expression/is/
   │               │   │   ├─ name = "token"
   │               │   │   └─ pattern[declaration]/
@@ -501,8 +502,8 @@ unit/
   │               │       └─ argument[@list="arguments"]/member[instance]/
   │               │           ├─ name = "probe"
   │               │           └─ name = "Id"
-  │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// LINQ query syntax + method syntax"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "evens"
@@ -522,7 +523,7 @@ unit/
   │               │               ├─ left/expression/name = "n"
   │               │               ├─ op[multiply] = "*"
   │               │               └─ right/expression/name = "n"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "odds"
@@ -535,7 +536,7 @@ unit/
   │               │           │   │   │   │   └─ name = "Where"
   │               │           │   │   │   └─ argument[@list="arguments"]/lambda/
   │               │           │   │   │       ├─ parameter = "n"
-  │               │           │   │   │       └─ body/binary/
+  │               │           │   │   │       └─ body/binary[@list="binary"]/
   │               │           │   │   │           ├─ left/expression/binary/
   │               │           │   │   │           │   ├─ left/expression/name = "n"
   │               │           │   │   │           │   ├─ op[modulo] = "%"
@@ -545,23 +546,23 @@ unit/
   │               │           │   │   └─ name = "Select"
   │               │           │   └─ argument[@list="arguments"]/lambda/
   │               │           │       ├─ parameter = "n"
-  │               │           │       └─ body/binary/
+  │               │           │       └─ body/binary[@list="binary"]/
   │               │           │           ├─ left/expression/name = "n"
   │               │           │           ├─ op[plus] = "+"
   │               │           │           └─ right/expression/int = "1"
   │               │           └─ name = "ToList"
-  │               ├─ comment[leading] = "// local function + lambda"
-  │               ├─ method/
+  │               ├─ comment[leading and @list="comment"] = "// local function + lambda"
+  │               ├─ method[@list="method"]/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "Square"
   │               │   ├─ parameter[@list="parameters"]/
   │               │   │   ├─ type/name = "int"
   │               │   │   └─ name = "x"
-  │               │   └─ body/binary/
+  │               │   └─ body/binary[@list="binary"]/
   │               │       ├─ left/expression/name = "x"
   │               │       ├─ op[multiply] = "*"
   │               │       └─ right/expression/name = "x"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ type[@list="arguments"]/name = "int"
@@ -570,14 +571,14 @@ unit/
   │               │       ├─ name = "cube"
   │               │       └─ lambda/
   │               │           ├─ parameter = "x"
-  │               │           └─ body/binary/
+  │               │           └─ body/binary[@list="binary"]/
   │               │               ├─ left/expression/binary/
   │               │               │   ├─ left/expression/name = "x"
   │               │               │   ├─ op[multiply] = "*"
   │               │               │   └─ right/expression/name = "x"
   │               │               ├─ op[multiply] = "*"
   │               │               └─ right/expression/name = "x"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Action"
   │               │   │   └─ type[@list="arguments"]/name = "string"
@@ -585,12 +586,12 @@ unit/
   │               │       ├─ name = "log"
   │               │       └─ lambda/
   │               │           ├─ parameter = "msg"
-  │               │           └─ body/call/
+  │               │           └─ body/call[@list="call"]/
   │               │               ├─ member[instance]/
   │               │               │   ├─ name = "Console"
   │               │               │   └─ name = "WriteLine"
   │               │               └─ argument[@list="arguments"]/name = "msg"
-  │               ├─ expression/call/
+  │               ├─ expression[@list="expression"]/call/
   │               │   ├─ name = "log"
   │               │   └─ argument[@list="arguments"]/string/
   │               │       ├─ interpolation/call/member[instance]/
@@ -602,8 +603,8 @@ unit/
   │               │       └─ interpolation/call/
   │               │           ├─ name = "Square"
   │               │           └─ argument[@list="arguments"]/int = "4"
-  │               ├─ comment[leading] = "// loops"
-  │               ├─ for/
+  │               ├─ comment[leading and @list="comment"] = "// loops"
+  │               ├─ for[@list="for"]/
   │               │   ├─ variable/
   │               │   │   ├─ type/name = "var"
   │               │   │   └─ declarator/
@@ -616,42 +617,42 @@ unit/
   │               │   ├─ unary/
   │               │   │   ├─ name = "i"
   │               │   │   └─ op[increment] = "++"
-  │               │   └─ body/block/comment = "/* for */"
-  │               ├─ variable/
+  │               │   └─ body/block[@list="block"]/comment[@list="comment"] = "/* for */"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "int"
   │               │   └─ declarator/
   │               │       ├─ name = "j"
   │               │       └─ int = "0"
-  │               ├─ while/condition/expression/binary/
+  │               ├─ while[@list="while"]/condition/expression/binary/
   │               │   ├─ left/expression/unary/
   │               │   │   ├─ name = "j"
   │               │   │   └─ op[increment] = "++"
   │               │   ├─ op[compare and less] = "<"
   │               │   └─ right/expression/int = "2"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "int"
   │               │   └─ declarator/
   │               │       ├─ name = "k"
   │               │       └─ int = "0"
-  │               ├─ do/
-  │               │   ├─ body/block/expression/unary/
+  │               ├─ do[@list="do"]/
+  │               │   ├─ body/block[@list="block"]/expression[@list="expression"]/unary/
   │               │   │   ├─ name = "k"
   │               │   │   └─ op[increment] = "++"
   │               │   └─ condition/expression/binary/
   │               │       ├─ left/expression/name = "k"
   │               │       ├─ op[compare and less] = "<"
   │               │       └─ right/expression/int = "2"
-  │               ├─ foreach/
+  │               ├─ foreach[@list="foreach"]/
   │               │   ├─ type/name = "var"
   │               │   ├─ left/expression/name = "n"
   │               │   ├─ right/expression/name = "odds"
-  │               │   └─ body/expression/call/
+  │               │   └─ body/expression[@list="expression"]/call/
   │               │       ├─ name = "log"
   │               │       └─ argument[@list="arguments"]/call/member[instance]/
   │               │           ├─ name = "n"
   │               │           └─ name = "ToString"
-  │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// try/catch/finally with when + using declaration + using statement"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "scope"
@@ -659,9 +660,9 @@ unit/
   │               │           ├─ name = "System"
   │               │           ├─ name = "IO"
   │               │           └─ name = "MemoryStream"
-  │               ├─ try/
-  │               │   ├─ body/block/
-  │               │   │   ├─ using/
+  │               ├─ try[@list="try"]/
+  │               │   ├─ body/block[@list="block"]/
+  │               │   │   ├─ using[@list="using"]/
   │               │   │   │   ├─ variable/
   │               │   │   │   │   ├─ type/name = "var"
   │               │   │   │   │   └─ declarator/
@@ -670,12 +671,12 @@ unit/
   │               │   │   │   │           ├─ name = "System"
   │               │   │   │   │           ├─ name = "IO"
   │               │   │   │   │           └─ name = "MemoryStream"
-  │               │   │   │   └─ body/block/expression/call/
+  │               │   │   │   └─ body/block[@list="block"]/expression[@list="expression"]/call/
   │               │   │   │       ├─ member[instance]/
   │               │   │   │       │   ├─ name = "inner"
   │               │   │   │       │   └─ name = "WriteByte"
   │               │   │   │       └─ argument[@list="arguments"]/int = "1"
-  │               │   │   └─ throw/new/
+  │               │   │   └─ throw[@list="throw"]/new/
   │               │   │       ├─ type/name = "InvalidOperationException"
   │               │   │       └─ argument[@list="arguments"]/string = "\"boom\""
   │               │   ├─ catch/
@@ -690,19 +691,19 @@ unit/
   │               │   │   │   │   └─ name = "Length"
   │               │   │   │   ├─ op[compare and greater] = ">"
   │               │   │   │   └─ right/expression/int = "0"
-  │               │   │   └─ body/block/expression/call/
+  │               │   │   └─ body/block[@list="block"]/expression[@list="expression"]/call/
   │               │   │       ├─ name = "log"
   │               │   │       └─ argument[@list="arguments"]/member[instance]/
   │               │   │           ├─ name = "ex"
   │               │   │           └─ name = "Message"
   │               │   ├─ catch/
   │               │   │   ├─ declaration/type/name = "Exception"
-  │               │   │   └─ body/block[throw]
-  │               │   └─ finally/block/expression/call/member[instance]/
+  │               │   │   └─ body/block[@list="block"]/throw[@list="throw"]
+  │               │   └─ finally/block/expression[@list="expression"]/call/member[instance]/
   │               │       ├─ name = "scope"
   │               │       └─ name = "Flush"
-  │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// tuples + deconstruction + target-typed new + collection expression"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type[tuple]/
   │               │   │   ├─ element/
   │               │   │   │   ├─ type/name = "int"
@@ -717,14 +718,14 @@ unit/
   │               │           │   ├─ name = "odds"
   │               │           │   └─ name = "Count"
   │               │           └─ argument/string = "\"odd\""
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ pattern[tuple]/
   │               │       │   ├─ name = "cnt"
   │               │       │   └─ name = "tg"
   │               │       └─ name = "pair"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "List"
   │               │   │   └─ type[@list="arguments"]/name = "int"
@@ -735,7 +736,7 @@ unit/
   │               │           ├─ argument/int = "2"
   │               │           ├─ argument/int = "3"
   │               │           └─ argument/range/name = "odds"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Dictionary"
   │               │   │   ├─ type[@list="arguments"]/name = "string"
@@ -751,30 +752,30 @@ unit/
   │               │               ├─ left/expression/index/argument/string = "\"b\""
   │               │               ├─ op = "="
   │               │               └─ right/expression/int = "2"
-  │               ├─ comment[leading] = "// string literals"
-  │               ├─ variable/
+  │               ├─ comment[leading and @list="comment"] = "// string literals"
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "plain"
   │               │       └─ string = "\"hello\""
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "verbatim"
   │               │       └─ string = "@\"C:\\path\\file.txt\""
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "interp"
   │               │       └─ string/
   │               │           ├─ interpolation/name = "cnt"
   │               │           └─ interpolation/name = "tg"
-  │               ├─ variable/
+  │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "raw"
   │               │       └─ string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
-  │               └─ return/expression/binary/
+  │               └─ return[@list="return"]/expression/binary/
   │                   ├─ left/expression/binary/
   │                   │   ├─ left/expression/binary/
   │                   │   │   ├─ left/expression/binary/
@@ -816,78 +817,79 @@ unit/
   │                   └─ right/expression/member[instance]/
   │                       ├─ name = "shouted"
   │                       └─ name = "Length"
-  └─ namespace[file]/
-      ├─ name = "Tractor.Fixtures.FileScoped"
-      ├─ import/name = "System"
-      ├─ class[internal and file and sealed]/
+  └─ namespace[@list="namespace"]/
+      ├─ name[@list="name"] = "Tractor.Fixtures.FileScoped"
+      ├─ file[@list="file"]
+      ├─ import[@list="import"]/name = "System"
+      ├─ class[internal and file and sealed and @list="class"]/
       │   ├─ name = "Hidden"
-      │   └─ body/property[public and static]/
+      │   └─ body/property[public and static and @list="property"]/
       │       ├─ type/name = "int"
       │       ├─ name = "Answer"
       │       └─ value/expression/int = "42"
-      ├─ class[public and static]/
+      ├─ class[public and static and @list="class"]/
       │   ├─ name = "Entry"
-      │   └─ body/method[public and static]/
+      │   └─ body/method[public and static and @list="method"]/
       │       ├─ returns/type/name = "int"
       │       ├─ name = "Get"
-      │       └─ body/member[instance]/
+      │       └─ body/member[instance and @list="member"]/
       │           ├─ name = "Hidden"
       │           └─ name = "Answer"
-      ├─ comment = "// Iter 20: new shapes — statements, expressions, patterns, literals."
-      ├─ comment[leading] = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
-      └─ class[public and static]/
+      ├─ comment[@list="comment"] = "// Iter 20: new shapes — statements, expressions, patterns, literals."
+      ├─ comment[leading and @list="comment"] = "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>"
+      └─ class[public and static and @list="class"]/
           ├─ name = "Extras"
           └─ body/
-              ├─ method[public and static]/
+              ├─ method[public and static and @list="method"]/
               │   ├─ returns/type/name = "void"
               │   ├─ name = "Statements"
               │   ├─ parameter[@list="parameters"]/
               │   │   ├─ type/name = "object"
               │   │   └─ name = "o"
-              │   └─ body/block/
-              │       ├─ comment[leading] = "// cast expression"
-              │       ├─ variable/
+              │   └─ body/block[@list="block"]/
+              │       ├─ comment[leading and @list="comment"] = "// cast expression"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "n"
               │       │       └─ cast/
               │       │           ├─ type/name = "int"
               │       │           └─ value/expression/float = "3.14"
-              │       ├─ comment[leading] = "// char literal"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// char literal"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "char"
               │       │   └─ declarator/
               │       │       ├─ name = "ch"
               │       │       └─ char = "'A'"
-              │       ├─ comment[leading] = "// checked statement + yield return (via iterator method below)"
-              │       ├─ checked/block/expression/assign/
+              │       ├─ comment[leading and @list="comment"] = "// checked statement + yield return (via iterator method below)"
+              │       ├─ checked[@list="checked"]/block/expression[@list="expression"]/assign/
               │       │   ├─ left/expression/name = "n"
               │       │   ├─ op = "="
               │       │   └─ right/expression/binary/
               │       │       ├─ left/expression/name = "n"
               │       │       ├─ op[plus] = "+"
               │       │       └─ right/expression/int = "1"
-              │       ├─ comment[leading] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n// goto + labeled statement"
-              │       ├─ goto/name = "skip"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n// goto + labeled statement"
+              │       ├─ goto[@list="goto"]/name = "skip"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "unreachable"
               │       │       └─ int = "0"
-              │       ├─ label/
+              │       ├─ label[@list="label"]/
               │       │   ├─ name = "skip"
               │       │   └─ expression/assign/
               │       │       ├─ left/expression/name = "_"
               │       │       ├─ op = "="
               │       │       └─ right/expression/name = "n"
-              │       ├─ comment[leading] = "// lock statement"
-              │       ├─ lock/
+              │       ├─ comment[leading and @list="comment"] = "// lock statement"
+              │       ├─ lock[@list="lock"]/
               │       │   ├─ typeof/type/name = "Entry"
-              │       │   └─ block/expression/unary/
+              │       │   └─ block/expression[@list="expression"]/unary/
               │       │       ├─ name = "n"
               │       │       └─ op[increment] = "++"
-              │       ├─ comment[leading] = "// with expression (record update)"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// with expression (record update)"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "var"
               │       │   └─ declarator/
               │       │       ├─ name = "m"
@@ -895,7 +897,7 @@ unit/
               │       │           ├─ type/name = "Money"
               │       │           ├─ argument[@list="arguments"]/float = "1.0m"
               │       │           └─ argument[@list="arguments"]/string = "\"USD\""
-              │       ├─ variable/
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "var"
               │       │   └─ declarator/
               │       │       ├─ name = "m2"
@@ -904,8 +906,8 @@ unit/
               │       │           └─ literal/
               │       │               ├─ name = "Currency"
               │       │               └─ string = "\"EUR\""
-              │       ├─ comment[leading] = "// anonymous object creation"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// anonymous object creation"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "var"
               │       │   └─ declarator/
               │       │       ├─ name = "anon"
@@ -914,8 +916,8 @@ unit/
               │       │           ├─ string = "\"foo\""
               │       │           ├─ name = "Value"
               │       │           └─ int = "42"
-              │       ├─ comment[leading] = "// array creation"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// array creation"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type[array]/type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "arr"
@@ -925,7 +927,7 @@ unit/
               │       │               ├─ int = "1"
               │       │               ├─ int = "2"
               │       │               └─ int = "3"
-              │       ├─ variable/
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type[array]/type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "arr2"
@@ -933,30 +935,30 @@ unit/
               │       │           ├─ int = "4"
               │       │           ├─ int = "5"
               │       │           └─ int = "6"
-              │       ├─ comment[leading] = "// typeof + sizeof"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// typeof + sizeof"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "Type"
               │       │   └─ declarator/
               │       │       ├─ name = "t"
               │       │       └─ typeof/type/name = "int"
-              │       ├─ variable/
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "sz"
               │       │       └─ sizeof/type/name = "int"
-              │       ├─ comment[leading] = "// default expression"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// default expression"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "int"
               │       │   └─ declarator/
               │       │       ├─ name = "def"
               │       │       └─ default/type/name = "int"
-              │       ├─ comment[leading] = "// throw expression (in null-coalescing context)"
-              │       ├─ variable/
+              │       ├─ comment[leading and @list="comment"] = "// throw expression (in null-coalescing context)"
+              │       ├─ variable[@list="variable"]/
               │       │   ├─ type/name = "string"
               │       │   └─ declarator/
               │       │       ├─ name = "s"
               │       │       └─ null = "null"
-              │       └─ variable/
+              │       └─ variable[@list="variable"]/
               │           ├─ type/name = "string"
               │           └─ declarator/
               │               ├─ name = "s2"
@@ -968,21 +970,21 @@ unit/
               │                       └─ argument[@list="arguments"]/call/
               │                           ├─ name = "nameof"
               │                           └─ argument[@list="arguments"]/name = "s"
-              ├─ method[public and static]/
+              ├─ method[public and static and @list="method"]/
               │   ├─ returns/type[generic]/
               │   │   ├─ name = "IEnumerable"
               │   │   └─ type[@list="arguments"]/name = "int"
               │   ├─ name = "Yields"
-              │   └─ body/block/
-              │       ├─ yield/int = "1"
-              │       └─ yield/int = "2"
-              └─ method[public and static]/
+              │   └─ body/block[@list="block"]/
+              │       ├─ yield[@list="yield"]/int = "1"
+              │       └─ yield[@list="yield"]/int = "2"
+              └─ method[public and static and @list="method"]/
                   ├─ returns/type/name = "string"
                   ├─ name = "Patterns"
                   ├─ parameter[@list="parameters"]/
                   │   ├─ type/name = "object"
                   │   └─ name = "o"
-                  └─ body/block/return/expression/switch/
+                  └─ body/block[@list="block"]/return[@list="return"]/expression/switch/
                       ├─ name = "o"
                       ├─ arm/
                       │   ├─ pattern[and]/

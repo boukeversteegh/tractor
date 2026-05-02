@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <results>
   <tree>
-    <class>
+    <class list="class">
       <public/>
       public class
       <name>Calculator</name>
       <body>
-        <method>
+        <method list="method">
           <!-- ... (26 children) -->
         </method>
-        <method>
+        <method list="method">
           <!-- ... (26 children) -->
         </method>
-        <method>
+        <method list="method">
           <!-- ... (26 children) -->
         </method>
       </body>
     </class>
   </tree>
   <tree>
-    <class>
+    <class list="class">
       <public/>
       public class
       <name>Greeter</name>
       <body>
-        <method>
+        <method list="method">
           <!-- ... (22 children) -->
         </method>
-        <method>
+        <method list="method">
           <!-- ... (22 children) -->
         </method>
-        <method>
+        <method list="method">
           <!-- ... (5 children) -->
         </method>
       </body>

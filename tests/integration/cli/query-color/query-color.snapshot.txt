@@ -1,23 +1,23 @@
 tests/integration/sample.cs:2
-🟦class[public]🟦🟫/🟫
+🟦class[public and @list="class"]🟦🟫/🟫
 🟫  ├─ 🟫🟨"public class"🟨
 🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Calculator"🟨
 🟫  └─ 🟫🟦body🟦🟫/🟫
-🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫      │   └─ 🟫🟫... (26 children)🟫
-🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫      │   └─ 🟫🟫... (26 children)🟫
-🟫      └─ 🟫🟦method[public]🟦🟫/🟫
+🟫      └─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫          └─ 🟫🟫... (26 children)🟫
 
 tests/integration/sample.cs:9
-🟦class[public]🟦🟫/🟫
+🟦class[public and @list="class"]🟦🟫/🟫
 🟫  ├─ 🟫🟨"public class"🟨
 🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Greeter"🟨
 🟫  └─ 🟫🟦body🟦🟫/🟫
-🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫      │   └─ 🟫🟫... (22 children)🟫
-🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫      │   └─ 🟫🟫... (22 children)🟫
-🟫      └─ 🟫🟦method[public]🟦🟫/🟫
+🟫      └─ 🟫🟦method[public and @list="method"]🟦🟫/🟫
 🟫          └─ 🟫🟫... (5 children)🟫

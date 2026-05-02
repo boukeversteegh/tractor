@@ -1,22 +1,22 @@
 program/
-  ├─ comment = "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax."
-  ├─ import[group]/
+  ├─ comment[@list="comment"] = "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax."
+  ├─ import[group and @list="import"]/
   │   ├─ path = "./barrel"
   │   ├─ name = "defaultExport"
   │   ├─ import/name = "namedA"
   │   └─ import[alias]/
   │       ├─ name = "namedB"
   │       └─ alias/name = "aliasedB"
-  ├─ import[namespace]/
+  ├─ import[namespace and @list="import"]/
   │   ├─ path = "./namespace"
   │   └─ alias/name = "ns"
-  ├─ import[group]/
+  ├─ import[group and @list="import"]/
   │   ├─ path = "./types"
   │   └─ import/name = "OnlyAtCompileTime"
-  ├─ export/
+  ├─ export[@list="export"]/
   │   ├─ spec/name = "namedA"
   │   └─ string = "\"./barrel\""
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Re"
   │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[conditional]/
@@ -26,29 +26,29 @@ program/
   │       │   └─ type[infer and @list="arguments"]/type/name = "U"
   │       ├─ then/type/name = "U"
   │       └─ else/type/name = "never"
-  ├─ comment[leading] = "/** A shape with an optional label and readonly id. */"
-  ├─ export/interface/
+  ├─ comment[leading and @list="comment"] = "/** A shape with an optional label and readonly id. */"
+  ├─ export[@list="export"]/interface/
   │   ├─ name = "Shape"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ type[default]/type/name = "number"
   │   └─ body/
-  │       ├─ property[readonly]/
+  │       ├─ property[readonly and @list="property"]/
   │       │   ├─ name = "id"
   │       │   └─ type/name = "string"
-  │       ├─ property/
+  │       ├─ property[@list="property"]/
   │       │   ├─ name = "label"
   │       │   └─ type/name = "string"
-  │       ├─ property/
+  │       ├─ property[@list="property"]/
   │       │   ├─ name = "value"
   │       │   └─ type/name = "T"
-  │       └─ method/
+  │       └─ method[@list="method"]/
   │           ├─ name = "describe"
   │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "prefix"
   │           │   └─ type/name = "string"
   │           └─ returns/type/name = "string"
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Point"
   │   └─ type[object]/
   │       ├─ property/
@@ -57,12 +57,12 @@ program/
   │       └─ property/
   │           ├─ name = "y"
   │           └─ type/name = "number"
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Pair"
   │   └─ type[tuple]/
   │       ├─ type/name = "string"
   │       └─ type/name = "number"
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Status"
   │   └─ type[union]/
   │       ├─ type[union]/
@@ -71,7 +71,7 @@ program/
   │       │   │   └─ type[literal]/string = "\"loading\""
   │       │   └─ type[literal]/string = "\"ready\""
   │       └─ type[literal]/string = "\"error\""
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Mapper"
   │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[function]/
@@ -79,7 +79,7 @@ program/
   │       │   ├─ name = "input"
   │       │   └─ type/name = "T"
   │       └─ returns/type/name = "T"
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Partialized"
   │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[object]/indexer/
@@ -88,46 +88,46 @@ program/
   │       └─ annotation/type[lookup]/
   │           ├─ type/name = "T"
   │           └─ type/name = "K"
-  ├─ export/alias/
+  ├─ export[@list="export"]/alias/
   │   ├─ name = "Greeting"
   │   └─ type[template]/type[template]/type/name = "string"
-  ├─ export/enum/
+  ├─ export[@list="export"]/enum/
   │   ├─ name = "Color"
   │   └─ body/
-  │       ├─ constant/
+  │       ├─ constant[@list="constant"]/
   │       │   ├─ name = "Red"
   │       │   └─ value/expression/string = "\"RED\""
-  │       ├─ constant/
+  │       ├─ constant[@list="constant"]/
   │       │   ├─ name = "Green"
   │       │   └─ value/expression/string = "\"GREEN\""
-  │       └─ constant/
+  │       └─ constant[@list="constant"]/
   │           ├─ name = "Blue"
   │           └─ value/expression/string = "\"BLUE\""
-  ├─ comment[leading] = "/** Abstract base using visibility + readonly + static. */"
-  ├─ export/class[abstract]/
+  ├─ comment[leading and @list="comment"] = "/** Abstract base using visibility + readonly + static. */"
+  ├─ export[@list="export"]/class[abstract]/
   │   ├─ name = "Base"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
   │   │   └─ extends[@list="extends"]/type/name = "Shape"
   │   └─ body/
-  │       ├─ field[static and public]/
+  │       ├─ field[static and public and @list="field"]/
   │       │   ├─ name = "kind"
   │       │   ├─ type/name = "string"
   │       │   └─ value/expression/string = "\"base\""
-  │       ├─ field[readonly and protected]/
+  │       ├─ field[readonly and protected and @list="field"]/
   │       │   ├─ name = "createdAt"
   │       │   ├─ type/name = "number"
   │       │   └─ value/expression/call/callee/member/
   │       │       ├─ object/name = "Date"
   │       │       └─ property/name = "now"
-  │       ├─ field[private]/
+  │       ├─ field[private and @list="field"]/
   │       │   ├─ name = "_cache"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Map"
   │       │   │   ├─ type[@list="arguments"]/name = "string"
   │       │   │   └─ type[@list="arguments"]/name = "T"
   │       │   └─ value/expression/new/name = "Map"
-  │       ├─ method[public]/
+  │       ├─ method[public and @list="method"]/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required and public and @list="parameters"]/
   │       │   │   ├─ name = "name"
@@ -135,23 +135,23 @@ program/
   │       │   └─ parameter[optional and readonly and private and @list="parameters"]/
   │       │       ├─ name = "seed"
   │       │       └─ type/name = "number"
-  │       ├─ method[abstract and public]/
+  │       ├─ method[abstract and public and @list="method"]/
   │       │   ├─ name = "render"
   │       │   └─ returns/type/name = "string"
-  │       ├─ method[public and get]/
+  │       ├─ method[public and get and @list="method"]/
   │       │   ├─ name = "cacheSize"
   │       │   ├─ returns/type/name = "number"
-  │       │   └─ body/block/return/expression/member/
+  │       │   └─ body/block[@list="block"]/return[@list="return"]/expression/member/
   │       │       ├─ object/member/
   │       │       │   ├─ object/this = "this"
   │       │       │   └─ property/name = "_cache"
   │       │       └─ property/name = "size"
-  │       ├─ method[public and set]/
+  │       ├─ method[public and set and @list="method"]/
   │       │   ├─ name = "primary"
   │       │   ├─ parameter[required and @list="parameters"]/
   │       │   │   ├─ name = "value"
   │       │   │   └─ type/name = "T"
-  │       │   └─ body/block/expression/call/
+  │       │   └─ body/block[@list="block"]/expression[@list="expression"]/call/
   │       │       ├─ callee/member/
   │       │       │   ├─ object/member/
   │       │       │   │   ├─ object/this = "this"
@@ -159,7 +159,7 @@ program/
   │       │       │   └─ property/name = "set"
   │       │       ├─ string[@list="arguments"] = "\"primary\""
   │       │       └─ name[@list="arguments"] = "value"
-  │       └─ method[public]/
+  │       └─ method[public and @list="method"]/
   │           ├─ name = "store"
   │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "key"
@@ -168,7 +168,7 @@ program/
   │           │   ├─ name = "value"
   │           │   └─ type/name = "T"
   │           ├─ returns/type/name = "void"
-  │           └─ body/block/expression/call/
+  │           └─ body/block[@list="block"]/expression[@list="expression"]/call/
   │               ├─ callee/member/
   │               │   ├─ object/member/
   │               │   │   ├─ object/this = "this"
@@ -176,7 +176,7 @@ program/
   │               │   └─ property/name = "set"
   │               ├─ name[@list="arguments"] = "key"
   │               └─ name[@list="arguments"] = "value"
-  ├─ export/class/
+  ├─ export[@list="export"]/class/
   │   ├─ name = "Widget"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -188,10 +188,10 @@ program/
   │   │   ├─ name = "Base"
   │   │   └─ type[@list="arguments"]/name = "T"
   │   └─ body/
-  │       ├─ field[private and static]/
+  │       ├─ field[private and static and @list="field"]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
-  │       ├─ method[public]/
+  │       ├─ method[public and @list="method"]/
   │       │   ├─ name = "constructor"
   │       │   ├─ parameter[required and @list="parameters"]/
   │       │   │   ├─ name = "name"
@@ -200,20 +200,20 @@ program/
   │       │   │   ├─ name = "items"
   │       │   │   ├─ type[array]/type/name = "T"
   │       │   │   └─ value/expression/array = "[]"
-  │       │   └─ body/block/
-  │       │       ├─ expression/call/
+  │       │   └─ body/block[@list="block"]/
+  │       │       ├─ expression[@list="expression"]/call/
   │       │       │   ├─ callee/super = "super"
   │       │       │   └─ name[@list="arguments"] = "name"
-  │       │       └─ expression/unary/
+  │       │       └─ expression[@list="expression"]/unary/
   │       │           ├─ member/
   │       │           │   ├─ object/name = "Widget"
   │       │           │   └─ property/name = "#counter"
   │       │           └─ op[increment] = "++"
-  │       ├─ method[public and override]/
+  │       ├─ method[public and override and @list="method"]/
   │       │   ├─ name = "render"
   │       │   ├─ returns/type/name = "string"
-  │       │   └─ body/block/
-  │       │       ├─ variable[const]/
+  │       │   └─ body/block[@list="block"]/
+  │       │       ├─ variable[const and @list="variable"]/
   │       │       │   ├─ name = "first"
   │       │       │   └─ value/expression/binary/
   │       │       │       ├─ left/expression/member/
@@ -226,15 +226,15 @@ program/
   │       │       │       │   └─ property/name = "label"
   │       │       │       ├─ op[nullish-coalescing] = "??"
   │       │       │       └─ right/expression/string = "\"unnamed\""
-  │       │       └─ return/expression/template/interpolation/expression[non_null]/name = "first"
-  │       ├─ method[public and generator]/
+  │       │       └─ return[@list="return"]/expression/template/interpolation/expression[non_null]/name = "first"
+  │       ├─ method[public and generator and @list="method"]/
   │       │   ├─ name = "entries"
   │       │   ├─ returns/type[generic]/
   │       │   │   ├─ name = "Generator"
   │       │   │   └─ type[tuple and @list="arguments"]/
   │       │   │       ├─ type/name = "number"
   │       │   │       └─ type/name = "T"
-  │       │   └─ body/block/for/
+  │       │   └─ body/block[@list="block"]/for[@list="for"]/
   │       │       ├─ variable[let]/
   │       │       │   ├─ name = "i"
   │       │       │   └─ value/expression/number = "0"
@@ -249,14 +249,14 @@ program/
   │       │       ├─ unary/
   │       │       │   ├─ name = "i"
   │       │       │   └─ op[increment] = "++"
-  │       │       └─ body/expression/yield/array/
+  │       │       └─ body/expression[@list="expression"]/yield/array/
   │       │           ├─ name = "i"
   │       │           └─ index/
   │       │               ├─ object/member/
   │       │               │   ├─ object/this = "this"
   │       │               │   └─ property/name = "items"
   │       │               └─ name = "i"
-  │       └─ method[public and async]/
+  │       └─ method[public and async and @list="method"]/
   │           ├─ name = "loadAll"
   │           ├─ parameter[required and @list="parameters"]/
   │           │   ├─ name = "urls"
@@ -267,33 +267,33 @@ program/
   │           ├─ returns/type[generic]/
   │           │   ├─ name = "Promise"
   │           │   └─ type[array and @list="arguments"]/type/name = "T"
-  │           └─ body/block/try/
-  │               ├─ body/block/
-  │               │   ├─ variable[const]/
+  │           └─ body/block[@list="block"]/try[@list="try"]/
+  │               ├─ body/block[@list="block"]/
+  │               │   ├─ variable[const and @list="variable"]/
   │               │   │   ├─ name = "merged"
   │               │   │   └─ value/expression/array/
   │               │   │       ├─ spread/name = "urls"
   │               │   │       └─ spread/name = "extra"
-  │               │   ├─ for/
+  │               │   ├─ for[@list="for"]/
   │               │   │   ├─ left/expression/name = "u"
   │               │   │   ├─ right/expression/name = "merged"
-  │               │   │   └─ body/block/expression[await]/call/
+  │               │   │   └─ body/block[@list="block"]/expression[await and @list="expression"]/call/
   │               │   │       ├─ callee/name = "fetch"
   │               │   │       └─ name[@list="arguments"] = "u"
-  │               │   └─ return/expression/member/
+  │               │   └─ return[@list="return"]/expression/member/
   │               │       ├─ object/this = "this"
   │               │       └─ property/name = "items"
   │               ├─ catch/
   │               │   ├─ name = "e"
-  │               │   └─ body/block/throw/as/
+  │               │   └─ body/block[@list="block"]/throw[@list="throw"]/as/
   │               │       ├─ name = "e"
   │               │       └─ type/name = "Error"
-  │               └─ finally/body/block/expression/member/
+  │               └─ finally/body/block[@list="block"]/expression[@list="expression"]/member/
   │                   ├─ object/member/
   │                   │   ├─ object/this = "this"
   │                   │   └─ property/name = "items"
   │                   └─ property/name = "length"
-  ├─ function/
+  ├─ function[@list="function"]/
   │   ├─ name = "isShape"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "v"
@@ -301,7 +301,7 @@ program/
   │   ├─ returns/predicate/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "Shape"
-  │   └─ body/block/return/expression/binary/
+  │   └─ body/block[@list="block"]/return[@list="return"]/expression/binary/
   │       ├─ left/expression/binary/
   │       │   ├─ left/expression/binary/
   │       │   │   ├─ left/expression/unary/
@@ -319,7 +319,7 @@ program/
   │           ├─ left/expression/string = "\"id\""
   │           ├─ op[contains] = "in"
   │           └─ right/expression/name = "v"
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "tag"
   │   └─ value/expression/arrow/
   │       ├─ parameter[required and @list="parameters"]/
@@ -328,7 +328,7 @@ program/
   │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ rest/name = "vals"
   │       │   └─ type[array]/type/name = "unknown"
-  │       └─ body/call/
+  │       └─ body/call[@list="call"]/
   │           ├─ callee/member/
   │           │   ├─ object/name = "parts"
   │           │   └─ property/name = "reduce"
@@ -337,7 +337,7 @@ program/
   │           │   ├─ parameter[required and @list="parameters"]/name = "acc"
   │           │   ├─ parameter[required and @list="parameters"]/name = "p"
   │           │   ├─ parameter[required and @list="parameters"]/name = "i"
-  │           │   └─ body/binary/
+  │           │   └─ body/binary[@list="binary"]/
   │           │       ├─ left/expression/binary/
   │           │       │   ├─ left/expression/name = "acc"
   │           │       │   ├─ op[plus] = "+"
@@ -350,7 +350,7 @@ program/
   │           │           ├─ op[nullish-coalescing] = "??"
   │           │           └─ right/expression/string = "\"\""
   │           └─ string[@list="arguments"] = "\"\""
-  ├─ function[async]/
+  ├─ function[async and @list="function"]/
   │   ├─ name = "compute"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -377,8 +377,8 @@ program/
   │   ├─ returns/type[generic]/
   │   │   ├─ name = "Promise"
   │   │   └─ type[@list="arguments"]/name = "Greeting"
-  │   └─ body/block/
-  │       ├─ variable[const]/
+  │   └─ body/block[@list="block"]/
+  │       ├─ variable[const and @list="variable"]/
   │       │   ├─ pattern[array]/
   │       │   │   ├─ name = "head"
   │       │   │   └─ rest/name = "rest"
@@ -389,15 +389,15 @@ program/
   │       │       │   │   └─ name[@list="arguments"] = "input"
   │       │       │   └─ property/name = "split"
   │       │       └─ string[@list="arguments"] = "\"\""
-  │       ├─ comment[trailing] = "// array destructure + rest"
-  │       ├─ variable[const]/
+  │       ├─ comment[trailing and @list="comment"] = "// array destructure + rest"
+  │       ├─ variable[const and @list="variable"]/
   │       │   ├─ name = "spread"
   │       │   └─ value/expression/object/
   │       │       ├─ spread/object/pair/name = "scale"
   │       │       ├─ pair/name = "label"
   │       │       ├─ pair/name = "head"
   │       │       └─ pair/name = "rest"
-  │       ├─ variable[const]/
+  │       ├─ variable[const and @list="variable"]/
   │       │   ├─ name = "msg"
   │       │   └─ value/expression/as/
   │       │       ├─ call/
@@ -411,22 +411,22 @@ program/
   │       │       │           ├─ object/name = "spread"
   │       │       │           └─ property/name = "scale"
   │       │       └─ type/name = "Greeting"
-  │       └─ return/expression/satisfies/
+  │       └─ return[@list="return"]/expression/satisfies/
   │           ├─ name = "msg"
   │           └─ type/name = "Greeting"
-  ├─ comment[leading] = "/* A block comment describing control flow demos. */"
-  ├─ export/function/
+  ├─ comment[leading and @list="comment"] = "/* A block comment describing control flow demos. */"
+  ├─ export[@list="export"]/function/
   │   ├─ name = "controlFlow"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "n"
   │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "Status"
-  │   └─ body/block/
-  │       ├─ variable[let]/
+  │   └─ body/block[@list="block"]/
+  │       ├─ variable[let and @list="variable"]/
   │       │   ├─ name = "status"
   │       │   ├─ type/name = "Status"
   │       │   └─ value/expression/string = "\"idle\""
-  │       ├─ if/
+  │       ├─ if[@list="if"]/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op[compare and less] = "<"
@@ -457,21 +457,21 @@ program/
   │       │       ├─ left/expression/name = "status"
   │       │       ├─ op = "="
   │       │       └─ right/expression/string = "\"ready\""
-  │       ├─ switch/
+  │       ├─ switch[@list="switch"]/
   │       │   ├─ value/expression/name = "status"
   │       │   └─ body/
-  │       │       ├─ case/
+  │       │       ├─ case[@list="case"]/
   │       │       │   ├─ value/expression/string = "\"ready\""
-  │       │       │   └─ body[break]
-  │       │       ├─ case/
+  │       │       │   └─ body/break[@list="break"]
+  │       │       ├─ case[@list="case"]/
   │       │       │   ├─ value/expression/string = "\"error\""
-  │       │       │   └─ body/throw/new/
+  │       │       │   └─ body/throw[@list="throw"]/new/
   │       │       │       ├─ name = "Error"
   │       │       │       └─ string[@list="arguments"] = "\"bad\""
-  │       │       └─ default/
+  │       │       └─ default[@list="default"]/
   │       │           ├─ comment = "/* fallthrough */"
-  │       │           └─ body[break]
-  │       ├─ variable[const]/
+  │       │           └─ body/break[@list="break"]
+  │       ├─ variable[const and @list="variable"]/
   │       │   ├─ name = "obj"
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Record"
@@ -484,36 +484,36 @@ program/
   │       │       └─ pair/
   │       │           ├─ name = "b"
   │       │           └─ value/expression/number = "2"
-  │       ├─ for/
+  │       ├─ for[@list="for"]/
   │       │   ├─ left/expression/name = "k"
   │       │   ├─ right/expression/name = "obj"
-  │       │   └─ body/block/expression/assign/
+  │       │   └─ body/block[@list="block"]/expression[@list="expression"]/assign/
   │       │       ├─ left/expression[non_null]/index/
   │       │       │   ├─ object/name = "obj"
   │       │       │   └─ name = "k"
   │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/number = "1"
-  │       ├─ for/
+  │       ├─ for[@list="for"]/
   │       │   ├─ left/expression/pattern[array]/name = "v"
   │       │   ├─ right/expression/call/
   │       │   │   ├─ callee/member/
   │       │   │   │   ├─ object/name = "Object"
   │       │   │   │   └─ property/name = "entries"
   │       │   │   └─ name[@list="arguments"] = "obj"
-  │       │   └─ body/block/expression/unary/
+  │       │   └─ body/block[@list="block"]/expression[@list="expression"]/unary/
   │       │       ├─ op[void] = "void"
   │       │       └─ name = "v"
-  │       ├─ while/
+  │       ├─ while[@list="while"]/
   │       │   ├─ condition/expression/bool = "false"
-  │       │   └─ body/block/comment = "/* never */"
-  │       └─ return/expression/ternary/
+  │       │   └─ body/block[@list="block"]/comment[@list="comment"] = "/* never */"
+  │       └─ return[@list="return"]/expression/ternary/
   │           ├─ condition/expression/binary/
   │           │   ├─ left/expression/name = "n"
   │           │   ├─ op[compare and greater] = ">"
   │           │   └─ right/expression/number = "0"
   │           ├─ then/name = "status"
   │           └─ else/string = "\"idle\""
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "arrow"
   │   └─ value/expression/arrow/
   │       ├─ generic[@list="generics"]/name = "U"
@@ -523,10 +523,10 @@ program/
   │       ├─ returns/type[union]/
   │       │   ├─ type/name = "U"
   │       │   └─ type[literal]/undefined = "undefined"
-  │       └─ body/index/
+  │       └─ body/index[@list="index"]/
   │           ├─ object/name = "xs"
   │           └─ number = "0"
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "doubled"
   │   ├─ type[array]/type/name = "number"
   │   └─ value/expression/call/
@@ -539,75 +539,75 @@ program/
   │       └─ arrow[@list="arguments"]/
   │           ├─ parameter[required and @list="parameters"]/name = "x"
   │           ├─ returns/type/name = "number"
-  │           └─ body/binary/
+  │           └─ body/binary[@list="binary"]/
   │               ├─ left/expression/name = "x"
   │               ├─ op[multiply] = "*"
   │               └─ right/expression/number = "2"
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "maybe"
   │   ├─ type[union]/
   │   │   ├─ type/name = "string"
   │   │   └─ type[literal]/null = "null"
   │   └─ value/expression/null = "null"
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "fallback"
   │   └─ value/expression/binary/
   │       ├─ left/expression/name = "maybe"
   │       ├─ op[nullish-coalescing] = "??"
   │       └─ right/expression/string = "\"default\""
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "nonNull"
   │   └─ value/expression[non_null]/as/
   │       ├─ name = "maybe"
   │       └─ type[union]/
   │           ├─ type/name = "string"
   │           └─ type[literal]/null = "null"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "arrow"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "doubled"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "fallback"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "nonNull"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "ns"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "defaultExport"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "aliasedB"
-  ├─ comment = "// Iter 18: TS 5+ / advanced type / declare / module shapes."
-  ├─ comment[leading] = "// Ambient `declare` declarations."
-  ├─ declare/variable[const]/
+  ├─ comment[@list="comment"] = "// Iter 18: TS 5+ / advanced type / declare / module shapes."
+  ├─ comment[leading and @list="comment"] = "// Ambient `declare` declarations."
+  ├─ declare[@list="declare"]/variable[const]/
   │   ├─ name = "__DEV__"
   │   └─ type/name = "boolean"
-  ├─ declare/signature/
+  ├─ declare[@list="declare"]/signature/
   │   ├─ name = "externalThing"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "name"
   │   │   └─ type/name = "string"
   │   └─ returns/type/name = "void"
-  ├─ declare/namespace/
+  ├─ declare[@list="declare"]/namespace/
   │   ├─ name = "SideEffect"
-  │   └─ body/block/signature/
+  │   └─ body/block[@list="block"]/signature[@list="signature"]/
   │       ├─ name = "init"
   │       └─ returns/type/name = "void"
-  ├─ comment[leading] = "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
-  ├─ alias/
+  ├─ comment[leading and @list="comment"] = "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
+  ├─ alias[@list="alias"]/
   │   ├─ name = "Builder"
   │   └─ type[constructor]/
   │       ├─ parameter[required and @list="parameters"]/
   │       │   ├─ name = "input"
   │       │   └─ type/name = "string"
   │       └─ type/name = "Status"
-  ├─ alias/
+  ├─ alias[@list="alias"]/
   │   ├─ name = "Identity"
   │   ├─ generic[@list="generics"]/name = "T"
   │   └─ type[conditional]/
@@ -615,19 +615,19 @@ program/
   │       ├─ right/type/name = "T"
   │       ├─ then/type/name = "T"
   │       └─ else/type/name = "never"
-  ├─ alias/
+  ├─ alias[@list="alias"]/
   │   ├─ name = "Reflective"
   │   └─ type[object]/method/
   │       ├─ name = "copy"
   │       └─ returns/type[this] = "this"
-  ├─ comment[leading] = "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
-  ├─ alias/
+  ├─ comment[leading and @list="comment"] = "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
+  ├─ alias[@list="alias"]/
   │   ├─ name = "RestArgs"
   │   └─ type[tuple]/
   │       ├─ type/name = "number"
   │       └─ type[rest]/type[array]/type/name = "string"
-  ├─ comment[leading] = "// `T?` only appears inside tuple element annotations."
-  ├─ alias/
+  ├─ comment[leading and @list="comment"] = "// `T?` only appears inside tuple element annotations."
+  ├─ alias[@list="alias"]/
   │   ├─ name = "OptionalSlot"
   │   └─ type[tuple]/
   │       ├─ parameter[required]/
@@ -636,29 +636,31 @@ program/
   │       └─ parameter[optional]/
   │           ├─ name = "tail"
   │           └─ type/name = "string"
-  ├─ comment[leading] = "// Old-style cast (`<T>expr`) — type assertion."
-  ├─ variable[const]/
+  ├─ comment[leading and @list="comment"] = "// Old-style cast (`<T>expr`) — type assertion."
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "asserted"
   │   └─ value/expression/as/
   │       ├─ type[@list="arguments"]/name = "number"
   │       └─ as/
   │           ├─ type[@list="arguments"]/name = "unknown"
   │           └─ string = "\"42\""
-  ├─ comment[leading] = "// Class with static initializer block."
-  ├─ class/
+  ├─ comment[leading and @list="comment"] = "// Class with static initializer block."
+  ├─ class[@list="class"]/
   │   ├─ name = "StaticBlock"
   │   └─ body/
-  │       ├─ field[static and public]/
+  │       ├─ field[static and public and @list="field"]/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/number = "0"
-  │       └─ block[static]/body/block/expression/assign/
-  │           ├─ left/expression/member/
-  │           │   ├─ object/name = "StaticBlock"
-  │           │   └─ property/name = "counter"
-  │           ├─ op = "="
-  │           └─ right/expression/number = "7"
-  ├─ comment[leading] = "// Asserts / type predicate annotations."
-  ├─ function/
+  │       └─ block[@list="block"]/
+  │           ├─ static[@list="static"]
+  │           └─ body[@list="body"]/block[@list="block"]/expression[@list="expression"]/assign/
+  │               ├─ left/expression/member/
+  │               │   ├─ object/name = "StaticBlock"
+  │               │   └─ property/name = "counter"
+  │               ├─ op = "="
+  │               └─ right/expression/number = "7"
+  ├─ comment[leading and @list="comment"] = "// Asserts / type predicate annotations."
+  ├─ function[@list="function"]/
   │   ├─ name = "isNumber"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "x"
@@ -666,7 +668,7 @@ program/
   │   ├─ returns/predicate[asserts]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "number"
-  │   └─ body/block/if/
+  │   └─ body/block[@list="block"]/if[@list="if"]/
   │       ├─ condition/expression/binary/
   │       │   ├─ left/expression/unary/
   │       │   │   ├─ op[typeof] = "typeof"
@@ -676,66 +678,66 @@ program/
   │       └─ then/throw/new/
   │           ├─ name = "Error"
   │           └─ string[@list="arguments"] = "\"not a number\""
-  ├─ comment[leading] = "// `Foo<T>` instantiation expression."
-  ├─ variable[const]/
+  ├─ comment[leading and @list="comment"] = "// `Foo<T>` instantiation expression."
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "arrayOf"
   │   └─ value/expression/type[generic]/
   │       ├─ name = "Array"
   │       └─ type[@list="arguments"]/name = "number"
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "fixed"
   │   └─ value/expression/call/callee/name = "arrayOf"
-  ├─ comment[leading] = "// Old-style `import x = require(y)` form."
-  ├─ import/
+  ├─ comment[leading and @list="comment"] = "// Old-style `import x = require(y)` form."
+  ├─ import[@list="import"]/
   │   ├─ name = "legacy"
   │   └─ path = "./legacy"
-  ├─ comment[leading] = "// `import.meta` / `new.target` meta-properties."
-  ├─ variable[const]/
+  ├─ comment[leading and @list="comment"] = "// `import.meta` / `new.target` meta-properties."
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "url"
   │   └─ value/expression/member/
   │       ├─ object/member = "import.meta"
   │       └─ property/name = "url"
-  ├─ function/
+  ├─ function[@list="function"]/
   │   ├─ name = "MetaCtor"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ this = "this"
   │   │   └─ type/name = "unknown"
-  │   └─ body/block/return/expression/binary/
+  │   └─ body/block[@list="block"]/return[@list="return"]/expression/binary/
   │       ├─ left/expression/member/
   │       │   ├─ object/member = "new.target"
   │       │   ├─ member[optional] = "?."
   │       │   └─ property/name = "name"
   │       ├─ op[nullish-coalescing] = "??"
   │       └─ right/expression/string = "\"\""
-  ├─ comment[leading] = "// Nested type / value identifiers."
-  ├─ alias/
+  ├─ comment[leading and @list="comment"] = "// Nested type / value identifiers."
+  ├─ alias[@list="alias"]/
   │   ├─ name = "NestedTy"
   │   └─ type[lookup]/
   │       ├─ type/name = "StaticBlock"
   │       └─ type[literal]/string = "\"counter\""
-  ├─ variable[const]/
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "nestedVal"
   │   └─ value/expression/member/
   │       ├─ object/name = "StaticBlock"
   │       └─ property/name = "counter"
-  ├─ comment[leading] = "// Regex literal + flags."
-  ├─ variable[const]/
+  ├─ comment[leading and @list="comment"] = "// Regex literal + flags."
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "pattern"
   │   └─ value/expression/regex/flags = "giu"
-  ├─ comment[leading] = "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
-  ├─ function/
+  ├─ comment[leading and @list="comment"] = "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
+  ├─ function[@list="function"]/
   │   ├─ name = "controlOdds"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ name = "value"
   │   │   └─ type/name = "number"
   │   ├─ returns/type/name = "number"
-  │   └─ body/block/
-  │       ├─ variable[let]/
+  │   └─ body/block[@list="block"]/
+  │       ├─ variable[let and @list="variable"]/
   │       │   ├─ name = "total"
   │       │   └─ value/expression/number = "0"
-  │       ├─ label/
+  │       ├─ label[@list="label"]/
   │       │   ├─ name = "outer"
-  │       │   └─ body/for/
+  │       │   └─ body/for[@list="for"]/
   │       │       ├─ variable[let]/
   │       │       │   ├─ name = "i"
   │       │       │   ├─ value/expression/number = "0"
@@ -751,20 +753,20 @@ program/
   │       │       ├─ unary/
   │       │       │   ├─ name = "j"
   │       │       │   └─ op[decrement] = "--"
-  │       │       └─ body/block/
-  │       │           ├─ if/
+  │       │       └─ body/block[@list="block"]/
+  │       │           ├─ if[@list="if"]/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
   │       │           │   │   ├─ op[equals and strict] = "==="
   │       │           │   │   └─ right/expression/number = "2"
   │       │           │   └─ then/continue/name = "outer"
-  │       │           ├─ if/
+  │       │           ├─ if[@list="if"]/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "i"
   │       │           │   │   ├─ op[equals and strict] = "==="
   │       │           │   │   └─ right/expression/number = "4"
   │       │           │   └─ then/break/name = "outer"
-  │       │           └─ expression/assign/
+  │       │           └─ expression[@list="expression"]/assign/
   │       │               ├─ left/expression/name = "total"
   │       │               ├─ op = "="
   │       │               └─ right/
@@ -776,26 +778,26 @@ program/
   │       │                       ├─ left/expression/name = "total"
   │       │                       ├─ op[multiply] = "*"
   │       │                       └─ right/expression/number = "2"
-  │       ├─ variable[let]/
+  │       ├─ variable[let and @list="variable"]/
   │       │   ├─ name = "n"
   │       │   └─ value/expression/number = "0"
-  │       ├─ do/
-  │       │   ├─ body/block/expression/unary/
+  │       ├─ do[@list="do"]/
+  │       │   ├─ body/block[@list="block"]/expression[@list="expression"]/unary/
   │       │   │   ├─ name = "n"
   │       │   │   └─ op[increment] = "++"
   │       │   └─ condition/expression/binary/
   │       │       ├─ left/expression/name = "n"
   │       │       ├─ op[compare and less] = "<"
   │       │       └─ right/expression/number = "3"
-  │       ├─ if/
+  │       ├─ if[@list="if"]/
   │       │   ├─ condition/expression/bool = "false"
   │       │   └─ then/debugger = "debugger;"
-  │       └─ return/expression/binary/
+  │       └─ return[@list="return"]/expression/binary/
   │           ├─ left/expression/name = "total"
   │           ├─ op[plus] = "+"
   │           └─ right/expression/name = "n"
-  ├─ comment[leading] = "// Pair pattern + assignment pattern in destructure with defaults."
-  ├─ function/
+  ├─ comment[leading and @list="comment"] = "// Pair pattern + assignment pattern in destructure with defaults."
+  ├─ function[@list="function"]/
   │   ├─ name = "destructure"
   │   ├─ parameter[required and @list="parameters"]/
   │   │   ├─ pattern[object]/
@@ -822,7 +824,7 @@ program/
   │   │   │   └─ rest/name = "rest"
   │   │   └─ type[array]/type/name = "number"
   │   ├─ returns/type/name = "number"
-  │   └─ body/block/return/expression/binary/
+  │   └─ body/block[@list="block"]/return[@list="return"]/expression/binary/
   │       ├─ left/expression/binary/
   │       │   ├─ left/expression/binary/
   │       │   │   ├─ left/expression/name = "aa"
@@ -834,30 +836,30 @@ program/
   │       └─ right/expression/member/
   │           ├─ object/name = "rest"
   │           └─ property/name = "length"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "controlOdds"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "destructure"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "asserted"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "fixed"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "url"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "nestedVal"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "pattern"
-  ├─ expression/unary/
+  ├─ expression[@list="expression"]/unary/
   │   ├─ op[void] = "void"
   │   └─ name = "MetaCtor"
-  └─ expression/unary/
+  └─ expression[@list="expression"]/unary/
       ├─ op[void] = "void"
       └─ name = "legacy"

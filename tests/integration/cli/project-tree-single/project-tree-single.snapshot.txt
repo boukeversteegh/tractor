@@ -1,10 +1,10 @@
-class[public]/
+class[public and @list="class"]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      ├─ method[public]/
+      ├─ method[public and @list="method"]/
       │   └─ ... (26 children)
-      ├─ method[public]/
+      ├─ method[public and @list="method"]/
       │   └─ ... (26 children)
-      └─ method[public]/
+      └─ method[public and @list="method"]/
           └─ ... (26 children)

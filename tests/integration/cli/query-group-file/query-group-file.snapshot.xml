@@ -5,18 +5,18 @@
     <group file="tests/integration/sample.cs">
       <match line="2" column="1" end_line="7" end_column="2">
         <tree>
-          <class>
+          <class list="class">
             <public/>
             public class
             <name>Calculator</name>
             <body>
-              <method>
+              <method list="method">
                 <!-- ... (26 children) -->
               </method>
-              <method>
+              <method list="method">
                 <!-- ... (26 children) -->
               </method>
-              <method>
+              <method list="method">
                 <!-- ... (26 children) -->
               </method>
             </body>
@@ -25,18 +25,18 @@
       </match>
       <match line="9" column="1" end_line="14" end_column="2">
         <tree>
-          <class>
+          <class list="class">
             <public/>
             public class
             <name>Greeter</name>
             <body>
-              <method>
+              <method list="method">
                 <!-- ... (22 children) -->
               </method>
-              <method>
+              <method list="method">
                 <!-- ... (22 children) -->
               </method>
-              <method>
+              <method list="method">
                 <!-- ... (5 children) -->
               </method>
             </body>
@@ -47,12 +47,12 @@
     <group file="tests/integration/sample2.cs">
       <match line="1" column="1" end_line="4" end_column="2">
         <tree>
-          <class>
+          <class list="class">
             <public/>
             public class
             <name>Alpha</name>
             <body>
-              <property>
+              <property list="property">
                 <!-- ... (6 children) -->
               </property>
             </body>

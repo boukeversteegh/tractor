@@ -1,51 +1,51 @@
 file/
-  ├─ comment[leading] = "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built."
-  ├─ package/name = "blueprint"
-  ├─ import/path = "fmt"
-  ├─ import/path = "context"
-  ├─ import/path = "errors"
-  ├─ import/path = "io"
-  ├─ import[alias]/
+  ├─ comment[leading and @list="comment"] = "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built."
+  ├─ package[@list="package"]/name = "blueprint"
+  ├─ import[@list="import"]/path = "fmt"
+  ├─ import[@list="import"]/path = "context"
+  ├─ import[@list="import"]/path = "errors"
+  ├─ import[@list="import"]/path = "io"
+  ├─ import[alias and @list="import"]/
   │   ├─ path = "io"
   │   └─ alias/name = "myio"
-  ├─ import[dot]/path = "strings"
-  ├─ import[blank]/path = "net/http/pprof"
-  ├─ const/
+  ├─ import[dot and @list="import"]/path = "strings"
+  ├─ import[blank and @list="import"]/path = "net/http/pprof"
+  ├─ const[@list="const"]/
   │   ├─ name = "Pi"
   │   └─ value/expression/float = "3.14159"
-  ├─ const/
+  ├─ const[@list="const"]/
   │   ├─ name = "StatusIdle"
   │   └─ value/expression/iota = "iota"
-  ├─ const/name = "StatusRunning"
-  ├─ const/name = "StatusDone"
-  ├─ const/name = "_"
-  ├─ const/name = "StatusError"
-  ├─ var/
+  ├─ const[@list="const"]/name = "StatusRunning"
+  ├─ const[@list="const"]/name = "StatusDone"
+  ├─ const[@list="const"]/name = "_"
+  ├─ const[@list="const"]/name = "StatusError"
+  ├─ var[@list="var"]/
   │   ├─ name = "ErrNotFound"
   │   └─ value/expression/call/
   │       ├─ member/
   │       │   ├─ name = "errors"
   │       │   └─ name = "New"
   │       └─ string[@list="arguments"] = "\"not found\""
-  ├─ var/
+  ├─ var[@list="var"]/
   │   ├─ name = "globalCount"
   │   └─ type/name = "int"
-  ├─ var/
+  ├─ var[@list="var"]/
   │   ├─ name = "name"
   │   ├─ name = "age"
   │   └─ value/
   │       ├─ expression/string = "\"alice\""
   │       └─ expression/int = "30"
-  ├─ interface[exported]/
+  ├─ interface[exported and @list="interface"]/
   │   ├─ name = "Number"
   │   ├─ type[approximation]/type/name = "int"
   │   └─ type[approximation]/type/name = "float64"
-  ├─ interface[exported]/
+  ├─ interface[exported and @list="interface"]/
   │   ├─ name = "Stringer"
   │   └─ method/
   │       ├─ name = "String"
   │       └─ returns/type/name = "string"
-  ├─ interface[exported]/
+  ├─ interface[exported and @list="interface"]/
   │   ├─ name = "ReadStringer"
   │   ├─ extends[@list="extends"]/type/
   │   │   ├─ name = "io"
@@ -54,15 +54,15 @@ file/
   │   └─ method/
   │       ├─ name = "Close"
   │       └─ returns/type/name = "error"
-  ├─ alias[exported]/
+  ├─ alias[exported and @list="alias"]/
   │   ├─ name = "Alias"
   │   └─ type/
   │       ├─ name = "context"
   │       └─ name = "Context"
-  ├─ type[exported]/
+  ├─ type[exported and @list="type"]/
   │   ├─ name = "UserID"
   │   └─ type/name = "int64"
-  ├─ type[exported]/
+  ├─ type[exported and @list="type"]/
   │   ├─ name = "Handler"
   │   └─ type[function]/
   │       ├─ parameter[@list="parameters"]/
@@ -74,7 +74,7 @@ file/
   │       │   ├─ name = "id"
   │       │   └─ type/name = "UserID"
   │       └─ returns/type/name = "error"
-  ├─ struct[exported]/
+  ├─ struct[exported and @list="struct"]/
   │   ├─ name = "Container"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -82,12 +82,12 @@ file/
   │   └─ field[unexported]/
   │       ├─ name = "items"
   │       └─ slice/type/name = "T"
-  ├─ struct[exported]/
+  ├─ struct[exported and @list="struct"]/
   │   ├─ name = "MyErr"
   │   └─ field[unexported]/
   │       ├─ name = "msg"
   │       └─ type/name = "string"
-  ├─ struct[exported]/
+  ├─ struct[exported and @list="struct"]/
   │   ├─ name = "Point"
   │   ├─ field[exported]/
   │   │   ├─ name = "X"
@@ -98,7 +98,7 @@ file/
   │       ├─ name = "Name"
   │       ├─ type/name = "string"
   │       └─ string[raw] = "`json:\"name\"`"
-  ├─ struct[exported]/
+  ├─ struct[exported and @list="struct"]/
   │   ├─ name = "Labeled"
   │   ├─ field[unexported]/type/name = "Point"
   │   ├─ field[exported]/
@@ -112,7 +112,7 @@ file/
   │       └─ struct/field[exported]/
   │           ├─ name = "Created"
   │           └─ type/name = "int64"
-  ├─ method[exported]/
+  ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "c"
   │   │   └─ pointer/type[generic]/
@@ -122,7 +122,7 @@ file/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
-  │   └─ body/assign/
+  │   └─ body/assign[@list="assign"]/
   │       ├─ left/expression/member/
   │       │   ├─ name = "c"
   │       │   └─ name = "items"
@@ -132,13 +132,13 @@ file/
   │           │   ├─ name = "c"
   │           │   └─ name = "items"
   │           └─ name[@list="arguments"] = "v"
-  ├─ method[exported]/
+  ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
   │   │   └─ type/name = "Point"
   │   ├─ name = "String"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/expression/call/
+  │   └─ body/return[@list="return"]/expression/call/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Sprintf"
@@ -149,7 +149,7 @@ file/
   │       └─ member[@list="arguments"]/
   │           ├─ name = "p"
   │           └─ name = "Y"
-  ├─ method[exported]/
+  ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "p"
   │   │   └─ pointer/type/name = "Point"
@@ -159,50 +159,50 @@ file/
   │   │   ├─ name = "dy"
   │   │   └─ type/name = "int"
   │   └─ body/
-  │       ├─ assign/
+  │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/member/
   │       │   │   ├─ name = "p"
   │       │   │   └─ name = "X"
   │       │   └─ right/expression/name = "dx"
-  │       └─ assign/
+  │       └─ assign[@list="assign"]/
   │           ├─ left/expression/member/
   │           │   ├─ name = "p"
   │           │   └─ name = "Y"
   │           └─ right/expression/name = "dy"
-  ├─ method[exported]/
+  ├─ method[exported and @list="method"]/
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "e"
   │   │   └─ pointer/type/name = "MyErr"
   │   ├─ name = "Error"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/expression/member/
+  │   └─ body/return[@list="return"]/expression/member/
   │       ├─ name = "e"
   │       └─ name = "msg"
-  ├─ function[unexported]/
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "wrap"
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "err"
   │   │   └─ type/name = "error"
   │   ├─ returns/type/name = "error"
-  │   └─ body/return/expression/call/
+  │   └─ body/return[@list="return"]/expression/call/
   │       ├─ member/
   │       │   ├─ name = "fmt"
   │       │   └─ name = "Errorf"
   │       ├─ string[@list="arguments"] = "\"wrap: %w\""
   │       └─ name[@list="arguments"] = "err"
-  ├─ function[unexported]/
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "doThing"
   │   ├─ returns/type/name = "error"
-  │   └─ body/return/expression/nil = "nil"
-  ├─ function[unexported]/
+  │   └─ body/return[@list="return"]/expression/nil = "nil"
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "risky"
   │   ├─ returns/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
-  │   └─ body/return/
+  │   └─ body/return[@list="return"]/
   │       ├─ expression/int = "0"
   │       └─ expression/name = "ErrNotFound"
-  ├─ function[exported]/
+  ├─ function[exported and @list="function"]/
   │   ├─ name = "Map"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -218,7 +218,7 @@ file/
   │   │       └─ returns/type/name = "U"
   │   ├─ returns/slice/type/name = "U"
   │   └─ body/
-  │       ├─ variable[short]/
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "out"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "make"
@@ -227,13 +227,13 @@ file/
   │       │       └─ call[@list="arguments"]/
   │       │           ├─ name = "len"
   │       │           └─ name[@list="arguments"] = "xs"
-  │       ├─ for/
+  │       ├─ for[@list="for"]/
   │       │   ├─ range/
   │       │   │   ├─ left/
   │       │   │   │   ├─ expression/name = "_"
   │       │   │   │   └─ expression/name = "x"
   │       │   │   └─ right/expression/name = "xs"
-  │       │   └─ body/assign/
+  │       │   └─ body/assign[@list="assign"]/
   │       │       ├─ left/expression/name = "out"
   │       │       └─ right/expression/call/
   │       │           ├─ name = "append"
@@ -241,8 +241,8 @@ file/
   │       │           └─ call[@list="arguments"]/
   │       │               ├─ name = "f"
   │       │               └─ name[@list="arguments"] = "x"
-  │       └─ return/expression/name = "out"
-  ├─ function[exported]/
+  │       └─ return[@list="return"]/expression/name = "out"
+  ├─ function[exported and @list="function"]/
   │   ├─ name = "Sum"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -251,16 +251,18 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/type/name = "T"
-  │   └─ body[return]/for/
-  │       ├─ range/
-  │       │   ├─ left/
-  │       │   │   ├─ expression/name = "_"
-  │       │   │   └─ expression/name = "x"
-  │       │   └─ right/expression/name = "xs"
-  │       └─ body/assign/
-  │           ├─ left/expression/name = "total"
-  │           └─ right/expression/name = "x"
-  ├─ function[exported]/
+  │   └─ body/
+  │       ├─ for[@list="for"]/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
+  │       │   └─ body/assign[@list="assign"]/
+  │       │       ├─ left/expression/name = "total"
+  │       │       └─ right/expression/name = "x"
+  │       └─ return[@list="return"]
+  ├─ function[exported and @list="function"]/
   │   ├─ name = "Uniq"
   │   ├─ generic[@list="generics"]/
   │   │   ├─ name = "T"
@@ -269,42 +271,43 @@ file/
   │   │   ├─ name = "xs"
   │   │   └─ slice/type/name = "T"
   │   ├─ returns/slice/type/name = "T"
-  │   └─ body[return]/
-  │       ├─ variable[short]/
+  │   └─ body/
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "seen"
   │       │   └─ right/expression/literal/map/
   │       │       ├─ type/name = "T"
   │       │       └─ value/expression/struct = "struct{}"
-  │       └─ for/
-  │           ├─ range/
-  │           │   ├─ left/
-  │           │   │   ├─ expression/name = "_"
-  │           │   │   └─ expression/name = "x"
-  │           │   └─ right/expression/name = "xs"
-  │           └─ body/if/
-  │               ├─ variable[short]/
-  │               │   ├─ left/
-  │               │   │   ├─ expression/name = "_"
-  │               │   │   └─ expression/name = "ok"
-  │               │   └─ right/expression/index/
-  │               │       ├─ name = "seen"
-  │               │       └─ name = "x"
-  │               ├─ condition/expression/unary/
-  │               │   ├─ op[logical and not] = "!"
-  │               │   └─ name = "ok"
-  │               └─ then/
-  │                   ├─ assign/
-  │                   │   ├─ left/expression/index/
-  │                   │   │   ├─ name = "seen"
-  │                   │   │   └─ name = "x"
-  │                   │   └─ right/expression/literal/struct = "struct{}"
-  │                   └─ assign/
-  │                       ├─ left/expression/name = "out"
-  │                       └─ right/expression/call/
-  │                           ├─ name = "append"
-  │                           ├─ name[@list="arguments"] = "out"
-  │                           └─ name[@list="arguments"] = "x"
-  ├─ function[unexported]/
+  │       ├─ for[@list="for"]/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "x"
+  │       │   │   └─ right/expression/name = "xs"
+  │       │   └─ body/if[@list="if"]/
+  │       │       ├─ variable[short]/
+  │       │       │   ├─ left/
+  │       │       │   │   ├─ expression/name = "_"
+  │       │       │   │   └─ expression/name = "ok"
+  │       │       │   └─ right/expression/index/
+  │       │       │       ├─ name = "seen"
+  │       │       │       └─ name = "x"
+  │       │       ├─ condition/expression/unary/
+  │       │       │   ├─ op[logical and not] = "!"
+  │       │       │   └─ name = "ok"
+  │       │       └─ then/
+  │       │           ├─ assign/
+  │       │           │   ├─ left/expression/index/
+  │       │           │   │   ├─ name = "seen"
+  │       │           │   │   └─ name = "x"
+  │       │           │   └─ right/expression/literal/struct = "struct{}"
+  │       │           └─ assign/
+  │       │               ├─ left/expression/name = "out"
+  │       │               └─ right/expression/call/
+  │       │                   ├─ name = "append"
+  │       │                   ├─ name[@list="arguments"] = "out"
+  │       │                   └─ name[@list="arguments"] = "x"
+  │       └─ return[@list="return"]
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "variadic"
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "prefix"
@@ -315,29 +318,30 @@ file/
   │   ├─ returns/
   │   │   ├─ type/name = "int"
   │   │   └─ type/name = "error"
-  │   └─ body[return]/
-  │       ├─ defer/call/closure/body/assign/
+  │   └─ body/
+  │       ├─ defer[@list="defer"]/call/closure/body/assign[@list="assign"]/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/name = "recover"
-  │       ├─ assign/
+  │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/name = "_"
   │       │   └─ right/expression/call/
   │       │       ├─ name = "ToUpper"
   │       │       └─ name[@list="arguments"] = "prefix"
-  │       └─ for/
-  │           ├─ range/
-  │           │   ├─ left/
-  │           │   │   ├─ expression/name = "_"
-  │           │   │   └─ expression/name = "v"
-  │           │   └─ right/expression/name = "vals"
-  │           └─ body/assign/
-  │               ├─ left/expression/name = "sum"
-  │               └─ right/expression/name = "v"
-  ├─ comment[leading] = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
-  ├─ function[unexported]/
+  │       ├─ for[@list="for"]/
+  │       │   ├─ range/
+  │       │   │   ├─ left/
+  │       │   │   │   ├─ expression/name = "_"
+  │       │   │   │   └─ expression/name = "v"
+  │       │   │   └─ right/expression/name = "vals"
+  │       │   └─ body/assign[@list="assign"]/
+  │       │       ├─ left/expression/name = "sum"
+  │       │       └─ right/expression/name = "v"
+  │       └─ return[@list="return"]
+  ├─ comment[leading and @list="comment"] = "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "arraysAndCasts"
   │   └─ body/
-  │       ├─ var/
+  │       ├─ var[@list="var"]/
   │       │   ├─ name = "fixed"
   │       │   ├─ array/
   │       │   │   ├─ int = "5"
@@ -347,37 +351,37 @@ file/
   │       │       │   ├─ int = "5"
   │       │       │   └─ type/name = "int"
   │       │       └─ body/
-  │       │           ├─ int = "1"
-  │       │           ├─ int = "2"
-  │       │           ├─ int = "3"
-  │       │           ├─ int = "4"
-  │       │           └─ int = "5"
-  │       ├─ variable[short]/
+  │       │           ├─ int[@list="int"] = "1"
+  │       │           ├─ int[@list="int"] = "2"
+  │       │           ├─ int[@list="int"] = "3"
+  │       │           ├─ int[@list="int"] = "4"
+  │       │           └─ int[@list="int"] = "5"
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "implicit"
   │       │   └─ right/expression/literal/
   │       │       ├─ array[implicit]/type/name = "int"
   │       │       └─ body/
-  │       │           ├─ int = "10"
-  │       │           ├─ int = "20"
-  │       │           └─ int = "30"
-  │       ├─ variable[short]/
+  │       │           ├─ int[@list="int"] = "10"
+  │       │           ├─ int[@list="int"] = "20"
+  │       │           └─ int[@list="int"] = "30"
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "sub"
   │       │   └─ right/expression/index[slice]/
   │       │       ├─ name = "fixed"
   │       │       ├─ int = "1"
   │       │       └─ int = "3"
-  │       ├─ variable[short]/
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "chRecvOnly"
   │       │   └─ right/expression/call[type]/
   │       │       ├─ chan/value/type/name = "int"
   │       │       └─ nil = "nil"
-  │       ├─ variable[short]/
+  │       ├─ variable[short and @list="variable"]/
   │       │   ├─ left/expression/name = "mapper"
   │       │   └─ right/expression/type[generic]/
   │       │       ├─ type/name = "Map"
   │       │       ├─ type[@list="arguments"]/name = "int"
   │       │       └─ type[@list="arguments"]/name = "string"
-  │       ├─ assign/
+  │       ├─ assign[@list="assign"]/
   │       │   ├─ left/
   │       │   │   ├─ expression/name = "_"
   │       │   │   └─ expression/name = "_"
@@ -385,7 +389,7 @@ file/
   │       │       ├─ name = "variadic"
   │       │       ├─ string[@list="arguments"] = "\"nums\""
   │       │       └─ spread[@list="arguments"]/index[slice]/name = "fixed"
-  │       ├─ switch/
+  │       ├─ switch[@list="switch"]/
   │       │   ├─ value/expression/index/
   │       │   │   ├─ name = "implicit"
   │       │   │   └─ int = "0"
@@ -395,7 +399,7 @@ file/
   │       │       └─ assign/
   │       │           ├─ left/expression/name = "_"
   │       │           └─ right/expression/name = "sub"
-  │       └─ assign/
+  │       └─ assign[@list="assign"]/
   │           ├─ left/
   │           │   ├─ expression/name = "_"
   │           │   ├─ expression/name = "_"
@@ -404,13 +408,13 @@ file/
   │               ├─ expression/name = "chRecvOnly"
   │               ├─ expression/name = "mapper"
   │               └─ expression/name = "sub"
-  ├─ function[unexported]/
+  ├─ function[unexported and @list="function"]/
   │   ├─ name = "classify"
   │   ├─ parameter[@list="parameters"]/
   │   │   ├─ name = "x"
   │   │   └─ type/name = "any"
   │   ├─ returns/type/name = "string"
-  │   └─ body/switch[type]/
+  │   └─ body/switch[type and @list="switch"]/
   │       ├─ name = "v"
   │       ├─ value/expression/name = "x"
   │       ├─ case/
@@ -438,7 +442,7 @@ file/
   │           │   └─ name = "Sprintf"
   │           ├─ string[@list="arguments"] = "\"%T\""
   │           └─ name[@list="arguments"] = "v"
-  └─ function[unexported]/
+  └─ function[unexported and @list="function"]/
       ├─ name = "controlFlow"
       ├─ parameter[@list="parameters"]/
       │   ├─ name = "ctx"
@@ -453,14 +457,14 @@ file/
       │   └─ chan/value/type/name = "int"
       ├─ returns/type/name = "error"
       └─ body/
-          ├─ variable[short]/
+          ├─ variable[short and @list="variable"]/
           │   ├─ left/
           │   │   ├─ expression/name = "raw"
           │   │   └─ expression/name = "ch"
           │   └─ right/
           │       ├─ expression/string[raw] = "`no \"escapes\" here`"
           │       └─ expression/char = "'A'"
-          ├─ if/
+          ├─ if[@list="if"]/
           │   ├─ variable[short]/
           │   │   ├─ left/
           │   │   │   ├─ expression/name = "x"
@@ -478,7 +482,7 @@ file/
           │   └─ else/assign/
           │       ├─ left/expression/name = "_"
           │       └─ right/expression/name = "x"
-          ├─ for/
+          ├─ for[@list="for"]/
           │   ├─ variable[short]/
           │   │   ├─ left/expression/name = "i"
           │   │   └─ right/expression/int = "0"
@@ -489,20 +493,20 @@ file/
           │   ├─ unary/
           │   │   ├─ name = "i"
           │   │   └─ op[increment] = "++"
-          │   └─ body/if/
+          │   └─ body/if[@list="if"]/
           │       ├─ condition/expression/binary/
           │       │   ├─ left/expression/name = "i"
           │       │   ├─ op[equals] = "=="
           │       │   └─ right/expression/int = "5"
           │       └─ then[continue]
-          ├─ for/
+          ├─ for[@list="for"]/
           │   ├─ range/
           │   │   ├─ left/expression/name = "i"
           │   │   └─ right/expression/int = "5"
-          │   └─ body/assign/
+          │   └─ body/assign[@list="assign"]/
           │       ├─ left/expression/name = "_"
           │       └─ right/expression/name = "i"
-          ├─ for/
+          ├─ for[@list="for"]/
           │   ├─ range/
           │   │   ├─ left/
           │   │   │   ├─ expression/name = "k"
@@ -512,36 +516,36 @@ file/
           │   │       │   ├─ type/name = "string"
           │   │       │   └─ value/type/name = "int"
           │   │       └─ body/
-          │   │           ├─ string = "\"a\""
-          │   │           ├─ value/expression/int = "1"
-          │   │           ├─ string = "\"b\""
-          │   │           └─ value/expression/int = "2"
-          │   └─ body/assign/
+          │   │           ├─ string[@list="string"] = "\"a\""
+          │   │           ├─ value[@list="value"]/expression/int = "1"
+          │   │           ├─ string[@list="string"] = "\"b\""
+          │   │           └─ value[@list="value"]/expression/int = "2"
+          │   └─ body/assign[@list="assign"]/
           │       ├─ left/
           │       │   ├─ expression/name = "_"
           │       │   └─ expression/name = "_"
           │       └─ right/
           │           ├─ expression/name = "k"
           │           └─ expression/name = "v"
-          ├─ variable[short]/
+          ├─ variable[short and @list="variable"]/
           │   ├─ left/expression/name = "n"
           │   └─ right/expression/int = "0"
-          ├─ for/
+          ├─ for[@list="for"]/
           │   ├─ binary/
           │   │   ├─ left/expression/name = "n"
           │   │   ├─ op[compare and less] = "<"
           │   │   └─ right/expression/int = "3"
-          │   └─ body/unary/
+          │   └─ body/unary[@list="unary"]/
           │       ├─ name = "n"
           │       └─ op[increment] = "++"
-          ├─ go/call/closure/body/expression/call/
+          ├─ go[@list="go"]/call/closure/body/expression[@list="expression"]/call/
           │   ├─ member/
           │   │   ├─ name = "fmt"
           │   │   └─ name = "Println"
           │   └─ string[@list="arguments"] = "\"bg\""
-          ├─ labeled/
+          ├─ labeled[@list="labeled"]/
           │   ├─ label = "Outer"
-          │   └─ for/body/select/
+          │   └─ for/body/select[@list="select"]/
           │       ├─ case/
           │       │   ├─ receive/
           │       │   │   ├─ left/
@@ -570,7 +574,7 @@ file/
           │           │       ├─ name = "ctx"
           │           │       └─ name = "Done"
           │           └─ goto/label = "cleanup"
-          ├─ labeled/
+          ├─ labeled[@list="labeled"]/
           │   ├─ label = "cleanup"
           │   └─ variable[short]/
           │       ├─ left/expression/name = "buffered"
@@ -578,13 +582,13 @@ file/
           │           ├─ name = "make"
           │           ├─ chan[@list="arguments"]/value/type/name = "int"
           │           └─ int[@list="arguments"] = "4"
-          ├─ send/
+          ├─ send[@list="send"]/
           │   ├─ name = "buffered"
           │   └─ value/expression/int = "1"
-          ├─ expression/call/
+          ├─ expression[@list="expression"]/call/
           │   ├─ name = "close"
           │   └─ name[@list="arguments"] = "buffered"
-          ├─ variable[short]/
+          ├─ variable[short and @list="variable"]/
           │   ├─ left/
           │   │   ├─ expression/name = "pt"
           │   │   └─ expression/name = "pts"
@@ -594,31 +598,31 @@ file/
           │       │   └─ literal/
           │       │       ├─ type/name = "Point"
           │       │       └─ body/
-          │       │           ├─ name = "X"
-          │       │           ├─ value/expression/int = "1"
-          │       │           ├─ name = "Y"
-          │       │           └─ value/expression/int = "2"
+          │       │           ├─ name[@list="name"] = "X"
+          │       │           ├─ value[@list="value"]/expression/int = "1"
+          │       │           ├─ name[@list="name"] = "Y"
+          │       │           └─ value[@list="value"]/expression/int = "2"
           │       └─ expression/literal/
           │           ├─ slice/type/name = "Point"
           │           └─ body/
-          │               ├─ name = "X"
-          │               ├─ value/expression/int = "0"
-          │               ├─ name = "X"
-          │               ├─ value/expression/int = "1"
-          │               ├─ name = "Y"
-          │               └─ value/expression/int = "1"
-          ├─ variable[short]/
+          │               ├─ name[@list="name"] = "X"
+          │               ├─ value[@list="value"]/expression/int = "0"
+          │               ├─ name[@list="name"] = "X"
+          │               ├─ value[@list="value"]/expression/int = "1"
+          │               ├─ name[@list="name"] = "Y"
+          │               └─ value[@list="value"]/expression/int = "1"
+          ├─ variable[short and @list="variable"]/
           │   ├─ left/expression/name = "m"
           │   └─ right/expression/literal/
           │       ├─ map/
           │       │   ├─ type/name = "string"
           │       │   └─ value/type/name = "Point"
           │       └─ body/
-          │           ├─ string = "\"a\""
-          │           └─ value/
+          │           ├─ string[@list="string"] = "\"a\""
+          │           └─ value[@list="value"]/
           │               ├─ expression/name = "X"
           │               └─ expression/value/expression/int = "1"
-          ├─ var/
+          ├─ var[@list="var"]/
           │   ├─ name = "r"
           │   ├─ type/
           │   │   ├─ name = "io"
@@ -628,7 +632,7 @@ file/
           │       └─ type[@list="arguments"]/
           │           ├─ name = "myio"
           │           └─ name = "PipeReader"
-          ├─ if/
+          ├─ if[@list="if"]/
           │   ├─ variable[short]/
           │   │   ├─ left/
           │   │   │   ├─ expression/name = "s"
@@ -640,10 +644,10 @@ file/
           │   └─ then/assign/
           │       ├─ left/expression/name = "_"
           │       └─ right/expression/name = "s"
-          ├─ var/
+          ├─ var[@list="var"]/
           │   ├─ name = "target"
           │   └─ pointer/type/name = "MyErr"
-          ├─ if/
+          ├─ if[@list="if"]/
           │   ├─ variable[short]/
           │   │   ├─ left/expression/name = "err"
           │   │   └─ right/expression/call/name = "doThing"
@@ -664,7 +668,7 @@ file/
           │   │       ├─ name[@list="arguments"] = "err"
           │   │       └─ name[@list="arguments"] = "ErrNotFound"
           │   └─ then/return/expression/name = "err"
-          ├─ assign/
+          ├─ assign[@list="assign"]/
           │   ├─ left/
           │   │   ├─ expression/name = "_"
           │   │   ├─ expression/name = "_"
@@ -681,4 +685,4 @@ file/
           │       └─ expression/call/
           │           ├─ name = "UserID"
           │           └─ int[@list="arguments"] = "42"
-          └─ return/expression/nil = "nil"
+          └─ return[@list="return"]/expression/nil = "nil"
