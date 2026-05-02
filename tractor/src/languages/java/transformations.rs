@@ -74,6 +74,62 @@ pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Flatten)
 }
 
+/// `extends_interfaces` — `interface I extends A, B`. Same pattern as
+/// `super_interfaces`: lift inner `type_list` children, wrap each in
+/// `<extends>` with `field="extends"` + `list="true"`.
+pub fn extends_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_kind(xot, child).as_deref() == Some("type_list") {
+            let inner: Vec<XotNode> = xot.children(child)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for inner_child in inner {
+                xot.detach(inner_child)?;
+                xot.insert_before(child, inner_child)?;
+            }
+            xot.detach(child)?;
+        }
+    }
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let ext_elt = xot.add_name(Extends.as_str());
+        let ext_node = xot.new_element(ext_elt);
+        xot.insert_before(child, ext_node)?;
+        xot.detach(child)?;
+        xot.append(ext_node, child)?;
+        xot.with_attr(ext_node, "field", "extends");
+        xot.with_attr(ext_node, "list", "true");
+    }
+    Ok(TransformAction::Flatten)
+}
+
+/// `type_bound` — `<T extends A & B>` generic bound. Same pattern as
+/// `super_interfaces`: each bound becomes a flat `<extends>` sibling
+/// with `field="extends"` + `list="true"` so multi-bound and single-
+/// bound forms differ only by sibling count.
+pub fn type_bound(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let ext_elt = xot.add_name(Extends.as_str());
+        let ext_node = xot.new_element(ext_elt);
+        xot.insert_before(child, ext_node)?;
+        xot.detach(child)?;
+        xot.append(ext_node, child)?;
+        xot.with_attr(ext_node, "field", "extends");
+        xot.with_attr(ext_node, "list", "true");
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `super_interfaces` — `implements A, B, C`. Tree-sitter wraps the
 /// type list under an inner `type_list` node; descend through it (and
 /// any other transparent wrappers) to find the real type children,

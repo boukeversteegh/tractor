@@ -37,7 +37,7 @@ program/
   │   ├─ name = "Demo"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ extends/type[generic]/
+  │   │   └─ extends[@list="true"]/type[generic]/
   │   │       ├─ name = "Comparable"
   │   │       └─ type[@list="true"]/name = "T"
   │   ├─ extends[@list="true"]/type/name = "Base"
