@@ -232,6 +232,26 @@ pub fn formal_parameters(
     Ok(TransformAction::Flatten)
 }
 
+/// `constraint` — `<T extends Shape>` inside a `<type_parameter>`.
+/// Tree-sitter wraps the `extends` keyword + bound type. Strip the
+/// keyword text (the element name carries the meaning), rename to
+/// `<extends>` per Principle #18 (name after operator), and add
+/// `field="extends" list="true"` to match the cross-language
+/// relationship shape (Java type_bound, Rust trait_bounds).
+pub fn constraint(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            if text.trim() == "extends" {
+                xot.detach(child)?;
+            }
+        }
+    }
+    xot.with_renamed(node, Extends)
+        .with_attr(node, "field", "extends")
+        .with_attr(node, "list", "true");
+    Ok(TransformAction::Continue)
+}
+
 /// `extends_clause` — `class Foo extends Bar` or `extends Base<T>`.
 /// TS classes only allow one extends.
 ///

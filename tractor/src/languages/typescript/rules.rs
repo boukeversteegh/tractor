@@ -258,9 +258,15 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and survives as raw kind name.
 
+        // `<T extends Shape>` — generic constraint. Per Principle #18,
+        // name the relationship after the source keyword. TS source
+        // uses `extends`, so the element becomes `<extends>` matching
+        // Java/Rust shape, with `field="extends" list="true"` for
+        // JSON-array consistency.
+        TsKind::Constraint                => Custom(transformations::constraint),
+
         // Already matches our vocabulary.
         TsKind::Array
-        | TsKind::Constraint
         | TsKind::Object
         | TsKind::Pair
         | TsKind::Super

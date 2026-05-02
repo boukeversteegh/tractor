@@ -108,7 +108,7 @@ program/
   │   ├─ name = "Base"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ constraint/type/name = "Shape"
+  │   │   └─ extends[@list="true"]/type/name = "Shape"
   │   └─ body/
   │       ├─ field[static and public]/
   │       │   ├─ name = "kind"
@@ -180,7 +180,7 @@ program/
   │   ├─ name = "Widget"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   ├─ constraint/type/name = "Shape"
+  │   │   ├─ extends[@list="true"]/type/name = "Shape"
   │   │   └─ value/expression/type[default]/type[generic]/
   │   │       ├─ name = "Shape"
   │   │       └─ type[@list="true"]/name = "number"
@@ -354,7 +354,7 @@ program/
   │   ├─ name = "compute"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ constraint/type[union]/
+  │   │   └─ extends[@list="true"]/type[union]/
   │   │       ├─ type/name = "number"
   │   │       └─ type/name = "string"
   │   ├─ parameter[required and @list="true"]/
