@@ -338,7 +338,7 @@ unit/
   │   │       │       │   └─ argument[@list="true"]/int = "1"
   │   │       │       └─ return/expression/index/argument = "this"
   │   │       └─ method[public and static]/
-  │   │           ├─ returns/name = "TResult"
+  │   │           ├─ returns/type/name = "TResult"
   │   │           ├─ name = "Pipe"
   │   │           ├─ generic[@list="true"]/name = "T"
   │   │           ├─ generic[notnull and @list="true"]/name = "TResult"

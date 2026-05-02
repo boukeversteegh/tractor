@@ -229,10 +229,10 @@ pub fn wrap_body_value_children(
     Ok(())
 }
 
-/// Ensure every immediate element child of an `<extends>` /
-/// `<implements>` / `<throws>` relationship wrapper is a `<type>`
-/// element (Principle #14: namespace vocabulary — type-reference
-/// slots use `<type>` uniformly across languages).
+/// Ensure every immediate element child of a type-reference slot
+/// (`<extends>`, `<implements>`, `<throws>`, `<returns>`) is a
+/// `<type>` element (Principle #14: namespace vocabulary —
+/// type-reference slots use `<type>` uniformly across languages).
 ///
 /// Pre-iter-117 inconsistency:
 ///   Java/TS: `<extends><type><name>Foo</name></type></extends>`  ✓
@@ -248,7 +248,7 @@ pub fn wrap_relationship_targets_in_type(
     root: XotNode,
 ) -> Result<(), xot::Error> {
     use helpers::*;
-    const RELATIONSHIPS: &[&str] = &["extends", "implements", "throws"];
+    const RELATIONSHIPS: &[&str] = &["extends", "implements", "throws", "returns"];
     let root = find_content_root(xot, root);
     let mut targets: Vec<XotNode> = Vec::new();
     fn collect(
