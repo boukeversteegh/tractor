@@ -16,14 +16,34 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Comment as CommentName, Global, Leading, Prefix, Primitive, Private, Protected, Public,
-    String as PhpString, Trailing, Type, Unary, Variable,
+    Arrow, Comment as CommentName, Function, Global, Leading, Prefix, Primitive, Private, Protected,
+    Public, String as PhpString, Trailing, Type, Unary, Variable,
 };
 
 /// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
 /// the wrapper, promote children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `arrow_function` — `fn($x) => expr`. PHP arrow functions are
+/// syntactically always single-expression (no block bodies — that's
+/// `function ($x) { ... }`). Re-tag the `<body>` wrapper to `<value>`
+/// so `wrap_expression_positions` wraps the body's content in
+/// `<expression>` host (Principle #15). Mirrors iter 161/162/167.
+pub fn arrow_function(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let body_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+    if let Some(body) = body_child {
+        let value_id = xot.add_name("value");
+        if let Some(elem) = xot.element_mut(body) {
+            elem.set_name(value_id);
+        }
+    }
+    xot.with_renamed(node, Function)
+        .with_prepended_marker(node, Arrow)?;
+    Ok(TransformAction::Continue)
 }
 
 /// `enum_declaration` — `enum Status: string { ... }` (backed enum).

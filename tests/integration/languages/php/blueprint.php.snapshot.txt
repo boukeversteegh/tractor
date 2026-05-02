@@ -293,7 +293,7 @@ program/
   │       │   ├─ type[primitive]/name = "int"
   │       │   └─ name = "$x"
   │       ├─ returns/type[primitive]/name = "int"
-  │       └─ body/binary[@list="binary"]/
+  │       └─ value/expression/binary/
   │           ├─ left/expression/variable/name = "x"
   │           ├─ op[multiply] = "*"
   │           └─ right/expression/int = "2"

@@ -47,7 +47,10 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
 
         // ---- RenameWithMarker ------------------------------------------
         PhpKind::AnonymousFunction              => RenameWithMarker(Function, Anonymous),
-        PhpKind::ArrowFunction                  => RenameWithMarker(Function, Arrow),
+        // `arrow_function` — re-tag `<body>` as `<value>` so
+        // single-expression body wraps in `<expression>` host
+        // (Principle #15). Mirrors iter 161/162/167.
+        PhpKind::ArrowFunction                  => Custom(transformations::arrow_function),
         PhpKind::ClassConstantAccessExpression  => RenameWithMarker(Member, Constant),
         PhpKind::MatchDefaultExpression         => RenameWithMarker(Arm, Default),
         PhpKind::MemberAccessExpression         => RenameWithMarker(Member, Instance),

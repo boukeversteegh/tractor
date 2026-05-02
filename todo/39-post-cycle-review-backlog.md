@@ -222,18 +222,9 @@ member-access receiver). But several transform sites still
   - **Effort**: 1 iter per language (~7 iters total) once decided.
   - **Source**: long-pending; flagged in multiple cycles.
 
-### Closure/arrow/lambda body unification — round 2 (PHP, Ruby)
+### Closure/arrow/lambda body unification — round 2 (Ruby remaining)
 
-C# closed iter 167. Two remaining:
-
-- [ ] **PHP arrow function body re-tag** — PHP
-  `function[arrow]` single-expr body:
-  `tests/integration/languages/php/blueprint.php.snapshot.txt:296`.
-  Current: `function[arrow]/.../body/binary[@list="binary"]/...`.
-  Expected: `value/expression/binary/...`. Mechanical extension of
-  iter 167 (C# lambda); PHP arrow functions are always
-  single-expression (`fn() => expr`) so no `is_block` discriminator
-  needed. Effort: small.
+C# closed iter 167; PHP closed iter 168.
 
 - [ ] **Ruby lambda body unification** —
   `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:363-369`.
@@ -245,6 +236,7 @@ C# closed iter 167. Two remaining:
   Ruby-specific.
 
 - [x] C# lambda body unification — closed iter 167.
+- [x] PHP arrow function body unification — closed iter 168.
 
 ### TS arrow block-body fixture missing
 
@@ -285,6 +277,10 @@ C# closed iter 167. Two remaining:
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 168: PHP arrow function body unification — single-expr
+  arrow `fn(...) => expr` retags `<body>` as `<value>` (matches
+  C#/Rust/TS/Python archetype). PHP arrow is syntactically always
+  single-expression, no discriminator needed.
 - [x] iter 167: C# lambda body unification — single-expr lambdas
   retag `<body>` as `<value>` (matches Rust closure / TS arrow /
   Python lambda); block-bodied lambdas keep `<body>` via
