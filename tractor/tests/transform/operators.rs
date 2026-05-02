@@ -203,9 +203,9 @@ fn java_update_prefix_vs_postfix() {
 /// as `+=` (`<op[assign[plus]]>`) — child marker under `<assign>`.
 #[test]
 fn python_floor_divide_and_matmul() {
-    claim("Python `//=` carries flat `assign` + `floor-divide` markers on `<op>`",
+    claim("Python `//=` carries flat `assign` + `floor` markers on `<op>`",
         &mut parse_src("python", "x = 4\nx //= 2\n"),
-        "//assign[op[assign and floor-divide]]",
+        "//assign[op[assign and floor]]",
         1);
 
     claim("Python `@=` carries flat `assign` + `matmul` markers on `<op>`",
@@ -213,9 +213,9 @@ fn python_floor_divide_and_matmul() {
         "//assign[op[assign and matmul]]",
         1);
 
-    claim("Python `//` (bare floor-divide) extracts `<op[floor-divide]>`",
+    claim("Python `//` (bare floor-divide) extracts `<op[floor]>`",
         &mut parse_src("python", "y = 7 // 2\n"),
-        "//binary[op[floor-divide]]",
+        "//binary[op[floor]]",
         1);
 }
 

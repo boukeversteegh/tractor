@@ -127,7 +127,7 @@ module/
   │       ├─ assert[@list="assert"]/
   │       │   ├─ compare/
   │       │   │   ├─ name = "x"
-  │       │   │   ├─ op[compare and greater and or-equal] = ">="
+  │       │   │   ├─ op[compare and greater and equal] = ">="
   │       │   │   └─ int = "0"
   │       │   └─ string = "\"x must be non-negative\""
   │       ├─ assign[@list="assign"]/
@@ -140,7 +140,7 @@ module/
   │       │   └─ right/expression/int = "1"
   │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/name = "result"
-  │       │   ├─ op[assign and floor-divide] = "//="
+  │       │   ├─ op[assign and floor] = "//="
   │       │   └─ right/expression/int = "2"
   │       ├─ assign[@list="assign"]/
   │       │   ├─ left/expression/name = "matrix"
@@ -491,7 +491,7 @@ module/
   │       │       │   └─ int[@list="arguments"] = "3"
   │       │       └─ compare/
   │       │           ├─ name = "i"
-  │       │           ├─ op[not-equals] = "!="
+  │       │           ├─ op[inequality] = "!="
   │       │           └─ name = "j"
   │       └─ return[@list="return"]/
   │           ├─ expression/name = "squares"

@@ -355,7 +355,7 @@ program/
           │       ├─ assert[@list="assert"]/
           │       │   ├─ binary/
           │       │   │   ├─ left/expression/name = "n"
-          │       │   │   ├─ op[compare and greater and or-equal] = ">="
+          │       │   │   ├─ op[compare and greater and equal] = ">="
           │       │   │   └─ right/expression/int = "0"
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable[@list="variable"]/

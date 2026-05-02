@@ -407,7 +407,7 @@ unit/
   │               │       ├─ name = "widget"
   │               │       └─ binary/
   │               │           ├─ left/expression/name = "maybe"
-  │               │           ├─ op[nullish-coalescing] = "??"
+  │               │           ├─ op[nullish] = "??"
   │               │           └─ right/expression/new/
   │               │               ├─ type/name = "Widget"
   │               │               ├─ argument[@list="arguments"]/int = "1"
@@ -420,7 +420,7 @@ unit/
   │               │           ├─ left/expression/call/member[instance and optional]/
   │               │           │   ├─ condition/expression/name = "widget"
   │               │           │   └─ name = "Shout"
-  │               │           ├─ op[nullish-coalescing] = "??"
+  │               │           ├─ op[nullish] = "??"
   │               │           └─ right/expression/string = "\"n/a\""
   │               ├─ variable[@list="variable"]/
   │               │   ├─ type/name = "var"
@@ -540,7 +540,7 @@ unit/
   │               │           │   │   │           │   ├─ left/expression/name = "n"
   │               │           │   │   │           │   ├─ op[modulo] = "%"
   │               │           │   │   │           │   └─ right/expression/int = "2"
-  │               │           │   │   │           ├─ op[not-equals] = "!="
+  │               │           │   │   │           ├─ op[inequality] = "!="
   │               │           │   │   │           └─ right/expression/int = "0"
   │               │           │   │   └─ name = "Select"
   │               │           │   └─ argument[@list="arguments"]/lambda/
@@ -962,7 +962,7 @@ unit/
               │               ├─ name = "s2"
               │               └─ binary/
               │                   ├─ left/expression/name = "s"
-              │                   ├─ op[nullish-coalescing] = "??"
+              │                   ├─ op[nullish] = "??"
               │                   └─ right/expression/throw/new/
               │                       ├─ type/name = "ArgumentNullException"
               │                       └─ argument[@list="arguments"]/call/

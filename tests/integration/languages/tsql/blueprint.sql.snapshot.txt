@@ -178,7 +178,7 @@ file/
   │   │   ├─ case/
   │   │   │   ├─ compare/
   │   │   │   │   ├─ column/name = "Age"
-  │   │   │   │   ├─ op[compare and greater and or-equal] = ">="
+  │   │   │   │   ├─ op[compare and greater and equal] = ">="
   │   │   │   │   └─ literal = "18"
   │   │   │   ├─ literal = "'Adult'"
   │   │   │   └─ literal = "'Minor'"

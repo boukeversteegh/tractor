@@ -308,7 +308,7 @@ program/
   │       ├─ until[@list="until"]/
   │       │   ├─ condition/expression/binary/
   │       │   │   ├─ left/expression/name = "i"
-  │       │   │   ├─ op[compare and greater and or-equal] = ">="
+  │       │   │   ├─ op[compare and greater and equal] = ">="
   │       │   │   └─ right/expression/int = "6"
   │       │   └─ body/do[@list="do"]/assign/
   │       │       ├─ left/expression/name = "i"

@@ -140,13 +140,13 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     // Equality
     OperatorSpec { text: "==",  primary: Some("equals"),     children: &[],         nested: None },
     OperatorSpec { text: "===", primary: Some("equals"),     children: &["strict"], nested: None },
-    OperatorSpec { text: "!=",  primary: Some("not-equals"), children: &[],         nested: None },
-    OperatorSpec { text: "!==", primary: Some("not-equals"), children: &["strict"], nested: None },
+    OperatorSpec { text: "!=",  primary: Some("inequality"), children: &[],         nested: None },
+    OperatorSpec { text: "!==", primary: Some("inequality"), children: &["strict"], nested: None },
     // Comparison
     OperatorSpec { text: "<",   primary: Some("compare"),    children: &["less"],                 nested: None },
     OperatorSpec { text: ">",   primary: Some("compare"),    children: &["greater"],              nested: None },
-    OperatorSpec { text: "<=",  primary: Some("compare"),    children: &["less", "or-equal"],     nested: None },
-    OperatorSpec { text: ">=",  primary: Some("compare"),    children: &["greater", "or-equal"],  nested: None },
+    OperatorSpec { text: "<=",  primary: Some("compare"),    children: &["less", "equal"],        nested: None },
+    OperatorSpec { text: ">=",  primary: Some("compare"),    children: &["greater", "equal"],     nested: None },
     // Arithmetic
     OperatorSpec { text: "+",   primary: Some("plus"),     children: &[], nested: None },
     OperatorSpec { text: "-",   primary: Some("minus"),    children: &[], nested: None },
@@ -161,7 +161,7 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "or",  primary: Some("logical"), children: &["or"],  nested: None },
     OperatorSpec { text: "!",   primary: Some("logical"), children: &["not"], nested: None },
     OperatorSpec { text: "not", primary: Some("logical"), children: &["not"], nested: None },
-    OperatorSpec { text: "??",  primary: Some("nullish-coalescing"), children: &[], nested: None },
+    OperatorSpec { text: "??",  primary: Some("nullish"), children: &[], nested: None },
     // Bitwise
     OperatorSpec { text: "&",   primary: Some("bitwise"), children: &["and"], nested: None },
     OperatorSpec { text: "|",   primary: Some("bitwise"), children: &["or"],  nested: None },
@@ -181,7 +181,7 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     // Compound assignment (logical / bitwise / shift) — nested form.
     OperatorSpec { text: "&&=", primary: Some("assign"), children: &[], nested: Some(("logical", &["and"])) },
     OperatorSpec { text: "||=", primary: Some("assign"), children: &[], nested: Some(("logical", &["or"]))  },
-    OperatorSpec { text: "??=", primary: Some("assign"), children: &[], nested: Some(("nullish-coalescing", &[])) },
+    OperatorSpec { text: "??=", primary: Some("assign"), children: &[], nested: Some(("nullish", &[])) },
     OperatorSpec { text: "<<=", primary: Some("assign"), children: &[], nested: Some(("shift", &["left"]))  },
     OperatorSpec { text: ">>=", primary: Some("assign"), children: &[], nested: Some(("shift", &["right"])) },
     OperatorSpec { text: "&=",  primary: Some("assign"), children: &[], nested: Some(("bitwise", &["and"])) },
@@ -193,9 +193,9 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     OperatorSpec { text: "is",     primary: Some("identity"), children: &[],      nested: None },
     OperatorSpec { text: "is not", primary: Some("identity"), children: &["not"], nested: None },
     // Python floor-divide and matmul (binary + augmented-assign)
-    OperatorSpec { text: "//",  primary: Some("floor-divide"), children: &[],               nested: None },
-    OperatorSpec { text: "@",   primary: Some("matmul"),       children: &[],               nested: None },
-    OperatorSpec { text: "//=", primary: Some("assign"),       children: &["floor-divide"], nested: None },
+    OperatorSpec { text: "//",  primary: Some("floor"),    children: &[],               nested: None },
+    OperatorSpec { text: "@",   primary: Some("matmul"),   children: &[],               nested: None },
+    OperatorSpec { text: "//=", primary: Some("assign"),   children: &["floor"],        nested: None },
     OperatorSpec { text: "@=",  primary: Some("assign"),       children: &["matmul"],       nested: None },
     // TypeScript / JavaScript unary type operators
     OperatorSpec { text: "typeof", primary: Some("typeof"), children: &[], nested: None },
@@ -303,10 +303,10 @@ fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xo
 /// Check if an element name is an operator semantic marker
 pub fn is_operator_marker(name: &str) -> bool {
     matches!(name,
-        "equals" | "not-equals" | "compare" | "less" | "greater" | "or-equal"
+        "equals" | "inequality" | "compare" | "less" | "greater" | "equal"
         | "plus" | "minus" | "multiply" | "divide" | "modulo" | "power"
-        | "floor-divide" | "matmul"
-        | "logical" | "bitwise" | "shift" | "nullish-coalescing"
+        | "floor" | "matmul"
+        | "logical" | "bitwise" | "shift" | "nullish"
         | "assign" | "increment" | "decrement"
         | "strict" | "left" | "right" | "unsigned" | "xor"
         | "contains" | "identity" | "not" | "and" | "or"

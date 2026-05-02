@@ -360,6 +360,44 @@ fn no_underscore_in_node_names_except_whitelist() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Invariant: no element name contains a dash (`-`).
+//
+// XPath 3.1 actually allows dashes in element names, but project
+// convention is single-word names where possible, falling back to
+// snake_case for multi-word concepts. Dashes invite ambiguity with
+// arithmetic-minus when authoring queries, and they don't match the
+// strum `serialize_all = "snake_case"` default that every output enum
+// declares. This test pins the convention.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn no_dash_in_node_names() {
+    let mut report = Report::default();
+    for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let Some(parsed) = parse_structure(&fixture) else { continue };
+        let xot = parsed.documents.xot();
+        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
+        walk_elements(xot, root, &mut |xot, node| {
+            let Some(name) = element_name(xot, node) else { return };
+            if !name.contains('-') {
+                return;
+            }
+            report.record(&name, &fixture, String::new());
+        });
+    }
+    if !report.is_empty() && ASSERT_INVARIANTS {
+        report.print(
+            "Project convention — element names must not contain dashes (use single words or snake_case)",
+        );
+        panic!("dashed node names");
+    }
+}
+
 /// `(lang_id, kind_strs)` for every language whose rule table is
 /// rule-driven. The kind strings are the snake_case `IntoStaticStr`
 /// outputs of the language's `Kind` enum, filtered to those that map

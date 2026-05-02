@@ -470,7 +470,7 @@ file/
           │   │       └─ name = "Pipe"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "err"
-          │   │   ├─ op[not-equals] = "!="
+          │   │   ├─ op[inequality] = "!="
           │   │   └─ right/expression/nil = "nil"
           │   ├─ then/return/expression/call/
           │   │   ├─ name = "wrap"

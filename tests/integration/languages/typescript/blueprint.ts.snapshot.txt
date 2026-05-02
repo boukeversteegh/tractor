@@ -224,7 +224,7 @@ program/
   │       │       │       │   │   └─ number = "0"
   │       │       │       │   ├─ member[optional] = "?."
   │       │       │       │   └─ property/name = "label"
-  │       │       │       ├─ op[nullish-coalescing] = "??"
+  │       │       │       ├─ op[nullish] = "??"
   │       │       │       └─ right/expression/string = "\"unnamed\""
   │       │       └─ return[@list="return"]/expression/template/interpolation/expression[non_null]/name = "first"
   │       ├─ method[public and generator and @list="method"]/
@@ -312,7 +312,7 @@ program/
   │       │   ├─ op[logical and and] = "&&"
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/name = "v"
-  │       │       ├─ op[not-equals and strict] = "!=="
+  │       │       ├─ op[inequality and strict] = "!=="
   │       │       └─ right/expression/null = "null"
   │       ├─ op[logical and and] = "&&"
   │       └─ right/expression/binary/
@@ -347,7 +347,7 @@ program/
   │           │           ├─ left/expression/index/
   │           │           │   ├─ object/name = "vals"
   │           │           │   └─ name = "i"
-  │           │           ├─ op[nullish-coalescing] = "??"
+  │           │           ├─ op[nullish] = "??"
   │           │           └─ right/expression/string = "\"\""
   │           └─ string[@list="arguments"] = "\"\""
   ├─ function[async and @list="function"]/
@@ -405,7 +405,7 @@ program/
   │       │       │   └─ template/
   │       │       │       ├─ interpolation/binary/
   │       │       │       │   ├─ left/expression/name = "label"
-  │       │       │       │   ├─ op[nullish-coalescing] = "??"
+  │       │       │       │   ├─ op[nullish] = "??"
   │       │       │       │   └─ right/expression/string = "\"world\""
   │       │       │       └─ interpolation/member/
   │       │       │           ├─ object/name = "spread"
@@ -553,7 +553,7 @@ program/
   │   ├─ name = "fallback"
   │   └─ value/expression/binary/
   │       ├─ left/expression/name = "maybe"
-  │       ├─ op[nullish-coalescing] = "??"
+  │       ├─ op[nullish] = "??"
   │       └─ right/expression/string = "\"default\""
   ├─ variable[const and @list="variable"]/
   │   ├─ name = "nonNull"
@@ -671,7 +671,7 @@ program/
   │       │   ├─ left/expression/unary/
   │       │   │   ├─ op[typeof] = "typeof"
   │       │   │   └─ name = "x"
-  │       │   ├─ op[not-equals and strict] = "!=="
+  │       │   ├─ op[inequality and strict] = "!=="
   │       │   └─ right/expression/string = "\"number\""
   │       └─ then/throw/new/
   │           ├─ name = "Error"
@@ -705,7 +705,7 @@ program/
   │       │   ├─ object/member = "new.target"
   │       │   ├─ member[optional] = "?."
   │       │   └─ property/name = "name"
-  │       ├─ op[nullish-coalescing] = "??"
+  │       ├─ op[nullish] = "??"
   │       └─ right/expression/string = "\"\""
   ├─ comment[leading and @list="comment"] = "// Nested type / value identifiers."
   ├─ alias[@list="alias"]/

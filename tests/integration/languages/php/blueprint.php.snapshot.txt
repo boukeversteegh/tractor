@@ -99,7 +99,7 @@ program/
   │       │       │   ├─ op = "="
   │       │       │   └─ right/expression/binary/
   │       │       │       ├─ left/expression/variable/name = "who"
-  │       │       │       ├─ op[nullish-coalescing] = "??"
+  │       │       │       ├─ op[nullish] = "??"
   │       │       │       └─ right/expression/member[instance]/
   │       │       │           ├─ variable/name = "this"
   │       │       │           └─ name = "name"
@@ -548,7 +548,7 @@ program/
   │   ├─ returns/type[primitive]/name = "bool"
   │   └─ body/return[@list="return"]/expression/binary/
   │       ├─ left/expression/variable/name = "thing"
-  │       ├─ op[not-equals and strict] = "!=="
+  │       ├─ op[inequality and strict] = "!=="
   │       └─ right/expression/null = "null"
   ├─ comment[leading and @list="comment"] = "// Bottom type (`never`) in return position."
   ├─ function[@list="function"]/
