@@ -455,7 +455,7 @@ program/
   │       │   ├─ left/expression/variable/name = "cast"
   │       │   ├─ op = "="
   │       │   └─ right/expression/cast/
-  │       │       ├─ type = "int"
+  │       │       ├─ type/name = "int"
   │       │       └─ value/expression/variable/name = "value"
   │       ├─ comment[leading] = "// Clone, error suppression, shell."
   │       ├─ expression/assign/

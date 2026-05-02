@@ -214,7 +214,10 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         // `<variable[static]><variable>...</variable></variable>`
         // double-wrap (within-language Principle #5).
         PhpKind::StaticVariableDeclaration => Flatten { distribute_field: None },
-        PhpKind::CastType                  => Rename(Type),
+        // `(int)` cast type. Wrap bare text in `<name>` so the shape
+        // is `<type><name>int</name></type>` matching other PHP type
+        // contexts (Principle #14: identifiers in `<name>`).
+        PhpKind::CastType                  => Custom(transformations::cast_type),
         // `self`/`parent`/`static` keyword-scope.
         PhpKind::RelativeScope             => Rename(Scope),
         // `` `cmd` `` shell-command literal.

@@ -194,6 +194,15 @@ pub fn encapsed_string(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 // implicit access modifiers in PHP.
 // ---------------------------------------------------------------------
 
+/// `cast_type` — `(int)`/`(string)` cast prefix. Wrap the bare type
+/// text in `<name>` so the shape matches other PHP type contexts
+/// (Principle #14 — identifiers in `<name>`).
+pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_renamed(node, Type);
+    wrap_text_in_name(xot, node)?;
+    Ok(TransformAction::Continue)
+}
+
 /// `global_declaration` — `global $x;`. Strip the bare `global`
 /// keyword text. Within each variable_name child, lift the `<name>`
 /// out so the shape is `<variable[global]><name>x</name>...</variable>`
