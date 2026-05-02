@@ -48,7 +48,7 @@ file/
   ├─ interface[exported and @list="interface"]/
   │   ├─ name = "ReadStringer"
   │   ├─ extends[@list="extends"]/type/
-  │   │   ├─ name = "io"
+  │   │   ├─ package/name = "io"
   │   │   └─ name = "Reader"
   │   ├─ extends[@list="extends"]/type/name = "Stringer"
   │   └─ method/
@@ -57,7 +57,7 @@ file/
   ├─ alias[exported and @list="alias"]/
   │   ├─ name = "Alias"
   │   └─ type/
-  │       ├─ name = "context"
+  │       ├─ package/name = "context"
   │       └─ name = "Context"
   ├─ type[exported and @list="type"]/
   │   ├─ name = "UserID"
@@ -68,7 +68,7 @@ file/
   │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "ctx"
   │       │   └─ type/
-  │       │       ├─ name = "context"
+  │       │       ├─ package/name = "context"
   │       │       └─ name = "Context"
   │       ├─ parameter[@list="parameters"]/
   │       │   ├─ name = "id"
@@ -443,7 +443,7 @@ file/
       ├─ parameter[@list="parameters"]/
       │   ├─ name = "ctx"
       │   └─ type/
-      │       ├─ name = "context"
+      │       ├─ package/name = "context"
       │       └─ name = "Context"
       ├─ parameter[@list="parameters"]/
       │   ├─ name = "in"
@@ -628,12 +628,12 @@ file/
           ├─ var[@list="var"]/
           │   ├─ name = "r"
           │   ├─ type/
-          │   │   ├─ name = "io"
+          │   │   ├─ package/name = "io"
           │   │   └─ name = "Reader"
           │   └─ value/expression/call/
           │       ├─ name = "new"
           │       └─ type[@list="arguments"]/
-          │           ├─ name = "myio"
+          │           ├─ package/name = "myio"
           │           └─ name = "PipeReader"
           ├─ if[@list="if"]/
           │   ├─ variable[short]/

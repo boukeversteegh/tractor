@@ -19,6 +19,28 @@ use super::output::TractorNode::{
     Unexported, Variable,
 };
 
+/// `qualified_type` — `pkg.Name`. Wraps the package identifier in
+/// `<package>` so the type-name stays as a bare `<name>` (canonical
+/// singleton property of `<type>`). Per Principle #19 + iter 147.
+pub fn qualified_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Package;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_attr(xot, child, "field").as_deref() != Some("package") {
+            continue;
+        }
+        let wrapper_id = xot.add_name(Package.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+        break;
+    }
+    xot.with_renamed(node, Type);
+    Ok(TransformAction::Continue)
+}
+
 /// `selector_expression` — `obj.field`. Wraps the operand and field
 /// names in role-named containers (`<object>` / `<property>`) so
 /// the two `<name>` siblings under `<member>` no longer collide on
