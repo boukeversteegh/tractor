@@ -55,8 +55,14 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::HeredocContent
         | RubyKind::HeredocEnd
         | RubyKind::ParenthesizedStatements
-        | RubyKind::SimpleSymbol
         | RubyKind::StringContent => Flatten { distribute_field: None },
+
+        // `:name` simple symbol — produces `<symbol>:name</symbol>`
+        // (with the leading `:` preserved). Matches `<symbol>` shape
+        // used elsewhere (DelimitedSymbol, HashSplatNil) and lets
+        // queries find symbols structurally rather than as bare text
+        // leaves inside calls.
+        RubyKind::SimpleSymbol => Rename(Symbol),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         RubyKind::Comment => Custom(transformations::comment),

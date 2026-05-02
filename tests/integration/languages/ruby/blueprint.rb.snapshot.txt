@@ -29,8 +29,12 @@ program/
   │       ├─ class/
   │       │   ├─ name = "Base"
   │       │   └─ body/
-  │       │       ├─ expression/call/name = "attr_accessor"
-  │       │       ├─ expression/call/name = "attr_reader"
+  │       │       ├─ expression/call/
+  │       │       │   ├─ name = "attr_accessor"
+  │       │       │   └─ symbol = ":name"
+  │       │       ├─ expression/call/
+  │       │       │   ├─ name = "attr_reader"
+  │       │       │   └─ symbol = ":id"
   │       │       ├─ method/
   │       │       │   ├─ name = "initialize"
   │       │       │   ├─ parameter/name = "name"
@@ -207,7 +211,7 @@ program/
   │                       │   ├─ left/expression/name = "rocket"
   │                       │   └─ right/expression/hash/
   │                       │       ├─ pair/
-  │                       │       │   ├─ symbol = "foo"
+  │                       │       │   ├─ symbol = ":foo"
   │                       │       │   └─ value/expression/int = "1"
   │                       │       └─ pair/
   │                       │           ├─ symbol[delimited] = ":\"hello world\""
@@ -241,25 +245,25 @@ program/
   │       ├─ when/
   │       │   ├─ pattern/name = "Integer"
   │       │   ├─ pattern/name = "Float"
-  │       │   └─ body/then = "then :number"
+  │       │   └─ body/then/expression/symbol = ":number"
   │       ├─ when/
   │       │   ├─ pattern/range/
   │       │   │   ├─ int = "1"
   │       │   │   └─ int = "9"
-  │       │   └─ body/then = "then :digit"
+  │       │   └─ body/then/expression/symbol = ":digit"
   │       ├─ when/
   │       │   ├─ pattern/name = "String"
-  │       │   └─ body/then = "then :string"
+  │       │   └─ body/then/expression/symbol = ":string"
   │       ├─ when/
   │       │   ├─ pattern/array/
   │       │   │   ├─ int = "1"
   │       │   │   ├─ int = "2"
   │       │   │   └─ int = "3"
-  │       │   └─ body/then = "then :triple"
+  │       │   └─ body/then/expression/symbol = ":triple"
   │       ├─ when/
   │       │   ├─ pattern/nil = "nil"
-  │       │   └─ body/then = "then :nothing"
-  │       └─ else = "else :unknown"
+  │       │   └─ body/then/expression/symbol = ":nothing"
+  │       └─ else/expression/symbol = ":unknown"
   ├─ method/
   │   ├─ name = "control"
   │   ├─ parameter/name = "items"
@@ -281,7 +285,7 @@ program/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/name = "x"
   │       │           │   │   ├─ op[equals] = "=="
-  │       │           │   │   └─ right = ":stop"
+  │       │           │   │   └─ right/expression/symbol = ":stop"
   │       │           │   └─ then[break] = "break"
   │       │           └─ else/
   │       │               ├─ assign/
@@ -375,9 +379,12 @@ program/
   │       │               └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
-  │       │   └─ right/expression/conditional/condition/expression/call/
-  │       │       ├─ name = "total"
-  │       │       └─ name = "zero?"
+  │       │   └─ right/expression/conditional/
+  │       │       ├─ condition/expression/call/
+  │       │       │   ├─ name = "total"
+  │       │       │   └─ name = "zero?"
+  │       │       ├─ symbol = ":empty"
+  │       │       └─ symbol = ":filled"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
   │       │   └─ right/expression/int = "0"
@@ -457,7 +464,7 @@ program/
   │       │       ├─ value/expression/name = "values"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array] = "[]"
-  │       │       │   └─ body/then = ":empty"
+  │       │       │   └─ body/then/expression/symbol = ":empty"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "head"
@@ -481,7 +488,7 @@ program/
   │       │       │   │   ├─ left/expression/name = "first"
   │       │       │   │   ├─ op[equals] = "=="
   │       │       │   │   └─ right/expression/name = "last"
-  │       │       │   └─ body/then = ":find_pattern"
+  │       │       │   └─ body/then/expression/symbol = ":find_pattern"
   │       │       ├─ in/
   │       │       │   ├─ pattern[hash]/pattern[keyword]/value/expression/pattern[as]/
   │       │       │   │   ├─ value/expression/name = "Integer"
@@ -492,7 +499,7 @@ program/
   │       │       │   │   ├─ int = "1"
   │       │       │   │   ├─ int = "2"
   │       │       │   │   └─ int = "3"
-  │       │       │   └─ body/then = ":small"
+  │       │       │   └─ body/then/expression/symbol = ":small"
   │       │       └─ in/
   │       │           ├─ pattern[as]/
   │       │           │   ├─ value/expression/name = "Integer"
@@ -519,7 +526,9 @@ program/
   │       ├─ expression/index/
   │       │   ├─ name = "arr"
   │       │   └─ int = "0"
-  │       └─ rescue/body/expression/name = "result"
+  │       └─ rescue/
+  │           ├─ body/expression/name = "result"
+  │           └─ symbol = ":failed"
   ├─ method/
   │   ├─ name = "destructured"
   │   ├─ parameter[destructured]/
