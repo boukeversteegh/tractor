@@ -24,9 +24,9 @@ program/
   │   │       ├─ name = "Attribute"
   │   │       └─ name = "TARGET_CLASS"
   │   ├─ name = "Demo"
-  │   ├─ extends[@list="true"]/name = "Base"
-  │   ├─ implements[@list="true"]/name = "Speaker"
-  │   ├─ implements[@list="true"]/name = "Countable"
+  │   ├─ extends[@list="true"]/type/name = "Base"
+  │   ├─ implements[@list="true"]/type/name = "Speaker"
+  │   ├─ implements[@list="true"]/type/name = "Countable"
   │   └─ body/
   │       ├─ use/name = "Loggable"
   │       ├─ const[public]/constant/
@@ -372,7 +372,7 @@ program/
   │       │   ├─ left/expression/variable/name = "anon"
   │       │   ├─ op = "="
   │       │   └─ right/expression/new/class[anonymous]/
-  │       │       ├─ implements[@list="true"]/name = "Stringable"
+  │       │       ├─ implements[@list="true"]/type/name = "Stringable"
   │       │       └─ body/method[public]/
   │       │           ├─ name = "__toString"
   │       │           ├─ returns/type[primitive]/name = "string"

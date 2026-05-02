@@ -34,7 +34,7 @@ pub enum TractorNode {
     #[strum(serialize = "self")]
     Self_,
     // Identifiers
-    Name, Constant, Comment,
+    Name, Constant, Comment, Type,
     // Comment markers
     Trailing, Leading,
     // Spread-shape markers

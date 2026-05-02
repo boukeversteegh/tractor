@@ -229,6 +229,71 @@ pub fn wrap_body_value_children(
     Ok(())
 }
 
+/// Ensure every immediate element child of an `<extends>` /
+/// `<implements>` / `<throws>` relationship wrapper is a `<type>`
+/// element (Principle #14: namespace vocabulary — type-reference
+/// slots use `<type>` uniformly across languages).
+///
+/// Pre-iter-117 inconsistency:
+///   Java/TS: `<extends><type><name>Foo</name></type></extends>`  ✓
+///   C#/Python/Ruby/PHP: `<extends><name>Foo</name></extends>`    ✗
+///
+/// This pass walks the tree post-transform; for any inner `<name>`
+/// (or other non-`<type>` name-shaped child), it wraps the child in
+/// a `<type>` element. Already-`<type>` children and inner element
+/// kinds that aren't type references (e.g. C#'s primary-constructor
+/// argument lists) are left alone.
+pub fn wrap_relationship_targets_in_type(
+    xot: &mut Xot,
+    root: XotNode,
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    const RELATIONSHIPS: &[&str] = &["extends", "implements", "throws"];
+    let root = find_content_root(xot, root);
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(
+        xot: &Xot,
+        node: XotNode,
+        out: &mut Vec<XotNode>,
+    ) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if RELATIONSHIPS.contains(&name.as_str()) {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+    for parent in targets {
+        let elem_children: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        // Only wrap when the inner element is a bare `<name>` — that's
+        // the recognizable type-reference shape that escaped wrapping.
+        // `<type>` and `<type[generic]>` are already correct; other
+        // element shapes (e.g. C# constructor-arg passthrough) aren't
+        // type references and should be left alone.
+        for child in elem_children {
+            let child_name = match get_element_name(xot, child) {
+                Some(n) => n,
+                None => continue,
+            };
+            if child_name != "name" {
+                continue;
+            }
+            let type_id = xot.add_name("type");
+            let type_node = xot.new_element(type_id);
+            xot.with_source_location_from(type_node, child)
+                .with_wrap_child(child, type_node)?;
+        }
+    }
+    Ok(())
+}
+
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
 /// elements (and any other element name in `body_names`) recursively
 /// across the tree. C-family languages emit braces as anonymous text

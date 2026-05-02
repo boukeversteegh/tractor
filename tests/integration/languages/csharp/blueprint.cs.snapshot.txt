@@ -271,7 +271,7 @@ unit/
   │   │               └─ argument[@list="true"] = "this"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
-  │   │   ├─ extends[@list="true"]/name = "EntityBase"
+  │   │   ├─ extends[@list="true"]/type/name = "EntityBase"
   │   │   ├─ extends[@list="true"]/type[generic]/
   │   │   │   ├─ name = "IRepository"
   │   │   │   └─ type[@list="true"]/name = "Widget"

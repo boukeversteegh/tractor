@@ -331,6 +331,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // constructor_initializer (`<call[this]>`/`<call[base]>`) after
     // its handler ran.
     crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "call"])?;
+    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     Ok(())
 }
 
@@ -1066,6 +1067,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     )?;
     python_restructure_imports(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
+    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     Ok(())
 }
 
@@ -1376,6 +1378,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     php_restructure_use(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
+    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     Ok(())
 }
 
@@ -1571,6 +1574,7 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     ruby_extract_pair_keys(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
+    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     Ok(())
 }
 
