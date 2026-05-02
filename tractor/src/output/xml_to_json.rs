@@ -97,7 +97,11 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             }
 
             // Build the JSON value
-            let is_text_only = content_children.iter().all(|c| is_anon_text_entry(c));
+            // After iter 139, content_children only holds elements with
+            // their own children — text-only-leaf children short-circuit
+            // to a scalar string before reaching this list. So if there
+            // are no `content_children`, the element is a text-only leaf.
+            let is_text_only = content_children.is_empty();
             let has_text = !text_fragments.is_empty();
             let combined_text = if has_text { text_fragments.join(" ") } else { String::new() };
             let children_truncated = truncated_descendants > 0;
@@ -123,9 +127,6 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             //                        (transform-bug fallback per Principle #19).
             let mut array_children: Vec<Value> = Vec::new();
             for entry in content_children {
-                if is_anon_text_entry(&entry) {
-                    continue;
-                }
                 if let Some(list) = entry.list_name {
                     match obj.remove(&list) {
                         Some(Value::Array(mut arr)) => {
@@ -207,14 +208,6 @@ struct ChildEntry {
     value: Value,
 }
 
-fn is_anon_text_entry(_entry: &ChildEntry) -> bool {
-    // Anonymous-text-entry detection used pre-iter-139 to suppress the
-    // outer `{name: "..."}` wrap that bare text-leaves emitted. After
-    // the rewrite, text-only leaves return raw strings, so this is a
-    // dead helper retained to keep the call sites readable. Always
-    // returns false; the dead-code path has no effect.
-    false
-}
 
 #[cfg(test)]
 mod tests {
