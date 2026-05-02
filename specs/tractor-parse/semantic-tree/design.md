@@ -338,8 +338,10 @@ unions (Principle #13).
 
 When a wrapper exists only to group a homogeneous list of child
 elements, drop the wrapper. The children become direct siblings of the
-enclosing element. Each child carries a `field="<plural>"` attribute so
-non-XML serializers (JSON, YAML) can reconstruct the logical group.
+enclosing element. Each child carries a `list="<plural>"` attribute
+naming the logical group, so non-XML serializers (JSON, YAML) can
+reconstruct it as an array under that key — deterministically, with no
+dependence on cardinality.
 
 ```xml
 <!-- WRONG: double-wrapped parameter list -->
@@ -353,29 +355,29 @@ non-XML serializers (JSON, YAML) can reconstruct the logical group.
   </parameters>
 </method>
 
-<!-- RIGHT: flat siblings, grouped by field attribute -->
+<!-- RIGHT: flat siblings, each tagged with the logical list name -->
 <method>
   <name>add</name>
-  <parameter field="parameters"><name>a</name></parameter>
-  <parameter field="parameters"><name>b</name></parameter>
+  <parameter list="parameters"><name>a</name></parameter>
+  <parameter list="parameters"><name>b</name></parameter>
 </method>
 ```
 
+JSON: `{"$type":"method","name":"add","parameters":[{"name":"a"},{"name":"b"}]}`.
+A 1-parameter method renders the same way (1-element array), so
+consumers never branch on scalar-vs-array.
+
 Applies to purely-grouping wrappers: `parameters`, `arguments`,
-`attributes`, `accessors`, `generics` (type parameter/argument lists).
-Does **not** apply to wrappers that carry their own meaning — `body`,
-`block`, `type` — since those represent distinct concepts, not just
-"N things of the same kind".
+`attributes`, `accessors`, `generics` (type parameter/argument lists),
+`extends`, `implements`, `throws`. Does **not** apply to wrappers that
+carry their own meaning — `body`, `block`, `type` — since those represent
+distinct concepts, not just "N things of the same kind".
 
 Queries get shorter and read naturally:
 - `//method[parameter]` — "method that has any parameter"
 - `//method[not(parameter)]` — "zero-parameter method"
 - `//method/parameter[1]` — "first parameter"
 - `//call[count(argument)=3]` — "three-argument call"
-
-JSON/YAML output stays sensible: the `field="parameters"` attribute
-tells the serializer to collect same-field siblings into a `parameters`
-array, so scalar-vs-array ambiguity is resolved deterministically.
 
 **Rationale:** Directly serves Goal #5 (developer's mental model — a
 developer thinks "the function has parameters a and b", not "the
@@ -385,6 +387,16 @@ nesting), and #4 (minimal query complexity). The wrapper element never
 represented a thing in the source code — the parens and commas of the
 list live as sibling text nodes either way — so removing it loses no
 renderer-relevant information.
+
+**The `list="X"` attribute (renderer signal, not a marker)** —
+`list="X"` exists purely to communicate logical-list membership to
+non-XML serializers; XML itself has no built-in distinction between
+"singleton property" and "one-element list", and we forbid wrapper
+elements (above), so the items themselves carry the signal. The
+attribute value is the JSON key (the plural list name); presence on
+two siblings means "we're items of the same list named X". XPath
+queries don't need it (sibling traversal already groups them); it's
+stripped from XML output by default.
 
 ### 13. Annotation Follows Node Shape
 
@@ -765,6 +777,123 @@ mental abstraction, not target labels), Principle #1 (use
 language keywords when source has them), Principle #5 (unified
 concepts — operator names unify across syntax variations),
 Principle #12 (no list containers).
+
+### 19. Wrap Role-Mixed Text-Leaves; Keep Role-Uniform Lists Flat
+
+Text-leaf elements (`<name>`, `<int>`, `<string>`, `<lifetime>`, …)
+carry only text content and never structural children or markers
+(Principle #13). When a parent contains multiple text-leaves of the
+same element name, two configurations are possible:
+
+**Role-uniform** — every leaf plays the same role. They form a list:
+the i-th item is "another instance of the same kind". Stay flat;
+each leaf carries `list="<plural>"` so JSON serializes them as an
+array.
+
+```xml
+<!-- Python `[1, 2, 3]` — every <int> is a list element -->
+<list>
+  <int list="elements">1</int>
+  <int list="elements">2</int>
+  <int list="elements">3</int>
+</list>
+<!-- JSON: {"$type":"list","elements":[{"$type":"int","text":"1"}, ...]} -->
+
+<!-- Go `var x, y int` — every <name> is a declarator-name -->
+<var>
+  <name list="declarators">x</name>
+  <name list="declarators">y</name>
+  <type>int</type>
+</var>
+```
+
+**Role-mixed** — leaves play different roles. Each role gets a
+distinct wrapper element naming the slot. The wrapper holds the
+text-leaf as its primary content and provides a stable host for
+any current or future markers.
+
+```xml
+<!-- WRONG: two bare <name>s with different roles, disambiguated only by sibling order -->
+<member>
+  <name>obj</name>      <!-- the receiver -->
+  <name>field</name>    <!-- the accessed property -->
+</member>
+
+<!-- RIGHT: each role wrapped in a slot-named element -->
+<member>
+  <object><name>obj</name></object>
+  <property><name>field</name></property>
+</member>
+<!-- JSON: {"$type":"member","object":{"name":"obj"},"property":{"name":"field"}} -->
+```
+
+#### Why role-uniformity is the discriminator
+
+The split is about whether the *element name itself* tells you
+everything you need to know about a child's role:
+
+- *Role-uniform*: the element name `<int>` already says "I'm an
+  integer". Two `<int>` siblings are "two integers in the list" —
+  the role doesn't differ. The list-attribute names the slot;
+  positional order is the only further distinction (`elements[0]`
+  vs `elements[1]`).
+- *Role-mixed*: a bare `<name>` doesn't tell you whether it's the
+  receiver or the accessed property. Element-name collision
+  forces the consumer to rely on sibling order or on attributes
+  like `field=`. Every JSON consumer would either lose information
+  or branch on position; XPath queries become fragile
+  (`//member/name[1]` for receiver). The wrapper element name
+  carries the role, so every position is named.
+
+#### How to tell the difference
+
+Ask: *if I added a marker to one of these siblings, would I want
+that marker to apply to a "role" or to a "list position"?*
+
+- "Mark the third element" — role-uniform; the position is the
+  identity. Stay flat.
+- "Mark the receiver" — role-mixed; the position is incidental,
+  the role is what matters. Wrap.
+
+Equivalently: *would two same-name siblings ever need different
+markers because they play different roles?* If yes, wrap.
+
+#### Counter-examples (role-uniform — do NOT wrap)
+
+- **Array/tuple/list literals** — every `<int>`/`<string>` is a
+  list element. Wrapping each in `<item>` adds depth without
+  naming a role.
+- **Multi-name field declarations** (Go `X, Y int`) — both
+  `<name>`s are declarators sharing one type. Same role.
+- **Multi-string concatenation** (Python `"a" "b" "c"`) — every
+  `<string>` is a concatenation operand.
+- **Pattern-union alternatives** (Python `case "y" | "Y" | "yes":`) —
+  every alternative is the same kind of pattern.
+- **Dotted path segments** (`com.foo.bar`) — every segment is "a
+  segment of the path". No segment-level marker variant exists in
+  any supported language today; positional order is the only
+  distinction. Stay flat with `list="path"` on each `<name>`.
+
+#### When to wrap (role-mixed — DO wrap)
+
+- **Member/attribute access** (`obj.field` → `<member><object/><property/></member>`).
+- **Method calls with a receiver** (`a.b(x)` → `<call><object/><name/><argument/></call>` —
+  receiver and method-name differ in role).
+- **Anywhere two text-leaves of the same kind would otherwise rely
+  on sibling order to mean different things.**
+
+**Rationale:** Goal #1 (queries name roles, not positions), Goal
+#5 (developer mental model — "the receiver is mapper" parses
+naturally), Goal #6 (broad-to-narrow — `//object/name` finds all
+receivers; `//member/object/name='X'` is the specific form),
+Principle #5 (within-language unification — every member access
+has the same shape regardless of complexity), Principle #13
+(markers attach to objects, never to text-leaves).
+
+**Scope note:** This principle applies to programming-language
+ASTs only. Data trees (JSON, YAML, TOML, INI) render content as
+content — `{a: 1}` parses to a JSON object with key `a` and value
+`1`, never to a wrapped name/value structure.
 
 ---
 
