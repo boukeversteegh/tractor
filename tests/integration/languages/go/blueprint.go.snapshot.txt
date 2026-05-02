@@ -369,11 +369,11 @@ file/
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "chRecvOnly"
   │       │   └─ right/expression/call[type]/
-  │       │       ├─ chan/value/expression/type/name = "int"
+  │       │       ├─ chan/value/type/name = "int"
   │       │       └─ nil = "nil"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "mapper"
-  │       │   └─ right/expression/type[generic]/
+  │       │   └─ right/type[generic]/
   │       │       ├─ type/name = "Map"
   │       │       ├─ type[@list="true"]/name = "int"
   │       │       └─ type[@list="true"]/name = "string"
@@ -447,10 +447,10 @@ file/
       │       └─ name = "Context"
       ├─ parameter[@list="true"]/
       │   ├─ name = "in"
-      │   └─ chan/value/expression/type/name = "int"
+      │   └─ chan/value/type/name = "int"
       ├─ parameter[@list="true"]/
       │   ├─ name = "out"
-      │   └─ chan/value/expression/type/name = "int"
+      │   └─ chan/value/type/name = "int"
       ├─ returns/type/name = "error"
       └─ body/
           ├─ variable[short]/
@@ -510,7 +510,7 @@ file/
           │   │   └─ right/expression/literal/
           │   │       ├─ map/
           │   │       │   ├─ type/name = "string"
-          │   │       │   └─ value/expression/type/name = "int"
+          │   │       │   └─ value/type/name = "int"
           │   │       └─ body/
           │   │           ├─ string = "\"a\""
           │   │           ├─ value/expression/int = "1"
@@ -576,7 +576,7 @@ file/
           │       ├─ left/expression/name = "buffered"
           │       └─ right/expression/call/
           │           ├─ name = "make"
-          │           ├─ chan[@list="true"]/value/expression/type/name = "int"
+          │           ├─ chan[@list="true"]/value/type/name = "int"
           │           └─ int[@list="true"] = "4"
           ├─ send/
           │   ├─ name = "buffered"
@@ -612,7 +612,7 @@ file/
           │   └─ right/expression/literal/
           │       ├─ map/
           │       │   ├─ type/name = "string"
-          │       │   └─ value/expression/type/name = "Point"
+          │       │   └─ value/type/name = "Point"
           │       └─ body/
           │           ├─ string = "\"a\""
           │           └─ value/

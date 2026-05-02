@@ -73,7 +73,7 @@ file/
   │   ├─ lifetime[@list="true"]/name = "a"
   │   ├─ generic[@list="true"]/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/expression/type/name = "T"
+  │   │   ├─ left/type/name = "T"
   │   │   ├─ extends[@list="true"]/type/name = "Clone"
   │   │   ├─ extends[@list="true"]/type/name = "Send"
   │   │   └─ extends[@list="true"]/lifetime/name = "static"
@@ -223,7 +223,7 @@ file/
   │   │   ├─ lifetime[@list="true"]/name = "a"
   │   │   └─ type[@list="true"]/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/expression/type/name = "T"
+  │   │   ├─ left/type/name = "T"
   │   │   ├─ extends[@list="true"]/type/name = "Clone"
   │   │   ├─ extends[@list="true"]/type/name = "Send"
   │   │   ├─ extends[@list="true"]/type/name = "Debug"
@@ -723,7 +723,7 @@ file/
   │   │   ├─ name = "_t"
   │   │   └─ type[borrowed]/type/name = "T"
   │   └─ where/bound/
-  │       ├─ left/expression/type/name = "F"
+  │       ├─ left/type/name = "F"
   │       └─ extends[higher and @list="true"]/
   │           ├─ lifetime[@list="true"]/name = "a"
   │           └─ type[function]/

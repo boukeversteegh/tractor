@@ -20,8 +20,8 @@ program/
   │   ├─ name = "Re"
   │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[conditional]/
-  │       ├─ left/expression/type/name = "T"
-  │       ├─ right/expression/type[generic]/
+  │       ├─ left/type/name = "T"
+  │       ├─ right/type[generic]/
   │       │   ├─ name = "Array"
   │       │   └─ type[infer and @list="true"]/type/name = "U"
   │       ├─ then/type/name = "U"
@@ -611,8 +611,8 @@ program/
   │   ├─ name = "Identity"
   │   ├─ generic[@list="true"]/name = "T"
   │   └─ type[conditional]/
-  │       ├─ left/expression/type[typeof]/name = "globalThis"
-  │       ├─ right/expression/type/name = "T"
+  │       ├─ left/type[typeof]/name = "globalThis"
+  │       ├─ right/type/name = "T"
   │       ├─ then/type/name = "T"
   │       └─ type/name = "never"
   ├─ alias/
@@ -679,7 +679,7 @@ program/
   ├─ comment[leading] = "// `Foo<T>` instantiation expression."
   ├─ variable[const]/
   │   ├─ name = "arrayOf"
-  │   └─ value/expression/type[generic]/
+  │   └─ value/type[generic]/
   │       ├─ name = "Array"
   │       └─ type[@list="true"]/name = "number"
   ├─ variable[const]/

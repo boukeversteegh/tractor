@@ -94,10 +94,10 @@ module/
   │   ├─ generic/type/name = "T"
   │   └─ body[pass]
   ├─ alias/
-  │   ├─ left/expression/type[generic]/
+  │   ├─ left/type[generic]/
   │   │   ├─ name = "Vec"
   │   │   └─ type/name = "T"
-  │   └─ right/expression/type[generic]/
+  │   └─ right/type[generic]/
   │       ├─ name = "list"
   │       └─ type/name = "T"
   ├─ function/
@@ -609,13 +609,13 @@ module/
   │   └─ import[wildcard] = "*"
   ├─ comment[leading] = "# Python 3.12 type-alias statement and PEP 695 generics with constraints,\n# member-types, and splat-types."
   ├─ alias/
-  │   ├─ left/expression/type/name = "IntOrStr"
-  │   └─ right/expression/type/binary/
+  │   ├─ left/type/name = "IntOrStr"
+  │   └─ right/type/binary/
   │       ├─ left/expression/name = "int"
   │       ├─ op/bitwise[or]
   │       └─ right/expression/name = "str"
   ├─ alias/
-  │   ├─ left/expression/type[generic]/
+  │   ├─ left/type[generic]/
   │   │   ├─ name = "Pair"
   │   │   ├─ type/type[constrained]/
   │   │   │   ├─ type/name = "T"
@@ -626,14 +626,14 @@ module/
   │   │   │       ├─ name = "int"
   │   │   │       └─ name = "str"
   │   │   └─ type/type[splat]/name = "Ts"
-  │   └─ right/expression/type[generic]/
+  │   └─ right/type[generic]/
   │       ├─ name = "tuple"
   │       ├─ type/name = "T"
   │       ├─ type/name = "U"
   │       └─ type/type[splat]/name = "Ts"
   ├─ alias/
-  │   ├─ left/expression/type/name = "Containing"
-  │   └─ right/expression/type/member/
+  │   ├─ left/type/name = "Containing"
+  │   └─ right/type/member/
   │       ├─ name = "OrderedDict"
   │       └─ name = "Foo"
   └─ function/

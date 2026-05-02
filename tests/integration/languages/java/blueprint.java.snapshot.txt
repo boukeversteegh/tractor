@@ -326,7 +326,7 @@ program/
           │       │   │   └─ wildcard[@list="true"]
           │       │   └─ declarator/
           │       │       ├─ name = "cls"
-          │       │       └─ value/expression/type[class]/type/name = "String"
+          │       │       └─ value/type[class]/type/name = "String"
           │       └─ variable/
           │           ├─ type[generic]/
           │           │   ├─ name = "java.util.function.Function"
@@ -364,7 +364,7 @@ program/
           │       │       ├─ name = "isStr"
           │       │       └─ value/expression/instanceof/
           │       │           ├─ left/expression/name = "o"
-          │       │           └─ right/expression/type/name = "String"
+          │       │           └─ right/type/name = "String"
           │       ├─ label/
           │       │   ├─ name = "outer"
           │       │   └─ for/

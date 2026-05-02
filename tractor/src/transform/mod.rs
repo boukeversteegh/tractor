@@ -449,12 +449,25 @@ fn collect_expression_position_targets(
             if xot.element(child).is_none() {
                 continue;
             }
+            let child_name = get_element_name(xot, child);
             // Skip if the child is already an <expression> host —
             // idempotent under repeat application.
-            let child_name = get_element_name(xot, child);
-            if child_name.as_deref() != Some("expression") {
-                out.push(child);
+            if child_name.as_deref() == Some("expression") {
+                continue;
             }
+            // Skip if the child is a <type> element — type-namespace
+            // values shouldn't be wrapped in a value-namespace
+            // <expression> host (Principle #14). Examples:
+            //   Rust where-bound LHS: `where T: Clone` (T is a type)
+            //   Go map value-type slot: `map[string]int` (int is a type)
+            //   TS conditional-type extends-clause LHS/RHS (already type)
+            // Languages that need a value-namespace `<typeof T>` shape
+            // wrap the type in their own `<typeof>` / `<sizeof>` /
+            // `<call><type/>` host before this pass runs.
+            if child_name.as_deref() == Some("type") {
+                continue;
+            }
+            out.push(child);
         }
     }
     for child in xot.children(node) {
