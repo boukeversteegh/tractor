@@ -13,8 +13,9 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::RustKind;
 use super::output::TractorNode::{
     self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Extern,
-    Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Pattern, Private,
-    Pub, Raw, Static, String as RustString, Super, Trailing, Try, Type, Unsafe, Use as UseName,
+    Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Parameter, Pattern,
+    Private, Pub, Raw, Static, String as RustString, Super, Trailing, Try, Type, Unsafe,
+    Use as UseName,
 };
 
 /// `expression_statement` — wrap value-producing statements in an
@@ -270,6 +271,33 @@ pub fn let_declaration(
     extract_modifiers(xot, node)?;
     xot.with_renamed(node, Let);
     Ok(TransformAction::Continue)
+}
+
+/// `closure_parameters` — `|x|`, `|a, b|`, `|x: i32|`. Tree-sitter
+/// emits the bare-name forms as `identifier` children; typed forms
+/// emit `parameter` (with name+type fields). Wrap each bare
+/// identifier in `<parameter>` so the shape is uniform across both
+/// forms (Principle #5 within-language).
+pub fn closure_parameters(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let candidates: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            matches!(
+                get_kind(xot, c).and_then(|k| k.parse::<RustKind>().ok()),
+                Some(RustKind::Identifier | RustKind::MutPattern | RustKind::SelfParameter)
+            )
+        })
+        .collect();
+    for child in candidates {
+        let param_elt = xot.add_name(Parameter.as_str());
+        let param_node = xot.new_element(param_elt);
+        xot.insert_before(child, param_node)?;
+        xot.detach(child)?;
+        xot.append(param_node, child)?;
+    }
+    Ok(TransformAction::Flatten)
 }
 
 /// `static_item` — `static FOO: T = …` and `static mut FOO: T = …`.

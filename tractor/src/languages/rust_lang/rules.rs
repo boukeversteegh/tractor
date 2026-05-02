@@ -114,7 +114,6 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::AttributeItem
         | RustKind::Block
         | RustKind::BracketedType
-        | RustKind::ClosureParameters
         | RustKind::DeclarationList
         | RustKind::EmptyStatement
         | RustKind::EnumVariantList
@@ -182,6 +181,11 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::CallExpression           => Rename(Call),
         RustKind::CharLiteral              => Rename(Char),
         RustKind::ClosureExpression        => Rename(Closure),
+        // `|x|` bare-name closure params flatten the inner identifier
+        // into a bare `<name>`; typed forms (`|x: i32|`) already
+        // produce `<parameter>{name, type}`. Wrap bare names in
+        // `<parameter>` so the shape is uniform across both forms.
+        RustKind::ClosureParameters        => Custom(transformations::closure_parameters),
         RustKind::CompoundAssignmentExpr   => Rename(Assign),
         RustKind::ContinueExpression       => Rename(Continue),
         RustKind::ElseClause               => Rename(Else),

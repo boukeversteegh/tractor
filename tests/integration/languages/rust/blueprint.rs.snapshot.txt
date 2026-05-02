@@ -313,7 +313,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "id"
   │       │   └─ value/expression/closure/
-  │       │       ├─ name = "x"
+  │       │       ├─ parameter/name = "x"
   │       │       └─ body/name = "x"
   │       ├─ let/
   │       │   ├─ name = "add"
@@ -322,8 +322,8 @@ file/
   │       │   │   ├─ type/name = "i32"
   │       │   │   └─ returns/type/name = "i32"
   │       │   └─ value/expression/closure/
-  │       │       ├─ name = "a"
-  │       │       ├─ name = "b"
+  │       │       ├─ parameter/name = "a"
+  │       │       ├─ parameter/name = "b"
   │       │       └─ body/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
