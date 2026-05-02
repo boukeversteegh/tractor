@@ -77,6 +77,15 @@ before committing a non-trivial change.
   the target shape and check it's present. Don't lean on the
   spec-tag sweep to catch missed languages — it has the same
   blindspot as the original sweep.
+- **Field-wrap is global per-language; can't scope per-kind.**
+  Tempting to add `("consequence", "then")` / `("alternative", "else")`
+  to FIELD_WRAPPINGS for ternary support — but those field names also
+  appear on if/elsif/while/until and breaking-but-mechanical chain
+  passes (collapse_else_if_chain). Always: when a field-wrap entry
+  would wrap a per-kind concept, use a Custom handler scoped to that
+  kind instead. Iter 179 was caught by test; would have been a quiet
+  regression otherwise. (Sister to the "all N languages done" lesson:
+  changes that look universal often aren't.)
 - **Read BOTH snapshot surfaces.** Every iter that touches
   transforms produces two diffs per affected language: the
   `.snapshot.txt` (tree shape, markers, `[@list="X"]` attrs) and
@@ -311,18 +320,15 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   multi-stmt bodies keep `<body>`. Closes the iter-174 missed-language
   gap. Added `multiStmt` blueprint fixture for the multi-stmt case.
 
-- [ ] **Ruby ternary uses `<conditional>` element + role-mixed
-  bare-leaf branches** *(severity HIGH)*. Site:
-  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:412-413`,
-  JSON `tests/integration/languages/ruby/blueprint.rb.snapshot.json:715-728`.
-  Current: `conditional/{symbol = ":empty", symbol = ":filled"}` —
-  two bare role-mixed `<symbol>` siblings → JSON
-  `{"conditional": {"symbol": ":empty", "children": [":filled"]}}`.
-  Other PLs use `<ternary><condition><then><else>` with role wrappers.
-  Two issues: (1) element-name divergence (`<conditional>` vs
-  `<ternary>` cross-language), (2) role-mixed leaves need
-  `<then>/<else>` wrappers. Effort: small. Verify rename doesn't
-  collide with conditional-modifier statements (`x if cond`, etc.).
+- [x] **Ruby ternary** — closed iter 179. Custom handler
+  `conditional` renames to `<ternary>` (cross-language Principle #5;
+  matches C#/Java/Python/PHP/TS) AND wraps the consequence/alternative
+  arms in `<then>`/`<else>` slots. Custom handler (not field-wrap)
+  because the broad `("alternative", "else")` field-wrap entry would
+  also wrap if/elsif chain alternatives, breaking
+  `collapse_else_if_chain`. JSON now: `ternary.condition`,
+  `ternary.then`, `ternary.else` — uniform with other PLs; no more
+  `symbol`/`children` collision.
 
 - [ ] **Ruby `range`: marker dropped + role-mixed begin/end**
   *(severity HIGH; Principle #8 + #19 violations)*. Sites:
@@ -371,6 +377,12 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 179: Ruby ternary `<conditional>` → `<ternary>` rename
+  + `<then>`/`<else>` role wrappers via Custom handler. Lessons:
+  almost shipped via field-wrap entries `("alternative", "else")` —
+  that would have wrapped if/elsif alternatives too, breaking
+  collapse_else_if_chain. Caught by tests on first run; reverted to
+  Custom handler scoped to Conditional only.
 - [x] iter 178: C# member-access role-wrap (port iter-147 to C#).
   `MemberAccessExpression` Custom handler wraps receiver in
   `<object>` and property in `<property>`. JSON

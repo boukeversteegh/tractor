@@ -136,9 +136,17 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // The case/in clause uses `InClause` → `<in>` instead.
         RubyKind::In => Flatten { distribute_list: None },
 
+        // `cond ? a : b` ternary — Custom handler renames to `<ternary>`
+        // (Principle #5: matches C# / Java / Python / PHP / TS) AND
+        // wraps the consequence/alternative arms in `<then>`/`<else>`
+        // so JSON `then`/`else` keys no longer collide on `<symbol>`.
+        // Custom (not field-wrap) because the `("alternative", "else")`
+        // table entry would also wrap if/elsif chains, breaking
+        // `collapse_else_if_chain`.
+        RubyKind::Conditional        => Custom(transformations::conditional),
+
         // Already matches our vocabulary (no text leak in current snapshots).
         RubyKind::Block
-        | RubyKind::Conditional
         | RubyKind::Do
         | RubyKind::Exceptions
         | RubyKind::False

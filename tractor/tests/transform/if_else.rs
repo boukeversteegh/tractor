@@ -150,8 +150,15 @@ fn ruby() {
         "#),
         1);
 
-    claim("Ruby ternary expression is named conditional",
-        &mut parse_src("ruby", "n > 0 ? \"positive\" : \"non-positive\"\n"), "//conditional", 1);
+    claim("Ruby ternary expression renames to <ternary> with then/else role wrappers (iter 179)",
+        &mut parse_src("ruby", "n > 0 ? \"positive\" : \"non-positive\"\n"),
+        &multi_xpath(r#"
+            //ternary
+                [condition/expression/binary]
+                [then/expression/string]
+                [else/expression/string]
+        "#),
+        1);
 }
 
 #[test]

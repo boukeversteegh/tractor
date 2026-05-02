@@ -714,10 +714,12 @@
           {
             "right": {
               "expression": {
-                "conditional": {
-                  "children": [
-                    ":filled"
-                  ],
+                "ternary": {
+                  "else": {
+                    "expression": {
+                      "symbol": ":filled"
+                    }
+                  },
                   "condition": {
                     "expression": {
                       "call": {
@@ -728,7 +730,11 @@
                       }
                     }
                   },
-                  "symbol": ":empty"
+                  "then": {
+                    "expression": {
+                      "symbol": ":empty"
+                    }
+                  }
                 }
               }
             },
@@ -1546,36 +1552,42 @@
                 },
                 {
                   "body": {
-                    "expression": [
+                    "ternary": [
                       {
-                        "conditional": {
-                          "string": {
-                            "children": [
-                              {
-                                "$type": "interpolation",
-                                "call": {
-                                  "children": [
-                                    "inspect"
-                                  ],
-                                  "name": "opts"
+                        "else": {
+                          "expression": {
+                            "string": {
+                              "children": [
+                                {
+                                  "$type": "interpolation",
+                                  "call": {
+                                    "children": [
+                                      "inspect"
+                                    ],
+                                    "name": "opts"
+                                  }
                                 }
-                              }
-                            ],
-                            "interpolation": {
-                              "name": "msg"
-                            }
-                          },
-                          "condition": {
-                            "expression": {
-                              "call": {
-                                "children": [
-                                  "empty?"
-                                ],
-                                "name": "opts"
+                              ],
+                              "interpolation": {
+                                "name": "msg"
                               }
                             }
-                          },
-                          "name": "msg"
+                          }
+                        },
+                        "condition": {
+                          "expression": {
+                            "call": {
+                              "children": [
+                                "empty?"
+                              ],
+                              "name": "opts"
+                            }
+                          }
+                        },
+                        "then": {
+                          "expression": {
+                            "name": "msg"
+                          }
                         }
                       }
                     ],
@@ -1583,29 +1595,34 @@
                       {
                         "right": {
                           "expression": {
-                            "conditional": {
-                              "children": [
-                                {
-                                  "$type": "string",
-                                  "interpolation": {
-                                    "name": "greeting"
-                                  },
-                                  "children": [
-                                    {
-                                      "$type": "interpolation",
-                                      "name": "@name"
+                            "ternary": {
+                              "else": {
+                                "expression": {
+                                  "string": {
+                                    "children": [
+                                      {
+                                        "$type": "interpolation",
+                                        "name": "@name"
+                                      }
+                                    ],
+                                    "interpolation": {
+                                      "name": "greeting"
                                     }
-                                  ]
+                                  }
                                 }
-                              ],
+                              },
                               "condition": {
                                 "expression": {
                                   "name": "formal"
                                 }
                               },
-                              "string": {
-                                "interpolation": {
-                                  "name": "@name"
+                              "then": {
+                                "expression": {
+                                  "string": {
+                                    "interpolation": {
+                                      "name": "@name"
+                                    }
+                                  }
                                 }
                               }
                             }
@@ -1620,8 +1637,12 @@
                       {
                         "right": {
                           "expression": {
-                            "conditional": {
-                              "name": "msg",
+                            "ternary": {
+                              "else": {
+                                "expression": {
+                                  "name": "msg"
+                                }
+                              },
                               "condition": {
                                 "expression": {
                                   "call": {
@@ -1629,10 +1650,14 @@
                                   }
                                 }
                               },
-                              "yield": {
-                                "arguments": [
-                                  "msg"
-                                ]
+                              "then": {
+                                "expression": {
+                                  "yield": {
+                                    "arguments": [
+                                      "msg"
+                                    ]
+                                  }
+                                }
                               }
                             }
                           }

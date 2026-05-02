@@ -134,24 +134,24 @@ program/
   │               │   └─ body/
   │               │       ├─ assign/
   │               │       │   ├─ left/expression/name = "msg"
-  │               │       │   └─ right/expression/conditional/
+  │               │       │   └─ right/expression/ternary/
   │               │       │       ├─ condition/expression/name = "formal"
-  │               │       │       ├─ string/interpolation/name = "@name"
-  │               │       │       └─ string/
+  │               │       │       ├─ then/expression/string/interpolation/name = "@name"
+  │               │       │       └─ else/expression/string/
   │               │       │           ├─ interpolation/name = "greeting"
   │               │       │           └─ interpolation/name = "@name"
   │               │       ├─ assign/
   │               │       │   ├─ left/expression/name = "msg"
-  │               │       │   └─ right/expression/conditional/
+  │               │       │   └─ right/expression/ternary/
   │               │       │       ├─ condition/expression/call/name = "block_given?"
-  │               │       │       ├─ yield/name = "msg"
-  │               │       │       └─ name = "msg"
-  │               │       └─ expression/conditional/
+  │               │       │       ├─ then/expression/yield/name = "msg"
+  │               │       │       └─ else/expression/name = "msg"
+  │               │       └─ ternary/
   │               │           ├─ condition/expression/call/
   │               │           │   ├─ name = "opts"
   │               │           │   └─ name = "empty?"
-  │               │           ├─ name = "msg"
-  │               │           └─ string/
+  │               │           ├─ then/expression/name = "msg"
+  │               │           └─ else/expression/string/
   │               │               ├─ interpolation/name = "msg"
   │               │               └─ interpolation/call/
   │               │                   ├─ name = "opts"
@@ -405,12 +405,12 @@ program/
   │       │               └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
-  │       │   └─ right/expression/conditional/
+  │       │   └─ right/expression/ternary/
   │       │       ├─ condition/expression/call/
   │       │       │   ├─ name = "total"
   │       │       │   └─ name = "zero?"
-  │       │       ├─ symbol = ":empty"
-  │       │       └─ symbol = ":filled"
+  │       │       ├─ then/expression/symbol = ":empty"
+  │       │       └─ else/expression/symbol = ":filled"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
   │       │   └─ right/expression/int = "0"

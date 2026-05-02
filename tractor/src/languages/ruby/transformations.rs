@@ -10,8 +10,38 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
 use super::output::TractorNode::{
-    self, Call, Comment as CommentName, Leading, Name, Optional, Parameter, Trailing,
+    self, Call, Comment as CommentName, Else, Leading, Name, Optional, Parameter, Ternary, Then,
+    Trailing,
 };
+
+/// `conditional` — `cond ? consequence : alternative` ternary. Wraps
+/// the arms in `<then>` / `<else>` (mirroring the role-named slots
+/// other languages produce via field-wrapping) and renames to
+/// `<ternary>` for cross-language Principle #5.
+///
+/// Custom (not field-wrap) because the field-wrap table is global
+/// per language: a `("alternative", "else")` entry would also wrap
+/// the alternative of `if`/`elsif` chains, which breaks
+/// `collapse_else_if_chain`.
+pub fn conditional(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let field = get_attr(xot, child, "field");
+        let wrapper = match field.as_deref() {
+            Some("consequence") => Then,
+            Some("alternative") => Else,
+            _ => continue,
+        };
+        let wrapper_id = xot.add_name(wrapper.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Ternary);
+    Ok(TransformAction::Continue)
+}
 
 /// `call` — `obj.method(...)` or `obj&.method(...)` (safe-navigation).
 /// Tree-sitter Ruby uses ONE kind for both; the only difference is
