@@ -645,6 +645,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     rust_restructure_use(xot, root)?;
+    crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
     crate::transform::distribute_member_list_attrs(

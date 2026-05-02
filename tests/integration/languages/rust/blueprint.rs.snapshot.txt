@@ -8,38 +8,38 @@ file/
   │   └─ name = "unused_mut"
   ├─ use[group and @list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "collections"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "collections"
   │   ├─ use/name = "HashMap"
   │   └─ use[alias]/
   │       ├─ name = "HashSet"
   │       └─ alias/name = "Set"
   ├─ use[group and @list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "fmt"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "fmt"
   │   ├─ use/name = "Debug"
   │   ├─ use/name = "Display"
   │   └─ use[self]
   ├─ use[@list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "rc"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "rc"
   │   └─ name = "Rc"
   ├─ use[@list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "sync"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "sync"
   │   └─ name = "Arc"
   ├─ use[@list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "cell"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "cell"
   │   └─ name = "RefCell"
   ├─ use[group and @list="use"]/
   │   ├─ path/
-  │   │   ├─ name = "std"
-  │   │   └─ name = "io"
+  │   │   ├─ name[@list="name"] = "std"
+  │   │   └─ name[@list="name"] = "io"
   │   ├─ use[alias]/
   │   │   ├─ name = "Read"
   │   │   └─ alias/name = "IoRead"
@@ -47,8 +47,8 @@ file/
   │       ├─ name = "Write"
   │       └─ alias/name = "IoWrite"
   ├─ use[wildcard and @list="use"]/path/
-  │   ├─ name = "std"
-  │   └─ name = "vec"
+  │   ├─ name[@list="name"] = "std"
+  │   └─ name[@list="name"] = "vec"
   ├─ mod[pub and @list="mod"]/
   │   ├─ name = "outer"
   │   └─ body/mod[@list="mod"]/
@@ -143,16 +143,16 @@ file/
   │       │   └─ parameter[@list="parameters"]/
   │       │       ├─ name = "c"
   │       │       └─ type[borrowed and mut]/path/
-  │       │           ├─ name = "Self"
-  │       │           └─ name = "Canvas"
+  │       │           ├─ name[@list="name"] = "Self"
+  │       │           └─ name[@list="name"] = "Canvas"
   │       └─ function[private and @list="function"]/
   │           ├─ name = "name"
   │           ├─ parameter[self and @list="parameters"]/self = "self"
   │           ├─ returns/type/name = "String"
   │           └─ body/call[@list="call"]/
   │               ├─ path/
-  │               │   ├─ name = "String"
-  │               │   └─ name = "from"
+  │               │   ├─ name[@list="name"] = "String"
+  │               │   └─ name[@list="name"] = "from"
   │               └─ string[@list="arguments"] = "\"drawable\""
   ├─ impl[@list="impl"]/
   │   ├─ lifetime[@list="generics"]/name = "a"
@@ -240,8 +240,8 @@ file/
   │           └─ parameter[@list="parameters"]/
   │               ├─ name = "_c"
   │               └─ type[borrowed and mut]/path/
-  │                   ├─ name = "Self"
-  │                   └─ name = "Canvas"
+  │                   ├─ name[@list="name"] = "Self"
+  │                   └─ name[@list="name"] = "Canvas"
   ├─ alias[pub and @list="alias"]/
   │   ├─ name = "BoxedDraw"
   │   ├─ lifetime[@list="generics"]/name = "a"
@@ -329,8 +329,8 @@ file/
   │       │   ├─ name = "s"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "String"
-  │       │       │   └─ name = "from"
+  │       │       │   ├─ name[@list="name"] = "String"
+  │       │       │   └─ name[@list="name"] = "from"
   │       │       └─ string[@list="arguments"] = "\"owned\""
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "moved"
@@ -358,8 +358,8 @@ file/
   │       │   │   └─ type[@list="arguments"]/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "Box"
-  │       │       │   └─ name = "new"
+  │       │       │   ├─ name[@list="name"] = "Box"
+  │       │       │   └─ name[@list="name"] = "new"
   │       │       └─ int[@list="arguments"] = "1"
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "rc"
@@ -368,12 +368,12 @@ file/
   │       │   │   └─ type[@list="arguments"]/name = "String"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "Rc"
-  │       │       │   └─ name = "new"
+  │       │       │   ├─ name[@list="name"] = "Rc"
+  │       │       │   └─ name[@list="name"] = "new"
   │       │       └─ call[@list="arguments"]/
   │       │           ├─ path/
-  │       │           │   ├─ name = "String"
-  │       │           │   └─ name = "from"
+  │       │           │   ├─ name[@list="name"] = "String"
+  │       │           │   └─ name[@list="name"] = "from"
   │       │           └─ string[@list="arguments"] = "\"rc\""
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "arc"
@@ -382,8 +382,8 @@ file/
   │       │   │   └─ type[@list="arguments"]/name = "u32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "Arc"
-  │       │       │   └─ name = "new"
+  │       │       │   ├─ name[@list="name"] = "Arc"
+  │       │       │   └─ name[@list="name"] = "new"
   │       │       └─ int[@list="arguments"] = "9"
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "cell"
@@ -394,8 +394,8 @@ file/
   │       │   │       └─ type[@list="arguments"]/name = "i32"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "RefCell"
-  │       │       │   └─ name = "new"
+  │       │       │   ├─ name[@list="name"] = "RefCell"
+  │       │       │   └─ name[@list="name"] = "new"
   │       │       └─ macro[@list="arguments"]/
   │       │           ├─ name = "vec"
   │       │           ├─ int = "1"
@@ -423,8 +423,8 @@ file/
   │       │   ├─ name = "p"
   │       │   └─ value/expression/call/
   │       │       ├─ path/
-  │       │       │   ├─ name = "Point"
-  │       │       │   └─ name = "new"
+  │       │       │   ├─ name[@list="name"] = "Point"
+  │       │       │   └─ name[@list="name"] = "new"
   │       │       ├─ int[@list="arguments"] = "1"
   │       │       ├─ int[@list="arguments"] = "2"
   │       │       └─ string[@list="arguments"] = "\"p\""
@@ -449,27 +449,27 @@ file/
   │       │       └─ body/
   │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/path/
-  │       │           │   │   ├─ name = "Shape"
-  │       │           │   │   └─ name = "Nothing"
+  │       │           │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   └─ name[@list="name"] = "Nothing"
   │       │           │   └─ value/expression/int = "0"
   │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/pattern[or]/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name = "Shape"
-  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   │   └─ name[@list="name"] = "Dot"
   │       │           │   │   ├─ int = "0"
   │       │           │   │   ├─ name = "y"
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name = "Shape"
-  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   │   └─ name[@list="name"] = "Dot"
   │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ int = "0"
   │       │           │   └─ value/expression/name = "y"
   │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name = "Shape"
-  │       │           │   │   │   └─ name = "Dot"
+  │       │           │   │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   │   └─ name[@list="name"] = "Dot"
   │       │           │   │   ├─ name = "x"
   │       │           │   │   ├─ name = "y"
   │       │           │   │   └─ condition/expression/binary/
@@ -484,8 +484,8 @@ file/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ pattern[struct]/
   │       │           │   │   │   ├─ path/
-  │       │           │   │   │   │   ├─ name = "Shape"
-  │       │           │   │   │   │   └─ name = "Rect"
+  │       │           │   │   │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   │   │   └─ name[@list="name"] = "Rect"
   │       │           │   │   │   ├─ pattern[field]/name = "w"
   │       │           │   │   │   └─ pattern[field]/name = "h"
   │       │           │   │   └─ condition/expression/binary/
@@ -501,8 +501,8 @@ file/
   │       │           ├─ arm[@list="arm"]/
   │       │           │   ├─ pattern/
   │       │           │   │   ├─ path/
-  │       │           │   │   │   ├─ name = "Shape"
-  │       │           │   │   │   └─ name = "Labeled"
+  │       │           │   │   │   ├─ name[@list="name"] = "Shape"
+  │       │           │   │   │   └─ name[@list="name"] = "Labeled"
   │       │           │   │   └─ pattern[ref]/name = "name"
   │       │           │   └─ value/expression/cast/
   │       │           │       ├─ value/expression/call/field/
@@ -611,10 +611,9 @@ file/
   │   │   ├─ name = "Result"
   │   │   ├─ type[@list="arguments"]/name = "i32"
   │   │   └─ path[@list="arguments"]/
-  │   │       ├─ path/
-  │   │       │   ├─ name = "std"
-  │   │       │   └─ name = "num"
-  │   │       └─ name = "ParseIntError"
+  │   │       ├─ name[@list="name"] = "std"
+  │   │       ├─ name[@list="name"] = "num"
+  │   │       └─ name[@list="name"] = "ParseIntError"
   │   └─ body/
   │       ├─ let[@list="let"]/
   │       │   ├─ name = "parsed"
@@ -939,7 +938,7 @@ file/
   │       │       ├─ type[generic]/
   │       │       │   ├─ name = "Vec"
   │       │       │   └─ type[@list="arguments"]/name = "i32"
-  │       │       └─ name = "new"
+  │       │       └─ name[@list="name"] = "new"
   │       └─ binary[@list="binary"]/
   │           ├─ left/expression/cast/
   │           │   ├─ value/expression/call/field/
@@ -968,8 +967,8 @@ file/
           │   ├─ name = "patterns"
           │   └─ call[@list="arguments"]/
           │       ├─ path/
-          │       │   ├─ name = "Shape"
-          │       │   └─ name = "Dot"
+          │       │   ├─ name[@list="name"] = "Shape"
+          │       │   └─ name[@list="name"] = "Dot"
           │       ├─ int[@list="arguments"] = "1"
           │       └─ int[@list="arguments"] = "1"
           ├─ let[@list="let"]/value/expression/call/name = "loops_and_flow"
@@ -977,8 +976,8 @@ file/
           │   ├─ name = "pattern_zoo"
           │   ├─ call[@list="arguments"]/
           │   │   ├─ path/
-          │   │   │   ├─ name = "Point"
-          │   │   │   └─ name = "new"
+          │   │   │   ├─ name[@list="name"] = "Point"
+          │   │   │   └─ name[@list="name"] = "new"
           │   │   ├─ int[@list="arguments"] = "1"
           │   │   ├─ int[@list="arguments"] = "2"
           │   │   └─ string[@list="arguments"] = "\"p\""
