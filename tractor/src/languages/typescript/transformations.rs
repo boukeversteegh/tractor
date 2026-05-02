@@ -232,6 +232,21 @@ pub fn formal_parameters(
     Ok(TransformAction::Flatten)
 }
 
+/// `conditional_type` — `T extends X ? Y : Z`. Tree-sitter tags the
+/// branches as `consequence` (then-type) and `alternative` (else-type).
+/// `consequence` is mapped to `<then>` via the language's field
+/// wrappings, but `alternative` has no generic mapping (the comment
+/// in `mod.rs` notes it's done surgically per-language). Wrap the
+/// alternative in `<else>` so the conditional has symmetric branch
+/// slots, then rename to `<type[conditional]>`.
+pub fn conditional_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Conditional, Else};
+    xot.with_wrapped_field_child(node, "alternative", Else)?
+        .with_renamed(node, Type)
+        .with_prepended_marker(node, Conditional)?;
+    Ok(TransformAction::Continue)
+}
+
 /// `type_parameter` — `<T>` / `<T extends Shape>` / `<T = number>`.
 /// Strips the `<value>` field-wrapper around the `default_type`
 /// child so the post-transform `wrap_expression_positions` pass

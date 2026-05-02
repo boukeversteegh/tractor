@@ -25,7 +25,7 @@ program/
   │       │   ├─ name = "Array"
   │       │   └─ type[infer and @list="true"]/type/name = "U"
   │       ├─ then/type/name = "U"
-  │       └─ type/name = "never"
+  │       └─ else/type/name = "never"
   ├─ comment[leading] = "/** A shape with an optional label and readonly id. */"
   ├─ export/interface/
   │   ├─ name = "Shape"
@@ -614,7 +614,7 @@ program/
   │       ├─ left/type[typeof]/name = "globalThis"
   │       ├─ right/type/name = "T"
   │       ├─ then/type/name = "T"
-  │       └─ type/name = "never"
+  │       └─ else/type/name = "never"
   ├─ alias/
   │   ├─ name = "Reflective"
   │   └─ type[object]/method/

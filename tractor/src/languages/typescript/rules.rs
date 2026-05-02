@@ -29,7 +29,12 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::AbstractClassDeclaration => RenameWithMarker(Class, Abstract),
         TsKind::ArrayPattern             => RenameWithMarker(Pattern, Array),
         TsKind::ArrayType                => RenameWithMarker(Type, Array),
-        TsKind::ConditionalType          => RenameWithMarker(Type, Conditional),
+        // `T extends X ? Y : Z` — conditional type. Wrap the
+        // `alternative` field child in `<else>` to match the
+        // `<then>` shape produced by COMMON_FIELD_WRAPPINGS for
+        // `consequence`. Without this, `<else>` was missing while
+        // `<then>` was present — Principle #5 within-TS asymmetry.
+        TsKind::ConditionalType          => Custom(transformations::conditional_type),
         TsKind::DefaultType              => RenameWithMarker(Type, Default),
         TsKind::FunctionType             => RenameWithMarker(Type, Function),
         TsKind::IndexTypeQuery           => RenameWithMarker(Type, Keyof),
