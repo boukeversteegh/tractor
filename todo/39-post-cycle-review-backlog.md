@@ -67,6 +67,21 @@ before committing a non-trivial change.
   items evaporate without a tracked backlog. This file exists
   because of that pattern. When closing items, mark `[x]`; when
   deferring, leave `[ ]` and reference the cycle that flagged it.
+- **Whack-a-mole / flip-flop is a real risk over many iters.** A
+  later iter can silently reverse a deliberate decision from an
+  earlier one — same element name, same marker, same flatten —
+  without realizing the prior iter chose the opposite for a
+  reason. Before implementing any rename / wrapper-vs-marker /
+  flatten-vs-preserve change, grep this file (Open + Addressed +
+  Lessons) and `git log --oneline --grep=<topic>` for prior
+  decisions on the same element or kind. If a prior iter shipped
+  the opposite, either (a) articulate WHY the new decision
+  supersedes (new evidence; changed surroundings; better
+  evaluation criterion) and tag the commit "Reverses iter N
+  because…", or (b) abort and pick a different target. The Lessons
+  section + Addressed list exist partly to make this check
+  cheap — keep them populated with enough specificity that later
+  iters can see what was decided.
 - **Over-tightening invariants traps real cases.** When adding a
   cross-cutting invariant test, sweep current fixtures FIRST and
   fix any pre-existing violations before committing the test —
