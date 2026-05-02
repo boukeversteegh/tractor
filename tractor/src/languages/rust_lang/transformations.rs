@@ -25,8 +25,15 @@ use super::output::TractorNode::{
 /// sibling, matching Java's `<T extends A & B>` shape and the
 /// cross-language relationship-naming rule. Drops the `<bounds>`
 /// wrapper.
+///
+/// Special bound forms lift their marker onto the `<extends>` itself
+/// rather than producing an inner `<bound[marker]>` wrapper:
+///   * `removed_trait_bound` (`?Sized`)  → `<extends[optional]>...`
+///   * `higher_ranked_trait_bound` (`for<'a> Fn(...)`) → `<extends[higher]>...`
+/// Pre-iter-126 these rendered as `<extends>/<bound[optional]>/...`,
+/// awkward for `//extends/type[...]` queries.
 pub fn trait_bounds(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    use super::output::TractorNode::Extends;
+    use super::output::TractorNode::{Extends, Higher, Optional};
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
@@ -34,10 +41,35 @@ pub fn trait_bounds(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
         let ext_elt = xot.add_name(Extends.as_str());
         let ext_node = xot.new_element(ext_elt);
         xot.insert_before(child, ext_node)?;
-        xot.detach(child)?;
-        xot.append(ext_node, child)?;
+        let child_kind = get_kind(xot, child);
+        let marker = match child_kind.as_deref() {
+            Some("removed_trait_bound") => Some(Optional),
+            Some("higher_ranked_trait_bound") => Some(Higher),
+            _ => None,
+        };
+        if marker.is_some() {
+            // Lift the bound's element children directly into the
+            // `<extends>` wrapper, then drop the bound element. The
+            // text leaves (`?` for removed, `for`/`<`/`>` for higher)
+            // are pure source markers; the lifted marker captures the
+            // semantic.
+            let inner_elements: Vec<XotNode> = xot.children(child)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for inner in inner_elements {
+                xot.detach(inner)?;
+                xot.append(ext_node, inner)?;
+            }
+            xot.detach(child)?;
+        } else {
+            xot.detach(child)?;
+            xot.append(ext_node, child)?;
+        }
         xot.with_attr(ext_node, "field", "extends");
         xot.with_attr(ext_node, "list", "true");
+        if let Some(m) = marker {
+            xot.with_appended_marker(ext_node, m)?;
+        }
     }
     Ok(TransformAction::Flatten)
 }

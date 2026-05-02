@@ -715,7 +715,7 @@ file/
   │   ├─ generic[@list="true"]/name = "F"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ extends[@list="true"]/bound[optional]/type/name = "Sized"
+  │   │   └─ extends[optional and @list="true"]/type/name = "Sized"
   │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "_f"
   │   │   └─ type/name = "F"
@@ -724,7 +724,7 @@ file/
   │   │   └─ type[borrowed]/type/name = "T"
   │   └─ where/bound/
   │       ├─ left/expression/type/name = "F"
-  │       └─ extends[@list="true"]/bound[higher]/
+  │       └─ extends[higher and @list="true"]/
   │           ├─ lifetime[@list="true"]/name = "'a"
   │           └─ type[function]/
   │               ├─ type/name = "Fn"
