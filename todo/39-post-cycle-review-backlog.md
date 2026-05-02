@@ -67,6 +67,18 @@ before committing a non-trivial change.
   items evaporate without a tracked backlog. This file exists
   because of that pattern. When closing items, mark `[x]`; when
   deferring, leave `[ ]` and reference the cycle that flagged it.
+- **Read BOTH snapshot surfaces.** Every iter that touches
+  transforms produces two diffs per affected language: the
+  `.snapshot.txt` (tree shape, markers, `[@list="X"]` attrs) and
+  the `.snapshot.json` (object-vs-array, key collisions,
+  `children` fall-throughs — landed iter 170). Some shape
+  regressions only manifest in the JSON: a 1-element array where
+  a singleton was expected; a `"children": [...]` overflow key
+  where a structural role-slot was intended; a cross-language
+  key-name divergence (e.g. `"argument": ...` in one language vs
+  bare keys in another). Cold-read pass and per-iter snapshot
+  review must check both. Reviewer subagents should be told to
+  scan JSON specifically.
 - **Whack-a-mole / flip-flop is a real risk over many iters.** A
   later iter can silently reverse a deliberate decision from an
   earlier one — same element name, same marker, same flatten —
