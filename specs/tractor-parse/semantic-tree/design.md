@@ -945,6 +945,36 @@ avoid markers on `<name>`).
   doubled the vocabulary for a distinction the tree shape already makes;
   the short `<ref>` element was also ambiguous with other uses (issue #73).
 
+### Path segments always emit as a JSON array
+
+A dotted/scoped name like `import os` (Python) or `using System;`
+(C#) renders the same way as a multi-segment path `import a.b.c`:
+the inner `<path>` (or analogous container) holds `<name>` segments
+each tagged `list="name"`, so JSON consumers always see
+`path.name: [...]` regardless of segment count.
+
+```json
+// `import os`        — single segment
+{"import": [{"path": {"name": ["os"]}}]}
+
+// `import a.b.c`     — three segments
+{"import": [{"path": {"name": ["a", "b", "c"]}}]}
+```
+
+The 1-element-array case for single-segment paths is intentional:
+content-deterministic shape per Principle #12 (`list="X"` always
+emits an array regardless of cardinality). The alternative — scalar
+for one segment, array for many — would force every consumer to
+branch on the count.
+
+This follows from the iter 151 `flatten_nested_paths` post-pass +
+Principle #19 role-uniform discriminator: every segment plays the
+same role ("a segment of the path"), so they stay flat with
+`list="name"` rather than being wrapped in role-named slots.
+
+**Cites:** Principle #12 (flat lists, deterministic JSON arrays),
+Principle #19 (role-uniform stays flat with `list=`).
+
 ### Identifiers are never element names
 
 Nodes are always lowercase (Principle #3). Identifiers — user-defined

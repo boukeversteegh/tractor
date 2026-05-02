@@ -197,21 +197,12 @@ member-access receiver). But several transform sites still
 
 ### Single-segment paths render as 1-element arrays
 
-- [ ] **`import os;` (Python), `using System;` (C#), `import "io"` (Go)**
-  all produce `path/name[@list="name"]` for a single segment, so
-  JSON renders `path: {name: ["os"]}` (1-elem array).
-  - **Current behavior**: `flatten_nested_paths` (iter 151) tags every
-    `<name>` segment under `<path>` with `list="name"` regardless of
-    sibling count. Single-segment paths therefore JSON as 1-element
-    arrays.
-  - **Defensible**: matches multi-segment shape, content-deterministic.
-  - **But**: no spec note pins the choice; reads slightly weird in
-    JSON consumers (`path.name[0]` for the only segment).
-  - **Decision needed**: document in design.md ("paths always emit
-    `name` as an array regardless of cardinality, for shape
-    consistency") OR change to use scalar for 1-segment.
-  - **Effort**: 15 minutes (doc) or 30 minutes (transform conditional).
-  - **Source**: iters 149-153 review.
+- [x] **Single-segment paths render as 1-element arrays** — closed
+  iter 160. Documented in `design.md` as a new Decision section
+  "Path segments always emit as a JSON array". The 1-element-array
+  shape is intentional per Principle #12 (`list="X"` always emits an
+  array regardless of cardinality) — content-deterministic, no
+  scalar-vs-array branching for consumers.
 
 ### Cross-language `<argument>` vocabulary mismatch
 
