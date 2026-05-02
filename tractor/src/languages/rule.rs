@@ -51,11 +51,11 @@ pub enum Rule<N> {
     /// preserved.
     RenameStripKeyword(N, &'static str),
     /// Drop the wrapper, promote children to siblings. If
-    /// `distribute_field` is `Some`, set `field=<name>` on every child
+    /// `distribute_list` is `Some`, set `field=<name>` on every child
     /// before flattening (so the children are still grouped under a
     /// uniform field).
     Flatten {
-        distribute_field: Option<&'static str>,
+        distribute_list: Option<&'static str>,
     },
     /// Find the operator text inside the node, prepend it as an `<op>`
     /// child via [`extract_operator`], then rename the node to `to`.
@@ -157,8 +157,8 @@ where
             xot.with_renamed(node, to);
             Ok(TransformAction::Continue)
         }
-        Rule::Flatten { distribute_field } => {
-            if let Some(field) = distribute_field {
+        Rule::Flatten { distribute_list } => {
+            if let Some(field) = distribute_list {
                 distribute_list_to_children(xot, node, field);
             }
             Ok(TransformAction::Flatten)

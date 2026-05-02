@@ -57,14 +57,14 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::TupleType                   => RenameWithMarker(Type, Tuple),
 
         // ---- Flatten with field distribution ---------------------------
-        CsKind::AccessorList          => Flatten { distribute_field: Some("accessors") },
-        CsKind::ArgumentList          => Flatten { distribute_field: Some("arguments") },
-        CsKind::AttributeArgumentList => Flatten { distribute_field: Some("arguments") },
-        CsKind::AttributeList         => Flatten { distribute_field: Some("attributes") },
-        CsKind::BracketedParameterList => Flatten { distribute_field: Some("parameters") },
-        CsKind::ParameterList         => Flatten { distribute_field: Some("parameters") },
-        CsKind::TypeArgumentList      => Flatten { distribute_field: Some("arguments") },
-        CsKind::TypeParameterList     => Flatten { distribute_field: Some("generics") },
+        CsKind::AccessorList          => Flatten { distribute_list: Some("accessors") },
+        CsKind::ArgumentList          => Flatten { distribute_list: Some("arguments") },
+        CsKind::AttributeArgumentList => Flatten { distribute_list: Some("arguments") },
+        CsKind::AttributeList         => Flatten { distribute_list: Some("attributes") },
+        CsKind::BracketedParameterList => Flatten { distribute_list: Some("parameters") },
+        CsKind::ParameterList         => Flatten { distribute_list: Some("parameters") },
+        CsKind::TypeArgumentList      => Flatten { distribute_list: Some("arguments") },
+        CsKind::TypeParameterList     => Flatten { distribute_list: Some("generics") },
 
         // ---- Pure Flatten ----------------------------------------------
         CsKind::ArrowExpressionClause
@@ -80,7 +80,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::RawStringEnd
         | CsKind::RawStringStart
         | CsKind::StringContent
-        | CsKind::StringLiteralContent => Flatten { distribute_field: None },
+        | CsKind::StringLiteralContent => Flatten { distribute_list: None },
 
         // ---- DefaultAccessThenRename — declarations with implicit
         //      access modifier (see `transformations::default_access_for_declaration`).
@@ -187,7 +187,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::StringLiteral                  => Rename(String),
         // `switch_statement.body` field already wraps this in <body>;
         // flatten avoids double-nested <body><body>...</body></body>.
-        CsKind::SwitchBody                     => Flatten { distribute_field: None },
+        CsKind::SwitchBody                     => Flatten { distribute_list: None },
         CsKind::SwitchExpression               => Rename(Switch),
         CsKind::SwitchExpressionArm            => Rename(Arm),
         CsKind::SwitchSection                  => Rename(Section),
@@ -229,7 +229,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::ListPattern             => RenameWithMarker(Pattern, List),
         CsKind::VarPattern              => RenameWithMarker(Pattern, Var),
         CsKind::TypePattern             => RenameWithMarker(Pattern, Type),
-        CsKind::ParenthesizedPattern    => Flatten { distribute_field: None },
+        CsKind::ParenthesizedPattern    => Flatten { distribute_list: None },
 
         // `as_expression` (`x as Foo`) and `is_expression` (`obj is
         // Foo`) join `is_pattern_expression` under `<is>` — they're
@@ -263,7 +263,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
 
         // Special-statement forms.
         CsKind::CheckedStatement    => Rename(Checked),
-        CsKind::EmptyStatement      => Flatten { distribute_field: None },
+        CsKind::EmptyStatement      => Flatten { distribute_list: None },
         CsKind::FixedStatement      => Rename(Fixed),
         CsKind::GotoStatement       => Rename(Goto),
         CsKind::LabeledStatement    => Rename(Label),
@@ -284,7 +284,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
 
         // Character literals.
         CsKind::CharacterLiteral        => Rename(Char),
-        CsKind::CharacterLiteralContent => Flatten { distribute_field: None },
+        CsKind::CharacterLiteralContent => Flatten { distribute_list: None },
 
         // Checked expression (mirrors checked_statement).
         CsKind::CheckedExpression       => Rename(Checked),
@@ -315,36 +315,36 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // `<extends>` (iter 130). Renaming this to `<extends>`
         // directly produced `<extends>/<extends>` nesting because
         // base_list also wraps it in `<extends>`.
-        CsKind::PrimaryConstructorBaseType => Flatten { distribute_field: None },
+        CsKind::PrimaryConstructorBaseType => Flatten { distribute_list: None },
 
         // ---- Structural supertypes / wrappers (flatten, promote children) ---
-        CsKind::AliasQualifiedName      => Flatten { distribute_field: None },
-        CsKind::ArrayRankSpecifier      => Flatten { distribute_field: None },
-        CsKind::AttributeTargetSpecifier => Flatten { distribute_field: None },
-        CsKind::BracketedArgumentList   => Flatten { distribute_field: Some("arguments") },
-        CsKind::CallingConvention       => Flatten { distribute_field: None },
-        CsKind::Declaration             => Flatten { distribute_field: None },
-        CsKind::DeclarationExpression   => Flatten { distribute_field: None },
-        CsKind::ExplicitInterfaceSpecifier => Flatten { distribute_field: None },
-        CsKind::Expression              => Flatten { distribute_field: None },
-        CsKind::GlobalStatement         => Flatten { distribute_field: None },
-        CsKind::InterpolationAlignmentClause => Flatten { distribute_field: None },
-        CsKind::InterpolationFormatClause => Flatten { distribute_field: None },
-        CsKind::InterpolationQuote      => Flatten { distribute_field: None },
-        CsKind::Literal                 => Flatten { distribute_field: None },
-        CsKind::LvalueExpression        => Flatten { distribute_field: None },
-        CsKind::MakerefExpression       => Flatten { distribute_field: None },
-        CsKind::NonLvalueExpression     => Flatten { distribute_field: None },
-        CsKind::ParenthesizedVariableDesignation => Flatten { distribute_field: None },
-        CsKind::Pattern                 => Flatten { distribute_field: None },
-        CsKind::PositionalPatternClause => Flatten { distribute_field: None },
-        CsKind::ReftypeExpression       => Flatten { distribute_field: None },
-        CsKind::RefvalueExpression      => Flatten { distribute_field: None },
-        CsKind::ScopedType              => Flatten { distribute_field: None },
-        CsKind::Statement               => Flatten { distribute_field: None },
-        CsKind::StringLiteralEncoding   => Flatten { distribute_field: None },
-        CsKind::Type                    => Flatten { distribute_field: None },
-        CsKind::TypeDeclaration         => Flatten { distribute_field: None },
+        CsKind::AliasQualifiedName      => Flatten { distribute_list: None },
+        CsKind::ArrayRankSpecifier      => Flatten { distribute_list: None },
+        CsKind::AttributeTargetSpecifier => Flatten { distribute_list: None },
+        CsKind::BracketedArgumentList   => Flatten { distribute_list: Some("arguments") },
+        CsKind::CallingConvention       => Flatten { distribute_list: None },
+        CsKind::Declaration             => Flatten { distribute_list: None },
+        CsKind::DeclarationExpression   => Flatten { distribute_list: None },
+        CsKind::ExplicitInterfaceSpecifier => Flatten { distribute_list: None },
+        CsKind::Expression              => Flatten { distribute_list: None },
+        CsKind::GlobalStatement         => Flatten { distribute_list: None },
+        CsKind::InterpolationAlignmentClause => Flatten { distribute_list: None },
+        CsKind::InterpolationFormatClause => Flatten { distribute_list: None },
+        CsKind::InterpolationQuote      => Flatten { distribute_list: None },
+        CsKind::Literal                 => Flatten { distribute_list: None },
+        CsKind::LvalueExpression        => Flatten { distribute_list: None },
+        CsKind::MakerefExpression       => Flatten { distribute_list: None },
+        CsKind::NonLvalueExpression     => Flatten { distribute_list: None },
+        CsKind::ParenthesizedVariableDesignation => Flatten { distribute_list: None },
+        CsKind::Pattern                 => Flatten { distribute_list: None },
+        CsKind::PositionalPatternClause => Flatten { distribute_list: None },
+        CsKind::ReftypeExpression       => Flatten { distribute_list: None },
+        CsKind::RefvalueExpression      => Flatten { distribute_list: None },
+        CsKind::ScopedType              => Flatten { distribute_list: None },
+        CsKind::Statement               => Flatten { distribute_list: None },
+        CsKind::StringLiteralEncoding   => Flatten { distribute_list: None },
+        CsKind::Type                    => Flatten { distribute_list: None },
+        CsKind::TypeDeclaration         => Flatten { distribute_list: None },
 
         // Preprocessor directives and shebang — flatten to suppress raw output.
         CsKind::PreprocArg
@@ -361,6 +361,6 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::PreprocRegion
         | CsKind::PreprocUndef
         | CsKind::PreprocWarning
-        | CsKind::ShebangDirective      => Flatten { distribute_field: None },
+        | CsKind::ShebangDirective      => Flatten { distribute_list: None },
     }
 }

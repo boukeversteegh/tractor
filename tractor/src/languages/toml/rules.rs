@@ -24,19 +24,19 @@ pub fn rule(kind: TomlKind) -> Rule<&'static str> {
 
         // Strings / scalars — promote text to parent
         TomlKind::String            => Rule::Custom(string),
-        TomlKind::Integer           => Rule::Flatten { distribute_field: None },
-        TomlKind::Float             => Rule::Flatten { distribute_field: None },
-        TomlKind::Boolean           => Rule::Flatten { distribute_field: None },
-        TomlKind::LocalDate         => Rule::Flatten { distribute_field: None },
-        TomlKind::LocalDateTime     => Rule::Flatten { distribute_field: None },
-        TomlKind::LocalTime         => Rule::Flatten { distribute_field: None },
-        TomlKind::OffsetDateTime    => Rule::Flatten { distribute_field: None },
-        TomlKind::EscapeSequence    => Rule::Flatten { distribute_field: None },
+        TomlKind::Integer           => Rule::Flatten { distribute_list: None },
+        TomlKind::Float             => Rule::Flatten { distribute_list: None },
+        TomlKind::Boolean           => Rule::Flatten { distribute_list: None },
+        TomlKind::LocalDate         => Rule::Flatten { distribute_list: None },
+        TomlKind::LocalDateTime     => Rule::Flatten { distribute_list: None },
+        TomlKind::LocalTime         => Rule::Flatten { distribute_list: None },
+        TomlKind::OffsetDateTime    => Rule::Flatten { distribute_list: None },
+        TomlKind::EscapeSequence    => Rule::Flatten { distribute_list: None },
 
         // Keys — promote text (consumed by pair/table extractors)
-        TomlKind::BareKey           => Rule::Flatten { distribute_field: None },
-        TomlKind::QuotedKey         => Rule::Flatten { distribute_field: None },
-        TomlKind::DottedKey         => Rule::Flatten { distribute_field: None },
+        TomlKind::BareKey           => Rule::Flatten { distribute_list: None },
+        TomlKind::QuotedKey         => Rule::Flatten { distribute_list: None },
+        TomlKind::DottedKey         => Rule::Flatten { distribute_list: None },
 
         // Comments — drop the `#` and text
         TomlKind::Comment           => Rule::Custom(comment),

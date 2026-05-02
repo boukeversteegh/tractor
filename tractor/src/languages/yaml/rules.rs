@@ -46,8 +46,8 @@ pub fn syntax_rule(kind: YamlKind) -> Rule<&'static str> {
         YamlKind::Anchor             => Rule::Custom(strip_punct_flatten),
         YamlKind::Tag                => Rule::Custom(strip_punct_flatten),
         YamlKind::Alias              => Rule::Custom(strip_punct_flatten),
-        YamlKind::AliasName          => Rule::Flatten { distribute_field: None },
-        YamlKind::AnchorName         => Rule::Flatten { distribute_field: None },
+        YamlKind::AliasName          => Rule::Flatten { distribute_list: None },
+        YamlKind::AnchorName         => Rule::Flatten { distribute_list: None },
         YamlKind::Comment            => Rule::Custom(strip_punct_flatten),
 
         // Directive family — `%YAML 1.2` and `%TAG !! tag:…`. Both
@@ -85,18 +85,18 @@ pub fn data_rule(kind: YamlKind) -> Rule<&'static str> {
         YamlKind::DoubleQuoteScalar  => Rule::Custom(data_double_quote),
         YamlKind::SingleQuoteScalar  => Rule::Custom(data_single_quote),
         YamlKind::BlockScalar        => Rule::Custom(data_block_scalar),
-        YamlKind::StringScalar       => Rule::Flatten { distribute_field: None },
-        YamlKind::IntegerScalar      => Rule::Flatten { distribute_field: None },
-        YamlKind::FloatScalar        => Rule::Flatten { distribute_field: None },
-        YamlKind::BooleanScalar      => Rule::Flatten { distribute_field: None },
-        YamlKind::NullScalar         => Rule::Flatten { distribute_field: None },
+        YamlKind::StringScalar       => Rule::Flatten { distribute_list: None },
+        YamlKind::IntegerScalar      => Rule::Flatten { distribute_list: None },
+        YamlKind::FloatScalar        => Rule::Flatten { distribute_list: None },
+        YamlKind::BooleanScalar      => Rule::Flatten { distribute_list: None },
+        YamlKind::NullScalar         => Rule::Flatten { distribute_list: None },
 
         // Anchors / aliases / tags
         YamlKind::Anchor             => Rule::Custom(strip_punct_flatten),
         YamlKind::Tag                => Rule::Custom(strip_punct_flatten),
         YamlKind::Alias              => Rule::Custom(strip_punct_flatten),
-        YamlKind::AliasName          => Rule::Flatten { distribute_field: None },
-        YamlKind::AnchorName         => Rule::Flatten { distribute_field: None },
+        YamlKind::AliasName          => Rule::Flatten { distribute_list: None },
+        YamlKind::AnchorName         => Rule::Flatten { distribute_list: None },
 
         // Document is kept (multi-doc YAML).
         YamlKind::Document           => Rule::Custom(strip_punct_continue),

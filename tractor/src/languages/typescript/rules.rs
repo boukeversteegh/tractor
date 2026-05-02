@@ -73,8 +73,8 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::ImportAlias              => RenameWithMarker(Import, Alias),
 
         // ---- Flatten with field distribution ---------------------------
-        TsKind::Arguments     => Flatten { distribute_field: Some("arguments") },
-        TsKind::TypeArguments => Flatten { distribute_field: Some("arguments") },
+        TsKind::Arguments     => Flatten { distribute_list: Some("arguments") },
+        TsKind::TypeArguments => Flatten { distribute_list: Some("arguments") },
 
         // ---- Pure Flatten ----------------------------------------------
         TsKind::AddingTypeAnnotation
@@ -96,7 +96,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::SequenceExpression
         | TsKind::StringFragment
         | TsKind::TypeAnnotation
-        | TsKind::VariableDeclarator => Flatten { distribute_field: None },
+        | TsKind::VariableDeclarator => Flatten { distribute_list: None },
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         TsKind::AbstractMethodSignature  => Custom(transformations::abstract_method_signature),
@@ -189,7 +189,7 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::SubscriptExpression       => Rename(Index),
         // `switch_statement.body` field already wraps this in <body>;
         // flatten avoids double-nested <body><body>...</body></body>.
-        TsKind::SwitchBody                => Flatten { distribute_field: None },
+        TsKind::SwitchBody                => Flatten { distribute_list: None },
         TsKind::SwitchCase                => Rename(Case),
         TsKind::SwitchDefault             => Rename(Default),
         TsKind::SwitchStatement           => Rename(Switch),
@@ -210,13 +210,13 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // a direct sibling of the enclosing declaration with
         // `field="generics" list="true"` for JSON-array recovery.
         // Matches Java / Rust shape.
-        TsKind::TypeParameters            => Flatten { distribute_field: Some("generics") },
+        TsKind::TypeParameters            => Flatten { distribute_list: Some("generics") },
         TsKind::TypePredicate             => Rename(Predicate),
         // `: v is Shape` — the annotation wrapper only adds a `:` text;
         // flatten so the inner type_predicate becomes the direct
         // `<predicate>` child of the function (avoids
         // `<predicate>/<predicate>` double-wrap).
-        TsKind::TypePredicateAnnotation   => Flatten { distribute_field: None },
+        TsKind::TypePredicateAnnotation   => Flatten { distribute_list: None },
         TsKind::WhileStatement            => Rename(While),
         TsKind::YieldExpression           => Rename(Yield),
 

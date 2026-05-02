@@ -14,9 +14,9 @@ pub fn rule(kind: IniKind) -> Rule<&'static str> {
         IniKind::Section      => Rule::Custom(section),
         IniKind::SectionName  => Rule::Custom(section_name),
         IniKind::Setting      => Rule::Custom(setting),
-        IniKind::SettingName  => Rule::Flatten { distribute_field: None },
-        IniKind::SettingValue => Rule::Flatten { distribute_field: None },
-        IniKind::Text         => Rule::Flatten { distribute_field: None },
+        IniKind::SettingName  => Rule::Flatten { distribute_list: None },
+        IniKind::SettingValue => Rule::Flatten { distribute_list: None },
+        IniKind::Text         => Rule::Flatten { distribute_list: None },
         IniKind::Comment      => Rule::Custom(comment),
     }
 }

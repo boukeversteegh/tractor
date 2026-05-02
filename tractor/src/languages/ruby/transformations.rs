@@ -37,7 +37,7 @@ pub fn call_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 pub fn parameters(
     xot: &mut Xot,
     node: XotNode,
-    distribute_field: Option<&str>,
+    distribute_list: Option<&str>,
 ) -> Result<TransformAction, xot::Error> {
     let children: Vec<XotNode> = xot
         .children(node)
@@ -53,7 +53,7 @@ pub fn parameters(
             xot.append(param, child)?;
         }
     }
-    if let Some(field) = distribute_field {
+    if let Some(field) = distribute_list {
         distribute_list_to_children(xot, node, field);
     }
     Ok(TransformAction::Flatten)

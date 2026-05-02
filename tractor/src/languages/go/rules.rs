@@ -40,7 +40,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::TypeSwitchStatement => RenameWithMarker(Switch, Type),
 
         // ---- Flatten with field distribution --------------------------
-        GoKind::ArgumentList => Flatten { distribute_field: Some("arguments") },
+        GoKind::ArgumentList => Flatten { distribute_list: Some("arguments") },
 
         // `X: 1` inside a composite literal — preserve the pairing
         // structurally as `<pair><name>X</name><value/expression/int=1/></pair>`
@@ -61,14 +61,14 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         | GoKind::TypeConstraint
         | GoKind::InterpretedStringLiteralContent
         | GoKind::RawStringLiteralContent
-        | GoKind::EscapeSequence => Flatten { distribute_field: None },
+        | GoKind::EscapeSequence => Flatten { distribute_list: None },
 
         // `[T any, U comparable]` — generic parameter list. Per
         // Principle #12 (no list containers): flatten with
         // `field="generics"` distribution so each parameter becomes
         // a flat `<generic>` sibling of the enclosing declaration.
         // Matches Java / Rust / TS shape.
-        GoKind::TypeParameterList        => Flatten { distribute_field: Some("generics") },
+        GoKind::TypeParameterList        => Flatten { distribute_list: Some("generics") },
         GoKind::TypeParameterDeclaration => Rename(Generic),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
@@ -192,10 +192,10 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // so the inner expression / type bubbles up. Matches the
         // treatment in csharp, typescript, etc.
         GoKind::ParenthesizedExpression
-        | GoKind::ParenthesizedType => Flatten { distribute_field: None },
+        | GoKind::ParenthesizedType => Flatten { distribute_list: None },
 
         // `empty_statement` (a bare `;`) carries no semantic content.
-        GoKind::EmptyStatement => Flatten { distribute_field: None },
+        GoKind::EmptyStatement => Flatten { distribute_list: None },
 
         // `fallthrough_statement` is real Go control-flow; renames to
         // `<fallthrough>` alongside `<break>`, `<continue>`, `<goto>`.

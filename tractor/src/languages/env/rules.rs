@@ -22,14 +22,14 @@ pub fn rule(kind: EnvKind) -> Rule<&'static str> {
         EnvKind::Comment             => Rule::Custom(comment),
 
         // Value wrappers — promote text to the parent assignment
-        EnvKind::VariableName        => Rule::Flatten { distribute_field: None },
-        EnvKind::Word                => Rule::Flatten { distribute_field: None },
-        EnvKind::Number              => Rule::Flatten { distribute_field: None },
-        EnvKind::RawString           => Rule::Flatten { distribute_field: None },
-        EnvKind::AnsiiCString        => Rule::Flatten { distribute_field: None },
-        EnvKind::String              => Rule::Flatten { distribute_field: None },
-        EnvKind::SimpleExpansion     => Rule::Flatten { distribute_field: None },
-        EnvKind::Expansion           => Rule::Flatten { distribute_field: None },
-        EnvKind::StringContent       => Rule::Flatten { distribute_field: None },
+        EnvKind::VariableName        => Rule::Flatten { distribute_list: None },
+        EnvKind::Word                => Rule::Flatten { distribute_list: None },
+        EnvKind::Number              => Rule::Flatten { distribute_list: None },
+        EnvKind::RawString           => Rule::Flatten { distribute_list: None },
+        EnvKind::AnsiiCString        => Rule::Flatten { distribute_list: None },
+        EnvKind::String              => Rule::Flatten { distribute_list: None },
+        EnvKind::SimpleExpansion     => Rule::Flatten { distribute_list: None },
+        EnvKind::Expansion           => Rule::Flatten { distribute_list: None },
+        EnvKind::StringContent       => Rule::Flatten { distribute_list: None },
     }
 }

@@ -106,9 +106,9 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::YieldExpression  => Rename(Yield),
 
         // ---- Flatten with field distribution ---------------------------
-        RustKind::Arguments     => Flatten { distribute_field: Some("arguments") },
-        RustKind::Parameters    => Flatten { distribute_field: Some("parameters") },
-        RustKind::TypeArguments => Flatten { distribute_field: Some("arguments") },
+        RustKind::Arguments     => Flatten { distribute_list: Some("arguments") },
+        RustKind::Parameters    => Flatten { distribute_list: Some("parameters") },
+        RustKind::TypeArguments => Flatten { distribute_list: Some("arguments") },
 
         // ---- Pure Flatten ----------------------------------------------
         RustKind::AttributeItem
@@ -139,7 +139,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::TypeBinding
         | RustKind::UseAsClause
         | RustKind::UseList
-        | RustKind::UseWildcard => Flatten { distribute_field: None },
+        | RustKind::UseWildcard => Flatten { distribute_list: None },
 
         // ---- DefaultAccessThenRename — 8 declaration kinds.
         //      Default access in Rust is `private` when `pub` is absent.

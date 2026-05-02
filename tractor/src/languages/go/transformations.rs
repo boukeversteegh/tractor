@@ -95,7 +95,7 @@ pub fn type_instantiation_expression(
 /// `type_arguments` — `[T, string]` after a generic type. Tree-sitter
 /// nests each argument under a transparent `type_elem` wrapper; lift
 /// each `type_elem`'s element child up first so the subsequent flatten
-/// + `distribute_field("arguments")` lands the field attribute on the
+/// + `distribute_list("arguments")` lands the field attribute on the
 /// real type child (otherwise it sits on the `type_elem` wrapper and
 /// gets lost in flatten).
 pub fn type_arguments(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

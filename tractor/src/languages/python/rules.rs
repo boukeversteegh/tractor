@@ -82,7 +82,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         | PyKind::StringEnd
         | PyKind::StringStart
         | PyKind::WithClause
-        | PyKind::WithItem => Flatten { distribute_field: None },
+        | PyKind::WithItem => Flatten { distribute_list: None },
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         PyKind::Comment                  => Custom(transformations::comment),
@@ -107,7 +107,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         // Flatten so the two names become direct children of the
         // outer `<import>`. The first name is the imported module,
         // the second is the alias — order conveys the relationship.
-        PyKind::AliasedImport         => Flatten { distribute_field: None },
+        PyKind::AliasedImport         => Flatten { distribute_list: None },
         PyKind::AsPattern             => Rename(As),
         PyKind::AssertStatement       => Rename(Assert),
         PyKind::Assignment            => Rename(Assign),
@@ -232,7 +232,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::NotOperator           => ExtractOpThenRename(Unary),
 
         // Pure-whitespace continuation `\\\n` carries no semantics.
-        PyKind::LineContinuation => Flatten { distribute_field: None },
+        PyKind::LineContinuation => Flatten { distribute_list: None },
 
         // Remaining unhandled grammar kinds — fall through with no
         // semantic name. None contain underscores after iter 13's sweep.
@@ -247,6 +247,6 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         //      is a supertype that flattens to its single child.
         PyKind::Expression
         | PyKind::Pattern => Passthrough,
-        PyKind::PrimaryExpression => Flatten { distribute_field: None },
+        PyKind::PrimaryExpression => Flatten { distribute_list: None },
     }
 }

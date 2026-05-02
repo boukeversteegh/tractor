@@ -38,7 +38,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::SymbolArray        => RenameWithMarker(Array, Symbol),
 
         // ---- Flatten with field distribution ---------------------------
-        RubyKind::ArgumentList     => Flatten { distribute_field: Some("arguments") },
+        RubyKind::ArgumentList     => Flatten { distribute_list: Some("arguments") },
         RubyKind::MethodParameters => Custom(transformations::method_parameters),
         RubyKind::BlockParameters
         | RubyKind::LambdaParameters => Custom(transformations::block_parameters),
@@ -55,7 +55,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         | RubyKind::HeredocContent
         | RubyKind::HeredocEnd
         | RubyKind::ParenthesizedStatements
-        | RubyKind::StringContent => Flatten { distribute_field: None },
+        | RubyKind::StringContent => Flatten { distribute_list: None },
 
         // `:name` simple symbol — produces `<symbol>:name</symbol>`
         // (with the leading `:` preserved). Matches `<symbol>` shape
@@ -134,7 +134,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         // from the collection; flatten so the iterable is a direct
         // child of `<value>` (or wherever the field places it).
         // The case/in clause uses `InClause` → `<in>` instead.
-        RubyKind::In => Flatten { distribute_field: None },
+        RubyKind::In => Flatten { distribute_list: None },
 
         // Already matches our vocabulary (no text leak in current snapshots).
         RubyKind::Block
@@ -174,7 +174,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::TestPattern                => RenameWithMarker(Pattern, Test),
         RubyKind::VariableReferencePattern   => RenameWithMarker(Pattern, Variable),
         // Pure grammar grouping; flatten so the inner pattern bubbles up.
-        RubyKind::ParenthesizedPattern       => Flatten { distribute_field: None },
+        RubyKind::ParenthesizedPattern       => Flatten { distribute_list: None },
         // case/in shapes: `case_match` is the construct, `in_clause`
         // is the `in pattern` arm body, guards are postfix predicates.
         RubyKind::CaseMatch                  => Rename(Match),
@@ -221,7 +221,7 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
 
         // Control-flow / structural odds and ends with underscored names.
         RubyKind::ElementReference     => Rename(Index),       // `arr[i]`
-        RubyKind::EmptyStatement       => Flatten { distribute_field: None },
+        RubyKind::EmptyStatement       => Flatten { distribute_list: None },
         RubyKind::EndBlock             => RenameWithMarker(Block, End),  // `END { ... }`
         RubyKind::RescueModifier       => Rename(Rescue),      // `expr rescue fallback`
         RubyKind::RightAssignmentList  => Rename(Right),       // `(a, b) = ...` RHS list

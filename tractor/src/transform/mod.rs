@@ -1299,7 +1299,7 @@ pub mod helpers {
     /// (so a 1-arg call emits `"arguments": [{...}]` matching a 3-arg
     /// call's `"arguments": [{...}, {...}, {...}]`).
     ///
-    /// Renamed from `distribute_field_to_children` in iter 145 to
+    /// Renamed from `distribute_list_to_children` in iter 145 to
     /// reflect the attribute it actually writes (`list=`, not
     /// `field=`). Tree-sitter's own `field=` attributes are preserved
     /// untouched (they survive into `--meta` debug output but are

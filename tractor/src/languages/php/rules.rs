@@ -82,8 +82,8 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::VariadicPlaceholder            => RenameWithMarker(Argument, Variadic),
 
         // ---- Flatten with field distribution ---------------------------
-        PhpKind::Arguments        => Flatten { distribute_field: Some("arguments") },
-        PhpKind::FormalParameters => Flatten { distribute_field: Some("parameters") },
+        PhpKind::Arguments        => Flatten { distribute_list: Some("arguments") },
+        PhpKind::FormalParameters => Flatten { distribute_list: Some("parameters") },
 
         // ---- Pure Flatten ----------------------------------------------
         PhpKind::AnonymousFunctionUseClause
@@ -120,7 +120,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         | PhpKind::Text
         | PhpKind::UseAsClause
         | PhpKind::UseInsteadOfClause
-        | PhpKind::UseList => Flatten { distribute_field: None },
+        | PhpKind::UseList => Flatten { distribute_list: None },
 
         // ---- DefaultAccessThenRename — class members default to public.
         PhpKind::MethodDeclaration   => da(Method),
@@ -226,7 +226,7 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         // `<variable[static]>`; flattening the inner avoids the
         // `<variable[static]><variable>...</variable></variable>`
         // double-wrap (within-language Principle #5).
-        PhpKind::StaticVariableDeclaration => Flatten { distribute_field: None },
+        PhpKind::StaticVariableDeclaration => Flatten { distribute_list: None },
         // `(int)` cast type. Wrap bare text in `<name>` so the shape
         // is `<type><name>int</name></type>` matching other PHP type
         // contexts (Principle #14: identifiers in `<name>`).

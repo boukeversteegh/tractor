@@ -27,7 +27,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
 
         // ---- Pure Flatten ----------------------------------------------
         TsqlKind::Term
-        | TsqlKind::SelectExpression => Flatten { distribute_field: None },
+        | TsqlKind::SelectExpression => Flatten { distribute_list: None },
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         TsqlKind::Identifier      => Custom(transformations::identifier),
@@ -57,7 +57,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         // FunctionArguments is the list wrapper; flatten so its
         // FunctionArgument children become direct siblings under
         // the parent <call>, avoiding `<arg><arg>...</arg></arg>`.
-        TsqlKind::FunctionArguments  => Flatten { distribute_field: None },
+        TsqlKind::FunctionArguments  => Flatten { distribute_list: None },
         TsqlKind::FunctionBody       => Rename(Body),
         TsqlKind::GoStatement        => Rename(Go),
         TsqlKind::GroupBy            => Rename(Group),
@@ -505,7 +505,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         // wraps the SELECT statement under create_view. Flatten so
         // the SELECT lifts directly under the outer `<create>`,
         // avoiding `<create><create>...</create></create>`.
-        TsqlKind::CreateQuery => Flatten { distribute_field: None },
+        TsqlKind::CreateQuery => Flatten { distribute_list: None },
 
         // drop_* variants — share the generic <drop> container.
         TsqlKind::DropColumn
@@ -554,7 +554,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::FunctionSecurity
         | TsqlKind::FunctionStrictness
         | TsqlKind::FunctionSupport
-        | TsqlKind::FunctionVolatility => Flatten { distribute_field: None },
+        | TsqlKind::FunctionVolatility => Flatten { distribute_list: None },
 
         // Boolean comparison forms — all share <compare> with BinaryExpression.
         TsqlKind::DistinctFrom
@@ -574,7 +574,7 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         // `<constraint><constraint>...</constraint></constraint>` under
         // `ADD CONSTRAINT`. Flatten so its keywords/columns/references
         // lift into the outer `<constraint>`.
-        TsqlKind::Constraint          => Flatten { distribute_field: None },
+        TsqlKind::Constraint          => Flatten { distribute_list: None },
 
         // Column operations within ALTER TABLE.
         TsqlKind::ChangeColumn
@@ -632,12 +632,12 @@ pub fn rule(k: TsqlKind) -> Rule<TractorNode> {
         | TsqlKind::TableOption       => Rename(Option),
 
         // ---- Structural / rare: flatten to surface children ---------------
-        TsqlKind::ArraySizeDefinition  => Flatten { distribute_field: None },
-        TsqlKind::ColumnPosition       => Flatten { distribute_field: None },
-        TsqlKind::DollarQuote          => Flatten { distribute_field: None },
-        TsqlKind::IndexHint            => Flatten { distribute_field: None },
-        TsqlKind::ParenthesizedExpression => Flatten { distribute_field: None },
-        TsqlKind::TabletSplit          => Flatten { distribute_field: None },
+        TsqlKind::ArraySizeDefinition  => Flatten { distribute_list: None },
+        TsqlKind::ColumnPosition       => Flatten { distribute_list: None },
+        TsqlKind::DollarQuote          => Flatten { distribute_list: None },
+        TsqlKind::IndexHint            => Flatten { distribute_list: None },
+        TsqlKind::ParenthesizedExpression => Flatten { distribute_list: None },
+        TsqlKind::TabletSplit          => Flatten { distribute_list: None },
 
         // ---- No-underscore passthroughs (kind name is already valid) ------
         TsqlKind::Array

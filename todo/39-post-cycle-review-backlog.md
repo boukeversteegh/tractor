@@ -154,20 +154,13 @@ member-access receiver). But several transform sites still
 
 ### `Rule::Flatten` field rename
 
-- [ ] **`Rule::Flatten { distribute_field: ... }` enum field name
-  is now misleading** after iter 145's helper rename.
-  - **File**: `tractor/src/languages/rule.rs:57-59` (the variant
-    definition; field named `distribute_field`).
-  - **Current code**: `Rule::Flatten { distribute_field: Some("parameters") }`
-  - **Desired code**: `Rule::Flatten { distribute_list: Some("parameters") }`
-  - **Why**: the helper it dispatches to is `distribute_list_to_children`
-    (renamed iter 145); the field name is the only `distribute_field`
-    identifier left in the codebase.
-  - **Callsites** (~15 in rules.rs files; search:
-    `grep -rn "distribute_field" tractor/src/languages/`):
-    Java/Python/Go/Ruby/TS/Rust rules.
-  - **Effort**: 30 minutes — pure mechanical rename.
-  - **Source**: iters 143-148 review.
+- [x] **`Rule::Flatten { distribute_field: ... }` enum field name** —
+  closed iter 158. Mechanical rename across 17 files: enum variant
+  field renamed `distribute_field` → `distribute_list`, all
+  Rule::Flatten { ... } callsites updated. Helper signature
+  parameters also renamed (Ruby, Custom handlers). All 829 tests
+  green. The `distribute_field` identifier is now zero in the
+  codebase.
 
 ### Java method-call shape divergence
 

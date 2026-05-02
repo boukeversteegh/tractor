@@ -49,9 +49,9 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::TypePattern                   => RenameWithMarker(Pattern, Type),
 
         // ---- Flatten with field distribution ---------------------------
-        JavaKind::ArgumentList     => Flatten { distribute_field: Some("arguments") },
-        JavaKind::FormalParameters => Flatten { distribute_field: Some("parameters") },
-        JavaKind::TypeArguments    => Flatten { distribute_field: Some("arguments") },
+        JavaKind::ArgumentList     => Flatten { distribute_list: Some("arguments") },
+        JavaKind::FormalParameters => Flatten { distribute_list: Some("parameters") },
+        JavaKind::TypeArguments    => Flatten { distribute_list: Some("arguments") },
 
         // ---- Pure Flatten ----------------------------------------------
         JavaKind::AnnotationArgumentList
@@ -62,7 +62,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::EnumBodyDeclarations
         | JavaKind::InterfaceBody
         | JavaKind::StringFragment
-        | JavaKind::TypeList => Flatten { distribute_field: None },
+        | JavaKind::TypeList => Flatten { distribute_list: None },
 
         // ---- DefaultAccessThenRename — 5 of 6 declaration kinds.
         //      method_declaration is Custom (extra return-type wrapping).
@@ -142,7 +142,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::Superclass                  => Custom(transformations::superclass),
         // `switch_expression.body` field already wraps this in <body>;
         // flatten avoids double-nested <body><body>...</body></body>.
-        JavaKind::SwitchBlock                 => Flatten { distribute_field: None },
+        JavaKind::SwitchBlock                 => Flatten { distribute_list: None },
         JavaKind::SwitchBlockStatementGroup   => Rename(Case),
         JavaKind::SwitchExpression            => Rename(Switch),
         // `case X:` / `default:` switch label. The `default` form has
@@ -199,7 +199,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
 
         // ---- Try-with-resources ----------------------------------------
         JavaKind::TryWithResourcesStatement => RenameWithMarker(Try, Resource),
-        JavaKind::ResourceSpecification     => Flatten { distribute_field: None },
+        JavaKind::ResourceSpecification     => Flatten { distribute_list: None },
 
         // ---- Expressions -----------------------------------------------
         JavaKind::ArrayCreationExpression => RenameWithMarker(New, Array),
@@ -209,7 +209,7 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
 
         // ---- Catch / extends -------------------------------------------
         JavaKind::CatchFormalParameter => Rename(Parameter),
-        JavaKind::CatchType            => Flatten { distribute_field: None },
+        JavaKind::CatchType            => Flatten { distribute_list: None },
         // `interface I extends A, B` — multiple parent interfaces.
         // Same shape as `super_interfaces`: flat `<extends>` siblings
         // with `list="extends"`.
@@ -229,40 +229,40 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::DimensionsExpr => Rename(Dimensions),
 
         // ---- Method shapes ---------------------------------------------
-        JavaKind::InferredParameters => Flatten { distribute_field: None },
+        JavaKind::InferredParameters => Flatten { distribute_list: None },
         JavaKind::ReceiverParameter  => RenameWithMarker(Parameter, Receiver),
         JavaKind::StaticInitializer  => RenameWithMarker(Block, Static),
 
         // ---- String / template interpolation ---------------------------
-        JavaKind::EscapeSequence          => Flatten { distribute_field: None },
-        JavaKind::MultilineStringFragment => Flatten { distribute_field: None },
+        JavaKind::EscapeSequence          => Flatten { distribute_list: None },
+        JavaKind::MultilineStringFragment => Flatten { distribute_list: None },
         JavaKind::StringInterpolation     => Rename(Interpolation),
         JavaKind::TemplateExpression      => Rename(Template),
 
         // ---- Annotation-type (@interface) ------------------------------
-        JavaKind::AnnotatedType                    => Flatten { distribute_field: None },
-        JavaKind::AnnotationTypeBody               => Flatten { distribute_field: None },
+        JavaKind::AnnotatedType                    => Flatten { distribute_list: None },
+        JavaKind::AnnotationTypeBody               => Flatten { distribute_list: None },
         JavaKind::AnnotationTypeDeclaration        => RenameWithMarker(Interface, Annotation),
         JavaKind::AnnotationTypeElementDeclaration => Rename(Method),
 
         // ---- Patterns --------------------------------------------------
         JavaKind::UnderscorePattern     => RenameWithMarker(Pattern, Wildcard),
-        JavaKind::RecordPatternBody     => Flatten { distribute_field: None },
-        JavaKind::RecordPatternComponent => Flatten { distribute_field: None },
+        JavaKind::RecordPatternBody     => Flatten { distribute_list: None },
+        JavaKind::RecordPatternComponent => Flatten { distribute_list: None },
 
         // ---- Interface constants / misc --------------------------------
         JavaKind::ConstantDeclaration => Rename(Field),
 
         // ---- Module-info (Java 9+ JPMS) --------------------------------
         JavaKind::ModuleDeclaration       => Rename(Module),
-        JavaKind::ModuleBody              => Flatten { distribute_field: None },
-        JavaKind::ModuleDirective         => Flatten { distribute_field: None },
+        JavaKind::ModuleBody              => Flatten { distribute_list: None },
+        JavaKind::ModuleDirective         => Flatten { distribute_list: None },
         JavaKind::ExportsModuleDirective  => RenameWithMarker(Directive, Exports),
         JavaKind::OpensModuleDirective    => RenameWithMarker(Directive, Opens),
         JavaKind::ProvidesModuleDirective => RenameWithMarker(Directive, Provides),
         JavaKind::RequiresModuleDirective => RenameWithMarker(Directive, Requires),
         JavaKind::UsesModuleDirective     => RenameWithMarker(Directive, Uses),
-        JavaKind::RequiresModifier        => Flatten { distribute_field: None },
+        JavaKind::RequiresModifier        => Flatten { distribute_list: None },
 
         // ---- Passthrough — single-word names (no underscore) ----------
         // `permits` (sealed-class clause) — single-word OK.
@@ -287,6 +287,6 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         | JavaKind::Expression
         | JavaKind::Statement => Passthrough,
         // PrimaryExpression has an underscore — flatten instead of passthrough.
-        JavaKind::PrimaryExpression => Flatten { distribute_field: None },
+        JavaKind::PrimaryExpression => Flatten { distribute_list: None },
     }
 }
