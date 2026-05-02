@@ -67,6 +67,16 @@ before committing a non-trivial change.
   items evaporate without a tracked backlog. This file exists
   because of that pattern. When closing items, mark `[x]`; when
   deferring, leave `[ ]` and reference the cycle that flagged it.
+- **"All N languages done" claims need a per-language verification
+  step.** Iter 147's "all PLs sweep" missed C# member-access; iter
+  174's "all 8 PLs" closure-archetype claim missed Go. Both
+  surfaced ~25-30 iters later when the next cold-read pass ran.
+  Lesson: when an iter ends with a claim that spans multiple
+  languages, in the same iter spawn an explicit verification step:
+  for each language, run a probe (or grep blueprint snapshots) for
+  the target shape and check it's present. Don't lean on the
+  spec-tag sweep to catch missed languages — it has the same
+  blindspot as the original sweep.
 - **Read BOTH snapshot surfaces.** Every iter that touches
   transforms produces two diffs per affected language: the
   `.snapshot.txt` (tree shape, markers, `[@list="X"]` attrs) and
@@ -283,6 +293,83 @@ member-access receiver). But several transform sites still
   3 distinct shapes; Ruby is a 4th. Fold into that item when the
   cross-language alignment design call is made. (severity: med;
   effort: small once decided)
+
+### Findings from iter-175 post-cycle review (iters 170-174 cluster)
+
+Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
+
+- [ ] **C# member-access still uses bare `<name>/<name>` siblings**
+  *(severity HIGH; iter-147 sweep missed C#)*. Sites: `tests/integration/languages/csharp/blueprint.cs.snapshot.txt:283-285`
+  and ~43 other lines. Current: `<member[instance]>/<name>="a"/<name>="X"`.
+  In JSON: `{"member": {"name": "a", "children": ["X"]}}` — the
+  receiver and property collide on `name`, the property falls through
+  to `children`. Expected: `<object>/<property>` wrappers like
+  Java/Python/Go from iter 147-148. Effort: small (mechanical
+  extension of iter 147 to C#'s `MemberAccessExpression`). Rust
+  may have the same gap on `field_expression` — verify in same iter.
+
+- [ ] **Go closure body archetype unmigrated** *(severity MED;
+  iter-174 "all 8 PLs" claim was wrong — Go was missed)*. Sites:
+  `tests/integration/languages/go/blueprint.go.snapshot.txt:319, 539`.
+  Current: `closure/body/...`. Expected: `closure/value/expression/...`
+  for single-stmt (matches Rust closure / TS arrow / C# lambda /
+  PHP arrow / Python lambda / Ruby Block / Ruby Lambda from iters
+  161/162/167/168/173/174). Effort: small.
+
+- [ ] **Ruby ternary uses `<conditional>` element + role-mixed
+  bare-leaf branches** *(severity HIGH)*. Site:
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:412-413`,
+  JSON `tests/integration/languages/ruby/blueprint.rb.snapshot.json:715-728`.
+  Current: `conditional/{symbol = ":empty", symbol = ":filled"}` —
+  two bare role-mixed `<symbol>` siblings → JSON
+  `{"conditional": {"symbol": ":empty", "children": [":filled"]}}`.
+  Other PLs use `<ternary><condition><then><else>` with role wrappers.
+  Two issues: (1) element-name divergence (`<conditional>` vs
+  `<ternary>` cross-language), (2) role-mixed leaves need
+  `<then>/<else>` wrappers. Effort: small. Verify rename doesn't
+  collide with conditional-modifier statements (`x if cond`, etc.).
+
+- [ ] **Ruby `range`: marker dropped + role-mixed begin/end**
+  *(severity HIGH; Principle #8 + #19 violations)*. Sites:
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:102-104`
+  and `:107-109` show `range/{int="1", int="10"}` for BOTH `1..10`
+  (inclusive) and `1...10` (exclusive) — marker dropped, can't
+  reconstruct source. JSON: `{"range": {"int": "1", "children":
+  ["10"]}}` — begin/end role-mixed. Expected: `<range>` with
+  `<inclusive>/<exclusive>` marker (or `<closed>/<open>`) AND
+  `<from>/<to>` wrappers. Effort: small.
+
+- [ ] **Ruby `case`/`when` clauses lack `list="cases"`** *(severity
+  HIGH; Principle #12)*. Site: `tests/integration/languages/ruby/blueprint.rb.snapshot.json:35-110`.
+  Currently 4 of 5 `<when>` siblings overflow into `case.children:
+  [{$type: "when", ...}]` and only the first is `case.when:
+  {...}`. Source: `RubyKind::When => Passthrough` at
+  `tractor/src/languages/ruby/rules.rs:156`. Expected: `When` rule
+  needs `list="cases"` (or `list="when"`) so `case.cases: [...]`
+  is a uniform array. Effort: small.
+
+- [ ] **Ruby multi-pattern `when` — pattern siblings overflow**
+  *(severity HIGH; Principle #12)*. Site:
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.json:115-124`.
+  Multi-pattern `when X, Y` produces `when/{pattern: {name:
+  "Integer"}, children: [{$type: "pattern", name: "Float"}]}`.
+  Expected: `pattern` siblings need `list="patterns"` so
+  `when.patterns: [...]`. Effort: small.
+
+- [ ] **C# accessor heterogeneous JSON array** *(severity LOW)*.
+  Site: `tests/integration/languages/csharp/blueprint.cs.snapshot.json:181-188`.
+  Current: `accessors: ["get;", {$type: "set", protected: true,
+  text: "protected set;"}]` — mixes string and object in same
+  array; consumers must type-switch. Acceptable per #13 (text-leaf
+  vs complex), worth noting. May require always-wrap-in-object
+  if uniformity matters more than text-only-leaf compactness.
+
+- [ ] **Audit all role-mixed text-leaf sites cross-language** *(meta
+  task; severity MED)*. The post-iter-171 JSON snapshots make this
+  trivial. Grep `"children": [` across all 9 `.snapshot.json`
+  fixtures; each occurrence is a candidate role-collision. Most
+  likely to find: member-access, ternaries, ranges, calls with
+  unhandled receivers.
 
 ### Standing items (re-flag every cycle)
 
