@@ -261,38 +261,47 @@ pub fn strip_body_braces(
     }
     collect(xot, root, body_names, &mut bodies);
     for body in bodies {
+        // Build a set of element-child names — any text content that
+        // exactly matches a sibling marker name is a keyword leak and
+        // can be stripped (the marker captures the same fact).
+        let element_child_names: std::collections::HashSet<String> = xot.children(body)
+            .filter_map(|c| get_element_name(xot, c))
+            .collect();
         let children: Vec<XotNode> = xot.children(body).collect();
         for c in children {
             let Some(text) = xot.text_str(c).map(|s| s.to_string()) else { continue };
-            // Strip leading `{` (with surrounding whitespace) and
-            // trailing `}` (likewise) from each text leaf. These are
-            // the body-block delimiters; the body element itself
-            // already conveys "block here." Inner text content (e.g.
-            // bare `continue` keyword adjacent to a brace) survives.
             let trimmed = text.trim();
             if trimmed.is_empty() || trimmed == ";" {
                 xot.detach(c)?;
                 continue;
             }
-            // Strip leading `{` if present.
+            // Strip leading `{` and trailing `}` — body-block delimiters.
             let after_open = if let Some(rest) = trimmed.strip_prefix('{') {
                 rest.trim_start()
             } else {
                 trimmed
             };
-            // Strip trailing `}` if present.
             let stripped = if let Some(rest) = after_open.strip_suffix('}') {
                 rest.trim_end()
             } else {
                 after_open
             };
-            if stripped == trimmed {
+            // If, after brace-stripping, the remaining text is a bare
+            // keyword that matches a sibling marker (e.g. `continue`
+            // matching `<continue/>` marker), strip it too — the
+            // marker already captures the keyword.
+            let final_text = if element_child_names.contains(stripped) {
+                ""
+            } else {
+                stripped
+            };
+            if final_text == trimmed {
                 continue;
             }
-            if stripped.is_empty() {
+            if final_text.is_empty() {
                 xot.detach(c)?;
             } else {
-                let new_text = xot.new_text(stripped);
+                let new_text = xot.new_text(final_text);
                 xot.insert_before(c, new_text)?;
                 xot.detach(c)?;
             }

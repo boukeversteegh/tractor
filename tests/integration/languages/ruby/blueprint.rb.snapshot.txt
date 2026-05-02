@@ -288,7 +288,7 @@ program/
   │       │               │   ├─ left/expression/name = "total"
   │       │               │   └─ right/expression/name = "x"
   │       │               └─ if/
-  │       │                   ├─ body[redo] = "redo"
+  │       │                   ├─ body[redo]
   │       │                   └─ condition/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "i"
@@ -319,7 +319,7 @@ program/
   │       │       └─ right/expression/name = "j"
   │       ├─ expression/call/
   │       │   ├─ name = "loop"
-  │       │   └─ block/body[break] = "break"
+  │       │   └─ block/body[break]
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
   │       │   └─ right/expression/begin/
@@ -338,7 +338,7 @@ program/
   │       │       │   ├─ variable/name = "e"
   │       │       │   └─ body/then/
   │       │       │       ├─ if/
-  │       │       │       │   ├─ body[retry] = "retry"
+  │       │       │       │   ├─ body[retry]
   │       │       │       │   └─ condition/expression/false = "false"
   │       │       │       └─ expression/call/
   │       │       │           ├─ name = "e"
