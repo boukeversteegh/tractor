@@ -232,6 +232,36 @@ pub fn formal_parameters(
     Ok(TransformAction::Flatten)
 }
 
+/// `type_parameter` — `<T>` / `<T extends Shape>` / `<T = number>`.
+/// Strips the `<value>` field-wrapper around the `default_type`
+/// child so the post-transform `wrap_expression_positions` pass
+/// doesn't add a value-namespace `<expression>` host around a
+/// type-namespace slot. The `default_type` element itself stays —
+/// its `RenameWithMarker(Type, Default)` rule fires on the next
+/// walker step and produces `<type[default]>` as a direct child of
+/// `<generic>`. Renames `type_parameter` to `<generic>`.
+pub fn type_parameter(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let element_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in element_children {
+        if get_element_name(xot, child).as_deref() != Some("value") {
+            continue;
+        }
+        let inner: Vec<XotNode> = xot.children(child)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for inner_child in inner {
+            xot.detach(inner_child)?;
+            xot.insert_before(child, inner_child)?;
+        }
+        xot.detach(child)?;
+        break;
+    }
+    xot.with_renamed(node, super::output::TractorNode::Generic);
+    Ok(TransformAction::Continue)
+}
+
 /// `constraint` — `<T extends Shape>` inside a `<type_parameter>`.
 /// Tree-sitter wraps the `extends` keyword + bound type. Strip the
 /// keyword text (the element name carries the meaning), rename to

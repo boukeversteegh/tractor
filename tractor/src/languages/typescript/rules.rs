@@ -193,7 +193,13 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         TsKind::ThrowStatement            => Rename(Throw),
         TsKind::True                      => Rename(Bool),
         TsKind::TryStatement              => Rename(Try),
-        TsKind::TypeParameter             => Rename(Generic),
+        // `<T = number>` / `<T extends Shape = Shape>` — type parameter
+        // with optional default. Custom handler unwraps the
+        // `<value>` field-wrapper around the default so the post-pass
+        // `wrap_expression_positions` doesn't add an `<expression>`
+        // host (a value-namespace host) around a type slot. See iter
+        // 131 for the Principle #14 motivation.
+        TsKind::TypeParameter             => Custom(transformations::type_parameter),
         // `<T, U>` generic parameter list. Per Principle #12 (no list
         // containers): flatten the wrapper so each `<generic>` becomes
         // a direct sibling of the enclosing declaration with
