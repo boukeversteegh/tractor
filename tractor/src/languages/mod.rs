@@ -642,6 +642,53 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     rust_restructure_use(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
+    rust_normalize_lifetime_names(xot, root)?;
+    Ok(())
+}
+
+/// Within-Rust Principle #5: every `<lifetime>` exposes its identifier
+/// as `<name>X</name>` without the leading apostrophe. Tree-sitter
+/// declaration-position lifetimes (`<'a>` in generics) keep the `'`
+/// inside the inner name's text via field-wrapping, while use-position
+/// lifetimes (`&'a str`) emit the `'` as a separate text leaf and
+/// rename the identifier to `<name>a</name>`. Normalize the
+/// declaration-position form to match: strip a leading `'` from any
+/// `<name>` text whose parent is a `<lifetime>`. Idempotent.
+fn rust_normalize_lifetime_names(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::*;
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("lifetime")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+    for lifetime in targets {
+        let name_children: Vec<XotNode> = xot.children(lifetime)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("name")
+            })
+            .collect();
+        for name in name_children {
+            if let Some(text) = get_text_content(xot, name) {
+                let trimmed = text.trim_start_matches('\'');
+                if trimmed.len() != text.len() {
+                    xot.with_only_text(name, trimmed)?;
+                }
+            }
+        }
+    }
     Ok(())
 }
 

@@ -70,7 +70,7 @@ file/
   │   └─ name = "Clone"
   ├─ struct[pub]/
   │   ├─ name = "Point"
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   ├─ generic[@list="true"]/name = "T"
   │   ├─ where/bound/
   │   │   ├─ left/expression/type/name = "T"
@@ -105,7 +105,7 @@ file/
   │   └─ name = "Debug"
   ├─ enum[pub]/
   │   ├─ name = "Shape"
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   └─ body/
   │       ├─ variant/name = "Nothing"
   │       ├─ variant/
@@ -155,7 +155,7 @@ file/
   │               │   └─ name = "from"
   │               └─ string[@list="true"] = "\"drawable\""
   ├─ impl/
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
   │   │   ├─ extends[@list="true"]/type/name = "Clone"
@@ -215,7 +215,7 @@ file/
   │               │   └─ name = "ptr"
   │               └─ name = "clone"
   ├─ impl/
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   ├─ generic[@list="true"]/name = "T"
   │   ├─ type/name = "Drawable"
   │   ├─ type[generic]/
@@ -244,7 +244,7 @@ file/
   │                   └─ name = "Canvas"
   ├─ alias[pub]/
   │   ├─ name = "BoxedDraw"
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   └─ type[generic]/
   │       ├─ name = "Box"
   │       └─ type[bounded and @list="true"]/
@@ -634,7 +634,7 @@ file/
   │           └─ name[@list="true"] = "casted"
   ├─ function[pub]/
   │   ├─ name = "trait_object_and_impl"
-  │   ├─ lifetime[@list="true"]/name = "'a"
+  │   ├─ lifetime[@list="true"]/name = "a"
   │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "d"
   │   │   └─ type[borrowed]/
@@ -725,7 +725,7 @@ file/
   │   └─ where/bound/
   │       ├─ left/expression/type/name = "F"
   │       └─ extends[higher and @list="true"]/
-  │           ├─ lifetime[@list="true"]/name = "'a"
+  │           ├─ lifetime[@list="true"]/name = "a"
   │           └─ type[function]/
   │               ├─ type/name = "Fn"
   │               ├─ type[borrowed and @list="true"]/
