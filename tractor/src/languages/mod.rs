@@ -1647,6 +1647,7 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         RUBY_VALUE_KINDS,
     )?;
     ruby_retag_singleton_block_body(xot, root)?;
+    ruby_collapse_lambda_body(xot, root)?;
     ruby_extract_pair_keys(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
@@ -1720,6 +1721,82 @@ fn ruby_retag_singleton_block_body(xot: &mut Xot, root: XotNode) -> Result<(), x
             let host = xot.new_element(expr_id);
             xot.with_wrap_child(only_child, host)?;
         }
+    }
+    Ok(())
+}
+
+/// Collapse the doubled-body shape produced by `->(x) { ... }` /
+/// `->(x) do ... end`-style stabby lambdas into the
+/// closure-archetype shape used by other languages
+/// (`lambda/value/expression/...` for single-stmt; `lambda/body/...`
+/// multi-stmt).
+///
+/// Tree-sitter's grammar nests two `<body>` levels for stabby
+/// lambdas: one from field-wrapping `lambda.body` (outer), one from
+/// field-wrapping `block.body` (inner). The inner block element
+/// (`<block>` from `RubyKind::Block` Passthrough) sits between them,
+/// carrying the literal `{` `}` text leaves. After
+/// `ruby_retag_singleton_block_body`, the inner block contains
+/// either `<value>` (single-stmt) or `<body>` (multi-stmt).
+///
+/// This pass lifts that inner element up to replace the outer
+/// `body/block` chain, producing:
+/// - single-stmt `->(x) { x + 1 }` → `lambda/value/expression/binary/...`
+///   (matches Rust closure / TS arrow / C# lambda / PHP arrow / Python
+///    lambda from iters 161/162/167/168).
+/// - multi-stmt `->(x) { puts x; x + 1 }` → `lambda/body/expression: [..., ...]`
+///   (mirrors Ruby Block multi-stmt shape from iter 173).
+///
+/// Note: `lambda do ... end` is parsed as a `call` to the `lambda`
+/// method with an attached `<do_block>`, NOT as a `<lambda>`
+/// element — handled by the iter-173 call-attached path.
+fn ruby_collapse_lambda_body(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::get_element_name;
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut lambdas: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("lambda")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut lambdas);
+
+    for lambda in lambdas {
+        let outer_body = xot.children(lambda)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("body"));
+        let outer_body = match outer_body { Some(b) => b, None => continue };
+
+        let body_elem_children: Vec<XotNode> = xot.children(outer_body)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        if body_elem_children.len() != 1 { continue; }
+        let block = body_elem_children[0];
+        if get_element_name(xot, block).as_deref() != Some("block") { continue; }
+
+        let block_elem_children: Vec<XotNode> = xot.children(block)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        if block_elem_children.len() != 1 { continue; }
+        let inner = block_elem_children[0];
+        let inner_name = get_element_name(xot, inner);
+        if !matches!(inner_name.as_deref(), Some("value") | Some("body")) { continue; }
+
+        // Lift: detach inner from block, insert before outer_body, detach outer_body.
+        // The block element (and any text leaves it contained, like `{` / `}`)
+        // is dropped — this is structural, source-text fidelity is advisory.
+        xot.detach(inner)?;
+        xot.insert_before(outer_body, inner)?;
+        xot.detach(outer_body)?;
     }
     Ok(())
 }

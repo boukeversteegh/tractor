@@ -526,31 +526,25 @@
             "right": {
               "expression": {
                 "lambda": {
-                  "body": {
-                    "block": [
-                      {
-                        "value": {
+                  "value": {
+                    "expression": {
+                      "binary": {
+                        "right": {
                           "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "b"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "a"
-                                }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
-                            }
+                            "name": "b"
                           }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "a"
+                          }
+                        },
+                        "op": {
+                          "text": "+",
+                          "plus": true
                         }
                       }
-                    ]
+                    }
                   },
                   "parameters": [
                     {
@@ -662,6 +656,55 @@
             "left": {
               "expression": {
                 "name": "multi_stmt"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "lambda": {
+                  "body": {
+                    "expression": [
+                      {
+                        "call": {
+                          "arguments": [
+                            "n"
+                          ],
+                          "name": "puts"
+                        }
+                      },
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "n"
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "n"
+                    }
+                  ]
+                }
+              }
+            },
+            "left": {
+              "expression": {
+                "name": "multi_lambda"
               }
             }
           },

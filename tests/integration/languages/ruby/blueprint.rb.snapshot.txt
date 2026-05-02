@@ -363,7 +363,7 @@ program/
   │       │   └─ right/expression/lambda/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
-  │       │       └─ body/block/value/expression/binary/
+  │       │       └─ value/expression/binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
@@ -391,6 +391,18 @@ program/
   │       │                   ├─ left/expression/name = "n"
   │       │                   ├─ op[plus] = "+"
   │       │                   └─ right/expression/int = "1"
+  │       ├─ assign/
+  │       │   ├─ left/expression/name = "multi_lambda"
+  │       │   └─ right/expression/lambda/
+  │       │       ├─ parameter/name = "n"
+  │       │       └─ body/
+  │       │           ├─ expression/call/
+  │       │           │   ├─ name = "puts"
+  │       │           │   └─ name = "n"
+  │       │           └─ expression/binary/
+  │       │               ├─ left/expression/name = "n"
+  │       │               ├─ op[plus] = "+"
+  │       │               └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
   │       │   └─ right/expression/conditional/
