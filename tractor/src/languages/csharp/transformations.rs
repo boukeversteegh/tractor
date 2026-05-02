@@ -57,7 +57,23 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
     } else {
         use super::output::TractorNode::Extends;
+        // Primary-constructor base call like `class Foo(int x) : Bar(x)`:
+        // tree-sitter emits the type identifier and the constructor
+        // `argument_list` as sibling children of base_list. The
+        // argument_list belongs to the preceding type — append it to
+        // that type's `<extends>` wrapper, don't give it its own.
+        let mut current_extends: Option<XotNode> = None;
         for child in elem_children {
+            let is_arg_list = get_kind(xot, child).as_deref() == Some("argument_list");
+            if is_arg_list {
+                if let Some(ext) = current_extends {
+                    xot.detach(child)?;
+                    xot.append(ext, child)?;
+                    continue;
+                }
+                // No preceding type — fall through to the default
+                // wrapping (defensive; unreachable for valid C#).
+            }
             let extends_elt = xot.add_name(Extends.as_str());
             let extends_node = xot.new_element(extends_elt);
             xot.insert_before(child, extends_node)?;
@@ -65,6 +81,7 @@ pub fn base_list(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             xot.append(extends_node, child)?;
             xot.with_attr(extends_node, "field", "extends");
             xot.with_attr(extends_node, "list", "true");
+            current_extends = Some(extends_node);
         }
     }
     Ok(TransformAction::Flatten)
