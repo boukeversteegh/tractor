@@ -15,8 +15,8 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Else, Expression, File, Generic, If, Instance, Internal, Leading,
-    Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public, Protected,
+    self, Accessor, Await, Base, Chain, Else, Expression, File, Generic, If, Instance, Internal,
+    Leading, Member, Name, Namespace, NonNull, Nullable, Optional, Private, Public, Protected,
     String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
 
@@ -26,6 +26,34 @@ use super::output::TractorNode::{
 /// the trailing siblings under `<unit>` into a `<body>` child, so
 /// both forms (block-scoped and file-scoped) share the same shape.
 /// Closes todo/34.
+/// `constructor_initializer` — `: this(args)` / `: base(args)` chain
+/// in a constructor declaration. Renames to `<chain>` with a
+/// `[this]` or `[base]` marker indicating which form. Strips the
+/// bare `: this(` / `: base(` text leaks.
+pub fn constructor_initializer(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let mut is_base = false;
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if let Some(text) = xot.text_str(child) {
+            if text.contains("base") {
+                is_base = true;
+            }
+        }
+    }
+    // Strip text leaves (`:`, `this`, `base`, `(`, `)`).
+    for child in xot.children(node).collect::<Vec<_>>() {
+        if xot.text_str(child).is_some() {
+            xot.detach(child)?;
+        }
+    }
+    xot.with_renamed(node, Chain);
+    let marker = if is_base { Base } else { This };
+    xot.with_prepended_marker(node, marker)?;
+    Ok(TransformAction::Continue)
+}
+
 pub fn file_scoped_namespace(
     xot: &mut Xot,
     node: XotNode,

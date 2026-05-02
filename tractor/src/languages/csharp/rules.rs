@@ -131,7 +131,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::CatchDeclaration               => Rename(Declaration),
         CsKind::CatchFilterClause              => Rename(Filter),
         CsKind::CompilationUnit                => Rename(Unit),
-        CsKind::ConstructorInitializer         => Rename(Chain),
+        // `: this(...)` / `: base(...)` constructor chain. Detect the
+        // keyword and lift it as `[this]` / `[base]` marker so the
+        // chain target is queryable. Strip the bare `: this(` /
+        // `: base(` text leaks.
+        CsKind::ConstructorInitializer         => Custom(transformations::constructor_initializer),
         CsKind::ContinueStatement              => RenameStripKeyword(Continue, "continue"),
         CsKind::DelegateDeclaration            => Rename(Delegate),
         CsKind::DestructorDeclaration          => Rename(Destructor),

@@ -325,6 +325,11 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
+    // Reuse the body-brace strip on `<chain>` elements: the
+    // constructor_initializer handler ran before its children were
+    // flattened, so the `(`/`)` parens from the argument list got
+    // promoted up afterwards. Strip them now.
+    crate::transform::strip_body_braces(xot, root, &["chain"])?;
     Ok(())
 }
 

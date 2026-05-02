@@ -275,13 +275,18 @@ pub fn strip_body_braces(
                 xot.detach(c)?;
                 continue;
             }
-            // Strip leading `{` and trailing `}` — body-block delimiters.
+            // Strip leading `{` / `(` and trailing `}` / `)` —
+            // delimiters that the parent element already implies.
             let after_open = if let Some(rest) = trimmed.strip_prefix('{') {
+                rest.trim_start()
+            } else if let Some(rest) = trimmed.strip_prefix('(') {
                 rest.trim_start()
             } else {
                 trimmed
             };
             let stripped = if let Some(rest) = after_open.strip_suffix('}') {
+                rest.trim_end()
+            } else if let Some(rest) = after_open.strip_suffix(')') {
                 rest.trim_end()
             } else {
                 after_open

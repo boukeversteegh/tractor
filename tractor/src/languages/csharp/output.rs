@@ -80,6 +80,9 @@ pub enum TractorNode {
     Get, Set, Init, Add, Remove,
     // Generic-constraint markers
     Notnull, Unmanaged,
+    // Constructor-chain target marker — `[base]` on `<chain>` for
+    // `: base(...)` (the `[this]` form reuses the existing This marker).
+    Base,
 }
 
 impl TractorNode {
@@ -106,7 +109,8 @@ impl TractorNode {
             | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
-            | Self::Anonymous | Self::Stackalloc | Self::File                   => (true, false, Default),
+            | Self::Anonymous | Self::Stackalloc | Self::File
+            | Self::Base                                                        => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),
