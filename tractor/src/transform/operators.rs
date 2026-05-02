@@ -106,7 +106,7 @@ pub fn prepend_op_element(xot: &mut Xot, parent: XotNode, op_text: &str) -> Resu
 /// `primary`: the top-level marker child of `<op>`. `None` means "no
 ///           marker — graceful degradation" (e.g. bare `=` alone).
 /// `children`: empty-element children appended *inside* the primary
-///             marker. Each is a distinct flag (e.g. `<less/><or-equal/>`
+///             marker. Each is a distinct flag (e.g. `<less/><equal/>`
 ///             inside a `<compare>`).
 /// `nested`: for compound assignments only — a second marker nested
 ///           inside `<assign>` with its own children
@@ -272,7 +272,7 @@ pub fn is_operator_marker_name(name: &str) -> bool {
 /// Render every operator marker as a flat sibling under `<op>` —
 /// no nesting of marker categories. `==` → `<op><equals/></op>`;
 /// `===` → `<op><equals/><strict/></op>`; `<=` →
-/// `<op><compare/><less/><or-equal/></op>`; `&&=` →
+/// `<op><compare/><less/><equal/></op>`; `&&=` →
 /// `<op><assign/><logical/><and/></op>`. Marker order is
 /// "primary, children, nested-name, nested-children" but since
 /// markers are presence-flags the order is semantically irrelevant

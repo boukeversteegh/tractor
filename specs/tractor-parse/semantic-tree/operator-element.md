@@ -41,8 +41,8 @@ predicates on `<op>` directly.
 //binary[op[equals]]                        (any equality: == or ===)
 //binary[op[equals and strict]]             (strict equality only)
 //binary[op[compare]]                       (any comparison: < > <= >=)
-//binary[op[compare and or-equal]]          (>= or <=)
-//binary[op[compare and less and or-equal]] (only <=)
+//binary[op[compare and equal]]          (>= or <=)
+//binary[op[compare and less and equal]] (only <=)
 //binary[op[logical and and]]               (logical and: && or 'and')
 //assign[op[assign]]                        (any compound assignment)
 //assign[op[assign and logical and and]]    (only &&=)
@@ -88,8 +88,8 @@ contain sub-markers for variations.
 |----------------|--------------------------------|--------------------|
 | `==`           | `<equals/>`                    | All                |
 | `===`          | `<equals/><strict/>`           | JS, TS, PHP        |
-| `!=`           | `<not-equals/>`                | All                |
-| `!==`          | `<not-equals/><strict/>`       | JS, TS, PHP        |
+| `!=`           | `<inequality/>`                | All                |
+| `!==`          | `<inequality/><strict/>`       | JS, TS, PHP        |
 
 ### Comparison
 
@@ -97,8 +97,8 @@ contain sub-markers for variations.
 |----------------|-----------------------------------------|-----------|
 | `<`            | `<compare/><less/>`                     | All       |
 | `>`            | `<compare/><greater/>`                  | All       |
-| `<=`           | `<compare/><less/><or-equal/>`          | All       |
-| `>=`           | `<compare/><greater/><or-equal/>`       | All       |
+| `<=`           | `<compare/><less/><equal/>`          | All       |
+| `>=`           | `<compare/><greater/><equal/>`       | All       |
 
 Query: `//binary[op[compare]]` — all comparisons.
 
@@ -123,7 +123,7 @@ grouping in queries.
 | `&&` / `and`      | `<logical/><and/>`        | All             |
 | `\|\|` / `or`     | `<logical/><or/>`         | All             |
 | `!` / `not`       | `<logical/><not/>`        | All (unary)     |
-| `??`              | `<nullish-coalescing/>`   | JS, TS, C#      |
+| `??`              | `<nullish/>`   | JS, TS, C#      |
 
 Query: `//binary[op[logical]]` — all logical operations.
 

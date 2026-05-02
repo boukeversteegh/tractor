@@ -11,7 +11,7 @@ name) or is explicitly documented as an intentional gap.
 The simplify-node-names branch closed the bulk of this audit:
 
 - **Cross-language coverage** — `typeof`, `void`, `defined?`,
-  `floor-divide` (`//`, `//=`), `matmul` (`@`, `@=`) added to
+  `floor` (`//`, `//=`), `matmul` (`@`, `@=`) added to
   `OPERATOR_MARKERS` in iter 9.
 - **Go channel `<-`** — `op[receive] = "<-"` emitted via the table.
 - **Go increment / decrement** — `++` / `--` carry the canonical

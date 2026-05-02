@@ -1207,11 +1207,11 @@ pub mod helpers {
     /// (so a 1-arg call emits `"arguments": [{...}]` matching a 3-arg
     /// call's `"arguments": [{...}, {...}, {...}]`).
     ///
-    /// The function is still named `distribute_list_to_children` for
-    /// legacy callsite compatibility; the attribute it writes is now
-    /// `list=`, not `field=`. Tree-sitter's own `field=` attributes are
-    /// preserved untouched (they survive into `--meta` debug output but
-    /// are ignored by the JSON serializer).
+    /// Renamed from `distribute_field_to_children` in iter 145 to
+    /// reflect the attribute it actually writes (`list=`, not
+    /// `field=`). Tree-sitter's own `field=` attributes are preserved
+    /// untouched (they survive into `--meta` debug output but are
+    /// ignored by the JSON serializer).
     pub fn distribute_list_to_children(xot: &mut Xot, node: XotNode, field: impl AsRef<str>) {
         let field = field.as_ref();
         let children: Vec<XotNode> = xot.children(node)
