@@ -120,6 +120,7 @@ export function controlFlow(n: number): Status {
 
 const arrow = <U,>(xs: U[]): U | undefined => xs[0];
 const doubled: number[] = [1, 2, 3].map((x): number => x * 2);
+const arrowBlock = (x: number): number => { return x * 2; };
 const maybe: string | null = null;
 const fallback = maybe ?? "default";
 const nonNull = (maybe as string | null)!;

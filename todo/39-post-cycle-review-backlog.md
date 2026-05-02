@@ -244,18 +244,12 @@ member-access receiver). But several transform sites still
 
 ### TS arrow block-body fixture missing
 
-- [ ] **Add a block-bodied TS arrow to the blueprint** — iter 162
-  added an `is_block` discriminator at
-  `tractor/src/languages/typescript/transformations.rs:533-541`
-  (matches `"statement_block" | "block" | "block_statement"`) but
-  no TS blueprint covers the block-body branch.
-  - **Action**: append a line like `const f = (x) => { return x*2; };`
-    to `tests/integration/languages/typescript/blueprint.ts`,
-    regenerate snapshot, confirm `<body>` is preserved (not retagged
-    to `<value>`).
-  - **Effort**: small (5 minutes).
-  - **Source**: post-cycle review iter 161-164. Per Lessons §"Skipping
-    fixtures hides regressions".
+- [x] **Block-bodied TS arrow added to blueprint** — closed iter 166.
+  `const arrowBlock = (x: number): number => { return x * 2; };`
+  added at line 123. Snapshot confirms `body/block[@list="block"]/...`
+  shape (block-body branch of iter 162's `is_block` discriminator)
+  while the single-expr arrow on the same line above renders as
+  `value/expression/...`. Discriminator verified working.
 
 ### Stale doc-comment sweep round 3
 
@@ -287,6 +281,8 @@ member-access receiver). But several transform sites still
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 166: TS arrow block-body fixture added; iter-162
+  `is_block` discriminator now exercised.
 - [x] iter 165: stale doc-comment sweep round 3 — `apply_field_wrappings`
   + `replace_identifier_with_name_child` + `Rule::Flatten` docs aligned
   to post-iter-164 / post-iter-145 reality; bonus dropped orphaned

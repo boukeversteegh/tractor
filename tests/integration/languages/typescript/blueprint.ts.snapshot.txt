@@ -544,6 +544,17 @@ program/
   │               ├─ op[multiply] = "*"
   │               └─ right/expression/number = "2"
   ├─ variable[const and @list="variable"]/
+  │   ├─ name = "arrowBlock"
+  │   └─ value/expression/arrow/
+  │       ├─ parameter[required and @list="parameters"]/
+  │       │   ├─ name = "x"
+  │       │   └─ type/name = "number"
+  │       ├─ returns/type/name = "number"
+  │       └─ body/block[@list="block"]/return[@list="return"]/expression/binary/
+  │           ├─ left/expression/name = "x"
+  │           ├─ op[multiply] = "*"
+  │           └─ right/expression/number = "2"
+  ├─ variable[const and @list="variable"]/
   │   ├─ name = "maybe"
   │   ├─ type[union]/
   │   │   ├─ type/name = "string"
