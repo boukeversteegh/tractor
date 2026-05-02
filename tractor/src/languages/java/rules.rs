@@ -155,8 +155,12 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::Guard
         | JavaKind::Pattern
         | JavaKind::Super
-        | JavaKind::This
-        | JavaKind::Throws => Passthrough,
+        | JavaKind::This => Passthrough,
+
+        // `throws E1, E2, E3` — Principle #18: name after the
+        // operator/keyword. Principle #12: multiple targets →
+        // multiple `<throws>` siblings, not a list container.
+        JavaKind::Throws => Custom(transformations::throws_clause),
 
         // ---- Unhandled in the previous dispatcher — survive as raw
         //      kind names. Pending real-semantics candidates tracked

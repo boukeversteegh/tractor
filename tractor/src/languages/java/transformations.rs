@@ -41,6 +41,24 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `throws_clause` — `throws E1, E2, E3`. Wrap each thrown type in
+/// its own `<throws>` element (Principle #18 — name after operator;
+/// Principle #12 — multiple siblings, not list wrapper).
+pub fn throws_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Throws;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let throws_elt = xot.add_name(Throws.as_str());
+        let throws_node = xot.new_element(throws_elt);
+        xot.insert_before(child, throws_node)?;
+        xot.detach(child)?;
+        xot.append(throws_node, child)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `super_interfaces` — `implements A, B, C`. Wrap each interface
 /// type in its own `<implements>` element so multiple targets become
 /// multiple flat siblings (Principle #12 — no list container).
