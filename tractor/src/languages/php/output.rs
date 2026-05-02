@@ -40,7 +40,7 @@ pub enum TractorNode {
     // Call/member flavor markers
     Instance,
     // Type-shape markers
-    Primitive, Union, Optional,
+    Primitive, Union, Optional, Underlying,
     // Parameter-shape markers
     Variadic,
     // Anonymous / arrow function shape markers
@@ -78,6 +78,7 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Primitive | Self::Union | Self::Optional
+            | Self::Underlying
             | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open
             | Self::Prefix
             | Self::Nullsafe | Self::Bottom | Self::Intersection | Self::Disjunctive

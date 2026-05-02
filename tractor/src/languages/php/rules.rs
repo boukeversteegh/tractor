@@ -169,7 +169,12 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::ElseClause                => Rename(Else),
         PhpKind::ElseIfClause              => Rename(ElseIf),
         PhpKind::EnumCase                  => Rename(Constant),
-        PhpKind::EnumDeclaration           => Rename(Enum),
+        // `enum Status: string { ... }` — backed enum. The `: string`
+        // declares the underlying integral storage type (PHP enums
+        // can't inherit). Mark the type child with `[underlying]` +
+        // `field="underlying"` so cross-language `//enum/type[underlying]`
+        // queries work uniformly with C# (iter 125).
+        PhpKind::EnumDeclaration           => Custom(transformations::enum_declaration),
         PhpKind::ExitStatement             => Rename(Exit),
         PhpKind::FinallyClause             => Rename(Finally),
         PhpKind::Float                     => Rename(Float),

@@ -241,7 +241,7 @@ program/
   │       └─ body/echo/string/interpolation/variable/name = "msg"
   ├─ enum/
   │   ├─ name = "Status"
-  │   ├─ type[primitive]/name = "string"
+  │   ├─ type[underlying and primitive]/name = "string"
   │   └─ body/
   │       ├─ constant/
   │       │   ├─ name = "Active"

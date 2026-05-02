@@ -26,6 +26,28 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
     Ok(TransformAction::Skip)
 }
 
+/// `enum_declaration` — `enum Status: string { ... }` (backed enum).
+/// Tree-sitter emits the storage type as a `primitive_type` child of
+/// the enum_declaration. Tag it with `[underlying]` + `field="underlying"`
+/// so cross-language `//enum/type[underlying]` works uniformly with C#
+/// (iter 125). Plain (non-backed) enums have no primitive_type child
+/// and are unaffected.
+pub fn enum_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Underlying;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        if get_kind(xot, child).as_deref() == Some("primitive_type") {
+            xot.with_appended_marker(child, Underlying)?
+                .with_attr(child, "field", "underlying");
+            break;
+        }
+    }
+    xot.with_renamed(node, super::output::TractorNode::Enum);
+    Ok(TransformAction::Continue)
+}
+
 /// `primitive_type` — render as `<type[primitive]><name>string</name></type>`
 /// matching the cross-language type shape (`type/name` is the broad
 /// query path; `[primitive]` distinguishes built-in from user types).
