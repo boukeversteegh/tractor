@@ -337,22 +337,15 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   `<inclusive>/<exclusive>` marker (or `<closed>/<open>`) AND
   `<from>/<to>` wrappers. Effort: small.
 
-- [ ] **Ruby `case`/`when` clauses lack `list="cases"`** *(severity
-  HIGH; Principle #12)*. Site: `tests/integration/languages/ruby/blueprint.rb.snapshot.json:35-110`.
-  Currently 4 of 5 `<when>` siblings overflow into `case.children:
-  [{$type: "when", ...}]` and only the first is `case.when:
-  {...}`. Source: `RubyKind::When => Passthrough` at
-  `tractor/src/languages/ruby/rules.rs:156`. Expected: `When` rule
-  needs `list="cases"` (or `list="when"`) so `case.cases: [...]`
-  is a uniform array. Effort: small.
-
-- [ ] **Ruby multi-pattern `when` — pattern siblings overflow**
-  *(severity HIGH; Principle #12)*. Site:
-  `tests/integration/languages/ruby/blueprint.rb.snapshot.json:115-124`.
-  Multi-pattern `when X, Y` produces `when/{pattern: {name:
-  "Integer"}, children: [{$type: "pattern", name: "Float"}]}`.
-  Expected: `pattern` siblings need `list="patterns"` so
-  `when.patterns: [...]`. Effort: small.
+- [x] **Ruby `case`/`when`/`pattern` list distribution** — closed
+  iter 177. New post-pass `ruby_tag_case_when_lists` tags
+  `<case>`'s `<when>` children with `list="when"` and `<when>`'s
+  `<pattern>` children with `list="pattern"`. Targeted (not bulk
+  via `distribute_member_list_attrs`) because case/when have
+  role-mixed children — `<value>` discriminant and `<else>` are
+  singleton, only `<when>`/`<pattern>` repeat. Result: JSON
+  `case.when: [...]` array (was: 1 lifted, rest in `children:`),
+  `when.pattern: [...]` array for multi-pattern `when X, Y`.
 
 - [ ] **C# accessor heterogeneous JSON array** *(severity LOW)*.
   Site: `tests/integration/languages/csharp/blueprint.cs.snapshot.json:181-188`.
@@ -381,6 +374,11 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 177: Ruby `<case>` / `<when>` list distribution — closes
+  2 backlog items: `case.when: [...]` array (no more children
+  overflow on multi-when cases) AND `when.pattern: [...]` for
+  multi-pattern `when X, Y`. Targeted post-pass (not bulk via
+  distribute_member_list_attrs) because role-mixed children.
 - [x] iter 176: Go closure body archetype — closes iter-174's
   missed-language gap. `closure/body/...` → `closure/value/expression/...`
   (single-stmt) or `closure/body/...` (multi-stmt). Cross-language

@@ -34,17 +34,37 @@
       "body": {
         "case": [
           {
-            "children": [
+            "else": {
+              "expression": {
+                "symbol": ":unknown"
+              }
+            },
+            "value": {
+              "expression": {
+                "name": "value"
+              }
+            },
+            "when": [
               {
-                "$type": "when",
-                "pattern": {
-                  "range": {
-                    "children": [
-                      "9"
-                    ],
-                    "int": "1"
-                  }
+                "body": {
+                  "then": [
+                    {
+                      "expression": {
+                        "symbol": ":number"
+                      }
+                    }
+                  ]
                 },
+                "pattern": [
+                  {
+                    "name": "Integer"
+                  },
+                  {
+                    "name": "Float"
+                  }
+                ]
+              },
+              {
                 "body": {
                   "then": [
                     {
@@ -53,13 +73,19 @@
                       }
                     }
                   ]
-                }
+                },
+                "pattern": [
+                  {
+                    "range": {
+                      "children": [
+                        "9"
+                      ],
+                      "int": "1"
+                    }
+                  }
+                ]
               },
               {
-                "$type": "when",
-                "pattern": {
-                  "name": "String"
-                },
                 "body": {
                   "then": [
                     {
@@ -68,19 +94,14 @@
                       }
                     }
                   ]
-                }
+                },
+                "pattern": [
+                  {
+                    "name": "String"
+                  }
+                ]
               },
               {
-                "$type": "when",
-                "pattern": {
-                  "array": {
-                    "children": [
-                      "2",
-                      "3"
-                    ],
-                    "int": "1"
-                  }
-                },
                 "body": {
                   "then": [
                     {
@@ -89,13 +110,20 @@
                       }
                     }
                   ]
-                }
+                },
+                "pattern": [
+                  {
+                    "array": {
+                      "children": [
+                        "2",
+                        "3"
+                      ],
+                      "int": "1"
+                    }
+                  }
+                ]
               },
               {
-                "$type": "when",
-                "pattern": {
-                  "nil": "nil"
-                },
                 "body": {
                   "then": [
                     {
@@ -104,39 +132,14 @@
                       }
                     }
                   ]
-                }
-              }
-            ],
-            "value": {
-              "expression": {
-                "name": "value"
-              }
-            },
-            "when": {
-              "children": [
-                {
-                  "$type": "pattern",
-                  "name": "Float"
-                }
-              ],
-              "pattern": {
-                "name": "Integer"
-              },
-              "body": {
-                "then": [
+                },
+                "pattern": [
                   {
-                    "expression": {
-                      "symbol": ":number"
-                    }
+                    "nil": "nil"
                   }
                 ]
               }
-            },
-            "else": {
-              "expression": {
-                "symbol": ":unknown"
-              }
-            }
+            ]
           }
         ]
       },

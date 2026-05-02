@@ -1717,9 +1717,75 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     ruby_extract_pair_keys(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    ruby_tag_case_when_lists(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "program"],
     )?;
+    Ok(())
+}
+
+/// Tag the multi-instance role children of `<case>` and `<when>`
+/// with `list=` so JSON consumers see them as arrays:
+/// - `<case>`'s `<when>` children → `list="when"` (case branches; multi).
+/// - `<when>`'s `<pattern>` children → `list="pattern"` (multi-pattern
+///   `when X, Y` lifts each as a sibling).
+///
+/// `distribute_member_list_attrs` would over-tag siblings that are
+/// role-MIXED (e.g. `<case>`'s `<value>` discriminant and `<else>`,
+/// which are singletons). Per Principle #19, we hand-pick the
+/// roles that genuinely repeat.
+fn ruby_tag_case_when_lists(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_attr, get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    fn collect(xot: &Xot, node: XotNode, name: &str, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some(name)
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, name, out);
+        }
+    }
+
+    // `<case>` → tag `<when>` children with list="when".
+    let mut cases: Vec<XotNode> = Vec::new();
+    collect(xot, root, "case", &mut cases);
+    for case in cases {
+        let whens: Vec<XotNode> = xot.children(case)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("when")
+            })
+            .collect();
+        for w in whens {
+            if get_attr(xot, w, "list").is_none() {
+                xot.with_attr(w, "list", "when");
+            }
+        }
+    }
+
+    // `<when>` → tag `<pattern>` children with list="pattern".
+    let mut whens: Vec<XotNode> = Vec::new();
+    collect(xot, root, "when", &mut whens);
+    for w in whens {
+        let patterns: Vec<XotNode> = xot.children(w)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("pattern")
+            })
+            .collect();
+        for p in patterns {
+            if get_attr(xot, p, "list").is_none() {
+                xot.with_attr(p, "list", "pattern");
+            }
+        }
+    }
+
     Ok(())
 }
 
