@@ -21,7 +21,7 @@ pub enum TractorNode {
     Self_,
     Field, Variant, Lifetime, Attribute,
     // Types / generics (Generic dual-use)
-    Type, Generic, Generics, Path, Bounds, Bound, Where,
+    Type, Generic, Generics, Path, Bounds, Bound, Extends, Where,
     // Statements / control flow
     Let, Return, If, Else, ElseIf, For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
     Send, Label, Yield,

@@ -74,10 +74,9 @@ file/
   │   ├─ generic[@list="true"]/name = "T"
   │   ├─ where/bound/
   │   │   ├─ left/expression/type/name = "T"
-  │   │   └─ bounds/
-  │   │       ├─ type/name = "Clone"
-  │   │       ├─ type/name = "Send"
-  │   │       └─ lifetime/name = "static"
+  │   │   ├─ extends[@list="true"]/type/name = "Clone"
+  │   │   ├─ extends[@list="true"]/type/name = "Send"
+  │   │   └─ extends[@list="true"]/lifetime/name = "static"
   │   └─ body/
   │       ├─ field[pub]/
   │       │   ├─ name = "x"
@@ -131,7 +130,7 @@ file/
   │           └─ value/expression/int = "10"
   ├─ trait[pub]/
   │   ├─ name = "Drawable"
-  │   ├─ bounds/type/name = "Debug"
+  │   ├─ extends[@list="true"]/type/name = "Debug"
   │   └─ body/
   │       ├─ type[associated]/name = "Canvas"
   │       ├─ const[private]/
@@ -159,10 +158,9 @@ file/
   │   ├─ lifetime[@list="true"]/name = "'a"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ bounds/
-  │   │       ├─ type/name = "Clone"
-  │   │       ├─ type/name = "Send"
-  │   │       └─ lifetime/name = "static"
+  │   │   ├─ extends[@list="true"]/type/name = "Clone"
+  │   │   ├─ extends[@list="true"]/type/name = "Send"
+  │   │   └─ extends[@list="true"]/lifetime/name = "static"
   │   ├─ type[generic]/
   │   │   ├─ name = "Point"
   │   │   ├─ lifetime[@list="true"]/name = "a"
@@ -226,11 +224,10 @@ file/
   │   │   └─ type[@list="true"]/name = "T"
   │   ├─ where/bound/
   │   │   ├─ left/expression/type/name = "T"
-  │   │   └─ bounds/
-  │   │       ├─ type/name = "Clone"
-  │   │       ├─ type/name = "Send"
-  │   │       ├─ type/name = "Debug"
-  │   │       └─ lifetime/name = "static"
+  │   │   ├─ extends[@list="true"]/type/name = "Clone"
+  │   │   ├─ extends[@list="true"]/type/name = "Send"
+  │   │   ├─ extends[@list="true"]/type/name = "Debug"
+  │   │   └─ extends[@list="true"]/lifetime/name = "static"
   │   └─ body/
   │       ├─ alias[private]/
   │       │   ├─ name = "Canvas"
@@ -718,7 +715,7 @@ file/
   │   ├─ generic[@list="true"]/name = "F"
   │   ├─ generic[@list="true"]/
   │   │   ├─ name = "T"
-  │   │   └─ bounds/bound[optional]/type/name = "Sized"
+  │   │   └─ extends[@list="true"]/bound[optional]/type/name = "Sized"
   │   ├─ parameter[@list="true"]/
   │   │   ├─ name = "_f"
   │   │   └─ type/name = "F"
@@ -727,7 +724,7 @@ file/
   │   │   └─ type[borrowed]/type/name = "T"
   │   └─ where/bound/
   │       ├─ left/expression/type/name = "F"
-  │       └─ bounds/bound[higher]/
+  │       └─ extends[@list="true"]/bound[higher]/
   │           ├─ lifetime[@list="true"]/name = "'a"
   │           └─ type[function]/
   │               ├─ type/name = "Fn"

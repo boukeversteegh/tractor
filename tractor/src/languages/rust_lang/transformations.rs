@@ -18,6 +18,30 @@ use super::output::TractorNode::{
     Use as UseName,
 };
 
+/// `trait_bounds` — `: Clone + Send + 'static` after a generic
+/// parameter, type parameter, or trait header. Per Principle #12 (no
+/// list containers) + #18 (name relationships after the operator):
+/// each constraint becomes a flat `<extends field="extends" list="true">`
+/// sibling, matching Java's `<T extends A & B>` shape and the
+/// cross-language relationship-naming rule. Drops the `<bounds>`
+/// wrapper.
+pub fn trait_bounds(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Extends;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let ext_elt = xot.add_name(Extends.as_str());
+        let ext_node = xot.new_element(ext_elt);
+        xot.insert_before(child, ext_node)?;
+        xot.detach(child)?;
+        xot.append(ext_node, child)?;
+        xot.with_attr(ext_node, "field", "extends");
+        xot.with_attr(ext_node, "list", "true");
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Control-flow constructs used
 /// as statements (`if`, `for`, `while`, `loop`, `match`, `return`,

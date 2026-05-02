@@ -218,7 +218,10 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::ShorthandFieldInitializer => Rename(Field),
         RustKind::SourceFile               => Rename(File),
         RustKind::StringLiteral            => Rename(String),
-        RustKind::TraitBounds              => Rename(Bounds),
+        // `: Clone + Send + 'static` — generic / trait constraint
+        // list. Per Principle #12 + #18: flatten to `<extends>`
+        // siblings (matches Java/cross-language relationship-naming).
+        RustKind::TraitBounds              => Custom(transformations::trait_bounds),
         RustKind::TupleExpression          => Rename(Tuple),
         RustKind::TypeCastExpression       => Rename(Cast),
         RustKind::UnsafeBlock              => Rename(Unsafe),

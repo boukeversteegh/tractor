@@ -139,7 +139,7 @@ fn rust_vocabulary() {
         &multi_xpath(r#"
             //struct[name='Dog']
                 [generic[name='T']
-                    [bounds/type[name='Barker']]]
+                    [extends/type[name='Barker']]]
                 [body/field[name='owner']
                     [type[name='T']]]
                 [body/field[name='tags']
