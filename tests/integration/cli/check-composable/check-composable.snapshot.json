@@ -18,7 +18,6 @@
             "public": true,
             "name": "Calculator",
             "body": {
-              "$type": "body",
               "$truncated": 81
             }
           },
@@ -31,7 +30,6 @@
             "public": true,
             "name": "Greeter",
             "body": {
-              "$type": "body",
               "$truncated": 52
             }
           },

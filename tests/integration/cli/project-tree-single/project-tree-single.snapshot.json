@@ -3,7 +3,6 @@
   "public": true,
   "name": "Calculator",
   "body": {
-    "$type": "body",
     "$truncated": 81
   }
 }

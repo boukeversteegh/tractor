@@ -125,33 +125,51 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             //   `list=` absent     → property keyed by element name; collisions
             //                        promote to anonymous `children` array
             //                        (transform-bug fallback per Principle #19).
+            //
+            // Strip `$type` from a child when its value is redundant with the
+            // parent's chosen JSON key:
+            //   - singleton (no list): key = child element-name; $type repeats it.
+            //   - list with list-name = element-name: key = element-name; $type repeats.
+            // Children that go into the anonymous `children` array keep `$type`
+            // (no key context). Roots also keep `$type` (no parent at all).
+            // The render path (`render::parse_json`) tolerates both: it uses the
+            // property key for keyed children and falls back to `$type` for
+            // anonymous / list-with-different-name items.
             let mut array_children: Vec<Value> = Vec::new();
             for entry in content_children {
-                if let Some(list) = entry.list_name {
+                let ChildEntry { element_name, list_name, value } = entry;
+                if let Some(list) = list_name {
+                    let value = if list == element_name {
+                        strip_top_level_type(value)
+                    } else {
+                        value
+                    };
                     match obj.remove(&list) {
                         Some(Value::Array(mut arr)) => {
-                            arr.push(entry.value);
+                            arr.push(value);
                             obj.insert(list, Value::Array(arr));
                         }
                         Some(existing) => {
-                            obj.insert(list, Value::Array(vec![existing, entry.value]));
+                            obj.insert(list, Value::Array(vec![existing, value]));
                         }
                         None => {
-                            obj.insert(list, Value::Array(vec![entry.value]));
+                            obj.insert(list, Value::Array(vec![value]));
                         }
                     }
                 } else {
-                    let elem_key = entry.element_name;
-                    match obj.remove(&elem_key) {
+                    match obj.remove(&element_name) {
                         None => {
-                            obj.insert(elem_key, entry.value);
+                            obj.insert(element_name, strip_top_level_type(value));
                         }
                         Some(existing) => {
                             // Same-element-name collision without `list=` —
                             // shouldn't happen for role-mixed shapes after
-                            // Principle #19. Fall back to anonymous children.
-                            obj.insert(elem_key, existing);
-                            array_children.push(entry.value);
+                            // Principle #19. Fall back to anonymous children;
+                            // restore the singleton (existing) without `$type`
+                            // and push the conflicting child with `$type` kept
+                            // (anonymous-array context).
+                            obj.insert(element_name, existing);
+                            array_children.push(value);
                         }
                     }
                 }
@@ -195,6 +213,20 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
         XmlNode::Boolean(b) => Value::Bool(*b),
         XmlNode::Null => Value::Null,
         _ => Value::Null,
+    }
+}
+
+/// Strip `$type` from the top-level of a JSON object value. Used at
+/// child-insertion time when the parent's chosen JSON key already
+/// equals the child's element name (so `$type` would just repeat
+/// the key).
+fn strip_top_level_type(value: Value) -> Value {
+    match value {
+        Value::Object(mut obj) => {
+            obj.remove(KEY_TYPE);
+            Value::Object(obj)
+        }
+        other => other,
     }
 }
 

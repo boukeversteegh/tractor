@@ -2,302 +2,249 @@
   "$type": "file",
   "comment": [
     {
-      "$type": "comment",
-      "leading": true,
-      "text": "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built."
+      "text": "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built.",
+      "leading": true
     },
     {
-      "$type": "comment",
-      "leading": true,
-      "text": "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword."
+      "text": "// arraysAndCasts exercises Go-specific shapes that don't appear elsewhere\n// in the blueprint: fixed-length array types, implicit-length array\n// literals, slice expressions, parenthesized type conversions, generic\n// instantiation in value position, variadic argument expansion, and\n// the `fallthrough` switch keyword.",
+      "leading": true
     }
   ],
   "package": [
     {
-      "$type": "package",
       "name": "blueprint"
     }
   ],
   "import": [
     {
-      "$type": "import",
       "path": "fmt"
     },
     {
-      "$type": "import",
       "path": "context"
     },
     {
-      "$type": "import",
       "path": "errors"
     },
     {
-      "$type": "import",
       "path": "io"
     },
     {
-      "$type": "import",
-      "path": "io",
-      "alias": true,
       "children": [
         {
           "$type": "alias",
           "name": "myio"
         }
-      ]
+      ],
+      "path": "io",
+      "alias": true
     },
     {
-      "$type": "import",
-      "dot": true,
-      "path": "strings"
+      "path": "strings",
+      "dot": true
     },
     {
-      "$type": "import",
-      "blank": true,
-      "path": "net/http/pprof"
+      "path": "net/http/pprof",
+      "blank": true
     }
   ],
   "const": [
     {
-      "$type": "const",
-      "name": "Pi",
       "value": {
-        "$type": "value",
         "expression": {
-          "$type": "expression",
           "float": "3.14159"
         }
-      }
+      },
+      "name": "Pi"
     },
     {
-      "$type": "const",
-      "name": "StatusIdle",
       "value": {
-        "$type": "value",
         "expression": {
-          "$type": "expression",
           "iota": "iota"
         }
-      }
+      },
+      "name": "StatusIdle"
     },
     {
-      "$type": "const",
       "name": "StatusRunning"
     },
     {
-      "$type": "const",
       "name": "StatusDone"
     },
     {
-      "$type": "const",
       "name": "_"
     },
     {
-      "$type": "const",
       "name": "StatusError"
     }
   ],
   "var": [
     {
-      "$type": "var",
-      "name": "ErrNotFound",
       "value": {
-        "$type": "value",
         "expression": {
-          "$type": "expression",
           "call": {
-            "$type": "call",
-            "member": {
-              "$type": "member",
-              "object": {
-                "$type": "object",
-                "name": "errors"
-              },
-              "property": {
-                "$type": "property",
-                "name": "New"
-              }
-            },
             "arguments": [
               "\"not found\""
-            ]
+            ],
+            "member": {
+              "property": {
+                "name": "New"
+              },
+              "object": {
+                "name": "errors"
+              }
+            }
           }
         }
-      }
+      },
+      "name": "ErrNotFound"
     },
     {
-      "$type": "var",
-      "name": "globalCount",
       "type": {
-        "$type": "type",
         "name": "int"
-      }
+      },
+      "name": "globalCount"
     },
     {
-      "$type": "var",
+      "children": [
+        "age"
+      ],
       "name": "name",
       "value": {
-        "$type": "value",
-        "expression": {
-          "$type": "expression",
-          "string": "\"alice\""
-        },
         "children": [
           {
             "$type": "expression",
             "int": "30"
           }
-        ]
-      },
-      "children": [
-        "age"
-      ]
+        ],
+        "expression": {
+          "string": "\"alice\""
+        }
+      }
     }
   ],
   "interface": [
     {
-      "$type": "interface",
-      "exported": true,
-      "name": "Number",
-      "type": {
-        "$type": "type",
-        "approximation": true,
-        "type": {
-          "$type": "type",
-          "name": "int"
-        }
-      },
       "children": [
         {
           "$type": "type",
           "approximation": true,
           "type": {
-            "$type": "type",
             "name": "float64"
           }
         }
-      ]
-    },
-    {
-      "$type": "interface",
+      ],
       "exported": true,
-      "name": "Stringer",
-      "method": {
-        "$type": "method",
-        "name": "String",
-        "returns": {
-          "$type": "returns",
-          "type": {
-            "$type": "type",
-            "name": "string"
-          }
-        }
+      "name": "Number",
+      "type": {
+        "type": {
+          "name": "int"
+        },
+        "approximation": true
       }
     },
     {
-      "$type": "interface",
+      "method": {
+        "returns": {
+          "type": {
+            "name": "string"
+          }
+        },
+        "name": "String"
+      },
+      "exported": true,
+      "name": "Stringer"
+    },
+    {
+      "method": {
+        "returns": {
+          "type": {
+            "name": "error"
+          }
+        },
+        "name": "Close"
+      },
       "exported": true,
       "name": "ReadStringer",
       "extends": [
         {
-          "$type": "extends",
           "type": {
-            "$type": "type",
+            "name": "Reader",
             "package": {
-              "$type": "package",
               "name": "io"
-            },
-            "name": "Reader"
+            }
           }
         },
         {
-          "$type": "extends",
           "type": {
-            "$type": "type",
             "name": "Stringer"
           }
         }
-      ],
-      "method": {
-        "$type": "method",
-        "name": "Close",
-        "returns": {
-          "$type": "returns",
-          "type": {
-            "$type": "type",
-            "name": "error"
-          }
-        }
-      }
+      ]
     }
   ],
   "alias": [
     {
-      "$type": "alias",
-      "exported": true,
-      "name": "Alias",
       "type": {
-        "$type": "type",
+        "name": "Context",
         "package": {
-          "$type": "package",
           "name": "context"
-        },
-        "name": "Context"
-      }
+        }
+      },
+      "exported": true,
+      "name": "Alias"
     }
   ],
   "type": [
     {
-      "$type": "type",
-      "exported": true,
-      "name": "UserID",
       "type": {
-        "$type": "type",
         "name": "int64"
-      }
+      },
+      "exported": true,
+      "name": "UserID"
     },
     {
-      "$type": "type",
-      "exported": true,
-      "name": "Handler",
       "type": {
-        "$type": "type",
+        "returns": {
+          "type": {
+            "name": "error"
+          }
+        },
         "function": true,
         "parameters": [
           {
             "$type": "parameter",
             "name": "ctx",
             "type": {
-              "$type": "type",
+              "name": "Context",
               "package": {
-                "$type": "package",
                 "name": "context"
-              },
-              "name": "Context"
+              }
             }
           },
           {
             "$type": "parameter",
             "name": "id",
             "type": {
-              "$type": "type",
               "name": "UserID"
             }
           }
-        ],
-        "returns": {
-          "$type": "returns",
-          "type": {
-            "$type": "type",
-            "name": "error"
-          }
-        }
-      }
+        ]
+      },
+      "exported": true,
+      "name": "Handler"
     }
   ],
   "struct": [
     {
-      "$type": "struct",
+      "field": {
+        "slice": {
+          "type": {
+            "name": "T"
+          }
+        },
+        "unexported": true,
+        "name": "items"
+      },
       "exported": true,
       "name": "Container",
       "generics": [
@@ -305,95 +252,61 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "$type": "type",
             "name": "any"
           }
         }
-      ],
-      "field": {
-        "$type": "field",
-        "unexported": true,
-        "name": "items",
-        "slice": {
-          "$type": "slice",
-          "type": {
-            "$type": "type",
-            "name": "T"
-          }
-        }
-      }
+      ]
     },
     {
-      "$type": "struct",
-      "exported": true,
-      "name": "MyErr",
       "field": {
-        "$type": "field",
-        "unexported": true,
-        "name": "msg",
         "type": {
-          "$type": "type",
           "name": "string"
-        }
-      }
+        },
+        "unexported": true,
+        "name": "msg"
+      },
+      "exported": true,
+      "name": "MyErr"
     },
     {
-      "$type": "struct",
-      "exported": true,
-      "name": "Point",
-      "field": {
-        "$type": "field",
-        "exported": true,
-        "name": "X",
-        "type": {
-          "$type": "type",
-          "name": "int"
-        },
-        "string": {
-          "$type": "string",
-          "raw": true,
-          "text": "`json:\"x,omitempty\"`"
-        },
-        "children": [
-          "Y"
-        ]
-      },
       "children": [
         {
           "$type": "field",
           "exported": true,
           "name": "Name",
           "type": {
-            "$type": "type",
             "name": "string"
           },
           "string": {
-            "$type": "string",
-            "raw": true,
-            "text": "`json:\"name\"`"
+            "text": "`json:\"name\"`",
+            "raw": true
           }
         }
-      ]
+      ],
+      "exported": true,
+      "name": "Point",
+      "field": {
+        "children": [
+          "Y"
+        ],
+        "exported": true,
+        "name": "X",
+        "type": {
+          "name": "int"
+        },
+        "string": {
+          "text": "`json:\"x,omitempty\"`",
+          "raw": true
+        }
+      }
     },
     {
-      "$type": "struct",
-      "exported": true,
-      "name": "Labeled",
-      "field": {
-        "$type": "field",
-        "unexported": true,
-        "type": {
-          "$type": "type",
-          "name": "Point"
-        }
-      },
       "children": [
         {
           "$type": "field",
           "exported": true,
           "name": "Tag",
           "type": {
-            "$type": "type",
             "name": "string"
           }
         },
@@ -408,24 +321,65 @@
           "exported": true,
           "name": "Meta",
           "struct": {
-            "$type": "struct",
             "field": {
-              "$type": "field",
-              "exported": true,
-              "name": "Created",
               "type": {
-                "$type": "type",
                 "name": "int64"
-              }
+              },
+              "exported": true,
+              "name": "Created"
             }
           }
         }
-      ]
+      ],
+      "exported": true,
+      "name": "Labeled",
+      "field": {
+        "type": {
+          "name": "Point"
+        },
+        "unexported": true
+      }
     }
   ],
   "method": [
     {
-      "$type": "method",
+      "body": {
+        "assign": [
+          {
+            "right": {
+              "expression": {
+                "call": {
+                  "arguments": [
+                    {
+                      "$type": "member",
+                      "object": {
+                        "name": "c"
+                      },
+                      "property": {
+                        "name": "items"
+                      }
+                    },
+                    "v"
+                  ],
+                  "name": "append"
+                }
+              }
+            },
+            "left": {
+              "expression": {
+                "member": {
+                  "property": {
+                    "name": "items"
+                  },
+                  "object": {
+                    "name": "c"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
       "exported": true,
       "name": "Push",
       "parameters": [
@@ -433,20 +387,17 @@
           "$type": "parameter",
           "name": "c",
           "pointer": {
-            "$type": "pointer",
             "type": {
-              "$type": "type",
-              "generic": true,
-              "type": {
-                "$type": "type",
-                "name": "Container"
-              },
               "arguments": [
                 {
                   "$type": "type",
                   "name": "T"
                 }
-              ]
+              ],
+              "generic": true,
+              "type": {
+                "name": "Container"
+              }
             }
           }
         },
@@ -454,135 +405,111 @@
           "$type": "parameter",
           "name": "v",
           "type": {
-            "$type": "type",
             "name": "T"
           }
         }
-      ],
-      "body": {
-        "$type": "body",
-        "assign": [
-          {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "member": {
-                  "$type": "member",
-                  "object": {
-                    "$type": "object",
-                    "name": "c"
-                  },
-                  "property": {
-                    "$type": "property",
-                    "name": "items"
-                  }
-                }
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "call": {
-                  "$type": "call",
-                  "name": "append",
-                  "arguments": [
-                    {
-                      "$type": "member",
-                      "object": {
-                        "$type": "object",
-                        "name": "c"
-                      },
-                      "property": {
-                        "$type": "property",
-                        "name": "items"
-                      }
-                    },
-                    "v"
-                  ]
-                }
-              }
-            }
-          }
-        ]
-      }
+      ]
     },
     {
-      "$type": "method",
-      "exported": true,
-      "parameters": [
-        {
-          "$type": "parameter",
-          "name": "p",
-          "type": {
-            "$type": "type",
-            "name": "Point"
-          }
-        }
-      ],
-      "name": "String",
-      "returns": {
-        "$type": "returns",
-        "type": {
-          "$type": "type",
-          "name": "string"
-        }
-      },
       "body": {
-        "$type": "body",
         "return": [
           {
-            "$type": "return",
             "expression": {
-              "$type": "expression",
               "call": {
-                "$type": "call",
-                "member": {
-                  "$type": "member",
-                  "object": {
-                    "$type": "object",
-                    "name": "fmt"
-                  },
-                  "property": {
-                    "$type": "property",
-                    "name": "Sprintf"
-                  }
-                },
                 "arguments": [
                   "\"(%d,%d)\"",
                   {
                     "$type": "member",
                     "object": {
-                      "$type": "object",
                       "name": "p"
                     },
                     "property": {
-                      "$type": "property",
                       "name": "X"
                     }
                   },
                   {
                     "$type": "member",
                     "object": {
-                      "$type": "object",
                       "name": "p"
                     },
                     "property": {
-                      "$type": "property",
                       "name": "Y"
                     }
                   }
-                ]
+                ],
+                "member": {
+                  "property": {
+                    "name": "Sprintf"
+                  },
+                  "object": {
+                    "name": "fmt"
+                  }
+                }
               }
             }
           }
         ]
+      },
+      "exported": true,
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "p",
+          "type": {
+            "name": "Point"
+          }
+        }
+      ],
+      "name": "String",
+      "returns": {
+        "type": {
+          "name": "string"
+        }
       }
     },
     {
-      "$type": "method",
+      "body": {
+        "assign": [
+          {
+            "right": {
+              "expression": {
+                "name": "dx"
+              }
+            },
+            "left": {
+              "expression": {
+                "member": {
+                  "property": {
+                    "name": "X"
+                  },
+                  "object": {
+                    "name": "p"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "name": "dy"
+              }
+            },
+            "left": {
+              "expression": {
+                "member": {
+                  "property": {
+                    "name": "Y"
+                  },
+                  "object": {
+                    "name": "p"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
       "exported": true,
       "name": "Shift",
       "parameters": [
@@ -590,9 +517,7 @@
           "$type": "parameter",
           "name": "p",
           "pointer": {
-            "$type": "pointer",
             "type": {
-              "$type": "type",
               "name": "Point"
             }
           }
@@ -601,85 +526,38 @@
           "$type": "parameter",
           "name": "dx",
           "type": {
-            "$type": "type",
             "name": "int"
           },
           "children": [
             "dy"
           ]
         }
-      ],
+      ]
+    },
+    {
       "body": {
-        "$type": "body",
-        "assign": [
+        "return": [
           {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "member": {
-                  "$type": "member",
-                  "object": {
-                    "$type": "object",
-                    "name": "p"
-                  },
-                  "property": {
-                    "$type": "property",
-                    "name": "X"
-                  }
+            "expression": {
+              "member": {
+                "property": {
+                  "name": "msg"
+                },
+                "object": {
+                  "name": "e"
                 }
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "name": "dx"
-              }
-            }
-          },
-          {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "member": {
-                  "$type": "member",
-                  "object": {
-                    "$type": "object",
-                    "name": "p"
-                  },
-                  "property": {
-                    "$type": "property",
-                    "name": "Y"
-                  }
-                }
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "name": "dy"
               }
             }
           }
         ]
-      }
-    },
-    {
-      "$type": "method",
+      },
       "exported": true,
       "parameters": [
         {
           "$type": "parameter",
           "name": "e",
           "pointer": {
-            "$type": "pointer",
             "type": {
-              "$type": "type",
               "name": "MyErr"
             }
           }
@@ -687,39 +565,36 @@
       ],
       "name": "Error",
       "returns": {
-        "$type": "returns",
         "type": {
-          "$type": "type",
           "name": "string"
         }
-      },
-      "body": {
-        "$type": "body",
-        "return": [
-          {
-            "$type": "return",
-            "expression": {
-              "$type": "expression",
-              "member": {
-                "$type": "member",
-                "object": {
-                  "$type": "object",
-                  "name": "e"
-                },
-                "property": {
-                  "$type": "property",
-                  "name": "msg"
-                }
-              }
-            }
-          }
-        ]
       }
     }
   ],
   "function": [
     {
-      "$type": "function",
+      "body": {
+        "return": [
+          {
+            "expression": {
+              "call": {
+                "arguments": [
+                  "\"wrap: %w\"",
+                  "err"
+                ],
+                "member": {
+                  "property": {
+                    "name": "Errorf"
+                  },
+                  "object": {
+                    "name": "fmt"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
       "unexported": true,
       "name": "wrap",
       "parameters": [
@@ -727,110 +602,157 @@
           "$type": "parameter",
           "name": "err",
           "type": {
-            "$type": "type",
             "name": "error"
           }
         }
       ],
       "returns": {
-        "$type": "returns",
         "type": {
-          "$type": "type",
           "name": "error"
         }
-      },
-      "body": {
-        "$type": "body",
-        "return": [
-          {
-            "$type": "return",
-            "expression": {
-              "$type": "expression",
-              "call": {
-                "$type": "call",
-                "member": {
-                  "$type": "member",
-                  "object": {
-                    "$type": "object",
-                    "name": "fmt"
-                  },
-                  "property": {
-                    "$type": "property",
-                    "name": "Errorf"
-                  }
-                },
-                "arguments": [
-                  "\"wrap: %w\"",
-                  "err"
-                ]
-              }
-            }
-          }
-        ]
       }
     },
     {
-      "$type": "function",
-      "unexported": true,
-      "name": "doThing",
-      "returns": {
-        "$type": "returns",
-        "type": {
-          "$type": "type",
-          "name": "error"
-        }
-      },
       "body": {
-        "$type": "body",
         "return": [
           {
-            "$type": "return",
             "expression": {
-              "$type": "expression",
               "nil": "nil"
             }
           }
         ]
+      },
+      "unexported": true,
+      "name": "doThing",
+      "returns": {
+        "type": {
+          "name": "error"
+        }
       }
     },
     {
-      "$type": "function",
-      "unexported": true,
-      "name": "risky",
-      "returns": {
-        "$type": "returns",
-        "type": {
-          "$type": "type",
-          "name": "int"
-        },
-        "children": [
-          {
-            "$type": "type",
-            "name": "error"
-          }
-        ]
-      },
       "body": {
-        "$type": "body",
         "return": [
           {
-            "$type": "return",
-            "expression": {
-              "$type": "expression",
-              "int": "0"
-            },
             "children": [
               {
                 "$type": "expression",
                 "name": "ErrNotFound"
               }
-            ]
+            ],
+            "expression": {
+              "int": "0"
+            }
           }
         ]
+      },
+      "unexported": true,
+      "name": "risky",
+      "returns": {
+        "children": [
+          {
+            "$type": "type",
+            "name": "error"
+          }
+        ],
+        "type": {
+          "name": "int"
+        }
       }
     },
     {
-      "$type": "function",
+      "body": {
+        "return": [
+          {
+            "expression": {
+              "name": "out"
+            }
+          }
+        ],
+        "variable": [
+          {
+            "right": {
+              "expression": {
+                "call": {
+                  "arguments": [
+                    {
+                      "$type": "slice",
+                      "type": {
+                        "name": "U"
+                      }
+                    },
+                    "0",
+                    {
+                      "$type": "call",
+                      "name": "len",
+                      "arguments": [
+                        "xs"
+                      ]
+                    }
+                  ],
+                  "name": "make"
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "out"
+              }
+            }
+          }
+        ],
+        "for": [
+          {
+            "body": {
+              "assign": [
+                {
+                  "right": {
+                    "expression": {
+                      "call": {
+                        "arguments": [
+                          "out",
+                          {
+                            "$type": "call",
+                            "name": "f",
+                            "arguments": [
+                              "x"
+                            ]
+                          }
+                        ],
+                        "name": "append"
+                      }
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "out"
+                    }
+                  }
+                }
+              ]
+            },
+            "range": {
+              "right": {
+                "expression": {
+                  "name": "xs"
+                }
+              },
+              "left": {
+                "children": [
+                  {
+                    "$type": "expression",
+                    "name": "x"
+                  }
+                ],
+                "expression": {
+                  "name": "_"
+                }
+              }
+            }
+          }
+        ]
+      },
       "exported": true,
       "name": "Map",
       "generics": [
@@ -838,7 +760,6 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "$type": "type",
             "name": "any"
           },
           "children": [
@@ -851,9 +772,7 @@
           "$type": "parameter",
           "name": "xs",
           "slice": {
-            "$type": "slice",
             "type": {
-              "$type": "type",
               "name": "T"
             }
           }
@@ -862,155 +781,73 @@
           "$type": "parameter",
           "name": "f",
           "type": {
-            "$type": "type",
+            "returns": {
+              "type": {
+                "name": "U"
+              }
+            },
             "function": true,
             "parameters": [
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "T"
                 }
               }
-            ],
-            "returns": {
-              "$type": "returns",
-              "type": {
-                "$type": "type",
-                "name": "U"
-              }
-            }
+            ]
           }
         }
       ],
       "returns": {
-        "$type": "returns",
         "slice": {
-          "$type": "slice",
           "type": {
-            "$type": "type",
             "name": "U"
           }
         }
-      },
+      }
+    },
+    {
       "body": {
-        "$type": "body",
-        "variable": [
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "out"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "call": {
-                  "$type": "call",
-                  "name": "make",
-                  "arguments": [
-                    {
-                      "$type": "slice",
-                      "type": {
-                        "$type": "type",
-                        "name": "U"
-                      }
-                    },
-                    "0",
-                    {
-                      "$type": "call",
-                      "name": "len",
-                      "arguments": [
-                        "xs"
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        ],
         "for": [
           {
-            "$type": "for",
+            "body": {
+              "assign": [
+                {
+                  "right": {
+                    "expression": {
+                      "name": "x"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "total"
+                    }
+                  }
+                }
+              ]
+            },
             "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
+              "right": {
                 "expression": {
-                  "$type": "expression",
-                  "name": "_"
-                },
+                  "name": "xs"
+                }
+              },
+              "left": {
                 "children": [
                   {
                     "$type": "expression",
                     "name": "x"
                   }
-                ]
-              },
-              "right": {
-                "$type": "right",
+                ],
                 "expression": {
-                  "$type": "expression",
-                  "name": "xs"
+                  "name": "_"
                 }
               }
-            },
-            "body": {
-              "$type": "body",
-              "assign": [
-                {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "out"
-                    }
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "call": {
-                        "$type": "call",
-                        "name": "append",
-                        "arguments": [
-                          "out",
-                          {
-                            "$type": "call",
-                            "name": "f",
-                            "arguments": [
-                              "x"
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  }
-                }
-              ]
             }
           }
         ],
-        "return": [
-          {
-            "$type": "return",
-            "expression": {
-              "$type": "expression",
-              "name": "out"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "$type": "function",
+        "return": true
+      },
       "exported": true,
       "name": "Sum",
       "generics": [
@@ -1018,7 +855,6 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "$type": "type",
             "name": "Number"
           }
         }
@@ -1028,78 +864,154 @@
           "$type": "parameter",
           "name": "xs",
           "slice": {
-            "$type": "slice",
             "type": {
-              "$type": "type",
               "name": "T"
             }
           }
         }
       ],
       "returns": {
-        "$type": "returns",
         "type": {
-          "$type": "type",
           "name": "T"
         }
-      },
+      }
+    },
+    {
       "body": {
-        "$type": "body",
-        "return": true,
         "for": [
           {
-            "$type": "for",
+            "body": {
+              "if": [
+                {
+                  "then": {
+                    "children": [
+                      {
+                        "$type": "assign",
+                        "left": {
+                          "expression": {
+                            "name": "out"
+                          }
+                        },
+                        "right": {
+                          "expression": {
+                            "call": {
+                              "arguments": [
+                                "out",
+                                "x"
+                              ],
+                              "name": "append"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "literal": {
+                            "struct": "struct{}"
+                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "index": {
+                            "children": [
+                              "x"
+                            ],
+                            "name": "seen"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "variable": {
+                    "right": {
+                      "expression": {
+                        "index": {
+                          "children": [
+                            "x"
+                          ],
+                          "name": "seen"
+                        }
+                      }
+                    },
+                    "short": true,
+                    "left": {
+                      "children": [
+                        {
+                          "$type": "expression",
+                          "name": "ok"
+                        }
+                      ],
+                      "expression": {
+                        "name": "_"
+                      }
+                    }
+                  },
+                  "condition": {
+                    "expression": {
+                      "unary": {
+                        "name": "ok",
+                        "op": {
+                          "text": "!",
+                          "logical": true,
+                          "not": true
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
             "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
+              "right": {
                 "expression": {
-                  "$type": "expression",
-                  "name": "_"
-                },
+                  "name": "xs"
+                }
+              },
+              "left": {
                 "children": [
                   {
                     "$type": "expression",
                     "name": "x"
                   }
-                ]
-              },
-              "right": {
-                "$type": "right",
+                ],
                 "expression": {
-                  "$type": "expression",
-                  "name": "xs"
+                  "name": "_"
                 }
               }
-            },
-            "body": {
-              "$type": "body",
-              "assign": [
-                {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "total"
-                    }
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "x"
+            }
+          }
+        ],
+        "return": true,
+        "variable": [
+          {
+            "right": {
+              "expression": {
+                "literal": {
+                  "map": {
+                    "value": {
+                      "expression": {
+                        "struct": "struct{}"
+                      }
+                    },
+                    "type": {
+                      "name": "T"
                     }
                   }
                 }
-              ]
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "seen"
+              }
             }
           }
         ]
-      }
-    },
-    {
-      "$type": "function",
+      },
       "exported": true,
       "name": "Uniq",
       "generics": [
@@ -1107,7 +1019,6 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "$type": "type",
             "name": "comparable"
           }
         }
@@ -1117,204 +1028,107 @@
           "$type": "parameter",
           "name": "xs",
           "slice": {
-            "$type": "slice",
             "type": {
-              "$type": "type",
               "name": "T"
             }
           }
         }
       ],
       "returns": {
-        "$type": "returns",
         "slice": {
-          "$type": "slice",
           "type": {
-            "$type": "type",
             "name": "T"
           }
         }
-      },
+      }
+    },
+    {
       "body": {
-        "$type": "body",
-        "return": true,
-        "variable": [
+        "for": [
           {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "seen"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "literal": {
-                  "$type": "literal",
-                  "map": {
-                    "$type": "map",
-                    "type": {
-                      "$type": "type",
-                      "name": "T"
-                    },
-                    "value": {
-                      "$type": "value",
-                      "expression": {
-                        "$type": "expression",
-                        "struct": "struct{}"
-                      }
+            "body": {
+              "assign": [
+                {
+                  "right": {
+                    "expression": {
+                      "name": "v"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "sum"
                     }
                   }
+                }
+              ]
+            },
+            "range": {
+              "right": {
+                "expression": {
+                  "name": "vals"
+                }
+              },
+              "left": {
+                "children": [
+                  {
+                    "$type": "expression",
+                    "name": "v"
+                  }
+                ],
+                "expression": {
+                  "name": "_"
                 }
               }
             }
           }
         ],
-        "for": [
+        "return": true,
+        "defer": [
           {
-            "$type": "for",
-            "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                "children": [
-                  {
-                    "$type": "expression",
-                    "name": "x"
-                  }
-                ]
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "name": "xs"
+            "call": {
+              "closure": {
+                "body": {
+                  "assign": [
+                    {
+                      "right": {
+                        "expression": {
+                          "call": {
+                            "name": "recover"
+                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "_"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "assign": [
+          {
+            "right": {
+              "expression": {
+                "call": {
+                  "arguments": [
+                    "prefix"
+                  ],
+                  "name": "ToUpper"
                 }
               }
             },
-            "body": {
-              "$type": "body",
-              "if": [
-                {
-                  "$type": "if",
-                  "variable": {
-                    "$type": "variable",
-                    "short": true,
-                    "left": {
-                      "$type": "left",
-                      "expression": {
-                        "$type": "expression",
-                        "name": "_"
-                      },
-                      "children": [
-                        {
-                          "$type": "expression",
-                          "name": "ok"
-                        }
-                      ]
-                    },
-                    "right": {
-                      "$type": "right",
-                      "expression": {
-                        "$type": "expression",
-                        "index": {
-                          "$type": "index",
-                          "name": "seen",
-                          "children": [
-                            "x"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  "condition": {
-                    "$type": "condition",
-                    "expression": {
-                      "$type": "expression",
-                      "unary": {
-                        "$type": "unary",
-                        "op": {
-                          "$type": "op",
-                          "logical": true,
-                          "not": true,
-                          "text": "!"
-                        },
-                        "name": "ok"
-                      }
-                    }
-                  },
-                  "then": {
-                    "$type": "then",
-                    "assign": {
-                      "$type": "assign",
-                      "left": {
-                        "$type": "left",
-                        "expression": {
-                          "$type": "expression",
-                          "index": {
-                            "$type": "index",
-                            "name": "seen",
-                            "children": [
-                              "x"
-                            ]
-                          }
-                        }
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "literal": {
-                            "$type": "literal",
-                            "struct": "struct{}"
-                          }
-                        }
-                      }
-                    },
-                    "children": [
-                      {
-                        "$type": "assign",
-                        "left": {
-                          "$type": "left",
-                          "expression": {
-                            "$type": "expression",
-                            "name": "out"
-                          }
-                        },
-                        "right": {
-                          "$type": "right",
-                          "expression": {
-                            "$type": "expression",
-                            "call": {
-                              "$type": "call",
-                              "name": "append",
-                              "arguments": [
-                                "out",
-                                "x"
-                              ]
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              ]
+            "left": {
+              "expression": {
+                "name": "_"
+              }
             }
           }
         ]
-      }
-    },
-    {
-      "$type": "function",
+      },
       "unexported": true,
       "name": "variadic",
       "parameters": [
@@ -1322,7 +1136,6 @@
           "$type": "parameter",
           "name": "prefix",
           "type": {
-            "$type": "type",
             "name": "string"
           }
         },
@@ -1330,437 +1143,57 @@
           "$type": "parameter",
           "name": "vals",
           "type": {
-            "$type": "type",
             "name": "int"
           }
         }
       ],
       "returns": {
-        "$type": "returns",
-        "type": {
-          "$type": "type",
-          "name": "int"
-        },
         "children": [
           {
             "$type": "type",
             "name": "error"
           }
-        ]
-      },
-      "body": {
-        "$type": "body",
-        "return": true,
-        "defer": [
-          {
-            "$type": "defer",
-            "call": {
-              "$type": "call",
-              "closure": {
-                "$type": "closure",
-                "body": {
-                  "$type": "body",
-                  "assign": [
-                    {
-                      "$type": "assign",
-                      "left": {
-                        "$type": "left",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "_"
-                        }
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "call": {
-                            "$type": "call",
-                            "name": "recover"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          }
         ],
-        "assign": [
-          {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "_"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "call": {
-                  "$type": "call",
-                  "name": "ToUpper",
-                  "arguments": [
-                    "prefix"
-                  ]
-                }
-              }
-            }
-          }
-        ],
-        "for": [
-          {
-            "$type": "for",
-            "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                "children": [
-                  {
-                    "$type": "expression",
-                    "name": "v"
-                  }
-                ]
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "name": "vals"
-                }
-              }
-            },
-            "body": {
-              "$type": "body",
-              "assign": [
-                {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "sum"
-                    }
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "v"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        ]
+        "type": {
+          "name": "int"
+        }
       }
     },
     {
-      "$type": "function",
-      "unexported": true,
-      "name": "arraysAndCasts",
       "body": {
-        "$type": "body",
-        "var": [
-          {
-            "$type": "var",
-            "name": "fixed",
-            "array": {
-              "$type": "array",
-              "int": "5",
-              "type": {
-                "$type": "type",
-                "name": "int"
-              }
-            },
-            "value": {
-              "$type": "value",
-              "expression": {
-                "$type": "expression",
-                "literal": {
-                  "$type": "literal",
-                  "array": {
-                    "$type": "array",
-                    "int": "5",
-                    "type": {
-                      "$type": "type",
-                      "name": "int"
-                    }
-                  },
-                  "body": {
-                    "$type": "body",
-                    "int": [
-                      "1",
-                      "2",
-                      "3",
-                      "4",
-                      "5"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        ],
-        "variable": [
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "implicit"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "literal": {
-                  "$type": "literal",
-                  "array": {
-                    "$type": "array",
-                    "implicit": true,
-                    "type": {
-                      "$type": "type",
-                      "name": "int"
-                    }
-                  },
-                  "body": {
-                    "$type": "body",
-                    "int": [
-                      "10",
-                      "20",
-                      "30"
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "sub"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "index": {
-                  "$type": "index",
-                  "slice": true,
-                  "name": "fixed",
-                  "int": "1",
-                  "children": [
-                    "3"
-                  ]
-                }
-              }
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "chRecvOnly"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "call": {
-                  "$type": "call",
-                  "type": true,
-                  "chan": {
-                    "$type": "chan",
-                    "value": {
-                      "$type": "value",
-                      "type": {
-                        "$type": "type",
-                        "name": "int"
-                      }
-                    }
-                  },
-                  "nil": "nil"
-                }
-              }
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "mapper"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "type": {
-                  "$type": "type",
-                  "generic": true,
-                  "type": {
-                    "$type": "type",
-                    "name": "Map"
-                  },
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "name": "int"
-                    },
-                    {
-                      "$type": "type",
-                      "name": "string"
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        ],
-        "switch": [
-          {
-            "$type": "switch",
-            "value": {
-              "$type": "value",
-              "expression": {
-                "$type": "expression",
-                "index": {
-                  "$type": "index",
-                  "name": "implicit",
-                  "int": "0"
-                }
-              }
-            },
-            "case": {
-              "$type": "case",
-              "fallthrough": true,
-              "value": {
-                "$type": "value",
-                "expression": {
-                  "$type": "expression",
-                  "int": "10"
-                }
-              }
-            },
-            "children": [
-              {
-                "$type": "case",
-                "value": {
-                  "$type": "value",
-                  "expression": {
-                    "$type": "expression",
-                    "int": "20"
-                  }
-                },
-                "assign": {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "_"
-                    }
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "sub"
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ],
         "assign": [
           {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "_"
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "name": "_"
-                }
-              ]
-            },
             "right": {
-              "$type": "right",
               "expression": {
-                "$type": "expression",
                 "call": {
-                  "$type": "call",
-                  "name": "variadic",
                   "arguments": [
                     "\"nums\"",
                     {
                       "$type": "spread",
                       "index": {
-                        "$type": "index",
-                        "slice": true,
-                        "name": "fixed"
+                        "name": "fixed",
+                        "slice": true
                       }
                     }
-                  ]
+                  ],
+                  "name": "variadic"
                 }
               }
-            }
-          },
-          {
-            "$type": "assign",
+            },
             "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "_"
-              },
               "children": [
                 {
                   "$type": "expression",
                   "name": "_"
-                },
-                {
-                  "$type": "expression",
-                  "name": "_"
                 }
-              ]
-            },
-            "right": {
-              "$type": "right",
+              ],
               "expression": {
-                "$type": "expression",
-                "name": "chRecvOnly"
-              },
+                "name": "_"
+              }
+            }
+          },
+          {
+            "right": {
               "children": [
                 {
                   "$type": "expression",
@@ -1770,99 +1203,218 @@
                   "$type": "expression",
                   "name": "sub"
                 }
-              ]
+              ],
+              "expression": {
+                "name": "chRecvOnly"
+              }
+            },
+            "left": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "name": "_"
+                },
+                {
+                  "$type": "expression",
+                  "name": "_"
+                }
+              ],
+              "expression": {
+                "name": "_"
+              }
             }
           }
-        ]
-      }
-    },
-    {
-      "$type": "function",
-      "unexported": true,
-      "name": "classify",
-      "parameters": [
-        {
-          "$type": "parameter",
-          "name": "x",
-          "type": {
-            "$type": "type",
-            "name": "any"
-          }
-        }
-      ],
-      "returns": {
-        "$type": "returns",
-        "type": {
-          "$type": "type",
-          "name": "string"
-        }
-      },
-      "body": {
-        "$type": "body",
-        "switch": [
+        ],
+        "var": [
           {
-            "$type": "switch",
-            "type": true,
-            "name": "v",
             "value": {
-              "$type": "value",
               "expression": {
-                "$type": "expression",
-                "name": "x"
-              }
-            },
-            "case": {
-              "$type": "case",
-              "type": {
-                "$type": "type",
-                "name": "nil"
-              },
-              "return": {
-                "$type": "return",
-                "expression": {
-                  "$type": "expression",
-                  "string": "\"nil\""
-                }
-              }
-            },
-            "default": {
-              "$type": "default",
-              "return": {
-                "$type": "return",
-                "expression": {
-                  "$type": "expression",
-                  "call": {
-                    "$type": "call",
-                    "member": {
-                      "$type": "member",
-                      "object": {
-                        "$type": "object",
-                        "name": "fmt"
-                      },
-                      "property": {
-                        "$type": "property",
-                        "name": "Sprintf"
-                      }
-                    },
-                    "arguments": [
-                      "\"%T\"",
-                      "v"
+                "literal": {
+                  "body": {
+                    "int": [
+                      "1",
+                      "2",
+                      "3",
+                      "4",
+                      "5"
                     ]
+                  },
+                  "array": {
+                    "type": {
+                      "name": "int"
+                    },
+                    "int": "5"
                   }
                 }
               }
             },
+            "name": "fixed",
+            "array": {
+              "type": {
+                "name": "int"
+              },
+              "int": "5"
+            }
+          }
+        ],
+        "variable": [
+          {
+            "right": {
+              "expression": {
+                "literal": {
+                  "body": {
+                    "int": [
+                      "10",
+                      "20",
+                      "30"
+                    ]
+                  },
+                  "array": {
+                    "type": {
+                      "name": "int"
+                    },
+                    "implicit": true
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "implicit"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "index": {
+                  "children": [
+                    "3"
+                  ],
+                  "slice": true,
+                  "name": "fixed",
+                  "int": "1"
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "sub"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "call": {
+                  "nil": "nil",
+                  "type": true,
+                  "chan": {
+                    "value": {
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "chRecvOnly"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "type": {
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "name": "int"
+                    },
+                    {
+                      "$type": "type",
+                      "name": "string"
+                    }
+                  ],
+                  "generic": true,
+                  "type": {
+                    "name": "Map"
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "mapper"
+              }
+            }
+          }
+        ],
+        "switch": [
+          {
+            "children": [
+              {
+                "$type": "case",
+                "value": {
+                  "expression": {
+                    "int": "20"
+                  }
+                },
+                "assign": {
+                  "right": {
+                    "expression": {
+                      "name": "sub"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "_"
+                    }
+                  }
+                }
+              }
+            ],
+            "value": {
+              "expression": {
+                "index": {
+                  "int": "0",
+                  "name": "implicit"
+                }
+              }
+            },
+            "case": {
+              "value": {
+                "expression": {
+                  "int": "10"
+                }
+              },
+              "fallthrough": true
+            }
+          }
+        ]
+      },
+      "unexported": true,
+      "name": "arraysAndCasts"
+    },
+    {
+      "body": {
+        "switch": [
+          {
             "children": [
               {
                 "$type": "case",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "return": {
-                  "$type": "return",
                   "expression": {
-                    "$type": "expression",
                     "string": "\"int-ish\""
                   }
                 },
@@ -1880,33 +1432,24 @@
               {
                 "$type": "case",
                 "type": {
-                  "$type": "type",
                   "name": "string"
                 },
                 "return": {
-                  "$type": "return",
                   "expression": {
-                    "$type": "expression",
                     "binary": {
-                      "$type": "binary",
-                      "left": {
-                        "$type": "left",
+                      "right": {
                         "expression": {
-                          "$type": "expression",
+                          "name": "v"
+                        }
+                      },
+                      "left": {
+                        "expression": {
                           "string": "\"string:\""
                         }
                       },
                       "op": {
-                        "$type": "op",
-                        "plus": true,
-                        "text": "+"
-                      },
-                      "right": {
-                        "$type": "right",
-                        "expression": {
-                          "$type": "expression",
-                          "name": "v"
-                        }
+                        "text": "+",
+                        "plus": true
                       }
                     }
                   }
@@ -1915,461 +1458,367 @@
               {
                 "$type": "case",
                 "type": {
-                  "$type": "type",
                   "name": "Stringer"
                 },
                 "return": {
-                  "$type": "return",
                   "expression": {
-                    "$type": "expression",
                     "call": {
-                      "$type": "call",
                       "member": {
-                        "$type": "member",
-                        "object": {
-                          "$type": "object",
-                          "name": "v"
-                        },
                         "property": {
-                          "$type": "property",
                           "name": "String"
+                        },
+                        "object": {
+                          "name": "v"
                         }
                       }
                     }
                   }
                 }
               }
-            ]
+            ],
+            "type": true,
+            "name": "v",
+            "value": {
+              "expression": {
+                "name": "x"
+              }
+            },
+            "case": {
+              "return": {
+                "expression": {
+                  "string": "\"nil\""
+                }
+              },
+              "type": {
+                "name": "nil"
+              }
+            },
+            "default": {
+              "return": {
+                "expression": {
+                  "call": {
+                    "arguments": [
+                      "\"%T\"",
+                      "v"
+                    ],
+                    "member": {
+                      "property": {
+                        "name": "Sprintf"
+                      },
+                      "object": {
+                        "name": "fmt"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         ]
-      }
-    },
-    {
-      "$type": "function",
+      },
       "unexported": true,
-      "name": "controlFlow",
+      "name": "classify",
       "parameters": [
         {
           "$type": "parameter",
-          "name": "ctx",
+          "name": "x",
           "type": {
-            "$type": "type",
-            "package": {
-              "$type": "package",
-              "name": "context"
-            },
-            "name": "Context"
-          }
-        },
-        {
-          "$type": "parameter",
-          "name": "in",
-          "chan": {
-            "$type": "chan",
-            "value": {
-              "$type": "value",
-              "type": {
-                "$type": "type",
-                "name": "int"
-              }
-            }
-          }
-        },
-        {
-          "$type": "parameter",
-          "name": "out",
-          "chan": {
-            "$type": "chan",
-            "value": {
-              "$type": "value",
-              "type": {
-                "$type": "type",
-                "name": "int"
-              }
-            }
+            "name": "any"
           }
         }
       ],
       "returns": {
-        "$type": "returns",
         "type": {
-          "$type": "type",
-          "name": "error"
+          "name": "string"
         }
-      },
+      }
+    },
+    {
       "body": {
-        "$type": "body",
+        "return": [
+          {
+            "expression": {
+              "nil": "nil"
+            }
+          }
+        ],
         "expression": [
           {
-            "$type": "expression",
             "call": {
-              "$type": "call",
-              "name": "close",
               "arguments": [
                 "buffered"
-              ]
+              ],
+              "name": "close"
             }
           }
         ],
         "var": [
           {
-            "$type": "var",
-            "name": "r",
-            "type": {
-              "$type": "type",
-              "package": {
-                "$type": "package",
-                "name": "io"
-              },
-              "name": "Reader"
-            },
             "value": {
-              "$type": "value",
               "expression": {
-                "$type": "expression",
                 "call": {
-                  "$type": "call",
-                  "name": "new",
                   "arguments": [
                     {
                       "$type": "type",
                       "package": {
-                        "$type": "package",
                         "name": "myio"
                       },
                       "name": "PipeReader"
                     }
-                  ]
+                  ],
+                  "name": "new"
                 }
+              }
+            },
+            "name": "r",
+            "type": {
+              "name": "Reader",
+              "package": {
+                "name": "io"
               }
             }
           },
           {
-            "$type": "var",
-            "name": "target",
             "pointer": {
-              "$type": "pointer",
               "type": {
-                "$type": "type",
                 "name": "MyErr"
               }
-            }
+            },
+            "name": "target"
           }
         ],
         "for": [
           {
-            "$type": "for",
+            "body": {
+              "if": [
+                {
+                  "then": {
+                    "continue": true
+                  },
+                  "condition": {
+                    "expression": {
+                      "binary": {
+                        "right": {
+                          "expression": {
+                            "int": "5"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "i"
+                          }
+                        },
+                        "op": {
+                          "text": "==",
+                          "equals": true
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            },
             "variable": {
-              "$type": "variable",
-              "short": true,
-              "left": {
-                "$type": "left",
+              "right": {
                 "expression": {
-                  "$type": "expression",
-                  "name": "i"
+                  "int": "0"
                 }
               },
-              "right": {
-                "$type": "right",
+              "short": true,
+              "left": {
                 "expression": {
-                  "$type": "expression",
-                  "int": "0"
+                  "name": "i"
                 }
               }
             },
             "condition": {
-              "$type": "condition",
               "expression": {
-                "$type": "expression",
                 "binary": {
-                  "$type": "binary",
-                  "left": {
-                    "$type": "left",
+                  "right": {
                     "expression": {
-                      "$type": "expression",
+                      "int": "10"
+                    }
+                  },
+                  "left": {
+                    "expression": {
                       "name": "i"
                     }
                   },
                   "op": {
-                    "$type": "op",
+                    "text": "<",
                     "compare": true,
-                    "less": true,
-                    "text": "<"
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "int": "10"
-                    }
+                    "less": true
                   }
                 }
               }
             },
             "unary": {
-              "$type": "unary",
-              "name": "i",
               "op": {
-                "$type": "op",
-                "increment": true,
-                "text": "++"
-              }
-            },
-            "body": {
-              "$type": "body",
-              "if": [
-                {
-                  "$type": "if",
-                  "condition": {
-                    "$type": "condition",
-                    "expression": {
-                      "$type": "expression",
-                      "binary": {
-                        "$type": "binary",
-                        "left": {
-                          "$type": "left",
-                          "expression": {
-                            "$type": "expression",
-                            "name": "i"
-                          }
-                        },
-                        "op": {
-                          "$type": "op",
-                          "equals": true,
-                          "text": "=="
-                        },
-                        "right": {
-                          "$type": "right",
-                          "expression": {
-                            "$type": "expression",
-                            "int": "5"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "then": {
-                    "$type": "then",
-                    "continue": true
-                  }
-                }
-              ]
+                "text": "++",
+                "increment": true
+              },
+              "name": "i"
             }
           },
           {
-            "$type": "for",
-            "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "i"
-                }
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "int": "5"
-                }
-              }
-            },
             "body": {
-              "$type": "body",
               "assign": [
                 {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "_"
-                    }
-                  },
                   "right": {
-                    "$type": "right",
                     "expression": {
-                      "$type": "expression",
                       "name": "i"
                     }
-                  }
-                }
-              ]
-            }
-          },
-          {
-            "$type": "for",
-            "range": {
-              "$type": "range",
-              "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "k"
-                },
-                "children": [
-                  {
-                    "$type": "expression",
-                    "name": "v"
-                  }
-                ]
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "literal": {
-                    "$type": "literal",
-                    "map": {
-                      "$type": "map",
-                      "type": {
-                        "$type": "type",
-                        "name": "string"
-                      },
-                      "value": {
-                        "$type": "value",
-                        "type": {
-                          "$type": "type",
-                          "name": "int"
-                        }
-                      }
-                    },
-                    "body": {
-                      "$type": "body",
-                      "pair": [
-                        {
-                          "$type": "pair",
-                          "string": "\"a\"",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "1"
-                            }
-                          }
-                        },
-                        {
-                          "$type": "pair",
-                          "string": "\"b\"",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "2"
-                            }
-                          }
-                        }
-                      ]
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "_"
                     }
                   }
                 }
-              }
+              ]
             },
+            "range": {
+              "right": {
+                "expression": {
+                  "int": "5"
+                }
+              },
+              "left": {
+                "expression": {
+                  "name": "i"
+                }
+              }
+            }
+          },
+          {
             "body": {
-              "$type": "body",
               "assign": [
                 {
-                  "$type": "assign",
-                  "left": {
-                    "$type": "left",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "_"
-                    },
-                    "children": [
-                      {
-                        "$type": "expression",
-                        "name": "_"
-                      }
-                    ]
-                  },
                   "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "name": "k"
-                    },
                     "children": [
                       {
                         "$type": "expression",
                         "name": "v"
                       }
-                    ]
+                    ],
+                    "expression": {
+                      "name": "k"
+                    }
+                  },
+                  "left": {
+                    "children": [
+                      {
+                        "$type": "expression",
+                        "name": "_"
+                      }
+                    ],
+                    "expression": {
+                      "name": "_"
+                    }
                   }
                 }
               ]
+            },
+            "range": {
+              "right": {
+                "expression": {
+                  "literal": {
+                    "body": {
+                      "pair": [
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "string": "\"a\""
+                        },
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "2"
+                            }
+                          },
+                          "string": "\"b\""
+                        }
+                      ]
+                    },
+                    "map": {
+                      "value": {
+                        "type": {
+                          "name": "int"
+                        }
+                      },
+                      "type": {
+                        "name": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "left": {
+                "children": [
+                  {
+                    "$type": "expression",
+                    "name": "v"
+                  }
+                ],
+                "expression": {
+                  "name": "k"
+                }
+              }
             }
           },
           {
-            "$type": "for",
+            "body": {
+              "unary": [
+                {
+                  "op": {
+                    "text": "++",
+                    "increment": true
+                  },
+                  "name": "n"
+                }
+              ]
+            },
             "binary": {
-              "$type": "binary",
-              "left": {
-                "$type": "left",
+              "right": {
                 "expression": {
-                  "$type": "expression",
+                  "int": "3"
+                }
+              },
+              "left": {
+                "expression": {
                   "name": "n"
                 }
               },
               "op": {
-                "$type": "op",
+                "text": "<",
                 "compare": true,
-                "less": true,
-                "text": "<"
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "int": "3"
-                }
+                "less": true
               }
-            },
-            "body": {
-              "$type": "body",
-              "unary": [
-                {
-                  "$type": "unary",
-                  "name": "n",
-                  "op": {
-                    "$type": "op",
-                    "increment": true,
-                    "text": "++"
-                  }
-                }
-              ]
             }
           }
         ],
         "go": [
           {
-            "$type": "go",
             "call": {
-              "$type": "call",
               "closure": {
-                "$type": "closure",
                 "body": {
-                  "$type": "body",
                   "expression": [
                     {
-                      "$type": "expression",
                       "call": {
-                        "$type": "call",
-                        "member": {
-                          "$type": "member",
-                          "object": {
-                            "$type": "object",
-                            "name": "fmt"
-                          },
-                          "property": {
-                            "$type": "property",
-                            "name": "Println"
-                          }
-                        },
                         "arguments": [
                           "\"bg\""
-                        ]
+                        ],
+                        "member": {
+                          "property": {
+                            "name": "Println"
+                          },
+                          "object": {
+                            "name": "fmt"
+                          }
+                        }
                       }
                     }
                   ]
@@ -2380,702 +1829,526 @@
         ],
         "labeled": [
           {
-            "$type": "labeled",
-            "label": "Outer",
             "for": {
-              "$type": "for",
               "body": {
-                "$type": "body",
                 "select": [
                   {
-                    "$type": "select",
-                    "case": {
-                      "$type": "case",
-                      "receive": {
-                        "$type": "receive",
-                        "left": {
-                          "$type": "left",
-                          "expression": {
-                            "$type": "expression",
-                            "name": "v"
-                          },
-                          "children": [
-                            {
-                              "$type": "expression",
-                              "name": "ok"
-                            }
-                          ]
-                        },
-                        "right": {
-                          "$type": "right",
-                          "expression": {
-                            "$type": "expression",
-                            "unary": {
-                              "$type": "unary",
-                              "op": {
-                                "$type": "op",
-                                "receive": true,
-                                "text": "<-"
-                              },
-                              "name": "in"
-                            }
-                          }
-                        }
-                      },
-                      "if": {
-                        "$type": "if",
-                        "condition": {
-                          "$type": "condition",
-                          "expression": {
-                            "$type": "expression",
-                            "unary": {
-                              "$type": "unary",
-                              "op": {
-                                "$type": "op",
-                                "logical": true,
-                                "not": true,
-                                "text": "!"
-                              },
-                              "name": "ok"
-                            }
-                          }
-                        },
-                        "then": {
-                          "$type": "then",
-                          "break": {
-                            "$type": "break",
-                            "label": "Outer"
-                          }
-                        }
-                      },
-                      "send": {
-                        "$type": "send",
-                        "name": "out",
-                        "value": {
-                          "$type": "value",
-                          "expression": {
-                            "$type": "expression",
-                            "name": "v"
-                          }
-                        }
-                      }
-                    },
                     "children": [
                       {
                         "$type": "case",
                         "send": {
-                          "$type": "send",
-                          "name": "out",
                           "value": {
-                            "$type": "value",
                             "expression": {
-                              "$type": "expression",
                               "int": "42"
                             }
-                          }
+                          },
+                          "name": "out"
                         },
                         "continue": {
-                          "$type": "continue",
                           "label": "Outer"
                         }
                       },
                       {
                         "$type": "case",
                         "receive": {
-                          "$type": "receive",
                           "right": {
-                            "$type": "right",
                             "expression": {
-                              "$type": "expression",
                               "unary": {
-                                "$type": "unary",
-                                "op": {
-                                  "$type": "op",
-                                  "receive": true,
-                                  "text": "<-"
-                                },
                                 "call": {
-                                  "$type": "call",
                                   "member": {
-                                    "$type": "member",
-                                    "object": {
-                                      "$type": "object",
-                                      "name": "ctx"
-                                    },
                                     "property": {
-                                      "$type": "property",
                                       "name": "Done"
+                                    },
+                                    "object": {
+                                      "name": "ctx"
                                     }
                                   }
+                                },
+                                "op": {
+                                  "text": "<-",
+                                  "receive": true
                                 }
                               }
                             }
                           }
                         },
                         "goto": {
-                          "$type": "goto",
                           "label": "cleanup"
                         }
                       }
-                    ]
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "$type": "labeled",
-            "label": "cleanup",
-            "variable": {
-              "$type": "variable",
-              "short": true,
-              "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "buffered"
-                }
-              },
-              "right": {
-                "$type": "right",
-                "expression": {
-                  "$type": "expression",
-                  "call": {
-                    "$type": "call",
-                    "name": "make",
-                    "arguments": [
-                      {
-                        "$type": "chan",
+                    ],
+                    "case": {
+                      "send": {
                         "value": {
-                          "$type": "value",
-                          "type": {
-                            "$type": "type",
-                            "name": "int"
+                          "expression": {
+                            "name": "v"
+                          }
+                        },
+                        "name": "out"
+                      },
+                      "receive": {
+                        "right": {
+                          "expression": {
+                            "unary": {
+                              "name": "in",
+                              "op": {
+                                "text": "<-",
+                                "receive": true
+                              }
+                            }
+                          }
+                        },
+                        "left": {
+                          "children": [
+                            {
+                              "$type": "expression",
+                              "name": "ok"
+                            }
+                          ],
+                          "expression": {
+                            "name": "v"
                           }
                         }
                       },
-                      "4"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        ],
-        "send": [
-          {
-            "$type": "send",
-            "name": "buffered",
-            "value": {
-              "$type": "value",
-              "expression": {
-                "$type": "expression",
-                "int": "1"
-              }
-            }
-          }
-        ],
-        "variable": [
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "raw"
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "name": "ch"
-                }
-              ]
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "string": {
-                  "$type": "string",
-                  "raw": true,
-                  "text": "`no \"escapes\" here`"
-                }
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "char": "'A'"
-                }
-              ]
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "n"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "int": "0"
-              }
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "pt"
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "name": "pts"
-                }
-              ]
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "unary": {
-                  "$type": "unary",
-                  "op": {
-                    "$type": "op",
-                    "bitwise": true,
-                    "and": true,
-                    "text": "&"
-                  },
-                  "literal": {
-                    "$type": "literal",
-                    "type": {
-                      "$type": "type",
-                      "name": "Point"
-                    },
-                    "body": {
-                      "$type": "body",
-                      "pair": [
-                        {
-                          "$type": "pair",
-                          "name": "X",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "1"
-                            }
+                      "if": {
+                        "then": {
+                          "break": {
+                            "label": "Outer"
                           }
                         },
-                        {
-                          "$type": "pair",
-                          "name": "Y",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "2"
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "literal": {
-                    "$type": "literal",
-                    "slice": {
-                      "$type": "slice",
-                      "type": {
-                        "$type": "type",
-                        "name": "Point"
-                      }
-                    },
-                    "body": {
-                      "$type": "body",
-                      "pair": [
-                        {
-                          "$type": "pair",
-                          "name": "X",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "0"
-                            }
-                          }
-                        },
-                        {
-                          "$type": "pair",
-                          "name": "X",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "1"
-                            }
-                          }
-                        },
-                        {
-                          "$type": "pair",
-                          "name": "Y",
-                          "value": {
-                            "$type": "value",
-                            "expression": {
-                              "$type": "expression",
-                              "int": "1"
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          {
-            "$type": "variable",
-            "short": true,
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "m"
-              }
-            },
-            "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "literal": {
-                  "$type": "literal",
-                  "map": {
-                    "$type": "map",
-                    "type": {
-                      "$type": "type",
-                      "name": "string"
-                    },
-                    "value": {
-                      "$type": "value",
-                      "type": {
-                        "$type": "type",
-                        "name": "Point"
-                      }
-                    }
-                  },
-                  "body": {
-                    "$type": "body",
-                    "pair": [
-                      {
-                        "$type": "pair",
-                        "string": "\"a\"",
-                        "value": {
-                          "$type": "value",
+                        "condition": {
                           "expression": {
-                            "$type": "expression",
-                            "pair": {
-                              "$type": "pair",
-                              "name": "X",
-                              "value": {
-                                "$type": "value",
-                                "expression": {
-                                  "$type": "expression",
-                                  "int": "1"
-                                }
+                            "unary": {
+                              "name": "ok",
+                              "op": {
+                                "text": "!",
+                                "logical": true,
+                                "not": true
                               }
                             }
                           }
                         }
                       }
-                    ]
+                    }
+                  }
+                ]
+              }
+            },
+            "label": "Outer"
+          },
+          {
+            "variable": {
+              "right": {
+                "expression": {
+                  "call": {
+                    "arguments": [
+                      {
+                        "$type": "chan",
+                        "value": {
+                          "type": {
+                            "name": "int"
+                          }
+                        }
+                      },
+                      "4"
+                    ],
+                    "name": "make"
                   }
                 }
+              },
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "buffered"
+                }
+              }
+            },
+            "label": "cleanup"
+          }
+        ],
+        "send": [
+          {
+            "value": {
+              "expression": {
+                "int": "1"
+              }
+            },
+            "name": "buffered"
+          }
+        ],
+        "variable": [
+          {
+            "right": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "char": "'A'"
+                }
+              ],
+              "expression": {
+                "string": {
+                  "text": "`no \"escapes\" here`",
+                  "raw": true
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "name": "ch"
+                }
+              ],
+              "expression": {
+                "name": "raw"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "int": "0"
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "n"
+              }
+            }
+          },
+          {
+            "right": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "literal": {
+                    "body": {
+                      "pair": [
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "0"
+                            }
+                          },
+                          "name": "X"
+                        },
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "name": "X"
+                        },
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "name": "Y"
+                        }
+                      ]
+                    },
+                    "slice": {
+                      "type": {
+                        "name": "Point"
+                      }
+                    }
+                  }
+                }
+              ],
+              "expression": {
+                "unary": {
+                  "literal": {
+                    "body": {
+                      "pair": [
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "name": "X"
+                        },
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "2"
+                            }
+                          },
+                          "name": "Y"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "name": "Point"
+                    }
+                  },
+                  "op": {
+                    "text": "&",
+                    "bitwise": true,
+                    "and": true
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "name": "pts"
+                }
+              ],
+              "expression": {
+                "name": "pt"
+              }
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "literal": {
+                  "body": {
+                    "pair": [
+                      {
+                        "value": {
+                          "expression": {
+                            "pair": {
+                              "value": {
+                                "expression": {
+                                  "int": "1"
+                                }
+                              },
+                              "name": "X"
+                            }
+                          }
+                        },
+                        "string": "\"a\""
+                      }
+                    ]
+                  },
+                  "map": {
+                    "value": {
+                      "type": {
+                        "name": "Point"
+                      }
+                    },
+                    "type": {
+                      "name": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "short": true,
+            "left": {
+              "expression": {
+                "name": "m"
               }
             }
           }
         ],
         "if": [
           {
-            "$type": "if",
+            "else": {
+              "assign": {
+                "right": {
+                  "expression": {
+                    "name": "x"
+                  }
+                },
+                "left": {
+                  "expression": {
+                    "name": "_"
+                  }
+                }
+              }
+            },
             "variable": {
-              "$type": "variable",
+              "right": {
+                "expression": {
+                  "call": {
+                    "member": {
+                      "property": {
+                        "name": "Pipe"
+                      },
+                      "object": {
+                        "name": "io"
+                      }
+                    }
+                  }
+                }
+              },
               "short": true,
               "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "x"
-                },
                 "children": [
                   {
                     "$type": "expression",
                     "name": "err"
                   }
-                ]
-              },
-              "right": {
-                "$type": "right",
+                ],
                 "expression": {
-                  "$type": "expression",
-                  "call": {
-                    "$type": "call",
-                    "member": {
-                      "$type": "member",
-                      "object": {
-                        "$type": "object",
-                        "name": "io"
-                      },
-                      "property": {
-                        "$type": "property",
-                        "name": "Pipe"
-                      }
-                    }
-                  }
+                  "name": "x"
                 }
               }
             },
             "condition": {
-              "$type": "condition",
               "expression": {
-                "$type": "expression",
                 "binary": {
-                  "$type": "binary",
-                  "left": {
-                    "$type": "left",
+                  "right": {
                     "expression": {
-                      "$type": "expression",
+                      "nil": "nil"
+                    }
+                  },
+                  "left": {
+                    "expression": {
                       "name": "err"
                     }
                   },
                   "op": {
-                    "$type": "op",
-                    "inequality": true,
-                    "text": "!="
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "nil": "nil"
-                    }
+                    "text": "!=",
+                    "inequality": true
                   }
                 }
               }
             },
             "then": {
-              "$type": "then",
               "return": {
-                "$type": "return",
                 "expression": {
-                  "$type": "expression",
                   "call": {
-                    "$type": "call",
-                    "name": "wrap",
                     "arguments": [
                       "err"
-                    ]
-                  }
-                }
-              }
-            },
-            "else": {
-              "$type": "else",
-              "assign": {
-                "$type": "assign",
-                "left": {
-                  "$type": "left",
-                  "expression": {
-                    "$type": "expression",
-                    "name": "_"
-                  }
-                },
-                "right": {
-                  "$type": "right",
-                  "expression": {
-                    "$type": "expression",
-                    "name": "x"
+                    ],
+                    "name": "wrap"
                   }
                 }
               }
             }
           },
           {
-            "$type": "if",
+            "then": {
+              "assign": {
+                "right": {
+                  "expression": {
+                    "name": "s"
+                  }
+                },
+                "left": {
+                  "expression": {
+                    "name": "_"
+                  }
+                }
+              }
+            },
             "variable": {
-              "$type": "variable",
+              "right": {
+                "expression": {
+                  "assert": {
+                    "type": {
+                      "name": "Stringer"
+                    },
+                    "name": "r"
+                  }
+                }
+              },
               "short": true,
               "left": {
-                "$type": "left",
-                "expression": {
-                  "$type": "expression",
-                  "name": "s"
-                },
                 "children": [
                   {
                     "$type": "expression",
                     "name": "ok"
                   }
-                ]
-              },
-              "right": {
-                "$type": "right",
+                ],
                 "expression": {
-                  "$type": "expression",
-                  "assert": {
-                    "$type": "assert",
-                    "name": "r",
-                    "type": {
-                      "$type": "type",
-                      "name": "Stringer"
-                    }
-                  }
+                  "name": "s"
                 }
               }
             },
             "condition": {
-              "$type": "condition",
               "expression": {
-                "$type": "expression",
                 "name": "ok"
-              }
-            },
-            "then": {
-              "$type": "then",
-              "assign": {
-                "$type": "assign",
-                "left": {
-                  "$type": "left",
-                  "expression": {
-                    "$type": "expression",
-                    "name": "_"
-                  }
-                },
-                "right": {
-                  "$type": "right",
-                  "expression": {
-                    "$type": "expression",
-                    "name": "s"
-                  }
-                }
               }
             }
           },
           {
-            "$type": "if",
-            "variable": {
-              "$type": "variable",
-              "short": true,
-              "left": {
-                "$type": "left",
+            "then": {
+              "return": {
                 "expression": {
-                  "$type": "expression",
                   "name": "err"
                 }
-              },
+              }
+            },
+            "variable": {
               "right": {
-                "$type": "right",
                 "expression": {
-                  "$type": "expression",
                   "call": {
-                    "$type": "call",
                     "name": "doThing"
                   }
+                }
+              },
+              "short": true,
+              "left": {
+                "expression": {
+                  "name": "err"
                 }
               }
             },
             "condition": {
-              "$type": "condition",
               "expression": {
-                "$type": "expression",
                 "binary": {
-                  "$type": "binary",
-                  "left": {
-                    "$type": "left",
+                  "right": {
                     "expression": {
-                      "$type": "expression",
                       "call": {
-                        "$type": "call",
+                        "arguments": [
+                          "err",
+                          "ErrNotFound"
+                        ],
                         "member": {
-                          "$type": "member",
-                          "object": {
-                            "$type": "object",
-                            "name": "errors"
-                          },
                           "property": {
-                            "$type": "property",
-                            "name": "As"
+                            "name": "Is"
+                          },
+                          "object": {
+                            "name": "errors"
                           }
-                        },
+                        }
+                      }
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "call": {
                         "arguments": [
                           "err",
                           {
                             "$type": "unary",
                             "op": {
-                              "$type": "op",
+                              "text": "&",
                               "bitwise": true,
-                              "and": true,
-                              "text": "&"
+                              "and": true
                             },
                             "name": "target"
                           }
-                        ]
+                        ],
+                        "member": {
+                          "property": {
+                            "name": "As"
+                          },
+                          "object": {
+                            "name": "errors"
+                          }
+                        }
                       }
                     }
                   },
                   "op": {
-                    "$type": "op",
+                    "text": "||",
                     "logical": true,
-                    "or": true,
-                    "text": "||"
-                  },
-                  "right": {
-                    "$type": "right",
-                    "expression": {
-                      "$type": "expression",
-                      "call": {
-                        "$type": "call",
-                        "member": {
-                          "$type": "member",
-                          "object": {
-                            "$type": "object",
-                            "name": "errors"
-                          },
-                          "property": {
-                            "$type": "property",
-                            "name": "Is"
-                          }
-                        },
-                        "arguments": [
-                          "err",
-                          "ErrNotFound"
-                        ]
-                      }
-                    }
+                    "or": true
                   }
-                }
-              }
-            },
-            "then": {
-              "$type": "then",
-              "return": {
-                "$type": "return",
-                "expression": {
-                  "$type": "expression",
-                  "name": "err"
                 }
               }
             }
@@ -3083,42 +2356,7 @@
         ],
         "assign": [
           {
-            "$type": "assign",
-            "left": {
-              "$type": "left",
-              "expression": {
-                "$type": "expression",
-                "name": "_"
-              },
-              "children": [
-                {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                {
-                  "$type": "expression",
-                  "name": "_"
-                },
-                {
-                  "$type": "expression",
-                  "name": "_"
-                }
-              ]
-            },
             "right": {
-              "$type": "right",
-              "expression": {
-                "$type": "expression",
-                "name": "raw"
-              },
               "children": [
                 {
                   "$type": "expression",
@@ -3139,26 +2377,87 @@
                 {
                   "$type": "expression",
                   "call": {
-                    "$type": "call",
-                    "name": "UserID",
                     "arguments": [
                       "42"
-                    ]
+                    ],
+                    "name": "UserID"
                   }
                 }
-              ]
-            }
-          }
-        ],
-        "return": [
-          {
-            "$type": "return",
-            "expression": {
-              "$type": "expression",
-              "nil": "nil"
+              ],
+              "expression": {
+                "name": "raw"
+              }
+            },
+            "left": {
+              "children": [
+                {
+                  "$type": "expression",
+                  "name": "_"
+                },
+                {
+                  "$type": "expression",
+                  "name": "_"
+                },
+                {
+                  "$type": "expression",
+                  "name": "_"
+                },
+                {
+                  "$type": "expression",
+                  "name": "_"
+                },
+                {
+                  "$type": "expression",
+                  "name": "_"
+                }
+              ],
+              "expression": {
+                "name": "_"
+              }
             }
           }
         ]
+      },
+      "unexported": true,
+      "name": "controlFlow",
+      "parameters": [
+        {
+          "$type": "parameter",
+          "name": "ctx",
+          "type": {
+            "name": "Context",
+            "package": {
+              "name": "context"
+            }
+          }
+        },
+        {
+          "$type": "parameter",
+          "name": "in",
+          "chan": {
+            "value": {
+              "type": {
+                "name": "int"
+              }
+            }
+          }
+        },
+        {
+          "$type": "parameter",
+          "name": "out",
+          "chan": {
+            "value": {
+              "type": {
+                "name": "int"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "error"
+        }
       }
     }
   ]

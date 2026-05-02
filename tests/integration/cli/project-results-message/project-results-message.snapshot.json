@@ -7,15 +7,39 @@
       "public": true,
       "name": "Calculator",
       "body": {
-        "$type": "body",
         "method": [
           {
-            "$type": "method",
+            "body": {
+              "block": [
+                {
+                  "return": [
+                    {
+                      "expression": {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "name": "b"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "a"
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "int"
               }
             },
@@ -24,7 +48,6 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "a"
@@ -32,42 +55,33 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "b"
               }
-            ],
+            ]
+          },
+          {
             "body": {
-              "$type": "body",
               "block": [
                 {
-                  "$type": "block",
                   "return": [
                     {
-                      "$type": "return",
                       "expression": {
-                        "$type": "expression",
                         "binary": {
-                          "$type": "binary",
-                          "left": {
-                            "$type": "left",
+                          "right": {
                             "expression": {
-                              "$type": "expression",
+                              "name": "b"
+                            }
+                          },
+                          "left": {
+                            "expression": {
                               "name": "a"
                             }
                           },
                           "op": {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
-                          },
-                          "right": {
-                            "$type": "right",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "b"
-                            }
+                            "text": "-",
+                            "minus": true
                           }
                         }
                       }
@@ -75,15 +89,10 @@
                   ]
                 }
               ]
-            }
-          },
-          {
-            "$type": "method",
+            },
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "int"
               }
             },
@@ -92,7 +101,6 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "a"
@@ -100,42 +108,33 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "b"
               }
-            ],
+            ]
+          },
+          {
             "body": {
-              "$type": "body",
               "block": [
                 {
-                  "$type": "block",
                   "return": [
                     {
-                      "$type": "return",
                       "expression": {
-                        "$type": "expression",
                         "binary": {
-                          "$type": "binary",
-                          "left": {
-                            "$type": "left",
+                          "right": {
                             "expression": {
-                              "$type": "expression",
+                              "name": "b"
+                            }
+                          },
+                          "left": {
+                            "expression": {
                               "name": "a"
                             }
                           },
                           "op": {
-                            "$type": "op",
-                            "minus": true,
-                            "text": "-"
-                          },
-                          "right": {
-                            "$type": "right",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "b"
-                            }
+                            "text": "*",
+                            "multiply": true
                           }
                         }
                       }
@@ -143,15 +142,10 @@
                   ]
                 }
               ]
-            }
-          },
-          {
-            "$type": "method",
+            },
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "int"
               }
             },
@@ -160,7 +154,6 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "a"
@@ -168,50 +161,11 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "int"
                 },
                 "name": "b"
               }
-            ],
-            "body": {
-              "$type": "body",
-              "block": [
-                {
-                  "$type": "block",
-                  "return": [
-                    {
-                      "$type": "return",
-                      "expression": {
-                        "$type": "expression",
-                        "binary": {
-                          "$type": "binary",
-                          "left": {
-                            "$type": "left",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "a"
-                            }
-                          },
-                          "op": {
-                            "$type": "op",
-                            "multiply": true,
-                            "text": "*"
-                          },
-                          "right": {
-                            "$type": "right",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "b"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
+            ]
           }
         ]
       }
@@ -226,15 +180,39 @@
       "public": true,
       "name": "Greeter",
       "body": {
-        "$type": "body",
         "method": [
           {
-            "$type": "method",
+            "body": {
+              "block": [
+                {
+                  "return": [
+                    {
+                      "expression": {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "name": "name"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "string": "\"Hello, \""
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "string"
               }
             },
@@ -243,42 +221,33 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "string"
                 },
                 "name": "name"
               }
-            ],
+            ]
+          },
+          {
             "body": {
-              "$type": "body",
               "block": [
                 {
-                  "$type": "block",
                   "return": [
                     {
-                      "$type": "return",
                       "expression": {
-                        "$type": "expression",
                         "binary": {
-                          "$type": "binary",
-                          "left": {
-                            "$type": "left",
+                          "right": {
                             "expression": {
-                              "$type": "expression",
-                              "string": "\"Hello, \""
+                              "name": "name"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "string": "\"Goodbye, \""
                             }
                           },
                           "op": {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
-                          },
-                          "right": {
-                            "$type": "right",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "name"
-                            }
+                            "text": "+",
+                            "plus": true
                           }
                         }
                       }
@@ -286,15 +255,10 @@
                   ]
                 }
               ]
-            }
-          },
-          {
-            "$type": "method",
+            },
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "string"
               }
             },
@@ -303,62 +267,20 @@
               {
                 "$type": "parameter",
                 "type": {
-                  "$type": "type",
                   "name": "string"
                 },
                 "name": "name"
               }
-            ],
-            "body": {
-              "$type": "body",
-              "block": [
-                {
-                  "$type": "block",
-                  "return": [
-                    {
-                      "$type": "return",
-                      "expression": {
-                        "$type": "expression",
-                        "binary": {
-                          "$type": "binary",
-                          "left": {
-                            "$type": "left",
-                            "expression": {
-                              "$type": "expression",
-                              "string": "\"Goodbye, \""
-                            }
-                          },
-                          "op": {
-                            "$type": "op",
-                            "plus": true,
-                            "text": "+"
-                          },
-                          "right": {
-                            "$type": "right",
-                            "expression": {
-                              "$type": "expression",
-                              "name": "name"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
+            ]
           },
           {
-            "$type": "method",
+            "name": "Reset",
             "public": true,
             "returns": {
-              "$type": "returns",
               "type": {
-                "$type": "type",
                 "name": "void"
               }
-            },
-            "name": "Reset"
+            }
           }
         ]
       }

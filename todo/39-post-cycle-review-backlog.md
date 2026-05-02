@@ -315,6 +315,19 @@ C# closed iter 167; PHP closed iter 168; Ruby Block/DoBlock closed iter 169.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 171: strip redundant `$type` from JSON/YAML output.
+  `$type` was being emitted on every non-text-leaf object; for
+  ~90% of children it just repeated the parent's JSON key. Now
+  stripped only when redundant (singleton lifted by element-name,
+  or list-item where list-name == element-name). Kept where
+  load-bearing: root, items in `children: [...]` overflow,
+  list-items where list-name differs from element-name (e.g.
+  `parameters: [{$type: "parameter", ...}]`). Render path was
+  already key-tolerant. Per-language reduction: csharp 1042→114,
+  ts 1081→84, rust 1022→97, java 525→28, go 788→87, python
+  847→94, php 749→49, ruby 698→51, tsql 342→57. ~6.4K
+  redundant `$type` lines gone across the JSON snapshots; YAML
+  benefits identically (same code path).
 - [x] iter 170: per-language JSON blueprint snapshots
   (`blueprint.<ext>.snapshot.json`) added alongside existing
   `.snapshot.txt`. Generated via `-p tree --single -f json`.
