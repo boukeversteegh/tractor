@@ -203,9 +203,10 @@ pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
     // Ruby unary defined-test
     OperatorSpec { text: "defined?", primary: Some("defined"), children: &[], nested: None },
     // Ruby spaceship comparator: `a <=> b` returns -1 / 0 / 1.
-    // Marker `compare-three-way` is more explicit than the source
-    // sigil and parallels the existing `compare` family.
-    OperatorSpec { text: "<=>", primary: Some("compare-three-way"), children: &[], nested: None },
+    // Ruby community universally calls this the "spaceship operator";
+    // the marker uses that idiomatic name (Goal #5: developer mental
+    // model).
+    OperatorSpec { text: "<=>", primary: Some("spaceship"), children: &[], nested: None },
     // Ruby regex match operators.
     OperatorSpec { text: "=~", primary: Some("match"), children: &[],      nested: None },
     OperatorSpec { text: "!~", primary: Some("match"), children: &["not"], nested: None },

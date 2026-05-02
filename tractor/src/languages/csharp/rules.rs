@@ -123,7 +123,13 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::Attribute                      => Rename(Attribute),
         CsKind::AttributeArgument              => Rename(Argument),
         CsKind::AwaitExpression                => Custom(transformations::await_expression),
-        CsKind::BaseList                       => Rename(Extends),
+        // `class Foo : Base, IFace` — C# uses `:` (no `extends`/
+        // `implements` keyword); the colon-list contains the base
+        // class plus interfaces. Idiomatically called the "base
+        // list" / "base types" in MS docs. Produce multiple `<base>`
+        // siblings (Principle #12 — no list container, Goal #5 —
+        // dev mental model).
+        CsKind::BaseList                       => Custom(transformations::base_list),
         CsKind::Block                          => Rename(Block),
         CsKind::BooleanLiteral                 => Rename(Bool),
         CsKind::BreakStatement                 => RenameStripKeyword(Break, "break"),

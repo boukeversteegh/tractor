@@ -25,9 +25,8 @@ program/
   │   │       └─ name = "TARGET_CLASS"
   │   ├─ name = "Demo"
   │   ├─ extends/name = "Base"
-  │   ├─ implements/
-  │   │   ├─ name = "Speaker"
-  │   │   └─ name = "Countable"
+  │   ├─ implements/name = "Speaker"
+  │   ├─ implements/name = "Countable"
   │   └─ body/
   │       ├─ use/name = "Loggable"
   │       ├─ const[public]/constant/

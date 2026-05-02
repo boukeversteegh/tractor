@@ -36,9 +36,8 @@ fn csharp_vocabulary() {
             //class[name='Dog']
                 [generic[name='T']
                     [extends/type[name='Animal']]]
-                [extends
-                    [type[name='Animal']]
-                    [type[name='IBarker']]]
+                [base[name='Animal']]
+                [base[name='IBarker']]
                 [body/field
                     [declarator/name='Owner']
                     [type[name='T']]

@@ -41,6 +41,24 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
     Ok(TransformAction::Continue)
 }
 
+/// `super_interfaces` — `implements A, B, C`. Wrap each interface
+/// type in its own `<implements>` element so multiple targets become
+/// multiple flat siblings (Principle #12 — no list container).
+pub fn super_interfaces(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Implements;
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let impl_elt = xot.add_name(Implements.as_str());
+        let impl_node = xot.new_element(impl_elt);
+        xot.insert_before(child, impl_node)?;
+        xot.detach(child)?;
+        xot.append(impl_node, child)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `switch_label` — `case X:` / `default:`. The `default` form has
 /// just the bare keyword text. Detect it and lift to a `[default]`
 /// marker so the shape is `<label[default]/>`. The `case X` form

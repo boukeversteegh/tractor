@@ -34,7 +34,7 @@ unit/
   │   ├─ enum[public]/
   │   │   ├─ attribute/name = "Flags"
   │   │   ├─ name = "Trait"
-  │   │   ├─ extends/type/name = "uint"
+  │   │   ├─ base/type/name = "uint"
   │   │   └─ body/
   │   │       ├─ constant/
   │   │       │   ├─ name = "None"
@@ -271,11 +271,10 @@ unit/
   │   │               └─ argument = "this"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
-  │   │   ├─ extends/
-  │   │   │   ├─ type/name = "EntityBase"
-  │   │   │   └─ type[generic]/
-  │   │   │       ├─ name = "IRepository"
-  │   │   │       └─ type/name = "Widget"
+  │   │   ├─ base/name = "EntityBase"
+  │   │   ├─ base/type[generic]/
+  │   │   │   ├─ name = "IRepository"
+  │   │   │   └─ type/name = "Widget"
   │   │   └─ body/
   │   │       ├─ event[public]/variable/
   │   │       │   ├─ type/type[generic]/

@@ -122,7 +122,11 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::ScopedIdentifier            => Rename(Path),
         JavaKind::ScopedTypeIdentifier        => Rename(Path),
         JavaKind::StringLiteral               => Rename(String),
-        JavaKind::SuperInterfaces             => Rename(Implements),
+        // `implements A, B, C` — Principle #12 forbids the
+        // list-container `<implements>{type=A, type=B, type=C}` shape;
+        // produce multiple `<implements>` siblings, one per interface.
+        // Drops the literal `implements` keyword text leaf.
+        JavaKind::SuperInterfaces             => Custom(transformations::super_interfaces),
         JavaKind::Superclass                  => Rename(Extends),
         // `switch_expression.body` field already wraps this in <body>;
         // flatten avoids double-nested <body><body>...</body></body>.

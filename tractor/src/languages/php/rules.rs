@@ -149,7 +149,10 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::CastExpression            => Rename(Cast),
         PhpKind::CatchClause               => Rename(Catch),
         PhpKind::ClassDeclaration          => Rename(Class),
-        PhpKind::ClassInterfaceClause      => Rename(Implements),
+        // `class Foo implements A, B, C` — Principle #12 forbids the
+        // list-container `<implements>{name=A, name=B, name=C}` shape;
+        // produce multiple `<implements>` siblings, one per interface.
+        PhpKind::ClassInterfaceClause      => Custom(transformations::class_interface_clause),
         PhpKind::ConditionalExpression     => Rename(Ternary),
         PhpKind::ConstDeclaration          => Rename(Const),
         PhpKind::ConstElement              => Rename(Constant),

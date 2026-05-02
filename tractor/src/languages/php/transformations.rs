@@ -203,6 +203,30 @@ pub fn cast_type(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     Ok(TransformAction::Continue)
 }
 
+/// `class_interface_clause` — `implements A, B, C`. Wrap each
+/// interface name in its own `<implements>` element so the shape
+/// is multiple flat siblings rather than a single `<implements>`
+/// list container (Principle #12).
+pub fn class_interface_clause(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Implements;
+    // Iterate non-text element children. Each becomes its own
+    // `<implements>` sibling.
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in elem_children {
+        let impl_elt = xot.add_name(Implements.as_str());
+        let impl_node = xot.new_element(impl_elt);
+        xot.insert_before(child, impl_node)?;
+        xot.detach(child)?;
+        xot.append(impl_node, child)?;
+    }
+    Ok(TransformAction::Flatten)
+}
+
 /// `global_declaration` — `global $x;`. Strip the bare `global`
 /// keyword text. Within each variable_name child, lift the `<name>`
 /// out so the shape is `<variable[global]><name>x</name>...</variable>`
