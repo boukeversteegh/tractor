@@ -443,12 +443,15 @@ fn render_open_tag(
     for (attr_name_id, attr_value) in attrs.iter() {
         let attr_name = xot.local_name_str(attr_name_id);
 
-        // Skip metadata attributes unless --meta is on
+        // Skip metadata attributes unless --meta is on. `list` is the
+        // renderer-internal cardinality signal (read by xml_to_json
+        // post-iter-139, ignored by everything else): hidden alongside
+        // tree-sitter `field=` and source-location attributes.
         if !options.include_meta {
             if matches!(
                 attr_name,
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field"
+                | "kind" | "field" | "list"
             ) {
                 continue;
             }
@@ -788,7 +791,7 @@ fn render_xml_node_open_tag(
             if matches!(
                 attr_name.as_str(),
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field"
+                | "kind" | "field" | "list"
             ) {
                 continue;
             }

@@ -1,127 +1,127 @@
 program/
-  ├─ comment[@list="comment"] = "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot."
-  ├─ package[@list="package"]/path/
-  │   ├─ name[@list="name"] = "com"
-  │   ├─ name[@list="name"] = "example"
-  │   └─ name[@list="name"] = "blueprint"
-  ├─ import[@list="import"]/path/
-  │   ├─ name[@list="name"] = "java"
-  │   ├─ name[@list="name"] = "util"
-  │   └─ name[@list="name"] = "List"
-  ├─ import[@list="import"]/path/
-  │   ├─ name[@list="name"] = "java"
-  │   ├─ name[@list="name"] = "util"
-  │   └─ name[@list="name"] = "Map"
-  ├─ import[@list="import"]/path/
-  │   ├─ name[@list="name"] = "java"
-  │   ├─ name[@list="name"] = "util"
-  │   ├─ name[@list="name"] = "function"
-  │   └─ name[@list="name"] = "Function"
-  ├─ import[static and @list="import"]/path/
-  │   ├─ name[@list="name"] = "java"
-  │   ├─ name[@list="name"] = "util"
-  │   ├─ name[@list="name"] = "Collections"
-  │   └─ name[@list="name"] = "emptyList"
-  ├─ comment[leading and @list="comment"] = "/** Javadoc comment on the class. */"
-  ├─ class[public and final and @list="class"]/
+  ├─ comment = "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot."
+  ├─ package/path/
+  │   ├─ name = "com"
+  │   ├─ name = "example"
+  │   └─ name = "blueprint"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   └─ name = "List"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   └─ name = "Map"
+  ├─ import/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   ├─ name = "function"
+  │   └─ name = "Function"
+  ├─ import[static]/path/
+  │   ├─ name = "java"
+  │   ├─ name = "util"
+  │   ├─ name = "Collections"
+  │   └─ name = "emptyList"
+  ├─ comment[leading] = "/** Javadoc comment on the class. */"
+  ├─ class[public and final]/
   │   ├─ annotation/
   │   │   ├─ name = "SuppressWarnings"
   │   │   └─ string = "\"unchecked\""
   │   ├─ name = "Demo"
-  │   ├─ generic[@list="generics"]/
+  │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   └─ extends[@list="extends"]/type[generic]/
+  │   │   └─ extends/type[generic]/
   │   │       ├─ name = "Comparable"
-  │   │       └─ type[@list="arguments"]/name = "T"
-  │   ├─ extends[@list="extends"]/type/name = "Base"
-  │   ├─ implements[@list="implements"]/type[generic]/
+  │   │       └─ type/name = "T"
+  │   ├─ extends/type/name = "Base"
+  │   ├─ implements/type[generic]/
   │   │   ├─ name = "Handler"
-  │   │   └─ type[@list="arguments"]/name = "T"
+  │   │   └─ type/name = "T"
   │   └─ body/
-  │       ├─ comment[@list="comment"] = "// Line comment before a field"
-  │       ├─ comment[leading and @list="comment"] = "/* block comment */"
-  │       ├─ field[public and static and final and @list="field"]/
+  │       ├─ comment = "// Line comment before a field"
+  │       ├─ comment[leading] = "/* block comment */"
+  │       ├─ field[public and static and final]/
   │       │   ├─ type/name = "int"
   │       │   └─ declarator/
   │       │       ├─ name = "MAX"
   │       │       └─ value/expression/int = "100"
-  │       ├─ field[private and @list="field"]/
+  │       ├─ field[private]/
   │       │   ├─ type/name = "String"
   │       │   └─ declarator/name = "name"
-  │       ├─ field[protected and @list="field"]/
+  │       ├─ field[protected]/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "List"
-  │       │   │   └─ type[generic and @list="arguments"]/
+  │       │   │   └─ type[generic]/
   │       │   │       ├─ name = "Map"
-  │       │   │       ├─ type[@list="arguments"]/name = "String"
-  │       │   │       └─ type[@list="arguments"]/name = "T"
+  │       │   │       ├─ type/name = "String"
+  │       │   │       └─ type/name = "T"
   │       │   └─ declarator/name = "items"
-  │       ├─ field[package and @list="field"]/
+  │       ├─ field[package]/
   │       │   ├─ type/name = "int"
   │       │   └─ declarator/name = "pkg"
-  │       ├─ comment[trailing and @list="comment"] = "// trailing line comment"
-  │       ├─ field[package and transient and volatile and @list="field"]/
+  │       ├─ comment[trailing] = "// trailing line comment"
+  │       ├─ field[package and transient and volatile]/
   │       │   ├─ type/name = "boolean"
   │       │   └─ declarator/name = "ready"
-  │       ├─ constructor[public and @list="constructor"]/
+  │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
-  │       │   └─ body/call[this and @list="call"]/null[@list="arguments"] = "null"
-  │       ├─ constructor[public and @list="constructor"]/
+  │       │   └─ body/call[this]/null = "null"
+  │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
-  │       │   ├─ parameter[@list="parameters"]/
+  │       │   ├─ parameter/
   │       │   │   ├─ type/name = "String"
   │       │   │   └─ name = "name"
   │       │   └─ body/
-  │       │       ├─ call[super and @list="call"]
-  │       │       └─ expression[@list="expression"]/assign/
+  │       │       ├─ call[super]
+  │       │       └─ expression/assign/
   │       │           ├─ left/expression/member/
   │       │           │   ├─ object/this = "this"
   │       │           │   └─ property/name = "name"
   │       │           ├─ op = "="
   │       │           └─ right/expression/name = "name"
-  │       ├─ method[public and static and @list="method"]/
-  │       │   ├─ generic[@list="generics"]/name = "R"
+  │       ├─ method[public and static]/
+  │       │   ├─ generic/name = "R"
   │       │   ├─ returns/type/name = "R"
   │       │   ├─ name = "factory"
-  │       │   ├─ parameter[@list="parameters"]/
+  │       │   ├─ parameter/
   │       │   │   ├─ type[generic]/
   │       │   │   │   ├─ name = "Function"
-  │       │   │   │   ├─ type[@list="arguments"]/name = "String"
-  │       │   │   │   └─ type[@list="arguments"]/name = "R"
+  │       │   │   │   ├─ type/name = "String"
+  │       │   │   │   └─ type/name = "R"
   │       │   │   └─ name = "mapper"
-  │       │   └─ body/return[@list="return"]/expression/call/
+  │       │   └─ body/return/expression/call/
   │       │       ├─ object/name = "mapper"
   │       │       ├─ name = "apply"
-  │       │       └─ string[@list="arguments"] = "\"hello\""
-  │       ├─ method[public and synchronized and @list="method"]/
+  │       │       └─ string = "\"hello\""
+  │       ├─ method[public and synchronized]/
   │       │   ├─ annotation/name = "Override"
   │       │   ├─ returns/type/name = "T"
   │       │   ├─ name = "process"
-  │       │   ├─ parameter[@list="parameters"]/
+  │       │   ├─ parameter/
   │       │   │   ├─ type/name = "T"
   │       │   │   └─ name = "input"
-  │       │   ├─ throws[@list="throws"]/type/name = "IllegalArgumentException"
-  │       │   └─ body/if[@list="if"]/
+  │       │   ├─ throws/type/name = "IllegalArgumentException"
+  │       │   └─ body/if/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "input"
   │       │       │   ├─ op[equals] = "=="
   │       │       │   └─ right/expression/null = "null"
   │       │       ├─ then/throw/new/
   │       │       │   ├─ type/name = "IllegalArgumentException"
-  │       │       │   └─ string[@list="arguments"] = "\"null\""
+  │       │       │   └─ string = "\"null\""
   │       │       ├─ else_if/
   │       │       │   ├─ condition/expression/unary/
   │       │       │   │   ├─ op[logical and not] = "!"
   │       │       │   │   └─ name = "ready"
   │       │       │   └─ then/return/expression/null = "null"
   │       │       └─ else/return/expression/name = "input"
-  │       ├─ method[public and @list="method"]/
+  │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "describe"
-  │       │   ├─ parameter[@list="parameters"]/
+  │       │   ├─ parameter/
   │       │   │   ├─ type/name = "int"
   │       │   │   └─ name = "n"
-  │       │   └─ body/return[@list="return"]/expression/ternary/
+  │       │   └─ body/return/expression/ternary/
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "n"
   │       │       │   ├─ op[compare and greater] = ">"
@@ -134,54 +134,54 @@ program/
   │       │           │   └─ right/expression/int = "0"
   │       │           ├─ then/string = "\"negative\""
   │       │           └─ else/string = "\"zero\""
-  │       ├─ method[public and @list="method"]/
+  │       ├─ method[public]/
   │       │   ├─ returns/type/name = "int"
   │       │   ├─ name = "sum"
-  │       │   ├─ parameter[variadic and @list="parameters"]/
+  │       │   ├─ parameter[variadic]/
   │       │   │   ├─ type/name = "int"
   │       │   │   └─ declarator/name = "xs"
   │       │   └─ body/
-  │       │       ├─ variable[@list="variable"]/
+  │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
   │       │       │   └─ declarator/
   │       │       │       ├─ name = "total"
   │       │       │       └─ value/expression/int = "0"
-  │       │       ├─ foreach[@list="foreach"]/
+  │       │       ├─ foreach/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "x"
   │       │       │   ├─ value/expression/name = "xs"
-  │       │       │   └─ body/expression[@list="expression"]/assign/
+  │       │       │   └─ body/expression/assign/
   │       │       │       ├─ left/expression/name = "total"
   │       │       │       ├─ op[assign and plus] = "+="
   │       │       │       └─ right/expression/name = "x"
-  │       │       ├─ variable[@list="variable"]/
+  │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
   │       │       │   └─ declarator/
   │       │       │       ├─ name = "i"
   │       │       │       └─ value/expression/int = "0"
-  │       │       ├─ while[@list="while"]/
+  │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
   │       │       │   │   ├─ left/expression/name = "i"
   │       │       │   │   ├─ op[compare and less] = "<"
   │       │       │   │   └─ right/expression/int = "3"
-  │       │       │   └─ body/expression[@list="expression"]/assign/
+  │       │       │   └─ body/expression/assign/
   │       │       │       ├─ left/expression/name = "i"
   │       │       │       ├─ op = "="
   │       │       │       └─ right/expression/binary/
   │       │       │           ├─ left/expression/name = "i"
   │       │       │           ├─ op[plus] = "+"
   │       │       │           └─ right/expression/int = "1"
-  │       │       └─ return[@list="return"]/expression/name = "total"
-  │       ├─ method[public and @list="method"]/
+  │       │       └─ return/expression/name = "total"
+  │       ├─ method[public]/
   │       │   ├─ returns/type/name = "String"
   │       │   ├─ name = "match"
-  │       │   ├─ parameter[@list="parameters"]/
+  │       │   ├─ parameter/
   │       │   │   ├─ type/name = "Object"
   │       │   │   └─ name = "o"
-  │       │   └─ body/return[@list="return"]/expression/switch/
+  │       │   └─ body/return/expression/switch/
   │       │       ├─ condition/expression/name = "o"
   │       │       └─ body/
-  │       │           ├─ arm[@list="arm"]/
+  │       │           ├─ arm/
   │       │           │   ├─ label/pattern/pattern[type]/
   │       │           │   │   ├─ type/name = "Integer"
   │       │           │   │   └─ name = "i"
@@ -189,7 +189,7 @@ program/
   │       │           │       ├─ left/expression/string = "\"int \""
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "i"
-  │       │           ├─ arm[@list="arm"]/
+  │       │           ├─ arm/
   │       │           │   ├─ label/
   │       │           │   │   ├─ pattern/pattern[type]/
   │       │           │   │   │   ├─ type/name = "String"
@@ -203,51 +203,51 @@ program/
   │       │           │       ├─ left/expression/string = "\"non-empty: \""
   │       │           │       ├─ op[plus] = "+"
   │       │           │       └─ right/expression/name = "s"
-  │       │           └─ arm[@list="arm"]/
+  │       │           └─ arm/
   │       │               ├─ label[default]
   │       │               └─ expression/string = "\"other\""
-  │       ├─ interface[private and @list="interface"]/
+  │       ├─ interface[private]/
   │       │   ├─ name = "Handler"
-  │       │   ├─ generic[@list="generics"]/name = "U"
-  │       │   └─ body/method[public and @list="method"]/
+  │       │   ├─ generic/name = "U"
+  │       │   └─ body/method[public]/
   │       │       ├─ returns/type/name = "U"
   │       │       ├─ name = "process"
-  │       │       ├─ parameter[@list="parameters"]/
+  │       │       ├─ parameter/
   │       │       │   ├─ type/name = "U"
   │       │       │   └─ name = "input"
-  │       │       └─ throws[@list="throws"]/type/name = "IllegalArgumentException"
-  │       ├─ enum[public and @list="enum"]/
+  │       │       └─ throws/type/name = "IllegalArgumentException"
+  │       ├─ enum[public]/
   │       │   ├─ name = "Color"
   │       │   └─ body/
-  │       │       ├─ constant[@list="constant"]/name = "RED"
-  │       │       ├─ constant[@list="constant"]/name = "GREEN"
-  │       │       ├─ constant[@list="constant"]/name = "BLUE"
-  │       │       └─ method[public and @list="method"]/
+  │       │       ├─ constant/name = "RED"
+  │       │       ├─ constant/name = "GREEN"
+  │       │       ├─ constant/name = "BLUE"
+  │       │       └─ method[public]/
   │       │           ├─ returns/type/name = "int"
   │       │           ├─ name = "rgb"
-  │       │           └─ body/return[@list="return"]/expression/switch/
+  │       │           └─ body/return/expression/switch/
   │       │               ├─ condition/expression/this = "this"
   │       │               └─ body/
-  │       │                   ├─ arm[@list="arm"]/
+  │       │                   ├─ arm/
   │       │                   │   ├─ label/name = "RED"
   │       │                   │   └─ expression/int = "0xFF0000"
-  │       │                   ├─ arm[@list="arm"]/
+  │       │                   ├─ arm/
   │       │                   │   ├─ label/name = "GREEN"
   │       │                   │   └─ expression/int = "0x00FF00"
-  │       │                   └─ arm[@list="arm"]/
+  │       │                   └─ arm/
   │       │                       ├─ label/name = "BLUE"
   │       │                       └─ expression/int = "0x0000FF"
-  │       └─ record[public and @list="record"]/
+  │       └─ record[public]/
   │           ├─ name = "Point"
-  │           ├─ parameter[@list="parameters"]/
+  │           ├─ parameter/
   │           │   ├─ type/name = "int"
   │           │   └─ name = "x"
-  │           ├─ parameter[@list="parameters"]/
+  │           ├─ parameter/
   │           │   ├─ type/name = "int"
   │           │   └─ name = "y"
-  │           └─ body/constructor[compact and public and @list="constructor"]/
+  │           └─ body/constructor[compact and public]/
   │               ├─ name = "Point"
-  │               └─ body/if[@list="if"]/
+  │               └─ body/if/
   │                   ├─ condition/expression/binary/
   │                   │   ├─ left/expression/binary/
   │                   │   │   ├─ left/expression/name = "x"
@@ -259,48 +259,48 @@ program/
   │                   │       ├─ op[compare and less] = "<"
   │                   │       └─ right/expression/int = "0"
   │                   └─ then/throw/new/type/name = "IllegalArgumentException"
-  ├─ class[package and @list="class"]/
+  ├─ class[package]/
   │   ├─ name = "Base"
-  │   └─ body/method[package and @list="method"]/
+  │   └─ body/method[package]/
   │       ├─ returns/type/name = "String"
   │       ├─ name = "greet"
-  │       └─ body/return[@list="return"]/expression/call/
+  │       └─ body/return/expression/call/
   │           ├─ object/name = "String"
   │           ├─ name = "format"
-  │           ├─ string[@list="arguments"] = "\"hello from %s\""
-  │           └─ call[@list="arguments"]/
+  │           ├─ string = "\"hello from %s\""
+  │           └─ call/
   │               ├─ object/call/name = "getClass"
   │               └─ name = "getSimpleName"
-  ├─ comment[@list="comment"] = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
-  ├─ comment[leading and @list="comment"] = "/** @interface (annotation type) with a constant. */"
-  ├─ interface[annotation and @list="interface"]/
+  ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
+  ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
+  ├─ interface[annotation]/
   │   ├─ name = "Config"
   │   └─ body/
-  │       ├─ method[@list="method"]/
+  │       ├─ method/
   │       │   ├─ type/name = "String"
   │       │   ├─ name = "value"
   │       │   └─ value/expression/string = "\"default\""
-  │       └─ method[@list="method"]/
+  │       └─ method/
   │           ├─ type/name = "int"
   │           ├─ name = "timeout"
   │           └─ value/expression/int = "30"
-  ├─ comment[leading and @list="comment"] = "/** Static initializer + try-with-resources + labeled loops + misc. */"
-  └─ class[package and @list="class"]/
+  ├─ comment[leading] = "/** Static initializer + try-with-resources + labeled loops + misc. */"
+  └─ class[package]/
       ├─ name = "Extras"
       └─ body/
-          ├─ field[package and static and final and @list="field"]/
+          ├─ field[package and static and final]/
           │   ├─ type/name = "int"
           │   └─ declarator/name = "SEED"
-          ├─ block[static and @list="block"]/expression[@list="expression"]/assign/
+          ├─ block[static]/expression/assign/
           │   ├─ left/expression/name = "SEED"
           │   ├─ op = "="
           │   └─ right/expression/int = "42"
-          ├─ comment[leading and @list="comment"] = "/** Array initializer, char literal, class literal, method reference. */"
-          ├─ method[package and @list="method"]/
+          ├─ comment[leading] = "/** Array initializer, char literal, class literal, method reference. */"
+          ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "literals"
           │   └─ body/
-          │       ├─ variable[@list="variable"]/
+          │       ├─ variable/
           │       │   ├─ type[array]/type/name = "int"
           │       │   └─ declarator/
           │       │       ├─ name = "arr"
@@ -308,57 +308,55 @@ program/
           │       │           ├─ int = "1"
           │       │           ├─ int = "2"
           │       │           └─ int = "3"
-          │       ├─ variable[@list="variable"]/
+          │       ├─ variable/
           │       │   ├─ type/name = "char"
           │       │   └─ declarator/
           │       │       ├─ name = "ch"
           │       │       └─ value/expression/char = "'A'"
-          │       ├─ variable[@list="variable"]/
-          │       │   ├─ type[generic]/
-          │       │   │   ├─ name = "Class"
-          │       │   │   └─ wildcard[@list="arguments"]
+          │       ├─ variable/
+          │       │   ├─ type[generic and wildcard]/name = "Class"
           │       │   └─ declarator/
           │       │       ├─ name = "cls"
           │       │       └─ value/expression/type[class]/type/name = "String"
-          │       └─ variable[@list="variable"]/
+          │       └─ variable/
           │           ├─ type[generic]/
           │           │   ├─ name = "java.util.function.Function"
-          │           │   ├─ type[@list="arguments"]/name = "Object"
-          │           │   └─ type[@list="arguments"]/name = "String"
+          │           │   ├─ type/name = "Object"
+          │           │   └─ type/name = "String"
           │           └─ declarator/
           │               ├─ name = "ref"
           │               └─ value/expression/reference/
           │                   ├─ name = "String"
           │                   └─ name = "valueOf"
-          ├─ comment[leading and @list="comment"] = "/** Cast, instanceof, assert, break/continue with label. */"
-          ├─ method[package and @list="method"]/
+          ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
+          ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "controlFlow"
-          │   ├─ parameter[@list="parameters"]/
+          │   ├─ parameter/
           │   │   ├─ type/name = "Object"
           │   │   └─ name = "o"
           │   └─ body/
-          │       ├─ variable[@list="variable"]/
+          │       ├─ variable/
           │       │   ├─ type/name = "int"
           │       │   └─ declarator/
           │       │       ├─ name = "n"
           │       │       └─ value/expression/cast/
           │       │           ├─ type/name = "int"
           │       │           └─ value/expression/int = "0L"
-          │       ├─ assert[@list="assert"]/
+          │       ├─ assert/
           │       │   ├─ binary/
           │       │   │   ├─ left/expression/name = "n"
           │       │   │   ├─ op[compare and greater and equal] = ">="
           │       │   │   └─ right/expression/int = "0"
           │       │   └─ string = "\"non-negative\""
-          │       ├─ variable[@list="variable"]/
+          │       ├─ variable/
           │       │   ├─ type/name = "boolean"
           │       │   └─ declarator/
           │       │       ├─ name = "isStr"
           │       │       └─ value/expression/instanceof/
           │       │           ├─ left/expression/name = "o"
           │       │           └─ right/type/name = "String"
-          │       ├─ label[@list="label"]/
+          │       ├─ label/
           │       │   ├─ name = "outer"
           │       │   └─ for/
           │       │       ├─ variable/
@@ -374,87 +372,87 @@ program/
           │       │       │   ├─ name = "i"
           │       │       │   └─ op[increment] = "++"
           │       │       └─ body/
-          │       │           ├─ if[@list="if"]/
+          │       │           ├─ if/
           │       │           │   ├─ condition/expression/binary/
           │       │           │   │   ├─ left/expression/name = "i"
           │       │           │   │   ├─ op[equals] = "=="
           │       │           │   │   └─ right/expression/int = "1"
           │       │           │   └─ then/continue/name = "outer"
-          │       │           └─ if[@list="if"]/
+          │       │           └─ if/
           │       │               ├─ condition/expression/binary/
           │       │               │   ├─ left/expression/name = "i"
           │       │               │   ├─ op[equals] = "=="
           │       │               │   └─ right/expression/int = "3"
           │       │               └─ then/break/name = "outer"
-          │       ├─ variable[@list="variable"]/
+          │       ├─ variable/
           │       │   ├─ type/name = "int"
           │       │   └─ declarator/
           │       │       ├─ name = "k"
           │       │       └─ value/expression/int = "0"
-          │       └─ do[@list="do"]/
-          │           ├─ body/expression[@list="expression"]/unary/
+          │       └─ do/
+          │           ├─ body/expression/unary/
           │           │   ├─ name = "k"
           │           │   └─ op[increment] = "++"
           │           └─ condition/expression/binary/
           │               ├─ left/expression/name = "k"
           │               ├─ op[compare and less] = "<"
           │               └─ right/expression/int = "3"
-          ├─ comment[leading and @list="comment"] = "/** Try-with-resources + multi-catch + synchronized block. */"
-          ├─ method[package and @list="method"]/
+          ├─ comment[leading] = "/** Try-with-resources + multi-catch + synchronized block. */"
+          ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
           │   ├─ name = "resources"
-          │   ├─ throws[@list="throws"]/type/name = "Exception"
+          │   ├─ throws/type/name = "Exception"
           │   └─ body/
-          │       ├─ try[resource and @list="try"]/
+          │       ├─ try[resource]/
           │       │   ├─ variable/
           │       │   │   ├─ path/
-          │       │   │   │   ├─ name[@list="name"] = "java"
-          │       │   │   │   ├─ name[@list="name"] = "io"
-          │       │   │   │   └─ name[@list="name"] = "InputStream"
+          │       │   │   │   ├─ name = "java"
+          │       │   │   │   ├─ name = "io"
+          │       │   │   │   └─ name = "InputStream"
           │       │   │   ├─ name = "s"
           │       │   │   └─ value/expression/null = "null"
-          │       │   ├─ body/if[@list="if"]/
+          │       │   ├─ body/if/
           │       │   │   ├─ condition/expression/binary/
           │       │   │   │   ├─ left/expression/name = "s"
           │       │   │   │   ├─ op[equals] = "=="
           │       │   │   │   └─ right/expression/null = "null"
           │       │   │   └─ then/throw/new/path/
-          │       │   │       ├─ name[@list="name"] = "java"
-          │       │   │       ├─ name[@list="name"] = "io"
-          │       │   │       └─ name[@list="name"] = "IOException"
+          │       │   │       ├─ name = "java"
+          │       │   │       ├─ name = "io"
+          │       │   │       └─ name = "IOException"
           │       │   └─ catch/
           │       │       ├─ parameter/
           │       │       │   ├─ path/
-          │       │       │   │   ├─ name[@list="name"] = "java"
-          │       │       │   │   ├─ name[@list="name"] = "io"
-          │       │       │   │   └─ name[@list="name"] = "IOException"
+          │       │       │   │   ├─ name = "java"
+          │       │       │   │   ├─ name = "io"
+          │       │       │   │   └─ name = "IOException"
           │       │       │   ├─ type/name = "RuntimeException"
           │       │       │   └─ name = "e"
-          │       │       └─ body/throw[@list="throw"]/name = "e"
-          │       └─ synchronized[@list="synchronized"]/
+          │       │       └─ body/throw/name = "e"
+          │       └─ synchronized/
           │           ├─ this = "this"
-          │           └─ body/expression[@list="expression"]/name = "SEED"
-          ├─ comment[leading and @list="comment"] = "/** Yield in block-switch + switch with underscore/record pattern. */"
-          └─ method[package and @list="method"]/
+          │           └─ body/expression/name = "SEED"
+          ├─ comment[leading] = "/** Yield in block-switch + switch with underscore/record pattern. */"
+          └─ method[package]/
               ├─ returns/type/name = "int"
               ├─ name = "yieldDemo"
-              ├─ parameter[@list="parameters"]/
+              ├─ parameter/
               │   ├─ type/name = "Object"
               │   └─ name = "o"
               └─ body/
-                  ├─ variable[@list="variable"]/
+                  ├─ variable/
                   │   ├─ type/name = "int"
                   │   └─ declarator/
                   │       ├─ name = "v"
                   │       └─ value/expression/switch/
                   │           ├─ condition/expression/name = "o"
                   │           └─ body/
-                  │               ├─ arm[@list="arm"]/
+                  │               ├─ arm/
                   │               │   ├─ label/pattern/pattern[type]/
                   │               │   │   ├─ type/name = "Integer"
                   │               │   │   └─ name = "i"
                   │               │   └─ expression/name = "i"
-                  │               └─ arm[@list="arm"]/
+                  │               └─ arm/
                   │                   ├─ label[default]
                   │                   └─ yield/int = "0"
-                  └─ return[@list="return"]/expression/name = "v"
+                  └─ return/expression/name = "v"

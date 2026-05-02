@@ -315,6 +315,17 @@ C# closed iter 167; PHP closed iter 168; Ruby Block/DoBlock closed iter 169.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 172: hide `list=` from tree-text + XML rendering. Treated
+  as a renderer-internal cardinality signal (parallel to `field=`
+  iter 139 decision). `list=` still surfaces with `--meta` for
+  debugging; xml_to_json continues to read it as the JSON
+  cardinality driver. Two filters updated: `is_hidden_meta_attr`
+  in `query_tree_renderer.rs:740` and the open-tag attribute filter
+  in `xml_renderer.rs:447,789`. Snapshots: ~1.9K
+  `[@list="X"]` predicates and `list="X"` attributes removed across
+  all 9 blueprint .txt snapshots (XML report snapshots in
+  tests/integration/cli/ also benefit). All 829 tests + 149
+  fixtures green.
 - [x] iter 171: strip redundant `$type` from JSON/YAML output.
   `$type` was being emitted on every non-text-leaf object; for
   ~90% of children it just repeated the parent's JSON key. Now

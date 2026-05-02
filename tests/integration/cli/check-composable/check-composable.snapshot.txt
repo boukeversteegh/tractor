@@ -1,24 +1,24 @@
-class[public and @list="class"]/
+class[public]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (26 children)
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (26 children)
-      └─ method[public and @list="method"]/
+      └─ method[public]/
           └─ ... (26 children)
 error: class found
 
-class[public and @list="class"]/
+class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (22 children)
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (22 children)
-      └─ method[public and @list="method"]/
+      └─ method[public]/
           └─ ... (5 children)
 error: class found
 2 errors in 1 file

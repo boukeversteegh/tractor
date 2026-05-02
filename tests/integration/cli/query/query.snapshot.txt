@@ -1,23 +1,23 @@
 tests/integration/sample.cs:2
-class[public and @list="class"]/
+class[public]/
   ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (26 children)
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (26 children)
-      └─ method[public and @list="method"]/
+      └─ method[public]/
           └─ ... (26 children)
 
 tests/integration/sample.cs:9
-class[public and @list="class"]/
+class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (22 children)
-      ├─ method[public and @list="method"]/
+      ├─ method[public]/
       │   └─ ... (22 children)
-      └─ method[public and @list="method"]/
+      └─ method[public]/
           └─ ... (5 children)

@@ -13,7 +13,7 @@
     <group file="tests/integration/sample.cs">
       <match line="2" column="1" end_line="7" end_column="2">
         <tree>
-          <class list="class">
+          <class>
             <public/>
             public class
             <name>Calculator</name>
@@ -27,7 +27,7 @@
       </match>
       <match line="9" column="1" end_line="14" end_column="2">
         <tree>
-          <class list="class">
+          <class>
             <public/>
             public class
             <name>Greeter</name>

@@ -1,24 +1,24 @@
-unit/                                                                                                            ┤    │ 
-  ├─ comment[leading and @list="comment"] = "// Calculator and Greeter — shared sample for tractor format demos."┤  1 ├ // Calculator and Greeter — shared sample for tractor format demos.
-  ├─ class[public and @list="class"]/                                                                            ┤    │ 
-  │   ├─ "public class"                                                                                          ┤  2 ├ public class Calculator
-  │   ├─ name = "Calculator"                                                                                     ┤    │ 
-  │   └─ body/                                                                                                   ┤    │ 
-  │       └─ ... (81 children)                                                                                   ┤    │ 
-  └─ class[public and @list="class"]/                                                                            ┤    │ 
-      │                                                                                                          │  3 ├ {
-      │                                                                                                          │  4 ├     public int Add(int a, int b) { return a + b; }
-      │                                                                                                          │  5 ├     public int Subtract(int a, int b) { return a - b; }
-      │                                                                                                          │  6 ├     public int Multiply(int a, int b) { return a * b; }
-      │                                                                                                          │  7 ├ }
-      │                                                                                                          │  8 │ 
-      ├─ "public class"                                                                                          ┤  9 ├ public class Greeter
-      ├─ name = "Greeter"                                                                                        ┤    │ 
-      └─ body/                                                                                                   ┤    │ 
-          └─ ... (52 children)                                                                                   ┤    │ 
-                                                                                                                 │ 10 ├ {
-                                                                                                                 │ 11 ├     public string Hello(string name) { return "Hello, " + name; }
-                                                                                                                 │ 12 ├     public string Goodbye(string name) { return "Goodbye, " + name; }
-                                                                                                                 │ 13 ├     public void Reset() { }
-                                                                                                                 │ 14 ├ }
-                                                                                                                 │ 15 │ 
+unit/                                                                                        ┤    │ 
+  ├─ comment[leading] = "// Calculator and Greeter — shared sample for tractor format demos."┤  1 ├ // Calculator and Greeter — shared sample for tractor format demos.
+  ├─ class[public]/                                                                          ┤    │ 
+  │   ├─ "public class"                                                                      ┤  2 ├ public class Calculator
+  │   ├─ name = "Calculator"                                                                 ┤    │ 
+  │   └─ body/                                                                               ┤    │ 
+  │       └─ ... (81 children)                                                               ┤    │ 
+  └─ class[public]/                                                                          ┤    │ 
+      │                                                                                      │  3 ├ {
+      │                                                                                      │  4 ├     public int Add(int a, int b) { return a + b; }
+      │                                                                                      │  5 ├     public int Subtract(int a, int b) { return a - b; }
+      │                                                                                      │  6 ├     public int Multiply(int a, int b) { return a * b; }
+      │                                                                                      │  7 ├ }
+      │                                                                                      │  8 │ 
+      ├─ "public class"                                                                      ┤  9 ├ public class Greeter
+      ├─ name = "Greeter"                                                                    ┤    │ 
+      └─ body/                                                                               ┤    │ 
+          └─ ... (52 children)                                                               ┤    │ 
+                                                                                             │ 10 ├ {
+                                                                                             │ 11 ├     public string Hello(string name) { return "Hello, " + name; }
+                                                                                             │ 12 ├     public string Goodbye(string name) { return "Goodbye, " + name; }
+                                                                                             │ 13 ├     public void Reset() { }
+                                                                                             │ 14 ├ }
+                                                                                             │ 15 │ 
