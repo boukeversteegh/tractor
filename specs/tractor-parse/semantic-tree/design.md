@@ -872,7 +872,9 @@ markers because they play different roles?* If yes, wrap.
 - **Dotted path segments** (`com.foo.bar`) — every segment is "a
   segment of the path". No segment-level marker variant exists in
   any supported language today; positional order is the only
-  distinction. Stay flat with `list="path"` on each `<name>`.
+  distinction. Stay flat with `list="name"` on each `<name>`
+  (the generic auto-distribution uses the child's own element
+  name as the list key — JSON renders as `namespace.name: [...]`).
 
 #### When to wrap (role-mixed — DO wrap)
 
