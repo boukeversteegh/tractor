@@ -357,12 +357,69 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   vs complex), worth noting. May require always-wrap-in-object
   if uniformity matters more than text-only-leaf compactness.
 
-- [ ] **Audit all role-mixed text-leaf sites cross-language** *(meta
-  task; severity MED)*. The post-iter-171 JSON snapshots make this
-  trivial. Grep `"children": [` across all 9 `.snapshot.json`
-  fixtures; each occurrence is a candidate role-collision. Most
-  likely to find: member-access, ternaries, ranges, calls with
-  unhandled receivers.
+- [x] **Cross-language role-mix audit** — closed iter 181.
+  Swept `"children": [` across all 9 `.snapshot.json` blueprints.
+  283 occurrences total; per-language: rust 50, python 48, ruby 42,
+  go 40, tsql 34, ts 28, csharp 18, php 18, java 5. Findings split
+  into top patterns below; remaining items spawned as fresh
+  backlog entries.
+
+### Cross-language role-mix audit findings (iter 181)
+
+**Top causes by language:**
+
+- [ ] **TSQL `<file>`/`<transaction>`/`<select>`/`<insert>` lack
+  `list=` distribution** — tsql has `post_transform: None`, so no
+  `distribute_member_list_attrs` runs. 34 of 34 TSQL overflow sites
+  trace to this single root cause. Fix: add a `tsql_post_transform`
+  with at minimum `distribute_member_list_attrs(["file",
+  "transaction", "select", "insert"])`. Verify list="X"
+  doesn't over-broaden role-mixed containers (case/when problem
+  from iter 177 — likely none in tsql since it's mostly statement-
+  list shaped). Effort: 1 iter. Severity: HIGH (closes 12% of total
+  audit findings in one fix).
+
+- [ ] **Rust `<use>` aliased imports collide with `<alias>` marker**
+  — `tests/integration/languages/rust/blueprint.rs.snapshot.json`
+  shows `{$type: "use", name: "HashSet", alias: true, children:
+  [{$type: "alias", name: "Set"}]}`. The boolean `alias: true`
+  marker collides with the structural `<alias>Set</alias>` wrapper
+  on the same `alias` JSON key. Fix: rename the structural wrapper
+  to `<aliased>` (or `<as>`), keep the marker as `<alias/>`.
+  Effort: small. ~5 sites in Rust.
+
+- [ ] **Ruby `<match>` with multiple `<in>` clauses** — same
+  pattern as case/when (closed iter 177). Multiple `<in>` siblings
+  under `<match>` overflow into `children: [...]`. Fix: extend
+  `ruby_tag_case_when_lists` (or rename to e.g.
+  `ruby_tag_pattern_match_lists`) to also tag `<in>` children of
+  `<match>` with `list="in"`. Effort: small.
+
+- [ ] **Rust/Python/PHP `<parameter>` overflow** — multiple
+  parameters in some contexts (typeparams? closures?) overflow.
+  Need to investigate which parent and why. Could be the same
+  root as TSQL (missing distribute_member_list_attrs config) or
+  a per-parent handler issue. Effort: medium (investigation +
+  fix). Sample sites: rust 5, python 1, php 2.
+
+- [ ] **C# `<arm>` / `<argument>` overflow** — small, likely
+  isolated. C# arms (switch arms) and arguments may need list=
+  distribution in specific positions. Effort: small.
+
+- [ ] **TypeScript `<type>`/`<parameter>`/`<import>`/`<generic>`
+  isolated overflow** — 4 sites, 1 each. Likely independent fixes
+  per site. Effort: small (per-site).
+
+- [ ] **Python `<type>` overflow (2 sites)** — possibly typeparams
+  or generic-arg lists. Effort: small.
+
+**Summary**:
+- TSQL post-transform addition would close 34 sites in one iter.
+- Each remaining language has 1-5 specific patterns to address
+  individually.
+- After the post-iter-171/172 cleanup, role-collisions are now
+  trivially auditable via JSON `"children": [` grep — keep this in
+  the post-cycle review checklist.
 
 ### Standing items (re-flag every cycle)
 
@@ -376,6 +433,12 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 181: cross-language role-mix audit — discovery iter (no
+  code change). 283 `"children": [` overflow sites swept across 9
+  JSON blueprints; categorized into 7 distinct patterns. Top
+  finding: TSQL has `post_transform: None` so all 34 TSQL overflow
+  sites trace to a missing distribute_member_list_attrs call (one
+  iter would close 12% of the total).
 - [x] iter 180: Ruby `<range>` — adds `[inclusive]`/`[exclusive]`
   marker (Principle #8: source must be reconstructable; `..` vs
   `...` are semantically distinct) and wraps begin/end ints in
