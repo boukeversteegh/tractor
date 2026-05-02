@@ -128,7 +128,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         transform: python::transform,
         post_transform: Some(python_post_transform),
         syntax_category: python::syntax_category,
-        field_wrappings: COMMON_FIELD_WRAPPINGS,
+        field_wrappings: PYTHON_FIELD_WRAPPINGS,
         node_spec: Some(python::output::spec),
         is_programming: true,
         supports_data_tree: false,
@@ -1059,6 +1059,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     python_restructure_imports(xot, root)?;
+    crate::transform::strip_body_braces(xot, root, &["body"])?;
     Ok(())
 }
 
@@ -1728,6 +1729,22 @@ const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("condition", "condition"),
     ("consequence", "then"),
     ("return_type", "returns"),
+];
+
+const PYTHON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "then"),
+    ("return_type", "returns"),
+    // `class Foo(Base, metaclass=Meta)` — superclasses field wraps
+    // the (positional bases + kwargs) into `<extends>` so they're
+    // queryable as `//class/extends/name='Base'` rather than mixed
+    // with the class's own `<name>`.
+    ("superclasses", "extends"),
 ];
 
 const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[

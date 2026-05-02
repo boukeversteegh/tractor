@@ -92,7 +92,7 @@ module/
   ├─ class/
   │   ├─ name = "Box"
   │   ├─ generic/type/name = "T"
-  │   └─ body[pass] = "pass"
+  │   └─ body[pass]
   ├─ alias/
   │   ├─ left/expression/type[generic]/
   │   │   ├─ name = "Vec"
@@ -228,7 +228,7 @@ module/
   │   │   ├─ name = "repeat"
   │   │   └─ int = "3"
   │   ├─ name = "stacked"
-  │   └─ body[pass] = "pass"
+  │   └─ body[pass]
   ├─ class/
   │   ├─ decorator/name = "dataclass"
   │   ├─ name = "Point"
@@ -254,17 +254,18 @@ module/
   │                   └─ value/expression/name = "list"
   ├─ class/
   │   ├─ name = "Base"
-  │   └─ body[pass] = "pass"
+  │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Meta"
-  │   ├─ name = "type"
-  │   └─ body[pass] = "pass"
+  │   ├─ extends/name = "type"
+  │   └─ body[pass]
   ├─ class/
   │   ├─ name = "Derived"
-  │   ├─ name = "Base"
-  │   ├─ argument/
-  │   │   ├─ name = "metaclass"
-  │   │   └─ value/expression/name = "Meta"
+  │   ├─ extends/
+  │   │   ├─ name = "Base"
+  │   │   └─ argument/
+  │   │       ├─ name = "metaclass"
+  │   │       └─ value/expression/name = "Meta"
   │   └─ body/
   │       ├─ expression/string = "\"\"\"Class with inheritance and metaclass kwarg.\"\"\""
   │       ├─ class/
@@ -347,7 +348,7 @@ module/
   │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op/assign[plus]
   │       │   │   └─ right/expression/int = "1"
-  │       │   └─ else/body[pass] = "pass"
+  │       │   └─ else/body[pass]
   │       ├─ try/
   │       │   ├─ body/expression/call/name = "risky"
   │       │   ├─ except/
