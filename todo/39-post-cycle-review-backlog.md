@@ -108,20 +108,13 @@ member-access receiver). But several transform sites still
   "Don't trust commit-message / review claims without verifying" —
   the reviewer's "likely dead" was wrong.
 
-- [ ] **Drop `field=` writes in three internal helpers** in
-  `tractor/src/transform/mod.rs` (likely dead post-iter-139 since
-  `apply_field_wrappings` and `wrap_field_child` already had their
-  `field=` setters removed in iter 139). Concrete callsites
-  (re-verify line numbers — file has shifted):
-  - `promote_field_to_wrapper` — sets `field=` on the synthesized
-    wrapper.
-  - `replace_identifier_with_name_child` — same pattern.
-  - `wrap_text_in_name` — same pattern.
-  - **Action**: grep for `with_attr.*"field"` in `tractor/src/transform/mod.rs`,
-    drop each that's writing TO an output element (not reading
-    from a tree-sitter input).
-  - **Effort**: 15 minutes including verification.
-  - **Source**: iters 138-140 review.
+- [x] **Drop `field=` writes in three internal helpers** — closed
+  iter 164. `promote_field_to_wrapper` had zero callers and was
+  deleted entirely (32 lines). `replace_identifier_with_name_child`
+  and `wrap_text_in_name` had their `with_attr(name_el, "field",
+  "name")` writes removed. All 829 tests green, snapshot diff empty
+  — confirming the JSON serializer (post-iter-139) and XML output
+  don't depend on these `field=` writes.
 
 ### `field=` claim about `--meta` is misleading
 
@@ -241,6 +234,10 @@ member-access receiver). But several transform sites still
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 164: drop dead `field=` writes from three transform/mod.rs
+  helpers (`promote_field_to_wrapper` deleted entirely;
+  `replace_identifier_with_name_child` + `wrap_text_in_name`
+  cleaned). Snapshot diff empty.
 - [x] iter 162: TS arrow + Python lambda body re-tag (cross-language
   follow-up to iter 161 — closure-shape archetype fix applied to
   all single-expression-body languages).

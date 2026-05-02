@@ -1141,39 +1141,6 @@ pub mod helpers {
     }
 
 
-    /// Promote a `field` attribute to a wrapper element.
-    ///
-    /// Given `<identifier field="function">require</identifier>`, produces
-    /// `<function><identifier>require</identifier></function>`.
-    ///
-    /// - Creates a wrapper element named after the field value
-    /// - Copies source location attributes to the wrapper
-    /// - Marks the wrapper with `field` for JSON property lifting
-    /// - Removes `field` from the inner element
-    /// - Returns the wrapper node, or `None` if the node has no matching field
-    ///
-    /// The caller specifies which field values to promote (e.g., `&["function", "object", "property"]`).
-    pub fn promote_field_to_wrapper(
-        xot: &mut Xot,
-        node: XotNode,
-        fields: &[&str],
-    ) -> Result<Option<XotNode>, xot::Error> {
-        let field_value = match get_attr(xot, node, "field") {
-            Some(f) if fields.contains(&f.as_str()) => f,
-            _ => return Ok(None),
-        };
-
-        // Create wrapper element
-        let wrapper_name = get_name(xot, &field_value);
-        let wrapper = xot.new_element(wrapper_name);
-
-        xot.with_source_location_from(wrapper, node)
-            .with_attr(wrapper, "field", &field_value)
-            .with_removed_attr(node, "field")
-            .with_wrap_child(node, wrapper)?;
-
-        Ok(Some(wrapper))
-    }
 
     /// Rename an element to a marker: renames, removes text children.
     /// Preserves `start`/`end` and `kind` attributes (source location for keyword-based markers).
@@ -1235,8 +1202,7 @@ pub mod helpers {
         };
         let name_id = xot.add_name("name");
         let name_el = xot.new_element(name_id);
-        xot.with_attr(name_el, "field", "name")
-            .with_source_location_from(name_el, target);
+        xot.with_source_location_from(name_el, target);
         let text_node = xot.new_text(&text);
         xot.append(name_el, text_node)?;
         xot.insert_before(target, name_el)?;
@@ -1277,12 +1243,11 @@ pub mod helpers {
         for child in text_children {
             xot.detach(child)?;
         }
-        // Create <name field="name">TEXT</name> and prepend it. The
-        // field attribute makes JSON/YAML serialisers lift it as a
-        // named property (`"name": "TEXT"`) rather than a nested child.
+        // Create <name>TEXT</name> and prepend it. JSON serializer
+        // (post-iter-139) keys by element name "name" — no `field=`
+        // needed.
         let name_id = xot.add_name("name");
         let name_el = xot.new_element(name_id);
-        xot.with_attr(name_el, "field", "name");
         let text_node = xot.new_text(&trimmed);
         xot.append(name_el, text_node)?;
         xot.prepend(node, name_el)?;
