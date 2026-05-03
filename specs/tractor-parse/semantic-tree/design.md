@@ -1176,4 +1176,149 @@ elements (already used by `<type>`) but flattens structural grouping
 for primary-kind elements like calls and members. Tracked as a
 separate experiment; not part of this decision.
 
+### Hierarchical access nests top-down
+
+When source code traverses a hierarchical data structure step by
+step — member access (`a.b.c`), method calls in a chain
+(`a.foo().bar()`), subscript indexing (`arr[0].field`) — the tree
+shape mirrors the traversal. The leftmost source token sits at the
+top of the tree; each subsequent access step nests as a child of
+the previous one. Source order maps to tree depth: left-to-right
+in the source becomes top-to-bottom in the tree.
+
+The receiver is the first non-marker child of the outermost
+wrapper. Access steps form a left-deep spine where the next step
+is the LAST child of the previous step.
+
+```xml
+<!-- console.stdout.write() -->
+<object>
+  <access/>                  <!-- distinguishes chain from object literal -->
+  <name>console</name>       <!-- receiver -->
+  <member>                   <!-- step 1: .stdout -->
+    <name>stdout</name>
+    <call>                   <!-- step 2 (terminal): .write() -->
+      <name>write</name>
+    </call>
+  </member>
+</object>
+```
+
+Step elements are `<member>` for property access (`.X`), `<call>`
+for method invocation (`.X(...)`), and `<subscript>` for indexing
+(`[i]`). Each step holds the access name (or index expression) and,
+optionally, the next step as a nested child. A bare identifier with
+no access steps produces no wrapper.
+
+#### Why top-down
+
+A developer reading `a.b.c` thinks "an object `a`, with member `b`
+accessed on it, with member `c` accessed on that." The tree should
+say the same. When tree depth mirrors access depth, queries are
+local: a rule about "calls of `bar` on `xot`" reads as
+`//object[name='xot']/call[name='bar']` regardless of how many
+intermediate access steps appear. Adding or removing a step does
+not change the path needed to find the receiver, the call, or any
+relationship between them.
+
+This is the same shape XML uses to represent any hierarchical
+traversal: `<a><b><c/></b></a>` for "the `c` inside the `b` inside
+the `a`." Member access, method chains, and subscript indexing are
+all hierarchical traversal at the source level; the tree
+represents them as hierarchical traversal.
+
+#### Achieving the shape
+
+Some grammars produce this shape directly (Java's flat call shape,
+Ruby's left-deep call tree). Others produce a right-deep
+operator-precedence tree where the LAST access becomes the
+outermost element and the receiver the deepest leaf
+(TypeScript, Python, Go, Rust, C#, PHP). The transform
+restructures the latter into the canonical top-down shape so every
+language emits the same tree at the design level — when the parser
+already gives us top-down, no restructuring is needed.
+
+#### The wrapper element
+
+The wrapper is `<object>` because a developer reads `foo.bar` as
+"an object `foo`, with member `bar` accessed on it" — the element
+name reflects the construct's role in the developer's mental
+model. The same name is used for object-literal expressions in
+TS/JS (`{a: 1}`); the `[access]` marker distinguishes the runtime
+member-access form. `//object[access]` finds chains;
+`//object[not(access)]` finds literals.
+
+#### Cross-language uniformity
+
+For `obj.foo().bar.baz()` the same XPath matches in seven of the
+eight currently-supported languages:
+
+```xpath
+//object[access]/call[name='foo']/member[name='bar']/call[name='baz']
+```
+
+Per-language quirks are pinned in `tests/transform/chain.rs`. Two
+deliberate exceptions exist at the time of writing:
+
+- Ruby's grammar parses every `.X` as a method call, so
+  intermediate accesses also emit `<call>` rather than `<member>`.
+- PHP wraps the receiver in `<variable>` because PHP variables
+  carry a `$` sigil; the receiver query is
+  `//object[access]/variable/name='obj'`.
+
+#### Implicit receivers
+
+When a language's grammar omits the receiver from the parse tree
+(e.g., C# inlines `base` and `this` as text leaks rather than
+structural elements), the per-language transform synthesises an
+empty receiver element (`<base/>` / `<this/>`) inside the
+wrapper. The empty element rides as a marker on the chain root —
+`//object[access and base]` finds explicit-base accesses;
+`//object[access]/name='obj'` finds explicit-receiver accesses;
+`//object[access]` finds every chain regardless of receiver form.
+
+**Cites:** Goal #1 (intuitive queries — left-to-right reading
+matches top-to-bottom tree), Goal #5 (developer's mental model —
+"object with member accessed"), Goal #6 (broad-to-narrow —
+`//object[access]` matches every chain regardless of length),
+Principle #5 (unified concepts — same shape across languages
+regardless of how each parser represents the construct),
+Principle #15 (stable host — the wrapper name and shape do not
+vary with step count or modifier set).
+
+**Rejected alternatives:**
+
+- **Tree shape that follows operator precedence rather than source
+  order.** Receiver queries grow paths whose depth depends on chain
+  length. A rule about "calls of `bar` on `xot`" must spell out a
+  specific chain depth and breaks every time a step is added or
+  removed. The query path no longer reflects the access path the
+  developer wrote. Violates Goal #6 (broad-to-narrow refinement)
+  and Goal #5 (mental model).
+- **A flat sibling-step spine** (every step a direct child of the
+  wrapper rather than nested under the previous step). Loses the
+  hierarchical relationship between receiver and step: the tree
+  no longer reflects which step is applied to which intermediate
+  result. Also loses the structural symmetry with declaration
+  trees — a method declaration (`<class>/<method>`) and a method
+  invocation (`<object>/<call>`) read identically only when both
+  are nested.
+- **A wrapper element that names the construct as a chain** (e.g.
+  `<chain>`, `<access>`). The element name should reflect what a
+  developer thinks the construct *is*, not how the parser
+  decomposes it. `foo.bar` is "an object with a member accessed,"
+  not "a chain of two tokens." Reusing `<object>` (with a marker
+  to disambiguate from object literals) keeps the vocabulary
+  small and the mental model explicit.
+- **Per-step `<instance/>` markers** distinguishing instance from
+  static access at every step. Once the chain root carries the
+  `[access]` marker, the per-step marker duplicates information
+  already on the stable host — Principle #15 requires markers to
+  live in stable predictable locations, not be replicated down
+  the spine.
+
+Implementation rationale, per-language pre-passes, and the
+forward-compatible plan for cascade operators (Dart-style `..`)
+live in [`docs/design-chain-inversion.md`](../../../docs/design-chain-inversion.md).
+
 *See child specs for language-specific and feature-specific decisions.*

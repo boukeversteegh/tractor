@@ -106,10 +106,18 @@ Each iter:
   enter any renderer today, so the chain rollout requires zero
   renderer changes. Re-evaluate when expression-level rendering
   is added to `csharp.rs` or new languages gain renderers.
-- [ ] iter 248 — **design.md Decision section**. Document the
-  chain shape as canonical in
-  `specs/tractor-parse/semantic-tree/design.md`. Requires explicit
-  user approval per the self-improvement loop's design.md rule.
+- [x] iter 257 — **design.md Decision section**. Landed as
+  "Hierarchical access nests top-down" in
+  `specs/tractor-parse/semantic-tree/design.md` (after the
+  expression-host decision). Framed prescriptively: the principle
+  is that source-order maps to tree depth for hierarchical
+  access (member access, method chains, subscript indexing).
+  Tree-shape restructuring is the implementation consequence
+  when a parser produces operator-precedence shape; languages
+  whose grammar already produces top-down (Java, Ruby) require
+  no restructuring. Cross-language quirks, per-language
+  pre-passes, and Dart cascade compatibility remain in
+  `docs/design-chain-inversion.md`.
 - [ ] (deferred — Dart) **Cascades support**. When Dart joins the
   supported PLs, extend `ChainSegment` with `Cascade` variant and
   `emit_chain` to group consecutive cascades under `<cascades>`.
