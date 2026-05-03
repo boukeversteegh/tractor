@@ -498,49 +498,72 @@ pub fn tag_multi_target_expressions(
     Ok(())
 }
 
-/// Tag `<type>` siblings under union-shaped type containers with
-/// `list="type"` so JSON renders e.g. `type.type: [{...}, {...}]`
-/// arrays for `int | string` (PHP/TS union), `A & B` (PHP
-/// intersection), `(A & B) | C` (PHP disjunctive normal form), etc.
+/// Tag children that share their parent's element name with
+/// `list="<name>"` so JSON renders `<name>.<name>: [{...}, {...}]`
+/// arrays. Covers recursive container shapes:
+/// - `<type>` containing union/intersection/disjunctive `<type>`
+///   members (PHP `int | string`; TS `string | number`; etc.).
+/// - `<pattern>` containing `<pattern>` siblings (alternative,
+///   tuple, sequence patterns in Python/Rust).
+/// - Any future container that recursively holds same-named
+///   children.
 ///
-/// Discriminator: parent is `<type>` element AND it has 2+ direct
-/// `<type>` children. The cardinality test keeps singleton `<type>`
-/// containers (e.g. parameter declarations with a single typed
-/// child) untouched. Idempotent.
-pub fn tag_multi_type_children(
+/// Discriminator: parent's element name is in `names` AND it has
+/// 2+ direct children sharing that name. The cardinality test
+/// keeps singleton wrappers untouched. Idempotent.
+pub fn tag_multi_same_name_children(
     xot: &mut Xot,
     root: XotNode,
+    names: &[&str],
 ) -> Result<(), xot::Error> {
     use helpers::*;
+    if names.is_empty() {
+        return Ok(());
+    }
     let root = find_content_root(xot, root);
     let mut targets: Vec<XotNode> = Vec::new();
-    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-        if xot.element(node).is_some()
-            && get_element_name(xot, node).as_deref() == Some("type")
-        {
-            out.push(node);
+    fn collect(xot: &Xot, node: XotNode, names: &[&str], out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if names.contains(&name.as_str()) {
+                    out.push(node);
+                }
+            }
         }
         for c in xot.children(node) {
-            collect(xot, c, out);
+            collect(xot, c, names, out);
         }
     }
-    collect(xot, root, &mut targets);
+    collect(xot, root, names, &mut targets);
 
     for parent in targets {
-        let types: Vec<XotNode> = xot.children(parent)
+        let parent_name = match get_element_name(xot, parent) {
+            Some(n) => n,
+            None => continue,
+        };
+        let same_name_kids: Vec<XotNode> = xot.children(parent)
             .filter(|&c| {
                 xot.element(c).is_some()
-                    && get_element_name(xot, c).as_deref() == Some("type")
+                    && get_element_name(xot, c).as_deref() == Some(parent_name.as_str())
             })
             .collect();
-        if types.len() < 2 { continue; }
-        for t in types {
-            if get_attr(xot, t, "list").is_none() {
-                xot.with_attr(t, "list", "type");
+        if same_name_kids.len() < 2 { continue; }
+        for k in same_name_kids {
+            if get_attr(xot, k, "list").is_none() {
+                xot.with_attr(k, "list", &parent_name);
             }
         }
     }
     Ok(())
+}
+
+/// Backward-compat wrapper: type-only multi-tagging. Equivalent to
+/// `tag_multi_same_name_children(xot, root, &["type"])`.
+pub fn tag_multi_type_children(
+    xot: &mut Xot,
+    root: XotNode,
+) -> Result<(), xot::Error> {
+    tag_multi_same_name_children(xot, root, &["type"])
 }
 
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped

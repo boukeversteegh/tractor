@@ -317,7 +317,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     unify_file_scoped_namespace(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     crate::transform::wrap_expression_positions(
         xot,
         root,
@@ -648,7 +648,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     rust_restructure_use(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
@@ -948,7 +948,7 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     typescript_restructure_import(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(
@@ -1129,7 +1129,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     python_restructure_imports(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
@@ -1384,7 +1384,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     java_unwrap_type_in_path(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(
@@ -1438,7 +1438,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
@@ -1590,7 +1590,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     php_restructure_use(xot, root)?;
-    crate::transform::tag_multi_type_children(xot, root)?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern"])?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;

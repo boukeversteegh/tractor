@@ -1767,11 +1767,14 @@
                             }
                           },
                           "pattern": {
-                            "children": [
+                            "pattern": [
                               {
-                                "$type": "pattern",
-                                "field": true,
-                                "name": "h"
+                                "name": "w",
+                                "field": true
+                              },
+                              {
+                                "name": "h",
+                                "field": true
                               }
                             ],
                             "struct": true,
@@ -1780,10 +1783,6 @@
                                 "Shape",
                                 "Rect"
                               ]
-                            },
-                            "pattern": {
-                              "name": "w",
-                              "field": true
                             }
                           }
                         }
@@ -2728,23 +2727,22 @@
                 {
                   "$type": "expression",
                   "pattern": {
-                    "children": [
+                    "pattern": [
                       {
-                        "$type": "pattern",
-                        "rest": true,
-                        "text": ".."
+                        "children": [
+                          "ix"
+                        ],
+                        "field": true,
+                        "name": "x"
+                      },
+                      {
+                        "text": "..",
+                        "rest": true
                       }
                     ],
                     "struct": true,
                     "type": {
                       "name": "Point"
-                    },
-                    "pattern": {
-                      "children": [
-                        "ix"
-                      ],
-                      "field": true,
-                      "name": "x"
                     }
                   }
                 },
@@ -2791,20 +2789,19 @@
               }
             },
             "pattern": {
-              "children": [
+              "pattern": [
                 {
-                  "$type": "pattern",
-                  "rest": true,
-                  "text": ".."
+                  "name": "x",
+                  "field": true
+                },
+                {
+                  "text": "..",
+                  "rest": true
                 }
               ],
               "struct": true,
               "type": {
                 "name": "Point"
-              },
-              "pattern": {
-                "name": "x",
-                "field": true
               }
             }
           },

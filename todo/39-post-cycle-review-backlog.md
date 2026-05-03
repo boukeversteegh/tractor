@@ -478,6 +478,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 194: generalized helper + pattern-pattern coverage —
+  promoted `tag_multi_type_children` to
+  `tag_multi_same_name_children(names: &[&str])` covering any
+  recursive container (parent name = child name = list= name).
+  Wired to all 7 post_transforms with `["type", "pattern"]`.
+  Rust audit 37 → 34 (-3); Python 35 → 32 (-3) from
+  `<pattern>/<pattern>` overflow in match patterns.
 - [x] iter 193: Python + C# + Java + Go wired to generic
   type/multi-target helpers. Python audit 41 → 35 (-6 from
   type-union pattern). C#/Java/Go: helpers idempotent + cardinality-

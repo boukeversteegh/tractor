@@ -1639,23 +1639,21 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "pattern": [
                         {
-                          "$type": "pattern",
+                          "int": "1"
+                        },
+                        {
                           "int": "2"
                         },
                         {
-                          "$type": "pattern",
                           "pattern": {
                             "name": "rest",
                             "splat": true
                           }
                         }
                       ],
-                      "list": true,
-                      "pattern": {
-                        "int": "1"
-                      }
+                      "list": true
                     }
                   }
                 },
@@ -1669,9 +1667,15 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "pattern": [
                         {
-                          "$type": "pattern",
+                          "pattern": {
+                            "int": "0",
+                            "keyword": true,
+                            "name": "x"
+                          }
+                        },
+                        {
                           "pattern": {
                             "children": [
                               "y"
@@ -1682,14 +1686,7 @@
                         }
                       ],
                       "class": true,
-                      "name": "Point",
-                      "pattern": {
-                        "pattern": {
-                          "int": "0",
-                          "keyword": true,
-                          "name": "x"
-                        }
-                      }
+                      "name": "Point"
                     }
                   }
                 },
@@ -2538,16 +2535,15 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "pattern": [
                         {
-                          "$type": "pattern",
+                          "name": "a"
+                        },
+                        {
                           "name": "b"
                         }
                       ],
-                      "tuple": true,
-                      "pattern": {
-                        "name": "a"
-                      }
+                      "tuple": true
                     }
                   }
                 },
