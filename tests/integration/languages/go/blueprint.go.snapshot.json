@@ -102,10 +102,6 @@
       "name": "globalCount"
     },
     {
-      "children": [
-        "age"
-      ],
-      "name": "name",
       "value": {
         "children": [
           {
@@ -116,7 +112,11 @@
         "expression": {
           "string": "\"alice\""
         }
-      }
+      },
+      "name": [
+        "name",
+        "age"
+      ]
     }
   ],
   "interface": [

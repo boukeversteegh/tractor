@@ -548,6 +548,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 223: Go multi-name var declaration list= — added
+  `("var", "name")` to Go's tag_multi_role_children.
+  `var x, y = 1, 2` now produces `var.name: ["x", "y"]` array.
+  Go audit 13 → 12 (-1).
 - [x] iter 222: Ruby destructured parameter multi-name list= —
   added `("parameter", "name")` to Ruby's tag_multi_role_children.
   `proc { |(x, y)| ... }` now produces `parameter.name: ["x", "y"]`

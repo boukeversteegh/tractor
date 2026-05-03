@@ -1491,6 +1491,9 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // Go multi-return functions: `func f() (int, error)`
             // produce `<returns>` with multiple `<type>` siblings.
             ("returns", "type"),
+            // Go multi-target var: `var x, y = 1, 2` produces
+            // `<var>` with multiple `<name>` siblings.
+            ("var", "name"),
         ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
