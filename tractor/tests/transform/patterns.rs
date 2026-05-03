@@ -233,3 +233,16 @@ fn csharp_multi_arg_indexer_lists_arguments() {
         "//index/argument[@list='arguments']",
         3);
 }
+
+/// TypeScript object destructuring with multiple aliased entries
+/// (`{ a: aa = 1, b: bb }`) produces `<pattern[object]>` with
+/// multiple `<pair>` siblings. Per Principle #19 they're
+/// role-uniform — each is one destructuring entry. Tag with
+/// `list="pairs"` so JSON renders consistently.
+#[test]
+fn typescript_destructuring_pattern_lists_pairs() {
+    claim("TS object-destructure with two aliased entries tags pairs",
+        &mut parse_src("typescript", "function f({ a: aa, b: bb }: T) {}"),
+        "//pattern[object]/pair[@list='pairs']",
+        2);
+}

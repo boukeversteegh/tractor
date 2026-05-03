@@ -1182,6 +1182,12 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    // Multi-target / comma-expression assignments —
+    // `total = (a, b)` produces `<right>` with multiple
+    // `<expression>` siblings. Tag with `list="expressions"`
+    // (mirrors Go iter pre-existing call). Without this TS
+    // assignment-right siblings overflow.
+    crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     // TS function-type / object-type signatures: `<type>` parent with
     // multiple `<parameter>` (function type) or `<property>` (object
@@ -1210,6 +1216,11 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             // `unaries: [...]` instead of overflowing to
             // `children`.
             ("for", "unary"),
+            // Object destructuring with multiple aliased entries
+            // (`{ a: aa, b: bb }`) produces `<pattern[object]>`
+            // with multiple `<pair>` siblings. Mirrors iter 264's
+            // `("object", "pair")` for object literals.
+            ("pattern", "pair"),
         ],
     )?;
     typescript_restructure_import(xot, root)?;

@@ -655,9 +655,27 @@
                               {
                                 "assign": {
                                   "right": {
-                                    "children": [
+                                    "expressions": [
                                       {
-                                        "$type": "expression",
+                                        "assign": {
+                                          "right": {
+                                            "expression": {
+                                              "name": "i"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "name": "total"
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "+=",
+                                            "assign": true,
+                                            "plus": true
+                                          }
+                                        }
+                                      },
+                                      {
                                         "binary": {
                                           "right": {
                                             "expression": {
@@ -675,26 +693,7 @@
                                           }
                                         }
                                       }
-                                    ],
-                                    "expression": {
-                                      "assign": {
-                                        "right": {
-                                          "expression": {
-                                            "name": "i"
-                                          }
-                                        },
-                                        "left": {
-                                          "expression": {
-                                            "name": "total"
-                                          }
-                                        },
-                                        "op": {
-                                          "text": "+=",
-                                          "assign": true,
-                                          "plus": true
-                                        }
-                                      }
-                                    }
+                                    ]
                                   },
                                   "left": {
                                     "expression": {
@@ -1010,38 +1009,37 @@
           },
           "required": true,
           "pattern": {
-            "children": [
+            "pairs": [
               {
-                "$type": "pair",
-                "name": "b",
+                "value": {
+                  "expression": {
+                    "pattern": {
+                      "right": {
+                        "expression": {
+                          "number": "1"
+                        }
+                      },
+                      "default": true,
+                      "left": {
+                        "expression": {
+                          "name": "aa"
+                        }
+                      }
+                    }
+                  }
+                },
+                "name": "a"
+              },
+              {
                 "value": {
                   "expression": {
                     "name": "bb"
                   }
-                }
+                },
+                "name": "b"
               }
             ],
-            "object": true,
-            "pair": {
-              "value": {
-                "expression": {
-                  "pattern": {
-                    "right": {
-                      "expression": {
-                        "number": "1"
-                      }
-                    },
-                    "default": true,
-                    "left": {
-                      "expression": {
-                        "name": "aa"
-                      }
-                    }
-                  }
-                }
-              },
-              "name": "a"
-            }
+            "object": true
           }
         },
         {
