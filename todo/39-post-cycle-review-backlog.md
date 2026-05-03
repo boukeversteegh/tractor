@@ -376,20 +376,27 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   `insert`, `from`, `case`, `compare`, `between`, `assign`)
   needing targeted handlers — see new entry below.
 
-- [ ] **TSQL role-mixed parents need targeted list= tagging**
-  *(severity MED)*. Remaining audit sites after iter 182:
-  - `<select>` ~6 sites: contains multiple `<column>` siblings
-    (the SELECT list) plus singleton clauses (`<from>`, `<where>`,
-    `<order>`, `<alias>`). Tag the multiple-instance role
-    (`<column>`) with `list="column"`.
-  - `<compare>` ~6 sites: contains operands like `<literal>`,
-    `<column>`, `<call>` siblings — but compare is role-mixed
-    (left/right/op). Investigate why `<compare>` has overflow
-    (probably operand-list collisions).
-  - `<insert>` 1 site, `<between>` 1, `<assign>` 1, `<from>` 1,
-    `<case>` 1: each needs investigation.
-  - Effort: medium (1-3 iters; one targeted handler per parent
-    or a shared list-name-by-parent table).
+- [x] **TSQL `<select>` / `<insert>` column lists** — closed iter
+  185 partial. Targeted post-pass `tsql_tag_select_columns` adds
+  `list="column"` to `<column>` children of `<select>`/`<insert>`.
+  Closed 6 of remaining 26 TSQL sites (26 → 20). See follow-up
+  for binary-operand wrapping.
+
+- [ ] **TSQL `<compare>` / `<assign>` / `<between>` operand
+  wrapping** *(severity MED, ~14 sites)* — TSQL binary expressions
+  produce `<compare><column>...</column><op>...</op><column>...</column></compare>`.
+  Tree-sitter DOES emit `field="left"` / `field="right"` on the
+  operands (verified via `--meta -t raw`), and TSQL's
+  `field_wrappings` is COMMON_FIELD_WRAPPINGS (which includes
+  left/right). Yet the operand `<column>`s don't get wrapped in
+  `<left>`/`<right>` — Java/etc. with the same config DO get
+  wrapped. Root cause unknown (deferred for investigation).
+  Workaround: targeted post-pass that re-wraps. Effort: medium
+  (root-cause investigation) OR small (workaround). Sites:
+  remaining 20 in tsql.
+
+- [ ] **TSQL `<from>` / `<case>` / `<call>` overflow** *(severity
+  LOW, ~6 sites)*. Smaller patterns; investigate per-parent.
 
 - [x] **Cross-language `<alias>` marker/wrapper rename** — closed
   iter 184. Found across Rust/TS/Python/PHP (not just Rust): the
@@ -444,6 +451,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 185: TSQL `<select>` / `<insert>` column-list tagging —
+  targeted post-pass adds `list="column"` to `<column>` children
+  (skips role-mixed singleton clauses like `<from>`/`<where>`).
+  Closed 6 of 26 remaining TSQL audit sites; binary-operand
+  overflow (compare/assign/between) deferred — needs root-cause
+  investigation into why TSQL's left/right field-wrap doesn't fire
+  despite identical config to Java.
 - [x] iter 184: cross-language `<alias>` wrapper renamed to
   `<aliased>` (Rust/TS/Python/PHP). Resolves the JSON-key collision
   between the `[alias]` marker and the structural binding wrapper.

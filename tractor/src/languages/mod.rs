@@ -1520,6 +1520,51 @@ fn tsql_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["file", "transaction", "union", "columns", "list"],
     )?;
+    tsql_tag_select_columns(xot, root)?;
+    Ok(())
+}
+
+/// Tag `<column>` children of `<select>` / `<insert>` with
+/// `list="column"` so JSON `select.column: [...]` becomes a uniform
+/// array (was: first column lifted as singleton, rest in
+/// `children` overflow). Targeted (not bulk via
+/// `distribute_member_list_attrs`) because select/insert have
+/// role-MIXED children: column lists + singleton clauses
+/// (`<from>`, `<where>`, `<order>`, `<alias>`).
+fn tsql_tag_select_columns(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_attr, get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    fn collect(xot: &Xot, node: XotNode, names: &[&str], out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if names.contains(&name.as_str()) {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, names, out);
+        }
+    }
+    let mut parents: Vec<XotNode> = Vec::new();
+    collect(xot, root, &["select", "insert"], &mut parents);
+    for parent in parents {
+        let columns: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("column")
+            })
+            .collect();
+        for col in columns {
+            if get_attr(xot, col, "list").is_none() {
+                xot.with_attr(col, "list", "column");
+            }
+        }
+    }
     Ok(())
 }
 

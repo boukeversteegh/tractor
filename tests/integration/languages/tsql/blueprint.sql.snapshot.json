@@ -139,21 +139,20 @@
         }
       },
       "select": {
-        "children": [
+        "column": [
           {
-            "$type": "column",
+            "name": "Name",
             "ref": {
               "name": "u"
-            },
-            "name": "Age"
+            }
+          },
+          {
+            "name": "Age",
+            "ref": {
+              "name": "u"
+            }
           }
-        ],
-        "column": {
-          "name": "Name",
-          "ref": {
-            "name": "u"
-          }
-        }
+        ]
       }
     },
     {
@@ -230,20 +229,19 @@
         }
       },
       "select": {
-        "children": [
+        "column": [
           {
-            "$type": "column",
+            "name": "Name",
+            "ref": {
+              "name": "Users",
+              "schema": "dbo"
+            }
+          },
+          {
             "var": "StartDate"
           }
         ],
-        "alias": "UserName",
-        "column": {
-          "name": "Name",
-          "ref": {
-            "name": "Users",
-            "schema": "dbo"
-          }
-        }
+        "alias": "UserName"
       }
     },
     {
@@ -363,28 +361,26 @@
         }
       },
       "select": {
-        "children": [
+        "column": [
           {
-            "$type": "column",
+            "name": "ID",
             "ref": {
-              "name": "u"
-            },
-            "name": "Name"
+              "name": "o"
+            }
           },
           {
-            "$type": "column",
+            "name": "Name",
+            "ref": {
+              "name": "u"
+            }
+          },
+          {
+            "name": "City",
             "ref": {
               "name": "a"
-            },
-            "name": "City"
+            }
           }
-        ],
-        "column": {
-          "name": "ID",
-          "ref": {
-            "name": "o"
-          }
-        }
+        ]
       }
     },
     {
@@ -413,9 +409,11 @@
                 }
               },
               "select": {
-                "column": {
-                  "name": "UserID"
-                }
+                "column": [
+                  {
+                    "name": "UserID"
+                  }
+                ]
               }
             },
             "column": {
@@ -430,9 +428,11 @@
         }
       },
       "select": {
-        "column": {
-          "name": "Name"
-        }
+        "column": [
+          {
+            "name": "Name"
+          }
+        ]
       }
     },
     {
@@ -482,12 +482,14 @@
         }
       },
       "select": {
-        "column": {
-          "name": "Name",
-          "ref": {
-            "name": "u"
+        "column": [
+          {
+            "name": "Name",
+            "ref": {
+              "name": "u"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -532,9 +534,11 @@
           },
           "AvgSalary"
         ],
-        "column": {
-          "name": "Department"
-        },
+        "column": [
+          {
+            "name": "Department"
+          }
+        ],
         "call": {
           "star": "*",
           "ref": {
@@ -554,9 +558,11 @@
       },
       "select": {
         "alias": "Category",
-        "column": {
-          "name": "Name"
-        },
+        "column": [
+          {
+            "name": "Name"
+          }
+        ],
         "case": {
           "children": [
             "'Minor'"
@@ -604,23 +610,24 @@
             }
           },
           "select": {
-            "children": [
+            "column": [
               {
-                "$type": "column",
+                "name": "ID"
+              },
+              {
                 "name": "Name"
               }
-            ],
-            "column": {
-              "name": "ID"
-            }
+            ]
           }
         },
         "name": "ActiveUsers"
       },
       "select": {
-        "column": {
-          "name": "Name"
-        }
+        "column": [
+          {
+            "name": "Name"
+          }
+        ]
       }
     },
     {
@@ -644,16 +651,20 @@
         "select": [
           {
             "alias": "Source",
-            "column": {
-              "name": "Name"
-            },
+            "column": [
+              {
+                "name": "Name"
+              }
+            ],
             "literal": "'User'"
           },
           {
             "alias": "Source",
-            "column": {
-              "name": "Name"
-            },
+            "column": [
+              {
+                "name": "Name"
+              }
+            ],
             "literal": "'Admin'"
           }
         ]
@@ -669,9 +680,11 @@
       },
       "select": {
         "alias": "Rank",
-        "column": {
-          "name": "Name"
-        },
+        "column": [
+          {
+            "name": "Name"
+          }
+        ],
         "window": {
           "over": {
             "order": {
@@ -785,9 +798,11 @@
         }
       },
       "select": {
-        "column": {
-          "name": "Department"
-        }
+        "column": [
+          {
+            "name": "Department"
+          }
+        ]
       }
     },
     {
@@ -919,15 +934,14 @@
         }
       },
       "select": {
-        "children": [
+        "column": [
           {
-            "$type": "column",
+            "name": "Name"
+          },
+          {
             "name": "Age"
           }
-        ],
-        "column": {
-          "name": "Name"
-        }
+        ]
       },
       "temp": "#TempUsers"
     },
@@ -1001,15 +1015,14 @@
           "name": "ActiveUsers"
         },
         "select": {
-          "children": [
+          "column": [
             {
-              "$type": "column",
+              "name": "ID"
+            },
+            {
               "name": "Name"
             }
-          ],
-          "column": {
-            "name": "ID"
-          }
+          ]
         }
       }
     },
