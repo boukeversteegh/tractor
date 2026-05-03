@@ -448,6 +448,56 @@ pub fn distribute_member_list_attrs(
     Ok(())
 }
 
+/// Tag multiple `<expression>` siblings under each `<left>` / `<right>`
+/// slot with `list="expression"` so multi-target assignments
+/// (`x, y := 1, 2` in Go; `a, b = xs` in Python; `a, b = [1,2]` in
+/// Ruby) render as JSON arrays:
+///   `{ left: { expression: [{...}, {...}] }, right: {...} }`
+///
+/// Targeted (not bulk via `distribute_member_list_attrs`) because
+/// `<left>` / `<right>` also host singleton binary-operator operands
+/// where they hold a single `<expression>` — those stay singleton.
+/// The `len() >= 2` cardinality test is the discriminator.
+///
+/// Idempotent: skips children already tagged.
+pub fn tag_multi_target_expressions(
+    xot: &mut Xot,
+    root: XotNode,
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    let root = find_content_root(xot, root);
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if matches!(name.as_str(), "left" | "right") {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+
+    for slot in targets {
+        let exprs: Vec<XotNode> = xot.children(slot)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("expression")
+            })
+            .collect();
+        if exprs.len() < 2 { continue; }
+        for e in exprs {
+            if get_attr(xot, e, "list").is_none() {
+                xot.with_attr(e, "list", "expression");
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
 /// elements (and any other element name in `body_names`) recursively
 /// across the tree. C-family languages emit braces as anonymous text

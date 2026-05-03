@@ -478,6 +478,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 190: cross-language multi-target list= — generalized
+  iter-189's helper (was Go-only) into
+  `crate::transform::tag_multi_target_expressions` and wired into
+  Python + Ruby post_transforms. Python audit 46 → 41 (-5); Ruby
+  41 → 39 (-2). Same `<left>`/`<right>`-with-multiple-`<expression>`
+  pattern fixes tuple unpacking (`a, b = xs`) and parallel
+  assignment cross-language.
 - [x] iter 189: Go multi-target left/right expression list — new
   `go_tag_multi_target_expressions` post-pass tags multiple
   `<expression>` siblings under `<left>`/`<right>` with

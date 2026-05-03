@@ -805,21 +805,19 @@
             "left": {
               "expression": {
                 "left": {
-                  "children": [
+                  "expression": [
                     {
-                      "$type": "expression",
+                      "name": "a"
+                    },
+                    {
                       "name": "b"
                     },
                     {
-                      "$type": "expression",
                       "spread": {
                         "name": "rest"
                       }
                     }
-                  ],
-                  "expression": {
-                    "name": "a"
-                  }
+                  ]
                 }
               }
             }
@@ -2236,19 +2234,17 @@
           "left": {
             "expression": {
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "destructured": true
+                  },
+                  {
                     "name": "a"
                   },
                   {
-                    "$type": "expression",
                     "name": "b"
                   }
-                ],
-                "expression": {
-                  "destructured": true
-                }
+                ]
               }
             }
           }

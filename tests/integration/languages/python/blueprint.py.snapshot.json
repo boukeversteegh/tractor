@@ -148,26 +148,24 @@
     },
     {
       "right": {
-        "children": [
+        "expression": [
           {
-            "$type": "expression",
+            "string": "r\"C:\\Users\\foo\\bar\""
+          },
+          {
             "string": "b\"\\x00\\x01\\x02\""
           }
-        ],
-        "expression": {
-          "string": "r\"C:\\Users\\foo\\bar\""
-        }
+        ]
       },
       "left": {
-        "children": [
+        "expression": [
           {
-            "$type": "expression",
+            "name": "RAW_PATH"
+          },
+          {
             "name": "BYTES_BLOB"
           }
-        ],
-        "expression": {
-          "name": "RAW_PATH"
-        }
+        ]
       }
     },
     {
@@ -1289,15 +1287,14 @@
               }
             },
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "i"
+                },
+                {
                   "name": "v"
                 }
-              ],
-              "expression": {
-                "name": "i"
-              }
+              ]
             },
             "right": {
               "expression": {
@@ -1847,15 +1844,14 @@
                     ]
                   },
                   "left": {
-                    "children": [
+                    "expression": [
                       {
-                        "$type": "expression",
+                        "name": "k"
+                      },
+                      {
                         "name": "v"
                       }
-                    ],
-                    "expression": {
-                      "name": "k"
-                    }
+                    ]
                   },
                   "right": {
                     "expression": {
@@ -2250,22 +2246,20 @@
               }
             },
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "head"
+                },
+                {
                   "parameter": {
                     "name": "mid",
                     "args": true
                   }
                 },
                 {
-                  "$type": "expression",
                   "name": "tail"
                 }
-              ],
-              "expression": {
-                "name": "head"
-              }
+              ]
             }
           },
           {
