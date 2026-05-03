@@ -548,6 +548,9 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 225: Python with/try multi-clause list= — added
+  `("with", "value")` and `("try", "except")` to the post-restructure
+  tag_multi_role_children call. Python audit 14 → 12 (-2).
 - [x] iter 224: Python from-import multi-name list= — added
   `("from", "import")` to a SECOND tag_multi_role_children call
   AFTER `python_restructure_imports` (the first call ran before

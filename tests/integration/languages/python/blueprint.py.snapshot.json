@@ -1437,17 +1437,13 @@
         ],
         "try": [
           {
-            "children": [
-              {
-                "$type": "except",
-                "pass": true,
-                "value": {
-                  "expression": {
-                    "name": "Exception"
-                  }
+            "finally": {
+              "expression": {
+                "call": {
+                  "name": "cleanup"
                 }
               }
-            ],
+            },
             "body": {
               "expression": [
                 {
@@ -1457,30 +1453,40 @@
                 }
               ]
             },
-            "except": {
-              "raise": {
-                "name": "e",
-                "call": {
-                  "arguments": [
-                    "\"bad\""
-                  ],
-                  "name": "RuntimeError"
-                }
-              },
-              "value": {
-                "expression": {
-                  "as": {
-                    "name": "e",
-                    "tuple": {
-                      "name": [
-                        "ValueError",
-                        "TypeError"
-                      ]
+            "except": [
+              {
+                "raise": {
+                  "name": "e",
+                  "call": {
+                    "arguments": [
+                      "\"bad\""
+                    ],
+                    "name": "RuntimeError"
+                  }
+                },
+                "value": {
+                  "expression": {
+                    "as": {
+                      "name": "e",
+                      "tuple": {
+                        "name": [
+                          "ValueError",
+                          "TypeError"
+                        ]
+                      }
                     }
                   }
                 }
+              },
+              {
+                "value": {
+                  "expression": {
+                    "name": "Exception"
+                  }
+                },
+                "pass": true
               }
-            },
+            ],
             "else": {
               "body": {
                 "assign": [
@@ -1503,47 +1509,11 @@
                   }
                 ]
               }
-            },
-            "finally": {
-              "expression": {
-                "call": {
-                  "name": "cleanup"
-                }
-              }
             }
           }
         ],
         "with": [
           {
-            "children": [
-              {
-                "$type": "value",
-                "expression": {
-                  "as": {
-                    "name": "fb",
-                    "call": {
-                      "arguments": [
-                        "\"b\""
-                      ],
-                      "name": "open"
-                    }
-                  }
-                }
-              }
-            ],
-            "value": {
-              "expression": {
-                "as": {
-                  "name": "fa",
-                  "call": {
-                    "arguments": [
-                      "\"a\""
-                    ],
-                    "name": "open"
-                  }
-                }
-              }
-            },
             "body": {
               "expression": [
                 {
@@ -1571,7 +1541,35 @@
                   }
                 }
               ]
-            }
+            },
+            "value": [
+              {
+                "expression": {
+                  "as": {
+                    "name": "fa",
+                    "call": {
+                      "arguments": [
+                        "\"a\""
+                      ],
+                      "name": "open"
+                    }
+                  }
+                }
+              },
+              {
+                "expression": {
+                  "as": {
+                    "name": "fb",
+                    "call": {
+                      "arguments": [
+                        "\"b\""
+                      ],
+                      "name": "open"
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       },

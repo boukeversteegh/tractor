@@ -1167,7 +1167,15 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // final `<import>` siblings (the restructure pass rewires them).
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("from", "import")],
+        &[
+            ("from", "import"),
+            // Python `with X as a, Y as b: ...` — `<with>` parent
+            // with multiple `<value>` (as-clause) siblings.
+            ("with", "value"),
+            // Python `try: ... except A: ... except B: ...` — `<try>`
+            // parent with multiple `<except>` siblings.
+            ("try", "except"),
+        ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
