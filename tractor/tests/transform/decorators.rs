@@ -24,6 +24,24 @@ fn python_decorator_is_direct_child() {
         &mut tree, "//decorated", 0);
 }
 
+/// Python multi-decorator stacks (`@a\n@b\ndef f():`) produce
+/// multiple `<decorator>` siblings under `<function>` (or
+/// `<class>`). Per Principle #19 they're role-uniform — each
+/// decorates the same target. Tag with `list="decorators"` so
+/// JSON renders as `decorators: [...]` array.
+#[test]
+fn python_multi_decorator_lists_decorators() {
+    claim("Python multi-decorator function tags each <decorator> with list='decorators'",
+        &mut parse_src("python", "@a\n@b(3)\ndef f(): pass\n"),
+        "//function/decorator[@list='decorators']",
+        2);
+
+    claim("Python single-decorator function keeps singleton <decorator> (no list= tagging)",
+        &mut parse_src("python", "@a\ndef f(): pass\n"),
+        "//function/decorator[not(@list)]",
+        1);
+}
+
 #[test]
 fn java_annotation_is_direct_child() {
     claim("Java annotation is a direct child of the method it annotates",

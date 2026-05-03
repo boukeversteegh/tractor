@@ -1200,9 +1200,14 @@
       ]
     },
     {
-      "children": [
+      "body": {
+        "pass": true
+      },
+      "decorators": [
         {
-          "$type": "decorator",
+          "name": "staticmethod"
+        },
+        {
           "call": {
             "arguments": [
               "3"
@@ -1211,13 +1216,7 @@
           }
         }
       ],
-      "decorator": {
-        "name": "staticmethod"
-      },
-      "name": "stacked",
-      "body": {
-        "pass": true
-      }
+      "name": "stacked"
     },
     {
       "body": {
@@ -1876,15 +1875,31 @@
             "right": {
               "expression": {
                 "generator": {
-                  "children": [
+                  "name": "x",
+                  "body": {
+                    "names": [
+                      "x"
+                    ]
+                  },
+                  "lefts": [
                     {
-                      "$type": "left",
                       "expression": {
-                        "name": "_"
+                        "name": "x"
                       }
                     },
                     {
-                      "$type": "right",
+                      "expression": {
+                        "name": "_"
+                      }
+                    }
+                  ],
+                  "rights": [
+                    {
+                      "expression": {
+                        "name": "data"
+                      }
+                    },
+                    {
                       "expression": {
                         "call": {
                           "arguments": [
@@ -1894,23 +1909,7 @@
                         }
                       }
                     }
-                  ],
-                  "body": {
-                    "names": [
-                      "x"
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "x"
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "name": "data"
-                    }
-                  },
-                  "name": "x"
+                  ]
                 }
               }
             },

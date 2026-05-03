@@ -1481,6 +1481,19 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             ("pattern", "int"),
             ("pattern", "string"),
             ("pattern", "name"),
+            // Python decorators stack on a function/class:
+            // `@a\n@b\ndef f():`. Multiple `<decorator>` siblings
+            // under `<function>` (or `<class>`) — role-uniform
+            // (each decorates the same target).
+            ("function", "decorator"),
+            ("class", "decorator"),
+            // Python multi-for generator `(x for x in xs for y in ys)`
+            // produces `<generator>` with multiple `<left>` and
+            // `<right>` siblings (one pair per for-clause). Per
+            // Principle #19 each is a clause-position; tag with
+            // `list="lefts"` / `list="rights"`.
+            ("generator", "left"),
+            ("generator", "right"),
         ],
     )?;
     python_restructure_imports(xot, root)?;
