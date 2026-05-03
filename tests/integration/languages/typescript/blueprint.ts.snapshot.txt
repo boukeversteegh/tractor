@@ -217,12 +217,12 @@ program/
   │       │       │   ├─ name = "first"
   │       │       │   └─ value/expression/binary/
   │       │       │       ├─ left/expression/object[access]/
-  │       │       │       │   ├─ index/
-  │       │       │       │   │   ├─ object/member/
-  │       │       │       │   │   │   ├─ object/this = "this"
-  │       │       │       │   │   │   └─ property/name = "items"
-  │       │       │       │   │   └─ number = "0"
-  │       │       │       │   └─ member/name = "label"
+  │       │       │       │   ├─ this = "this"
+  │       │       │       │   └─ member/
+  │       │       │       │       ├─ name = "items"
+  │       │       │       │       └─ subscript/
+  │       │       │       │           ├─ number = "0"
+  │       │       │       │           └─ member/name = "label"
   │       │       │       ├─ op[nullish] = "??"
   │       │       │       └─ right/expression/string = "\"unnamed\""
   │       │       └─ return/expression/template/interpolation/expression[non_null]/name = "first"

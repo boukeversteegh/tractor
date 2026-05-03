@@ -240,6 +240,7 @@ fn walk_chain(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
     match element_name.as_deref() {
         Some("member") => walk_member(xot, node, out),
         Some("call") => walk_call(xot, node, out),
+        Some("index") | Some("subscript") => walk_subscript(xot, node, out),
         _ => {
             // Base case: this is the leftmost receiver.
             out.push(ChainSegment::Receiver(node));
@@ -271,6 +272,51 @@ fn walk_member(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
         .unwrap_or(node);
     let markers = collect_markers(xot, node);
     out.push(ChainSegment::Member { name_node, markers });
+}
+
+fn walk_subscript(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
+    // Identify the receiver. Two input flavours:
+    //   (a) Slot-wrapped: first element child is `<object>` (TS) or
+    //       `<value>` (Python's <subscript>); recurse into its
+    //       first element child for the receiver.
+    //   (b) Bare-children: first non-marker element child IS the
+    //       receiver directly (Go/Java/C#/Ruby/Rust/PHP).
+    let element_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some() && !is_marker_element(xot, c))
+        .collect();
+    if element_children.is_empty() {
+        out.push(ChainSegment::Receiver(node));
+        return;
+    }
+    let first = element_children[0];
+    let first_name = get_element_name(xot, first);
+    let (receiver, index_exprs): (XotNode, Vec<XotNode>) = match first_name.as_deref() {
+        Some("object") | Some("value") => {
+            // Slot-wrapped: receiver is inside the slot.
+            let inner = first_element_child(xot, first);
+            match inner {
+                Some(r) => (r, element_children[1..].to_vec()),
+                None => {
+                    out.push(ChainSegment::Receiver(node));
+                    return;
+                }
+            }
+        }
+        _ => (first, element_children[1..].to_vec()),
+    };
+    walk_chain(xot, receiver, out);
+    // The index expression is whatever non-receiver children remain.
+    // Most languages have one; collect all and pick the first
+    // (others are likely text leaves anyway, already filtered).
+    let index_node = match index_exprs.into_iter().next() {
+        Some(n) => n,
+        None => {
+            // Degenerate: subscript with only a receiver, no index.
+            return;
+        }
+    };
+    let markers = collect_markers(xot, node);
+    out.push(ChainSegment::Subscript { index_node, markers });
 }
 
 fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
@@ -1258,6 +1304,38 @@ mod tests {
             panic!("expected outer Call");
         };
         assert_eq!(args.len(), 1);
+    }
+
+    #[test]
+    fn extract_subscript_in_chain_object_slot() {
+        // arr[0].b — TS shape: <member><object><index><object>arr</object><number>0</number></index></object><property>b</property></member>
+        let (mut xot, _root) = fresh_xot();
+        let arr = new_text_element(&mut xot, "name", "arr");
+        let arr_slot = new_named_element(&mut xot, "object");
+        xot.append(arr_slot, arr).unwrap();
+        let zero = new_text_element(&mut xot, "number", "0");
+        let index = new_named_element(&mut xot, "index");
+        xot.append(index, arr_slot).unwrap();
+        xot.append(index, zero).unwrap();
+        // Wrap in member so the chain has a Member step too.
+        let m = build_member(&mut xot, index, "b");
+        let segs = extract_chain(&xot, m);
+        assert_eq!(render_segments(&xot, &segs), "Receiver:arr, Subscript:0, Member:b");
+    }
+
+    #[test]
+    fn extract_subscript_bare_children_shape() {
+        // arr[0].b — bare-children shape (Go/Rust/Java/etc):
+        // <index>arr<number>0</number></index> wrapped in member.
+        let (mut xot, _root) = fresh_xot();
+        let arr = new_text_element(&mut xot, "name", "arr");
+        let zero = new_text_element(&mut xot, "number", "0");
+        let index = new_named_element(&mut xot, "index");
+        xot.append(index, arr).unwrap();
+        xot.append(index, zero).unwrap();
+        let m = build_member(&mut xot, index, "b");
+        let segs = extract_chain(&xot, m);
+        assert_eq!(render_segments(&xot, &segs), "Receiver:arr, Subscript:0, Member:b");
     }
 
     #[test]

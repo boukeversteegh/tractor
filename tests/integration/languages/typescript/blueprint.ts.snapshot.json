@@ -1700,22 +1700,16 @@
                                 "expression": {
                                   "object": {
                                     "member": {
-                                      "name": "label"
+                                      "subscript": {
+                                        "member": {
+                                          "name": "label"
+                                        },
+                                        "number": "0"
+                                      },
+                                      "name": "items"
                                     },
                                     "access": true,
-                                    "index": {
-                                      "number": "0",
-                                      "object": {
-                                        "member": {
-                                          "property": {
-                                            "name": "items"
-                                          },
-                                          "object": {
-                                            "this": "this"
-                                          }
-                                        }
-                                      }
-                                    }
+                                    "this": "this"
                                   }
                                 }
                               },

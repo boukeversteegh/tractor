@@ -24,7 +24,7 @@ pub enum TractorNode {
     Block, Return, If, Else, ElseIf, For, While, Try, Catch, Throw, Finally, Switch, Case,
     Break, Continue, Body, Do, With, Debugger, Label,
     // Expressions (Rest, This dual-use)
-    Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Pattern,
+    Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Subscript, Pattern,
     Spread, Rest, Expression, NonNull,
     // Imports / exports (Export dual-use)
     Import, Export, Imports, Spec, Clause, Namespace, Declare,
