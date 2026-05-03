@@ -313,10 +313,58 @@
   ],
   "macro": [
     {
-      "children": [
+      "arm": [
         {
-          "$type": "arm",
-          "left": "()",
+          "right": {
+            "expression": [
+              {
+                "name": "vec"
+              },
+              {
+                "repetition": {
+                  "children": [
+                    "$key",
+                    "$value"
+                  ],
+                  "name": "stringify"
+                }
+              }
+            ]
+          },
+          "left": {
+            "expression": [
+              {
+                "repetition": {
+                  "children": [
+                    {
+                      "$type": "pattern",
+                      "binding": true,
+                      "name": [
+                        "$value"
+                      ],
+                      "fragment": [
+                        "expr"
+                      ]
+                    }
+                  ],
+                  "pattern": {
+                    "fragment": [
+                      "ident"
+                    ],
+                    "binding": true,
+                    "name": [
+                      "$key"
+                    ]
+                  }
+                }
+              },
+              {
+                "repetition": "$(,)?"
+              }
+            ]
+          }
+        },
+        {
           "right": {
             "expression": [
               {
@@ -326,61 +374,14 @@
                 "name": "new"
               }
             ]
-          }
+          },
+          "left": "()"
         }
       ],
       "definition": true,
-      "name": "collect_pairs",
-      "arm": {
-        "right": {
-          "expression": [
-            {
-              "name": "vec"
-            },
-            {
-              "repetition": {
-                "children": [
-                  "$key",
-                  "$value"
-                ],
-                "name": "stringify"
-              }
-            }
-          ]
-        },
-        "left": {
-          "expression": [
-            {
-              "repetition": {
-                "children": [
-                  {
-                    "$type": "pattern",
-                    "binding": true,
-                    "name": [
-                      "$value"
-                    ],
-                    "fragment": [
-                      "expr"
-                    ]
-                  }
-                ],
-                "pattern": {
-                  "fragment": [
-                    "ident"
-                  ],
-                  "binding": true,
-                  "name": [
-                    "$key"
-                  ]
-                }
-              }
-            },
-            {
-              "repetition": "$(,)?"
-            }
-          ]
-        }
-      }
+      "name": [
+        "collect_pairs"
+      ]
     }
   ],
   "attribute": [
@@ -582,20 +583,24 @@
             "body": {
               "literal": [
                 {
-                  "body": {
-                    "field": [
-                      {
-                        "name": "x"
-                      },
-                      {
-                        "name": "y"
-                      },
-                      {
-                        "name": "label"
-                      }
-                    ]
-                  },
-                  "name": "Self"
+                  "body": [
+                    {
+                      "field": [
+                        {
+                          "name": "x"
+                        },
+                        {
+                          "name": "y"
+                        },
+                        {
+                          "name": "label"
+                        }
+                      ]
+                    }
+                  ],
+                  "name": [
+                    "Self"
+                  ]
                 }
               ]
             },
@@ -1275,12 +1280,14 @@
                   "body": {
                     "macro": [
                       {
-                        "children": [
+                        "name": [
+                          "format",
                           "s",
                           "x"
                         ],
-                        "string": "\"{}-{}\"",
-                        "name": "format"
+                        "string": [
+                          "\"{}-{}\""
+                        ]
                       }
                     ]
                   },
@@ -1433,9 +1440,11 @@
                   "arguments": [
                     {
                       "$type": "macro",
-                      "name": "vec",
-                      "int": "1",
-                      "children": [
+                      "name": [
+                        "vec"
+                      ],
+                      "int": [
+                        "1",
                         "2",
                         "3"
                       ]
@@ -1579,40 +1588,44 @@
             "value": {
               "expression": {
                 "literal": {
-                  "body": {
-                    "field": [
-                      {
-                        "value": {
-                          "expression": {
-                            "int": "10"
-                          }
+                  "body": [
+                    {
+                      "field": [
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "10"
+                            }
+                          },
+                          "name": "x"
                         },
-                        "name": "x"
-                      },
-                      {
-                        "value": {
-                          "expression": {
-                            "int": "20"
-                          }
+                        {
+                          "value": {
+                            "expression": {
+                              "int": "20"
+                            }
+                          },
+                          "name": "y"
                         },
-                        "name": "y"
-                      },
-                      {
-                        "call": {
-                          "field": {
-                            "name": "clone",
-                            "value": {
-                              "expression": {
-                                "name": "p"
+                        {
+                          "call": {
+                            "field": {
+                              "name": "clone",
+                              "value": {
+                                "expression": {
+                                  "name": "p"
+                                }
                               }
                             }
-                          }
-                        },
-                        "base": true
-                      }
-                    ]
-                  },
-                  "name": "Point"
+                          },
+                          "base": true
+                        }
+                      ]
+                    }
+                  ],
+                  "name": [
+                    "Point"
+                  ]
                 }
               }
             },
@@ -1968,12 +1981,14 @@
                     "value": {
                       "expression": {
                         "macro": {
-                          "children": [
+                          "int": [
+                            "1",
                             "2",
                             "3"
                           ],
-                          "name": "vec",
-                          "int": "1"
+                          "name": [
+                            "vec"
+                          ]
                         }
                       }
                     }
@@ -2319,12 +2334,14 @@
       "body": {
         "macro": [
           {
-            "children": [
+            "name": [
+              "format",
               "d",
               "name"
             ],
-            "string": "\"name={}\"",
-            "name": "format"
+            "string": [
+              "\"name={}\""
+            ]
           }
         ]
       },
@@ -2388,8 +2405,12 @@
         "expression": [
           {
             "macro": {
-              "string": "\"never returns\"",
-              "name": "panic"
+              "string": [
+                "\"never returns\""
+              ],
+              "name": [
+                "panic"
+              ]
             }
           }
         ]
@@ -3207,7 +3228,9 @@
                         "pattern": {
                           "literal": [
                             {
-                              "int": "1",
+                              "int": [
+                                "1"
+                              ],
                               "negative": true
                             }
                           ]
@@ -3344,12 +3367,14 @@
             "value": {
               "expression": {
                 "macro": {
-                  "children": [
+                  "int": [
+                    "1",
                     "2",
                     "3"
                   ],
-                  "name": "vec",
-                  "int": "1"
+                  "name": [
+                    "vec"
+                  ]
                 }
               }
             },
@@ -3418,13 +3443,15 @@
             "value": {
               "expression": {
                 "macro": {
-                  "children": [
-                    "a",
-                    "b",
+                  "int": [
+                    "1",
                     "2"
                   ],
-                  "name": "collect_pairs",
-                  "int": "1"
+                  "name": [
+                    "collect_pairs",
+                    "a",
+                    "b"
+                  ]
                 }
               }
             },
@@ -3454,11 +3481,13 @@
         "expression": [
           {
             "macro": {
-              "children": [
+              "name": [
+                "println",
                 "GREETING"
               ],
-              "string": "\"hello, {}\"",
-              "name": "println"
+              "string": [
+                "\"hello, {}\""
+              ]
             }
           }
         ]

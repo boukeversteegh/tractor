@@ -2230,52 +2230,56 @@
               ],
               "switch": [
                 {
-                  "body": {
-                    "default": [
-                      {
-                        "body": {
-                          "break": true
-                        },
-                        "comment": "/* fallthrough */"
-                      }
-                    ],
-                    "case": [
-                      {
-                        "body": {
-                          "break": true
-                        },
-                        "value": {
-                          "expression": {
-                            "string": "\"ready\""
-                          }
+                  "body": [
+                    {
+                      "default": [
+                        {
+                          "body": {
+                            "break": true
+                          },
+                          "comment": "/* fallthrough */"
                         }
-                      },
-                      {
-                        "body": {
-                          "throw": [
-                            {
-                              "new": {
-                                "arguments": [
-                                  "\"bad\""
-                                ],
-                                "name": "Error"
-                              }
+                      ],
+                      "case": [
+                        {
+                          "body": {
+                            "break": true
+                          },
+                          "value": {
+                            "expression": {
+                              "string": "\"ready\""
                             }
-                          ]
+                          }
                         },
-                        "value": {
-                          "expression": {
-                            "string": "\"error\""
+                        {
+                          "body": {
+                            "throw": [
+                              {
+                                "new": {
+                                  "arguments": [
+                                    "\"bad\""
+                                  ],
+                                  "name": "Error"
+                                }
+                              }
+                            ]
+                          },
+                          "value": {
+                            "expression": {
+                              "string": "\"error\""
+                            }
                           }
                         }
-                      }
-                    ]
-                  },
-                  "value": {
-                    "expression": {
-                      "name": "status"
+                      ]
                     }
-                  }
+                  ],
+                  "value": [
+                    {
+                      "expression": {
+                        "name": "status"
+                      }
+                    }
+                  ]
                 }
               ],
               "if": [

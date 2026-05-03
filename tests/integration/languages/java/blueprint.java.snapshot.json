@@ -738,112 +738,116 @@
                 {
                   "expression": {
                     "switch": {
-                      "body": {
-                        "arm": [
-                          {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "i"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "string": "\"int \""
-                                  }
-                                },
-                                "op": {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              }
-                            },
-                            "label": {
-                              "pattern": {
-                                "pattern": [
-                                  {
-                                    "name": [
-                                      "i"
-                                    ],
-                                    "type": [
-                                      true,
-                                      {
-                                        "name": "Integer"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "s"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "string": "\"non-empty: \""
-                                  }
-                                },
-                                "op": {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              }
-                            },
-                            "label": {
-                              "guard": {
-                                "unary": {
-                                  "call": {
-                                    "name": "isEmpty",
-                                    "object": {
-                                      "name": "s"
+                      "body": [
+                        {
+                          "arm": [
+                            {
+                              "expression": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "name": "i"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "string": "\"int \""
                                     }
                                   },
                                   "op": {
-                                    "text": "!",
-                                    "logical": true,
-                                    "not": true
+                                    "text": "+",
+                                    "plus": true
                                   }
                                 }
                               },
-                              "pattern": {
-                                "pattern": [
-                                  {
-                                    "name": [
-                                      "s"
-                                    ],
-                                    "type": [
-                                      true,
-                                      {
-                                        "name": "String"
-                                      }
-                                    ]
+                              "label": {
+                                "pattern": {
+                                  "pattern": [
+                                    {
+                                      "name": [
+                                        "i"
+                                      ],
+                                      "type": [
+                                        true,
+                                        {
+                                          "name": "Integer"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "expression": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "name": "s"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "string": "\"non-empty: \""
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "+",
+                                    "plus": true
                                   }
-                                ]
+                                }
+                              },
+                              "label": {
+                                "guard": {
+                                  "unary": {
+                                    "call": {
+                                      "name": "isEmpty",
+                                      "object": {
+                                        "name": "s"
+                                      }
+                                    },
+                                    "op": {
+                                      "text": "!",
+                                      "logical": true,
+                                      "not": true
+                                    }
+                                  }
+                                },
+                                "pattern": {
+                                  "pattern": [
+                                    {
+                                      "name": [
+                                        "s"
+                                      ],
+                                      "type": [
+                                        true,
+                                        {
+                                          "name": "String"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "expression": {
+                                "string": "\"other\""
+                              },
+                              "label": {
+                                "default": true
                               }
                             }
-                          },
-                          {
-                            "expression": {
-                              "string": "\"other\""
-                            },
-                            "label": {
-                              "default": true
-                            }
-                          }
-                        ]
-                      },
-                      "condition": {
-                        "expression": {
-                          "name": "o"
+                          ]
                         }
-                      }
+                      ],
+                      "condition": [
+                        {
+                          "expression": {
+                            "name": "o"
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -918,39 +922,43 @@
                       {
                         "expression": {
                           "switch": {
-                            "body": {
-                              "arm": [
-                                {
-                                  "expression": {
-                                    "int": "0xFF0000"
+                            "body": [
+                              {
+                                "arm": [
+                                  {
+                                    "expression": {
+                                      "int": "0xFF0000"
+                                    },
+                                    "label": {
+                                      "name": "RED"
+                                    }
                                   },
-                                  "label": {
-                                    "name": "RED"
-                                  }
-                                },
-                                {
-                                  "expression": {
-                                    "int": "0x00FF00"
+                                  {
+                                    "expression": {
+                                      "int": "0x00FF00"
+                                    },
+                                    "label": {
+                                      "name": "GREEN"
+                                    }
                                   },
-                                  "label": {
-                                    "name": "GREEN"
+                                  {
+                                    "expression": {
+                                      "int": "0x0000FF"
+                                    },
+                                    "label": {
+                                      "name": "BLUE"
+                                    }
                                   }
-                                },
-                                {
-                                  "expression": {
-                                    "int": "0x0000FF"
-                                  },
-                                  "label": {
-                                    "name": "BLUE"
-                                  }
-                                }
-                              ]
-                            },
-                            "condition": {
-                              "expression": {
-                                "this": "this"
+                                ]
                               }
-                            }
+                            ],
+                            "condition": [
+                              {
+                                "expression": {
+                                  "this": "this"
+                                }
+                              }
+                            ]
                           }
                         }
                       }
@@ -1551,45 +1559,49 @@
                     "value": {
                       "expression": {
                         "switch": {
-                          "body": {
-                            "arm": [
-                              {
-                                "expression": {
-                                  "name": "i"
+                          "body": [
+                            {
+                              "arm": [
+                                {
+                                  "expression": {
+                                    "name": "i"
+                                  },
+                                  "label": {
+                                    "pattern": {
+                                      "pattern": [
+                                        {
+                                          "name": [
+                                            "i"
+                                          ],
+                                          "type": [
+                                            true,
+                                            {
+                                              "name": "Integer"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
                                 },
-                                "label": {
-                                  "pattern": {
-                                    "pattern": [
-                                      {
-                                        "name": [
-                                          "i"
-                                        ],
-                                        "type": [
-                                          true,
-                                          {
-                                            "name": "Integer"
-                                          }
-                                        ]
-                                      }
-                                    ]
+                                {
+                                  "yield": {
+                                    "int": "0"
+                                  },
+                                  "label": {
+                                    "default": true
                                   }
                                 }
-                              },
-                              {
-                                "yield": {
-                                  "int": "0"
-                                },
-                                "label": {
-                                  "default": true
-                                }
-                              }
-                            ]
-                          },
-                          "condition": {
-                            "expression": {
-                              "name": "o"
+                              ]
                             }
-                          }
+                          ],
+                          "condition": [
+                            {
+                              "expression": {
+                                "name": "o"
+                              }
+                            }
+                          ]
                         }
                       }
                     },

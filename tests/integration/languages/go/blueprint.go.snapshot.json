@@ -906,7 +906,9 @@
                       "right": {
                         "expression": {
                           "literal": {
-                            "struct": "struct{}"
+                            "struct": [
+                              "struct{}"
+                            ]
                           }
                         }
                       },
@@ -985,16 +987,18 @@
             "right": {
               "expression": {
                 "literal": {
-                  "map": {
-                    "value": {
-                      "expression": {
-                        "struct": "struct{}"
+                  "map": [
+                    {
+                      "value": {
+                        "expression": {
+                          "struct": "struct{}"
+                        }
+                      },
+                      "type": {
+                        "name": "T"
                       }
-                    },
-                    "type": {
-                      "name": "T"
                     }
-                  }
+                  ]
                 }
               }
             },
@@ -1320,25 +1324,29 @@
             "value": {
               "expression": {
                 "literal": {
-                  "body": {
-                    "int": [
-                      "1",
-                      "2",
-                      "3",
-                      "4",
-                      "5"
-                    ]
-                  },
-                  "array": {
-                    "type": [
-                      {
-                        "name": "int"
-                      }
-                    ],
-                    "int": [
-                      "5"
-                    ]
-                  }
+                  "body": [
+                    {
+                      "int": [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5"
+                      ]
+                    }
+                  ],
+                  "array": [
+                    {
+                      "type": [
+                        {
+                          "name": "int"
+                        }
+                      ],
+                      "int": [
+                        "5"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1360,21 +1368,25 @@
             "right": {
               "expression": {
                 "literal": {
-                  "body": {
-                    "int": [
-                      "10",
-                      "20",
-                      "30"
-                    ]
-                  },
-                  "array": {
-                    "type": [
-                      {
-                        "name": "int"
-                      }
-                    ],
-                    "implicit": true
-                  }
+                  "body": [
+                    {
+                      "int": [
+                        "10",
+                        "20",
+                        "30"
+                      ]
+                    }
+                  ],
+                  "array": [
+                    {
+                      "type": [
+                        {
+                          "name": "int"
+                        }
+                      ],
+                      "implicit": true
+                    }
+                  ]
                 }
               }
             },
@@ -1461,14 +1473,16 @@
         ],
         "switch": [
           {
-            "children": [
+            "case": [
               {
-                "$type": "case",
                 "value": {
                   "expression": {
-                    "int": "20"
+                    "int": "10"
                   }
                 },
+                "fallthrough": true
+              },
+              {
                 "assign": {
                   "right": {
                     "expression": {
@@ -1480,25 +1494,24 @@
                       "name": "_"
                     }
                   }
+                },
+                "value": {
+                  "expression": {
+                    "int": "20"
+                  }
                 }
               }
             ],
-            "value": {
-              "expression": {
-                "index": {
-                  "int": "0",
-                  "name": "implicit"
+            "value": [
+              {
+                "expression": {
+                  "index": {
+                    "int": "0",
+                    "name": "implicit"
+                  }
                 }
               }
-            },
-            "case": {
-              "value": {
-                "expression": {
-                  "int": "10"
-                }
-              },
-              "fallthrough": true
-            }
+            ]
           }
         ]
       },
@@ -1509,17 +1522,51 @@
       "body": {
         "switch": [
           {
-            "children": [
+            "default": [
               {
-                "$type": "case",
-                "type": {
-                  "name": "int"
-                },
                 "return": {
                   "expression": {
-                    "string": "\"int-ish\""
+                    "call": {
+                      "arguments": [
+                        "\"%T\"",
+                        "v"
+                      ],
+                      "member": {
+                        "property": {
+                          "name": "Sprintf"
+                        },
+                        "object": {
+                          "name": "fmt"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "type": true,
+            "name": [
+              "v"
+            ],
+            "value": [
+              {
+                "expression": {
+                  "name": "x"
+                }
+              }
+            ],
+            "case": [
+              {
+                "return": {
+                  "expression": {
+                    "string": "\"nil\""
                   }
                 },
+                "type": {
+                  "name": "nil"
+                }
+              },
+              {
                 "children": [
                   {
                     "$type": "type",
@@ -1529,13 +1576,17 @@
                     "$type": "type",
                     "name": "int64"
                   }
-                ]
+                ],
+                "type": {
+                  "name": "int"
+                },
+                "return": {
+                  "expression": {
+                    "string": "\"int-ish\""
+                  }
+                }
               },
               {
-                "$type": "case",
-                "type": {
-                  "name": "string"
-                },
                 "return": {
                   "expression": {
                     "binary": {
@@ -1555,13 +1606,12 @@
                       }
                     }
                   }
+                },
+                "type": {
+                  "name": "string"
                 }
               },
               {
-                "$type": "case",
-                "type": {
-                  "name": "Stringer"
-                },
                 "return": {
                   "expression": {
                     "call": {
@@ -1575,46 +1625,12 @@
                       }
                     }
                   }
+                },
+                "type": {
+                  "name": "Stringer"
                 }
               }
-            ],
-            "type": true,
-            "name": "v",
-            "value": {
-              "expression": {
-                "name": "x"
-              }
-            },
-            "case": {
-              "return": {
-                "expression": {
-                  "string": "\"nil\""
-                }
-              },
-              "type": {
-                "name": "nil"
-              }
-            },
-            "default": {
-              "return": {
-                "expression": {
-                  "call": {
-                    "arguments": [
-                      "\"%T\"",
-                      "v"
-                    ],
-                    "member": {
-                      "property": {
-                        "name": "Sprintf"
-                      },
-                      "object": {
-                        "name": "fmt"
-                      }
-                    }
-                  }
-                }
-              }
-            }
+            ]
           }
         ]
       },
@@ -1823,36 +1839,40 @@
               "right": {
                 "expression": {
                   "literal": {
-                    "body": {
-                      "pair": [
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "1"
-                            }
+                    "body": [
+                      {
+                        "pair": [
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "1"
+                              }
+                            },
+                            "string": "\"a\""
                           },
-                          "string": "\"a\""
-                        },
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "2"
-                            }
-                          },
-                          "string": "\"b\""
-                        }
-                      ]
-                    },
-                    "map": {
-                      "value": {
-                        "type": {
-                          "name": "int"
-                        }
-                      },
-                      "type": {
-                        "name": "string"
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "2"
+                              }
+                            },
+                            "string": "\"b\""
+                          }
+                        ]
                       }
-                    }
+                    ],
+                    "map": [
+                      {
+                        "value": {
+                          "type": {
+                            "name": "int"
+                          }
+                        },
+                        "type": {
+                          "name": "string"
+                        }
+                      }
+                    ]
                   }
                 }
               },
@@ -2118,8 +2138,54 @@
                 {
                   "unary": {
                     "literal": {
-                      "body": {
+                      "body": [
+                        {
+                          "pair": [
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "1"
+                                }
+                              },
+                              "name": "X"
+                            },
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "2"
+                                }
+                              },
+                              "name": "Y"
+                            }
+                          ]
+                        }
+                      ],
+                      "type": [
+                        {
+                          "name": "Point"
+                        }
+                      ]
+                    },
+                    "op": {
+                      "text": "&",
+                      "bitwise": true,
+                      "and": true
+                    }
+                  }
+                },
+                {
+                  "literal": {
+                    "body": [
+                      {
                         "pair": [
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "0"
+                              }
+                            },
+                            "name": "X"
+                          },
                           {
                             "value": {
                               "expression": {
@@ -2131,59 +2197,21 @@
                           {
                             "value": {
                               "expression": {
-                                "int": "2"
+                                "int": "1"
                               }
                             },
                             "name": "Y"
                           }
                         ]
-                      },
-                      "type": {
-                        "name": "Point"
                       }
-                    },
-                    "op": {
-                      "text": "&",
-                      "bitwise": true,
-                      "and": true
-                    }
-                  }
-                },
-                {
-                  "literal": {
-                    "body": {
-                      "pair": [
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "0"
-                            }
-                          },
-                          "name": "X"
-                        },
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "1"
-                            }
-                          },
-                          "name": "X"
-                        },
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "1"
-                            }
-                          },
-                          "name": "Y"
+                    ],
+                    "slice": [
+                      {
+                        "type": {
+                          "name": "Point"
                         }
-                      ]
-                    },
-                    "slice": {
-                      "type": {
-                        "name": "Point"
                       }
-                    }
+                    ]
                   }
                 }
               ]
@@ -2204,35 +2232,39 @@
             "right": {
               "expression": {
                 "literal": {
-                  "body": {
-                    "pair": [
-                      {
-                        "value": {
-                          "expression": {
-                            "pair": {
-                              "value": {
-                                "expression": {
-                                  "int": "1"
-                                }
-                              },
-                              "name": "X"
+                  "body": [
+                    {
+                      "pair": [
+                        {
+                          "value": {
+                            "expression": {
+                              "pair": {
+                                "value": {
+                                  "expression": {
+                                    "int": "1"
+                                  }
+                                },
+                                "name": "X"
+                              }
                             }
-                          }
-                        },
-                        "string": "\"a\""
-                      }
-                    ]
-                  },
-                  "map": {
-                    "value": {
-                      "type": {
-                        "name": "Point"
-                      }
-                    },
-                    "type": {
-                      "name": "string"
+                          },
+                          "string": "\"a\""
+                        }
+                      ]
                     }
-                  }
+                  ],
+                  "map": [
+                    {
+                      "value": {
+                        "type": {
+                          "name": "Point"
+                        }
+                      },
+                      "type": {
+                        "name": "string"
+                      }
+                    }
+                  ]
                 }
               }
             },
