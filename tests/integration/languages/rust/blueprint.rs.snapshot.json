@@ -1187,9 +1187,12 @@
                       "name": "x"
                     }
                   },
-                  "parameter": {
-                    "name": "x"
-                  }
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "x"
+                    }
+                  ]
                 }
               }
             },
@@ -1199,15 +1202,6 @@
             "value": {
               "expression": {
                 "closure": {
-                  "children": [
-                    {
-                      "$type": "parameter",
-                      "name": "b"
-                    }
-                  ],
-                  "parameter": {
-                    "name": "a"
-                  },
                   "value": {
                     "expression": {
                       "binary": {
@@ -1227,7 +1221,17 @@
                         }
                       }
                     }
-                  }
+                  },
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "a"
+                    },
+                    {
+                      "$type": "parameter",
+                      "name": "b"
+                    }
+                  ]
                 }
               }
             },
@@ -1285,12 +1289,15 @@
                       }
                     ]
                   },
-                  "parameter": {
-                    "type": {
-                      "name": "i32"
-                    },
-                    "name": "x"
-                  },
+                  "parameters": [
+                    {
+                      "$type": "parameter",
+                      "name": "x",
+                      "type": {
+                        "name": "i32"
+                      }
+                    }
+                  ],
                   "returns": {
                     "type": {
                       "name": "String"

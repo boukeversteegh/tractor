@@ -391,6 +391,22 @@ pub fn closure_parameters(
         xot.detach(child)?;
         xot.append(param_node, child)?;
     }
+    // Tag every <parameter> child with list="parameters" so JSON
+    // renders `closure.parameters: [...]` uniformly across closures
+    // with 1 or N params (Principle #12). Without this, multi-param
+    // closures collide on the singleton `parameter` key and overflow
+    // to anonymous `children:` (iter-186 review finding).
+    let params_now: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some(Parameter.as_str())
+        })
+        .collect();
+    for p in params_now {
+        if get_attr(xot, p, "list").is_none() {
+            xot.with_attr(p, "list", "parameters");
+        }
+    }
     Ok(TransformAction::Flatten)
 }
 

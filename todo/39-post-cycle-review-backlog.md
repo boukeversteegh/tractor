@@ -453,14 +453,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 ### Findings from iter-186 post-cycle review (iters 175-185 cluster)
 
-- [ ] **Rust closure 2-param case overflows** *(severity MED)*.
-  Site: `tests/integration/languages/rust/blueprint.rs.snapshot.json:1198-1208`.
-  Concrete: `closure: { children: [{ $type: "parameter", name: "b" }],
-  parameter: { name: "a" }, value: ... }` — first param singleton-
-  lifted, second falls through to `children`. Fix: ensure every
-  `<parameter>` child of `<closure>` carries `list="parameters"`.
-  Likely missing distribute_member_list_attrs entry or a Rust-
-  specific tag pass. Effort: small (1 iter).
+- [x] **Rust closure multi-param overflow** — closed iter 187.
+  `closure_parameters` Custom handler now tags each wrapped
+  `<parameter>` with `list="parameters"` after the wrap step (was
+  missing — handler returned `Flatten` which promotes children but
+  didn't distribute list=). JSON: `closure.parameters: [{...}, {...}]`
+  uniform array (was: 1 lifted singleton + rest in children
+  overflow).
 
 - [ ] **Investigate Rust/Python `<pattern>` overflow** *(severity
   LOW-MED)*. Pattern-binding sites overflow consistently in
@@ -479,6 +478,10 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 187: Rust closure multi-param `list="parameters"` —
+  iter-186 review finding closed. `closure_parameters` Custom
+  handler now sets list= on each wrapped `<parameter>` so JSON
+  renders `closure.parameters: [...]` uniformly.
 - [x] iter 186: post-cycle review of iters 175-185. Audit total
   283 → 261 (-22, mostly TSQL). Cluster overall PASS — alias
   rename verified, closure archetype intact across 8 PLs, no
