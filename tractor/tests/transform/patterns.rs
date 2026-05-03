@@ -246,3 +246,14 @@ fn typescript_destructuring_pattern_lists_pairs() {
         "//pattern[object]/pair[@list='pairs']",
         2);
 }
+
+/// Rust tuple-pattern bindings `(a, b, c)` produce
+/// `<pattern[tuple]>` with multiple `<name>` siblings. Per
+/// Principle #19 each name is a positional binding.
+#[test]
+fn rust_tuple_pattern_lists_names() {
+    claim("Rust tuple-pattern with three bindings tags each <name>",
+        &mut parse_src("rust", "fn f() { match t { (a, b, c) => () } }"),
+        "//pattern[tuple]/name[@list='names']",
+        3);
+}

@@ -789,6 +789,17 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // rather than colliding on the singleton `use` key
             // and overflowing into `children`.
             ("use", "use"),
+            // Tuple/slice patterns `(a, b, c)` and `[a, b, c]` produce
+            // `<pattern[tuple]>` / `<pattern[slice]>` with multiple
+            // `<name>` binding siblings. Per Principle #19 they're
+            // role-uniform — each is a positional binding.
+            ("pattern", "name"),
+            // Or-patterns `Shape::Dot | Shape::Square` mix `<path>`,
+            // `<pattern>`, and `<int>` siblings. Tag each kind that
+            // can appear so JSON renders consistently.
+            ("pattern", "int"),
+            ("pattern", "string"),
+            ("pattern", "path"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;

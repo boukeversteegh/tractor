@@ -1606,26 +1606,29 @@
                         },
                         "pattern": {
                           "pattern": {
-                            "children": [
+                            "ints": [
+                              "0",
+                              "0"
+                            ],
+                            "or": true,
+                            "paths": [
                               {
-                                "$type": "path",
                                 "names": [
                                   "Shape",
                                   "Dot"
                                 ]
                               },
-                              "y",
-                              "0"
+                              {
+                                "names": [
+                                  "Shape",
+                                  "Dot"
+                                ]
+                              }
                             ],
-                            "or": true,
-                            "path": {
-                              "names": [
-                                "Shape",
-                                "Dot"
-                              ]
-                            },
-                            "name": "y",
-                            "int": "0"
+                            "names": [
+                              "y",
+                              "y"
+                            ]
                           }
                         }
                       },
@@ -1651,16 +1654,6 @@
                           }
                         },
                         "pattern": {
-                          "children": [
-                            "y"
-                          ],
-                          "path": {
-                            "names": [
-                              "Shape",
-                              "Dot"
-                            ]
-                          },
-                          "name": "x",
                           "condition": {
                             "expression": {
                               "binary": {
@@ -1680,7 +1673,17 @@
                                 }
                               }
                             }
-                          }
+                          },
+                          "path": {
+                            "names": [
+                              "Shape",
+                              "Dot"
+                            ]
+                          },
+                          "names": [
+                            "x",
+                            "y"
+                          ]
                         }
                       },
                       {
@@ -2683,11 +2686,11 @@
                   "pattern": {
                     "patterns": [
                       {
-                        "children": [
+                        "names": [
+                          "x",
                           "ix"
                         ],
-                        "field": true,
-                        "name": "x"
+                        "field": true
                       },
                       {
                         "text": "..",
@@ -2798,7 +2801,8 @@
                         "pattern": {
                           "pattern": {
                             "pattern": {
-                              "children": [
+                              "names": [
+                                "b",
                                 "_c"
                               ],
                               "tuple": true,
@@ -2814,8 +2818,7 @@
                                 },
                                 "capture": true,
                                 "name": "a"
-                              },
-                              "name": "b"
+                              }
                             },
                             "ref": true
                           }
@@ -2859,12 +2862,12 @@
                         },
                         "pattern": {
                           "pattern": {
-                            "children": [
+                            "names": [
+                              "a",
                               "b",
                               "c"
                             ],
-                            "tuple": true,
-                            "name": "a"
+                            "tuple": true
                           }
                         }
                       }
@@ -2931,15 +2934,15 @@
                         },
                         "pattern": {
                           "pattern": {
-                            "children": [
+                            "names": [
+                              "first",
                               "last"
                             ],
                             "slice": true,
                             "pattern": {
                               "text": "..",
                               "rest": true
-                            },
-                            "name": "first"
+                            }
                           }
                         }
                       },
