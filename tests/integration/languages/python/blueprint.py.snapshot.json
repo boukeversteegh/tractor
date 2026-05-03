@@ -1310,7 +1310,7 @@
                     "text": "continue",
                     "continue": true
                   },
-                  "elseif": {
+                  "else_if": {
                     "then": {
                       "text": "break",
                       "break": true

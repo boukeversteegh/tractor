@@ -20,10 +20,7 @@ pub enum TractorNode {
     // Type vocabulary (Type dual-use)
     Type, Path, Returns, Dimensions,
     // Control flow
-    Return, If, Else,
-    #[strum(serialize = "elseif")]
-    ElseIf,
-    For, Foreach, While, Try, Catch, Finally, Throw, Throws,
+    Return, If, Else, ElseIf, For, Foreach, While, Try, Catch, Finally, Throw, Throws,
     Switch, Arm, Label, Case, Pattern, Guard, Body,
     // Control flow additions
     Assert, Block, Break, Continue, Do, Instanceof, Yield,

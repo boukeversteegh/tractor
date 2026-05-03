@@ -19,10 +19,7 @@ pub enum TractorNode {
     // Type vocabulary
     Type,
     // Control flow
-    Return, If,
-    #[strum(serialize = "elseif")]
-    ElseIf,
-    Else, For, While, Try, Except, Finally, With, Raise, Pass, Break,
+    Return, If, ElseIf, Else, For, While, Try, Except, Finally, With, Raise, Pass, Break,
     Continue, Match, Arm, Pattern, Then, Condition,
     // Imports / names
     Import, From, Assert, Delete, Global, Nonlocal,

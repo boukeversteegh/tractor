@@ -1,9 +1,9 @@
 //! Conditional collapser transformer.
 //!
 //! Collapses nested `else { if ... }` chains (and Ruby's nested
-//! `<elsif>` shape) into the flat `<if>[condition][then][elseif*][else?]`
+//! `<elsif>` shape) into the flat `<if>[condition][then][else_if*][else?]`
 //! shape called for by the semantic-tree spec. Languages call
-//! [`collapse_elseif_chain`] from their post-transform passes.
+//! [`collapse_else_if_chain`] from their post-transform passes.
 
 use xot::{Xot, Node as XotNode};
 
@@ -11,28 +11,28 @@ use super::helpers::{copy_source_location, get_element_children, get_element_nam
 
 // /specs/tractor-parse/semantic-tree/transformations.md: Conditional shape
 /// Collapse a nested `else`/`if` chain under `if_node` into the flat
-/// conditional shape `<if>[condition][then][elseif*][else?]`.
+/// conditional shape `<if>[condition][then][else_if*][else?]`.
 ///
 /// Applies after names have been rewritten, so children are already
-/// `<if>` / `<else>` / `<elseif>` / `<elsif>` (the raw Ruby kind).
+/// `<if>` / `<else>` / `<else_if>` / `<elsif>` (the raw Ruby kind).
 /// Handles two input shapes:
 ///
 /// - **C-like** (JS/TS, Java, C#, Go, Rust) — the `<else>` field
 ///   wrapper holds a renamed `else_clause` (itself `<else>`). If the
 ///   inner `<else>` contains a single `<if>`, that `<if>`'s
-///   condition and then become a new `<elseif>` sibling; the
+///   condition and then become a new `<else_if>` sibling; the
 ///   nested `<if>`'s own `<else>` chain continues. Final `<else>`
 ///   with a plain block stays.
 /// - **Ruby** — the grammar already emits `<elsif>` (nested) and
-///   a final `<else>`. The `<elsif>` is renamed to `<elseif>` and
+///   a final `<else>`. The `<elsif>` is renamed to `<else_if>` and
 ///   lifted out so it becomes a sibling of the outer `<if>`'s
 ///   condition/then; the same for any nested `<else>`.
-pub fn collapse_elseif_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot::Error> {
+pub fn collapse_else_if_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot::Error> {
     // Walk the `<else>` / `<elsif>` chain, lifting each level out
     // of the previous one so they become flat children of
     // `if_node`. `current` is the node we scan for a trailing
     // alternative (initially `if_node`; later each lifted
-    // `<elseif>`). `anchor` is the child of `if_node` that the
+    // `<else_if>`). `anchor` is the child of `if_node` that the
     // next lifted alternative should be inserted *after* — None
     // means "append at the end" (modulo trailing text). Before
     // each step we normalize the C-like `<else>` wrapper around a
@@ -41,7 +41,7 @@ pub fn collapse_elseif_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot:
     let mut current = if_node;
     let mut anchor: Option<XotNode> = None;
     loop {
-        // Find the trailing alternative child (else / elsif / elseif)
+        // Find the trailing alternative child (else / elsif / else_if)
         // on the current node.
         let alt = match find_trailing_alternative(xot, current) {
             Some(a) => a,
@@ -57,7 +57,7 @@ pub fn collapse_elseif_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot:
                 let inner_if = single_if_child(xot, alt);
                 if let Some(inner_if) = inner_if {
                     // Grab the "else" keyword text so it survives
-                    // inside the new <elseif>. Tree-sitter grammars
+                    // inside the new <else_if>. Tree-sitter grammars
                     // put it in one of two places:
                     //   Rust-style: text child of the <else> wrapper
                     //     itself (tree-sitter emits else_clause →
@@ -69,16 +69,16 @@ pub fn collapse_elseif_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot:
                     //     child of the outer if).
                     let else_text = collect_else_keyword_text(xot, alt)?;
 
-                    let elseif = lift_if_as_elseif(xot, if_node, anchor, inner_if)?;
+                    let else_if = lift_if_as_else_if(xot, if_node, anchor, inner_if)?;
 
                     if let Some(content) = else_text {
                         let new_text = xot.new_text(&content);
-                        xot.prepend(elseif, new_text)?;
+                        xot.prepend(else_if, new_text)?;
                     }
 
                     xot.detach(alt)?; // drop the now-empty <else>
-                    current = elseif;
-                    anchor = Some(elseif);
+                    current = else_if;
+                    anchor = Some(else_if);
                     continue;
                 }
                 // Terminal <else>: if the "else" keyword lives as a
@@ -93,14 +93,14 @@ pub fn collapse_elseif_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot:
                 reparent_in(xot, alt, if_node, anchor)?;
                 break;
             }
-            "elsif" | "elseif" => {
+            "elsif" | "else_if" => {
                 // Ruby's <elsif> (or any previously-renamed
-                // <elseif>). Same preceding-text fold as above.
+                // <else_if>). Same preceding-text fold as above.
                 if let Some(content) = take_preceding_text_sibling(xot, alt)? {
                     let new_text = xot.new_text(&content);
                     xot.prepend(alt, new_text)?;
                 }
-                rename(xot, alt, "elseif");
+                rename(xot, alt, "else_if");
                 reparent_in(xot, alt, if_node, anchor)?;
                 current = alt;
                 anchor = Some(alt);
@@ -142,7 +142,7 @@ fn take_preceding_text_sibling(
 ///   the wrapper on the outer if.
 ///
 /// Returns the concatenated text content so the caller can
-/// prepend it into the new <elseif> / <else>, which then
+/// prepend it into the new <else_if> / <else>, which then
 /// consolidates with adjacent "if (" text for a single
 /// "else if (" source token.
 fn collect_else_keyword_text(
@@ -169,12 +169,12 @@ fn collect_else_keyword_text(
 }
 
 /// Return the last element child of `node` whose name is `else`,
-/// `elsif`, or `elseif` — the tail of the conditional chain.
+/// `elsif`, or `else_if` — the tail of the conditional chain.
 fn find_trailing_alternative(xot: &Xot, node: XotNode) -> Option<XotNode> {
     let children = get_element_children(xot, node);
     let last = *children.last()?;
     match get_element_name(xot, last).as_deref() {
-        Some("else") | Some("elsif") | Some("elseif") => Some(last),
+        Some("else") | Some("elsif") | Some("else_if") => Some(last),
         _ => None,
     }
 }
@@ -194,51 +194,51 @@ fn single_if_child(xot: &Xot, else_node: XotNode) -> Option<XotNode> {
     }
 }
 
-/// Build an `<elseif>` from `inner_if`'s condition/then and place
+/// Build an `<else_if>` from `inner_if`'s condition/then and place
 /// it as a child of `outer_if`, positioned after `after` (or at
 /// the end of `outer_if` when `after` is `None`). The inner
 /// `<if>`'s own `<else>` / `<elsif>` chain is moved into the new
-/// `<elseif>` so the caller can continue iterating. Returns the
-/// new `<elseif>` node.
-fn lift_if_as_elseif(
+/// `<else_if>` so the caller can continue iterating. Returns the
+/// new `<else_if>` node.
+fn lift_if_as_else_if(
     xot: &mut Xot,
     outer_if: XotNode,
     after: Option<XotNode>,
     inner_if: XotNode,
 ) -> Result<XotNode, xot::Error> {
-    let elseif_name = xot.add_name("elseif");
-    let elseif = xot.new_element(elseif_name);
-    copy_source_location(xot, inner_if, elseif);
+    let else_if_name = xot.add_name("else_if");
+    let else_if = xot.new_element(else_if_name);
+    copy_source_location(xot, inner_if, else_if);
 
-    // Insert the new `<elseif>` as a child of `outer_if`, placed
+    // Insert the new `<else_if>` as a child of `outer_if`, placed
     // right after `after` so the chain reads in source order.
     match after {
         Some(a) => {
             let next = xot.next_sibling(a);
             match next {
-                Some(n) => xot.insert_before(n, elseif)?,
-                None => xot.append(outer_if, elseif)?,
+                Some(n) => xot.insert_before(n, else_if)?,
+                None => xot.append(outer_if, else_if)?,
             }
         }
-        None => xot.append(outer_if, elseif)?,
+        None => xot.append(outer_if, else_if)?,
     }
 
     // Move condition / then element children AND all text children
     // (source keywords like "if") from the inner <if> to the new
-    // <elseif> so its XPath string-value stays source-accurate
+    // <else_if> so its XPath string-value stays source-accurate
     // (`"if (n==0) { ... }"` rather than just the condition + body).
     let inner_children: Vec<_> = xot.children(inner_if).collect();
     for child in inner_children {
         if xot.text_str(child).is_some() {
             xot.detach(child)?;
-            xot.append(elseif, child)?;
+            xot.append(else_if, child)?;
             continue;
         }
         let name = get_element_name(xot, child).unwrap_or_default();
         match name.as_str() {
             "condition" | "then" => {
                 xot.detach(child)?;
-                xot.append(elseif, child)?;
+                xot.append(else_if, child)?;
             }
             _ => {}
         }
@@ -246,18 +246,18 @@ fn lift_if_as_elseif(
 
     // The inner <if>'s remaining alternative children (its own
     // <else> / <elsif> chain) now belong semantically to the new
-    // <elseif>'s tail. Move them under `elseif` so the caller
+    // <else_if>'s tail. Move them under `else_if` so the caller
     // can continue iterating via `find_trailing_alternative`.
     let remaining = get_element_children(xot, inner_if);
     for child in remaining {
         let name = get_element_name(xot, child).unwrap_or_default();
-        if matches!(name.as_str(), "else" | "elsif" | "elseif") {
+        if matches!(name.as_str(), "else" | "elsif" | "else_if") {
             xot.detach(child)?;
-            xot.append(elseif, child)?;
+            xot.append(else_if, child)?;
         }
     }
 
-    Ok(elseif)
+    Ok(else_if)
 }
 
 /// Detach `node` from its current parent and place it as a child

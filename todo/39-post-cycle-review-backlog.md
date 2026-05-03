@@ -197,14 +197,30 @@ before committing a non-trivial change.
   - Effort: 1-iter.
   - Source: iter 233 cold-read.
 
-- [x] iter 252 — **`else_if` raw element name** renamed to
-  `<elseif>` across 8 languages (TS / Python / Java / Ruby / PHP
-  / C# / Go / Rust). Implementation: `#[strum(serialize = "elseif")]`
-  override on each `ElseIf` enum variant; `transform/conditionals.rs`
-  internals updated (function names + literal element-name
-  strings); `transform::if_else` test xpath assertions updated.
-  Flat shape preserved (no revert to nested `<else>/<if>/…`). 8
-  blueprints + 1 transform test file regenerated.
+- [ ] **`else_if` raw element name (underscore leak) in 5 languages**
+  *(Principle #2 violation, severity MED)*
+  - Files / line numbers:
+    - `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:438,447` (2 occurrences)
+    - `tests/integration/languages/python/blueprint.py.snapshot.txt:324`
+    - `tests/integration/languages/java/blueprint.java.snapshot.txt:112`
+    - `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:284`
+    - `tests/integration/languages/php/blueprint.php.snapshot.txt:114`
+  - Current: `else_if/` element. Iters 8 / 19 / 25 deliberately
+    chose `<else_if>` as the spelling for the collapsed elif chain
+    shape — flagged here because the underscore violates Principle
+    #2's "no grammar-leaked names with underscores."
+  - Whack-a-mole risk: HIGH. The flat-`<else_if>` shape was a
+    deliberate cross-language alignment (replaces nested
+    `else/if/...`). Renaming the spelling is OK; reverting the
+    shape is NOT.
+  - Desired (one of):
+    - `<elif>` (Python keyword, hyphen-free, lowercase).
+    - `<elseif>` (single word, common spelling).
+    - Recurse `<else>/<if>/...` (nested) — REJECTED by prior iters,
+      do not re-litigate without explicit reasoning.
+  - Effort: trivial (rename in each per-language config; tree
+    invariants whitelist update; snapshot regen).
+  - Source: iter 233 cold-read.
 
 - [ ] **Go `body[return]` marker semantics misleading**
   *(Principle #11 / #13, severity LOW)*
@@ -372,13 +388,25 @@ member-access receiver). But several transform sites still
 
 ### Java method-call shape divergence
 
-- [x] **Method-call shape divergence across 4 PLs** — closed iters
-  239-248 (chain inversion rollout). All 8 supported languages
-  now produce a unified `<object[access]>...<call>...</call></object>`
-  chain shape; the 3 prior divergent shapes (Java flat, Python/Go
-  nested member, TS callee+member) all converge to canonical post-
-  inversion. Cross-language `//object[access]/call[name='X']`
-  queries now work uniformly.
+- [ ] **Java method-invocation has `<call><object/><name="method"/>...</call>`**
+  (flat shape, iter 148); **Python/Go method calls have**
+  `<call><member><object/><property/></member>...args</call>`
+  (nested via `<member>`); **TypeScript uses**
+  `<call><callee><member>...</member></callee>...</call>`.
+  - **Concrete examples**:
+    - Java `mapper.apply("x")` → `<call><object/>mapper<name>apply</name>...</call>` (flat).
+    - Python/Go `obj.method(x)` → `<call><member><object/><property/></member>...</call>`.
+    - TS same `obj.method(x)` → `<call><callee><member>...</member></callee>...</call>`.
+  - **Three different call shapes across four PLs** for the same
+    syntactic construct. Within-language consistency is intact
+    (`feedback_principle5_scope.md` permits this), but cross-language
+    `//call/member/property/name='X'` queries are language-specific.
+  - **Decision needed**: align to one of (a) Java's flat, (b)
+    Python/Go's nested member, (c) TS's callee+member. Each has
+    trade-offs the user should weigh.
+  - **Effort**: 30 minutes (subagent design review) + 1-2 iters
+    (per-language migration) once decided.
+  - **Source**: iters 143-148 review.
 
 ### Stale doc-comment sweep — round 2
 
@@ -446,11 +474,13 @@ member-access receiver). But several transform sites still
 
 ### Ruby member-access role-wrap (fold into call-shape backlog)
 
-- [x] **Ruby method-call shape variant** — closed iter 246 (Ruby
-  chain inversion pilot). Ruby's flat `<call><object/>NAME...</call>`
-  shape was normalised via `wrap_flat_call_member` and inverted;
-  same canonical `<object[access]>...<call>...</call></object>`
-  as the other 7 languages.
+- [ ] **Ruby `obj.method(arg)` adds a 4th call-shape variant** —
+  flat `call[optional]/<name><name>...` at
+  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:554-557`.
+  Already-tracked Java method-call divergence backlog item lists
+  3 distinct shapes; Ruby is a 4th. Fold into that item when the
+  cross-language alignment design call is made. (severity: med;
+  effort: small once decided)
 
 ### Findings from iter-175 post-cycle review (iters 170-174 cluster)
 

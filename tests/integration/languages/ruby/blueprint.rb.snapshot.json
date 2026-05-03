@@ -312,7 +312,7 @@
                       "then": {
                         "next": true
                       },
-                      "elseif": {
+                      "else_if": {
                         "then": {
                           "break": true
                         },

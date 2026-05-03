@@ -111,7 +111,7 @@ program/
   │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "10"
   │       │           ├─ body/return/expression/string/interpolation/variable/name = "target"
-  │       │           ├─ elseif/
+  │       │           ├─ else_if/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/object[access]/
   │       │           │   │   │   ├─ variable/name = "this"

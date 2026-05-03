@@ -15,10 +15,7 @@ pub enum TractorNode {
     // Top-level / declarations
     Program, Module, Class, Method,
     // Statements / control flow (Begin dual-use)
-    If, Unless, Else,
-    #[strum(serialize = "elseif")]
-    ElseIf,
-    Case, Then, While, Until, For, Begin, Rescue, Ensure, Break, Continue,
+    If, Unless, Else, ElseIf, Case, Then, While, Until, For, Begin, Rescue, Ensure, Break, Continue,
     // Members / parameters
     Parameter, Argument, Variable,
     // Expressions

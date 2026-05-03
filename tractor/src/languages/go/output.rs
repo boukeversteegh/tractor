@@ -34,10 +34,7 @@ pub enum TractorNode {
     // Inheritance / interface embedding (cross-language)
     Extends,
     // Statements / control flow
-    Return, If, Else,
-    #[strum(serialize = "elseif")]
-    ElseIf,
-    For, Range, Switch, Case, Default, Defer, Go, Select,
+    Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
     Break, Continue, Goto, Labeled, Label, Send, Receive, Assign, Fallthrough,
     // Expressions
     Call, Member, Object, Property, Index, Binary, Unary, Assert, Closure, Literal, Expression,

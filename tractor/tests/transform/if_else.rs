@@ -25,7 +25,7 @@ fn csharp() {
     "#),
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -53,7 +53,7 @@ fn go() {
         &mut tree,
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -78,7 +78,7 @@ fn java() {
     "#),
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -113,7 +113,7 @@ def classify(n):
         &mut if_chain,
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -150,7 +150,7 @@ fn ruby() {
     "#),
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -179,7 +179,7 @@ fn rust() {
     "#),
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);
@@ -207,7 +207,7 @@ fn typescript() {
     "#),
         &multi_xpath(r#"
             //if
-                [count(elseif)=2]
+                [count(else_if)=2]
                 [count(else)=1]
         "#),
         1);

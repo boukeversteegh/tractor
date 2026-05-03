@@ -434,7 +434,7 @@ program/
   │       │   │   ├─ left/expression/name = "status"
   │       │   │   ├─ op = "="
   │       │   │   └─ right/expression/string = "\"error\""
-  │       │   ├─ elseif/
+  │       │   ├─ else_if/
   │       │   │   ├─ condition/expression/binary/
   │       │   │   │   ├─ left/expression/name = "n"
   │       │   │   │   ├─ op[equals and strict] = "==="
@@ -443,7 +443,7 @@ program/
   │       │   │       ├─ left/expression/name = "status"
   │       │   │       ├─ op = "="
   │       │   │       └─ right/expression/string = "\"idle\""
-  │       │   ├─ elseif/
+  │       │   ├─ else_if/
   │       │   │   ├─ condition/expression/binary/
   │       │   │   │   ├─ left/expression/name = "n"
   │       │   │   │   ├─ op[compare and less] = "<"
