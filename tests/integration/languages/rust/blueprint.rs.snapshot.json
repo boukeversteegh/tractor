@@ -318,15 +318,14 @@
           "$type": "arm",
           "left": "()",
           "right": {
-            "children": [
+            "expression": [
               {
-                "$type": "expression",
+                "name": "Vec"
+              },
+              {
                 "name": "new"
               }
-            ],
-            "expression": {
-              "name": "Vec"
-            }
+            ]
           }
         }
       ],
@@ -334,9 +333,11 @@
       "name": "collect_pairs",
       "arm": {
         "right": {
-          "children": [
+          "expression": [
             {
-              "$type": "expression",
+              "name": "vec"
+            },
+            {
               "repetition": {
                 "children": [
                   "$key",
@@ -345,35 +346,31 @@
                 "name": "stringify"
               }
             }
-          ],
-          "expression": {
-            "name": "vec"
-          }
+          ]
         },
         "left": {
-          "children": [
+          "expression": [
             {
-              "$type": "expression",
+              "repetition": {
+                "children": [
+                  {
+                    "$type": "pattern",
+                    "binding": true,
+                    "name": "$value",
+                    "fragment": "expr"
+                  }
+                ],
+                "pattern": {
+                  "fragment": "ident",
+                  "binding": true,
+                  "name": "$key"
+                }
+              }
+            },
+            {
               "repetition": "$(,)?"
             }
-          ],
-          "expression": {
-            "repetition": {
-              "children": [
-                {
-                  "$type": "pattern",
-                  "binding": true,
-                  "name": "$value",
-                  "fragment": "expr"
-                }
-              ],
-              "pattern": {
-                "fragment": "ident",
-                "binding": true,
-                "name": "$key"
-              }
-            }
-          }
+          ]
         }
       }
     }
@@ -1088,28 +1085,24 @@
       "name": "numeric_zoo",
       "returns": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
+              "name": "u32"
+            },
+            {
               "name": "f64"
             },
             {
-              "$type": "type",
               "name": "i32"
             },
             {
-              "$type": "type",
               "name": "i32"
             },
             {
-              "$type": "type",
               "name": "i32"
             }
           ],
-          "tuple": true,
-          "type": {
-            "name": "u32"
-          }
+          "tuple": true
         }
       }
     },
@@ -2509,9 +2502,11 @@
                   }
                 },
                 "function": true,
-                "type": {
-                  "name": "Fn"
-                },
+                "type": [
+                  {
+                    "name": "Fn"
+                  }
+                ],
                 "parameters": [
                   {
                     "$type": "type",
@@ -3367,15 +3362,14 @@
                 {
                   "$type": "type",
                   "tuple": true,
-                  "type": {
-                    "type": {
-                      "name": "str"
-                    },
-                    "borrowed": true
-                  },
-                  "children": [
+                  "type": [
                     {
-                      "$type": "type",
+                      "type": {
+                        "name": "str"
+                      },
+                      "borrowed": true
+                    },
+                    {
                       "name": "i32"
                     }
                   ]

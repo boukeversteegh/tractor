@@ -478,6 +478,12 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 192: Rust wired to generic helpers — added
+  `tag_multi_target_expressions` + `tag_multi_type_children` to
+  `rust_post_transform`. Rust audit 42 → 37 (-5). Remaining 37
+  in: pattern (9), macro (4), condition (3), right (2), repetition
+  (2), range (2), array (2), tuple (1) — each likely needs a
+  separate Rust-specific handler or per-parent list= rule.
 - [x] iter 191: cross-language type-union/intersection list= — new
   generic helper `tag_multi_type_children` tags `<type>` siblings
   under `<type>` parents (PHP `int|string`, `A&B`, `(A&B)|C`; TS
