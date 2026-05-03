@@ -1330,20 +1330,28 @@
                     ]
                   },
                   "array": {
-                    "type": {
-                      "name": "int"
-                    },
-                    "int": "5"
+                    "type": [
+                      {
+                        "name": "int"
+                      }
+                    ],
+                    "int": [
+                      "5"
+                    ]
                   }
                 }
               }
             },
             "name": "fixed",
             "array": {
-              "type": {
-                "name": "int"
-              },
-              "int": "5"
+              "type": [
+                {
+                  "name": "int"
+                }
+              ],
+              "int": [
+                "5"
+              ]
             }
           }
         ],
@@ -1360,9 +1368,11 @@
                     ]
                   },
                   "array": {
-                    "type": {
-                      "name": "int"
-                    },
+                    "type": [
+                      {
+                        "name": "int"
+                      }
+                    ],
                     "implicit": true
                   }
                 }

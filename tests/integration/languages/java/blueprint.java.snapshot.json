@@ -1079,11 +1079,11 @@
                     "value": {
                       "expression": {
                         "array": {
-                          "children": [
+                          "int": [
+                            "1",
                             "2",
                             "3"
-                          ],
-                          "int": "1"
+                          ]
                         }
                       }
                     },

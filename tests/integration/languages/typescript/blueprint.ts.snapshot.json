@@ -1830,20 +1830,24 @@
                             {
                               "yield": {
                                 "array": {
-                                  "index": {
-                                    "name": "i",
-                                    "object": {
-                                      "member": {
-                                        "property": {
-                                          "name": "items"
-                                        },
-                                        "object": {
-                                          "this": "this"
+                                  "index": [
+                                    {
+                                      "name": "i",
+                                      "object": {
+                                        "member": {
+                                          "property": {
+                                            "name": "items"
+                                          },
+                                          "object": {
+                                            "this": "this"
+                                          }
                                         }
                                       }
                                     }
-                                  },
-                                  "name": "i"
+                                  ],
+                                  "name": [
+                                    "i"
+                                  ]
                                 }
                               }
                             }
@@ -1984,15 +1988,14 @@
                                   "value": {
                                     "expression": {
                                       "array": {
-                                        "children": [
+                                        "spread": [
                                           {
-                                            "$type": "spread",
+                                            "name": "urls"
+                                          },
+                                          {
                                             "name": "extra"
                                           }
-                                        ],
-                                        "spread": {
-                                          "name": "urls"
-                                        }
+                                        ]
                                       }
                                     }
                                   },
@@ -2941,11 +2944,11 @@
                 },
                 "object": {
                   "array": {
-                    "children": [
+                    "number": [
+                      "1",
                       "2",
                       "3"
-                    ],
-                    "number": "1"
+                    ]
                   }
                 }
               }

@@ -117,11 +117,11 @@
                 "pattern": [
                   {
                     "array": {
-                      "children": [
+                      "int": [
+                        "1",
                         "2",
                         "3"
-                      ],
-                      "int": "1"
+                      ]
                     }
                   }
                 ]
@@ -316,34 +316,35 @@
           },
           {
             "array": {
-              "children": [
-                {
-                  "$type": "call",
-                  "object": {
-                    "name": "doubler"
-                  },
-                  "name": "call",
-                  "arguments": [
-                    "3"
-                  ]
-                },
+              "name": [
+                "result",
                 "ternary",
                 "a",
                 "b",
                 "rest",
                 "flag"
               ],
-              "call": {
-                "arguments": [
-                  "1",
-                  "2"
-                ],
-                "object": {
-                  "name": "adder"
+              "call": [
+                {
+                  "arguments": [
+                    "1",
+                    "2"
+                  ],
+                  "object": {
+                    "name": "adder"
+                  },
+                  "name": "call"
                 },
-                "name": "call"
-              },
-              "name": "result"
+                {
+                  "arguments": [
+                    "3"
+                  ],
+                  "object": {
+                    "name": "doubler"
+                  },
+                  "name": "call"
+                }
+              ]
             }
           }
         ],
@@ -793,12 +794,12 @@
             "right": {
               "expression": {
                 "array": {
-                  "children": [
+                  "int": [
+                    "1",
                     "2",
                     "3",
                     "4"
-                  ],
-                  "int": "1"
+                  ]
                 }
               }
             },
@@ -1217,11 +1218,11 @@
             "right": {
               "expression": {
                 "array": {
-                  "children": [
+                  "int": [
+                    "10",
                     "20",
                     "30"
-                  ],
-                  "int": "10"
+                  ]
                 }
               }
             },
@@ -1831,12 +1832,12 @@
                     "expression": [
                       {
                         "array": {
-                          "children": [
+                          "name": [
+                            "data",
                             "rocket",
                             "list",
                             "merged"
-                          ],
-                          "name": "data"
+                          ]
                         }
                       }
                     ],
@@ -1845,34 +1846,32 @@
                         "right": {
                           "expression": {
                             "hash": {
-                              "children": [
+                              "pair": [
                                 {
-                                  "$type": "pair",
-                                  "name": "name",
+                                  "value": {
+                                    "expression": {
+                                      "name": "@id"
+                                    }
+                                  },
+                                  "name": "id"
+                                },
+                                {
                                   "value": {
                                     "expression": {
                                       "name": "@name"
                                     }
-                                  }
+                                  },
+                                  "name": "name"
                                 },
                                 {
-                                  "$type": "pair",
-                                  "string": "'legacy'",
                                   "value": {
                                     "expression": {
                                       "true": "true"
                                     }
-                                  }
+                                  },
+                                  "string": "'legacy'"
                                 }
-                              ],
-                              "pair": {
-                                "value": {
-                                  "expression": {
-                                    "name": "@id"
-                                  }
-                                },
-                                "name": "id"
-                              }
+                              ]
                             }
                           }
                         },
@@ -1886,28 +1885,27 @@
                         "right": {
                           "expression": {
                             "hash": {
-                              "children": [
+                              "pair": [
                                 {
-                                  "$type": "pair",
-                                  "symbol": {
-                                    "text": ":\"hello world\"",
-                                    "delimited": true
+                                  "value": {
+                                    "expression": {
+                                      "int": "1"
+                                    }
                                   },
+                                  "symbol": ":foo"
+                                },
+                                {
                                   "value": {
                                     "expression": {
                                       "int": "2"
                                     }
+                                  },
+                                  "symbol": {
+                                    "text": ":\"hello world\"",
+                                    "delimited": true
                                   }
                                 }
-                              ],
-                              "pair": {
-                                "value": {
-                                  "expression": {
-                                    "int": "1"
-                                  }
-                                },
-                                "symbol": ":foo"
-                              }
+                              ]
                             }
                           }
                         },
@@ -1921,20 +1919,22 @@
                         "right": {
                           "expression": {
                             "array": {
-                              "children": [
+                              "spread": [
+                                {
+                                  "array": {
+                                    "int": [
+                                      "4",
+                                      "5"
+                                    ]
+                                  },
+                                  "list": true
+                                }
+                              ],
+                              "int": [
+                                "1",
                                 "2",
                                 "3"
-                              ],
-                              "int": "1",
-                              "spread": {
-                                "array": {
-                                  "children": [
-                                    "5"
-                                  ],
-                                  "int": "4"
-                                },
-                                "list": true
-                              }
+                              ]
                             }
                           }
                         },
@@ -1948,18 +1948,22 @@
                         "right": {
                           "expression": {
                             "hash": {
-                              "pair": {
-                                "value": {
-                                  "expression": {
-                                    "nil": "nil"
-                                  }
-                                },
-                                "name": "extra"
-                              },
-                              "spread": {
-                                "name": "data",
-                                "dict": true
-                              }
+                              "pair": [
+                                {
+                                  "value": {
+                                    "expression": {
+                                      "nil": "nil"
+                                    }
+                                  },
+                                  "name": "extra"
+                                }
+                              ],
+                              "spread": [
+                                {
+                                  "name": "data",
+                                  "dict": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -2224,10 +2228,10 @@
       "right": {
         "expression": {
           "array": {
-            "children": [
+            "int": [
+              "10",
               "20"
-            ],
-            "int": "10"
+            ]
           }
         }
       },

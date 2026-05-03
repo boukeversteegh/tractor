@@ -13,11 +13,11 @@ file/
   │       │   ├─ ref/name = "Users"
   │       │   └─ alias = "u"
   │       ├─ where/compare/
-  │       │   ├─ column/
+  │       │   ├─ left/column/
   │       │   │   ├─ ref/name = "u"
   │       │   │   └─ name = "Age"
   │       │   ├─ op[compare and greater] = ">"
-  │       │   └─ literal = "18"
+  │       │   └─ right/literal = "18"
   │       └─ order/target/column/
   │           ├─ ref/name = "u"
   │           └─ name = "Name"
@@ -32,9 +32,9 @@ file/
   ├─ statement[delete]/from/
   │   ├─ ref/name = "OldRecords"
   │   └─ where/compare/
-  │       ├─ column/name = "CreatedAt"
+  │       ├─ left/column/name = "CreatedAt"
   │       ├─ op[compare and less] = "<"
-  │       └─ literal = "'2020-01-01'"
+  │       └─ right/literal = "'2020-01-01'"
   ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
   │   ├─ select/
@@ -50,7 +50,7 @@ file/
   │       │   ├─ schema = "dbo"
   │       │   └─ name = "Users"
   │       └─ where/between/
-  │           ├─ column/name = "Age"
+  │           ├─ left/column/name = "Age"
   │           ├─ literal = "18"
   │           └─ literal = "65"
   ├─ comment = "-- UPDATE with variables and schema-qualified table"
@@ -59,13 +59,13 @@ file/
   │   │   ├─ schema = "dbo"
   │   │   └─ name = "Config"
   │   ├─ assign/
-  │   │   ├─ column/name = "Value"
+  │   │   ├─ left/column/name = "Value"
   │   │   ├─ op = "="
-  │   │   └─ column/var = "NewValue"
+  │   │   └─ right/column/var = "NewValue"
   │   └─ where/compare/
-  │       ├─ column/name = "Key"
+  │       ├─ left/column/name = "Key"
   │       ├─ op = "="
-  │       └─ column/var = "KeyName"
+  │       └─ right/column/var = "KeyName"
   ├─ comment = "-- JOINs"
   ├─ statement/
   │   ├─ select/
@@ -87,11 +87,11 @@ file/
   │       │   │   ├─ ref/name = "Users"
   │       │   │   └─ alias = "u"
   │       │   └─ compare/
-  │       │       ├─ column/
+  │       │       ├─ left/column/
   │       │       │   ├─ ref/name = "o"
   │       │       │   └─ name = "UserID"
   │       │       ├─ op = "="
-  │       │       └─ column/
+  │       │       └─ right/column/
   │       │           ├─ ref/name = "u"
   │       │           └─ name = "ID"
   │       ├─ join/
@@ -99,34 +99,34 @@ file/
   │       │   │   ├─ ref/name = "Addresses"
   │       │   │   └─ alias = "a"
   │       │   └─ compare/
-  │       │       ├─ column/
+  │       │       ├─ left/column/
   │       │       │   ├─ ref/name = "u"
   │       │       │   └─ name = "ID"
   │       │       ├─ op = "="
-  │       │       └─ column/
+  │       │       └─ right/column/
   │       │           ├─ ref/name = "a"
   │       │           └─ name = "UserID"
   │       └─ where/compare/
-  │           ├─ column/
+  │           ├─ left/column/
   │           │   ├─ ref/name = "o"
   │           │   └─ name = "Total"
   │           ├─ op[compare and greater] = ">"
-  │           └─ literal = "100"
+  │           └─ right/literal = "100"
   ├─ comment = "-- Subquery with IN"
   ├─ statement/
   │   ├─ select/column/name = "Name"
   │   └─ from/
   │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ column/name = "ID"
-  │           └─ subquery/
+  │           ├─ left/column/name = "ID"
+  │           └─ right/subquery/
   │               ├─ select/column/name = "UserID"
   │               └─ from/
   │                   ├─ relation/ref/name = "Orders"
   │                   └─ where/compare/
-  │                       ├─ column/name = "Total"
+  │                       ├─ left/column/name = "Total"
   │                       ├─ op[compare and greater] = ">"
-  │                       └─ literal = "50"
+  │                       └─ right/literal = "50"
   ├─ comment = "-- EXISTS"
   ├─ statement/
   │   ├─ select/column/
@@ -143,11 +143,11 @@ file/
   │               │   ├─ ref/name = "Orders"
   │               │   └─ alias = "o"
   │               └─ where/compare/
-  │                   ├─ column/
+  │                   ├─ left/column/
   │                   │   ├─ ref/name = "o"
   │                   │   └─ name = "UserID"
   │                   ├─ op = "="
-  │                   └─ column/
+  │                   └─ right/column/
   │                       ├─ ref/name = "u"
   │                       └─ name = "ID"
   ├─ comment = "-- GROUP BY, HAVING, aggregate functions"
@@ -166,20 +166,20 @@ file/
   │       ├─ relation/ref/name = "Employees"
   │       ├─ group/column/name = "Department"
   │       └─ having/compare/
-  │           ├─ call/
+  │           ├─ left/call/
   │           │   ├─ ref/name = "COUNT"
   │           │   └─ star = "*"
   │           ├─ op[compare and greater] = ">"
-  │           └─ literal = "5"
+  │           └─ right/literal = "5"
   ├─ comment = "-- CASE WHEN"
   ├─ statement/
   │   ├─ select/
   │   │   ├─ column/name = "Name"
   │   │   ├─ case/
   │   │   │   ├─ compare/
-  │   │   │   │   ├─ column/name = "Age"
+  │   │   │   │   ├─ left/column/name = "Age"
   │   │   │   │   ├─ op[compare and greater and equal] = ">="
-  │   │   │   │   └─ literal = "18"
+  │   │   │   │   └─ right/literal = "18"
   │   │   │   ├─ literal = "'Adult'"
   │   │   │   └─ literal = "'Minor'"
   │   │   └─ alias = "Category"
@@ -195,9 +195,9 @@ file/
   │   │       └─ from/
   │   │           ├─ relation/ref/name = "Users"
   │   │           └─ where/compare/
-  │   │               ├─ column/name = "Active"
+  │   │               ├─ left/column/name = "Active"
   │   │               ├─ op = "="
-  │   │               └─ literal = "1"
+  │   │               └─ right/literal = "1"
   │   ├─ select/column/name = "Name"
   │   └─ from/relation/ref/name = "ActiveUsers"
   ├─ comment = "-- UNION ALL"
@@ -238,14 +238,14 @@ file/
   │   └─ from/
   │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ compare/
-  │           │   ├─ compare/
-  │           │   │   ├─ column/name = "Email"
-  │           │   │   └─ literal = "'%@gmail.com'"
-  │           │   └─ compare/column/name = "DeletedAt"
-  │           └─ compare/
-  │               ├─ column/name = "Role"
-  │               └─ list/
+  │           ├─ left/compare/
+  │           │   ├─ left/compare/
+  │           │   │   ├─ left/column/name = "Email"
+  │           │   │   └─ right/literal = "'%@gmail.com'"
+  │           │   └─ right/compare/left/column/name = "DeletedAt"
+  │           └─ right/compare/
+  │               ├─ left/column/name = "Role"
+  │               └─ right/list/
   │                   ├─ literal = "'admin'"
   │                   └─ literal = "'moderator'"
   ├─ comment = "-- DISTINCT with ORDER BY DESC"
@@ -272,19 +272,19 @@ file/
   │   ├─ ref/name = "Source"
   │   ├─ alias = "s"
   │   ├─ compare/
-  │   │   ├─ column/
+  │   │   ├─ left/column/
   │   │   │   ├─ ref/name = "t"
   │   │   │   └─ name = "ID"
   │   │   ├─ op = "="
-  │   │   └─ column/
+  │   │   └─ right/column/
   │   │       ├─ ref/name = "s"
   │   │       └─ name = "ID"
   │   ├─ when/assign/
-  │   │   ├─ column/
+  │   │   ├─ left/column/
   │   │   │   ├─ ref/name = "t"
   │   │   │   └─ name = "Name"
   │   │   ├─ op = "="
-  │   │   └─ column/
+  │   │   └─ right/column/
   │   │       ├─ ref/name = "s"
   │   │       └─ name = "Name"
   │   └─ when/
@@ -307,37 +307,37 @@ file/
   │   └─ from/
   │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ column/name = "Active"
+  │           ├─ left/column/name = "Active"
   │           ├─ op = "="
-  │           └─ literal = "1"
+  │           └─ right/literal = "1"
   ├─ comment = "-- Transaction"
   ├─ transaction/
   │   ├─ statement/update/
   │   │   ├─ relation/ref/name = "Accounts"
   │   │   ├─ assign/
-  │   │   │   ├─ column/name = "Balance"
+  │   │   │   ├─ left/column/name = "Balance"
   │   │   │   ├─ op = "="
-  │   │   │   └─ compare/
-  │   │   │       ├─ column/name = "Balance"
+  │   │   │   └─ right/compare/
+  │   │   │       ├─ left/column/name = "Balance"
   │   │   │       ├─ op[minus] = "-"
-  │   │   │       └─ literal = "100"
+  │   │   │       └─ right/literal = "100"
   │   │   └─ where/compare/
-  │   │       ├─ column/name = "ID"
+  │   │       ├─ left/column/name = "ID"
   │   │       ├─ op = "="
-  │   │       └─ literal = "1"
+  │   │       └─ right/literal = "1"
   │   └─ statement/update/
   │       ├─ relation/ref/name = "Accounts"
   │       ├─ assign/
-  │       │   ├─ column/name = "Balance"
+  │       │   ├─ left/column/name = "Balance"
   │       │   ├─ op = "="
-  │       │   └─ compare/
-  │       │       ├─ column/name = "Balance"
+  │       │   └─ right/compare/
+  │       │       ├─ left/column/name = "Balance"
   │       │       ├─ op[plus] = "+"
-  │       │       └─ literal = "100"
+  │       │       └─ right/literal = "100"
   │       └─ where/compare/
-  │           ├─ column/name = "ID"
+  │           ├─ left/column/name = "ID"
   │           ├─ op = "="
-  │           └─ literal = "2"
+  │           └─ right/literal = "2"
   ├─ comment = "-- SET variable"
   ├─ statement/set/
   │   ├─ ref/var = "Threshold"
@@ -366,9 +366,9 @@ file/
   │   └─ from/
   │       ├─ relation/ref/name = "Users"
   │       └─ where/compare/
-  │           ├─ column/name = "Active"
+  │           ├─ left/column/name = "Active"
   │           ├─ op = "="
-  │           └─ literal = "1"
+  │           └─ right/literal = "1"
   ├─ statement/drop/ref/name = "TempData"
   ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
   ├─ statement/alter/

@@ -131,11 +131,11 @@
                 {
                   "$type": "argument",
                   "array": {
-                    "children": [
+                    "int": [
+                      "1",
                       "2",
                       "3"
-                    ],
-                    "int": "1"
+                    ]
                   }
                 }
               ],
@@ -1640,11 +1640,11 @@
               "right": {
                 "expression": {
                   "array": {
-                    "children": [
+                    "int": [
+                      "1",
                       "2",
                       "3"
-                    ],
-                    "int": "1"
+                    ]
                   }
                 }
               },
@@ -1692,15 +1692,14 @@
               "left": {
                 "expression": {
                   "array": {
-                    "children": [
+                    "variable": [
                       {
-                        "$type": "variable",
+                        "name": "first"
+                      },
+                      {
                         "name": "second"
                       }
-                    ],
-                    "variable": {
-                      "name": "first"
-                    }
+                    ]
                   }
                 }
               },
@@ -1712,28 +1711,27 @@
               "right": {
                 "expression": {
                   "array": {
-                    "children": [
+                    "int": [
+                      "10",
                       "20",
                       "30",
                       "40",
                       "50"
-                    ],
-                    "int": "10"
+                    ]
                   }
                 }
               },
               "left": {
                 "expression": {
                   "array": {
-                    "children": [
+                    "variable": [
                       {
-                        "$type": "variable",
+                        "name": "third"
+                      },
+                      {
                         "name": "fifth"
                       }
-                    ],
-                    "variable": {
-                      "name": "third"
-                    }
+                    ]
                   }
                 }
               },

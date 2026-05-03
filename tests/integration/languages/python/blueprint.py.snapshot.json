@@ -275,10 +275,10 @@
                   },
                   {
                     "tuple": {
-                      "children": [
+                      "name": [
+                        "int",
                         "str"
-                      ],
-                      "name": "int"
+                      ]
                     }
                   }
                 ],
@@ -689,14 +689,14 @@
           {
             "expression": {
               "tuple": {
-                "children": [
+                "name": [
+                  "a",
                   "b",
                   "c",
                   "d",
                   "e",
                   "f"
-                ],
-                "name": "a"
+                ]
               }
             }
           }
@@ -857,24 +857,23 @@
             "right": {
               "expression": {
                 "list": {
-                  "children": [
+                  "list": [
                     {
-                      "$type": "list",
-                      "literal": true,
-                      "int": "0",
-                      "children": [
+                      "int": [
+                        "1",
+                        "0"
+                      ],
+                      "literal": true
+                    },
+                    {
+                      "int": [
+                        "0",
                         "1"
-                      ]
+                      ],
+                      "literal": true
                     }
                   ],
-                  "literal": true,
-                  "list": {
-                    "children": [
-                      "0"
-                    ],
-                    "literal": true,
-                    "int": "1"
-                  }
+                  "literal": true
                 }
               }
             },
@@ -1470,10 +1469,10 @@
                   "as": {
                     "name": "e",
                     "tuple": {
-                      "children": [
+                      "name": [
+                        "ValueError",
                         "TypeError"
-                      ],
-                      "name": "ValueError"
+                      ]
                     }
                   }
                 }
@@ -1765,46 +1764,54 @@
             "right": {
               "expression": {
                 "list": {
-                  "compare": {
-                    "int": "0",
-                    "name": "x",
-                    "op": {
-                      "text": ">",
-                      "compare": true,
-                      "greater": true
-                    }
-                  },
-                  "comprehension": true,
-                  "body": {
-                    "binary": [
-                      {
-                        "right": {
-                          "expression": {
-                            "name": "x"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "x"
-                          }
-                        },
-                        "op": {
-                          "text": "*",
-                          "multiply": true
-                        }
+                  "compare": [
+                    {
+                      "int": "0",
+                      "name": "x",
+                      "op": {
+                        "text": ">",
+                        "compare": true,
+                        "greater": true
                       }
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "x"
                     }
-                  },
-                  "right": {
-                    "expression": {
-                      "name": "data"
+                  ],
+                  "comprehension": true,
+                  "body": [
+                    {
+                      "binary": [
+                        {
+                          "right": {
+                            "expression": {
+                              "name": "x"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "x"
+                            }
+                          },
+                          "op": {
+                            "text": "*",
+                            "multiply": true
+                          }
+                        }
+                      ]
                     }
-                  }
+                  ],
+                  "left": [
+                    {
+                      "expression": {
+                        "name": "x"
+                      }
+                    }
+                  ],
+                  "right": [
+                    {
+                      "expression": {
+                        "name": "data"
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -1818,44 +1825,52 @@
             "right": {
               "expression": {
                 "dict": {
-                  "name": "v",
+                  "name": [
+                    "v"
+                  ],
                   "comprehension": true,
-                  "body": {
-                    "pair": [
-                      {
-                        "value": {
-                          "expression": {
-                            "name": "v"
-                          }
-                        },
-                        "name": "k"
-                      }
-                    ]
-                  },
-                  "left": {
-                    "expression": [
-                      {
-                        "name": "k"
-                      },
-                      {
-                        "name": "v"
-                      }
-                    ]
-                  },
-                  "right": {
-                    "expression": {
-                      "call": {
-                        "member": {
-                          "property": {
-                            "name": "items"
+                  "body": [
+                    {
+                      "pair": [
+                        {
+                          "value": {
+                            "expression": {
+                              "name": "v"
+                            }
                           },
-                          "object": {
-                            "name": "data"
+                          "name": "k"
+                        }
+                      ]
+                    }
+                  ],
+                  "left": [
+                    {
+                      "expression": [
+                        {
+                          "name": "k"
+                        },
+                        {
+                          "name": "v"
+                        }
+                      ]
+                    }
+                  ],
+                  "right": [
+                    {
+                      "expression": {
+                        "call": {
+                          "member": {
+                            "property": {
+                              "name": "items"
+                            },
+                            "object": {
+                              "name": "data"
+                            }
                           }
                         }
                       }
                     }
-                  }
+                  ]
                 }
               }
             },
@@ -1946,15 +1961,55 @@
             "right": {
               "expression": {
                 "list": {
-                  "children": [
+                  "compare": [
                     {
-                      "$type": "left",
+                      "name": [
+                        "i",
+                        "j"
+                      ],
+                      "op": {
+                        "text": "!=",
+                        "inequality": true
+                      }
+                    }
+                  ],
+                  "comprehension": true,
+                  "body": [
+                    {
+                      "tuple": [
+                        {
+                          "name": [
+                            "i",
+                            "j"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "left": [
+                    {
                       "expression": {
-                        "name": "j"
+                        "name": "i"
                       }
                     },
                     {
-                      "$type": "right",
+                      "expression": {
+                        "name": "j"
+                      }
+                    }
+                  ],
+                  "right": [
+                    {
+                      "expression": {
+                        "call": {
+                          "arguments": [
+                            "3"
+                          ],
+                          "name": "range"
+                        }
+                      }
+                    },
+                    {
                       "expression": {
                         "call": {
                           "arguments": [
@@ -1964,43 +2019,7 @@
                         }
                       }
                     }
-                  ],
-                  "comprehension": true,
-                  "body": {
-                    "tuple": [
-                      {
-                        "children": [
-                          "j"
-                        ],
-                        "name": "i"
-                      }
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "i"
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "call": {
-                        "arguments": [
-                          "3"
-                        ],
-                        "name": "range"
-                      }
-                    }
-                  },
-                  "compare": {
-                    "name": [
-                      "i",
-                      "j"
-                    ],
-                    "op": {
-                      "text": "!=",
-                      "inequality": true
-                    }
-                  }
+                  ]
                 }
               }
             },
@@ -2253,44 +2272,47 @@
             "right": {
               "expression": {
                 "dict": {
-                  "children": [
+                  "spread": [
                     {
-                      "$type": "spread",
-                      "dict": true,
                       "children": [
                         {
                           "$type": "dict",
                           "literal": true,
-                          "pair": {
-                            "value": {
-                              "expression": {
-                                "int": "2"
-                              }
-                            },
-                            "string": "\"b\""
-                          }
+                          "pair": [
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "1"
+                                }
+                              },
+                              "string": "\"a\""
+                            }
+                          ]
                         }
-                      ]
+                      ],
+                      "dict": true
+                    },
+                    {
+                      "children": [
+                        {
+                          "$type": "dict",
+                          "literal": true,
+                          "pair": [
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "2"
+                                }
+                              },
+                              "string": "\"b\""
+                            }
+                          ]
+                        }
+                      ],
+                      "dict": true
                     }
                   ],
-                  "literal": true,
-                  "spread": {
-                    "children": [
-                      {
-                        "$type": "dict",
-                        "literal": true,
-                        "pair": {
-                          "value": {
-                            "expression": {
-                              "int": "1"
-                            }
-                          },
-                          "string": "\"a\""
-                        }
-                      }
-                    ],
-                    "dict": true
-                  }
+                  "literal": true
                 }
               }
             },
@@ -2304,18 +2326,17 @@
             "right": {
               "expression": {
                 "list": {
-                  "children": [
+                  "spread": [
                     {
-                      "$type": "spread",
-                      "list": true,
-                      "name": "items"
+                      "name": "items",
+                      "list": true
+                    },
+                    {
+                      "name": "items",
+                      "list": true
                     }
                   ],
-                  "literal": true,
-                  "spread": {
-                    "name": "items",
-                    "list": true
-                  }
+                  "literal": true
                 }
               }
             },
@@ -2468,10 +2489,10 @@
               },
               "group": true,
               "tuple": {
-                "children": [
+                "name": [
+                  "ValueError",
                   "TypeError"
-                ],
-                "name": "ValueError"
+                ]
               }
             },
             "body": {
@@ -2632,10 +2653,12 @@
             "right": {
               "expression": {
                 "tuple": {
-                  "spread": {
-                    "name": "items",
-                    "list": true
-                  }
+                  "spread": [
+                    {
+                      "name": "items",
+                      "list": true
+                    }
+                  ]
                 }
               }
             },

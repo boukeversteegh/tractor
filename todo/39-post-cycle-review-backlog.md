@@ -525,6 +525,12 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 205: extend `distribute_member_list_attrs` to literal
+  collections (tuple/list/dict/array/hash) cross-language. Single
+  config change in 7 post-transforms; per Principle #12 the
+  always-array shape is correct. Audit reductions: csharp 16→15,
+  ts 15→13, rust 34→30, java 5→4, python 29→18, php 14→9,
+  ruby 17→7. Total: 158 → 124 (-34, biggest single iter).
 - [x] iter 204: Python `<compare>` name siblings list= — added
   `("compare", "name")` pair to Python's `tag_multi_role_children`.
   Tree-sitter `comparison_operator` doesn't tag operands with

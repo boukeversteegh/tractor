@@ -2149,23 +2149,22 @@
                         {
                           "declarator": {
                             "tuple": {
-                              "children": [
+                              "argument": [
                                 {
-                                  "$type": "argument",
+                                  "member": {
+                                    "property": {
+                                      "name": "Count"
+                                    },
+                                    "instance": true,
+                                    "object": {
+                                      "name": "odds"
+                                    }
+                                  }
+                                },
+                                {
                                   "string": "\"odd\""
                                 }
-                              ],
-                              "argument": {
-                                "member": {
-                                  "property": {
-                                    "name": "Count"
-                                  },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "odds"
-                                  }
-                                }
-                              }
+                              ]
                             },
                             "name": "pair"
                           },
