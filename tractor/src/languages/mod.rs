@@ -1465,7 +1465,13 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     //   `func f(x, y int)` (param) → `<parameter>` with two `<name>` + `<type>`.
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("field", "name"), ("parameter", "name")],
+        &[
+            ("field", "name"),
+            ("parameter", "name"),
+            // Go multi-return functions: `func f() (int, error)`
+            // produce `<returns>` with multiple `<type>` siblings.
+            ("returns", "type"),
+        ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::flatten_nested_paths(xot, root)?;

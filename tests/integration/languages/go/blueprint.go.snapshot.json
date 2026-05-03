@@ -648,15 +648,14 @@
       "unexported": true,
       "name": "risky",
       "returns": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
+            "name": "int"
+          },
+          {
             "name": "error"
           }
-        ],
-        "type": {
-          "name": "int"
-        }
+        ]
       }
     },
     {
@@ -1247,15 +1246,14 @@
         }
       ],
       "returns": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
+            "name": "int"
+          },
+          {
             "name": "error"
           }
-        ],
-        "type": {
-          "name": "int"
-        }
+        ]
       }
     },
     {

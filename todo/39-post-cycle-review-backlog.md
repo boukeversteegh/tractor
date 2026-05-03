@@ -548,6 +548,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 216: Go multi-return type list= — added
+  `("returns", "type")` to Go's tag_multi_role_children.
+  `func f() (int, error)` now produces `returns.type:
+  [{name:"int"}, {name:"error"}]` array. Go audit 15→13 (-2).
 - [x] iter 215: TS function-type / object-type signatures targeted
   list= via `tag_multi_role_children(&[("type", "parameter"),
   ("type", "property")])`. TS audit 12 → 8 (-4). Properly scoped
