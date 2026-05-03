@@ -1,6 +1,6 @@
 {
   "$type": "program",
-  "alias": [
+  "aliases": [
     {
       "type": {
         "type": {
@@ -9,12 +9,11 @@
         "constructor": true,
         "parameters": [
           {
-            "$type": "parameter",
-            "required": true,
-            "name": "input",
             "type": {
               "name": "string"
-            }
+            },
+            "required": true,
+            "name": "input"
           }
         ]
       },
@@ -48,7 +47,6 @@
       "name": "Identity",
       "generics": [
         {
-          "$type": "generic",
           "name": "T"
         }
       ]
@@ -70,7 +68,7 @@
     },
     {
       "type": {
-        "type": [
+        "types": [
           {
             "name": "number"
           },
@@ -90,7 +88,7 @@
     },
     {
       "type": {
-        "parameter": [
+        "parameters": [
           {
             "type": {
               "name": "number"
@@ -112,7 +110,7 @@
     },
     {
       "type": {
-        "type": [
+        "types": [
           {
             "name": "StaticBlock"
           },
@@ -126,9 +124,9 @@
       "name": "NestedTy"
     }
   ],
-  "import": [
+  "imports": [
     {
-      "import": [
+      "imports": [
         {
           "name": "namedA"
         },
@@ -163,12 +161,12 @@
       "name": "legacy"
     }
   ],
-  "function": [
+  "functions": [
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "return": [
+            "returns": [
               {
                 "expression": {
                   "binary": {
@@ -266,12 +264,11 @@
       "name": "isShape",
       "parameters": [
         {
-          "$type": "parameter",
-          "required": true,
-          "name": "v",
           "type": {
             "name": "unknown"
-          }
+          },
+          "required": true,
+          "name": "v"
         }
       ],
       "returns": {
@@ -285,9 +282,9 @@
     },
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "return": [
+            "returns": [
               {
                 "expression": {
                   "satisfies": {
@@ -299,13 +296,13 @@
                 }
               }
             ],
-            "comment": [
+            "comments": [
               {
                 "text": "// array destructure + rest",
                 "trailing": true
               }
             ],
-            "variable": [
+            "variables": [
               {
                 "value": {
                   "expression": {
@@ -346,7 +343,7 @@
                 "value": {
                   "expression": {
                     "object": {
-                      "pair": [
+                      "pairs": [
                         {
                           "name": "label"
                         },
@@ -379,7 +376,7 @@
                       },
                       "call": {
                         "template": {
-                          "interpolation": [
+                          "interpolations": [
                             {
                               "binary": {
                                 "right": {
@@ -428,12 +425,10 @@
       "name": "compute",
       "generics": [
         {
-          "$type": "generic",
-          "name": "T",
           "extends": [
             {
               "type": {
-                "type": [
+                "types": [
                   {
                     "name": "number"
                   },
@@ -444,20 +439,24 @@
                 "union": true
               }
             }
-          ]
+          ],
+          "name": "T"
         }
       ],
       "parameters": [
         {
-          "$type": "parameter",
-          "required": true,
-          "name": "input",
           "type": {
             "name": "T"
-          }
+          },
+          "required": true,
+          "name": "input"
         },
         {
-          "$type": "parameter",
+          "value": {
+            "expression": {
+              "object": "{}"
+            }
+          },
           "required": true,
           "pattern": {
             "name": "label",
@@ -477,7 +476,7 @@
             }
           },
           "type": {
-            "property": [
+            "properties": [
               {
                 "type": {
                   "name": "number"
@@ -492,11 +491,6 @@
               }
             ],
             "object": true
-          },
-          "value": {
-            "expression": {
-              "object": "{}"
-            }
           }
         }
       ],
@@ -515,9 +509,9 @@
     },
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "if": [
+            "ifs": [
               {
                 "then": {
                   "throw": {
@@ -564,12 +558,11 @@
       "name": "isNumber",
       "parameters": [
         {
-          "$type": "parameter",
-          "required": true,
-          "name": "x",
           "type": {
             "name": "unknown"
-          }
+          },
+          "required": true,
+          "name": "x"
         }
       ],
       "returns": {
@@ -584,9 +577,9 @@
     },
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "return": [
+            "returns": [
               {
                 "expression": {
                   "binary": {
@@ -625,20 +618,19 @@
       "name": "MetaCtor",
       "parameters": [
         {
-          "$type": "parameter",
-          "required": true,
-          "this": "this",
           "type": {
             "name": "unknown"
-          }
+          },
+          "required": true,
+          "this": "this"
         }
       ]
     },
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "return": [
+            "returns": [
               {
                 "expression": {
                   "binary": {
@@ -660,10 +652,10 @@
                 }
               }
             ],
-            "label": [
+            "labels": [
               {
                 "body": {
-                  "for": [
+                  "fors": [
                     {
                       "children": [
                         {
@@ -722,9 +714,9 @@
                         "name": "i"
                       },
                       "body": {
-                        "block": [
+                        "blocks": [
                           {
-                            "expression": [
+                            "expressions": [
                               {
                                 "assign": {
                                   "right": {
@@ -778,7 +770,7 @@
                                 }
                               }
                             ],
-                            "if": [
+                            "ifs": [
                               {
                                 "then": {
                                   "continue": {
@@ -845,7 +837,7 @@
                 "name": "outer"
               }
             ],
-            "variable": [
+            "variables": [
               {
                 "value": {
                   "expression": {
@@ -865,7 +857,7 @@
                 "name": "n"
               }
             ],
-            "do": [
+            "dos": [
               {
                 "condition": {
                   "expression": {
@@ -889,9 +881,9 @@
                   }
                 },
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "expression": [
+                      "expressions": [
                         {
                           "unary": {
                             "op": {
@@ -907,7 +899,7 @@
                 }
               }
             ],
-            "if": [
+            "ifs": [
               {
                 "then": {
                   "debugger": "debugger;"
@@ -925,12 +917,11 @@
       "name": "controlOdds",
       "parameters": [
         {
-          "$type": "parameter",
-          "required": true,
-          "name": "value",
           "type": {
             "name": "number"
-          }
+          },
+          "required": true,
+          "name": "value"
         }
       ],
       "returns": {
@@ -941,9 +932,9 @@
     },
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "return": [
+            "returns": [
               {
                 "expression": {
                   "binary": {
@@ -1008,7 +999,23 @@
       "name": "destructure",
       "parameters": [
         {
-          "$type": "parameter",
+          "type": {
+            "properties": [
+              {
+                "type": {
+                  "name": "number"
+                },
+                "name": "a"
+              },
+              {
+                "type": {
+                  "name": "number"
+                },
+                "name": "b"
+              }
+            ],
+            "object": true
+          },
           "required": true,
           "pattern": {
             "children": [
@@ -1043,27 +1050,15 @@
               },
               "name": "a"
             }
-          },
-          "type": {
-            "property": [
-              {
-                "type": {
-                  "name": "number"
-                },
-                "name": "a"
-              },
-              {
-                "type": {
-                  "name": "number"
-                },
-                "name": "b"
-              }
-            ],
-            "object": true
           }
         },
         {
-          "$type": "parameter",
+          "type": {
+            "type": {
+              "name": "number"
+            },
+            "array": true
+          },
           "required": true,
           "pattern": {
             "rest": {
@@ -1083,12 +1078,6 @@
                 }
               }
             }
-          },
-          "type": {
-            "type": {
-              "name": "number"
-            },
-            "array": true
           }
         }
       ],
@@ -1099,7 +1088,7 @@
       }
     }
   ],
-  "export": [
+  "exports": [
     {
       "string": "\"./barrel\"",
       "spec": {
@@ -1144,7 +1133,6 @@
         "name": "Re",
         "generics": [
           {
-            "$type": "generic",
             "name": "T"
           }
         ]
@@ -1153,7 +1141,7 @@
     {
       "interface": {
         "body": {
-          "method": [
+          "methods": [
             {
               "returns": {
                 "type": {
@@ -1163,17 +1151,16 @@
               "name": "describe",
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "prefix",
                   "type": {
                     "name": "string"
-                  }
+                  },
+                  "required": true,
+                  "name": "prefix"
                 }
               ]
             }
           ],
-          "property": [
+          "properties": [
             {
               "type": {
                 "name": "string"
@@ -1198,14 +1185,13 @@
         "name": "Shape",
         "generics": [
           {
-            "$type": "generic",
-            "name": "T",
             "type": {
               "type": {
                 "name": "number"
               },
               "default": true
-            }
+            },
+            "name": "T"
           }
         ]
       }
@@ -1213,7 +1199,7 @@
     {
       "alias": {
         "type": {
-          "property": [
+          "properties": [
             {
               "type": {
                 "name": "number"
@@ -1235,7 +1221,7 @@
     {
       "alias": {
         "type": {
-          "type": [
+          "types": [
             {
               "name": "string"
             },
@@ -1251,11 +1237,11 @@
     {
       "alias": {
         "type": {
-          "type": [
+          "types": [
             {
-              "type": [
+              "types": [
                 {
-                  "type": [
+                  "types": [
                     {
                       "string": "\"idle\"",
                       "literal": true
@@ -1295,19 +1281,17 @@
           "function": true,
           "parameters": [
             {
-              "$type": "parameter",
-              "required": true,
-              "name": "input",
               "type": {
                 "name": "T"
-              }
+              },
+              "required": true,
+              "name": "input"
             }
           ]
         },
         "name": "Mapper",
         "generics": [
           {
-            "$type": "generic",
             "name": "T"
           }
         ]
@@ -1319,7 +1303,7 @@
           "indexer": {
             "annotation": {
               "type": {
-                "type": [
+                "types": [
                   {
                     "name": "T"
                   },
@@ -1343,7 +1327,6 @@
         "name": "Partialized",
         "generics": [
           {
-            "$type": "generic",
             "name": "T"
           }
         ]
@@ -1366,7 +1349,7 @@
     {
       "enum": {
         "body": {
-          "constant": [
+          "constants": [
             {
               "value": {
                 "expression": {
@@ -1399,27 +1382,25 @@
     {
       "class": {
         "body": {
-          "method": [
+          "methods": [
             {
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "public": true,
-                  "name": "name",
                   "type": {
                     "name": "string"
-                  }
+                  },
+                  "required": true,
+                  "public": true,
+                  "name": "name"
                 },
                 {
-                  "$type": "parameter",
+                  "type": {
+                    "name": "number"
+                  },
                   "optional": true,
                   "readonly": true,
                   "private": true,
-                  "name": "seed",
-                  "type": {
-                    "name": "number"
-                  }
+                  "name": "seed"
                 }
               ],
               "public": true,
@@ -1437,9 +1418,9 @@
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "return": [
+                    "returns": [
                       {
                         "expression": {
                           "member": {
@@ -1474,9 +1455,9 @@
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "expression": [
+                    "expressions": [
                       {
                         "call": {
                           "arguments": [
@@ -1511,20 +1492,19 @@
               "name": "primary",
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "value",
                   "type": {
                     "name": "T"
-                  }
+                  },
+                  "required": true,
+                  "name": "value"
                 }
               ]
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "expression": [
+                    "expressions": [
                       {
                         "call": {
                           "arguments": [
@@ -1558,20 +1538,18 @@
               "name": "store",
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "key",
                   "type": {
                     "name": "string"
-                  }
+                  },
+                  "required": true,
+                  "name": "key"
                 },
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "value",
                   "type": {
                     "name": "T"
-                  }
+                  },
+                  "required": true,
+                  "name": "value"
                 }
               ],
               "returns": {
@@ -1581,7 +1559,7 @@
               }
             }
           ],
-          "field": [
+          "fields": [
             {
               "value": {
                 "expression": {
@@ -1650,15 +1628,14 @@
         "name": "Base",
         "generics": [
           {
-            "$type": "generic",
-            "name": "T",
             "extends": [
               {
                 "type": {
                   "name": "Shape"
                 }
               }
-            ]
+            ],
+            "name": "T"
           }
         ]
       }
@@ -1666,12 +1643,12 @@
     {
       "class": {
         "body": {
-          "method": [
+          "methods": [
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "expression": [
+                    "expressions": [
                       {
                         "call": {
                           "arguments": [
@@ -1706,15 +1683,18 @@
               "name": "constructor",
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "name",
                   "type": {
                     "name": "string"
-                  }
+                  },
+                  "required": true,
+                  "name": "name"
                 },
                 {
-                  "$type": "parameter",
+                  "value": {
+                    "expression": {
+                      "array": "[]"
+                    }
+                  },
                   "required": true,
                   "private": true,
                   "name": "items",
@@ -1723,24 +1703,19 @@
                       "name": "T"
                     },
                     "array": true
-                  },
-                  "value": {
-                    "expression": {
-                      "array": "[]"
-                    }
                   }
                 }
               ]
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "return": [
+                    "returns": [
                       {
                         "expression": {
                           "template": {
-                            "interpolation": [
+                            "interpolations": [
                               {
                                 "expression": {
                                   "name": "first",
@@ -1752,7 +1727,7 @@
                         }
                       }
                     ],
-                    "variable": [
+                    "variables": [
                       {
                         "value": {
                           "expression": {
@@ -1815,16 +1790,16 @@
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "for": [
+                    "fors": [
                       {
                         "body": {
-                          "expression": [
+                          "expressions": [
                             {
                               "yield": {
                                 "array": {
-                                  "index": [
+                                  "indexes": [
                                     {
                                       "name": "i",
                                       "object": {
@@ -1839,7 +1814,7 @@
                                       }
                                     }
                                   ],
-                                  "name": [
+                                  "names": [
                                     "i"
                                   ]
                                 }
@@ -1912,7 +1887,7 @@
                     {
                       "$type": "type",
                       "tuple": true,
-                      "type": [
+                      "types": [
                         {
                           "name": "number"
                         },
@@ -1929,15 +1904,15 @@
             },
             {
               "body": {
-                "block": [
+                "blocks": [
                   {
-                    "try": [
+                    "tries": [
                       {
                         "finally": {
                           "body": {
-                            "block": [
+                            "blocks": [
                               {
-                                "expression": [
+                                "expressions": [
                                   {
                                     "member": {
                                       "property": {
@@ -1961,9 +1936,9 @@
                           }
                         },
                         "body": {
-                          "block": [
+                          "blocks": [
                             {
-                              "return": [
+                              "returns": [
                                 {
                                   "expression": {
                                     "member": {
@@ -1977,12 +1952,12 @@
                                   }
                                 }
                               ],
-                              "variable": [
+                              "variables": [
                                 {
                                   "value": {
                                     "expression": {
                                       "array": {
-                                        "spread": [
+                                        "spreads": [
                                           {
                                             "name": "urls"
                                           },
@@ -1997,12 +1972,12 @@
                                   "name": "merged"
                                 }
                               ],
-                              "for": [
+                              "fors": [
                                 {
                                   "body": {
-                                    "block": [
+                                    "blocks": [
                                       {
-                                        "expression": [
+                                        "expressions": [
                                           {
                                             "call": {
                                               "arguments": [
@@ -2035,9 +2010,9 @@
                         },
                         "catch": {
                           "body": {
-                            "block": [
+                            "blocks": [
                               {
-                                "throw": [
+                                "throws": [
                                   {
                                     "as": {
                                       "type": {
@@ -2062,27 +2037,25 @@
               "name": "loadAll",
               "parameters": [
                 {
-                  "$type": "parameter",
-                  "required": true,
-                  "name": "urls",
                   "type": {
                     "type": {
                       "name": "string"
                     },
                     "array": true
-                  }
+                  },
+                  "required": true,
+                  "name": "urls"
                 },
                 {
-                  "$type": "parameter",
+                  "type": {
+                    "type": {
+                      "name": "string"
+                    },
+                    "array": true
+                  },
                   "required": true,
                   "rest": {
                     "name": "extra"
-                  },
-                  "type": {
-                    "type": {
-                      "name": "string"
-                    },
-                    "array": true
                   }
                 }
               ],
@@ -2103,7 +2076,7 @@
               }
             }
           ],
-          "field": [
+          "fields": [
             {
               "value": {
                 "expression": {
@@ -2119,15 +2092,6 @@
         "name": "Widget",
         "generics": [
           {
-            "$type": "generic",
-            "name": "T",
-            "extends": [
-              {
-                "type": {
-                  "name": "Shape"
-                }
-              }
-            ],
             "type": {
               "type": {
                 "arguments": [
@@ -2140,7 +2104,15 @@
                 "name": "Shape"
               },
               "default": true
-            }
+            },
+            "name": "T",
+            "extends": [
+              {
+                "type": {
+                  "name": "Shape"
+                }
+              }
+            ]
           }
         ],
         "extends": [
@@ -2162,9 +2134,9 @@
     {
       "function": {
         "body": {
-          "block": [
+          "blocks": [
             {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "ternary": {
@@ -2199,11 +2171,11 @@
                   }
                 }
               ],
-              "switch": [
+              "switches": [
                 {
-                  "body": [
+                  "bodies": [
                     {
-                      "default": [
+                      "defaults": [
                         {
                           "body": {
                             "break": true
@@ -2211,7 +2183,7 @@
                           "comment": "/* fallthrough */"
                         }
                       ],
-                      "case": [
+                      "cases": [
                         {
                           "body": {
                             "break": true
@@ -2224,7 +2196,7 @@
                         },
                         {
                           "body": {
-                            "throw": [
+                            "throws": [
                               {
                                 "new": {
                                   "arguments": [
@@ -2244,7 +2216,7 @@
                       ]
                     }
                   ],
-                  "value": [
+                  "values": [
                     {
                       "expression": {
                         "name": "status"
@@ -2253,7 +2225,7 @@
                   ]
                 }
               ],
-              "if": [
+              "ifs": [
                 {
                   "children": [
                     {
@@ -2395,7 +2367,7 @@
                   }
                 }
               ],
-              "variable": [
+              "variables": [
                 {
                   "value": {
                     "expression": {
@@ -2412,7 +2384,7 @@
                   "value": {
                     "expression": {
                       "object": {
-                        "pair": [
+                        "pairs": [
                           {
                             "value": {
                               "expression": {
@@ -2451,12 +2423,12 @@
                   }
                 }
               ],
-              "for": [
+              "fors": [
                 {
                   "body": {
-                    "block": [
+                    "blocks": [
                       {
-                        "expression": [
+                        "expressions": [
                           {
                             "assign": {
                               "right": {
@@ -2499,9 +2471,9 @@
                 },
                 {
                   "body": {
-                    "block": [
+                    "blocks": [
                       {
-                        "expression": [
+                        "expressions": [
                           {
                             "unary": {
                               "name": "v",
@@ -2544,12 +2516,12 @@
                   }
                 }
               ],
-              "while": [
+              "whiles": [
                 {
                   "body": {
-                    "block": [
+                    "blocks": [
                       {
-                        "comment": [
+                        "comments": [
                           "/* never */"
                         ]
                       }
@@ -2568,12 +2540,11 @@
         "name": "controlFlow",
         "parameters": [
           {
-            "$type": "parameter",
-            "required": true,
-            "name": "n",
             "type": {
               "name": "number"
-            }
+            },
+            "required": true,
+            "name": "n"
           }
         ],
         "returns": {
@@ -2584,7 +2555,7 @@
       }
     }
   ],
-  "comment": [
+  "comments": [
     "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
     {
       "text": "/** A shape with an optional label and readonly id. */",
@@ -2656,7 +2627,7 @@
       "leading": true
     }
   ],
-  "declare": [
+  "declares": [
     {
       "variable": {
         "type": {
@@ -2676,12 +2647,11 @@
         "name": "externalThing",
         "parameters": [
           {
-            "$type": "parameter",
-            "required": true,
-            "name": "name",
             "type": {
               "name": "string"
-            }
+            },
+            "required": true,
+            "name": "name"
           }
         ]
       }
@@ -2689,9 +2659,9 @@
     {
       "namespace": {
         "body": {
-          "block": [
+          "blocks": [
             {
-              "signature": [
+              "signatures": [
                 {
                   "returns": {
                     "type": {
@@ -2708,7 +2678,7 @@
       }
     }
   ],
-  "variable": [
+  "variables": [
     {
       "value": {
         "expression": {
@@ -2725,19 +2695,16 @@
                       "$type": "arrow",
                       "parameters": [
                         {
-                          "$type": "parameter",
-                          "required": true,
-                          "name": "acc"
+                          "name": "acc",
+                          "required": true
                         },
                         {
-                          "$type": "parameter",
-                          "required": true,
-                          "name": "p"
+                          "name": "p",
+                          "required": true
                         },
                         {
-                          "$type": "parameter",
-                          "required": true,
-                          "name": "i"
+                          "name": "i",
+                          "required": true
                         }
                       ],
                       "value": {
@@ -2813,24 +2780,22 @@
             },
             "parameters": [
               {
-                "$type": "parameter",
-                "required": true,
-                "name": "parts",
                 "type": {
                   "name": "TemplateStringsArray"
-                }
+                },
+                "required": true,
+                "name": "parts"
               },
               {
-                "$type": "parameter",
-                "required": true,
-                "rest": {
-                  "name": "vals"
-                },
                 "type": {
                   "type": {
                     "name": "unknown"
                   },
                   "array": true
+                },
+                "required": true,
+                "rest": {
+                  "name": "vals"
                 }
               }
             ]
@@ -2856,26 +2821,24 @@
             },
             "generics": [
               {
-                "$type": "generic",
                 "name": "U"
               }
             ],
             "parameters": [
               {
-                "$type": "parameter",
-                "required": true,
-                "name": "xs",
                 "type": {
                   "type": {
                     "name": "U"
                   },
                   "array": true
-                }
+                },
+                "required": true,
+                "name": "xs"
               }
             ],
             "returns": {
               "type": {
-                "type": [
+                "types": [
                   {
                     "name": "U"
                   },
@@ -2902,9 +2865,8 @@
                 "$type": "arrow",
                 "parameters": [
                   {
-                    "$type": "parameter",
-                    "required": true,
-                    "name": "x"
+                    "name": "x",
+                    "required": true
                   }
                 ],
                 "returns": {
@@ -2941,7 +2903,7 @@
                 },
                 "object": {
                   "array": {
-                    "number": [
+                    "numbers": [
                       "1",
                       "2",
                       "3"
@@ -2967,9 +2929,9 @@
         "expression": {
           "arrow": {
             "body": {
-              "block": [
+              "blocks": [
                 {
-                  "return": [
+                  "returns": [
                     {
                       "expression": {
                         "binary": {
@@ -2996,12 +2958,11 @@
             },
             "parameters": [
               {
-                "$type": "parameter",
-                "required": true,
-                "name": "x",
                 "type": {
                   "name": "number"
-                }
+                },
+                "required": true,
+                "name": "x"
               }
             ],
             "returns": {
@@ -3024,7 +2985,7 @@
       "const": true,
       "name": "maybe",
       "type": {
-        "type": [
+        "types": [
           {
             "name": "string"
           },
@@ -3065,7 +3026,7 @@
         "expression": {
           "as": {
             "type": {
-              "type": [
+              "types": [
                 {
                   "name": "string"
                 },
@@ -3184,16 +3145,16 @@
       "name": "pattern"
     }
   ],
-  "class": [
+  "classes": [
     {
       "body": {
-        "block": [
+        "blocks": [
           {
-            "body": [
+            "bodies": [
               {
-                "block": [
+                "blocks": [
                   {
-                    "expression": [
+                    "expressions": [
                       {
                         "assign": {
                           "right": {
@@ -3224,7 +3185,7 @@
             "static": true
           }
         ],
-        "field": [
+        "fields": [
           {
             "value": {
               "expression": {
@@ -3240,7 +3201,7 @@
       "name": "StaticBlock"
     }
   ],
-  "expression": [
+  "expressions": [
     {
       "unary": {
         "name": "arrow",

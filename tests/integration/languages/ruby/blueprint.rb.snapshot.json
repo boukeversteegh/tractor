@@ -1,6 +1,6 @@
 {
   "$type": "program",
-  "unless": [
+  "unlesses": [
     {
       "then": {
         "expression": {
@@ -8,7 +8,7 @@
             "arguments": [
               {
                 "$type": "string",
-                "interpolation": [
+                "interpolations": [
                   {
                     "name": "MAX_RETRIES"
                   }
@@ -31,10 +31,10 @@
       }
     }
   ],
-  "method": [
+  "methods": [
     {
       "body": {
-        "case": [
+        "cases": [
           {
             "else": {
               "expression": {
@@ -46,10 +46,10 @@
                 "name": "value"
               }
             },
-            "when": [
+            "whens": [
               {
                 "body": {
-                  "then": [
+                  "thens": [
                     {
                       "expression": {
                         "symbol": ":number"
@@ -57,7 +57,7 @@
                     }
                   ]
                 },
-                "pattern": [
+                "patterns": [
                   {
                     "name": "Integer"
                   },
@@ -68,7 +68,7 @@
               },
               {
                 "body": {
-                  "then": [
+                  "thens": [
                     {
                       "expression": {
                         "symbol": ":digit"
@@ -76,7 +76,7 @@
                     }
                   ]
                 },
-                "pattern": [
+                "patterns": [
                   {
                     "range": {
                       "to": {
@@ -92,7 +92,7 @@
               },
               {
                 "body": {
-                  "then": [
+                  "thens": [
                     {
                       "expression": {
                         "symbol": ":string"
@@ -100,7 +100,7 @@
                     }
                   ]
                 },
-                "pattern": [
+                "patterns": [
                   {
                     "name": "String"
                   }
@@ -108,7 +108,7 @@
               },
               {
                 "body": {
-                  "then": [
+                  "thens": [
                     {
                       "expression": {
                         "symbol": ":triple"
@@ -116,10 +116,10 @@
                     }
                   ]
                 },
-                "pattern": [
+                "patterns": [
                   {
                     "array": {
-                      "int": [
+                      "ints": [
                         "1",
                         "2",
                         "3"
@@ -130,7 +130,7 @@
               },
               {
                 "body": {
-                  "then": [
+                  "thens": [
                     {
                       "expression": {
                         "symbol": ":nothing"
@@ -138,7 +138,7 @@
                     }
                   ]
                 },
-                "pattern": [
+                "patterns": [
                   {
                     "nil": "nil"
                   }
@@ -151,14 +151,13 @@
       "name": "classify",
       "parameters": [
         {
-          "$type": "parameter",
           "name": "value"
         }
       ]
     },
     {
       "body": {
-        "expression": [
+        "expressions": [
           {
             "call": {
               "block": {
@@ -233,7 +232,6 @@
                 "do": true,
                 "parameters": [
                   {
-                    "$type": "parameter",
                     "name": "x"
                   }
                 ]
@@ -318,7 +316,7 @@
           },
           {
             "array": {
-              "name": [
+              "names": [
                 "result",
                 "ternary",
                 "a",
@@ -326,7 +324,7 @@
                 "rest",
                 "flag"
               ],
-              "call": [
+              "calls": [
                 {
                   "arguments": [
                     "1",
@@ -350,10 +348,10 @@
             }
           }
         ],
-        "for": [
+        "fors": [
           {
             "body": {
-              "do": [
+              "dos": [
                 {
                   "assign": {
                     "right": {
@@ -386,7 +384,7 @@
             }
           }
         ],
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
@@ -445,7 +443,7 @@
                         }
                       },
                       "body": {
-                        "expression": [
+                        "expressions": [
                           {
                             "call": {
                               "name": "clear",
@@ -470,7 +468,7 @@
                       }
                     },
                     "body": {
-                      "expression": [
+                      "expressions": [
                         {
                           "call": {
                             "arguments": [
@@ -490,7 +488,7 @@
                   },
                   "rescue": {
                     "body": {
-                      "then": [
+                      "thens": [
                         {
                           "expression": {
                             "call": {
@@ -560,11 +558,9 @@
                   },
                   "parameters": [
                     {
-                      "$type": "parameter",
                       "name": "a"
                     },
                     {
-                      "$type": "parameter",
                       "name": "b"
                     }
                   ]
@@ -604,7 +600,6 @@
                     },
                     "parameters": [
                       {
-                        "$type": "parameter",
                         "name": "n"
                       }
                     ]
@@ -625,7 +620,7 @@
                 "call": {
                   "block": {
                     "body": {
-                      "expression": [
+                      "expressions": [
                         {
                           "call": {
                             "arguments": [
@@ -656,7 +651,6 @@
                     },
                     "parameters": [
                       {
-                        "$type": "parameter",
                         "name": "n"
                       }
                     ]
@@ -676,7 +670,7 @@
               "expression": {
                 "lambda": {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "call": {
                           "arguments": [
@@ -707,7 +701,6 @@
                   },
                   "parameters": [
                     {
-                      "$type": "parameter",
                       "name": "n"
                     }
                   ]
@@ -796,7 +789,7 @@
             "right": {
               "expression": {
                 "array": {
-                  "int": [
+                  "ints": [
                     "1",
                     "2",
                     "3",
@@ -808,7 +801,7 @@
             "left": {
               "expression": {
                 "left": {
-                  "expression": [
+                  "expressions": [
                     {
                       "name": "a"
                     },
@@ -884,10 +877,10 @@
             }
           }
         ],
-        "while": [
+        "whiles": [
           {
             "body": {
-              "do": [
+              "dos": [
                 {
                   "assign": {
                     "right": {
@@ -927,10 +920,10 @@
             }
           }
         ],
-        "until": [
+        "untils": [
           {
             "body": {
-              "do": [
+              "dos": [
                 {
                   "assign": {
                     "right": {
@@ -975,18 +968,17 @@
       "name": "control",
       "parameters": [
         {
-          "$type": "parameter",
           "name": "items"
         }
       ]
     },
     {
       "body": {
-        "rescue": [
+        "rescues": [
           {
             "symbol": ":failed",
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "result"
                 }
@@ -994,15 +986,15 @@
             }
           }
         ],
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
                 "match": {
-                  "in": [
+                  "ins": [
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "symbol": ":empty"
@@ -1017,7 +1009,7 @@
                     },
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "binary": {
@@ -1071,7 +1063,7 @@
                     },
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "symbol": ":find_pattern"
@@ -1115,7 +1107,7 @@
                     },
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "name": "k"
@@ -1145,7 +1137,7 @@
                     },
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "symbol": ":small"
@@ -1164,7 +1156,7 @@
                     },
                     {
                       "body": {
-                        "then": [
+                        "thens": [
                           {
                             "expression": {
                               "name": "n"
@@ -1201,7 +1193,7 @@
             "right": {
               "expression": {
                 "string": {
-                  "string": [
+                  "strings": [
                     "\"first \"",
                     "\"second \"",
                     "\"third\""
@@ -1220,7 +1212,7 @@
             "right": {
               "expression": {
                 "array": {
-                  "int": [
+                  "ints": [
                     "10",
                     "20",
                     "30"
@@ -1235,14 +1227,13 @@
             }
           }
         ],
-        "expression": [
+        "expressions": [
           {
             "call": {
               "arguments": [
                 {
-                  "$type": "argument",
-                  "forward": true,
-                  "text": "..."
+                  "text": "...",
+                  "forward": true
                 }
               ],
               "name": "forward"
@@ -1269,19 +1260,17 @@
       "name": "patterns",
       "parameters": [
         {
-          "$type": "parameter",
           "name": "values"
         },
         {
-          "$type": "parameter",
-          "forward": true,
-          "text": "..."
+          "text": "...",
+          "forward": true
         }
       ]
     },
     {
       "body": {
-        "expression": [
+        "expressions": [
           {
             "call": {
               "arguments": [
@@ -1299,31 +1288,29 @@
       "name": "destructured",
       "parameters": [
         {
-          "$type": "parameter",
-          "destructured": true,
-          "name": [
+          "names": [
             "x",
             "y"
-          ]
+          ],
+          "destructured": true
         },
         {
-          "$type": "parameter",
-          "block": true,
-          "name": "block"
+          "name": "block",
+          "block": true
         }
       ]
     }
   ],
-  "module": [
+  "modules": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "string": {
-                    "interpolation": [
+                    "interpolations": [
                       {
                         "name": "name"
                       }
@@ -1335,7 +1322,6 @@
             "name": "hello",
             "parameters": [
               {
-                "$type": "parameter",
                 "name": "name"
               }
             ]
@@ -1346,16 +1332,16 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "call": {
                     "arguments": [
                       {
                         "$type": "string",
-                        "interpolation": [
+                        "interpolations": [
                           {
                             "name": "msg"
                           }
@@ -1370,7 +1356,6 @@
             "name": "log",
             "parameters": [
               {
-                "$type": "parameter",
                 "name": "msg"
               }
             ]
@@ -1381,13 +1366,13 @@
     },
     {
       "body": {
-        "class": [
+        "classes": [
           {
             "body": {
-              "method": [
+              "methods": [
                 {
                   "body": {
-                    "assign": [
+                    "assigns": [
                       {
                         "right": {
                           "expression": {
@@ -1433,24 +1418,22 @@
                   "name": "initialize",
                   "parameters": [
                     {
-                      "$type": "parameter",
                       "name": "name"
                     },
                     {
-                      "$type": "parameter",
-                      "keyword": true,
-                      "name": "id",
                       "value": {
                         "expression": {
                           "nil": "nil"
                         }
-                      }
+                      },
+                      "keyword": true,
+                      "name": "id"
                     }
                   ]
                 },
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "binary": {
                           "right": {
@@ -1503,13 +1486,12 @@
                   "name": "==",
                   "parameters": [
                     {
-                      "$type": "parameter",
                       "name": "other"
                     }
                   ]
                 }
               ],
-              "expression": [
+              "expressions": [
                 {
                   "call": {
                     "arguments": [
@@ -1532,10 +1514,10 @@
           },
           {
             "body": {
-              "method": [
+              "methods": [
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "call": {
                           "arguments": [
@@ -1551,19 +1533,18 @@
                   "name": "build",
                   "parameters": [
                     {
-                      "$type": "parameter",
                       "name": "name"
                     }
                   ]
                 },
                 {
                   "body": {
-                    "ternary": [
+                    "ternaries": [
                       {
                         "else": {
                           "expression": {
                             "string": {
-                              "interpolation": [
+                              "interpolations": [
                                 {
                                   "name": "msg"
                                 },
@@ -1596,7 +1577,7 @@
                         }
                       }
                     ],
-                    "assign": [
+                    "assigns": [
                       {
                         "right": {
                           "expression": {
@@ -1604,7 +1585,7 @@
                               "else": {
                                 "expression": {
                                   "string": {
-                                    "interpolation": [
+                                    "interpolations": [
                                       {
                                         "name": "greeting"
                                       },
@@ -1623,7 +1604,7 @@
                               "then": {
                                 "expression": {
                                   "string": {
-                                    "interpolation": [
+                                    "interpolations": [
                                       {
                                         "name": "@name"
                                       }
@@ -1679,40 +1660,36 @@
                   "name": "greet?",
                   "parameters": [
                     {
-                      "$type": "parameter",
-                      "default": true,
-                      "name": "formal",
                       "value": {
                         "expression": {
                           "false": "false"
                         }
-                      }
+                      },
+                      "default": true,
+                      "name": "formal"
                     },
                     {
-                      "$type": "parameter",
-                      "keyword": true,
-                      "name": "greeting",
                       "value": {
                         "expression": {
                           "string": "'hi'"
                         }
-                      }
+                      },
+                      "keyword": true,
+                      "name": "greeting"
                     },
                     {
-                      "$type": "parameter",
-                      "kwsplat": true,
-                      "name": "opts"
+                      "name": "opts",
+                      "kwsplat": true
                     },
                     {
-                      "$type": "parameter",
-                      "block": true,
-                      "name": "block"
+                      "name": "block",
+                      "block": true
                     }
                   ]
                 },
                 {
                   "body": {
-                    "assign": [
+                    "assigns": [
                       {
                         "right": {
                           "expression": {
@@ -1736,7 +1713,7 @@
                 },
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "binary": {
                           "right": {
@@ -1756,7 +1733,7 @@
                                   "value": {
                                     "expression": {
                                       "string": {
-                                        "interpolation": [
+                                        "interpolations": [
                                           {
                                             "name": "i"
                                           },
@@ -1769,11 +1746,9 @@
                                   },
                                   "parameters": [
                                     {
-                                      "$type": "parameter",
                                       "name": "it"
                                     },
                                     {
-                                      "$type": "parameter",
                                       "name": "i"
                                     }
                                   ]
@@ -1801,20 +1776,18 @@
                   "name": "collect",
                   "parameters": [
                     {
-                      "$type": "parameter",
-                      "splat": true,
-                      "name": "items"
+                      "name": "items",
+                      "splat": true
                     },
                     {
-                      "$type": "parameter",
-                      "kwsplat": true,
-                      "name": "meta"
+                      "name": "meta",
+                      "kwsplat": true
                     }
                   ]
                 },
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "string": "'shh'"
                       }
@@ -1824,7 +1797,7 @@
                 },
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "name": "@id"
                       }
@@ -1834,10 +1807,10 @@
                 },
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "array": {
-                          "name": [
+                          "names": [
                             "data",
                             "rocket",
                             "list",
@@ -1846,12 +1819,12 @@
                         }
                       }
                     ],
-                    "assign": [
+                    "assigns": [
                       {
                         "right": {
                           "expression": {
                             "hash": {
-                              "pair": [
+                              "pairs": [
                                 {
                                   "value": {
                                     "expression": {
@@ -1890,7 +1863,7 @@
                         "right": {
                           "expression": {
                             "hash": {
-                              "pair": [
+                              "pairs": [
                                 {
                                   "value": {
                                     "expression": {
@@ -1924,10 +1897,10 @@
                         "right": {
                           "expression": {
                             "array": {
-                              "spread": [
+                              "spreads": [
                                 {
                                   "array": {
-                                    "int": [
+                                    "ints": [
                                       "4",
                                       "5"
                                     ]
@@ -1935,7 +1908,7 @@
                                   "list": true
                                 }
                               ],
-                              "int": [
+                              "ints": [
                                 "1",
                                 "2",
                                 "3"
@@ -1953,7 +1926,7 @@
                         "right": {
                           "expression": {
                             "hash": {
-                              "pair": [
+                              "pairs": [
                                 {
                                   "value": {
                                     "expression": {
@@ -1963,7 +1936,7 @@
                                   "name": "extra"
                                 }
                               ],
-                              "spread": [
+                              "spreads": [
                                 {
                                   "name": "data",
                                   "dict": true
@@ -1983,7 +1956,7 @@
                   "name": "describe"
                 }
               ],
-              "expression": [
+              "expressions": [
                 {
                   "call": {
                     "arguments": [
@@ -2024,12 +1997,12 @@
                   "name": "public"
                 }
               ],
-              "interpolation": [
+              "interpolations": [
                 {
                   "name": "MAX_RETRIES"
                 }
               ],
-              "assign": [
+              "assigns": [
                 {
                   "right": {
                     "expression": {
@@ -2046,7 +2019,7 @@
                   "right": {
                     "expression": {
                       "string": {
-                        "interpolation": [
+                        "interpolations": [
                           {
                             "name": "MAX_RETRIES"
                           }
@@ -2129,13 +2102,13 @@
                   }
                 }
               ],
-              "class": [
+              "classes": [
                 {
                   "body": {
-                    "method": [
+                    "methods": [
                       {
                         "body": {
-                          "assign": [
+                          "assigns": [
                             {
                               "right": {
                                 "expression": {
@@ -2177,7 +2150,7 @@
       "name": "App"
     }
   ],
-  "comment": [
+  "comments": [
     "# Kitchen-sink Ruby blueprint for tractor snapshot tests.\n# Rendered by `tractor query <file> -p tree --single` with NO depth limit\n# so any design-principle transform change produces a visible snapshot diff.\n# The file is intentionally syntactically valid but not executed.",
     {
       "text": "# Pattern-matching exercise — covers array/hash/find/alternative/as\n# patterns, guards (`if`/`unless` clauses inside `case/in`), and\n# Ruby 3.0 forwarding syntax. Iter 15 wraps each pattern variant\n# under `<pattern[X]>` so `//pattern[array]` etc. narrow.",
@@ -2188,7 +2161,7 @@
       "leading": true
     }
   ],
-  "assign": [
+  "assigns": [
     {
       "right": {
         "expression": {
@@ -2235,7 +2208,7 @@
       "right": {
         "expression": {
           "array": {
-            "int": [
+            "ints": [
               "10",
               "20"
             ]
@@ -2247,7 +2220,7 @@
           "left": {
             "expression": {
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "destructured": true
                   },
@@ -2286,7 +2259,7 @@
       }
     }
   ],
-  "block": [
+  "blocks": [
     {
       "call": {
         "arguments": [

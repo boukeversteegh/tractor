@@ -595,7 +595,22 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
-- [x] iter 230: wind-down checkpoint — audit at 63 sites (-78%
+- [x] iter 231: pluralize all list= attribute values — added
+  `pluralize_list_name(name)` helper with rules (consonant-y→ies,
+  s/x/z/ch/sh→es, default+s) plus an already-plural override list.
+  Routed all four dynamic helpers through it
+  (`distribute_member_list_attrs`, `tag_multi_role_children`,
+  `tag_multi_same_name_children`, `tag_multi_target_expressions`,
+  `flatten_nested_paths`). Updated singular `with_attr` sites in
+  Ruby case/when/match/in helpers and TSQL select-columns. Fixed
+  `xml_to_json::strip_top_level_type` to recognize `list=` as the
+  plural of `element_name` (so $type-stripping kicks in for
+  `methods: [<method>...]` after the rename — without this the
+  pluralization would re-introduce $type redundancy on every list
+  entry). Updated 11 JSON snapshots; net -156 lines (more $type
+  stripped than singular keys lengthened). Per user directive
+  "the final decision was to use plurals". 21 unit assertions in
+  `test_pluralize_list_name`.
   from 283 baseline; -220 sites closed across 46 iters since
   iter 181). Remaining work is design-call territory or per-
   construct surgery. Loop paused; resume on user direction.

@@ -1714,7 +1714,7 @@ fn tsql_tag_select_columns(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
             .collect();
         for col in columns {
             if get_attr(xot, col, "list").is_none() {
-                xot.with_attr(col, "list", "column");
+                xot.with_attr(col, "list", "columns");
             }
         }
     }
@@ -1994,7 +1994,7 @@ fn ruby_tag_case_when_lists(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
             .collect();
         for w in whens {
             if get_attr(xot, w, "list").is_none() {
-                xot.with_attr(w, "list", "when");
+                xot.with_attr(w, "list", "whens");
             }
         }
     }
@@ -2011,7 +2011,7 @@ fn ruby_tag_case_when_lists(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
             .collect();
         for p in patterns {
             if get_attr(xot, p, "list").is_none() {
-                xot.with_attr(p, "list", "pattern");
+                xot.with_attr(p, "list", "patterns");
             }
         }
     }
@@ -2029,7 +2029,7 @@ fn ruby_tag_case_when_lists(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
             .collect();
         for i in ins {
             if get_attr(xot, i, "list").is_none() {
-                xot.with_attr(i, "list", "in");
+                xot.with_attr(i, "list", "ins");
             }
         }
     }

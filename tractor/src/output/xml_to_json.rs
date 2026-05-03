@@ -139,7 +139,16 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             for entry in content_children {
                 let ChildEntry { element_name, list_name, value } = entry;
                 if let Some(list) = list_name {
-                    let value = if list == element_name {
+                    // List entries' `$type` is redundant when the list= name
+                    // is the (plural) form of the element name — every entry
+                    // in `methods: [...]` is a `<method>` so `$type: method`
+                    // just repeats the array key. Iter 231 made list= names
+                    // plural English nouns, so the equality check against
+                    // the element name is no longer enough; use the
+                    // pluralize helper.
+                    let value = if list == element_name
+                        || list == crate::transform::helpers::pluralize_list_name(&element_name)
+                    {
                         strip_top_level_type(value)
                     } else {
                         value

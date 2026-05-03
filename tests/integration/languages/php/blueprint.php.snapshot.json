@@ -1,16 +1,16 @@
 {
   "$type": "program",
-  "tag": [
+  "tags": [
     {
       "text": "<?php",
       "open": true
     }
   ],
-  "use": [
+  "uses": [
     {
       "name": "Base",
       "path": {
-        "name": [
+        "names": [
           "App"
         ]
       }
@@ -21,7 +21,7 @@
       },
       "alias": true,
       "path": {
-        "name": [
+        "names": [
           "App"
         ]
       },
@@ -36,7 +36,7 @@
       ],
       "group": true,
       "path": {
-        "name": [
+        "names": [
           "App"
         ]
       },
@@ -45,20 +45,20 @@
       }
     }
   ],
-  "declare": [
+  "declares": [
     {
       "int": "1"
     }
   ],
-  "namespace": [
+  "namespaces": [
     {
-      "name": [
+      "names": [
         "App",
         "Blueprint"
       ]
     }
   ],
-  "expression": [
+  "expressions": [
     {
       "assign": {
         "right": {
@@ -89,12 +89,11 @@
               "arrow": true,
               "parameters": [
                 {
-                  "$type": "parameter",
+                  "name": "$x",
                   "type": {
                     "name": "int",
                     "primitive": true
-                  },
-                  "name": "$x"
+                  }
                 }
               ],
               "returns": {
@@ -123,15 +122,13 @@
             "call": {
               "arguments": [
                 {
-                  "$type": "argument",
                   "variable": {
                     "name": "pipeline"
                   }
                 },
                 {
-                  "$type": "argument",
                   "array": {
-                    "int": [
+                    "ints": [
                       "1",
                       "2",
                       "3"
@@ -159,7 +156,7 @@
           "expression": {
             "function": {
               "body": {
-                "return": [
+                "returns": [
                   {
                     "expression": {
                       "binary": {
@@ -173,7 +170,6 @@
                             "call": {
                               "arguments": [
                                 {
-                                  "$type": "argument",
                                   "variable": {
                                     "name": "x"
                                   }
@@ -197,12 +193,11 @@
               "anonymous": true,
               "parameters": [
                 {
-                  "$type": "parameter",
+                  "name": "$x",
                   "type": {
                     "name": "int",
                     "primitive": true
-                  },
-                  "name": "$x"
+                  }
                 }
               ],
               "variable": {
@@ -228,7 +223,7 @@
       }
     }
   ],
-  "comment": [
+  "comments": [
     "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
     {
       "text": "/**\n * Demo class with various PHP features.\n */",
@@ -248,13 +243,13 @@
       "leading": true
     }
   ],
-  "class": [
+  "classes": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "assign": {
                     "right": {
@@ -307,21 +302,19 @@
             "name": "__construct",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$name",
                 "type": {
                   "name": "string",
                   "primitive": true
-                },
-                "name": "$name"
+                }
               },
               {
-                "$type": "parameter",
+                "int": "0",
                 "type": {
                   "name": "int",
                   "primitive": true
                 },
-                "name": "$count",
-                "int": "0"
+                "name": "$count"
               }
             ]
           },
@@ -338,13 +331,12 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "new": {
                       "arguments": [
                         {
-                          "$type": "argument",
                           "variable": {
                             "name": "name"
                           }
@@ -362,12 +354,11 @@
             "name": "create",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$name",
                 "type": {
                   "name": "string",
                   "primitive": true
-                },
-                "name": "$name"
+                }
               }
             ],
             "returns": {
@@ -378,15 +369,15 @@
           },
           {
             "body": {
-              "if": [
+              "ifs": [
                 {
                   "else": {
                     "body": {
-                      "return": [
+                      "returns": [
                         {
                           "expression": {
                             "string": {
-                              "interpolation": [
+                              "interpolations": [
                                 {
                                   "variable": {
                                     "name": "target"
@@ -427,11 +418,11 @@
                     }
                   },
                   "body": {
-                    "return": [
+                    "returns": [
                       {
                         "expression": {
                           "string": {
-                            "interpolation": [
+                            "interpolations": [
                               {
                                 "variable": {
                                   "name": "target"
@@ -445,11 +436,11 @@
                   },
                   "else_if": {
                     "body": {
-                      "return": [
+                      "returns": [
                         {
                           "expression": {
                             "string": {
-                              "interpolation": [
+                              "interpolations": [
                                 {
                                   "variable": {
                                     "name": "target"
@@ -491,7 +482,7 @@
                   }
                 }
               ],
-              "expression": [
+              "expressions": [
                 {
                   "assign": {
                     "right": {
@@ -538,7 +529,7 @@
             "name": "greet",
             "parameters": [
               {
-                "$type": "parameter",
+                "null": "null",
                 "type": {
                   "type": {
                     "name": "string",
@@ -546,17 +537,15 @@
                   },
                   "optional": true
                 },
-                "name": "$who",
-                "null": "null"
+                "name": "$who"
               },
               {
-                "$type": "parameter",
+                "name": "$extras",
                 "variadic": true,
                 "type": {
                   "name": "string",
                   "primitive": true
-                },
-                "name": "$extras"
+                }
               }
             ],
             "returns": {
@@ -568,7 +557,7 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "ternary": {
@@ -598,7 +587,7 @@
                           }
                         },
                         "body": {
-                          "string": [
+                          "strings": [
                             "\"negative\""
                           ]
                         }
@@ -627,7 +616,7 @@
                         }
                       },
                       "body": {
-                        "string": [
+                        "strings": [
                           "\"positive\""
                         ]
                       }
@@ -640,12 +629,11 @@
             "name": "describe",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$n",
                 "type": {
                   "name": "int",
                   "primitive": true
-                },
-                "name": "$n"
+                }
               }
             ],
             "returns": {
@@ -657,18 +645,17 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "match": {
                       "body": {
-                        "arm": [
+                        "arms": [
                           {
                             "string": "\"int\"",
                             "call": {
                               "arguments": [
                                 {
-                                  "$type": "argument",
                                   "variable": {
                                     "name": "value"
                                   }
@@ -693,7 +680,6 @@
                                         "call": {
                                           "arguments": [
                                             {
-                                              "$type": "argument",
                                               "variable": {
                                                 "name": "value"
                                               }
@@ -716,7 +702,6 @@
                                   "call": {
                                     "arguments": [
                                       {
-                                        "$type": "argument",
                                         "variable": {
                                           "name": "value"
                                         }
@@ -738,7 +723,6 @@
                             "call": {
                               "arguments": [
                                 {
-                                  "$type": "argument",
                                   "variable": {
                                     "name": "value"
                                   }
@@ -767,12 +751,11 @@
             "name": "categorize",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$value",
                 "type": {
                   "name": "mixed",
                   "primitive": true
-                },
-                "name": "$value"
+                }
               }
             ],
             "returns": {
@@ -784,7 +767,7 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "variable": {
@@ -793,7 +776,7 @@
                   }
                 }
               ],
-              "expression": [
+              "expressions": [
                 {
                   "assign": {
                     "right": {
@@ -812,10 +795,10 @@
                   }
                 }
               ],
-              "foreach": [
+              "foreaches": [
                 {
                   "body": {
-                    "try": [
+                    "tries": [
                       {
                         "catch": {
                           "body": {
@@ -829,7 +812,7 @@
                           "name": "$e"
                         },
                         "body": {
-                          "expression": [
+                          "expressions": [
                             {
                               "assign": {
                                 "right": {
@@ -837,7 +820,6 @@
                                     "call": {
                                       "arguments": [
                                         {
-                                          "$type": "argument",
                                           "variable": {
                                             "name": "item"
                                           }
@@ -873,7 +855,7 @@
                         }
                       }
                     ],
-                    "if": [
+                    "ifs": [
                       {
                         "body": {
                           "continue": true
@@ -925,12 +907,11 @@
             "name": "process",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$items",
                 "type": {
                   "name": "iterable",
                   "primitive": true
-                },
-                "name": "$items"
+                }
               }
             ],
             "returns": {
@@ -942,7 +923,7 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "variable": {
@@ -956,12 +937,11 @@
             "name": "transform",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$item",
                 "type": {
                   "name": "mixed",
                   "primitive": true
-                },
-                "name": "$item"
+                }
               }
             ],
             "returns": {
@@ -972,12 +952,12 @@
             }
           }
         ],
-        "use": [
+        "uses": [
           {
             "name": "Loggable"
           }
         ],
-        "const": [
+        "consts": [
           {
             "constant": {
               "int": "100",
@@ -993,7 +973,7 @@
             "private": true
           }
         ],
-        "field": [
+        "fields": [
           {
             "name": "$name",
             "private": true,
@@ -1039,7 +1019,6 @@
       "attribute": {
         "arguments": [
           {
-            "$type": "argument",
             "member": {
               "property": {
                 "name": "TARGET_CLASS"
@@ -1076,30 +1055,28 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$name",
                 "promoted": true,
                 "public": true,
                 "readonly": true,
                 "type": {
                   "name": "string",
                   "primitive": true
-                },
-                "name": "$name"
+                }
               },
               {
-                "$type": "parameter",
+                "int": "0",
                 "promoted": true,
                 "protected": true,
                 "type": {
                   "name": "int",
                   "primitive": true
                 },
-                "name": "$count",
-                "int": "0"
+                "name": "$count"
               }
             ],
             "public": true,
@@ -1110,16 +1087,16 @@
       "name": "PromotedDemo"
     }
   ],
-  "trait": [
+  "traits": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "echo": [
+              "echos": [
                 {
                   "string": {
-                    "interpolation": [
+                    "interpolations": [
                       {
                         "variable": {
                           "name": "msg"
@@ -1134,12 +1111,11 @@
             "name": "log",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$msg",
                 "type": {
                   "name": "string",
                   "primitive": true
-                },
-                "name": "$msg"
+                }
               }
             ],
             "returns": {
@@ -1154,18 +1130,18 @@
       "name": "Loggable"
     }
   ],
-  "enum": [
+  "enums": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "match": {
                       "body": {
-                        "arm": [
+                        "arms": [
                           {
                             "string": "\"✓\"",
                             "member": {
@@ -1226,7 +1202,7 @@
             }
           }
         ],
-        "constant": [
+        "constants": [
           {
             "value": {
               "expression": {
@@ -1261,10 +1237,10 @@
       }
     }
   ],
-  "interface": [
+  "interfaces": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "returns": {
               "type": {
@@ -1276,15 +1252,14 @@
             "name": "greet",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "$who",
                 "type": {
                   "type": {
                     "name": "string",
                     "primitive": true
                   },
                   "optional": true
-                },
-                "name": "$who"
+                }
               }
             ]
           }
@@ -1294,7 +1269,7 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "returns": {
               "type": {
@@ -1311,7 +1286,7 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "returns": {
               "type": {
@@ -1328,7 +1303,7 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "returns": {
               "type": {
@@ -1344,16 +1319,15 @@
       "name": "Countable2"
     }
   ],
-  "function": [
+  "functions": [
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "call": {
                 "arguments": [
                   {
-                    "$type": "argument",
                     "spread": {
                       "variable": {
                         "name": "args"
@@ -1372,21 +1346,19 @@
       "name": "factory",
       "parameters": [
         {
-          "$type": "parameter",
+          "name": "$fn",
           "type": {
             "name": "callable",
             "primitive": true
-          },
-          "name": "$fn"
+          }
         },
         {
-          "$type": "parameter",
+          "name": "$args",
           "variadic": true,
           "type": {
             "name": "mixed",
             "primitive": true
-          },
-          "name": "$args"
+          }
         }
       ],
       "returns": {
@@ -1398,12 +1370,12 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "match": {
                 "body": {
-                  "arm": [
+                  "arms": [
                     {
                       "int": "1",
                       "binary": {
@@ -1461,14 +1433,14 @@
             }
           }
         ],
-        "unset": [
+        "unsets": [
           {
             "variable": {
               "name": "x"
             }
           }
         ],
-        "expression": [
+        "expressions": [
           {
             "assign": {
               "right": {
@@ -1522,10 +1494,10 @@
                   "new": {
                     "class": {
                       "body": {
-                        "method": [
+                        "methods": [
                           {
                             "body": {
-                              "return": [
+                              "returns": [
                                 {
                                   "expression": {
                                     "string": "\"anon\""
@@ -1573,9 +1545,8 @@
                   "call": {
                     "arguments": [
                       {
-                        "$type": "argument",
-                        "variadic": true,
-                        "text": "..."
+                        "text": "...",
+                        "variadic": true
                       }
                     ],
                     "name": "strtoupper"
@@ -1656,7 +1627,7 @@
               "right": {
                 "expression": {
                   "array": {
-                    "int": [
+                    "ints": [
                       "1",
                       "2",
                       "3"
@@ -1708,7 +1679,7 @@
               "left": {
                 "expression": {
                   "array": {
-                    "variable": [
+                    "variables": [
                       {
                         "name": "first"
                       },
@@ -1727,7 +1698,7 @@
               "right": {
                 "expression": {
                   "array": {
-                    "int": [
+                    "ints": [
                       "10",
                       "20",
                       "30",
@@ -1740,7 +1711,7 @@
               "left": {
                 "expression": {
                   "array": {
-                    "variable": [
+                    "variables": [
                       {
                         "name": "third"
                       },
@@ -1848,7 +1819,6 @@
                     "call": {
                       "arguments": [
                         {
-                          "$type": "argument",
                           "string": "\"/missing\""
                         }
                       ],
@@ -1893,7 +1863,7 @@
               "right": {
                 "expression": {
                   "string": {
-                    "value": [
+                    "values": [
                       {
                         "expression": {
                           "variable": {
@@ -1921,7 +1891,7 @@
               "right": {
                 "expression": {
                   "string": {
-                    "value": [
+                    "values": [
                       "no interpolation: $not_a_var"
                     ],
                     "nowdoc": true
@@ -1939,7 +1909,7 @@
             }
           }
         ],
-        "foreach": [
+        "foreaches": [
           {
             "children": [
               {
@@ -1951,7 +1921,7 @@
               "name": "items"
             },
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "assign": {
                     "right": {
@@ -1977,7 +1947,7 @@
             }
           }
         ],
-        "variable": [
+        "variables": [
           {
             "value": {
               "expression": {
@@ -1992,7 +1962,7 @@
             "global": true
           }
         ],
-        "for": [
+        "fors": [
           {
             "children": [
               {
@@ -2072,23 +2042,23 @@
               }
             },
             "body": {
-              "comment": [
+              "comments": [
                 "/* ... */"
               ]
             }
           }
         ],
-        "label": [
+        "labels": [
           {
             "name": "end"
           }
         ],
-        "goto": [
+        "gotos": [
           {
             "name": "end"
           }
         ],
-        "comment": [
+        "comments": [
           {
             "text": "// Nullsafe member access + call.",
             "leading": true
@@ -2142,22 +2112,20 @@
       "name": "shapes",
       "parameters": [
         {
-          "$type": "parameter",
+          "name": "$thing",
           "type": {
             "type": {
               "name": "PromotedDemo"
             },
             "optional": true
-          },
-          "name": "$thing"
+          }
         },
         {
-          "$type": "parameter",
+          "name": "$value",
           "type": {
             "name": "mixed",
             "primitive": true
-          },
-          "name": "$value"
+          }
         }
       ],
       "returns": {
@@ -2169,7 +2137,7 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "call": {
@@ -2186,9 +2154,9 @@
       "name": "require_both",
       "parameters": [
         {
-          "$type": "parameter",
+          "name": "$thing",
           "type": {
-            "type": [
+            "types": [
               {
                 "name": "Stringable"
               },
@@ -2197,8 +2165,7 @@
               }
             ],
             "intersection": true
-          },
-          "name": "$thing"
+          }
         }
       ],
       "returns": {
@@ -2210,7 +2177,7 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "binary": {
@@ -2239,11 +2206,11 @@
       "name": "dnf_demo",
       "parameters": [
         {
-          "$type": "parameter",
+          "name": "$thing",
           "type": {
-            "type": [
+            "types": [
               {
-                "type": [
+                "types": [
                   {
                     "name": "Stringable"
                   },
@@ -2259,8 +2226,7 @@
               }
             ],
             "disjunctive": true
-          },
-          "name": "$thing"
+          }
         }
       ],
       "returns": {
@@ -2272,13 +2238,12 @@
     },
     {
       "body": {
-        "expression": [
+        "expressions": [
           {
             "throw": {
               "new": {
                 "arguments": [
                   {
-                    "$type": "argument",
                     "string": "\"boom\""
                   }
                 ],
@@ -2297,7 +2262,7 @@
       }
     }
   ],
-  "echo": [
+  "echos": [
     {
       "binary": {
         "right": {
@@ -2313,7 +2278,6 @@
                   "call": {
                     "arguments": [
                       {
-                        "$type": "argument",
                         "int": "5"
                       }
                     ],

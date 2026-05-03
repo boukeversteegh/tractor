@@ -1,11 +1,11 @@
 {
   "$type": "file",
-  "go": [
+  "gos": [
     "GO"
   ],
-  "transaction": [
+  "transactions": [
     {
-      "statement": [
+      "statements": [
         {
           "update": {
             "where": {
@@ -101,7 +101,7 @@
       ]
     }
   ],
-  "comment": [
+  "comments": [
     "-- Simple T-SQL example",
     "-- Bracket identifiers, schema-qualified names, variables",
     "-- UPDATE with variables and schema-qualified table",
@@ -126,10 +126,10 @@
     "-- CREATE VIEW, DROP TABLE",
     "-- ALTER TABLE: add constraint, drop constraint"
   ],
-  "statement": [
+  "statements": [
     {
       "from": {
-        "order": [
+        "orders": [
           {
             "target": {
               "column": {
@@ -141,7 +141,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "alias": "u",
             "ref": {
@@ -149,7 +149,7 @@
             }
           }
         ],
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
@@ -173,7 +173,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name",
             "ref": {
@@ -191,9 +191,9 @@
     },
     {
       "insert": {
-        "list": [
+        "lists": [
           {
-            "column": [
+            "columns": [
               {
                 "name": "Action"
               },
@@ -203,21 +203,21 @@
             ]
           },
           {
-            "call": [
+            "calls": [
               {
-                "ref": [
+                "refs": [
                   {
                     "name": "GETDATE"
                   }
                 ]
               }
             ],
-            "literal": [
+            "literals": [
               "'UserQuery'"
             ]
           }
         ],
-        "ref": [
+        "refs": [
           {
             "name": "AuditLog"
           }
@@ -226,7 +226,7 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
@@ -245,7 +245,7 @@
             }
           }
         ],
-        "ref": [
+        "refs": [
           {
             "name": "OldRecords"
           }
@@ -255,7 +255,7 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "between": {
               "high": {
@@ -272,7 +272,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Users",
@@ -282,7 +282,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name",
             "ref": {
@@ -294,7 +294,7 @@
             "var": "StartDate"
           }
         ],
-        "alias": [
+        "aliases": [
           "UserName"
         ]
       }
@@ -339,7 +339,7 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
@@ -361,7 +361,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "alias": "o",
             "ref": {
@@ -369,7 +369,7 @@
             }
           }
         ],
-        "join": [
+        "joins": [
           {
             "compare": {
               "right": {
@@ -427,7 +427,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "ID",
             "ref": {
@@ -451,13 +451,13 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
                 "subquery": {
                   "from": {
-                    "where": [
+                    "wheres": [
                       {
                         "compare": {
                           "right": {
@@ -476,7 +476,7 @@
                         }
                       }
                     ],
-                    "relation": [
+                    "relations": [
                       {
                         "ref": {
                           "name": "Orders"
@@ -485,7 +485,7 @@
                     ]
                   },
                   "select": {
-                    "column": [
+                    "columns": [
                       {
                         "name": "UserID"
                       }
@@ -501,7 +501,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Users"
@@ -510,7 +510,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name"
           }
@@ -519,12 +519,12 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "exists": {
               "subquery": {
                 "from": {
-                  "where": [
+                  "wheres": [
                     {
                       "compare": {
                         "right": {
@@ -547,7 +547,7 @@
                       }
                     }
                   ],
-                  "relation": [
+                  "relations": [
                     {
                       "alias": "o",
                       "ref": {
@@ -557,7 +557,7 @@
                   ]
                 },
                 "select": {
-                  "literal": [
+                  "literals": [
                     "1"
                   ]
                 }
@@ -565,7 +565,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "alias": "u",
             "ref": {
@@ -575,7 +575,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name",
             "ref": {
@@ -587,7 +587,7 @@
     },
     {
       "from": {
-        "having": [
+        "havings": [
           {
             "compare": {
               "right": {
@@ -595,10 +595,10 @@
               },
               "left": {
                 "call": {
-                  "star": [
+                  "stars": [
                     "*"
                   ],
-                  "ref": [
+                  "refs": [
                     {
                       "name": "COUNT"
                     }
@@ -613,14 +613,14 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Employees"
             }
           }
         ],
-        "group": [
+        "groups": [
           {
             "column": {
               "name": "Department"
@@ -629,33 +629,33 @@
         ]
       },
       "select": {
-        "alias": [
+        "aliases": [
           "HeadCount",
           "AvgSalary"
         ],
-        "column": [
+        "columns": [
           {
             "name": "Department"
           }
         ],
-        "call": [
+        "calls": [
           {
-            "star": [
+            "stars": [
               "*"
             ],
-            "ref": [
+            "refs": [
               {
                 "name": "COUNT"
               }
             ]
           },
           {
-            "column": [
+            "columns": [
               {
                 "name": "Salary"
               }
             ],
-            "ref": [
+            "refs": [
               {
                 "name": "AVG"
               }
@@ -666,7 +666,7 @@
     },
     {
       "from": {
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Users"
@@ -675,21 +675,21 @@
         ]
       },
       "select": {
-        "alias": [
+        "aliases": [
           "Category"
         ],
-        "column": [
+        "columns": [
           {
             "name": "Name"
           }
         ],
-        "case": [
+        "cases": [
           {
-            "literal": [
+            "literals": [
               "'Adult'",
               "'Minor'"
             ],
-            "compare": [
+            "compares": [
               {
                 "right": {
                   "literal": "18"
@@ -713,7 +713,7 @@
     },
     {
       "from": {
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "ActiveUsers"
@@ -724,7 +724,7 @@
       "cte": {
         "statement": {
           "from": {
-            "where": [
+            "wheres": [
               {
                 "compare": {
                   "right": {
@@ -739,7 +739,7 @@
                 }
               }
             ],
-            "relation": [
+            "relations": [
               {
                 "ref": {
                   "name": "Users"
@@ -748,7 +748,7 @@
             ]
           },
           "select": {
-            "column": [
+            "columns": [
               {
                 "name": "ID"
               },
@@ -761,7 +761,7 @@
         "name": "ActiveUsers"
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name"
           }
@@ -770,9 +770,9 @@
     },
     {
       "union": {
-        "from": [
+        "froms": [
           {
-            "relation": [
+            "relations": [
               {
                 "ref": {
                   "name": "Users"
@@ -781,7 +781,7 @@
             ]
           },
           {
-            "relation": [
+            "relations": [
               {
                 "ref": {
                   "name": "Admins"
@@ -790,30 +790,30 @@
             ]
           }
         ],
-        "select": [
+        "selects": [
           {
-            "alias": [
+            "aliases": [
               "Source"
             ],
-            "column": [
+            "columns": [
               {
                 "name": "Name"
               }
             ],
-            "literal": [
+            "literals": [
               "'User'"
             ]
           },
           {
-            "alias": [
+            "aliases": [
               "Source"
             ],
-            "column": [
+            "columns": [
               {
                 "name": "Name"
               }
             ],
-            "literal": [
+            "literals": [
               "'Admin'"
             ]
           }
@@ -822,7 +822,7 @@
     },
     {
       "from": {
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Employees"
@@ -831,15 +831,15 @@
         ]
       },
       "select": {
-        "alias": [
+        "aliases": [
           "Rank"
         ],
-        "column": [
+        "columns": [
           {
             "name": "Name"
           }
         ],
-        "window": [
+        "windows": [
           {
             "over": {
               "order": {
@@ -857,7 +857,7 @@
               }
             },
             "call": {
-              "ref": [
+              "refs": [
                 {
                   "name": "ROW_NUMBER"
                 }
@@ -869,14 +869,14 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
                 "compare": {
                   "right": {
                     "list": {
-                      "literal": [
+                      "literals": [
                         "'admin'",
                         "'moderator'"
                       ]
@@ -917,7 +917,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Users"
@@ -926,13 +926,13 @@
         ]
       },
       "select": {
-        "alias": [
+        "aliases": [
           "DisplayName",
           "AgeText"
         ],
-        "call": [
+        "calls": [
           {
-            "column": [
+            "columns": [
               {
                 "name": "Nickname"
               },
@@ -940,14 +940,14 @@
                 "name": "Name"
               }
             ],
-            "ref": [
+            "refs": [
               {
                 "name": "COALESCE"
               }
             ]
           }
         ],
-        "cast": [
+        "casts": [
           {
             "varchar": {
               "literal": "10"
@@ -962,7 +962,7 @@
     },
     {
       "from": {
-        "order": [
+        "orders": [
           {
             "target": {
               "column": {
@@ -972,7 +972,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Employees"
@@ -981,7 +981,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Department"
           }
@@ -991,7 +991,7 @@
     {
       "create": {
         "columns": {
-          "definition": [
+          "definitions": [
             {
               "name": "ID"
             },
@@ -1003,7 +1003,7 @@
             },
             {
               "call": {
-                "ref": [
+                "refs": [
                   {
                     "name": "GETDATE"
                   }
@@ -1028,7 +1028,7 @@
         {
           "$type": "when",
           "list": {
-            "column": [
+            "columns": [
               {
                 "name": "ID"
               },
@@ -1040,7 +1040,7 @@
           "children": [
             {
               "$type": "list",
-              "column": [
+              "columns": [
                 {
                   "name": "ID",
                   "ref": {
@@ -1105,7 +1105,7 @@
     },
     {
       "from": {
-        "where": [
+        "wheres": [
           {
             "compare": {
               "right": {
@@ -1120,7 +1120,7 @@
             }
           }
         ],
-        "relation": [
+        "relations": [
           {
             "ref": {
               "name": "Users"
@@ -1129,7 +1129,7 @@
         ]
       },
       "select": {
-        "column": [
+        "columns": [
           {
             "name": "Name"
           },
@@ -1152,21 +1152,21 @@
       "function": {
         "body": {
           "call": {
-            "call": [
+            "calls": [
               {
-                "ref": [
+                "refs": [
                   {
                     "name": "GETDATE"
                   }
                 ]
               }
             ],
-            "ref": [
+            "refs": [
               {
                 "name": "DATEDIFF"
               }
             ],
-            "column": [
+            "columns": [
               {
                 "name": "YEAR"
               },
@@ -1196,7 +1196,7 @@
     {
       "create": {
         "from": {
-          "where": [
+          "wheres": [
             {
               "compare": {
                 "right": {
@@ -1211,7 +1211,7 @@
               }
             }
           ],
-          "relation": [
+          "relations": [
             {
               "ref": {
                 "name": "Users"
@@ -1223,7 +1223,7 @@
           "name": "ActiveUsers"
         },
         "select": {
-          "column": [
+          "columns": [
             {
               "name": "ID"
             },
@@ -1244,18 +1244,18 @@
     {
       "alter": {
         "constraint": {
-          "name": [
+          "names": [
             "fk_customer",
             "ID"
           ],
-          "ref": [
+          "refs": [
             {
               "name": "Customers"
             }
           ],
           "columns": [
             {
-              "column": [
+              "columns": [
                 {
                   "name": "CustomerID"
                 }

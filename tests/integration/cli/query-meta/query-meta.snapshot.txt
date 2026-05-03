@@ -1,5 +1,5 @@
 tests/integration/sample.cs:2
-class[@kind="class_declaration" and @line="2" and @column="1" and @end_line="7" and @end_column="2" and @list="class"]/
+class[@kind="class_declaration" and @line="2" and @column="1" and @end_line="7" and @end_column="2" and @list="classes"]/
   ├─ public[@kind="modifier" and @line="2" and @column="1" and @end_line="2" and @end_column="7"]
   ├─ "public class"
   ├─ name[@line="2" and @column="14" and @end_line="2" and @end_column="24"] = "Calculator"
@@ -7,7 +7,7 @@ class[@kind="class_declaration" and @line="2" and @column="1" and @end_line="7" 
       └─ ... (81 children)
 
 tests/integration/sample.cs:9
-class[@kind="class_declaration" and @line="9" and @column="1" and @end_line="14" and @end_column="2" and @list="class"]/
+class[@kind="class_declaration" and @line="9" and @column="1" and @end_line="14" and @end_column="2" and @list="classes"]/
   ├─ public[@kind="modifier" and @line="9" and @column="1" and @end_line="9" and @end_column="7"]
   ├─ "public class"
   ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21"] = "Greeter"

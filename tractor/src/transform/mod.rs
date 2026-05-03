@@ -369,9 +369,10 @@ pub fn flatten_nested_paths(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
                     && get_element_name(xot, c).as_deref() == Some("name")
             })
             .collect();
+        let list_name = helpers::pluralize_list_name("name");
         for name in name_children {
             if get_attr(xot, name, "list").is_none() {
-                xot.with_attr(name, "list", "name");
+                xot.with_attr(name, "list", &list_name);
             }
         }
     }
@@ -442,7 +443,8 @@ pub fn distribute_member_list_attrs(
                 Some(n) => n,
                 None => continue,
             };
-            xot.with_attr(child, "list", &element_name);
+            let list_name = helpers::pluralize_list_name(&element_name);
+            xot.with_attr(child, "list", &list_name);
         }
     }
     Ok(())
@@ -489,9 +491,10 @@ pub fn tag_multi_target_expressions(
             })
             .collect();
         if exprs.len() < 2 { continue; }
+        let list_name = helpers::pluralize_list_name("expression");
         for e in exprs {
             if get_attr(xot, e, "list").is_none() {
-                xot.with_attr(e, "list", "expression");
+                xot.with_attr(e, "list", &list_name);
             }
         }
     }
@@ -548,9 +551,10 @@ pub fn tag_multi_same_name_children(
             })
             .collect();
         if same_name_kids.len() < 2 { continue; }
+        let list_name = helpers::pluralize_list_name(&parent_name);
         for k in same_name_kids {
             if get_attr(xot, k, "list").is_none() {
-                xot.with_attr(k, "list", &parent_name);
+                xot.with_attr(k, "list", &list_name);
             }
         }
     }
@@ -609,9 +613,10 @@ pub fn tag_multi_role_children(
             })
             .collect();
         if kids.len() < 2 { continue; }
+        let list_name = helpers::pluralize_list_name(child_name);
         for k in kids {
             if get_attr(xot, k, "list").is_none() {
-                xot.with_attr(k, "list", child_name);
+                xot.with_attr(k, "list", &list_name);
             }
         }
     }
@@ -1449,6 +1454,63 @@ pub mod helpers {
         }
     }
 
+    /// Convert an element-name (singular by convention) to the
+    /// plural form used as a `list=` attribute value. The list= name
+    /// is the JSON array key — JSON consumers see plural English nouns
+    /// (`methods`, `arguments`, `parameters`) regardless of the
+    /// element name (`<method>`, `<argument>`, `<parameter>`).
+    ///
+    /// Rules:
+    ///   - Already-plural inputs (`arguments`, `extends`, …) pass through.
+    ///   - `…<consonant>y` → `…ies` (`body` → `bodies`, `try` → `tries`,
+    ///     `property` → `properties`).
+    ///   - `…s|x|z|ch|sh` → `…es` (`class` → `classes`,
+    ///     `catch` → `catches`, `match` → `matches`).
+    ///   - default → `…s` (`method` → `methods`, `name` → `names`).
+    ///
+    /// Decided iter 231: list= names are plural English nouns. Singular
+    /// element names + plural list= keys give JSON consumers a uniform
+    /// "array of <singular>" reading: `methods: [{$type: method, …}, …]`.
+    pub fn pluralize_list_name(name: &str) -> String {
+        // Already-plural overrides — words that are singular-shaped but
+        // already idiomatic plurals in our domain (Java keywords whose
+        // grammar form is the plural verb), or that we choose to keep
+        // unchanged because the natural plural is awkward.
+        const ALREADY_PLURAL: &[&str] = &[
+            "arguments", "parameters", "attributes", "accessors",
+            "generics", "extends", "implements", "throws", "returns",
+            "names", "types", "methods", "fields", "values",
+            "patterns", "properties", "imports", "expressions",
+            "statements", "comments", "interpolations",
+            "matches", "catches", "classes", "members",
+            "columns", "exceptions", "pairs", "whens",
+        ];
+        if ALREADY_PLURAL.contains(&name) {
+            return name.to_string();
+        }
+        // …consonant + y → …ies
+        if name.len() >= 2 && name.ends_with('y') {
+            let prev = name.as_bytes()[name.len() - 2] as char;
+            if !"aeiou".contains(prev) {
+                let mut out = String::with_capacity(name.len() + 2);
+                out.push_str(&name[..name.len() - 1]);
+                out.push_str("ies");
+                return out;
+            }
+        }
+        // …s|x|z|ch|sh → …es
+        if name.ends_with('s')
+            || name.ends_with('x')
+            || name.ends_with('z')
+            || name.ends_with("ch")
+            || name.ends_with("sh")
+        {
+            return format!("{}es", name);
+        }
+        // default
+        format!("{}s", name)
+    }
+
     /// Wrap the child of `parent` with `field="<field>"` in a new element
     /// named `wrapper`. Used for surgical field-wrapping that can't be a
     /// global `FIELD_WRAPPINGS` rule — for example, wrapping a ternary
@@ -1617,6 +1679,60 @@ mod tests {
         }).unwrap();
 
         assert_eq!(visited, vec!["root", "child"]);
+    }
+
+    #[test]
+    fn test_pluralize_list_name() {
+        // Already-plural override list — passes through unchanged.
+        assert_eq!(pluralize_list_name("arguments"), "arguments");
+        assert_eq!(pluralize_list_name("parameters"), "parameters");
+        assert_eq!(pluralize_list_name("extends"), "extends");
+        assert_eq!(pluralize_list_name("throws"), "throws");
+        assert_eq!(pluralize_list_name("implements"), "implements");
+        assert_eq!(pluralize_list_name("generics"), "generics");
+        assert_eq!(pluralize_list_name("matches"), "matches");
+        assert_eq!(pluralize_list_name("classes"), "classes");
+
+        // Default: + s.
+        assert_eq!(pluralize_list_name("method"), "methods");
+        assert_eq!(pluralize_list_name("name"), "names");
+        assert_eq!(pluralize_list_name("type"), "types");
+        assert_eq!(pluralize_list_name("value"), "values");
+        assert_eq!(pluralize_list_name("argument"), "arguments");
+        assert_eq!(pluralize_list_name("parameter"), "parameters");
+        assert_eq!(pluralize_list_name("expression"), "expressions");
+        assert_eq!(pluralize_list_name("interpolation"), "interpolations");
+        assert_eq!(pluralize_list_name("pair"), "pairs");
+        assert_eq!(pluralize_list_name("import"), "imports");
+        assert_eq!(pluralize_list_name("throw"), "throws");
+        assert_eq!(pluralize_list_name("extend"), "extends");
+        assert_eq!(pluralize_list_name("implement"), "implements");
+        assert_eq!(pluralize_list_name("comment"), "comments");
+        assert_eq!(pluralize_list_name("statement"), "statements");
+        assert_eq!(pluralize_list_name("field"), "fields");
+
+        // Consonant + y → ies.
+        assert_eq!(pluralize_list_name("body"), "bodies");
+        assert_eq!(pluralize_list_name("try"), "tries");
+        assert_eq!(pluralize_list_name("property"), "properties");
+        assert_eq!(pluralize_list_name("entity"), "entities");
+
+        // Vowel + y → +s (no -ies).
+        assert_eq!(pluralize_list_name("key"), "keys");
+        assert_eq!(pluralize_list_name("array"), "arrays");
+        assert_eq!(pluralize_list_name("delay"), "delays");
+
+        // s|x|z|ch|sh → es.
+        assert_eq!(pluralize_list_name("class"), "classes");
+        assert_eq!(pluralize_list_name("match"), "matches");
+        assert_eq!(pluralize_list_name("catch"), "catches");
+        assert_eq!(pluralize_list_name("box"), "boxes");
+        assert_eq!(pluralize_list_name("dish"), "dishes");
+
+        // Domain-specific: "in" (Ruby match arms), "when" (Ruby case).
+        assert_eq!(pluralize_list_name("in"), "ins");
+        assert_eq!(pluralize_list_name("when"), "whens");
+        assert_eq!(pluralize_list_name("column"), "columns");
     }
 
     #[test]

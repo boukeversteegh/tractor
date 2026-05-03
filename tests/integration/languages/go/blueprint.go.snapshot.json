@@ -1,6 +1,6 @@
 {
   "$type": "file",
-  "comment": [
+  "comments": [
     {
       "text": "// Package blueprint is a kitchen-sink Go fixture for tractor snapshot tests.\n// Rendered by `tractor query <file> -p tree --single` with NO depth limit so\n// any design-principle transform change produces a visible snapshot diff.\n// Intentionally syntactically valid but not built.",
       "leading": true
@@ -10,12 +10,12 @@
       "leading": true
     }
   ],
-  "package": [
+  "packages": [
     {
       "name": "blueprint"
     }
   ],
-  "import": [
+  "imports": [
     {
       "path": "fmt"
     },
@@ -44,7 +44,7 @@
       "blank": true
     }
   ],
-  "const": [
+  "consts": [
     {
       "value": {
         "expression": {
@@ -74,7 +74,7 @@
       "name": "StatusError"
     }
   ],
-  "var": [
+  "vars": [
     {
       "value": {
         "expression": {
@@ -113,15 +113,15 @@
           "string": "\"alice\""
         }
       },
-      "name": [
+      "names": [
         "name",
         "age"
       ]
     }
   ],
-  "interface": [
+  "interfaces": [
     {
-      "type": [
+      "types": [
         {
           "type": {
             "name": "int"
@@ -178,7 +178,7 @@
       ]
     }
   ],
-  "alias": [
+  "aliases": [
     {
       "type": {
         "name": "Context",
@@ -190,7 +190,7 @@
       "name": "Alias"
     }
   ],
-  "type": [
+  "types": [
     {
       "type": {
         "name": "int64"
@@ -208,21 +208,19 @@
         "function": true,
         "parameters": [
           {
-            "$type": "parameter",
-            "name": "ctx",
             "type": {
               "name": "Context",
               "package": {
                 "name": "context"
               }
-            }
+            },
+            "name": "ctx"
           },
           {
-            "$type": "parameter",
-            "name": "id",
             "type": {
               "name": "UserID"
-            }
+            },
+            "name": "id"
           }
         ]
       },
@@ -230,7 +228,7 @@
       "name": "Handler"
     }
   ],
-  "struct": [
+  "structs": [
     {
       "field": {
         "slice": {
@@ -245,11 +243,10 @@
       "name": "Container",
       "generics": [
         {
-          "$type": "generic",
-          "name": "T",
           "type": {
             "name": "any"
-          }
+          },
+          "name": "T"
         }
       ]
     },
@@ -287,7 +284,7 @@
           "raw": true
         },
         "exported": true,
-        "name": [
+        "names": [
           "X",
           "Y"
         ],
@@ -337,10 +334,10 @@
       }
     }
   ],
-  "method": [
+  "methods": [
     {
       "body": {
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
@@ -380,8 +377,6 @@
       "name": "Push",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "c",
           "pointer": {
             "type": {
               "arguments": [
@@ -391,26 +386,26 @@
                 }
               ],
               "generic": true,
-              "type": [
+              "types": [
                 {
                   "name": "Container"
                 }
               ]
             }
-          }
+          },
+          "name": "c"
         },
         {
-          "$type": "parameter",
-          "name": "v",
           "type": {
             "name": "T"
-          }
+          },
+          "name": "v"
         }
       ]
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "call": {
@@ -451,11 +446,10 @@
       "exported": true,
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "p",
           "type": {
             "name": "Point"
-          }
+          },
+          "name": "p"
         }
       ],
       "name": "String",
@@ -467,7 +461,7 @@
     },
     {
       "body": {
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
@@ -512,29 +506,27 @@
       "name": "Shift",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "p",
           "pointer": {
             "type": {
               "name": "Point"
             }
-          }
+          },
+          "name": "p"
         },
         {
-          "$type": "parameter",
-          "name": [
-            "dx",
-            "dy"
-          ],
           "type": {
             "name": "int"
-          }
+          },
+          "names": [
+            "dx",
+            "dy"
+          ]
         }
       ]
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "member": {
@@ -552,13 +544,12 @@
       "exported": true,
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "e",
           "pointer": {
             "type": {
               "name": "MyErr"
             }
-          }
+          },
+          "name": "e"
         }
       ],
       "name": "Error",
@@ -569,10 +560,10 @@
       }
     }
   ],
-  "function": [
+  "functions": [
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "call": {
@@ -597,11 +588,10 @@
       "name": "wrap",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "err",
           "type": {
             "name": "error"
-          }
+          },
+          "name": "err"
         }
       ],
       "returns": {
@@ -612,7 +602,7 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "nil": "nil"
@@ -630,7 +620,7 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "children": [
               {
@@ -647,7 +637,7 @@
       "unexported": true,
       "name": "risky",
       "returns": {
-        "type": [
+        "types": [
           {
             "name": "int"
           },
@@ -659,14 +649,14 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "name": "out"
             }
           }
         ],
-        "variable": [
+        "variables": [
           {
             "right": {
               "expression": {
@@ -699,10 +689,10 @@
             }
           }
         ],
-        "for": [
+        "fors": [
           {
             "body": {
-              "assign": [
+              "assigns": [
                 {
                   "right": {
                     "expression": {
@@ -736,7 +726,7 @@
                 }
               },
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "_"
                   },
@@ -753,29 +743,25 @@
       "name": "Map",
       "generics": [
         {
-          "$type": "generic",
+          "children": [
+            "U"
+          ],
           "name": "T",
           "type": {
             "name": "any"
-          },
-          "children": [
-            "U"
-          ]
+          }
         }
       ],
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "xs",
           "slice": {
             "type": {
               "name": "T"
             }
-          }
+          },
+          "name": "xs"
         },
         {
-          "$type": "parameter",
-          "name": "f",
           "type": {
             "returns": {
               "type": {
@@ -785,13 +771,13 @@
             "function": true,
             "parameters": [
               {
-                "$type": "parameter",
                 "type": {
                   "name": "T"
                 }
               }
             ]
-          }
+          },
+          "name": "f"
         }
       ],
       "returns": {
@@ -804,10 +790,10 @@
     },
     {
       "body": {
-        "for": [
+        "fors": [
           {
             "body": {
-              "assign": [
+              "assigns": [
                 {
                   "right": {
                     "expression": {
@@ -829,7 +815,7 @@
                 }
               },
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "_"
                   },
@@ -847,22 +833,20 @@
       "name": "Sum",
       "generics": [
         {
-          "$type": "generic",
-          "name": "T",
           "type": {
             "name": "Number"
-          }
+          },
+          "name": "T"
         }
       ],
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "xs",
           "slice": {
             "type": {
               "name": "T"
             }
-          }
+          },
+          "name": "xs"
         }
       ],
       "returns": {
@@ -873,10 +857,10 @@
     },
     {
       "body": {
-        "for": [
+        "fors": [
           {
             "body": {
-              "if": [
+              "ifs": [
                 {
                   "then": {
                     "children": [
@@ -904,7 +888,7 @@
                       "right": {
                         "expression": {
                           "literal": {
-                            "struct": [
+                            "structs": [
                               "struct{}"
                             ]
                           }
@@ -935,7 +919,7 @@
                     },
                     "short": true,
                     "left": {
-                      "expression": [
+                      "expressions": [
                         {
                           "name": "_"
                         },
@@ -967,7 +951,7 @@
                 }
               },
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "_"
                   },
@@ -980,12 +964,12 @@
           }
         ],
         "return": true,
-        "variable": [
+        "variables": [
           {
             "right": {
               "expression": {
                 "literal": {
-                  "map": [
+                  "maps": [
                     {
                       "value": {
                         "expression": {
@@ -1013,22 +997,20 @@
       "name": "Uniq",
       "generics": [
         {
-          "$type": "generic",
-          "name": "T",
           "type": {
             "name": "comparable"
-          }
+          },
+          "name": "T"
         }
       ],
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "xs",
           "slice": {
             "type": {
               "name": "T"
             }
-          }
+          },
+          "name": "xs"
         }
       ],
       "returns": {
@@ -1041,10 +1023,10 @@
     },
     {
       "body": {
-        "for": [
+        "fors": [
           {
             "body": {
-              "assign": [
+              "assigns": [
                 {
                   "right": {
                     "expression": {
@@ -1066,7 +1048,7 @@
                 }
               },
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "_"
                   },
@@ -1079,7 +1061,7 @@
           }
         ],
         "return": true,
-        "defer": [
+        "defers": [
           {
             "call": {
               "closure": {
@@ -1105,13 +1087,13 @@
             }
           }
         ],
-        "variable": [
+        "variables": [
           {
             "right": {
               "expression": {
                 "closure": {
                   "body": {
-                    "return": [
+                    "returns": [
                       {
                         "expression": {
                           "binary": {
@@ -1133,7 +1115,7 @@
                         }
                       }
                     ],
-                    "variable": [
+                    "variables": [
                       {
                         "right": {
                           "expression": {
@@ -1166,11 +1148,10 @@
                   },
                   "parameters": [
                     {
-                      "$type": "parameter",
-                      "name": "n",
                       "type": {
                         "name": "int"
-                      }
+                      },
+                      "name": "n"
                     }
                   ],
                   "returns": {
@@ -1189,7 +1170,7 @@
             }
           }
         ],
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
@@ -1230,22 +1211,20 @@
       "name": "variadic",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "prefix",
           "type": {
             "name": "string"
-          }
+          },
+          "name": "prefix"
         },
         {
-          "$type": "parameter",
-          "name": "vals",
           "type": {
             "name": "int"
-          }
+          },
+          "name": "vals"
         }
       ],
       "returns": {
-        "type": [
+        "types": [
           {
             "name": "int"
           },
@@ -1257,7 +1236,7 @@
     },
     {
       "body": {
-        "assign": [
+        "assigns": [
           {
             "right": {
               "expression": {
@@ -1277,7 +1256,7 @@
               }
             },
             "left": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "_"
                 },
@@ -1289,7 +1268,7 @@
           },
           {
             "right": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "chRecvOnly"
                 },
@@ -1302,7 +1281,7 @@
               ]
             },
             "left": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "_"
                 },
@@ -1316,14 +1295,14 @@
             }
           }
         ],
-        "var": [
+        "vars": [
           {
             "value": {
               "expression": {
                 "literal": {
-                  "body": [
+                  "bodies": [
                     {
-                      "int": [
+                      "ints": [
                         "1",
                         "2",
                         "3",
@@ -1332,14 +1311,14 @@
                       ]
                     }
                   ],
-                  "array": [
+                  "arrays": [
                     {
-                      "type": [
+                      "types": [
                         {
                           "name": "int"
                         }
                       ],
-                      "int": [
+                      "ints": [
                         "5"
                       ]
                     }
@@ -1349,34 +1328,34 @@
             },
             "name": "fixed",
             "array": {
-              "type": [
+              "types": [
                 {
                   "name": "int"
                 }
               ],
-              "int": [
+              "ints": [
                 "5"
               ]
             }
           }
         ],
-        "variable": [
+        "variables": [
           {
             "right": {
               "expression": {
                 "literal": {
-                  "body": [
+                  "bodies": [
                     {
-                      "int": [
+                      "ints": [
                         "10",
                         "20",
                         "30"
                       ]
                     }
                   ],
-                  "array": [
+                  "arrays": [
                     {
-                      "type": [
+                      "types": [
                         {
                           "name": "int"
                         }
@@ -1452,7 +1431,7 @@
                     }
                   ],
                   "generic": true,
-                  "type": [
+                  "types": [
                     {
                       "name": "Map"
                     }
@@ -1468,9 +1447,9 @@
             }
           }
         ],
-        "switch": [
+        "switches": [
           {
-            "case": [
+            "cases": [
               {
                 "value": {
                   "expression": {
@@ -1499,7 +1478,7 @@
                 }
               }
             ],
-            "value": [
+            "values": [
               {
                 "expression": {
                   "index": {
@@ -1517,9 +1496,9 @@
     },
     {
       "body": {
-        "switch": [
+        "switches": [
           {
-            "default": [
+            "defaults": [
               {
                 "return": {
                   "expression": {
@@ -1542,17 +1521,17 @@
               }
             ],
             "type": true,
-            "name": [
+            "names": [
               "v"
             ],
-            "value": [
+            "values": [
               {
                 "expression": {
                   "name": "x"
                 }
               }
             ],
-            "case": [
+            "cases": [
               {
                 "return": {
                   "expression": {
@@ -1635,11 +1614,10 @@
       "name": "classify",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "x",
           "type": {
             "name": "any"
-          }
+          },
+          "name": "x"
         }
       ],
       "returns": {
@@ -1650,14 +1628,14 @@
     },
     {
       "body": {
-        "return": [
+        "returns": [
           {
             "expression": {
               "nil": "nil"
             }
           }
         ],
-        "expression": [
+        "expressions": [
           {
             "call": {
               "arguments": [
@@ -1667,7 +1645,7 @@
             }
           }
         ],
-        "var": [
+        "vars": [
           {
             "value": {
               "expression": {
@@ -1702,10 +1680,10 @@
             "name": "target"
           }
         ],
-        "for": [
+        "fors": [
           {
             "body": {
-              "if": [
+              "ifs": [
                 {
                   "then": {
                     "continue": true
@@ -1777,7 +1755,7 @@
           },
           {
             "body": {
-              "assign": [
+              "assigns": [
                 {
                   "right": {
                     "expression": {
@@ -1807,10 +1785,10 @@
           },
           {
             "body": {
-              "assign": [
+              "assigns": [
                 {
                   "right": {
-                    "expression": [
+                    "expressions": [
                       {
                         "name": "k"
                       },
@@ -1820,7 +1798,7 @@
                     ]
                   },
                   "left": {
-                    "expression": [
+                    "expressions": [
                       {
                         "name": "_"
                       },
@@ -1836,9 +1814,9 @@
               "right": {
                 "expression": {
                   "literal": {
-                    "body": [
+                    "bodies": [
                       {
-                        "pair": [
+                        "pairs": [
                           {
                             "value": {
                               "expression": {
@@ -1858,7 +1836,7 @@
                         ]
                       }
                     ],
-                    "map": [
+                    "maps": [
                       {
                         "value": {
                           "type": {
@@ -1874,7 +1852,7 @@
                 }
               },
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "k"
                   },
@@ -1887,7 +1865,7 @@
           },
           {
             "body": {
-              "unary": [
+              "unaries": [
                 {
                   "op": {
                     "text": "++",
@@ -1916,7 +1894,7 @@
             }
           }
         ],
-        "go": [
+        "gos": [
           {
             "call": {
               "closure": {
@@ -1941,11 +1919,11 @@
             }
           }
         ],
-        "labeled": [
+        "labeleds": [
           {
             "for": {
               "body": {
-                "select": [
+                "selects": [
                   {
                     "children": [
                       {
@@ -2013,7 +1991,7 @@
                           }
                         },
                         "left": {
-                          "expression": [
+                          "expressions": [
                             {
                               "name": "v"
                             },
@@ -2079,7 +2057,7 @@
             "label": "cleanup"
           }
         ],
-        "send": [
+        "sends": [
           {
             "value": {
               "expression": {
@@ -2089,10 +2067,10 @@
             "name": "buffered"
           }
         ],
-        "variable": [
+        "variables": [
           {
             "right": {
-              "expression": [
+              "expressions": [
                 {
                   "string": {
                     "text": "`no \"escapes\" here`",
@@ -2106,7 +2084,7 @@
             },
             "short": true,
             "left": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "raw"
                 },
@@ -2131,13 +2109,13 @@
           },
           {
             "right": {
-              "expression": [
+              "expressions": [
                 {
                   "unary": {
                     "literal": {
-                      "body": [
+                      "bodies": [
                         {
-                          "pair": [
+                          "pairs": [
                             {
                               "value": {
                                 "expression": {
@@ -2157,7 +2135,7 @@
                           ]
                         }
                       ],
-                      "type": [
+                      "types": [
                         {
                           "name": "Point"
                         }
@@ -2172,9 +2150,9 @@
                 },
                 {
                   "literal": {
-                    "body": [
+                    "bodies": [
                       {
-                        "pair": [
+                        "pairs": [
                           {
                             "value": {
                               "expression": {
@@ -2202,7 +2180,7 @@
                         ]
                       }
                     ],
-                    "slice": [
+                    "slices": [
                       {
                         "type": {
                           "name": "Point"
@@ -2215,7 +2193,7 @@
             },
             "short": true,
             "left": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "pt"
                 },
@@ -2229,9 +2207,9 @@
             "right": {
               "expression": {
                 "literal": {
-                  "body": [
+                  "bodies": [
                     {
-                      "pair": [
+                      "pairs": [
                         {
                           "value": {
                             "expression": {
@@ -2250,7 +2228,7 @@
                       ]
                     }
                   ],
-                  "map": [
+                  "maps": [
                     {
                       "value": {
                         "type": {
@@ -2273,7 +2251,7 @@
             }
           }
         ],
-        "if": [
+        "ifs": [
           {
             "else": {
               "assign": {
@@ -2306,7 +2284,7 @@
               },
               "short": true,
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "x"
                   },
@@ -2377,7 +2355,7 @@
               },
               "short": true,
               "left": {
-                "expression": [
+                "expressions": [
                   {
                     "name": "s"
                   },
@@ -2473,10 +2451,10 @@
             }
           }
         ],
-        "assign": [
+        "assigns": [
           {
             "right": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "raw"
                 },
@@ -2503,7 +2481,7 @@
               ]
             },
             "left": {
-              "expression": [
+              "expressions": [
                 {
                   "name": "_"
                 },
@@ -2531,36 +2509,33 @@
       "name": "controlFlow",
       "parameters": [
         {
-          "$type": "parameter",
-          "name": "ctx",
           "type": {
             "name": "Context",
             "package": {
               "name": "context"
             }
-          }
+          },
+          "name": "ctx"
         },
         {
-          "$type": "parameter",
-          "name": "in",
           "chan": {
             "value": {
               "type": {
                 "name": "int"
               }
             }
-          }
+          },
+          "name": "in"
         },
         {
-          "$type": "parameter",
-          "name": "out",
           "chan": {
             "value": {
               "type": {
                 "name": "int"
               }
             }
-          }
+          },
+          "name": "out"
         }
       ],
       "returns": {

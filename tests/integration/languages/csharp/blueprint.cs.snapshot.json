@@ -1,18 +1,18 @@
 {
   "$type": "unit",
-  "comment": [
+  "comments": [
     "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
   ],
-  "import": [
+  "imports": [
     {
-      "name": [
+      "names": [
         "System"
       ]
     },
     {
-      "path": [
+      "paths": [
         {
-          "name": [
+          "names": [
             "System",
             "Collections",
             "Generic"
@@ -21,9 +21,9 @@
       ]
     },
     {
-      "path": [
+      "paths": [
         {
-          "name": [
+          "names": [
             "System",
             "Linq"
           ]
@@ -31,9 +31,9 @@
       ]
     },
     {
-      "path": [
+      "paths": [
         {
-          "name": [
+          "names": [
             "System",
             "Threading",
             "Tasks"
@@ -42,9 +42,9 @@
       ]
     },
     {
-      "path": [
+      "paths": [
         {
-          "name": [
+          "names": [
             "System",
             "Math"
           ]
@@ -52,12 +52,12 @@
       ]
     }
   ],
-  "namespace": [
+  "namespaces": [
     {
-      "class": [
+      "classes": [
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "name": "Describe",
                 "public": true,
@@ -70,7 +70,7 @@
               },
               {
                 "body": {
-                  "call": [
+                  "calls": [
                     {
                       "arguments": [
                         "this"
@@ -98,7 +98,7 @@
                 "name": "OnChanged"
               }
             ],
-            "field": [
+            "fields": [
               {
                 "declarator": {
                   "int": "128",
@@ -115,15 +115,12 @@
                   "new": {
                     "arguments": [
                       {
-                        "$type": "argument",
                         "int": "1970"
                       },
                       {
-                        "$type": "argument",
                         "int": "1"
                       },
                       {
-                        "$type": "argument",
                         "int": "1"
                       }
                     ]
@@ -148,7 +145,7 @@
                 }
               }
             ],
-            "property": [
+            "properties": [
               {
                 "accessors": [
                   "get;",
@@ -206,7 +203,7 @@
                 ]
               }
             ],
-            "indexer": [
+            "indexers": [
               {
                 "value": {
                   "expression": {
@@ -227,16 +224,15 @@
                 },
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "key",
                     "type": {
                       "name": "string"
-                    },
-                    "name": "key"
+                    }
                   }
                 ]
               }
             ],
-            "event": [
+            "events": [
               {
                 "variable": {
                   "declarator": {
@@ -258,12 +254,11 @@
                 "public": true
               }
             ],
-            "constructor": [
+            "constructors": [
               {
                 "call": {
                   "arguments": [
                     {
-                      "$type": "argument",
                       "int": "0"
                     }
                   ],
@@ -274,9 +269,9 @@
               },
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "expression": [
+                      "expressions": [
                         {
                           "assign": {
                             "right": {
@@ -300,21 +295,20 @@
                 "name": "EntityBase",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "id",
                     "type": {
                       "name": "int"
-                    },
-                    "name": "id"
+                    }
                   }
                 ]
               }
             ],
-            "destructor": [
+            "destructors": [
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "comment": [
+                      "comments": [
                         "/* finalizer */"
                       ]
                     }
@@ -329,34 +323,30 @@
           "partial": true,
           "attributes": [
             {
-              "$type": "attribute",
               "name": "Serializable"
             },
             {
-              "$type": "attribute",
-              "name": "Obsolete",
               "arguments": [
                 {
-                  "$type": "argument",
                   "string": "\"use V2\""
                 },
                 {
-                  "$type": "argument",
                   "bool": "false"
                 }
-              ]
+              ],
+              "name": "Obsolete"
             }
           ],
           "name": "EntityBase"
         },
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "string": [
+                  "strings": [
                     {
-                      "interpolation": [
+                      "interpolations": [
                         {
                           "name": "Id"
                         },
@@ -381,7 +371,7 @@
               },
               {
                 "body": {
-                  "ternary": [
+                  "ternaries": [
                     {
                       "else": {
                         "null": "null"
@@ -419,19 +409,18 @@
                 "name": "Find",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "id",
                     "type": {
                       "name": "int"
-                    },
-                    "name": "id"
+                    }
                   }
                 ]
               },
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "return": [
+                      "returns": [
                         {
                           "expression": {
                             "index": {
@@ -440,12 +429,11 @@
                           }
                         }
                       ],
-                      "expression": [
+                      "expressions": [
                         {
                           "call": {
                             "arguments": [
                               {
-                                "$type": "argument",
                                 "int": "1"
                               }
                             ],
@@ -490,11 +478,10 @@
               },
               {
                 "body": {
-                  "call": [
+                  "calls": [
                     {
                       "arguments": [
                         {
-                          "$type": "argument",
                           "name": "input"
                         }
                       ],
@@ -512,25 +499,22 @@
                 "name": "Pipe",
                 "generics": [
                   {
-                    "$type": "generic",
                     "name": "T"
                   },
                   {
-                    "$type": "generic",
-                    "notnull": true,
-                    "name": "TResult"
+                    "name": "TResult",
+                    "notnull": true
                   }
                 ],
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "input",
                     "type": {
                       "name": "T"
-                    },
-                    "name": "input"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "fn",
                     "type": {
                       "arguments": [
                         {
@@ -544,13 +528,12 @@
                       ],
                       "generic": true,
                       "name": "Transformer"
-                    },
-                    "name": "fn"
+                    }
                   }
                 ]
               }
             ],
-            "event": [
+            "events": [
               {
                 "variable": {
                   "declarator": {
@@ -572,12 +555,11 @@
                 "public": true
               }
             ],
-            "constructor": [
+            "constructors": [
               {
                 "call": {
                   "arguments": [
                     {
-                      "$type": "argument",
                       "int": "0"
                     }
                   ],
@@ -588,9 +570,9 @@
               },
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "expression": [
+                      "expressions": [
                         {
                           "assign": {
                             "right": {
@@ -614,24 +596,21 @@
                 "name": "Widget",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "id",
                     "type": {
                       "name": "int"
-                    },
-                    "name": "id"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "name",
                     "type": {
                       "name": "string"
-                    },
-                    "name": "name"
+                    }
                   }
                 ],
                 "call": {
                   "arguments": [
                     {
-                      "$type": "argument",
                       "name": "id"
                     }
                   ],
@@ -639,13 +618,13 @@
                 }
               }
             ],
-            "property": [
+            "properties": [
               {
                 "accessors": [
                   {
                     "$type": "get",
                     "body": {
-                      "member": [
+                      "members": [
                         {
                           "property": {
                             "name": "Priority"
@@ -659,7 +638,7 @@
                     "$type": "set",
                     "protected": true,
                     "body": {
-                      "assign": [
+                      "assigns": [
                         {
                           "right": {
                             "expression": {
@@ -717,10 +696,10 @@
         },
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "binary": [
+                  "binaries": [
                     {
                       "right": {
                         "expression": {
@@ -767,12 +746,11 @@
                 "name": "Shout",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "w",
                     "this": true,
                     "type": {
                       "name": "Widget"
-                    },
-                    "name": "w"
+                    }
                   }
                 ]
               }
@@ -784,12 +762,12 @@
         },
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "return": [
+                      "returns": [
                         {
                           "expression": {
                             "binary": {
@@ -984,14 +962,13 @@
                           }
                         }
                       ],
-                      "if": [
+                      "ifs": [
                         {
                           "then": {
                             "expression": {
                               "call": {
                                 "arguments": [
                                   {
-                                    "$type": "argument",
                                     "member": {
                                       "property": {
                                         "name": "Id"
@@ -1031,10 +1008,10 @@
                           }
                         }
                       ],
-                      "method": [
+                      "methods": [
                         {
                           "body": {
-                            "binary": [
+                            "binaries": [
                               {
                                 "right": {
                                   "expression": {
@@ -1059,27 +1036,25 @@
                           "name": "Square",
                           "parameters": [
                             {
-                              "$type": "parameter",
+                              "name": "x",
                               "type": {
                                 "name": "int"
-                              },
-                              "name": "x"
+                              }
                             }
                           ]
                         }
                       ],
-                      "switch": [
+                      "switches": [
                         {
-                          "body": [
+                          "bodies": [
                             {
-                              "section": [
+                              "sections": [
                                 {
-                                  "expression": [
+                                  "expressions": [
                                     {
                                       "call": {
                                         "arguments": [
                                           {
-                                            "$type": "argument",
                                             "call": {
                                               "member": {
                                                 "property": {
@@ -1106,7 +1081,7 @@
                                     }
                                   ],
                                   "break": true,
-                                  "pattern": [
+                                  "patterns": [
                                     {
                                       "name": "w",
                                       "declaration": true,
@@ -1117,7 +1092,7 @@
                                   ]
                                 },
                                 {
-                                  "throw": [
+                                  "throws": [
                                     {
                                       "new": {
                                         "type": {
@@ -1126,7 +1101,7 @@
                                       }
                                     }
                                   ],
-                                  "pattern": [
+                                  "patterns": [
                                     {
                                       "null": "null",
                                       "constant": true
@@ -1140,7 +1115,7 @@
                               ]
                             }
                           ],
-                          "value": [
+                          "values": [
                             {
                               "expression": {
                                 "name": "token"
@@ -1149,14 +1124,13 @@
                           ]
                         }
                       ],
-                      "expression": [
+                      "expressions": [
                         {
                           "call": {
                             "arguments": [
                               {
-                                "$type": "argument",
                                 "string": {
-                                  "interpolation": [
+                                  "interpolations": [
                                     {
                                       "call": {
                                         "member": {
@@ -1174,7 +1148,6 @@
                                       "call": {
                                         "arguments": [
                                           {
-                                            "$type": "argument",
                                             "int": "3"
                                           }
                                         ],
@@ -1185,7 +1158,6 @@
                                       "call": {
                                         "arguments": [
                                           {
-                                            "$type": "argument",
                                             "int": "4"
                                           }
                                         ],
@@ -1200,12 +1172,12 @@
                           }
                         }
                       ],
-                      "for": [
+                      "fors": [
                         {
                           "body": {
-                            "block": [
+                            "blocks": [
                               {
-                                "comment": [
+                                "comments": [
                                   "/* for */"
                                 ]
                               }
@@ -1250,15 +1222,14 @@
                           }
                         }
                       ],
-                      "foreach": [
+                      "foreaches": [
                         {
                           "body": {
-                            "expression": [
+                            "expressions": [
                               {
                                 "call": {
                                   "arguments": [
                                     {
-                                      "$type": "argument",
                                       "call": {
                                         "member": {
                                           "property": {
@@ -1292,7 +1263,7 @@
                           }
                         }
                       ],
-                      "while": [
+                      "whiles": [
                         {
                           "condition": {
                             "expression": {
@@ -1323,11 +1294,11 @@
                           }
                         }
                       ],
-                      "try": [
+                      "tries": [
                         {
                           "finally": {
                             "block": {
-                              "expression": [
+                              "expressions": [
                                 {
                                   "call": {
                                     "member": {
@@ -1345,14 +1316,13 @@
                             }
                           },
                           "body": {
-                            "block": [
+                            "blocks": [
                               {
-                                "throw": [
+                                "throws": [
                                   {
                                     "new": {
                                       "arguments": [
                                         {
-                                          "$type": "argument",
                                           "string": "\"boom\""
                                         }
                                       ],
@@ -1362,17 +1332,16 @@
                                     }
                                   }
                                 ],
-                                "using": [
+                                "usings": [
                                   {
                                     "body": {
-                                      "block": [
+                                      "blocks": [
                                         {
-                                          "expression": [
+                                          "expressions": [
                                             {
                                               "call": {
                                                 "arguments": [
                                                   {
-                                                    "$type": "argument",
                                                     "int": "1"
                                                   }
                                                 ],
@@ -1395,7 +1364,7 @@
                                       "declarator": {
                                         "new": {
                                           "path": {
-                                            "name": [
+                                            "names": [
                                               "System",
                                               "IO",
                                               "MemoryStream"
@@ -1413,17 +1382,16 @@
                               }
                             ]
                           },
-                          "catch": [
+                          "catches": [
                             {
                               "body": {
-                                "block": [
+                                "blocks": [
                                   {
-                                    "expression": [
+                                    "expressions": [
                                       {
                                         "call": {
                                           "arguments": [
                                             {
-                                              "$type": "argument",
                                               "member": {
                                                 "property": {
                                                   "name": "Message"
@@ -1486,7 +1454,7 @@
                             },
                             {
                               "body": {
-                                "block": [
+                                "blocks": [
                                   {
                                     "throw": true
                                   }
@@ -1501,7 +1469,7 @@
                           ]
                         }
                       ],
-                      "do": [
+                      "dos": [
                         {
                           "condition": {
                             "expression": {
@@ -1525,9 +1493,9 @@
                             }
                           },
                           "body": {
-                            "block": [
+                            "blocks": [
                               {
-                                "expression": [
+                                "expressions": [
                                   {
                                     "unary": {
                                       "op": {
@@ -1543,7 +1511,7 @@
                           }
                         }
                       ],
-                      "comment": [
+                      "comments": [
                         {
                           "text": "// switch expression + pattern matching",
                           "leading": true
@@ -1577,7 +1545,7 @@
                           "leading": true
                         }
                       ],
-                      "variable": [
+                      "variables": [
                         {
                           "declarator": {
                             "binary": {
@@ -1586,11 +1554,9 @@
                                   "new": {
                                     "arguments": [
                                       {
-                                        "$type": "argument",
                                         "int": "1"
                                       },
                                       {
-                                        "$type": "argument",
                                         "string": "\"alpha\""
                                       }
                                     ],
@@ -1697,7 +1663,7 @@
                         {
                           "declarator": {
                             "switch": {
-                              "arm": [
+                              "arms": [
                                 {
                                   "string": "\"hot\"",
                                   "pattern": {
@@ -1763,7 +1729,7 @@
                                   "discard": "_"
                                 }
                               ],
-                              "name": [
+                              "names": [
                                 "widget"
                               ]
                             },
@@ -1867,7 +1833,6 @@
                                   "call": {
                                     "arguments": [
                                       {
-                                        "$type": "argument",
                                         "lambda": {
                                           "value": {
                                             "expression": {
@@ -1902,7 +1867,6 @@
                                         "call": {
                                           "arguments": [
                                             {
-                                              "$type": "argument",
                                               "lambda": {
                                                 "value": {
                                                   "expression": {
@@ -2026,9 +1990,9 @@
                           "declarator": {
                             "lambda": {
                               "body": {
-                                "block": [
+                                "blocks": [
                                   {
-                                    "return": [
+                                    "returns": [
                                       {
                                         "expression": {
                                           "binary": {
@@ -2080,7 +2044,6 @@
                                   "call": {
                                     "arguments": [
                                       {
-                                        "$type": "argument",
                                         "name": "msg"
                                       }
                                     ],
@@ -2133,7 +2096,7 @@
                           "declarator": {
                             "new": {
                               "path": {
-                                "name": [
+                                "names": [
                                   "System",
                                   "IO",
                                   "MemoryStream"
@@ -2149,7 +2112,7 @@
                         {
                           "declarator": {
                             "tuple": {
-                              "argument": [
+                              "arguments": [
                                 {
                                   "member": {
                                     "property": {
@@ -2242,7 +2205,7 @@
                           "declarator": {
                             "new": {
                               "literal": {
-                                "assign": [
+                                "assigns": [
                                   {
                                     "right": {
                                       "expression": {
@@ -2318,7 +2281,7 @@
                         {
                           "declarator": {
                             "string": {
-                              "interpolation": [
+                              "interpolations": [
                                 {
                                   "name": "cnt"
                                 },
@@ -2364,15 +2327,14 @@
                 "name": "RunAsync",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "maybe",
                     "type": {
                       "text": "Widget",
                       "nullable": true
-                    },
-                    "name": "maybe"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "numbers",
                     "type": {
                       "arguments": [
                         {
@@ -2382,8 +2344,7 @@
                       ],
                       "generic": true,
                       "name": "IEnumerable"
-                    },
-                    "name": "numbers"
+                    }
                   }
                 ]
               }
@@ -2394,18 +2355,17 @@
           "name": "Demo"
         }
       ],
-      "name": [
+      "names": [
         "Tractor.Fixtures.Traditional"
       ],
-      "delegate": [
+      "delegates": [
         {
           "parameters": [
             {
-              "$type": "parameter",
+              "name": "value",
               "type": {
                 "name": "T"
-              },
-              "name": "value"
+              }
             }
           ],
           "public": true,
@@ -2415,20 +2375,18 @@
           "name": "Transformer",
           "generics": [
             {
-              "$type": "generic",
               "name": "T"
             },
             {
-              "$type": "generic",
               "name": "TResult"
             }
           ]
         }
       ],
-      "enum": [
+      "enums": [
         {
           "body": {
-            "constant": [
+            "constants": [
               {
                 "name": "Low"
               },
@@ -2445,7 +2403,7 @@
         },
         {
           "body": {
-            "constant": [
+            "constants": [
               {
                 "value": {
                   "expression": {
@@ -2483,7 +2441,6 @@
           "public": true,
           "attributes": [
             {
-              "$type": "attribute",
               "name": "Flags"
             }
           ],
@@ -2494,10 +2451,10 @@
           }
         }
       ],
-      "interface": [
+      "interfaces": [
         {
           "body": {
-            "event": [
+            "events": [
               {
                 "variable": {
                   "declarator": {
@@ -2518,15 +2475,14 @@
                 }
               }
             ],
-            "method": [
+            "methods": [
               {
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "id",
                     "type": {
                       "name": "int"
-                    },
-                    "name": "id"
+                    }
                   }
                 ],
                 "public": true,
@@ -2567,21 +2523,20 @@
           "name": "IRepository",
           "generics": [
             {
-              "$type": "generic",
+              "name": "T",
               "class": true,
-              "new": true,
-              "name": "T"
+              "new": true
             }
           ]
         }
       ],
-      "struct": [
+      "structs": [
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "binary": [
+                  "binaries": [
                     {
                       "right": {
                         "expression": {
@@ -2630,26 +2585,23 @@
                 "name": "Equals",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "o",
                     "type": {
                       "text": "object",
                       "nullable": true
-                    },
-                    "name": "o"
+                    }
                   }
                 ]
               },
               {
                 "body": {
-                  "call": [
+                  "calls": [
                     {
                       "arguments": [
                         {
-                          "$type": "argument",
                           "name": "X"
                         },
                         {
-                          "$type": "argument",
                           "name": "Y"
                         }
                       ],
@@ -2675,7 +2627,7 @@
                 "name": "GetHashCode"
               }
             ],
-            "property": [
+            "properties": [
               {
                 "value": {
                   "expression": {
@@ -2707,14 +2659,13 @@
                 ]
               }
             ],
-            "operator": [
+            "operators": [
               {
                 "body": {
-                  "new": [
+                  "news": [
                     {
                       "arguments": [
                         {
-                          "$type": "argument",
                           "binary": {
                             "right": {
                               "expression": {
@@ -2749,7 +2700,6 @@
                           }
                         },
                         {
-                          "$type": "argument",
                           "binary": {
                             "right": {
                               "expression": {
@@ -2794,24 +2744,22 @@
                 },
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "a",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "a"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "b",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "b"
+                    }
                   }
                 ]
               },
               {
                 "body": {
-                  "binary": [
+                  "binaries": [
                     {
                       "right": {
                         "expression": {
@@ -2900,24 +2848,22 @@
                 },
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "a",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "a"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "b",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "b"
+                    }
                   }
                 ]
               },
               {
                 "body": {
-                  "unary": [
+                  "unaries": [
                     {
                       "binary": {
                         "right": {
@@ -2950,18 +2896,16 @@
                 },
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "a",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "a"
+                    }
                   },
                   {
-                    "$type": "parameter",
+                    "name": "b",
                     "type": {
                       "name": "Point"
-                    },
-                    "name": "b"
+                    }
                   }
                 ]
               }
@@ -2972,38 +2916,34 @@
           "name": "Point",
           "parameters": [
             {
-              "$type": "parameter",
+              "name": "x",
               "type": {
                 "name": "double"
-              },
-              "name": "x"
+              }
             },
             {
-              "$type": "parameter",
+              "name": "y",
               "type": {
                 "name": "double"
-              },
-              "name": "y"
+              }
             }
           ]
         }
       ],
-      "record": [
+      "records": [
         {
           "parameters": [
             {
-              "$type": "parameter",
+              "name": "Amount",
               "type": {
                 "name": "decimal"
-              },
-              "name": "Amount"
+              }
             },
             {
-              "$type": "parameter",
+              "name": "Currency",
               "type": {
                 "name": "string"
-              },
-              "name": "Currency"
+              }
             }
           ],
           "public": true,
@@ -3014,11 +2954,9 @@
             {
               "arguments": [
                 {
-                  "$type": "argument",
                   "name": "Amount"
                 },
                 {
-                  "$type": "argument",
                   "name": "Currency"
                 }
               ],
@@ -3031,35 +2969,32 @@
           "name": "TaxedMoney",
           "parameters": [
             {
-              "$type": "parameter",
+              "name": "Amount",
               "type": {
                 "name": "decimal"
-              },
-              "name": "Amount"
+              }
             },
             {
-              "$type": "parameter",
+              "name": "Currency",
               "type": {
                 "name": "string"
-              },
-              "name": "Currency"
+              }
             },
             {
-              "$type": "parameter",
+              "name": "TaxRate",
               "type": {
                 "name": "decimal"
-              },
-              "name": "TaxRate"
+              }
             }
           ]
         }
       ]
     },
     {
-      "class": [
+      "classes": [
         {
           "body": {
-            "property": [
+            "properties": [
               {
                 "value": {
                   "expression": {
@@ -3082,10 +3017,10 @@
         },
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "member": [
+                  "members": [
                     {
                       "property": {
                         "name": "Answer"
@@ -3114,12 +3049,12 @@
         },
         {
           "body": {
-            "method": [
+            "methods": [
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "variable": [
+                      "variables": [
                         {
                           "declarator": {
                             "cast": {
@@ -3161,11 +3096,9 @@
                             "new": {
                               "arguments": [
                                 {
-                                  "$type": "argument",
                                   "float": "1.0m"
                                 },
                                 {
-                                  "$type": "argument",
                                   "string": "\"USD\""
                                 }
                               ],
@@ -3183,10 +3116,10 @@
                           "declarator": {
                             "with": {
                               "literal": {
-                                "string": [
+                                "strings": [
                                   "\"EUR\""
                                 ],
-                                "name": [
+                                "names": [
                                   "Currency"
                                 ]
                               },
@@ -3219,7 +3152,7 @@
                           "declarator": {
                             "new": {
                               "literal": {
-                                "int": [
+                                "ints": [
                                   "1",
                                   "2",
                                   "3"
@@ -3246,7 +3179,7 @@
                           "declarator": {
                             "new": {
                               "literal": {
-                                "int": [
+                                "ints": [
                                   "4",
                                   "5",
                                   "6"
@@ -3320,11 +3253,9 @@
                                     "new": {
                                       "arguments": [
                                         {
-                                          "$type": "argument",
                                           "call": {
                                             "arguments": [
                                               {
-                                                "$type": "argument",
                                                 "name": "s"
                                               }
                                             ],
@@ -3356,15 +3287,15 @@
                           }
                         }
                       ],
-                      "goto": [
+                      "gotos": [
                         {
                           "name": "skip"
                         }
                       ],
-                      "checked": [
+                      "checkeds": [
                         {
                           "block": {
-                            "expression": [
+                            "expressions": [
                               {
                                 "assign": {
                                   "right": {
@@ -3399,7 +3330,7 @@
                           }
                         }
                       ],
-                      "label": [
+                      "labels": [
                         {
                           "expression": {
                             "assign": {
@@ -3419,7 +3350,7 @@
                           "name": "skip"
                         }
                       ],
-                      "comment": [
+                      "comments": [
                         {
                           "text": "// cast expression",
                           "leading": true
@@ -3465,10 +3396,10 @@
                           "leading": true
                         }
                       ],
-                      "lock": [
+                      "locks": [
                         {
                           "block": {
-                            "expression": [
+                            "expressions": [
                               {
                                 "unary": {
                                   "op": {
@@ -3500,19 +3431,18 @@
                 "name": "Statements",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "o",
                     "type": {
                       "name": "object"
-                    },
-                    "name": "o"
+                    }
                   }
                 ]
               },
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "yield": [
+                      "yields": [
                         {
                           "int": "1"
                         },
@@ -3541,13 +3471,13 @@
               },
               {
                 "body": {
-                  "block": [
+                  "blocks": [
                     {
-                      "return": [
+                      "returns": [
                         {
                           "expression": {
                             "switch": {
-                              "arm": [
+                              "arms": [
                                 {
                                   "string": "\"positive int\"",
                                   "pattern": {
@@ -3662,7 +3592,7 @@
                                   }
                                 }
                               ],
-                              "name": [
+                              "names": [
                                 "o"
                               ]
                             }
@@ -3682,11 +3612,10 @@
                 "name": "Patterns",
                 "parameters": [
                   {
-                    "$type": "parameter",
+                    "name": "o",
                     "type": {
                       "name": "object"
-                    },
-                    "name": "o"
+                    }
                   }
                 ]
               }
@@ -3698,17 +3627,17 @@
         }
       ],
       "file": true,
-      "name": [
+      "names": [
         "Tractor.Fixtures.FileScoped"
       ],
-      "import": [
+      "imports": [
         {
-          "name": [
+          "names": [
             "System"
           ]
         }
       ],
-      "comment": [
+      "comments": [
         "// Iter 20: new shapes — statements, expressions, patterns, literals.",
         {
           "text": "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>",

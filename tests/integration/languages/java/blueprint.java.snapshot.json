@@ -1,9 +1,9 @@
 {
   "$type": "program",
-  "import": [
+  "imports": [
     {
       "path": {
-        "name": [
+        "names": [
           "java",
           "util",
           "List"
@@ -12,7 +12,7 @@
     },
     {
       "path": {
-        "name": [
+        "names": [
           "java",
           "util",
           "Map"
@@ -21,7 +21,7 @@
     },
     {
       "path": {
-        "name": [
+        "names": [
           "java",
           "util",
           "function",
@@ -31,7 +31,7 @@
     },
     {
       "path": {
-        "name": [
+        "names": [
           "java",
           "util",
           "Collections",
@@ -41,10 +41,10 @@
       "static": true
     }
   ],
-  "package": [
+  "packages": [
     {
       "path": {
-        "name": [
+        "names": [
           "com",
           "example",
           "blueprint"
@@ -52,7 +52,7 @@
       }
     }
   ],
-  "comment": [
+  "comments": [
     "// Blueprint fixture — exercises every major Java construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented; every\n// cycle of improvements should regenerate the snapshot.",
     {
       "text": "/** Javadoc comment on the class. */",
@@ -68,10 +68,10 @@
       "leading": true
     }
   ],
-  "interface": [
+  "interfaces": [
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "value": {
               "expression": {
@@ -100,16 +100,16 @@
       "name": "Config"
     }
   ],
-  "class": [
+  "classes": [
     {
       "body": {
-        "record": [
+        "records": [
           {
             "body": {
-              "constructor": [
+              "constructors": [
                 {
                   "body": {
-                    "if": [
+                    "ifs": [
                       {
                         "then": {
                           "throw": {
@@ -186,23 +186,21 @@
             "name": "Point",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "x",
                 "type": {
                   "name": "int"
-                },
-                "name": "x"
+                }
               },
               {
-                "$type": "parameter",
+                "name": "y",
                 "type": {
                   "name": "int"
-                },
-                "name": "y"
+                }
               }
             ]
           }
         ],
-        "comment": [
+        "comments": [
           "// Line comment before a field",
           {
             "text": "/* block comment */",
@@ -213,7 +211,7 @@
             "trailing": true
           }
         ],
-        "field": [
+        "fields": [
           {
             "declarator": {
               "value": {
@@ -287,10 +285,10 @@
             }
           }
         ],
-        "constructor": [
+        "constructors": [
           {
             "body": {
-              "call": [
+              "calls": [
                 {
                   "arguments": [
                     "null"
@@ -304,7 +302,7 @@
           },
           {
             "body": {
-              "expression": [
+              "expressions": [
                 {
                   "assign": {
                     "right": {
@@ -328,7 +326,7 @@
                   }
                 }
               ],
-              "call": [
+              "calls": [
                 {
                   "super": true
                 }
@@ -338,19 +336,18 @@
             "name": "Demo",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "name",
                 "type": {
                   "name": "String"
-                },
-                "name": "name"
+                }
               }
             ]
           }
         ],
-        "method": [
+        "methods": [
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "call": {
@@ -370,7 +367,6 @@
             "static": true,
             "generics": [
               {
-                "$type": "generic",
                 "name": "R"
               }
             ],
@@ -382,7 +378,7 @@
             "name": "factory",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "mapper",
                 "type": {
                   "arguments": [
                     {
@@ -396,14 +392,13 @@
                   ],
                   "generic": true,
                   "name": "Function"
-                },
-                "name": "mapper"
+                }
               }
             ]
           },
           {
             "body": {
-              "if": [
+              "ifs": [
                 {
                   "else": {
                     "return": {
@@ -481,11 +476,10 @@
             "name": "process",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "input",
                 "type": {
                   "name": "T"
-                },
-                "name": "input"
+                }
               }
             ],
             "throws": [
@@ -498,7 +492,7 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "ternary": {
@@ -571,27 +565,26 @@
             "name": "describe",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "n",
                 "type": {
                   "name": "int"
-                },
-                "name": "n"
+                }
               }
             ]
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "name": "total"
                   }
                 }
               ],
-              "foreach": [
+              "foreaches": [
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "assign": {
                           "right": {
@@ -624,7 +617,7 @@
                   }
                 }
               ],
-              "variable": [
+              "variables": [
                 {
                   "declarator": {
                     "value": {
@@ -652,10 +645,10 @@
                   }
                 }
               ],
-              "while": [
+              "whiles": [
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "assign": {
                           "right": {
@@ -721,26 +714,25 @@
             "name": "sum",
             "parameters": [
               {
-                "$type": "parameter",
+                "declarator": {
+                  "name": "xs"
+                },
                 "variadic": true,
                 "type": {
                   "name": "int"
-                },
-                "declarator": {
-                  "name": "xs"
                 }
               }
             ]
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "switch": {
-                      "body": [
+                      "bodies": [
                         {
-                          "arm": [
+                          "arms": [
                             {
                               "expression": {
                                 "binary": {
@@ -835,7 +827,7 @@
                           ]
                         }
                       ],
-                      "condition": [
+                      "conditions": [
                         {
                           "expression": {
                             "name": "o"
@@ -856,19 +848,18 @@
             "name": "match",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "o",
                 "type": {
                   "name": "Object"
-                },
-                "name": "o"
+                }
               }
             ]
           }
         ],
-        "interface": [
+        "interfaces": [
           {
             "body": {
-              "method": [
+              "methods": [
                 {
                   "throws": [
                     {
@@ -886,11 +877,10 @@
                   "name": "process",
                   "parameters": [
                     {
-                      "$type": "parameter",
+                      "name": "input",
                       "type": {
                         "name": "U"
-                      },
-                      "name": "input"
+                      }
                     }
                   ]
                 }
@@ -900,25 +890,24 @@
             "name": "Handler",
             "generics": [
               {
-                "$type": "generic",
                 "name": "U"
               }
             ]
           }
         ],
-        "enum": [
+        "enums": [
           {
             "body": {
-              "method": [
+              "methods": [
                 {
                   "body": {
-                    "return": [
+                    "returns": [
                       {
                         "expression": {
                           "switch": {
-                            "body": [
+                            "bodies": [
                               {
-                                "arm": [
+                                "arms": [
                                   {
                                     "expression": {
                                       "int": "0xFF0000"
@@ -946,7 +935,7 @@
                                 ]
                               }
                             ],
-                            "condition": [
+                            "conditions": [
                               {
                                 "expression": {
                                   "this": "this"
@@ -967,7 +956,7 @@
                   "name": "rgb"
                 }
               ],
-              "constant": [
+              "constants": [
                 {
                   "name": "RED"
                 },
@@ -993,8 +982,6 @@
       "name": "Demo",
       "generics": [
         {
-          "$type": "generic",
-          "name": "T",
           "extends": [
             {
               "type": {
@@ -1008,7 +995,8 @@
                 "name": "Comparable"
               }
             }
-          ]
+          ],
+          "name": "T"
         }
       ],
       "extends": [
@@ -1035,10 +1023,10 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "call": {
@@ -1078,16 +1066,16 @@
     },
     {
       "body": {
-        "method": [
+        "methods": [
           {
             "body": {
-              "variable": [
+              "variables": [
                 {
                   "declarator": {
                     "value": {
                       "expression": {
                         "array": {
-                          "int": [
+                          "ints": [
                             "1",
                             "2",
                             "3"
@@ -1142,7 +1130,7 @@
                     "value": {
                       "expression": {
                         "reference": {
-                          "name": [
+                          "names": [
                             "String",
                             "valueOf"
                           ]
@@ -1179,7 +1167,7 @@
           },
           {
             "body": {
-              "do": [
+              "dos": [
                 {
                   "condition": {
                     "expression": {
@@ -1203,7 +1191,7 @@
                     }
                   },
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "unary": {
                           "op": {
@@ -1217,7 +1205,7 @@
                   }
                 }
               ],
-              "assert": [
+              "asserts": [
                 {
                   "string": "\"non-negative\"",
                   "binary": {
@@ -1240,11 +1228,11 @@
                   }
                 }
               ],
-              "label": [
+              "labels": [
                 {
                   "for": {
                     "body": {
-                      "if": [
+                      "ifs": [
                         {
                           "then": {
                             "continue": {
@@ -1346,7 +1334,7 @@
                   "name": "outer"
                 }
               ],
-              "variable": [
+              "variables": [
                 {
                   "declarator": {
                     "value": {
@@ -1418,20 +1406,19 @@
             "name": "controlFlow",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "o",
                 "type": {
                   "name": "Object"
-                },
-                "name": "o"
+                }
               }
             ]
           },
           {
             "body": {
-              "synchronized": [
+              "synchronizeds": [
                 {
                   "body": {
-                    "expression": [
+                    "expressions": [
                       {
                         "name": "SEED"
                       }
@@ -1440,11 +1427,11 @@
                   "this": "this"
                 }
               ],
-              "try": [
+              "tries": [
                 {
                   "catch": {
                     "body": {
-                      "throw": [
+                      "throws": [
                         {
                           "name": "e"
                         }
@@ -1453,7 +1440,7 @@
                     "parameter": {
                       "name": "e",
                       "path": {
-                        "name": [
+                        "names": [
                           "java",
                           "io",
                           "IOException"
@@ -1472,7 +1459,7 @@
                       }
                     },
                     "path": {
-                      "name": [
+                      "names": [
                         "java",
                         "io",
                         "InputStream"
@@ -1481,13 +1468,13 @@
                     "name": "s"
                   },
                   "body": {
-                    "if": [
+                    "ifs": [
                       {
                         "then": {
                           "throw": {
                             "new": {
                               "path": {
-                                "name": [
+                                "names": [
                                   "java",
                                   "io",
                                   "IOException"
@@ -1540,22 +1527,22 @@
           },
           {
             "body": {
-              "return": [
+              "returns": [
                 {
                   "expression": {
                     "name": "v"
                   }
                 }
               ],
-              "variable": [
+              "variables": [
                 {
                   "declarator": {
                     "value": {
                       "expression": {
                         "switch": {
-                          "body": [
+                          "bodies": [
                             {
-                              "arm": [
+                              "arms": [
                                 {
                                   "expression": {
                                     "name": "i"
@@ -1586,7 +1573,7 @@
                               ]
                             }
                           ],
-                          "condition": [
+                          "conditions": [
                             {
                               "expression": {
                                 "name": "o"
@@ -1613,16 +1600,15 @@
             "name": "yieldDemo",
             "parameters": [
               {
-                "$type": "parameter",
+                "name": "o",
                 "type": {
                   "name": "Object"
-                },
-                "name": "o"
+                }
               }
             ]
           }
         ],
-        "field": [
+        "fields": [
           {
             "declarator": {
               "name": "SEED"
@@ -1635,9 +1621,9 @@
             }
           }
         ],
-        "block": [
+        "blocks": [
           {
-            "expression": [
+            "expressions": [
               {
                 "assign": {
                   "right": {
@@ -1657,7 +1643,7 @@
             "static": true
           }
         ],
-        "comment": [
+        "comments": [
           {
             "text": "/** Array initializer, char literal, class literal, method reference. */",
             "leading": true
