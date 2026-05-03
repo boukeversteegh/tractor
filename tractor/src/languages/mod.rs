@@ -1858,6 +1858,12 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // Go interfaces with multiple methods + type-set elements.
             ("interface", "method"),
             ("interface", "type"),
+            // Go multi-value return: `return x, err` produces
+            // `<return>` with multiple `<expression>` siblings
+            // (after `wrap_expression_positions`). Tag so JSON
+            // renders `expressions: [...]` instead of overflowing
+            // to `children`. Mirrors Python iter 265.
+            ("return", "expression"),
         ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.

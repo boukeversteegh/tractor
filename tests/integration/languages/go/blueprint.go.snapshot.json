@@ -606,15 +606,14 @@
       "body": {
         "returns": [
           {
-            "children": [
+            "expressions": [
               {
-                "$type": "expression",
+                "int": "0"
+              },
+              {
                 "name": "ErrNotFound"
               }
-            ],
-            "expression": {
-              "int": "0"
-            }
+            ]
           }
         ]
       },
