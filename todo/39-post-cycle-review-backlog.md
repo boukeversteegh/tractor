@@ -525,6 +525,11 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 208: extend distribute config — `object`/`template`/`returns`/
+  `generator`/`string`. Closed 13 more sites: csharp 8→5, ts 12→9,
+  go 15→13, python 14→13, ruby 5→1. Total 91 → 78
+  (-72% from baseline). Per-language: csharp 5, ts 9, rust 16,
+  java 1, go 13, python 13, php 9, ruby 1, tsql 11.
 - [x] iter 207: extend distribute config to `switch`/`literal`/`macro`
   containers cross-language. Closed 15 more sites: csharp 13→8,
   rust 24→16, go 17→15. Total 106 → 91 (-68% from baseline).

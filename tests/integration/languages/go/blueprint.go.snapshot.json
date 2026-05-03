@@ -87,7 +87,9 @@
                 "name": "New"
               },
               "object": {
-                "name": "errors"
+                "name": [
+                  "errors"
+                ]
               }
             }
           }
@@ -142,9 +144,11 @@
     {
       "method": {
         "returns": {
-          "type": {
-            "name": "string"
-          }
+          "type": [
+            {
+              "name": "string"
+            }
+          ]
         },
         "name": "String"
       },
@@ -154,9 +158,11 @@
     {
       "method": {
         "returns": {
-          "type": {
-            "name": "error"
-          }
+          "type": [
+            {
+              "name": "error"
+            }
+          ]
         },
         "name": "Close"
       },
@@ -202,9 +208,11 @@
     {
       "type": {
         "returns": {
-          "type": {
-            "name": "error"
-          }
+          "type": [
+            {
+              "name": "error"
+            }
+          ]
         },
         "function": true,
         "parameters": [
@@ -350,7 +358,9 @@
                     {
                       "$type": "member",
                       "object": {
-                        "name": "c"
+                        "name": [
+                          "c"
+                        ]
                       },
                       "property": {
                         "name": "items"
@@ -369,7 +379,9 @@
                     "name": "items"
                   },
                   "object": {
-                    "name": "c"
+                    "name": [
+                      "c"
+                    ]
                   }
                 }
               }
@@ -420,7 +432,9 @@
                   {
                     "$type": "member",
                     "object": {
-                      "name": "p"
+                      "name": [
+                        "p"
+                      ]
                     },
                     "property": {
                       "name": "X"
@@ -429,7 +443,9 @@
                   {
                     "$type": "member",
                     "object": {
-                      "name": "p"
+                      "name": [
+                        "p"
+                      ]
                     },
                     "property": {
                       "name": "Y"
@@ -441,7 +457,9 @@
                     "name": "Sprintf"
                   },
                   "object": {
-                    "name": "fmt"
+                    "name": [
+                      "fmt"
+                    ]
                   }
                 }
               }
@@ -461,9 +479,11 @@
       ],
       "name": "String",
       "returns": {
-        "type": {
-          "name": "string"
-        }
+        "type": [
+          {
+            "name": "string"
+          }
+        ]
       }
     },
     {
@@ -482,7 +502,9 @@
                     "name": "X"
                   },
                   "object": {
-                    "name": "p"
+                    "name": [
+                      "p"
+                    ]
                   }
                 }
               }
@@ -501,7 +523,9 @@
                     "name": "Y"
                   },
                   "object": {
-                    "name": "p"
+                    "name": [
+                      "p"
+                    ]
                   }
                 }
               }
@@ -543,7 +567,9 @@
                   "name": "msg"
                 },
                 "object": {
-                  "name": "e"
+                  "name": [
+                    "e"
+                  ]
                 }
               }
             }
@@ -564,9 +590,11 @@
       ],
       "name": "Error",
       "returns": {
-        "type": {
-          "name": "string"
-        }
+        "type": [
+          {
+            "name": "string"
+          }
+        ]
       }
     }
   ],
@@ -586,7 +614,9 @@
                     "name": "Errorf"
                   },
                   "object": {
-                    "name": "fmt"
+                    "name": [
+                      "fmt"
+                    ]
                   }
                 }
               }
@@ -606,9 +636,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "error"
-        }
+        "type": [
+          {
+            "name": "error"
+          }
+        ]
       }
     },
     {
@@ -624,9 +656,11 @@
       "unexported": true,
       "name": "doThing",
       "returns": {
-        "type": {
-          "name": "error"
-        }
+        "type": [
+          {
+            "name": "error"
+          }
+        ]
       }
     },
     {
@@ -648,15 +682,14 @@
       "unexported": true,
       "name": "risky",
       "returns": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
+            "name": "int"
+          },
+          {
             "name": "error"
           }
-        ],
-        "type": {
-          "name": "int"
-        }
+        ]
       }
     },
     {
@@ -780,9 +813,11 @@
           "name": "f",
           "type": {
             "returns": {
-              "type": {
-                "name": "U"
-              }
+              "type": [
+                {
+                  "name": "U"
+                }
+              ]
             },
             "function": true,
             "parameters": [
@@ -797,11 +832,13 @@
         }
       ],
       "returns": {
-        "slice": {
-          "type": {
-            "name": "U"
+        "slice": [
+          {
+            "type": {
+              "name": "U"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -868,9 +905,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "T"
-        }
+        "type": [
+          {
+            "name": "T"
+          }
+        ]
       }
     },
     {
@@ -1034,11 +1073,13 @@
         }
       ],
       "returns": {
-        "slice": {
-          "type": {
-            "name": "T"
+        "slice": [
+          {
+            "type": {
+              "name": "T"
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -1176,9 +1217,11 @@
                     }
                   ],
                   "returns": {
-                    "type": {
-                      "name": "int"
-                    }
+                    "type": [
+                      {
+                        "name": "int"
+                      }
+                    ]
                   }
                 }
               }
@@ -1247,15 +1290,14 @@
         }
       ],
       "returns": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
+            "name": "int"
+          },
+          {
             "name": "error"
           }
-        ],
-        "type": {
-          "name": "int"
-        }
+        ]
       }
     },
     {
@@ -1536,7 +1578,9 @@
                           "name": "Sprintf"
                         },
                         "object": {
-                          "name": "fmt"
+                          "name": [
+                            "fmt"
+                          ]
                         }
                       }
                     }
@@ -1620,7 +1664,9 @@
                           "name": "String"
                         },
                         "object": {
-                          "name": "v"
+                          "name": [
+                            "v"
+                          ]
                         }
                       }
                     }
@@ -1646,9 +1692,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "string"
-        }
+        "type": [
+          {
+            "name": "string"
+          }
+        ]
       }
     },
     {
@@ -1934,7 +1982,9 @@
                           "name": "Println"
                         },
                         "object": {
-                          "name": "fmt"
+                          "name": [
+                            "fmt"
+                          ]
                         }
                       }
                     }
@@ -1977,7 +2027,9 @@
                                       "name": "Done"
                                     },
                                     "object": {
-                                      "name": "ctx"
+                                      "name": [
+                                        "ctx"
+                                      ]
                                     }
                                   }
                                 },
@@ -2301,7 +2353,9 @@
                         "name": "Pipe"
                       },
                       "object": {
-                        "name": "io"
+                        "name": [
+                          "io"
+                        ]
                       }
                     }
                   }
@@ -2434,7 +2488,9 @@
                             "name": "Is"
                           },
                           "object": {
-                            "name": "errors"
+                            "name": [
+                              "errors"
+                            ]
                           }
                         }
                       }
@@ -2460,7 +2516,9 @@
                             "name": "As"
                           },
                           "object": {
-                            "name": "errors"
+                            "name": [
+                              "errors"
+                            ]
                           }
                         }
                       }
@@ -2567,9 +2625,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "error"
-        }
+        "type": [
+          {
+            "name": "error"
+          }
+        ]
       }
     }
   ]

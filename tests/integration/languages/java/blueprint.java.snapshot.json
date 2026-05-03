@@ -319,7 +319,9 @@
                             "name": "name"
                           },
                           "object": {
-                            "this": "this"
+                            "this": [
+                              "this"
+                            ]
                           }
                         }
                       }
@@ -358,7 +360,9 @@
                         "\"hello\""
                       ],
                       "object": {
-                        "name": "mapper"
+                        "name": [
+                          "mapper"
+                        ]
                       },
                       "name": "apply"
                     }
@@ -375,9 +379,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "R"
-              }
+              "type": [
+                {
+                  "name": "R"
+                }
+              ]
             },
             "name": "factory",
             "parameters": [
@@ -474,9 +480,11 @@
               "name": "Override"
             },
             "returns": {
-              "type": {
-                "name": "T"
-              }
+              "type": [
+                {
+                  "name": "T"
+                }
+              ]
             },
             "name": "process",
             "parameters": [
@@ -564,9 +572,11 @@
             },
             "public": true,
             "returns": {
-              "type": {
-                "name": "String"
-              }
+              "type": [
+                {
+                  "name": "String"
+                }
+              ]
             },
             "name": "describe",
             "parameters": [
@@ -714,9 +724,11 @@
             },
             "public": true,
             "returns": {
-              "type": {
-                "name": "int"
-              }
+              "type": [
+                {
+                  "name": "int"
+                }
+              ]
             },
             "name": "sum",
             "parameters": [
@@ -803,7 +815,9 @@
                                     "call": {
                                       "name": "isEmpty",
                                       "object": {
-                                        "name": "s"
+                                        "name": [
+                                          "s"
+                                        ]
                                       }
                                     },
                                     "op": {
@@ -855,9 +869,11 @@
             },
             "public": true,
             "returns": {
-              "type": {
-                "name": "String"
-              }
+              "type": [
+                {
+                  "name": "String"
+                }
+              ]
             },
             "name": "match",
             "parameters": [
@@ -885,9 +901,11 @@
                   ],
                   "public": true,
                   "returns": {
-                    "type": {
-                      "name": "U"
-                    }
+                    "type": [
+                      {
+                        "name": "U"
+                      }
+                    ]
                   },
                   "name": "process",
                   "parameters": [
@@ -966,9 +984,11 @@
                   },
                   "public": true,
                   "returns": {
-                    "type": {
-                      "name": "int"
-                    }
+                    "type": [
+                      {
+                        "name": "int"
+                      }
+                    ]
                   },
                   "name": "rgb"
                 }
@@ -1053,15 +1073,19 @@
                         {
                           "$type": "call",
                           "object": {
-                            "call": {
-                              "name": "getClass"
-                            }
+                            "call": [
+                              {
+                                "name": "getClass"
+                              }
+                            ]
                           },
                           "name": "getSimpleName"
                         }
                       ],
                       "object": {
-                        "name": "String"
+                        "name": [
+                          "String"
+                        ]
                       },
                       "name": "format"
                     }
@@ -1071,9 +1095,11 @@
             },
             "package": true,
             "returns": {
-              "type": {
-                "name": "String"
-              }
+              "type": [
+                {
+                  "name": "String"
+                }
+              ]
             },
             "name": "greet"
           }
@@ -1176,10 +1202,12 @@
             },
             "package": true,
             "returns": {
-              "type": {
-                "name": "void",
-                "void": true
-              }
+              "type": [
+                {
+                  "name": "void",
+                  "void": true
+                }
+              ]
             },
             "name": "literals"
           },
@@ -1416,10 +1444,12 @@
             },
             "package": true,
             "returns": {
-              "type": {
-                "name": "void",
-                "void": true
-              }
+              "type": [
+                {
+                  "name": "void",
+                  "void": true
+                }
+              ]
             },
             "name": "controlFlow",
             "parameters": [
@@ -1530,10 +1560,12 @@
             },
             "package": true,
             "returns": {
-              "type": {
-                "name": "void",
-                "void": true
-              }
+              "type": [
+                {
+                  "name": "void",
+                  "void": true
+                }
+              ]
             },
             "name": "resources",
             "throws": [
@@ -1615,9 +1647,11 @@
             },
             "package": true,
             "returns": {
-              "type": {
-                "name": "int"
-              }
+              "type": [
+                {
+                  "name": "int"
+                }
+              ]
             },
             "name": "yieldDemo",
             "parameters": [

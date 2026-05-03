@@ -98,10 +98,12 @@
                 }
               ],
               "returns": {
-                "type": {
-                  "name": "int",
-                  "primitive": true
-                }
+                "type": [
+                  {
+                    "name": "int",
+                    "primitive": true
+                  }
+                ]
               }
             }
           }
@@ -209,10 +211,12 @@
                 "name": "pipeline"
               },
               "returns": {
-                "type": {
-                  "name": "int",
-                  "primitive": true
-                }
+                "type": [
+                  {
+                    "name": "int",
+                    "primitive": true
+                  }
+                ]
               }
             }
           }
@@ -327,10 +331,12 @@
           },
           {
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             },
             "abstract": true,
             "public": true,
@@ -371,9 +377,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "static"
-              }
+              "type": [
+                {
+                  "name": "static"
+                }
+              ]
             }
           },
           {
@@ -386,11 +394,13 @@
                         {
                           "expression": {
                             "string": {
-                              "interpolation": {
-                                "variable": {
-                                  "name": "target"
+                              "interpolation": [
+                                {
+                                  "variable": {
+                                    "name": "target"
+                                  }
                                 }
-                              }
+                              ]
                             }
                           }
                         }
@@ -429,11 +439,13 @@
                       {
                         "expression": {
                           "string": {
-                            "interpolation": {
-                              "variable": {
-                                "name": "target"
+                            "interpolation": [
+                              {
+                                "variable": {
+                                  "name": "target"
+                                }
                               }
-                            }
+                            ]
                           }
                         }
                       }
@@ -445,11 +457,13 @@
                         {
                           "expression": {
                             "string": {
-                              "interpolation": {
-                                "variable": {
-                                  "name": "target"
+                              "interpolation": [
+                                {
+                                  "variable": {
+                                    "name": "target"
+                                  }
                                 }
-                              }
+                              ]
                             }
                           }
                         }
@@ -554,10 +568,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             }
           },
           {
@@ -643,10 +659,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             }
           },
           {
@@ -770,10 +788,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             }
           },
           {
@@ -928,10 +948,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "array",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "array",
+                  "primitive": true
+                }
+              ]
             }
           },
           {
@@ -959,10 +981,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "mixed",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "mixed",
+                  "primitive": true
+                }
+              ]
             }
           }
         ],
@@ -1111,11 +1135,13 @@
               "echo": [
                 {
                   "string": {
-                    "interpolation": {
-                      "variable": {
-                        "name": "msg"
+                    "interpolation": [
+                      {
+                        "variable": {
+                          "name": "msg"
+                        }
                       }
-                    }
+                    ]
                   }
                 }
               ]
@@ -1133,10 +1159,12 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "void",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "void",
+                  "primitive": true
+                }
+              ]
             }
           }
         ]
@@ -1203,10 +1231,12 @@
             "public": true,
             "name": "label",
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             }
           }
         ],
@@ -1251,10 +1281,12 @@
         "method": [
           {
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             },
             "public": true,
             "name": "greet",
@@ -1281,10 +1313,12 @@
         "method": [
           {
             "returns": {
-              "type": {
-                "name": "int",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "int",
+                  "primitive": true
+                }
+              ]
             },
             "public": true,
             "name": "count"
@@ -1298,10 +1332,12 @@
         "method": [
           {
             "returns": {
-              "type": {
-                "name": "string",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "string",
+                  "primitive": true
+                }
+              ]
             },
             "public": true,
             "name": "__toString"
@@ -1315,10 +1351,12 @@
         "method": [
           {
             "returns": {
-              "type": {
-                "name": "int",
-                "primitive": true
-              }
+              "type": [
+                {
+                  "name": "int",
+                  "primitive": true
+                }
+              ]
             },
             "public": true,
             "name": "size"
@@ -1374,10 +1412,12 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "mixed",
-          "primitive": true
-        }
+        "type": [
+          {
+            "name": "mixed",
+            "primitive": true
+          }
+        ]
       }
     },
     {
@@ -1520,10 +1560,12 @@
                             "public": true,
                             "name": "__toString",
                             "returns": {
-                              "type": {
-                                "name": "string",
-                                "primitive": true
-                              }
+                              "type": [
+                                {
+                                  "name": "string",
+                                  "primitive": true
+                                }
+                              ]
                             }
                           }
                         ]
@@ -1877,13 +1919,15 @@
               "right": {
                 "expression": {
                   "string": {
-                    "value": {
-                      "expression": {
-                        "variable": {
-                          "name": "name"
+                    "value": [
+                      {
+                        "expression": {
+                          "variable": {
+                            "name": "name"
+                          }
                         }
                       }
-                    },
+                    ],
                     "heredoc": true
                   }
                 }
@@ -1903,7 +1947,9 @@
               "right": {
                 "expression": {
                   "string": {
-                    "value": "no interpolation: $not_a_var",
+                    "value": [
+                      "no interpolation: $not_a_var"
+                    ],
                     "nowdoc": true
                   }
                 }
@@ -2141,10 +2187,12 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "mixed",
-          "primitive": true
-        }
+        "type": [
+          {
+            "name": "mixed",
+            "primitive": true
+          }
+        ]
       }
     },
     {
@@ -2182,10 +2230,12 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "int",
-          "primitive": true
-        }
+        "type": [
+          {
+            "name": "int",
+            "primitive": true
+          }
+        ]
       }
     },
     {
@@ -2244,10 +2294,12 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "bool",
-          "primitive": true
-        }
+        "type": [
+          {
+            "name": "bool",
+            "primitive": true
+          }
+        ]
       }
     },
     {
@@ -2270,10 +2322,12 @@
       },
       "name": "never_returns",
       "returns": {
-        "type": {
-          "text": "never",
-          "bottom": true
-        }
+        "type": [
+          {
+            "text": "never",
+            "bottom": true
+          }
+        ]
       }
     }
   ],

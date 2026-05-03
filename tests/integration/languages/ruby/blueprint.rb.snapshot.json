@@ -8,9 +8,11 @@
             "arguments": [
               {
                 "$type": "string",
-                "interpolation": {
-                  "name": "MAX_RETRIES"
-                }
+                "interpolation": [
+                  {
+                    "name": "MAX_RETRIES"
+                  }
+                ]
               }
             ],
             "name": "puts"
@@ -22,7 +24,9 @@
           "call": {
             "name": "zero?",
             "object": {
-              "name": "MAX_RETRIES"
+              "name": [
+                "MAX_RETRIES"
+              ]
             }
           }
         }
@@ -204,7 +208,9 @@
                           "call": {
                             "name": "nil?",
                             "object": {
-                              "name": "x"
+                              "name": [
+                                "x"
+                              ]
                             }
                           }
                         }
@@ -249,7 +255,9 @@
                 ]
               },
               "object": {
-                "name": "items"
+                "name": [
+                  "items"
+                ]
               },
               "name": "each"
             }
@@ -343,7 +351,9 @@
                     "2"
                   ],
                   "object": {
-                    "name": "adder"
+                    "name": [
+                      "adder"
+                    ]
                   },
                   "name": "call"
                 },
@@ -352,7 +362,9 @@
                     "3"
                   ],
                   "object": {
-                    "name": "doubler"
+                    "name": [
+                      "doubler"
+                    ]
                   },
                   "name": "call"
                 }
@@ -460,7 +472,9 @@
                             "call": {
                               "name": "clear",
                               "object": {
-                                "name": "items"
+                                "name": [
+                                  "items"
+                                ]
                               }
                             }
                           }
@@ -474,7 +488,9 @@
                         "call": {
                           "name": "any?",
                           "object": {
-                            "name": "items"
+                            "name": [
+                              "items"
+                            ]
                           }
                         }
                       }
@@ -495,7 +511,9 @@
                   "call": {
                     "name": "first",
                     "object": {
-                      "name": "items"
+                      "name": [
+                        "items"
+                      ]
                     }
                   },
                   "rescue": {
@@ -506,7 +524,9 @@
                             "call": {
                               "name": "message",
                               "object": {
-                                "name": "e"
+                                "name": [
+                                  "e"
+                                ]
                               }
                             }
                           },
@@ -744,7 +764,9 @@
                       "call": {
                         "name": "zero?",
                         "object": {
-                          "name": "total"
+                          "name": [
+                            "total"
+                          ]
                         }
                       }
                     }
@@ -1036,7 +1058,9 @@
                                     "call": {
                                       "name": "size",
                                       "object": {
-                                        "name": "tail"
+                                        "name": [
+                                          "tail"
+                                        ]
                                       }
                                     }
                                   }
@@ -1075,7 +1099,9 @@
                                 "Integer"
                               ],
                               "object": {
-                                "name": "head"
+                                "name": [
+                                  "head"
+                                ]
                               },
                               "name": "is_a?"
                             }
@@ -1229,12 +1255,12 @@
             "right": {
               "expression": {
                 "string": {
-                  "children": [
+                  "string": [
+                    "\"first \"",
                     "\"second \"",
                     "\"third\""
                   ],
-                  "concatenated": true,
-                  "string": "\"first \""
+                  "concatenated": true
                 }
               }
             },
@@ -1317,7 +1343,9 @@
                 "y"
               ],
               "object": {
-                "name": "block"
+                "name": [
+                  "block"
+                ]
               },
               "name": "call"
             }
@@ -1351,9 +1379,11 @@
               "expression": [
                 {
                   "string": {
-                    "interpolation": {
-                      "name": "name"
-                    }
+                    "interpolation": [
+                      {
+                        "name": "name"
+                      }
+                    ]
                   }
                 }
               ]
@@ -1381,9 +1411,11 @@
                     "arguments": [
                       {
                         "$type": "string",
-                        "interpolation": {
-                          "name": "msg"
-                        }
+                        "interpolation": [
+                          {
+                            "name": "msg"
+                          }
+                        ]
                       }
                     ],
                     "name": "puts"
@@ -1490,7 +1522,9 @@
                                     "call": {
                                       "name": "name",
                                       "object": {
-                                        "name": "other"
+                                        "name": [
+                                          "other"
+                                        ]
                                       }
                                     }
                                   }
@@ -1509,7 +1543,9 @@
                                   "Base"
                                 ],
                                 "object": {
-                                  "name": "other"
+                                  "name": [
+                                    "other"
+                                  ]
                                 },
                                 "name": "is_a?"
                               }
@@ -1587,20 +1623,21 @@
                         "else": {
                           "expression": {
                             "string": {
-                              "children": [
+                              "interpolation": [
                                 {
-                                  "$type": "interpolation",
+                                  "name": "msg"
+                                },
+                                {
                                   "call": {
                                     "name": "inspect",
                                     "object": {
-                                      "name": "opts"
+                                      "name": [
+                                        "opts"
+                                      ]
                                     }
                                   }
                                 }
-                              ],
-                              "interpolation": {
-                                "name": "msg"
-                              }
+                              ]
                             }
                           }
                         },
@@ -1609,7 +1646,9 @@
                             "call": {
                               "name": "empty?",
                               "object": {
-                                "name": "opts"
+                                "name": [
+                                  "opts"
+                                ]
                               }
                             }
                           }
@@ -1629,15 +1668,14 @@
                               "else": {
                                 "expression": {
                                   "string": {
-                                    "children": [
+                                    "interpolation": [
                                       {
-                                        "$type": "interpolation",
+                                        "name": "greeting"
+                                      },
+                                      {
                                         "name": "@name"
                                       }
-                                    ],
-                                    "interpolation": {
-                                      "name": "greeting"
-                                    }
+                                    ]
                                   }
                                 }
                               },
@@ -1649,9 +1687,11 @@
                               "then": {
                                 "expression": {
                                   "string": {
-                                    "interpolation": {
-                                      "name": "@name"
-                                    }
+                                    "interpolation": [
+                                      {
+                                        "name": "@name"
+                                      }
+                                    ]
                                   }
                                 }
                               }
@@ -1743,7 +1783,9 @@
                             "call": {
                               "name": "upcase",
                               "object": {
-                                "name": "@name"
+                                "name": [
+                                  "@name"
+                                ]
                               }
                             }
                           }
@@ -1768,7 +1810,9 @@
                               "call": {
                                 "name": "keys",
                                 "object": {
-                                  "name": "meta"
+                                  "name": [
+                                    "meta"
+                                  ]
                                 }
                               }
                             }
@@ -1780,15 +1824,14 @@
                                   "value": {
                                     "expression": {
                                       "string": {
-                                        "children": [
+                                        "interpolation": [
                                           {
-                                            "$type": "interpolation",
+                                            "name": "i"
+                                          },
+                                          {
                                             "name": "it"
                                           }
-                                        ],
-                                        "interpolation": {
-                                          "name": "i"
-                                        }
+                                        ]
                                       }
                                     }
                                   },
@@ -1804,12 +1847,16 @@
                                   ]
                                 },
                                 "object": {
-                                  "call": {
-                                    "name": "each_with_index",
-                                    "object": {
-                                      "name": "items"
+                                  "call": [
+                                    {
+                                      "name": "each_with_index",
+                                      "object": {
+                                        "name": [
+                                          "items"
+                                        ]
+                                      }
                                     }
-                                  }
+                                  ]
                                 },
                                 "name": "map"
                               }
@@ -2031,7 +2078,9 @@
                       {
                         "$type": "call",
                         "object": {
-                          "name": "Module"
+                          "name": [
+                            "Module"
+                          ]
                         },
                         "name": "new"
                       }
@@ -2071,9 +2120,11 @@
                   "right": {
                     "expression": {
                       "string": {
-                        "interpolation": {
-                          "name": "MAX_RETRIES"
-                        }
+                        "interpolation": [
+                          {
+                            "name": "MAX_RETRIES"
+                          }
+                        ]
                       }
                     }
                   },
@@ -2296,7 +2347,9 @@
             ],
             "optional": true,
             "object": {
-              "name": "obj"
+              "name": [
+                "obj"
+              ]
             },
             "name": "method"
           }

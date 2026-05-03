@@ -305,7 +305,9 @@
               "name": "Foo"
             },
             "object": {
-              "name": "OrderedDict"
+              "name": [
+                "OrderedDict"
+              ]
             }
           }
         }
@@ -462,7 +464,9 @@
                           "name": "name"
                         },
                         "object": {
-                          "name": "self"
+                          "name": [
+                            "self"
+                          ]
                         }
                       }
                     }
@@ -499,7 +503,9 @@
                               {
                                 "$type": "member",
                                 "object": {
-                                  "name": "other"
+                                  "name": [
+                                    "other"
+                                  ]
                                 },
                                 "property": {
                                   "name": "name"
@@ -515,7 +521,9 @@
                                 "name": "name"
                               },
                               "object": {
-                                "name": "self"
+                                "name": [
+                                  "self"
+                                ]
                               }
                             }
                           }
@@ -768,9 +776,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "T"
-        }
+        "type": [
+          {
+            "name": "T"
+          }
+        ]
       }
     },
     {
@@ -955,18 +965,20 @@
         }
       ],
       "returns": {
-        "type": {
-          "type": [
-            {
-              "name": "int"
-            },
-            {
-              "none": "None"
-            }
-          ],
-          "generic": true,
-          "name": "Union"
-        }
+        "type": [
+          {
+            "type": [
+              {
+                "name": "int"
+              },
+              {
+                "none": "None"
+              }
+            ],
+            "generic": true,
+            "name": "Union"
+          }
+        ]
       }
     },
     {
@@ -1013,7 +1025,9 @@
                             "name": "read"
                           },
                           "object": {
-                            "name": "conn"
+                            "name": [
+                              "conn"
+                            ]
                           }
                         }
                       },
@@ -1057,9 +1071,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "bytes"
-        }
+        "type": [
+          {
+            "name": "bytes"
+          }
+        ]
       }
     },
     {
@@ -1550,7 +1566,9 @@
                         "name": "read"
                       },
                       "object": {
-                        "name": "fa"
+                        "name": [
+                          "fa"
+                        ]
                       }
                     }
                   }
@@ -1562,7 +1580,9 @@
                         "name": "read"
                       },
                       "object": {
-                        "name": "fb"
+                        "name": [
+                          "fb"
+                        ]
                       }
                     }
                   }
@@ -1895,7 +1915,9 @@
                               "name": "items"
                             },
                             "object": {
-                              "name": "data"
+                              "name": [
+                                "data"
+                              ]
                             }
                           }
                         }
@@ -1944,15 +1966,35 @@
             "right": {
               "expression": {
                 "generator": {
-                  "children": [
+                  "name": [
+                    "x"
+                  ],
+                  "body": [
                     {
-                      "$type": "left",
+                      "name": [
+                        "x"
+                      ]
+                    }
+                  ],
+                  "left": [
+                    {
                       "expression": {
-                        "name": "_"
+                        "name": "x"
                       }
                     },
                     {
-                      "$type": "right",
+                      "expression": {
+                        "name": "_"
+                      }
+                    }
+                  ],
+                  "right": [
+                    {
+                      "expression": {
+                        "name": "data"
+                      }
+                    },
+                    {
                       "expression": {
                         "call": {
                           "arguments": [
@@ -1962,23 +2004,7 @@
                         }
                       }
                     }
-                  ],
-                  "body": {
-                    "name": [
-                      "x"
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "x"
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "name": "data"
-                    }
-                  },
-                  "name": "x"
+                  ]
                 }
               }
             },
@@ -2117,9 +2143,11 @@
                   "arguments": [
                     {
                       "$type": "string",
-                      "interpolation": {
-                        "name": "n"
-                      }
+                      "interpolation": [
+                        {
+                          "name": "n"
+                        }
+                      ]
                     }
                   ],
                   "name": "print"
@@ -2214,9 +2242,11 @@
                     },
                     {
                       "string": {
-                        "interpolation": {
-                          "name": "name"
-                        }
+                        "interpolation": [
+                          {
+                            "name": "name"
+                          }
+                        ]
                       }
                     }
                   ]

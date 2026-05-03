@@ -511,9 +511,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "String"
-              }
+              "type": [
+                {
+                  "name": "String"
+                }
+              ]
             }
           }
         ],
@@ -636,9 +638,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "Self"
-              }
+              "type": [
+                {
+                  "name": "Self"
+                }
+              ]
             }
           },
           {
@@ -667,9 +671,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "Self"
-              }
+              "type": [
+                {
+                  "name": "Self"
+                }
+              ]
             }
           },
           {
@@ -682,9 +688,11 @@
             "const": true,
             "name": "const_fn",
             "returns": {
-              "type": {
-                "name": "u32"
-              }
+              "type": [
+                {
+                  "name": "u32"
+                }
+              ]
             }
           },
           {
@@ -724,9 +732,11 @@
               }
             ],
             "returns": {
-              "type": {
-                "name": "T"
-              }
+              "type": [
+                {
+                  "name": "T"
+                }
+              ]
             }
           }
         ],
@@ -949,9 +959,11 @@
     {
       "type": {
         "returns": {
-          "type": {
-            "name": "i32"
-          }
+          "type": [
+            {
+              "name": "i32"
+            }
+          ]
         },
         "function": true,
         "parameters": [
@@ -1099,26 +1111,28 @@
       "private": true,
       "name": "numeric_zoo",
       "returns": {
-        "type": {
-          "type": [
-            {
-              "name": "u32"
-            },
-            {
-              "name": "f64"
-            },
-            {
-              "name": "i32"
-            },
-            {
-              "name": "i32"
-            },
-            {
-              "name": "i32"
-            }
-          ],
-          "tuple": true
-        }
+        "type": [
+          {
+            "type": [
+              {
+                "name": "u32"
+              },
+              {
+                "name": "f64"
+              },
+              {
+                "name": "i32"
+              },
+              {
+                "name": "i32"
+              },
+              {
+                "name": "i32"
+              }
+            ],
+            "tuple": true
+          }
+        ]
       }
     },
     {
@@ -1238,9 +1252,11 @@
             "name": "add",
             "type": {
               "returns": {
-                "type": {
-                  "name": "i32"
-                }
+                "type": [
+                  {
+                    "name": "i32"
+                  }
+                ]
               },
               "function": true,
               "parameters": [
@@ -1301,9 +1317,11 @@
                     }
                   ],
                   "returns": {
-                    "type": {
-                      "name": "String"
-                    }
+                    "type": [
+                      {
+                        "name": "String"
+                      }
+                    ]
                   }
                 }
               }
@@ -2074,9 +2092,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": [
+          {
+            "name": "i32"
+          }
+        ]
       }
     },
     {
@@ -2242,9 +2262,11 @@
       "pub": true,
       "name": "loops_and_flow",
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": [
+          {
+            "name": "i32"
+          }
+        ]
       }
     },
     {
@@ -2310,24 +2332,26 @@
       "pub": true,
       "name": "try_and_cast",
       "returns": {
-        "type": {
-          "arguments": [
-            {
-              "$type": "type",
-              "name": "i32"
-            },
-            {
-              "$type": "path",
-              "name": [
-                "std",
-                "num",
-                "ParseIntError"
-              ]
-            }
-          ],
-          "generic": true,
-          "name": "Result"
-        }
+        "type": [
+          {
+            "arguments": [
+              {
+                "$type": "type",
+                "name": "i32"
+              },
+              {
+                "$type": "path",
+                "name": [
+                  "std",
+                  "num",
+                  "ParseIntError"
+                ]
+              }
+            ],
+            "generic": true,
+            "name": "Result"
+          }
+        ]
       }
     },
     {
@@ -2386,18 +2410,20 @@
         }
       ],
       "returns": {
-        "type": {
-          "lifetime": {
-            "name": "a"
-          },
-          "bounded": true,
-          "type": {
-            "type": {
-              "name": "Display"
+        "type": [
+          {
+            "lifetime": {
+              "name": "a"
             },
-            "abstract": true
+            "bounded": true,
+            "type": {
+              "type": {
+                "name": "Display"
+              },
+              "abstract": true
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -2418,10 +2444,12 @@
       "pub": true,
       "name": "diverges",
       "returns": {
-        "type": {
-          "text": "!",
-          "never": true
-        }
+        "type": [
+          {
+            "text": "!",
+            "never": true
+          }
+        ]
       }
     },
     {
@@ -2467,9 +2495,11 @@
       "async": true,
       "name": "async_demo",
       "returns": {
-        "type": {
-          "name": "u32"
-        }
+        "type": [
+          {
+            "name": "u32"
+          }
+        ]
       }
     },
     {
@@ -2552,15 +2582,17 @@
             {
               "type": {
                 "returns": {
-                  "type": {
-                    "type": {
-                      "name": "i32"
-                    },
-                    "borrowed": true,
-                    "lifetime": {
-                      "name": "a"
+                  "type": [
+                    {
+                      "type": {
+                        "name": "i32"
+                      },
+                      "borrowed": true,
+                      "lifetime": {
+                        "name": "a"
+                      }
                     }
-                  }
+                  ]
                 },
                 "function": true,
                 "type": [
@@ -3355,9 +3387,11 @@
         }
       ],
       "returns": {
-        "type": {
-          "name": "i32"
-        }
+        "type": [
+          {
+            "name": "i32"
+          }
+        ]
       }
     },
     {
