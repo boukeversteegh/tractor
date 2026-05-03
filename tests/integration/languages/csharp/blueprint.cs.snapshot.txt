@@ -501,7 +501,7 @@ unit/
   │               │   └─ query/
   │               │       ├─ from/
   │               │       │   ├─ name = "n"
-  │               │       │   └─ name = "numbers"
+  │               │       │   └─ value/expression/name = "numbers"
   │               │       ├─ where/binary/
   │               │       │   ├─ left/expression/binary/
   │               │       │   │   ├─ left/expression/name = "n"

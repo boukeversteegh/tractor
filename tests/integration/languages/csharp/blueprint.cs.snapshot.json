@@ -1666,9 +1666,11 @@
                               }
                             },
                             "from": {
-                              "children": [
-                                "numbers"
-                              ],
+                              "value": {
+                                "expression": {
+                                  "name": "numbers"
+                                }
+                              },
                               "name": "n"
                             },
                             "where": {
@@ -1983,22 +1985,21 @@
                             ]
                           },
                           "type": {
-                            "children": [
+                            "elements": [
                               {
-                                "$type": "element",
+                                "name": "count",
+                                "type": {
+                                  "name": "int"
+                                }
+                              },
+                              {
+                                "name": "tag",
                                 "type": {
                                   "name": "string"
-                                },
-                                "name": "tag"
+                                }
                               }
                             ],
-                            "tuple": true,
-                            "element": {
-                              "name": "count",
-                              "type": {
-                                "name": "int"
-                              }
-                            }
+                            "tuple": true
                           },
                           "name": "pair"
                         },

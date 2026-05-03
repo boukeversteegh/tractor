@@ -161,7 +161,11 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::FinallyClause                  => Rename(Finally),
         CsKind::ForStatement                   => Rename(For),
         CsKind::ForeachStatement               => Rename(Foreach),
-        CsKind::FromClause                     => Rename(From),
+        // C# LINQ `from n in numbers` — wrap the source (the
+        // identifier after `in`) in `<value>` slot so it doesn't
+        // collide with the binding `<name>` on the JSON `name` key.
+        // Iter 287.
+        CsKind::FromClause                     => Custom(transformations::from_clause),
         CsKind::GroupClause                    => Rename(Group),
         CsKind::ImplicitObjectCreationExpression => Rename(New),
         CsKind::ImplicitParameter              => Rename(Parameter),

@@ -80,6 +80,33 @@ fn csharp_markers() {
         1);
 }
 
+/// C# tuple types `(int count, string tag)` produce `<type[tuple]>`
+/// with multiple `<element>` siblings (one per tuple position).
+/// Per Principle #19 they're role-uniform; tag with
+/// `list="elements"` so JSON renders as `elements: [...]` array.
+#[test]
+fn csharp_tuple_type_lists_elements() {
+    claim("C# tuple type with two positions tags each <element>",
+        &mut parse_src("csharp", r#"
+        class T { void M() { (int count, string tag) p = (1, "x"); } }
+    "#),
+        "//type[tuple]/element[@list='elements']",
+        2);
+}
+
+/// C# LINQ `from n in numbers` wraps the source in `<value>` slot
+/// so the binding `<name>` doesn't collide with the source `<name>`
+/// on the JSON `name` key.
+#[test]
+fn csharp_linq_from_clause_wraps_source() {
+    claim("C# `from n in numbers` wraps the source in <value>",
+        &mut parse_src("csharp", r#"
+        class T { void M() { var q = from n in numbers select n; } }
+    "#),
+        "//from[name='n'][value/expression/name='numbers']",
+        1);
+}
+
 /// TypeScript type flavors all collapse to <type> with a shape
 /// marker (Principle #9) so `//type[union]`, `//type[tuple]`,
 /// etc. work uniformly without matching on text.

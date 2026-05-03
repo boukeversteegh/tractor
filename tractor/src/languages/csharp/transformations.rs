@@ -15,9 +15,10 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Internal,
+    self, Accessor, Await, Base, Call, Else, Expression, File, From, Generic, If, Internal,
     Lambda, Leading, Member, Name, Namespace, NonNull, Nullable, Object, Optional, Private,
-    Property, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
+    Property, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Value,
+    Variable,
 };
 
 /// `file_scoped_namespace_declaration` — `namespace Foo;`. Rename
@@ -216,6 +217,38 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
     }
     xot.with_renamed(node, Expression)
         .with_prepended_marker(node, Await)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `from_clause` — C# LINQ `from n in numbers`. Tree-sitter emits
+/// the binding identifier with `field="name"` (auto-wrapped to
+/// `<name>`) and the source identifier as a bare untagged child
+/// (becomes another `<name>` after rename). Two `<name>` siblings
+/// collide on the JSON `name` key — first becomes singleton, second
+/// overflows.
+///
+/// Wrap the SECOND non-marker element child (the source) in
+/// `<value>` slot. Position-based: tree-sitter source order is
+/// always `binding "in" source`, so the source is the last element
+/// child. Mirrors PHP foreach iter 286 (wrap iterable in `<value>`).
+pub fn from_clause(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    if let Some(&source) = elem_children.last() {
+        // Only wrap if there are 2+ elements (binding + source).
+        // For `from n in numbers`, that's true; defensive guard.
+        if elem_children.len() >= 2 {
+            let value_id = xot.add_name(Value.as_str());
+            let value_node = xot.new_element(value_id);
+            xot.with_source_location_from(value_node, source)
+                .with_wrap_child(source, value_node)?;
+        }
+    }
+    xot.with_renamed(node, From);
     Ok(TransformAction::Continue)
 }
 

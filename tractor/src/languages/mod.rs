@@ -351,6 +351,10 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // Multi-argument indexer `arr[1, 2, 3]` — `<index>`
             // parent with multiple `<argument>` siblings.
             ("index", "argument"),
+            // C# tuple type `(int count, string tag)` — `<type[tuple]>`
+            // parent with multiple `<element>` siblings (each is one
+            // tuple position). Role-uniform per Principle #19.
+            ("type", "element"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
