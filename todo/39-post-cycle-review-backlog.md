@@ -222,23 +222,20 @@ before committing a non-trivial change.
   allowed-exception citations naming the flagged element.
   **Do not re-flag this item.**
 
-- [ ] **Go `body[return]` marker semantics misleading**
-  *(Principle #11 / #13, severity LOW)*
-  - File: `tests/integration/languages/go/blueprint.go.snapshot.txt:254,272,318`.
-  - Current shape (line 254): `body[return]/for/...` — the `[return]`
-    marker on `<body>` says "function ends with bare return", but
-    structurally the bare `return` statement is invisible (its
-    children include for/defer/etc. but no `<return/>` element).
-  - Reads as "body is return-flavored" rather than "body has a
-    final naked return statement." Marker mode (Principle #13)
-    expects markers off text-only leaves; here the marker is on a
-    structural body, which is fine, but the semantics are unclear.
-  - Desired (one of):
-    - Emit a structural final child `<return/>` (no value) so the
-      bare return is a normal trailing statement; drop the marker.
-    - Rename marker to `body[naked-return]` to clarify intent.
-  - Effort: 1-iter.
-  - Source: iter 233 cold-read.
+- [x] iter 262 — **Go `body[return]` marker semantics** —
+  REJECTED (cold-read misread). Verified with
+  `//body/return` against blueprint: 11 matches including the
+  bare-return sites at Sum/Uniq/variadic. The `<return/>` element
+  IS structural (an empty element child of `<body>`); the
+  tree-text bracket notation (`body[return]/for/...`) just
+  collapses empty children into marker-style display, but the
+  structural element is present and queryable. The cold-read's
+  claim "structurally invisible" was wrong. JSON does serialize
+  `<return/>` as `"return": true` (boolean key, like a marker),
+  but that's a general empty-element-vs-marker semantic that
+  applies to every empty-element statement (`<break/>`,
+  `<continue/>`, `<fallthrough/>`) — not specific to return.
+  No fix needed.
 
 - [ ] **Java `field/declarator/` is a tree-sitter grammar leak**
   *(Principle #2 / #11, severity LOW)*
@@ -272,19 +269,31 @@ before committing a non-trivial change.
   JSON: `"pattern": "_"` → `{"pattern": {"wildcard": true}}`.
   2 fixture sites; 829 tests green.
 
-- [ ] **TypeScript `body[break]` switch-case marker on body**
-  *(Principle #11 / #13, severity LOW)*
-  - File: `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:465,473`.
-  - Current: `case/{value/expression/string="ready", body[break]}` —
-    `body[break]` is a marker-on-empty-body for "case body that
-    just `break`s." The break statement itself is structurally
-    invisible.
-  - Desired: emit `body/break/` (the `break` is a normal statement)
-    and drop the special marker. Same archetype as the Go
-    `body[return]` finding — both should pick the same approach
-    for cross-language consistency (Principle #5).
-  - Effort: 1-iter (or 1-iter combined with the Go finding).
-  - Source: iter 233 cold-read.
+- [x] iter 262 — **TypeScript `body[break]` switch-case marker** —
+  REJECTED (cold-read misread, same as Go `body[return]`). Verified
+  `//body/break` matches both case sites; `<break/>` IS a structural
+  empty element child of `<body>`. The tree-text bracket notation
+  `body[break]` just collapses empty children for display. JSON
+  ambiguity (boolean key for empty element) applies to every empty
+  statement keyword, not just break. No fix needed.
+
+- [ ] **Cross-language bare-keyword statement shape inconsistency**
+  *(Principle #5, severity LOW, surfaced iter 262)*
+  - Python: `body/return = "return"` (`<return>` carries the
+    keyword as text content)
+  - Go: `body/<return/>` (empty element)
+  - TypeScript: `body/<block><return/></block>` (empty element
+    inside a block wrapper)
+  - Three shapes for the same conceptual statement ("bare
+    keyword statement at end of block"). Same applies to bare
+    `break`, `continue`, etc.
+  - Investigation needed: which shape is canonical? Probably the
+    Python one (text content distinguishes statement from marker
+    in JSON) — but check whether `<return>return</return>` adds
+    value or just noise. Also affects: which empty-element
+    statements in JSON look identical to markers and need
+    disambiguation.
+  - Effort: 1-iter design + 1-iter implementation.
 
 - [x] iter 261 — **Go for-while gains `<condition>` wrapper.**
   New `for_statement` Custom handler detects "while-form" (no
