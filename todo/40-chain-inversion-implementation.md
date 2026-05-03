@@ -71,20 +71,17 @@ Each iter:
   handles both slot-wrapped (TS / Python) and bare-children
   (Go/Java/C#/Ruby/Rust/PHP) shapes. TS subscript chains now
   invert cleanly.
-- [ ] **C# `base.X` and implicit-`this` member access.** 2
-  remaining un-inverted sites in C# blueprint
-  (`csharp/blueprint.cs.snapshot.txt:318, :320`). Source is
-  `base.Priority` in a property getter/setter. Tree-sitter
-  inlines `base` as a text leaf ("base.") rather than emitting
-  a `<base_expression>` element, so the C# `member_access_expression`
-  handler can't wrap it in `<object>` (nothing to wrap).
-  Approach options when picked up:
-  (a) detect "base." / "this." text leaks inside `<member>` and
-      synthesize a `<base/>` / `<this/>` receiver wrapped in
-      `<object>`;
-  (b) leave as-is and document `<member[instance]>` without
-      `<object>` as the implicit-receiver canonical shape.
-  Low priority; 2 sites only.
+- [x] iter 256 — **C# `base.X` and implicit-`this` member access.**
+  Approach (a) shipped: `member_access_expression` detects a
+  `"base."` / `"this."` text leak (tree-sitter inlines these as
+  text rather than as structural elements) and synthesises an
+  `<object>` slot containing a `<base/>` / `<this/>` empty
+  element. After chain inversion the empty element rides as a
+  marker on the `<object[access]>` chain root —
+  `//object[access and base]/member` finds the 2 prior sites
+  (`get => base.Priority` / `set => base.Priority = value`).
+  Marker vocabulary matches the existing `:base(id)` /
+  `:this(...)` constructor-initializer transform.
 - [ ] **C# `<instance/>` marker policy across languages.** Only
   C# carries `<instance/>` to distinguish static vs. instance
   access. Other languages don't expose this. Decide whether to
@@ -100,10 +97,15 @@ Each iter:
 
 ## Cross-cutting follow-ups
 
-- [ ] iter 247 — **Renderer update** (per-language). Each
-  `tractor/src/render/<lang>.rs` reconstructs source from the
-  right-deep shape; teach each to traverse `<chain>` with the
-  language's correct member-access operator (`.`, `->`, `::`).
+- [x] iter 256 — **Renderer update** (per-language). Audit
+  result: only `csharp.rs`, `json.rs`, `yaml.rs` exist as
+  renderers. `csharp.rs` is declaration-only (handles
+  Class/Struct/Property/Field/Unit/Namespace/Import/Comment;
+  no expression rendering at all). `json.rs` / `yaml.rs` are
+  data-format renderers (chains don't apply). Chains never
+  enter any renderer today, so the chain rollout requires zero
+  renderer changes. Re-evaluate when expression-level rendering
+  is added to `csharp.rs` or new languages gain renderers.
 - [ ] iter 248 — **design.md Decision section**. Document the
   chain shape as canonical in
   `specs/tractor-parse/semantic-tree/design.md`. Requires explicit

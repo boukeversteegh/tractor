@@ -612,11 +612,13 @@
                   {
                     "$type": "get",
                     "body": {
-                      "members": [
+                      "objects": [
                         {
-                          "property": {
+                          "member": {
                             "name": "Priority"
-                          }
+                          },
+                          "access": true,
+                          "base": true
                         }
                       ]
                     }
@@ -634,10 +636,12 @@
                           },
                           "left": {
                             "expression": {
-                              "member": {
-                                "property": {
+                              "object": {
+                                "member": {
                                   "name": "Priority"
-                                }
+                                },
+                                "access": true,
+                                "base": true
                               }
                             }
                           },

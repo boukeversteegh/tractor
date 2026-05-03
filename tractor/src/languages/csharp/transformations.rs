@@ -15,7 +15,7 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Instance, Internal,
+    self, Accessor, Await, Base, Call, Else, Expression, File, Generic, If, Internal,
     Lambda, Leading, Member, Name, Namespace, NonNull, Nullable, Object, Optional, Private,
     Property, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
 };
@@ -230,10 +230,56 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 /// wrapper). Renames the node to `<member>`. (Iter 255 dropped
 /// the previous `<instance/>` marker — redundant given the
 /// `<object[access]>` chain-root wrapper from iter 245.)
+///
+/// `base.X` / `this.X` text-leak handling: tree-sitter inlines
+/// `base` and `this` as a literal text leaf (`"base."` / `"this."`)
+/// rather than emitting a structural `base_expression` /
+/// `this_expression` element. Without intervention the resulting
+/// `<member>` has no `<object>` slot, so the chain inverter
+/// treats it as an opaque receiver and leaves it un-inverted.
+/// Synthesise an `<object>` slot containing a `<base/>` or
+/// `<this/>` empty element to give the chain a proper receiver.
+/// Marker vocabulary matches the existing `:base(id)` /
+/// `:this(...)` constructor-initializer handler (see the
+/// `constructor_initializer`-equivalent transform above).
 pub fn member_access_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let elem_children: Vec<XotNode> = xot.children(node)
+    let original_children: Vec<XotNode> = xot.children(node).collect();
+    let text_children: Vec<XotNode> = original_children.iter()
+        .copied()
+        .filter(|&c| xot.text_str(c).is_some())
+        .collect();
+    let elem_children: Vec<XotNode> = original_children.iter()
+        .copied()
         .filter(|&c| xot.element(c).is_some())
         .collect();
+
+    let receiver_marker: Option<TractorNode> = text_children.iter()
+        .find_map(|&c| {
+            let text = xot.text_str(c)?;
+            let trimmed = text.trim();
+            if trimmed == "base." || trimmed == "base" {
+                Some(Base)
+            } else if trimmed == "this." || trimmed == "this" {
+                Some(This)
+            } else {
+                None
+            }
+        });
+
+    if let Some(marker_kind) = receiver_marker {
+        for c in text_children {
+            xot.detach(c)?;
+        }
+        let object_id = xot.add_name(Object.as_str());
+        let object_node = xot.new_element(object_id);
+        let marker_id = xot.add_name(marker_kind.as_str());
+        let marker_node = xot.new_element(marker_id);
+        xot.append(object_node, marker_node)?;
+        xot.prepend(node, object_node)?;
+        xot.with_source_location_from(object_node, node)
+            .with_source_location_from(marker_node, node);
+    }
+
     for child in elem_children {
         let field = get_attr(xot, child, "field");
         let wrapper = match field.as_deref() {

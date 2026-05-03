@@ -315,9 +315,9 @@ unit/
   │   │       ├─ property[public and override]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get/body/member/property/name = "Priority"
+  │   │       │   ├─ get/body/object[access and base]/member/name = "Priority"
   │   │       │   └─ set[protected]/body/assign/
-  │   │       │       ├─ left/expression/member/property/name = "Priority"
+  │   │       │       ├─ left/expression/object[access and base]/member/name = "Priority"
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "value"
   │   │       ├─ method[public and override]/

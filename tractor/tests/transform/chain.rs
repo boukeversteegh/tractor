@@ -304,6 +304,57 @@ fn subscript_rust() {
         1);
 }
 
+// ---- Implicit-receiver chains (C# base./this.) -------------------------
+
+/// C# tree-sitter inlines `base` and `this` as a literal text leak
+/// (`"base."` / `"this."`) rather than emitting a structural
+/// `base_expression` / `this_expression` element. The C#
+/// `member_access_expression` handler synthesises an `<object>`
+/// slot containing a `<base/>` / `<this/>` empty element so the
+/// chain inverter sees a proper receiver. After inversion the
+/// `<base/>` / `<this/>` empty element rides as a marker on the
+/// chain root, queryable via `//object[base]` /
+/// `//object[this]`.
+#[test]
+fn csharp_base_member_access() {
+    let mut tree = parse_src("csharp", r#"
+        class X : Y {
+            public override int Priority {
+                get => base.Priority;
+                set => base.Priority = value;
+            }
+        }
+    "#);
+
+    claim("C# `base.Priority` inverts to <object[access and base]>",
+        &mut tree,
+        "//object[access and base]/member[name='Priority']",
+        2);
+
+    claim("C# `base.X` is queryable via //object[base]",
+        &mut tree, "//object[base]", 2);
+
+    claim("C# `base.X` chains share the chain-root marker //object[access]",
+        &mut tree, "//object[access]", 2);
+}
+
+#[test]
+fn csharp_this_member_access() {
+    let mut tree = parse_src("csharp", r#"
+        class X {
+            void M() { var y = this.Foo; }
+        }
+    "#);
+
+    claim("C# `this.Foo` inverts to <object[access and this]>",
+        &mut tree,
+        "//object[access and this]/member[name='Foo']",
+        1);
+
+    claim("C# `this.X` is queryable via //object[this]",
+        &mut tree, "//object[this]", 1);
+}
+
 // ---- Negative space: bare identifiers and top-level calls -----------------
 
 /// Per the inverter's "useful-chain guard", bare identifiers and
