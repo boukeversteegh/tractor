@@ -1142,10 +1142,10 @@
                     "value": {
                       "expression": {
                         "reference": {
-                          "children": [
+                          "name": [
+                            "String",
                             "valueOf"
-                          ],
-                          "name": "String"
+                          ]
                         }
                       }
                     },

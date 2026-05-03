@@ -548,6 +548,11 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 218: Java method reference list= — added
+  `("reference", "name")` to Java's tag_multi_role_children.
+  `String::valueOf` (`<reference>` with class + method `<name>`s)
+  now renders `reference.name: ["String", "valueOf"]` array.
+  Java audit 4 → 3 (-1).
 - [x] iter 217: TS object-literal pair list= — added `("object",
   "pair")` to TS's tag_multi_role_children. `{a: 1, b: 2}` now
   renders `object.pair: [{name:"a", value:...}, {name:"b", value:...}]`

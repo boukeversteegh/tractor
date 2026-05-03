@@ -1411,6 +1411,14 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    // Java method reference: `String::valueOf` produces `<reference>`
+    // with two `<name>` siblings (class + method). Tag both with
+    // `list="name"` so the JSON name array is uniform; cardinality
+    // discriminator (>=2) keeps singleton uses untouched.
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("reference", "name")],
+    )?;
     java_unwrap_type_in_path(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(
