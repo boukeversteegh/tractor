@@ -703,7 +703,7 @@ program/
   ├─ variable[const]/
   │   ├─ name = "url"
   │   └─ value/expression/object[access]/
-  │       ├─ member = "import.meta"
+  │       ├─ name = "import.meta"
   │       └─ member/name = "url"
   ├─ function/
   │   ├─ name = "MetaCtor"
@@ -712,7 +712,7 @@ program/
   │   │   └─ type/name = "unknown"
   │   └─ body/block/return/expression/binary/
   │       ├─ left/expression/object[access]/
-  │       │   ├─ member = "new.target"
+  │       │   ├─ name = "new.target"
   │       │   └─ member/name = "name"
   │       ├─ op[nullish] = "??"
   │       └─ right/expression/string = "\"\""
