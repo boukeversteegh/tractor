@@ -178,7 +178,7 @@ module/
   │           │   └─ body/yield/name = "chunk"
   │           ├─ assign/
   │           │   ├─ left/expression/name = "data"
-  │           │   └─ right/expression[await]/chain/
+  │           │   └─ right/expression[await]/object[access]/
   │           │       ├─ name = "conn"
   │           │       └─ call/name = "read"
   │           └─ return/expression/name = "data"
@@ -279,7 +279,7 @@ module/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
-  │       │       ├─ left/expression/chain/
+  │       │       ├─ left/expression/object[access]/
   │       │       │   ├─ name = "self"
   │       │       │   └─ member/name = "name"
   │       │       └─ right/expression/name = "name"
@@ -294,11 +294,11 @@ module/
   │               │   └─ name = "Derived"
   │               ├─ op[logical and and] = "and"
   │               └─ right/expression/compare/
-  │                   ├─ chain/
+  │                   ├─ object[access]/
   │                   │   ├─ name = "self"
   │                   │   └─ member/name = "name"
   │                   ├─ op[equals] = "=="
-  │                   └─ chain/
+  │                   └─ object[access]/
   │                       ├─ name = "other"
   │                       └─ member/name = "name"
   ├─ function/
@@ -379,10 +379,10 @@ module/
   │       │   │   │   └─ string = "\"b\""
   │       │   │   └─ name = "fb"
   │       │   └─ body/
-  │       │       ├─ expression/chain/
+  │       │       ├─ expression/object[access]/
   │       │       │   ├─ name = "fa"
   │       │       │   └─ call/name = "read"
-  │       │       └─ expression/chain/
+  │       │       └─ expression/object[access]/
   │       │           ├─ name = "fb"
   │       │           └─ call/name = "read"
   │       └─ return/expression/name = "total"
@@ -454,7 +454,7 @@ module/
   │       │       ├─ left/
   │       │       │   ├─ expression/name = "k"
   │       │       │   └─ expression/name = "v"
-  │       │       ├─ right/expression/chain/
+  │       │       ├─ right/expression/object[access]/
   │       │       │   ├─ name = "data"
   │       │       │   └─ call/name = "items"
   │       │       └─ name = "v"
@@ -633,7 +633,7 @@ module/
   │       └─ type/type[splat]/name = "Ts"
   ├─ alias/
   │   ├─ left/type/name = "Containing"
-  │   └─ right/type/chain/
+  │   └─ right/type/object[access]/
   │       ├─ name = "OrderedDict"
   │       └─ member/name = "Foo"
   └─ function/

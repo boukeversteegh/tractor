@@ -26,7 +26,7 @@ pub enum TractorNode {
     // Python 2 leftovers (kept as own elements; rare in modern code)
     Exec, Print,
     // Expressions
-    Call, Chain, Member, Object, Property, Subscript, Assign, Binary, Unary, Compare, Logical, Await,
+    Call, Member, Object, Access, Property, Subscript, Assign, Binary, Unary, Compare, Logical, Await,
     Yield, Generator, Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation,
     Expression,
     // Function-signature separators
@@ -76,7 +76,8 @@ impl TractorNode {
             | Self::Args | Self::Kwargs
             | Self::Constrained | Self::Complex | Self::Group | Self::Future
             | Self::Wildcard | Self::Concatenated | Self::Escape
-            | Self::Relative                                                      => (true, false, Default),
+            | Self::Relative
+            | Self::Access                                                        => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Async | Self::Literal | Self::Comprehension
             | Self::Await                                                        => (true, false, Keyword),

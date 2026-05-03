@@ -1,5 +1,5 @@
 //! Chain inversion — convert right-deep operator-precedence trees
-//! into left-deep nested-`<chain>` shape that mirrors the developer
+//! into left-deep nested-`<object>` shape that mirrors the developer
 //! mental model.
 //!
 //! ## Background
@@ -11,7 +11,7 @@
 //! `a`, then access `.b`, then `.c`, then call `.d()`."
 //!
 //! Iter 232 design (`todo/40-chain-inversion-design.md`) chose a
-//! NESTED inverted shape — `<chain>` wrapper around the receiver
+//! NESTED inverted shape — `<object>` wrapper around the receiver
 //! and a left-deep step spine. Choice ratified by the user mid-
 //! iter-234 conversation; declaration-call query symmetry was the
 //! deciding factor (`//class[name='Foo']/method[name='bar']` and
@@ -22,7 +22,10 @@
 //! For `console.stdout.write()`:
 //!
 //! ```xml
-//! <chain>
+//! <object>
+//!   <access/>                      <!-- marker: this is an access chain
+//!                                       (distinguishes from object
+//!                                       literals that share <object>) -->
 //!   <name>console</name>          <!-- receiver -->
 //!   <member>                       <!-- step 1: .stdout -->
 //!     <name>stdout</name>
@@ -30,10 +33,10 @@
 //!       <name>write</name>
 //!     </call>
 //!   </member>
-//! </chain>
+//! </object>
 //! ```
 //!
-//! Receiver (first child of `<chain>`) is any expression element
+//! Receiver (first child of `<object>`) is any expression element
 //! (typically `<name>`, but could be `<cast>`, `<paren>`, `<call>`
 //! for result-invocation). Each subsequent step is `<member>`,
 //! `<call>`, or `<subscript>` and nests subsequent steps as its
@@ -79,9 +82,9 @@ pub enum ChainSegment {
 // EMIT
 // =============================================================================
 
-/// Build the inverted `<chain>` tree from a segment list.
+/// Build the inverted `<object>` tree from a segment list.
 ///
-/// Returns the new `<chain>` element. The caller is responsible for
+/// Returns the new `<object>` element. The caller is responsible for
 /// inserting it into the document at the desired location.
 ///
 /// Pre-conditions:
@@ -94,7 +97,7 @@ pub enum ChainSegment {
 ///     before this function runs (the function will append them
 ///     to the new tree).
 ///
-/// Source-location: copied from the receiver node onto `<chain>`,
+/// Source-location: copied from the receiver node onto `<object>`,
 /// and from each segment's primary node onto the step element.
 pub fn emit_chain(
     xot: &mut Xot,
@@ -107,22 +110,34 @@ pub fn emit_chain(
         _ => panic!("first segment must be Receiver"),
     };
 
-    let chain_id = xot.add_name("chain");
-    let chain = xot.new_element(chain_id);
-    copy_source_location(xot, receiver, chain);
+    // Wrapper element is `<object>`. The `[access]` marker
+    // distinguishes the runtime member-access shape from object
+    // literals that share the same element name (TS/JS `{a: 1}`
+    // also emit `<object>`). Structural predicates can also
+    // disambiguate (`object[member]` vs `object[pair]`), but the
+    // marker makes the distinction queryable directly:
+    // `//object[access]` finds chains; `//object[not(access)]`
+    // finds literals.
+    let object_id = xot.add_name("object");
+    let object = xot.new_element(object_id);
+    copy_source_location(xot, receiver, object);
 
-    xot.append(chain, receiver)?;
+    let access_id = xot.add_name("access");
+    let access = xot.new_element(access_id);
+    xot.append(object, access)?;
+
+    xot.append(object, receiver)?;
 
     // Each step is appended as the LAST child of the previous
-    // step; the first step is appended directly to `<chain>`.
-    let mut anchor = chain;
+    // step; the first step is appended directly to `<object>`.
+    let mut anchor = object;
     for segment in iter {
         let step = build_step(xot, segment)?;
         xot.append(anchor, step)?;
         anchor = step;
     }
 
-    Ok(chain)
+    Ok(object)
 }
 
 fn build_step(
@@ -201,7 +216,7 @@ fn build_step(
 // For a non-chain expression (just a bare identifier, an isolated
 // `f(args)` top-level call, etc.), extract_chain returns segments
 // that don't form a useful inverted chain — the caller should not
-// emit a `<chain>` wrapper for fewer than 2 segments.
+// emit a `<object>` wrapper for fewer than 2 segments.
 
 /// Walk a right-deep chain rooted at `node` and produce a segment
 /// list in source order (leftmost-first).
@@ -458,22 +473,22 @@ fn is_chain_root(xot: &Xot, node: XotNode) -> bool {
 // =============================================================================
 
 /// In-place: replace `node` (a right-deep `<member>`/`<call>` chain
-/// root) with its inverted nested-`<chain>` equivalent.
+/// root) with its inverted nested-`<object>` equivalent.
 ///
 /// Pipeline:
 /// 1. `extract_chain(xot, node)` — produce the segment list IR.
 /// 2. If fewer than 2 segments OR the only step segment is a
 ///    nameless top-level Call (i.e. `f(x)` with no chain), leave
-///    `node` untouched. Wrapping a non-chain in `<chain>` adds
+///    `node` untouched. Wrapping a non-chain in `<object>` adds
 ///    noise without informational value.
 /// 3. Detach every node referenced in the segment list from its
 ///    current parent (the original chain tree is now hollow).
-/// 4. `emit_chain(xot, segments)` — build the new `<chain>`.
-/// 5. Insert the new `<chain>` at `node`'s position; detach
+/// 4. `emit_chain(xot, segments)` — build the new `<object>`.
+/// 5. Insert the new `<object>` at `node`'s position; detach
 ///    `node`. Source-location is already threaded onto the new
 ///    chain by `emit_chain`.
 ///
-/// Returns the new `<chain>` node on success, or `Ok(None)` if the
+/// Returns the new `<object>` node on success, or `Ok(None)` if the
 /// input wasn't a useful chain (and was left untouched).
 pub fn invert_chain_nesting(
     xot: &mut Xot,
@@ -618,7 +633,7 @@ mod tests {
 
     #[test]
     fn emit_simple_member_access() {
-        // a.b → <chain><name>a</name><member><name>b</name></member></chain>
+        // a.b → <object><name>a</name><member><name>b</name></member></chain>
         let (mut xot, _root) = fresh_xot();
         let recv = new_text_element(&mut xot, "name", "a");
         let access = new_text_element(&mut xot, "name", "b");
@@ -626,12 +641,12 @@ mod tests {
             ChainSegment::Receiver(recv),
             ChainSegment::Member { name_node: access, markers: vec![] },
         ]).unwrap();
-        assert_eq!(render(&xot, chain), "(chain (name a) (member (name b)))");
+        assert_eq!(render(&xot, chain), "(object (access) (name a) (member (name b)))");
     }
 
     #[test]
     fn emit_terminal_call() {
-        // a.b() → <chain><name>a</name><call><name>b</name></call></chain>
+        // a.b() → <object><name>a</name><call><name>b</name></call></chain>
         let (mut xot, _root) = fresh_xot();
         let recv = new_text_element(&mut xot, "name", "a");
         let method = new_text_element(&mut xot, "name", "b");
@@ -639,7 +654,7 @@ mod tests {
             ChainSegment::Receiver(recv),
             ChainSegment::Call { name_node: Some(method), args: vec![], markers: vec![] },
         ]).unwrap();
-        assert_eq!(render(&xot, chain), "(chain (name a) (call (name b)))");
+        assert_eq!(render(&xot, chain), "(object (access) (name a) (call (name b)))");
     }
 
     // --- Multi-link chains ---------------------------------------------
@@ -660,7 +675,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (member (name b) (member (name c) (member (name d)))))",
+            "(object (access) (name a) (member (name b) (member (name c) (member (name d)))))",
         );
     }
 
@@ -680,7 +695,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (member (name b) (member (name c) (call (name d)))))",
+            "(object (access) (name a) (member (name b) (member (name c) (call (name d)))))",
         );
     }
 
@@ -700,7 +715,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (call (name b) (member (name c) (call (name d)))))",
+            "(object (access) (name a) (call (name b) (member (name c) (call (name d)))))",
         );
     }
 
@@ -724,7 +739,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (call (name b) (argument x) (argument y)))",
+            "(object (access) (name a) (call (name b) (argument x) (argument y)))",
         );
     }
 
@@ -759,7 +774,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) \
+            "(object (access) (name a) \
              (call (name b) (argument 1) \
               (call (name c) (argument 2) \
                (call (name d) (argument 3)))))",
@@ -789,7 +804,7 @@ mod tests {
         // markers come BEFORE name (matches the typical [marker]name layout)
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (member (optional) (name b) (call (optional) (name c))))",
+            "(object (access) (name a) (member (optional) (name b) (call (optional) (name c))))",
         );
     }
 
@@ -809,7 +824,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name a) (subscript (int 0) (member (name b))))",
+            "(object (access) (name a) (subscript (int 0) (member (name b))))",
         );
     }
 
@@ -831,7 +846,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (cast (name x) (type Foo)) (member (name b)))",
+            "(object (access) (cast (name x) (type Foo)) (member (name b)))",
         );
     }
 
@@ -859,7 +874,7 @@ mod tests {
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(chain (name f) (call (call (argument x))))",
+            "(object (access) (name f) (call (call (argument x))))",
         );
     }
 
@@ -1149,12 +1164,12 @@ mod tests {
 
     #[test]
     fn invert_simple_member_access() {
-        // a.b → <chain><name>a</name><member><name>b</name></member></chain>
+        // a.b → <object><name>a</name><member><name>b</name></member></chain>
         let (mut xot, doc_root) = fresh_xot();
         let a = new_text_element(&mut xot, "name", "a");
         let m = build_member(&mut xot, a, "b");
         let result = invert_under_parent(&mut xot, doc_root, m);
-        assert_eq!(result, "(chain (name a) (member (name b)))");
+        assert_eq!(result, "(object (access) (name a) (member (name b)))");
     }
 
     #[test]
@@ -1168,7 +1183,7 @@ mod tests {
         let result = invert_under_parent(&mut xot, doc_root, m3);
         assert_eq!(
             result,
-            "(chain (name a) (member (name b) (member (name c) (member (name d)))))",
+            "(object (access) (name a) (member (name b) (member (name c) (member (name d)))))",
         );
     }
 
@@ -1180,7 +1195,7 @@ mod tests {
         let callee = build_member(&mut xot, a, "b");
         let call = build_call(&mut xot, callee, vec![]);
         let result = invert_under_parent(&mut xot, doc_root, call);
-        assert_eq!(result, "(chain (name a) (call (name b)))");
+        assert_eq!(result, "(object (access) (name a) (call (name b)))");
     }
 
     #[test]
@@ -1195,7 +1210,7 @@ mod tests {
         let result = invert_under_parent(&mut xot, doc_root, call);
         assert_eq!(
             result,
-            "(chain (name a) (member (name b) (member (name c) (call (name d)))))",
+            "(object (access) (name a) (member (name b) (member (name c) (call (name d)))))",
         );
     }
 
@@ -1211,7 +1226,7 @@ mod tests {
         let result = invert_under_parent(&mut xot, doc_root, call);
         assert_eq!(
             result,
-            "(chain (name a) (call (name b) (argument x) (argument y)))",
+            "(object (access) (name a) (call (name b) (argument x) (argument y)))",
         );
     }
 
@@ -1228,14 +1243,14 @@ mod tests {
         let result = invert_under_parent(&mut xot, doc_root, call_d);
         assert_eq!(
             result,
-            "(chain (name a) (call (name b) (member (name c) (call (name d)))))",
+            "(object (access) (name a) (call (name b) (member (name c) (call (name d)))))",
         );
     }
 
     #[test]
     fn invert_top_level_call_left_untouched() {
         // f(x) — bare function call, no chain. Should NOT be wrapped
-        // in <chain>; the original <call> stays in place.
+        // in <object>; the original <call> stays in place.
         let (mut xot, doc_root) = fresh_xot();
         let f = new_text_element(&mut xot, "name", "f");
         let arg = new_text_element(&mut xot, "argument", "x");
@@ -1256,25 +1271,28 @@ mod tests {
 
     #[test]
     fn invert_idempotent_on_already_inverted_chain() {
-        // Build an already-inverted <chain> directly (no member/call
-        // root) and confirm invert_chain_nesting leaves it alone
-        // (since the root isn't <member>/<call>, extract returns
-        // just a Receiver — single-segment, not a useful chain).
+        // Build an already-inverted <object> directly (NOT a
+        // <member>/<call> root) and confirm invert_chain_nesting
+        // leaves it alone — since the root isn't <member>/<call>,
+        // extract returns just a Receiver (single-segment, not a
+        // useful chain) and the helper returns Ok(None).
         let (mut xot, doc_root) = fresh_xot();
+        let access = new_named_element(&mut xot, "access");
         let recv = new_text_element(&mut xot, "name", "a");
         let bn = new_text_element(&mut xot, "name", "b");
         let member = new_named_element(&mut xot, "member");
         xot.append(member, bn).unwrap();
-        let chain = new_named_element(&mut xot, "chain");
-        xot.append(chain, recv).unwrap();
-        xot.append(chain, member).unwrap();
-        let result = invert_under_parent(&mut xot, doc_root, chain);
-        assert_eq!(result, "(chain (name a) (member (name b)))");
+        let object = new_named_element(&mut xot, "object");
+        xot.append(object, access).unwrap();
+        xot.append(object, recv).unwrap();
+        xot.append(object, member).unwrap();
+        let result = invert_under_parent(&mut xot, doc_root, object);
+        assert_eq!(result, "(object (access) (name a) (member (name b)))");
     }
 
     #[test]
     fn invert_threads_source_location_to_chain() {
-        // Verify <chain> inherits the receiver's line/column.
+        // Verify <object> inherits the receiver's line/column.
         let (mut xot, doc_root) = fresh_xot();
         let a = new_text_element(&mut xot, "name", "a");
         set_attr(&mut xot, a, "line", "12");
@@ -1296,7 +1314,7 @@ mod tests {
         xot.append(cast, xn).unwrap();
         let m = build_member(&mut xot, cast, "b");
         let result = invert_under_parent(&mut xot, doc_root, m);
-        assert_eq!(result, "(chain (cast (name x)) (member (name b)))");
+        assert_eq!(result, "(object (access) (cast (name x)) (member (name b)))");
     }
 
     // ===================================================================
@@ -1317,7 +1335,7 @@ mod tests {
         invert_chains_in_tree(&mut xot, doc_root).unwrap();
         assert_eq!(
             render(&xot, body),
-            "(body (stmt (chain (name a) (member (name b)))))",
+            "(body (stmt (object (access) (name a) (member (name b)))))",
         );
     }
 
@@ -1340,10 +1358,10 @@ mod tests {
         xot.append(doc_root, outer_call).unwrap();
         invert_chains_in_tree(&mut xot, doc_root).unwrap();
         // Outer call left untouched (top-level, no chain), inner
-        // call became a <chain>.
+        // call became a <object>.
         assert_eq!(
             render(&xot, outer_call),
-            "(call (name f) (argument (chain (name obj) (call (name method)))))",
+            "(call (name f) (argument (object (access) (name obj) (call (name method)))))",
         );
     }
 
@@ -1371,8 +1389,8 @@ mod tests {
         invert_chains_in_tree(&mut xot, doc_root).unwrap();
         assert_eq!(
             render(&xot, body),
-            "(body (stmt1 (chain (name a) (member (name b)))) \
-             (stmt2 (chain (name c) (member (name d) (member (name e))))))",
+            "(body (stmt1 (object (access) (name a) (member (name b)))) \
+             (stmt2 (object (access) (name c) (member (name d) (member (name e))))))",
         );
     }
 
@@ -1393,17 +1411,17 @@ mod tests {
         let outer_call = build_call(&mut xot, outer_callee, vec![]);
         xot.append(doc_root, outer_call).unwrap();
         invert_chains_in_tree(&mut xot, doc_root).unwrap();
-        // Single <chain> with all 4 segments.
+        // Single <object> with all 4 segments.
         let surviving = xot.children(doc_root)
             .find(|&c| {
                 xot.element(c).is_some()
-                    && get_element_name(&xot, c).as_deref() == Some("chain")
+                    && get_element_name(&xot, c).as_deref() == Some("object")
             })
             .or_else(|| xot.children(doc_root).find(|&c| xot.element(c).is_some()))
             .expect("a child");
         assert_eq!(
             render(&xot, surviving),
-            "(chain (name obj) (call (name method) (argument x) (member (name other) (call (name thing)))))",
+            "(object (access) (name obj) (call (name method) (argument x) (member (name other) (call (name thing)))))",
         );
     }
 

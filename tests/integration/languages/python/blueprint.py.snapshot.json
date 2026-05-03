@@ -297,10 +297,11 @@
     {
       "right": {
         "type": {
-          "chain": {
+          "object": {
             "member": {
               "name": "Foo"
             },
+            "access": true,
             "name": "OrderedDict"
           }
         }
@@ -451,10 +452,11 @@
                   },
                   "left": {
                     "expression": {
-                      "chain": {
+                      "object": {
                         "member": {
                           "name": "name"
                         },
+                        "access": true,
                         "name": "self"
                       }
                     }
@@ -485,17 +487,19 @@
                       "right": {
                         "expression": {
                           "compare": {
-                            "chains": [
+                            "objects": [
                               {
                                 "member": {
                                   "name": "name"
                                 },
+                                "access": true,
                                 "name": "self"
                               },
                               {
                                 "member": {
                                   "name": "name"
                                 },
+                                "access": true,
                                 "name": "other"
                               }
                             ],
@@ -981,10 +985,11 @@
                 {
                   "right": {
                     "expression": {
-                      "chain": {
+                      "object": {
                         "call": {
                           "name": "read"
                         },
+                        "access": true,
                         "name": "conn"
                       },
                       "await": true
@@ -1478,18 +1483,20 @@
             "body": {
               "expressions": [
                 {
-                  "chain": {
+                  "object": {
                     "call": {
                       "name": "read"
                     },
+                    "access": true,
                     "name": "fa"
                   }
                 },
                 {
-                  "chain": {
+                  "object": {
                     "call": {
                       "name": "read"
                     },
+                    "access": true,
                     "name": "fb"
                   }
                 }
@@ -1812,10 +1819,11 @@
                   "rights": [
                     {
                       "expression": {
-                        "chain": {
+                        "object": {
                           "call": {
                             "name": "items"
                           },
+                          "access": true,
                           "name": "data"
                         }
                       }

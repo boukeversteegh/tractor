@@ -27,13 +27,14 @@ call/
 
 The `//call/callee/member/object/member/object/member/object/name='a'` query reaches the receiver. Adding or removing a chain link changes the depth of every receiver query. Cross-language queries are language-specific because Java emits a flat call (`<call><object/>NAME...args</call>`), Python/Go nest via `<member>`, and TypeScript wraps in `<callee>`.
 
-## Inverted shape — `<chain>` wrapper, nested step spine
+## Inverted shape — `<object[access]>` wrapper, nested step spine
 
-For 2+ link chains, `<chain>` has exactly two children: the **receiver** (any expression element) followed by the **first step**. Subsequent steps nest as the LAST child of the previous step.
+For 2+ link chains, the wrapper is `<object>` carrying an `<access/>` marker. The marker distinguishes runtime member-access from object literals (which share the `<object>` element name in TS/JS). The wrapper has the marker as its first child, then the receiver, then the first step. Subsequent steps nest as the LAST child of the previous step.
 
 `console.stdout.write()`:
 ```xml
-<chain>
+<object>
+  <access/>                      <!-- marker: this is access, not literal -->
   <name>console</name>          <!-- receiver -->
   <member>                       <!-- step 1: .stdout -->
     <name>stdout</name>
@@ -41,10 +42,28 @@ For 2+ link chains, `<chain>` has exactly two children: the **receiver** (any ex
       <name>write</name>
     </call>
   </member>
-</chain>
+</object>
 ```
 
-For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no `<chain>` wrapper. The wrapper appears only when there is at least one access or invocation step.
+The `<object>` name is chosen so a developer reading the source thinks the same thing about the tree: `foo.bar` is "an object foo, with member bar accessed on it" — not "a chain of foo and bar". The element name reflects the natural mental model.
+
+For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no wrapper. The `<object[access]>` wrapper appears only when there is at least one access or invocation step.
+
+### Disambiguating chains from object literals
+
+The `<object>` element name is also used for object-literal expressions (TS/JS `{a: 1, b: 2}`):
+```xml
+<object>
+  <pair>...</pair>
+  <pair>...</pair>
+</object>
+```
+
+Two ways to distinguish in queries:
+- **Marker-based:** `//object[access]` finds chains; `//object[not(access)]` finds literals.
+- **Structural:** `//object[member or call or subscript]` finds chains; `//object[pair]` finds literals.
+
+The marker form is recommended — explicit and short. Both are valid.
 
 ### Step element types
 
@@ -57,7 +76,8 @@ For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no
 
 `a.b.c.d` (pure access):
 ```xml
-<chain>
+<object>
+  <access/>
   <name>a</name>
   <member>
     <name>b</name>
@@ -68,12 +88,13 @@ For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no
       </member>
     </member>
   </member>
-</chain>
+</object>
 ```
 
 `a.b().c.d()` (mixed mid-chain calls):
 ```xml
-<chain>
+<object>
+  <access/>
   <name>a</name>
   <call>
     <name>b</name>
@@ -84,12 +105,13 @@ For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no
       </call>
     </member>
   </call>
-</chain>
+</object>
 ```
 
 `a[0].b` (subscript in chain):
 ```xml
-<chain>
+<object>
+  <access/>
   <name>a</name>
   <subscript>
     <int>0</int>
@@ -97,12 +119,13 @@ For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no
       <name>b</name>
     </member>
   </subscript>
-</chain>
+</object>
 ```
 
 `(x as Foo).b` (complex receiver):
 ```xml
-<chain>
+<object>
+  <access/>
   <cast>
     <name>x</name>
     <type>Foo</type>
@@ -110,26 +133,28 @@ For a bare identifier `a` (no chain), the result is just `<name>a</name>` — no
   <member>
     <name>b</name>
   </member>
-</chain>
+</object>
 ```
 
 `f()(args)` (result-invocation):
 ```xml
-<chain>
+<object>
+  <access/>
   <call>
     <name>f</name>
   </call>
   <call>
     <argument>...</argument>
   </call>
-</chain>
+</object>
 ```
 
 The discriminator for "result invocation" vs "method call" is presence/absence of a `<name>` child.
 
 `a?.b?.c()` (optional chaining):
 ```xml
-<chain>
+<object>
+  <access/>
   <name>a</name>
   <member>
     <optional/>
@@ -139,30 +164,30 @@ The discriminator for "result invocation" vs "method call" is presence/absence o
       <name>c</name>
     </call>
   </member>
-</chain>
+</object>
 ```
 
 The marker rides on the step element where the operator appears, not on the receiver name.
 
 ## Why nested rather than flat
 
-The first proposal (iter 232) was a FLAT shape with sibling chain segments under `<chain>`. After comparing query patterns side-by-side, NESTED won on the strength of **declaration-call query symmetry**:
+The first proposal (iter 232) was a FLAT shape with sibling chain segments under a single wrapper. After comparing query patterns side-by-side, NESTED won on the strength of **declaration-call query symmetry**:
 
 | Query | Declaration | Chain (nested) | Chain (flat) |
 |---|---|---|---|
-| Specific path | `//class[name='Foo']/method[name='bar']` | `//chain[name='console']/member[name='stdout']/call[name='write']` | `//chain[name[1]='console' and name[2]='stdout' and call/name='write']` |
-| Receiver match | `//class[name='Foo']` | `//chain[name='Foo']` | `//chain[name[1]='Foo']` |
+| Specific path | `//class[name='Foo']/method[name='bar']` | `//object[access][name='console']/member[name='stdout']/call[name='write']` | `//chain[name[1]='console' and name[2]='stdout' and call/name='write']` |
+| Receiver match | `//class[name='Foo']` | `//object[access and name='Foo']` | `//chain[name[1]='Foo']` |
 | Middle pattern | n/a | `//member[name='foo']/member[name='bar']` | `//chain[name='foo']/following-sibling::*[1][.='bar']` |
 
 The nested form lets a developer write XPath against chain expressions exactly the way they write it against declarations. Tractor's whole rule library benefits from one consistent navigation idiom rather than two.
 
 The trade-off is that depth queries (Law-of-Demeter detection) become `count(.//member | .//call | .//subscript) >= 3` instead of FLAT's `count(*) >= 3`. Acceptable cost: depth queries are written once into a rule library; path-matching queries are written every time someone authors a rule.
 
-## Element name: `<chain>`
+## Element name: `<object[access]>`
 
 Distinct from existing `<path>`:
 - `<path>` — compile-time namespace lookup (`com.example.Foo`, `os::env`, `App\Models\User`). Each segment is purely declarative.
-- `<chain>` — runtime member-access / method-call sequence. Each segment may have effects (calls, subscripts, optional checks).
+- `<object[access]>` — runtime member-access / method-call sequence. Each segment may have effects (calls, subscripts, optional checks).
 
 Keeping them separate avoids forcing one element to carry both meanings — Principle #5 (Unified Concepts within a language) and Principle #11 (Specific Names Over Type Hierarchies).
 
@@ -186,19 +211,21 @@ paint.color = c; paint.strokeCap = s; /* return */ paint;
 The nested chain shape would be wrong for cascades because each step is *not* the result of the previous one. The clean extension is a `<cascades>` wrapper holding sibling steps — they're independent operations on the same receiver:
 
 ```xml
-<chain>
+<object>
+  <access/>
   <call><name>Paint</name></call>
   <cascades>
     <member><name>color</name><assign>c</assign></member>
     <member><name>strokeCap</name><assign>s</assign></member>
   </cascades>
-</chain>
+</object>
 ```
 
 For mixed cascade and normal chain `obj..a().b..c()..d()` (cascade `a()` on obj, then normal `.b` access on obj, then cascades `c()` and `d()` on `obj.b`):
 
 ```xml
-<chain>
+<object>
+  <access/>
   <name>obj</name>
   <cascades>
     <call><name>a</name></call>
@@ -210,7 +237,7 @@ For mixed cascade and normal chain `obj..a().b..c()..d()` (cascade `a()` on obj,
       <call><name>d</name></call>
     </cascades>
   </member>
-</chain>
+</object>
 ```
 
 `<cascades>` blocks are siblings of regular chain steps. They compose with the rest of the spine.
@@ -238,13 +265,13 @@ pub enum ChainSegment {
 /// in source order (leftmost-first). Non-mutating.
 pub fn extract_chain(xot: &Xot, node: XotNode) -> Vec<ChainSegment>;
 
-/// Build the inverted `<chain>` tree from a segment list. Returns
-/// the new `<chain>` element. Pre: ≥2 segments, first is Receiver.
+/// Build the inverted `<object[access]>` tree from a segment list. Returns
+/// the new `<object[access]>` element. Pre: ≥2 segments, first is Receiver.
 pub fn emit_chain(xot: &mut Xot, segments: Vec<ChainSegment>)
     -> Result<XotNode, xot::Error>;
 
 /// In-place: extract → detach → emit → replace. Returns the new
-/// `<chain>` on success, or None if the input wasn't a useful
+/// `<object[access]>` on success, or None if the input wasn't a useful
 /// chain (and was left untouched).
 pub fn invert_chain_nesting(xot: &mut Xot, node: XotNode)
     -> Result<Option<XotNode>, xot::Error>;
@@ -277,11 +304,11 @@ Languages whose current shape doesn't match (Java's flat call, TypeScript's `<ca
 - there are fewer than 2 segments (just a receiver, e.g. a bare identifier), or
 - the only step is a nameless top-level Call (e.g. `f(args)`).
 
-Wrapping these in `<chain>` would add noise without informational value.
+Wrapping these in `<object[access]>` would add noise without informational value.
 
 ### Source-location threading
 
-- `<chain>` inherits `line`/`column`/`end_line`/`end_column` from the receiver node (the leftmost source token).
+- `<object[access]>` inherits `line`/`column`/`end_line`/`end_column` from the receiver node (the leftmost source token).
 - Each step element inherits from its primary node — the access name for `<member>`, the method name for `<call>`, the index expression for `<subscript>`.
 - For result-invocation `<call>` segments (no `name_node`), the step has no source location attached automatically — callers can attach later if needed.
 
@@ -318,7 +345,7 @@ The walker visits chain roots top-down; each invocation extracts the full chain 
 
 ### Render module update
 
-The renderer (`tractor/src/render/<lang>.rs`) currently reconstructs source from the right-deep shape. After inversion, each per-language renderer needs an `<chain>` traversal that emits source with the correct operator (`.`, `->`, `::`) between segments. One render iter per language, batched as needed.
+The renderer (`tractor/src/render/<lang>.rs`) currently reconstructs source from the right-deep shape. After inversion, each per-language renderer needs an `<object[access]>` traversal that emits source with the correct operator (`.`, `->`, `::`) between segments. One render iter per language, batched as needed.
 
 ### Design.md update
 

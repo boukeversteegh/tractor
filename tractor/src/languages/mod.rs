@@ -1178,10 +1178,10 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             ("compare", "name"),
             // Same situation when both operands of a comparison
             // are member-access chains (`self.name == other.name`)
-            // — both become <chain> siblings under <compare> and
-            // collide on the singleton `chain` JSON key without
-            // this tag.
-            ("compare", "chain"),
+            // — both become <object[access]> siblings under
+            // <compare> and collide on the singleton `object`
+            // JSON key without this tag.
+            ("compare", "object"),
         ],
     )?;
     python_restructure_imports(xot, root)?;
