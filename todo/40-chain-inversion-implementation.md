@@ -61,20 +61,30 @@ Each iter:
 
 ## Open chain follow-ups (from iter 245 reviewer + cold-read)
 
-- [ ] **C# conditional-access (`?.`) doesn't fit canonical.**
-  Tree-sitter emits `<member[instance and optional]>` with a
-  `<condition>` slot wrapping the receiver instead of `<object>`.
-  4+ leftover sites in `csharp/blueprint.cs.snapshot.txt:283,
-  :318, :320, :420`. Need a C# pre-pass that rewrites the
-  `<condition>`-slot shape into canonical `<object>` slot before
-  `invert_chains_in_tree` runs.
-- [ ] **C# implicit-`this` member access has no `<object>` slot.**
-  `Priority` (used inside a getter body that returns
-  `this.Priority`) renders as `<member[instance]><property>...
-  </property></member>` with no `<object>` slot. Inverter
-  currently leaves this alone (treats as opaque Receiver, single
-  segment, not useful_chain). Decide: synthesize `<this/>`
-  receiver + invert, or document as expected non-chain.
+- [x] iter 250 — **C# conditional-access (`?.`).** Pre-pass
+  `csharp_normalize_conditional_access` converts the
+  `<condition>` slot to canonical `<object>` slot. Inverter also
+  fixed to propagate `<member>`-callee markers onto the resulting
+  `<call>` step (so `[instance]` / `[optional]` ride the call,
+  not the absent member).
+- [x] iter 249 — **Subscript chains.** `walk_subscript` added,
+  handles both slot-wrapped (TS / Python) and bare-children
+  (Go/Java/C#/Ruby/Rust/PHP) shapes. TS subscript chains now
+  invert cleanly.
+- [ ] **C# `base.X` and implicit-`this` member access.** 2
+  remaining un-inverted sites in C# blueprint
+  (`csharp/blueprint.cs.snapshot.txt:318, :320`). Source is
+  `base.Priority` in a property getter/setter. Tree-sitter
+  inlines `base` as a text leaf ("base.") rather than emitting
+  a `<base_expression>` element, so the C# `member_access_expression`
+  handler can't wrap it in `<object>` (nothing to wrap).
+  Approach options when picked up:
+  (a) detect "base." / "this." text leaks inside `<member>` and
+      synthesize a `<base/>` / `<this/>` receiver wrapped in
+      `<object>`;
+  (b) leave as-is and document `<member[instance]>` without
+      `<object>` as the implicit-receiver canonical shape.
+  Low priority; 2 sites only.
 - [ ] **C# `<instance/>` marker policy across languages.** Only
   C# carries `<instance/>` to distinguish static vs. instance
   access. Other languages don't expose this. Decide whether to
