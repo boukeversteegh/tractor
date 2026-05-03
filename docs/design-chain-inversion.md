@@ -183,6 +183,20 @@ The nested form lets a developer write XPath against chain expressions exactly t
 
 The trade-off is that depth queries (Law-of-Demeter detection) become `count(.//member | .//call | .//subscript) >= 3` instead of FLAT's `count(*) >= 3`. Acceptable cost: depth queries are written once into a rule library; path-matching queries are written every time someone authors a rule.
 
+## Per-step markers carry information; `[access]` lives only at the root
+
+The `[access]` marker on the `<object>` wrapper says "this is a member-access chain" — distinguishing it from object literals (TS `{a: 1}`), which share the `<object>` element name. **Per-step markers (`<member>`/`<call>`/`<subscript>`) only exist when they carry information that the root marker doesn't already imply.**
+
+Examples of per-step markers that DO carry information:
+- `<member[optional]>` / `<call[optional]>` — `?.` short-circuits on null. The semantic is per-step, not chain-wide (`a.b?.c.d` has only one optional step).
+- `<call[nullsafe]>` — PHP `?->` (same idea, different operator).
+
+Examples of per-step markers that should NOT exist (rejected as redundant):
+- `<member[access]>` / `<call[access]>` — would just repeat the root.
+- `<member[instance]>` (C#/PHP, dropped iter 255) — was added unconditionally to every member-access derived from the `member_access_expression` tree-sitter kind, but since static-vs-instance is not actually distinguished (both syntactic forms get the marker), the marker carried no information. The chain-root `[access]` already says "this is access," and the element name `<member>` already says "this is `.`-style." The `[instance]` marker was vestigial from pre-chain-inversion days when there was no chain-root marker.
+
+The general rule: **add a per-step marker only when there's a meaningful syntactic alternative that lacks it.** `[optional]` qualifies (some steps are nullable, others aren't). `[instance]` did not (every step was equally "instance" in the marker sense).
+
 ## Element name: `<object[access]>`
 
 Distinct from existing `<path>`:

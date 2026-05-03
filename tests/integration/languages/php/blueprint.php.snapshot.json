@@ -263,8 +263,7 @@
                       "expression": {
                         "object": {
                           "member": {
-                            "name": "name",
-                            "instance": true
+                            "name": "name"
                           },
                           "access": true,
                           "variable": {
@@ -289,8 +288,7 @@
                       "expression": {
                         "object": {
                           "member": {
-                            "name": "count",
-                            "instance": true
+                            "name": "count"
                           },
                           "access": true,
                           "variable": {
@@ -408,8 +406,7 @@
                           "expression": {
                             "object": {
                               "member": {
-                                "name": "count",
-                                "instance": true
+                                "name": "count"
                               },
                               "access": true,
                               "variable": {
@@ -473,8 +470,7 @@
                             "expression": {
                               "object": {
                                 "member": {
-                                  "name": "count",
-                                  "instance": true
+                                  "name": "count"
                                 },
                                 "access": true,
                                 "variable": {
@@ -504,8 +500,7 @@
                             "expression": {
                               "object": {
                                 "member": {
-                                  "name": "name",
-                                  "instance": true
+                                  "name": "name"
                                 },
                                 "access": true,
                                 "variable": {
@@ -841,7 +836,6 @@
                                             }
                                           }
                                         ],
-                                        "instance": true,
                                         "name": "transform"
                                       },
                                       "access": true,
@@ -2162,8 +2156,7 @@
             "expression": {
               "object": {
                 "call": {
-                  "name": "size",
-                  "instance": true
+                  "name": "size"
                 },
                 "access": true,
                 "variable": {

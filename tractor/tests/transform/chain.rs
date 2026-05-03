@@ -30,15 +30,15 @@
 //!   every step rather than `<member>`. The canonical shape is
 //!   `//object[access]/call/call/call` for Ruby; `//object[access]/call/member/call`
 //!   for the other 7 languages.
-//! - **C#**: each `<member>`/`<call>` step carries an
-//!   `[instance]` marker (`<member[instance]>`,
-//!   `<call[instance]>`) distinguishing instance from static
-//!   access. Same SHAPE as the others; just additional markers.
 //! - **PHP**: the receiver is wrapped in `<variable>` (because
 //!   PHP variables carry the `$` sigil), so the receiver query
 //!   is `//object[access]/variable/name='obj'` rather than
-//!   `//object[access]/name='obj'`. Each step also carries an
-//!   `[instance]` marker (same as C#).
+//!   `//object[access]/name='obj'`.
+//!
+//! (Iter 255: the redundant `[instance]` marker that C# and PHP
+//! previously added to every chain step was removed. The chain-
+//! root `[access]` marker already says "this is access," so the
+//! per-step marker carried no information.)
 //! - **Java**: method calls go through a synthetic `<member>`
 //!   wrapper in the canonical input (Java's flat-call shape was
 //!   normalised in iter 244), so the inverted shape is identical
@@ -128,9 +128,9 @@ fn csharp() {
     claim("C# chain receiver is `obj`",
         &mut tree, "//object[access]/name='obj'", 1);
 
-    claim("C# step elements carry an [instance] marker (cf. <instance/> for member access)",
+    claim("C# full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][name='obj']/call[instance][name='foo']/member[instance][name='bar']/call[instance][name='baz']",
+        "//object[access][name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -206,9 +206,9 @@ fn php() {
     claim("PHP chain receiver is `$obj` (a <variable> with name='obj')",
         &mut tree, "//object[access]/variable/name='obj'", 1);
 
-    claim("PHP step elements carry an [instance] marker (like C#)",
+    claim("PHP full chain reads as a path: receiver / call / member / call",
         &mut tree,
-        "//object[access][variable/name='obj']/call[instance][name='foo']/member[instance][name='bar']/call[instance][name='baz']",
+        "//object[access][variable/name='obj']/call[name='foo']/member[name='bar']/call[name='baz']",
         1);
 }
 
@@ -238,12 +238,12 @@ fn cross_language_uniformity() {
         );
     }
 
-    // C# and PHP add `[instance]` markers, so the canonical
-    // xpath without `[instance]` predicates still matches via
-    // implicit predicate-on-self semantics — the marker is
-    // additive, not exclusive.
+    // C# and PHP previously added redundant `[instance]` markers
+    // (dropped iter 255). The canonical xpath now matches them
+    // identically to the others — chain steps are bare across all
+    // 7 non-Ruby languages.
     claim(
-        "csharp: canonical xpath also matches despite [instance] markers (markers are additive)",
+        "csharp: canonical xpath matches (no per-step markers)",
         &mut parse_src("csharp", "class X { void M() { obj.foo().bar.baz(); } }"),
         canonical_xpath,
         1,

@@ -62,13 +62,13 @@ program/
   │       │       ├─ expression/assign/
   │       │       │   ├─ left/expression/object[access]/
   │       │       │   │   ├─ variable/name = "this"
-  │       │       │   │   └─ member[instance]/name = "name"
+  │       │       │   │   └─ member/name = "name"
   │       │       │   ├─ op = "="
   │       │       │   └─ right/expression/variable/name = "name"
   │       │       └─ expression/assign/
   │       │           ├─ left/expression/object[access]/
   │       │           │   ├─ variable/name = "this"
-  │       │           │   └─ member[instance]/name = "count"
+  │       │           │   └─ member/name = "count"
   │       │           ├─ op = "="
   │       │           └─ right/expression/variable/name = "count"
   │       ├─ method[abstract and public]/
@@ -102,12 +102,12 @@ program/
   │       │       │       ├─ op[nullish] = "??"
   │       │       │       └─ right/expression/object[access]/
   │       │       │           ├─ variable/name = "this"
-  │       │       │           └─ member[instance]/name = "name"
+  │       │       │           └─ member/name = "name"
   │       │       └─ if/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/object[access]/
   │       │           │   │   ├─ variable/name = "this"
-  │       │           │   │   └─ member[instance]/name = "count"
+  │       │           │   │   └─ member/name = "count"
   │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "10"
   │       │           ├─ body/return/expression/string/interpolation/variable/name = "target"
@@ -115,7 +115,7 @@ program/
   │       │           │   ├─ condition/expression/binary/
   │       │           │   │   ├─ left/expression/object[access]/
   │       │           │   │   │   ├─ variable/name = "this"
-  │       │           │   │   │   └─ member[instance]/name = "count"
+  │       │           │   │   │   └─ member/name = "count"
   │       │           │   │   ├─ op[compare and greater] = ">"
   │       │           │   │   └─ right/expression/int = "0"
   │       │           │   └─ body/return/expression/string/interpolation/variable/name = "target"
@@ -203,7 +203,7 @@ program/
   │       │       │           │   ├─ op = "="
   │       │       │           │   └─ right/expression/object[access]/
   │       │       │           │       ├─ variable/name = "this"
-  │       │       │           │       └─ call[instance]/
+  │       │       │           │       └─ call/
   │       │       │           │           ├─ name = "transform"
   │       │       │           │           └─ argument/variable/name = "item"
   │       │       │           └─ catch/
@@ -535,7 +535,7 @@ program/
   │   ├─ returns/type[primitive]/name = "int"
   │   └─ body/return/expression/object[access]/
   │       ├─ variable/name = "thing"
-  │       └─ call[instance]/name = "size"
+  │       └─ call/name = "size"
   ├─ comment[leading] = "// DNF type in parameter position."
   ├─ function/
   │   ├─ name = "dnf_demo"

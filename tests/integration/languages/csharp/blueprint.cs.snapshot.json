@@ -76,7 +76,6 @@
                         "arguments": [
                           "this"
                         ],
-                        "instance": true,
                         "optional": true,
                         "name": "Invoke"
                       },
@@ -175,8 +174,7 @@
                   "expression": {
                     "object": {
                       "member": {
-                        "name": "Low",
-                        "instance": true
+                        "name": "Low"
                       },
                       "access": true,
                       "name": "Priority"
@@ -205,8 +203,7 @@
                   "expression": {
                     "object": {
                       "member": {
-                        "name": "Length",
-                        "instance": true
+                        "name": "Length"
                       },
                       "access": true,
                       "name": "key"
@@ -433,7 +430,6 @@
                                   "int": "1"
                                 }
                               ],
-                              "instance": true,
                               "name": "Delay"
                             },
                             "access": true,
@@ -620,8 +616,7 @@
                         {
                           "property": {
                             "name": "Priority"
-                          },
-                          "instance": true
+                          }
                         }
                       ]
                     }
@@ -642,8 +637,7 @@
                               "member": {
                                 "property": {
                                   "name": "Priority"
-                                },
-                                "instance": true
+                                }
                               }
                             }
                           },
@@ -703,10 +697,8 @@
                           "object": {
                             "member": {
                               "call": {
-                                "name": "ToUpperInvariant",
-                                "instance": true
+                                "name": "ToUpperInvariant"
                               },
-                              "instance": true,
                               "name": "Name"
                             },
                             "access": true,
@@ -760,8 +752,7 @@
                                 "expression": {
                                   "object": {
                                     "member": {
-                                      "name": "Length",
-                                      "instance": true
+                                      "name": "Length"
                                     },
                                     "access": true,
                                     "name": "shouted"
@@ -810,8 +801,7 @@
                                             "expression": {
                                               "object": {
                                                 "member": {
-                                                  "name": "Length",
-                                                  "instance": true
+                                                  "name": "Length"
                                                 },
                                                 "access": true,
                                                 "name": "raw"
@@ -825,8 +815,7 @@
                                                   "expression": {
                                                     "object": {
                                                       "member": {
-                                                        "name": "Length",
-                                                        "instance": true
+                                                        "name": "Length"
                                                       },
                                                       "access": true,
                                                       "name": "interp"
@@ -840,8 +829,7 @@
                                                         "expression": {
                                                           "object": {
                                                             "member": {
-                                                              "name": "Length",
-                                                              "instance": true
+                                                              "name": "Length"
                                                             },
                                                             "access": true,
                                                             "name": "verbatim"
@@ -855,8 +843,7 @@
                                                               "expression": {
                                                                 "object": {
                                                                   "member": {
-                                                                    "name": "Length",
-                                                                    "instance": true
+                                                                    "name": "Length"
                                                                   },
                                                                   "access": true,
                                                                   "name": "plain"
@@ -870,8 +857,7 @@
                                                                     "expression": {
                                                                       "object": {
                                                                         "member": {
-                                                                          "name": "Count",
-                                                                          "instance": true
+                                                                          "name": "Count"
                                                                         },
                                                                         "access": true,
                                                                         "name": "map"
@@ -882,8 +868,7 @@
                                                                     "expression": {
                                                                       "object": {
                                                                         "member": {
-                                                                          "name": "Count",
-                                                                          "instance": true
+                                                                          "name": "Count"
                                                                         },
                                                                         "access": true,
                                                                         "name": "list"
@@ -950,15 +935,13 @@
                                     {
                                       "object": {
                                         "member": {
-                                          "name": "Id",
-                                          "instance": true
+                                          "name": "Id"
                                         },
                                         "access": true,
                                         "name": "probe"
                                       }
                                     }
                                   ],
-                                  "instance": true,
                                   "name": "WriteLine"
                                 },
                                 "access": true,
@@ -1032,15 +1015,13 @@
                                             {
                                               "object": {
                                                 "call": {
-                                                  "name": "Describe",
-                                                  "instance": true
+                                                  "name": "Describe"
                                                 },
                                                 "access": true,
                                                 "name": "w"
                                               }
                                             }
                                           ],
-                                          "instance": true,
                                           "name": "WriteLine"
                                         },
                                         "access": true,
@@ -1102,8 +1083,7 @@
                                     {
                                       "object": {
                                         "call": {
-                                          "name": "Sum",
-                                          "instance": true
+                                          "name": "Sum"
                                         },
                                         "access": true,
                                         "name": "evens"
@@ -1197,8 +1177,7 @@
                                     {
                                       "object": {
                                         "call": {
-                                          "name": "ToString",
-                                          "instance": true
+                                          "name": "ToString"
                                         },
                                         "access": true,
                                         "name": "n"
@@ -1264,8 +1243,7 @@
                                 {
                                   "object": {
                                     "call": {
-                                      "name": "Flush",
-                                      "instance": true
+                                      "name": "Flush"
                                     },
                                     "access": true,
                                     "name": "scope"
@@ -1305,7 +1283,6 @@
                                                       "int": "1"
                                                     }
                                                   ],
-                                                  "instance": true,
                                                   "name": "WriteByte"
                                                 },
                                                 "access": true,
@@ -1350,8 +1327,7 @@
                                             {
                                               "object": {
                                                 "member": {
-                                                  "name": "Message",
-                                                  "instance": true
+                                                  "name": "Message"
                                                 },
                                                 "access": true,
                                                 "name": "ex"
@@ -1383,10 +1359,8 @@
                                       "object": {
                                         "member": {
                                           "member": {
-                                            "name": "Length",
-                                            "instance": true
+                                            "name": "Length"
                                           },
-                                          "instance": true,
                                           "name": "Message"
                                         },
                                         "access": true,
@@ -1545,7 +1519,6 @@
                                   "object": {
                                     "call": {
                                       "name": "Shout",
-                                      "instance": true,
                                       "optional": true
                                     },
                                     "access": true,
@@ -1582,8 +1555,7 @@
                                           },
                                           "object": {
                                             "member": {
-                                              "name": "Length",
-                                              "instance": true
+                                              "name": "Length"
                                             },
                                             "access": true,
                                             "name": "Name"
@@ -1618,8 +1590,7 @@
                                         "pattern": {
                                           "object": {
                                             "member": {
-                                              "name": "High",
-                                              "instance": true
+                                              "name": "High"
                                             },
                                             "access": true,
                                             "name": "Priority"
@@ -1652,8 +1623,7 @@
                                         "expression": {
                                           "object": {
                                             "member": {
-                                              "name": "Id",
-                                              "instance": true
+                                              "name": "Id"
                                             },
                                             "access": true,
                                             "name": "w"
@@ -1771,10 +1741,8 @@
                               "call": {
                                 "call": {
                                   "call": {
-                                    "name": "ToList",
-                                    "instance": true
+                                    "name": "ToList"
                                   },
-                                  "instance": true,
                                   "name": "Select",
                                   "arguments": [
                                     {
@@ -1804,7 +1772,6 @@
                                     }
                                   ]
                                 },
-                                "instance": true,
                                 "name": "Where",
                                 "arguments": [
                                   {
@@ -1977,7 +1944,6 @@
                                           "name": "msg"
                                         }
                                       ],
-                                      "instance": true,
                                       "name": "WriteLine"
                                     },
                                     "access": true,
@@ -2042,8 +2008,7 @@
                                 {
                                   "object": {
                                     "member": {
-                                      "name": "Count",
-                                      "instance": true
+                                      "name": "Count"
                                     },
                                     "access": true,
                                     "name": "odds"
@@ -2531,7 +2496,6 @@
                             "name": "Y"
                           }
                         ],
-                        "instance": true,
                         "name": "Combine"
                       },
                       "access": true,
@@ -2593,8 +2557,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "X",
-                                    "instance": true
+                                    "name": "X"
                                   },
                                   "access": true,
                                   "name": "b"
@@ -2605,8 +2568,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "X",
-                                    "instance": true
+                                    "name": "X"
                                   },
                                   "access": true,
                                   "name": "a"
@@ -2625,8 +2587,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "Y",
-                                    "instance": true
+                                    "name": "Y"
                                   },
                                   "access": true,
                                   "name": "b"
@@ -2637,8 +2598,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "Y",
-                                    "instance": true
+                                    "name": "Y"
                                   },
                                   "access": true,
                                   "name": "a"
@@ -2686,8 +2646,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "Y",
-                                    "instance": true
+                                    "name": "Y"
                                   },
                                   "access": true,
                                   "name": "b"
@@ -2698,8 +2657,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "Y",
-                                    "instance": true
+                                    "name": "Y"
                                   },
                                   "access": true,
                                   "name": "a"
@@ -2720,8 +2678,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "X",
-                                    "instance": true
+                                    "name": "X"
                                   },
                                   "access": true,
                                   "name": "b"
@@ -2732,8 +2689,7 @@
                               "expression": {
                                 "object": {
                                   "member": {
-                                    "name": "X",
-                                    "instance": true
+                                    "name": "X"
                                   },
                                   "access": true,
                                   "name": "a"
@@ -2937,8 +2893,7 @@
                   "objects": [
                     {
                       "member": {
-                        "name": "Answer",
-                        "instance": true
+                        "name": "Answer"
                       },
                       "access": true,
                       "name": "Hidden"
@@ -3484,8 +3439,7 @@
                                 {
                                   "object": {
                                     "call": {
-                                      "name": "ToString",
-                                      "instance": true
+                                      "name": "ToString"
                                     },
                                     "access": true,
                                     "expression": {

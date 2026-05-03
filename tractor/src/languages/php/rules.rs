@@ -57,8 +57,10 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         // key (matches iter-178 C# member-access shape).
         PhpKind::ClassConstantAccessExpression  => Custom(transformations::class_constant_access),
         PhpKind::MatchDefaultExpression         => RenameWithMarker(Arm, Default),
-        PhpKind::MemberAccessExpression         => RenameWithMarker(Member, Instance),
-        PhpKind::MemberCallExpression           => RenameWithMarker(Call, Instance),
+        // Iter 255: dropped the [instance] marker — redundant
+        // given the <object[access]> chain-root wrapper.
+        PhpKind::MemberAccessExpression         => Rename(Member),
+        PhpKind::MemberCallExpression           => Rename(Call),
         PhpKind::OptionalType                   => RenameWithMarker(Type, Optional),
         PhpKind::PhpTag                         => RenameWithMarker(Tag, Open),
         PhpKind::PrimitiveType                  => Custom(transformations::primitive_type),

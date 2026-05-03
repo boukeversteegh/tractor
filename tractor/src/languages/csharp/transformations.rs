@@ -183,10 +183,13 @@ pub fn conditional_access_expression(
         xot.detach(binding)?;
     }
 
-    // Step 3: rename to <member>, add <instance/> and <optional/>.
+    // Step 3: rename to <member>, add <optional/>. The
+    // [optional] marker stays — it carries real information
+    // about `?.` short-circuiting. The previous [instance]
+    // marker was dropped iter 255 as redundant given the
+    // <object[access]> chain wrapper.
     xot.with_renamed(node, Member)
-        .with_prepended_marker(node, Optional)?
-        .with_prepended_marker(node, Instance)?;
+        .with_prepended_marker(node, Optional)?;
     Ok(TransformAction::Continue)
 }
 
@@ -224,9 +227,9 @@ pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 /// Discriminator: tree-sitter tags the receiver child with
 /// `field="expression"`. The property is the other element child
 /// (no `field=` after the field-wrap pass synthesizes its `<name>`
-/// wrapper). Renames the node to `<member>` and prepends the
-/// `<instance/>` marker (mirroring the previous
-/// `RenameWithMarker(Member, Instance)` semantics).
+/// wrapper). Renames the node to `<member>`. (Iter 255 dropped
+/// the previous `<instance/>` marker — redundant given the
+/// `<object[access]>` chain-root wrapper from iter 245.)
 pub fn member_access_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let elem_children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
@@ -242,8 +245,7 @@ pub fn member_access_expression(xot: &mut Xot, node: XotNode) -> Result<Transfor
         xot.with_source_location_from(wrapper_node, child)
             .with_wrap_child(child, wrapper_node)?;
     }
-    xot.with_renamed(node, Member)
-        .with_prepended_marker(node, Instance)?;
+    xot.with_renamed(node, Member);
     Ok(TransformAction::Continue)
 }
 
