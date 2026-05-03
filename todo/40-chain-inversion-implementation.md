@@ -55,9 +55,21 @@ Each iter:
   in "Open chain follow-ups": conditional-access `?.` shape uses
   `<condition>` slot (un-canonical); implicit-`this` member
   access without `<object>` slot left untransformed.
-- [ ] iter 246 — **Ruby**.
-- [ ] iter 247 — **PHP** (note `->` operator instead of `.`).
-- [ ] iter 248 — **Rust**.
+- [x] iter 246 — **Ruby**. `wrap_flat_call_member` helper
+  extracted from the Java pilot and applied to Ruby; every `.X`
+  parses as a method call so intermediate accesses also emit
+  `<call>` rather than `<member>`. Documented exception in
+  `tests/transform/chain.rs::ruby`.
+- [x] iter 247 — **PHP**. `php_wrap_member_call_slots` pre-pass
+  wraps the receiver in `<object>` on `<member>` (and only the
+  object on `<call>`, leaving the bare `<name>` for
+  `wrap_flat_call_member`). Receiver carries the `<variable>`
+  wrapper because PHP variables hold the `$` sigil.
+- [x] iter 248 — **Rust**. `rust_normalize_field_expression`
+  pre-pass converts `<field><value><expression>RECV</expression>
+  </value><name>X</name></field>` to canonical
+  `<member><object>RECV</object><property><name>X</name></property>
+  </member>`. All 8 PLs now invert chains.
 
 ## Open chain follow-ups (from iter 245 reviewer + cold-read)
 
@@ -82,18 +94,17 @@ Each iter:
   (`get => base.Priority` / `set => base.Priority = value`).
   Marker vocabulary matches the existing `:base(id)` /
   `:this(...)` constructor-initializer transform.
-- [ ] **C# `<instance/>` marker policy across languages.** Only
-  C# carries `<instance/>` to distinguish static vs. instance
-  access. Other languages don't expose this. Decide whether to
-  propagate (e.g. Java has the same need), drop, or document
-  the asymmetry.
-- [ ] **Subscript chains aren't extracted.**
-  `chain_inversion::extract_chain` only walks `<member>`/`<call>`;
-  `<subscript>`/`<index>` elements act as opaque receivers, so
-  `arr[0].field` chains stop short. The `ChainSegment::Subscript`
-  variant exists in `emit_chain` but is never produced. Add
-  `walk_subscript`. Visible in TS at
-  `typescript/blueprint.ts.snapshot.txt:219-225`.
+- [x] iter 255 — **C# `<instance/>` marker policy.** Resolved by
+  dropping the marker entirely from chain steps. The
+  `<object[access]>` chain root already signals "this is access,"
+  so the per-step marker carried no information. Codified in
+  design.md § "Hierarchical access nests top-down" → Rejected
+  alternatives → "Per-step `<instance/>` markers." Java never
+  needed it; the asymmetry is gone.
+- [x] iter 249 — **Subscript chains extracted** (this entry
+  duplicated the iter 249 closure above). `walk_subscript`
+  produces `ChainSegment::Subscript`; TS subscript chains invert
+  cleanly at `typescript/blueprint.ts.snapshot.txt:219-225`.
 
 ## Cross-cutting follow-ups
 
