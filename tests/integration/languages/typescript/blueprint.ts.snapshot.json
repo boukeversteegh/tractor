@@ -584,14 +584,11 @@
                     "left": {
                       "expression": {
                         "object": {
-                          "children": [
-                            {
-                              "$type": "member",
-                              "name": "name"
-                            }
-                          ],
+                          "member": {
+                            "name": "name"
+                          },
                           "access": true,
-                          "member": "new.target"
+                          "name": "new.target"
                         }
                       }
                     },
@@ -3022,14 +3019,11 @@
       "value": {
         "expression": {
           "object": {
-            "children": [
-              {
-                "$type": "member",
-                "name": "url"
-              }
-            ],
+            "member": {
+              "name": "url"
+            },
             "access": true,
-            "member": "import.meta"
+            "name": "import.meta"
           }
         }
       },

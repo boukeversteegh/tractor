@@ -237,7 +237,15 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         // `[expr]: value` — computed property name.
         TsKind::ComputedPropertyName      => Rename(Name),
         // `new.target` / `import.meta` — both are member-access shapes.
-        TsKind::MetaProperty              => Rename(Member),
+        // `new.target` and `import.meta` are JS meta-properties —
+        // single atomic compound identifiers. Rename to `<name>` so
+        // they slot cleanly into chain expressions as receivers
+        // (matches Python's `__file__` precedent). Pre-iter 283 they
+        // were renamed to `<member>` which collided with the chain-
+        // step `<member>` element in `import.meta.url` style chains:
+        // both became `<member>` siblings under `<object[access]>`,
+        // and JSON serializer overflowed the second one to children.
+        TsKind::MetaProperty              => Rename(Name),
         // `Foo.Bar` in type position — same shape as `<member>`.
         TsKind::NestedTypeIdentifier      => Rename(Member),
         // `Foo.Bar` value reference (scoped value identifier).

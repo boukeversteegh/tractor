@@ -75,6 +75,26 @@ fn python() {
 }
 
 #[test]
+fn typescript_meta_property_chain() {
+    // `import.meta.url` and `new.target.name` — JS meta-properties
+    // are single atomic compound identifiers. Pre-iter 283 they
+    // renamed to `<member>` and collided with the chain step
+    // `<member>` (both ended up as `<member>` siblings under
+    // `<object[access]>`, JSON overflowed). Iter 283 renamed
+    // meta_property to `<name>` so the receiver slot is bare-name
+    // (matching Python's `__file__` precedent).
+    claim("TS `import.meta.url` chain has <name>import.meta</name> receiver",
+        &mut parse_src("typescript", "const u = import.meta.url;\n"),
+        "//object[access][name='import.meta']/member[name='url']",
+        1);
+
+    claim("TS meta-property `new.target.name` chain similarly uses <name> receiver",
+        &mut parse_src("typescript", "const t = new.target.name;\n"),
+        "//object[access][name='new.target']/member[name='name']",
+        1);
+}
+
+#[test]
 fn typescript() {
     let mut tree = parse_src("typescript", "obj.foo().bar.baz();\n");
 
