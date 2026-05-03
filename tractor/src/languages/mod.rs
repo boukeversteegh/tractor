@@ -318,6 +318,12 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    // C# try/catch: `<try>` parent with `<body>` + multiple `<catch>`
+    // siblings. Tag catches with `list="catch"`; body stays singleton.
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("try", "catch")],
+    )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

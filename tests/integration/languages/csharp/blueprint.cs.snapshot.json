@@ -1325,23 +1325,25 @@
                       ],
                       "try": [
                         {
-                          "children": [
-                            {
-                              "$type": "catch",
-                              "declaration": {
-                                "type": {
-                                  "name": "Exception"
-                                }
-                              },
-                              "body": {
-                                "block": [
-                                  {
-                                    "throw": true
+                          "finally": {
+                            "block": {
+                              "expression": [
+                                {
+                                  "call": {
+                                    "member": {
+                                      "property": {
+                                        "name": "Flush"
+                                      },
+                                      "instance": true,
+                                      "object": {
+                                        "name": "scope"
+                                      }
+                                    }
                                   }
-                                ]
-                              }
+                                }
+                              ]
                             }
-                          ],
+                          },
                           "body": {
                             "block": [
                               {
@@ -1411,95 +1413,92 @@
                               }
                             ]
                           },
-                          "catch": {
-                            "body": {
-                              "block": [
-                                {
-                                  "expression": [
-                                    {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "$type": "argument",
-                                            "member": {
-                                              "property": {
-                                                "name": "Message"
-                                              },
-                                              "instance": true,
-                                              "object": {
-                                                "name": "ex"
+                          "catch": [
+                            {
+                              "body": {
+                                "block": [
+                                  {
+                                    "expression": [
+                                      {
+                                        "call": {
+                                          "arguments": [
+                                            {
+                                              "$type": "argument",
+                                              "member": {
+                                                "property": {
+                                                  "name": "Message"
+                                                },
+                                                "instance": true,
+                                                "object": {
+                                                  "name": "ex"
+                                                }
                                               }
                                             }
-                                          }
-                                        ],
-                                        "name": "log"
+                                          ],
+                                          "name": "log"
+                                        }
                                       }
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            "declaration": {
-                              "name": "ex",
-                              "type": {
-                                "name": "InvalidOperationException"
-                              }
-                            },
-                            "filter": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "0"
+                                    ]
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "member": {
-                                      "property": {
-                                        "name": "Length"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "member": {
-                                          "property": {
-                                            "name": "Message"
-                                          },
-                                          "instance": true,
-                                          "object": {
-                                            "name": "ex"
+                                ]
+                              },
+                              "declaration": {
+                                "name": "ex",
+                                "type": {
+                                  "name": "InvalidOperationException"
+                                }
+                              },
+                              "filter": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "0"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "member": {
+                                        "property": {
+                                          "name": "Length"
+                                        },
+                                        "instance": true,
+                                        "object": {
+                                          "member": {
+                                            "property": {
+                                              "name": "Message"
+                                            },
+                                            "instance": true,
+                                            "object": {
+                                              "name": "ex"
+                                            }
                                           }
                                         }
                                       }
                                     }
+                                  },
+                                  "op": {
+                                    "text": ">",
+                                    "compare": true,
+                                    "greater": true
                                   }
-                                },
-                                "op": {
-                                  "text": ">",
-                                  "compare": true,
-                                  "greater": true
+                                }
+                              }
+                            },
+                            {
+                              "body": {
+                                "block": [
+                                  {
+                                    "throw": true
+                                  }
+                                ]
+                              },
+                              "declaration": {
+                                "type": {
+                                  "name": "Exception"
                                 }
                               }
                             }
-                          },
-                          "finally": {
-                            "block": {
-                              "expression": [
-                                {
-                                  "call": {
-                                    "member": {
-                                      "property": {
-                                        "name": "Flush"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "name": "scope"
-                                      }
-                                    }
-                                  }
-                                }
-                              ]
-                            }
-                          }
+                          ]
                         }
                       ],
                       "do": [

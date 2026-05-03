@@ -548,6 +548,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 220: C# try/catch list= — added `("try", "catch")` to
+  C#'s tag_multi_role_children. Try blocks with multiple catches
+  now render `try.catch: [{...}, {...}]` array. C# audit 7 → 6
+  (-1).
 - [x] iter 219: Python ternary then/condition/else role wraps —
   rewrote `conditional_expression` Custom handler to position-wrap
   the 3 element children (then/condition/else) instead of relying
