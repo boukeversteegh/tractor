@@ -356,11 +356,11 @@
               },
               {
                 "repetition": {
-                  "children": [
+                  "name": [
+                    "stringify",
                     "$key",
                     "$value"
-                  ],
-                  "name": "stringify"
+                  ]
                 }
               }
             ]
@@ -369,27 +369,26 @@
             "expression": [
               {
                 "repetition": {
-                  "children": [
+                  "pattern": [
                     {
-                      "$type": "pattern",
+                      "fragment": [
+                        "ident"
+                      ],
+                      "binding": true,
+                      "name": [
+                        "$key"
+                      ]
+                    },
+                    {
+                      "fragment": [
+                        "expr"
+                      ],
                       "binding": true,
                       "name": [
                         "$value"
-                      ],
-                      "fragment": [
-                        "expr"
                       ]
                     }
-                  ],
-                  "pattern": {
-                    "fragment": [
-                      "ident"
-                    ],
-                    "binding": true,
-                    "name": [
-                      "$key"
-                    ]
-                  }
+                  ]
                 }
               },
               {
@@ -540,12 +539,14 @@
                   "arguments": [
                     "\"drawable\""
                   ],
-                  "path": {
-                    "name": [
-                      "String",
-                      "from"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "String",
+                        "from"
+                      ]
+                    }
+                  ]
                 }
               ]
             },
@@ -719,14 +720,16 @@
             "body": {
               "call": [
                 {
-                  "field": {
-                    "name": "clone",
-                    "value": {
-                      "expression": {
-                        "self": "self"
+                  "field": [
+                    {
+                      "name": "clone",
+                      "value": {
+                        "expression": {
+                          "self": "self"
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               ]
             },
@@ -773,20 +776,22 @@
             "body": {
               "call": [
                 {
-                  "field": {
-                    "name": "clone",
-                    "value": {
-                      "expression": {
-                        "unary": {
-                          "name": "ptr",
-                          "op": {
-                            "text": "*",
-                            "multiply": true
+                  "field": [
+                    {
+                      "name": "clone",
+                      "value": {
+                        "expression": {
+                          "unary": {
+                            "name": "ptr",
+                            "op": {
+                              "text": "*",
+                              "multiply": true
+                            }
                           }
                         }
                       }
                     }
-                  }
+                  ]
                 }
               ]
             },
@@ -1442,12 +1447,14 @@
                   "arguments": [
                     "\"owned\""
                   ],
-                  "path": {
-                    "name": [
-                      "String",
-                      "from"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "String",
+                        "from"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1535,12 +1542,14 @@
                   "arguments": [
                     "1"
                   ],
-                  "path": {
-                    "name": [
-                      "Box",
-                      "new"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "Box",
+                        "new"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1567,23 +1576,27 @@
                   "arguments": [
                     {
                       "$type": "call",
-                      "path": {
-                        "name": [
-                          "String",
-                          "from"
-                        ]
-                      },
+                      "path": [
+                        {
+                          "name": [
+                            "String",
+                            "from"
+                          ]
+                        }
+                      ],
                       "arguments": [
                         "\"rc\""
                       ]
                     }
                   ],
-                  "path": {
-                    "name": [
-                      "Rc",
-                      "new"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "Rc",
+                        "new"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1610,12 +1623,14 @@
                   "arguments": [
                     "9"
                   ],
-                  "path": {
-                    "name": [
-                      "Arc",
-                      "new"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "Arc",
+                        "new"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1652,12 +1667,14 @@
                       ]
                     }
                   ],
-                  "path": {
-                    "name": [
-                      "RefCell",
-                      "new"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "RefCell",
+                        "new"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1693,34 +1710,40 @@
                   "arguments": [
                     "0"
                   ],
-                  "field": {
-                    "name": "unwrap_or",
-                    "value": {
-                      "expression": {
-                        "call": {
+                  "field": [
+                    {
+                      "name": "unwrap_or",
+                      "value": {
+                        "expression": {
                           "call": {
-                            "arguments": [
+                            "call": [
                               {
-                                "$type": "type",
-                                "name": [
-                                  "i32"
+                                "arguments": [
+                                  {
+                                    "$type": "type",
+                                    "name": [
+                                      "i32"
+                                    ]
+                                  }
+                                ],
+                                "generic": true,
+                                "field": [
+                                  {
+                                    "name": "parse",
+                                    "value": {
+                                      "expression": {
+                                        "string": "\"42\""
+                                      }
+                                    }
+                                  }
                                 ]
                               }
-                            ],
-                            "generic": true,
-                            "field": {
-                              "name": "parse",
-                              "value": {
-                                "expression": {
-                                  "string": "\"42\""
-                                }
-                              }
-                            }
+                            ]
                           }
                         }
                       }
                     }
-                  }
+                  ]
                 }
               }
             },
@@ -1739,37 +1762,39 @@
         "if": [
           {
             "then": {
-              "let": {
-                "value": {
-                  "expression": {
-                    "name": "v"
+              "let": [
+                {
+                  "value": {
+                    "expression": {
+                      "name": "v"
+                    }
                   }
                 }
-              }
+              ]
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "v"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "call": {
                         "arguments": [
                           "10"
                         ],
-                        "name": "Some"
+                        "name": [
+                          "Some"
+                        ]
                       }
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ],
@@ -1783,12 +1808,14 @@
                     "2",
                     "\"p\""
                   ],
-                  "path": {
-                    "name": [
-                      "Point",
-                      "new"
-                    ]
-                  }
+                  "path": [
+                    {
+                      "name": [
+                        "Point",
+                        "new"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -1819,14 +1846,16 @@
                         },
                         {
                           "call": {
-                            "field": {
-                              "name": "clone",
-                              "value": {
-                                "expression": {
-                                  "name": "p"
+                            "field": [
+                              {
+                                "name": "clone",
+                                "value": {
+                                  "expression": {
+                                    "name": "p"
+                                  }
                                 }
                               }
-                            }
+                            ]
                           },
                           "base": true
                         }
@@ -1924,24 +1953,26 @@
                         "pattern": {
                           "condition": [
                             {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "y"
+                              "expression": [
+                                {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "name": "y"
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "name": "x"
+                                      }
+                                    },
+                                    "op": {
+                                      "text": "==",
+                                      "equals": true
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "x"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
                                   }
                                 }
-                              }
+                              ]
                             }
                           ],
                           "path": [
@@ -1993,25 +2024,27 @@
                         "pattern": {
                           "condition": [
                             {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "0"
+                              "expression": [
+                                {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "int": "0"
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "name": "w"
+                                      }
+                                    },
+                                    "op": {
+                                      "text": ">",
+                                      "compare": true,
+                                      "greater": true
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "w"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": ">",
-                                    "compare": true,
-                                    "greater": true
                                   }
                                 }
-                              }
+                              ]
                             }
                           ],
                           "pattern": [
@@ -2055,14 +2088,16 @@
                               "value": {
                                 "expression": {
                                   "call": {
-                                    "field": {
-                                      "name": "len",
-                                      "value": {
-                                        "expression": {
-                                          "name": "name"
+                                    "field": [
+                                      {
+                                        "name": "len",
+                                        "value": {
+                                          "expression": {
+                                            "name": "name"
+                                          }
                                         }
                                       }
-                                    }
+                                    ]
                                   }
                                 }
                               }
@@ -2129,16 +2164,20 @@
                         "pattern": {
                           "range": [
                             {
-                              "right": {
-                                "expression": {
-                                  "int": "9"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "int": "9"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "int": "0"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "int": "0"
+                                  }
                                 }
-                              }
+                              ]
                             }
                           ]
                         }
@@ -2152,16 +2191,20 @@
                         "pattern": {
                           "range": [
                             {
-                              "right": {
-                                "expression": {
-                                  "int": "99"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "int": "99"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "int": "10"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "int": "10"
+                                  }
                                 }
-                              }
+                              ]
                             }
                           ]
                         }
@@ -2190,23 +2233,25 @@
             "value": {
               "expression": {
                 "call": {
-                  "field": {
-                    "name": "into_iter",
-                    "value": {
-                      "expression": {
-                        "macro": {
-                          "int": [
-                            "1",
-                            "2",
-                            "3"
-                          ],
-                          "name": [
-                            "vec"
-                          ]
+                  "field": [
+                    {
+                      "name": "into_iter",
+                      "value": {
+                        "expression": {
+                          "macro": {
+                            "int": [
+                              "1",
+                              "2",
+                              "3"
+                            ],
+                            "name": [
+                              "vec"
+                            ]
+                          }
                         }
                       }
                     }
-                  }
+                  ]
                 }
               }
             },
@@ -2248,32 +2293,32 @@
               ]
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "x"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "call": {
-                        "field": {
-                          "name": "next",
-                          "value": {
-                            "expression": {
-                              "name": "it"
+                        "field": [
+                          {
+                            "name": "next",
+                            "value": {
+                              "expression": {
+                                "name": "it"
+                              }
                             }
                           }
-                        }
+                        ]
                       }
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ]
@@ -2315,47 +2360,51 @@
                     "if": [
                       {
                         "then": {
-                          "break": {
-                            "label": {
-                              "name": "outer"
-                            }
-                          }
-                        },
-                        "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "int": "20"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "j"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "i"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "*",
-                                      "multiply": true
-                                    }
-                                  }
-                                }
-                              },
-                              "op": {
-                                "text": ">",
-                                "compare": true,
-                                "greater": true
+                          "break": [
+                            {
+                              "label": {
+                                "name": "outer"
                               }
                             }
-                          }
+                          ]
+                        },
+                        "condition": {
+                          "expression": [
+                            {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "int": "20"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "binary": {
+                                      "right": {
+                                        "expression": {
+                                          "name": "j"
+                                        }
+                                      },
+                                      "left": {
+                                        "expression": {
+                                          "name": "i"
+                                        }
+                                      },
+                                      "op": {
+                                        "text": "*",
+                                        "multiply": true
+                                      }
+                                    }
+                                  }
+                                },
+                                "op": {
+                                  "text": ">",
+                                  "compare": true,
+                                  "greater": true
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     ]
@@ -2364,10 +2413,10 @@
                   "value": {
                     "expression": {
                       "range": {
-                        "children": [
+                        "int": [
+                          "0",
                           "10"
-                        ],
-                        "int": "0"
+                        ]
                       }
                     }
                   }
@@ -2381,10 +2430,10 @@
             "value": {
               "expression": {
                 "range": {
-                  "children": [
+                  "int": [
+                    "0",
                     "10"
-                  ],
-                  "int": "0"
+                  ]
                 }
               }
             }
@@ -2411,25 +2460,27 @@
               ]
             },
             "condition": {
-              "expression": {
-                "binary": {
-                  "right": {
-                    "expression": {
-                      "int": "3"
+              "expression": [
+                {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "int": "3"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "n"
+                      }
+                    },
+                    "op": {
+                      "text": "<",
+                      "compare": true,
+                      "less": true
                     }
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "n"
-                    }
-                  },
-                  "op": {
-                    "text": "<",
-                    "compare": true,
-                    "less": true
                   }
                 }
-              }
+              ]
             }
           }
         ],
@@ -2480,7 +2531,9 @@
             "arguments": [
               "casted"
             ],
-            "name": "Ok"
+            "name": [
+              "Ok"
+            ]
           }
         ],
         "let": [
@@ -2488,14 +2541,16 @@
             "value": {
               "expression": {
                 "call": {
-                  "field": {
-                    "name": "parse",
-                    "value": {
-                      "expression": {
-                        "string": "\"10\""
+                  "field": [
+                    {
+                      "name": "parse",
+                      "value": {
+                        "expression": {
+                          "string": "\"10\""
+                        }
                       }
                     }
-                  }
+                  ]
                 },
                 "try": true
               }
@@ -2942,8 +2997,12 @@
             "right": {
               "expression": {
                 "index": {
-                  "int": "0",
-                  "name": "triples"
+                  "int": [
+                    "0"
+                  ],
+                  "name": [
+                    "triples"
+                  ]
                 }
               }
             },
@@ -2958,14 +3017,16 @@
                   "value": {
                     "expression": {
                       "call": {
-                        "field": {
-                          "name": "len",
-                          "value": {
-                            "expression": {
-                              "name": "v"
+                        "field": [
+                          {
+                            "name": "len",
+                            "value": {
+                              "expression": {
+                                "name": "v"
+                              }
                             }
                           }
-                        }
+                        ]
                       }
                     }
                   }
@@ -3051,35 +3112,38 @@
         "if": [
           {
             "then": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "x"
+              "return": [
+                {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "x"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "ix"
+                        }
+                      },
+                      "op": {
+                        "text": "+",
+                        "plus": true
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "ix"
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
                     }
                   }
                 }
-              }
+              ]
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "inner"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "name": "opt"
@@ -3087,7 +3151,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "pattern": {
                     "pattern": [
                       {
@@ -3113,7 +3176,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "name": "inner"
@@ -3121,7 +3183,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "binary": {
                     "right": {
                       "expression": {
@@ -3140,10 +3201,7 @@
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ],
@@ -3232,16 +3290,20 @@
                                     {
                                       "range": [
                                         {
-                                          "right": {
-                                            "expression": {
-                                              "int": "10"
+                                          "right": [
+                                            {
+                                              "expression": {
+                                                "int": "10"
+                                              }
                                             }
-                                          },
-                                          "left": {
-                                            "expression": {
-                                              "int": "1"
+                                          ],
+                                          "left": [
+                                            {
+                                              "expression": {
+                                                "int": "1"
+                                              }
                                             }
-                                          }
+                                          ]
                                         }
                                       ],
                                       "capture": true,
@@ -3431,8 +3493,12 @@
                         "value": {
                           "expression": {
                             "index": {
-                              "range": "..",
-                              "name": "arr"
+                              "range": [
+                                ".."
+                              ],
+                              "name": [
+                                "arr"
+                              ]
                             }
                           }
                         }
@@ -3589,25 +3655,27 @@
             "value": {
               "expression": {
                 "call": {
-                  "path": {
-                    "name": [
-                      "new"
-                    ],
-                    "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": [
-                            "i32"
-                          ]
-                        }
-                      ],
-                      "generic": true,
+                  "path": [
+                    {
                       "name": [
-                        "Vec"
-                      ]
+                        "new"
+                      ],
+                      "type": {
+                        "arguments": [
+                          {
+                            "$type": "type",
+                            "name": [
+                              "i32"
+                            ]
+                          }
+                        ],
+                        "generic": true,
+                        "name": [
+                          "Vec"
+                        ]
+                      }
                     }
-                  }
+                  ]
                 }
               }
             },
@@ -3709,19 +3777,23 @@
                   "arguments": [
                     {
                       "$type": "call",
-                      "path": {
-                        "name": [
-                          "Shape",
-                          "Dot"
-                        ]
-                      },
+                      "path": [
+                        {
+                          "name": [
+                            "Shape",
+                            "Dot"
+                          ]
+                        }
+                      ],
                       "arguments": [
                         "1",
                         "1"
                       ]
                     }
                   ],
-                  "name": "patterns"
+                  "name": [
+                    "patterns"
+                  ]
                 }
               }
             }
@@ -3730,7 +3802,9 @@
             "value": {
               "expression": {
                 "call": {
-                  "name": "loops_and_flow"
+                  "name": [
+                    "loops_and_flow"
+                  ]
                 }
               }
             }
@@ -3742,12 +3816,14 @@
                   "arguments": [
                     {
                       "$type": "call",
-                      "path": {
-                        "name": [
-                          "Point",
-                          "new"
-                        ]
-                      },
+                      "path": [
+                        {
+                          "name": [
+                            "Point",
+                            "new"
+                          ]
+                        }
+                      ],
                       "arguments": [
                         "1",
                         "2",
@@ -3756,7 +3832,9 @@
                     },
                     "None"
                   ],
-                  "name": "pattern_zoo"
+                  "name": [
+                    "pattern_zoo"
+                  ]
                 }
               }
             }

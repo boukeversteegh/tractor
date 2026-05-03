@@ -79,20 +79,24 @@
                       "arguments": [
                         "this"
                       ],
-                      "member": {
-                        "name": [
-                          "Invoke"
-                        ],
-                        "instance": true,
-                        "optional": true,
-                        "condition": [
-                          {
-                            "expression": {
-                              "name": "Changed"
+                      "member": [
+                        {
+                          "name": [
+                            "Invoke"
+                          ],
+                          "instance": true,
+                          "optional": true,
+                          "condition": [
+                            {
+                              "expression": [
+                                {
+                                  "name": "Changed"
+                                }
+                              ]
                             }
-                          }
-                        ]
-                      }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 },
@@ -439,24 +443,26 @@
                         "null": "null"
                       },
                       "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "name": "Id"
+                        "expression": [
+                          {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "name": "Id"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "id"
+                                }
+                              },
+                              "op": {
+                                "text": "==",
+                                "equals": true
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "id"
-                              }
-                            },
-                            "op": {
-                              "text": "==",
-                              "equals": true
                             }
                           }
-                        }
+                        ]
                       }
                     }
                   ]
@@ -491,7 +497,9 @@
                         {
                           "expression": {
                             "index": {
-                              "argument": "this"
+                              "argument": [
+                                "this"
+                              ]
                             }
                           }
                         }
@@ -505,21 +513,23 @@
                                 "int": "1"
                               }
                             ],
-                            "member": {
-                              "property": [
-                                {
-                                  "name": "Delay"
-                                }
-                              ],
-                              "instance": true,
-                              "object": [
-                                {
-                                  "name": [
-                                    "Task"
-                                  ]
-                                }
-                              ]
-                            }
+                            "member": [
+                              {
+                                "property": [
+                                  {
+                                    "name": "Delay"
+                                  }
+                                ],
+                                "instance": true,
+                                "object": [
+                                  {
+                                    "name": [
+                                      "Task"
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
                           },
                           "await": true
                         }
@@ -568,7 +578,9 @@
                           "name": "input"
                         }
                       ],
-                      "name": "fn"
+                      "name": [
+                        "fn"
+                      ]
                     }
                   ]
                 },
@@ -834,35 +846,37 @@
                       "left": {
                         "expression": {
                           "call": {
-                            "member": {
-                              "property": [
-                                {
-                                  "name": "ToUpperInvariant"
-                                }
-                              ],
-                              "instance": true,
-                              "object": [
-                                {
-                                  "member": [
-                                    {
-                                      "property": [
-                                        {
-                                          "name": "Name"
-                                        }
-                                      ],
-                                      "instance": true,
-                                      "object": [
-                                        {
-                                          "name": [
-                                            "w"
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
+                            "member": [
+                              {
+                                "property": [
+                                  {
+                                    "name": "ToUpperInvariant"
+                                  }
+                                ],
+                                "instance": true,
+                                "object": [
+                                  {
+                                    "member": [
+                                      {
+                                        "property": [
+                                          {
+                                            "name": "Name"
+                                          }
+                                        ],
+                                        "instance": true,
+                                        "object": [
+                                          {
+                                            "name": [
+                                              "w"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
                           }
                         }
                       },
@@ -944,27 +958,31 @@
                                             "int": "1"
                                           },
                                           "condition": {
-                                            "expression": {
-                                              "binary": {
-                                                "right": {
-                                                  "expression": {
-                                                    "name": "kind"
+                                            "expression": [
+                                              {
+                                                "binary": {
+                                                  "right": {
+                                                    "expression": {
+                                                      "name": "kind"
+                                                    }
+                                                  },
+                                                  "left": {
+                                                    "expression": {
+                                                      "name": "label"
+                                                    }
+                                                  },
+                                                  "op": {
+                                                    "text": "==",
+                                                    "equals": true
                                                   }
-                                                },
-                                                "left": {
-                                                  "expression": {
-                                                    "name": "label"
-                                                  }
-                                                },
-                                                "op": {
-                                                  "text": "==",
-                                                  "equals": true
                                                 }
                                               }
-                                            }
+                                            ]
                                           },
                                           "then": {
-                                            "int": "0"
+                                            "int": [
+                                              "0"
+                                            ]
                                           }
                                         }
                                       }
@@ -1151,65 +1169,71 @@
                       "if": [
                         {
                           "then": {
-                            "expression": {
-                              "call": {
-                                "arguments": [
-                                  {
-                                    "$type": "argument",
-                                    "member": {
+                            "expression": [
+                              {
+                                "call": {
+                                  "arguments": [
+                                    {
+                                      "$type": "argument",
+                                      "member": {
+                                        "property": [
+                                          {
+                                            "name": "Id"
+                                          }
+                                        ],
+                                        "instance": true,
+                                        "object": [
+                                          {
+                                            "name": [
+                                              "probe"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ],
+                                  "member": [
+                                    {
                                       "property": [
                                         {
-                                          "name": "Id"
+                                          "name": "WriteLine"
                                         }
                                       ],
                                       "instance": true,
                                       "object": [
                                         {
                                           "name": [
-                                            "probe"
+                                            "Console"
                                           ]
                                         }
-                                      ]
-                                    }
-                                  }
-                                ],
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "WriteLine"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "Console"
                                       ]
                                     }
                                   ]
                                 }
                               }
-                            }
+                            ]
                           },
                           "condition": {
-                            "expression": {
-                              "is": {
-                                "pattern": {
-                                  "name": [
-                                    "probe"
-                                  ],
-                                  "declaration": true,
-                                  "type": [
-                                    {
-                                      "name": [
-                                        "Widget"
-                                      ]
-                                    }
-                                  ]
-                                },
-                                "name": "token"
+                            "expression": [
+                              {
+                                "is": {
+                                  "pattern": {
+                                    "name": [
+                                      "probe"
+                                    ],
+                                    "declaration": true,
+                                    "type": [
+                                      {
+                                        "name": [
+                                          "Widget"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "name": "token"
+                                }
                               }
-                            }
+                            ]
                           }
                         }
                       ],
@@ -1267,39 +1291,43 @@
                                           {
                                             "$type": "argument",
                                             "call": {
-                                              "member": {
-                                                "property": [
-                                                  {
-                                                    "name": "Describe"
-                                                  }
-                                                ],
-                                                "instance": true,
-                                                "object": [
-                                                  {
-                                                    "name": [
-                                                      "w"
-                                                    ]
-                                                  }
-                                                ]
-                                              }
+                                              "member": [
+                                                {
+                                                  "property": [
+                                                    {
+                                                      "name": "Describe"
+                                                    }
+                                                  ],
+                                                  "instance": true,
+                                                  "object": [
+                                                    {
+                                                      "name": [
+                                                        "w"
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
                                             }
                                           }
                                         ],
-                                        "member": {
-                                          "property": [
-                                            {
-                                              "name": "WriteLine"
-                                            }
-                                          ],
-                                          "instance": true,
-                                          "object": [
-                                            {
-                                              "name": [
-                                                "Console"
-                                              ]
-                                            }
-                                          ]
-                                        }
+                                        "member": [
+                                          {
+                                            "property": [
+                                              {
+                                                "name": "WriteLine"
+                                              }
+                                            ],
+                                            "instance": true,
+                                            "object": [
+                                              {
+                                                "name": [
+                                                  "Console"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
                                       }
                                     }
                                   ],
@@ -1367,21 +1395,23 @@
                                   "interpolation": [
                                     {
                                       "call": {
-                                        "member": {
-                                          "property": [
-                                            {
-                                              "name": "Sum"
-                                            }
-                                          ],
-                                          "instance": true,
-                                          "object": [
-                                            {
-                                              "name": [
-                                                "evens"
-                                              ]
-                                            }
-                                          ]
-                                        }
+                                        "member": [
+                                          {
+                                            "property": [
+                                              {
+                                                "name": "Sum"
+                                              }
+                                            ],
+                                            "instance": true,
+                                            "object": [
+                                              {
+                                                "name": [
+                                                  "evens"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
                                       }
                                     },
                                     {
@@ -1392,7 +1422,9 @@
                                             "int": "3"
                                           }
                                         ],
-                                        "name": "cube"
+                                        "name": [
+                                          "cube"
+                                        ]
                                       }
                                     },
                                     {
@@ -1403,14 +1435,18 @@
                                             "int": "4"
                                           }
                                         ],
-                                        "name": "Square"
+                                        "name": [
+                                          "Square"
+                                        ]
                                       }
                                     }
                                   ]
                                 }
                               }
                             ],
-                            "name": "log"
+                            "name": [
+                              "log"
+                            ]
                           }
                         }
                       ],
@@ -1437,25 +1473,27 @@
                             }
                           },
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "2"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "2"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "i"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "<",
+                                    "compare": true,
+                                    "less": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "i"
-                                  }
-                                },
-                                "op": {
-                                  "text": "<",
-                                  "compare": true,
-                                  "less": true
                                 }
                               }
-                            }
+                            ]
                           },
                           "unary": {
                             "op": {
@@ -1476,25 +1514,29 @@
                                     {
                                       "$type": "argument",
                                       "call": {
-                                        "member": {
-                                          "property": [
-                                            {
-                                              "name": "ToString"
-                                            }
-                                          ],
-                                          "instance": true,
-                                          "object": [
-                                            {
-                                              "name": [
-                                                "n"
-                                              ]
-                                            }
-                                          ]
-                                        }
+                                        "member": [
+                                          {
+                                            "property": [
+                                              {
+                                                "name": "ToString"
+                                              }
+                                            ],
+                                            "instance": true,
+                                            "object": [
+                                              {
+                                                "name": [
+                                                  "n"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
                                       }
                                     }
                                   ],
-                                  "name": "log"
+                                  "name": [
+                                    "log"
+                                  ]
                                 }
                               }
                             ]
@@ -1519,31 +1561,33 @@
                       "while": [
                         {
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "2"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "unary": {
-                                      "op": {
-                                        "text": "++",
-                                        "increment": true
-                                      },
-                                      "name": "j"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "2"
                                     }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "unary": {
+                                        "op": {
+                                          "text": "++",
+                                          "increment": true
+                                        },
+                                        "name": "j"
+                                      }
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "<",
+                                    "compare": true,
+                                    "less": true
                                   }
-                                },
-                                "op": {
-                                  "text": "<",
-                                  "compare": true,
-                                  "less": true
                                 }
                               }
-                            }
+                            ]
                           }
                         }
                       ],
@@ -1602,21 +1646,23 @@
                                                     "int": "1"
                                                   }
                                                 ],
-                                                "member": {
-                                                  "property": [
-                                                    {
-                                                      "name": "WriteByte"
-                                                    }
-                                                  ],
-                                                  "instance": true,
-                                                  "object": [
-                                                    {
-                                                      "name": [
-                                                        "inner"
-                                                      ]
-                                                    }
-                                                  ]
-                                                }
+                                                "member": [
+                                                  {
+                                                    "property": [
+                                                      {
+                                                        "name": "WriteByte"
+                                                      }
+                                                    ],
+                                                    "instance": true,
+                                                    "object": [
+                                                      {
+                                                        "name": [
+                                                          "inner"
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
                                               }
                                             }
                                           ]
@@ -1674,7 +1720,9 @@
                                             }
                                           }
                                         ],
-                                        "name": "log"
+                                        "name": [
+                                          "log"
+                                        ]
                                       }
                                     }
                                   ]
@@ -1742,21 +1790,23 @@
                               "expression": [
                                 {
                                   "call": {
-                                    "member": {
-                                      "property": [
-                                        {
-                                          "name": "Flush"
-                                        }
-                                      ],
-                                      "instance": true,
-                                      "object": [
-                                        {
-                                          "name": [
-                                            "scope"
-                                          ]
-                                        }
-                                      ]
-                                    }
+                                    "member": [
+                                      {
+                                        "property": [
+                                          {
+                                            "name": "Flush"
+                                          }
+                                        ],
+                                        "instance": true,
+                                        "object": [
+                                          {
+                                            "name": [
+                                              "scope"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 }
                               ]
@@ -1767,25 +1817,27 @@
                       "do": [
                         {
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "2"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "2"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "k"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "<",
+                                    "compare": true,
+                                    "less": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "k"
-                                  }
-                                },
-                                "op": {
-                                  "text": "<",
-                                  "compare": true,
-                                  "less": true
                                 }
                               }
-                            }
+                            ]
                           },
                           "body": {
                             "block": [
@@ -1894,20 +1946,24 @@
                               "left": {
                                 "expression": {
                                   "call": {
-                                    "member": {
-                                      "name": [
-                                        "Shout"
-                                      ],
-                                      "instance": true,
-                                      "optional": true,
-                                      "condition": [
-                                        {
-                                          "expression": {
-                                            "name": "widget"
+                                    "member": [
+                                      {
+                                        "name": [
+                                          "Shout"
+                                        ],
+                                        "instance": true,
+                                        "optional": true,
+                                        "condition": [
+                                          {
+                                            "expression": [
+                                              {
+                                                "name": "widget"
+                                              }
+                                            ]
                                           }
-                                        }
-                                      ]
-                                    }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -1931,44 +1987,48 @@
                                 "string": "\"blank\""
                               },
                               "condition": {
-                                "expression": {
-                                  "is": {
-                                    "pattern": {
-                                      "properties": [
-                                        {
-                                          "subpattern": {
-                                            "pattern": {
-                                              "int": [
-                                                "0"
-                                              ],
-                                              "relational": true
-                                            },
-                                            "member": {
-                                              "property": [
-                                                {
-                                                  "name": "Length"
-                                                }
-                                              ],
-                                              "instance": true,
-                                              "object": [
-                                                {
-                                                  "name": [
-                                                    "Name"
-                                                  ]
-                                                }
-                                              ]
+                                "expression": [
+                                  {
+                                    "is": {
+                                      "pattern": {
+                                        "properties": [
+                                          {
+                                            "subpattern": {
+                                              "pattern": {
+                                                "int": [
+                                                  "0"
+                                                ],
+                                                "relational": true
+                                              },
+                                              "member": {
+                                                "property": [
+                                                  {
+                                                    "name": "Length"
+                                                  }
+                                                ],
+                                                "instance": true,
+                                                "object": [
+                                                  {
+                                                    "name": [
+                                                      "Name"
+                                                    ]
+                                                  }
+                                                ]
+                                              }
                                             }
                                           }
-                                        }
-                                      ],
-                                      "recursive": true
-                                    },
-                                    "name": "widget"
+                                        ],
+                                        "recursive": true
+                                      },
+                                      "name": "widget"
+                                    }
                                   }
-                                }
+                                ]
                               },
                               "then": {
-                                "string": "\"named\""
+                                "string": [
+                                  "\"named\""
+                                ]
                               }
                             },
                             "name": "label"
@@ -2173,124 +2233,130 @@
                         {
                           "declarator": {
                             "call": {
-                              "member": {
-                                "property": [
-                                  {
-                                    "name": "ToList"
-                                  }
-                                ],
-                                "instance": true,
-                                "object": [
-                                  {
-                                    "call": [
-                                      {
-                                        "arguments": [
-                                          {
-                                            "$type": "argument",
-                                            "lambda": {
-                                              "value": {
-                                                "expression": {
-                                                  "binary": {
-                                                    "right": {
-                                                      "expression": {
-                                                        "int": "1"
+                              "member": [
+                                {
+                                  "property": [
+                                    {
+                                      "name": "ToList"
+                                    }
+                                  ],
+                                  "instance": true,
+                                  "object": [
+                                    {
+                                      "call": [
+                                        {
+                                          "arguments": [
+                                            {
+                                              "$type": "argument",
+                                              "lambda": {
+                                                "value": {
+                                                  "expression": {
+                                                    "binary": {
+                                                      "right": {
+                                                        "expression": {
+                                                          "int": "1"
+                                                        }
+                                                      },
+                                                      "left": {
+                                                        "expression": {
+                                                          "name": "n"
+                                                        }
+                                                      },
+                                                      "op": {
+                                                        "text": "+",
+                                                        "plus": true
                                                       }
-                                                    },
-                                                    "left": {
-                                                      "expression": {
-                                                        "name": "n"
-                                                      }
-                                                    },
-                                                    "op": {
-                                                      "text": "+",
-                                                      "plus": true
                                                     }
                                                   }
-                                                }
-                                              },
-                                              "parameter": "n"
-                                            }
-                                          }
-                                        ],
-                                        "member": {
-                                          "property": [
-                                            {
-                                              "name": "Select"
+                                                },
+                                                "parameter": "n"
+                                              }
                                             }
                                           ],
-                                          "instance": true,
-                                          "object": [
+                                          "member": [
                                             {
-                                              "call": [
+                                              "property": [
                                                 {
-                                                  "arguments": [
+                                                  "name": "Select"
+                                                }
+                                              ],
+                                              "instance": true,
+                                              "object": [
+                                                {
+                                                  "call": [
                                                     {
-                                                      "$type": "argument",
-                                                      "lambda": {
-                                                        "value": {
-                                                          "expression": {
-                                                            "binary": {
-                                                              "right": {
-                                                                "expression": {
-                                                                  "int": "0"
-                                                                }
-                                                              },
-                                                              "left": {
-                                                                "expression": {
-                                                                  "binary": {
-                                                                    "right": {
-                                                                      "expression": {
-                                                                        "int": "2"
-                                                                      }
-                                                                    },
-                                                                    "left": {
-                                                                      "expression": {
-                                                                        "name": "n"
-                                                                      }
-                                                                    },
-                                                                    "op": {
-                                                                      "text": "%",
-                                                                      "modulo": true
+                                                      "arguments": [
+                                                        {
+                                                          "$type": "argument",
+                                                          "lambda": {
+                                                            "value": {
+                                                              "expression": {
+                                                                "binary": {
+                                                                  "right": {
+                                                                    "expression": {
+                                                                      "int": "0"
                                                                     }
+                                                                  },
+                                                                  "left": {
+                                                                    "expression": {
+                                                                      "binary": {
+                                                                        "right": {
+                                                                          "expression": {
+                                                                            "int": "2"
+                                                                          }
+                                                                        },
+                                                                        "left": {
+                                                                          "expression": {
+                                                                            "name": "n"
+                                                                          }
+                                                                        },
+                                                                        "op": {
+                                                                          "text": "%",
+                                                                          "modulo": true
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  },
+                                                                  "op": {
+                                                                    "text": "!=",
+                                                                    "inequality": true
                                                                   }
                                                                 }
-                                                              },
-                                                              "op": {
-                                                                "text": "!=",
-                                                                "inequality": true
                                                               }
-                                                            }
+                                                            },
+                                                            "parameter": "n"
                                                           }
-                                                        },
-                                                        "parameter": "n"
-                                                      }
+                                                        }
+                                                      ],
+                                                      "member": [
+                                                        {
+                                                          "property": [
+                                                            {
+                                                              "name": "Where"
+                                                            }
+                                                          ],
+                                                          "instance": true,
+                                                          "object": [
+                                                            {
+                                                              "name": [
+                                                                "numbers"
+                                                              ]
+                                                            }
+                                                          ]
+                                                        }
+                                                      ]
                                                     }
-                                                  ],
-                                                  "member": {
-                                                    "property": [
-                                                      {
-                                                        "name": "Where"
-                                                      }
-                                                    ],
-                                                    "instance": true,
-                                                    "object": [
-                                                      {
-                                                        "name": [
-                                                          "numbers"
-                                                        ]
-                                                      }
-                                                    ]
-                                                  }
+                                                  ]
                                                 }
                                               ]
                                             }
                                           ]
                                         }
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
                             },
                             "name": "odds"
                           },
@@ -2431,21 +2497,23 @@
                                         "name": "msg"
                                       }
                                     ],
-                                    "member": {
-                                      "property": [
-                                        {
-                                          "name": "WriteLine"
-                                        }
-                                      ],
-                                      "instance": true,
-                                      "object": [
-                                        {
-                                          "name": [
-                                            "Console"
-                                          ]
-                                        }
-                                      ]
-                                    }
+                                    "member": [
+                                      {
+                                        "property": [
+                                          {
+                                            "name": "WriteLine"
+                                          }
+                                        ],
+                                        "instance": true,
+                                        "object": [
+                                          {
+                                            "name": [
+                                              "Console"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -2579,25 +2647,24 @@
                         {
                           "declarator": {
                             "index": {
-                              "children": [
+                              "argument": [
                                 {
-                                  "$type": "argument",
+                                  "int": "1"
+                                },
+                                {
                                   "int": "2"
                                 },
                                 {
-                                  "$type": "argument",
                                   "int": "3"
                                 },
                                 {
-                                  "$type": "argument",
                                   "range": {
-                                    "name": "odds"
+                                    "name": [
+                                      "odds"
+                                    ]
                                   }
                                 }
-                              ],
-                              "argument": {
-                                "int": "1"
-                              }
+                              ]
                             },
                             "name": "list"
                           },
@@ -2630,9 +2697,11 @@
                                     "left": {
                                       "expression": {
                                         "index": {
-                                          "argument": {
-                                            "string": "\"a\""
-                                          }
+                                          "argument": [
+                                            {
+                                              "string": "\"a\""
+                                            }
+                                          ]
                                         }
                                       }
                                     },
@@ -2647,9 +2716,11 @@
                                     "left": {
                                       "expression": {
                                         "index": {
-                                          "argument": {
-                                            "string": "\"b\""
-                                          }
+                                          "argument": [
+                                            {
+                                              "string": "\"b\""
+                                            }
+                                          ]
                                         }
                                       }
                                     },
@@ -3089,21 +3160,23 @@
                           "name": "Y"
                         }
                       ],
-                      "member": {
-                        "property": [
-                          {
-                            "name": "Combine"
-                          }
-                        ],
-                        "instance": true,
-                        "object": [
-                          {
-                            "name": [
-                              "HashCode"
-                            ]
-                          }
-                        ]
-                      }
+                      "member": [
+                        {
+                          "property": [
+                            {
+                              "name": "Combine"
+                            }
+                          ],
+                          "instance": true,
+                          "object": [
+                            {
+                              "name": [
+                                "HashCode"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
                     }
                   ]
                 },
@@ -3914,7 +3987,9 @@
                                                 "name": "s"
                                               }
                                             ],
-                                            "name": "nameof"
+                                            "name": [
+                                              "nameof"
+                                            ]
                                           }
                                         }
                                       ],
@@ -4283,24 +4358,26 @@
                                 },
                                 {
                                   "call": {
-                                    "member": {
-                                      "property": [
-                                        {
-                                          "name": "ToString"
-                                        }
-                                      ],
-                                      "instance": true,
-                                      "object": [
-                                        {
-                                          "expression": [
-                                            {
-                                              "name": "x",
-                                              "non_null": true
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    }
+                                    "member": [
+                                      {
+                                        "property": [
+                                          {
+                                            "name": "ToString"
+                                          }
+                                        ],
+                                        "instance": true,
+                                        "object": [
+                                          {
+                                            "expression": [
+                                              {
+                                                "name": "x",
+                                                "non_null": true
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   },
                                   "pattern": {
                                     "name": [

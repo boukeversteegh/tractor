@@ -145,7 +145,9 @@
                   }
                 }
               ],
-              "name": "array_map"
+              "name": [
+                "array_map"
+              ]
             }
           }
         },
@@ -185,9 +187,11 @@
                                   }
                                 }
                               ],
-                              "variable": {
-                                "name": "pipeline"
-                              }
+                              "variable": [
+                                {
+                                  "name": "pipeline"
+                                }
+                              ]
                             }
                           }
                         },
@@ -434,35 +438,37 @@
                     }
                   },
                   "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "10"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "member": {
-                              "name": [
-                                "count"
-                              ],
-                              "instance": true,
-                              "variable": [
-                                {
-                                  "name": "this"
-                                }
-                              ]
+                    "expression": [
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "int": "10"
                             }
+                          },
+                          "left": {
+                            "expression": {
+                              "member": {
+                                "name": [
+                                  "count"
+                                ],
+                                "instance": true,
+                                "variable": [
+                                  {
+                                    "name": "this"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": ">",
+                            "compare": true,
+                            "greater": true
                           }
-                        },
-                        "op": {
-                          "text": ">",
-                          "compare": true,
-                          "greater": true
                         }
                       }
-                    }
+                    ]
                   },
                   "body": {
                     "return": [
@@ -500,35 +506,37 @@
                       ]
                     },
                     "condition": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "0"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "member": {
-                                "name": [
-                                  "count"
-                                ],
-                                "instance": true,
-                                "variable": [
-                                  {
-                                    "name": "this"
-                                  }
-                                ]
+                      "expression": [
+                        {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "int": "0"
                               }
+                            },
+                            "left": {
+                              "expression": {
+                                "member": {
+                                  "name": [
+                                    "count"
+                                  ],
+                                  "instance": true,
+                                  "variable": [
+                                    {
+                                      "name": "this"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": {
+                              "text": ">",
+                              "compare": true,
+                              "greater": true
                             }
-                          },
-                          "op": {
-                            "text": ">",
-                            "compare": true,
-                            "greater": true
                           }
                         }
-                      }
+                      ]
                     }
                   }
                 }
@@ -631,7 +639,39 @@
                       "ternary": {
                         "string": "\"zero\"",
                         "condition": {
-                          "expression": {
+                          "expression": [
+                            {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "int": "0"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "variable": {
+                                      "name": "n"
+                                    }
+                                  }
+                                },
+                                "op": {
+                                  "text": "<",
+                                  "compare": true,
+                                  "less": true
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "body": {
+                          "string": [
+                            "\"negative\""
+                          ]
+                        }
+                      },
+                      "condition": {
+                        "expression": [
+                          {
                             "binary": {
                               "right": {
                                 "expression": {
@@ -646,41 +686,13 @@
                                 }
                               },
                               "op": {
-                                "text": "<",
+                                "text": ">",
                                 "compare": true,
-                                "less": true
+                                "greater": true
                               }
                             }
                           }
-                        },
-                        "body": {
-                          "string": [
-                            "\"negative\""
-                          ]
-                        }
-                      },
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "int": "0"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "variable": {
-                                  "name": "n"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": ">",
-                              "compare": true,
-                              "greater": true
-                            }
-                          }
-                        }
+                        ]
                       },
                       "body": {
                         "string": [
@@ -736,7 +748,9 @@
                                   }
                                 }
                               ],
-                              "name": "is_int"
+                              "name": [
+                                "is_int"
+                              ]
                             }
                           },
                           {
@@ -761,7 +775,9 @@
                                               }
                                             }
                                           ],
-                                          "name": "strlen"
+                                          "name": [
+                                            "strlen"
+                                          ]
                                         }
                                       }
                                     },
@@ -784,7 +800,9 @@
                                         }
                                       }
                                     ],
-                                    "name": "is_string"
+                                    "name": [
+                                      "is_string"
+                                    ]
                                   }
                                 }
                               },
@@ -806,7 +824,9 @@
                                   }
                                 }
                               ],
-                              "name": "is_array"
+                              "name": [
+                                "is_array"
+                              ]
                             }
                           },
                           {
@@ -816,9 +836,11 @@
                         ]
                       },
                       "condition": {
-                        "expression": {
-                          "bool": "true"
-                        }
+                        "expression": [
+                          {
+                            "bool": "true"
+                          }
+                        ]
                       }
                     }
                   }
@@ -914,25 +936,28 @@
                                         }
                                       ],
                                       "instance": true,
-                                      "variable": {
-                                        "name": "this"
-                                      },
-                                      "name": "transform"
+                                      "variable": [
+                                        {
+                                          "name": "this"
+                                        }
+                                      ],
+                                      "name": [
+                                        "transform"
+                                      ]
                                     }
                                   }
                                 },
                                 "left": {
                                   "expression": {
                                     "index": {
-                                      "children": [
+                                      "variable": [
                                         {
-                                          "$type": "variable",
+                                          "name": "results"
+                                        },
+                                        {
                                           "name": "key"
                                         }
-                                      ],
-                                      "variable": {
-                                        "name": "results"
-                                      }
+                                      ]
                                     }
                                   }
                                 },
@@ -949,27 +974,29 @@
                           "continue": true
                         },
                         "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "null": "null"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "variable": {
-                                    "name": "item"
+                          "expression": [
+                            {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "null": "null"
                                   }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "variable": {
+                                      "name": "item"
+                                    }
+                                  }
+                                },
+                                "op": {
+                                  "text": "===",
+                                  "equals": true,
+                                  "strict": true
                                 }
-                              },
-                              "op": {
-                                "text": "===",
-                                "equals": true,
-                                "strict": true
                               }
                             }
-                          }
+                          ]
                         }
                       }
                     ]
@@ -1305,11 +1332,13 @@
                         ]
                       },
                       "condition": {
-                        "expression": {
-                          "variable": {
-                            "name": "this"
+                        "expression": [
+                          {
+                            "variable": {
+                              "name": "this"
+                            }
                           }
-                        }
+                        ]
                       }
                     }
                   }
@@ -1487,9 +1516,11 @@
                     }
                   }
                 ],
-                "variable": {
-                  "name": "fn"
-                }
+                "variable": [
+                  {
+                    "name": "fn"
+                  }
+                ]
               }
             }
           }
@@ -1587,9 +1618,11 @@
                   ]
                 },
                 "condition": {
-                  "expression": {
-                    "bool": "true"
-                  }
+                  "expression": [
+                    {
+                      "bool": "true"
+                    }
+                  ]
                 }
               }
             }
@@ -1635,11 +1668,15 @@
               "right": {
                 "expression": {
                   "call": {
-                    "name": "describe",
+                    "name": [
+                      "describe"
+                    ],
                     "nullsafe": true,
-                    "variable": {
-                      "name": "thing"
-                    }
+                    "variable": [
+                      {
+                        "name": "thing"
+                      }
+                    ]
                   }
                 }
               },
@@ -1722,7 +1759,9 @@
                         "text": "..."
                       }
                     ],
-                    "name": "strtoupper"
+                    "name": [
+                      "strtoupper"
+                    ]
                   }
                 }
               },
@@ -1823,10 +1862,14 @@
               "right": {
                 "expression": {
                   "index": {
-                    "int": "0",
-                    "variable": {
-                      "name": "items"
-                    }
+                    "int": [
+                      "0"
+                    ],
+                    "variable": [
+                      {
+                        "name": "items"
+                      }
+                    ]
                   }
                 }
               },
@@ -1998,7 +2041,9 @@
                           "string": "\"/missing\""
                         }
                       ],
-                      "name": "file_get_contents"
+                      "name": [
+                        "file_get_contents"
+                      ]
                     },
                     "op": {
                       "text": "@",
@@ -2184,29 +2229,31 @@
               "op": "="
             },
             "condition": {
-              "expression": {
-                "binary": {
-                  "right": {
-                    "expression": {
-                      "variable": {
-                        "name": "j"
+              "expression": [
+                {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "variable": {
+                          "name": "j"
+                        }
                       }
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "variable": {
-                        "name": "i"
+                    },
+                    "left": {
+                      "expression": {
+                        "variable": {
+                          "name": "i"
+                        }
                       }
+                    },
+                    "op": {
+                      "text": "<",
+                      "compare": true,
+                      "less": true
                     }
-                  },
-                  "op": {
-                    "text": "<",
-                    "compare": true,
-                    "less": true
                   }
                 }
-              }
+              ]
             },
             "unary": {
               "op": {
@@ -2329,11 +2376,15 @@
           {
             "expression": {
               "call": {
-                "name": "size",
+                "name": [
+                  "size"
+                ],
                 "instance": true,
-                "variable": {
-                  "name": "thing"
-                }
+                "variable": [
+                  {
+                    "name": "thing"
+                  }
+                ]
               }
             }
           }
@@ -2493,9 +2544,11 @@
                         "int": "5"
                       }
                     ],
-                    "variable": {
-                      "name": "closure"
-                    }
+                    "variable": [
+                      {
+                        "name": "closure"
+                      }
+                    ]
                   }
                 }
               },

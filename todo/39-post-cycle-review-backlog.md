@@ -525,6 +525,9 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 210: extend distribute config — call/index/repetition/insert/
+  constraint/case/condition/range/then. Closed 14 sites: csharp 3→2,
+  rust 14→7, go 12→7, php 5→4. Total 61 → 47 (-83% from baseline).
 - [x] iter 209: extend distribute config — `type`/`member`/`select`/`from`
   containers cross-language. Closed 17 more sites: csharp 5→3, ts
   9→5, rust 16→14, go 13→12, python 13→10, php 9→5. Total

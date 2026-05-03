@@ -116,68 +116,72 @@
                     "if": [
                       {
                         "then": {
-                          "throw": {
-                            "new": {
-                              "type": {
-                                "name": [
-                                  "IllegalArgumentException"
-                                ]
+                          "throw": [
+                            {
+                              "new": {
+                                "type": {
+                                  "name": [
+                                    "IllegalArgumentException"
+                                  ]
+                                }
                               }
                             }
-                          }
+                          ]
                         },
                         "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "int": "0"
+                          "expression": [
+                            {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "binary": {
+                                      "right": {
+                                        "expression": {
+                                          "int": "0"
+                                        }
+                                      },
+                                      "left": {
+                                        "expression": {
+                                          "name": "y"
+                                        }
+                                      },
+                                      "op": {
+                                        "text": "<",
+                                        "compare": true,
+                                        "less": true
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "y"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "<",
-                                      "compare": true,
-                                      "less": true
                                     }
                                   }
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "int": "0"
+                                },
+                                "left": {
+                                  "expression": {
+                                    "binary": {
+                                      "right": {
+                                        "expression": {
+                                          "int": "0"
+                                        }
+                                      },
+                                      "left": {
+                                        "expression": {
+                                          "name": "x"
+                                        }
+                                      },
+                                      "op": {
+                                        "text": "<",
+                                        "compare": true,
+                                        "less": true
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "x"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "<",
-                                      "compare": true,
-                                      "less": true
                                     }
                                   }
+                                },
+                                "op": {
+                                  "text": "||",
+                                  "logical": true,
+                                  "or": true
                                 }
-                              },
-                              "op": {
-                                "text": "||",
-                                "logical": true,
-                                "or": true
                               }
                             }
-                          }
+                          ]
                         }
                       }
                     ]
@@ -391,12 +395,16 @@
                       "arguments": [
                         "\"hello\""
                       ],
-                      "object": {
-                        "name": [
-                          "mapper"
-                        ]
-                      },
-                      "name": "apply"
+                      "object": [
+                        {
+                          "name": [
+                            "mapper"
+                          ]
+                        }
+                      ],
+                      "name": [
+                        "apply"
+                      ]
                     }
                   }
                 }
@@ -459,58 +467,66 @@
                     }
                   },
                   "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "null": "null"
+                    "expression": [
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "null": "null"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "input"
+                            }
+                          },
+                          "op": {
+                            "text": "==",
+                            "equals": true
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "input"
-                          }
-                        },
-                        "op": {
-                          "text": "==",
-                          "equals": true
                         }
                       }
-                    }
+                    ]
                   },
                   "then": {
-                    "throw": {
-                      "new": {
-                        "arguments": [
-                          "\"null\""
-                        ],
-                        "type": {
-                          "name": [
-                            "IllegalArgumentException"
-                          ]
+                    "throw": [
+                      {
+                        "new": {
+                          "arguments": [
+                            "\"null\""
+                          ],
+                          "type": {
+                            "name": [
+                              "IllegalArgumentException"
+                            ]
+                          }
                         }
                       }
-                    }
+                    ]
                   },
                   "else_if": {
                     "then": {
-                      "return": {
-                        "expression": {
-                          "null": "null"
-                        }
-                      }
-                    },
-                    "condition": {
-                      "expression": {
-                        "unary": {
-                          "name": "ready",
-                          "op": {
-                            "text": "!",
-                            "logical": true,
-                            "not": true
+                      "return": [
+                        {
+                          "expression": {
+                            "null": "null"
                           }
                         }
-                      }
+                      ]
+                    },
+                    "condition": {
+                      "expression": [
+                        {
+                          "unary": {
+                            "name": "ready",
+                            "op": {
+                              "text": "!",
+                              "logical": true,
+                              "not": true
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -564,54 +580,62 @@
                             "string": "\"zero\""
                           },
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "0"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "0"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "n"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "<",
+                                    "compare": true,
+                                    "less": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "n"
-                                  }
-                                },
-                                "op": {
-                                  "text": "<",
-                                  "compare": true,
-                                  "less": true
                                 }
                               }
-                            }
+                            ]
                           },
                           "then": {
-                            "string": "\"negative\""
+                            "string": [
+                              "\"negative\""
+                            ]
                           }
                         }
                       },
                       "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "int": "0"
+                        "expression": [
+                          {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "int": "0"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "n"
+                                }
+                              },
+                              "op": {
+                                "text": ">",
+                                "compare": true,
+                                "greater": true
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": ">",
-                              "compare": true,
-                              "greater": true
                             }
                           }
-                        }
+                        ]
                       },
                       "then": {
-                        "string": "\"positive\""
+                        "string": [
+                          "\"positive\""
+                        ]
                       }
                     }
                   }
@@ -757,25 +781,27 @@
                     ]
                   },
                   "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "3"
+                    "expression": [
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "int": "3"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "i"
+                            }
+                          },
+                          "op": {
+                            "text": "<",
+                            "compare": true,
+                            "less": true
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "i"
-                          }
-                        },
-                        "op": {
-                          "text": "<",
-                          "compare": true,
-                          "less": true
                         }
                       }
-                    }
+                    ]
                   }
                 }
               ]
@@ -877,12 +903,16 @@
                                 "guard": {
                                   "unary": {
                                     "call": {
-                                      "name": "isEmpty",
-                                      "object": {
-                                        "name": [
-                                          "s"
-                                        ]
-                                      }
+                                      "name": [
+                                        "isEmpty"
+                                      ],
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "s"
+                                          ]
+                                        }
+                                      ]
                                     },
                                     "op": {
                                       "text": "!",
@@ -923,9 +953,11 @@
                       ],
                       "condition": [
                         {
-                          "expression": {
-                            "name": "o"
-                          }
+                          "expression": [
+                            {
+                              "name": "o"
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1048,9 +1080,11 @@
                             ],
                             "condition": [
                               {
-                                "expression": {
-                                  "this": "this"
-                                }
+                                "expression": [
+                                  {
+                                    "this": "this"
+                                  }
+                                ]
                               }
                             ]
                           }
@@ -1160,22 +1194,32 @@
                         "\"hello from %s\"",
                         {
                           "$type": "call",
-                          "object": {
-                            "call": [
-                              {
-                                "name": "getClass"
-                              }
-                            ]
-                          },
-                          "name": "getSimpleName"
+                          "object": [
+                            {
+                              "call": [
+                                {
+                                  "name": [
+                                    "getClass"
+                                  ]
+                                }
+                              ]
+                            }
+                          ],
+                          "name": [
+                            "getSimpleName"
+                          ]
                         }
                       ],
-                      "object": {
-                        "name": [
-                          "String"
-                        ]
-                      },
-                      "name": "format"
+                      "object": [
+                        {
+                          "name": [
+                            "String"
+                          ]
+                        }
+                      ],
+                      "name": [
+                        "format"
+                      ]
                     }
                   }
                 }
@@ -1326,25 +1370,27 @@
               "do": [
                 {
                   "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "3"
+                    "expression": [
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "int": "3"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "k"
+                            }
+                          },
+                          "op": {
+                            "text": "<",
+                            "compare": true,
+                            "less": true
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "k"
-                          }
-                        },
-                        "op": {
-                          "text": "<",
-                          "compare": true,
-                          "less": true
                         }
                       }
-                    }
+                    ]
                   },
                   "body": {
                     "expression": [
@@ -1391,56 +1437,64 @@
                       "if": [
                         {
                           "then": {
-                            "continue": {
-                              "name": "outer"
-                            }
+                            "continue": [
+                              {
+                                "name": "outer"
+                              }
+                            ]
                           },
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "1"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "1"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "i"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "==",
+                                    "equals": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "i"
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
                                 }
                               }
-                            }
+                            ]
                           }
                         },
                         {
                           "then": {
-                            "break": {
-                              "name": "outer"
-                            }
+                            "break": [
+                              {
+                                "name": "outer"
+                              }
+                            ]
                           },
                           "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "3"
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "3"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "i"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "==",
+                                    "equals": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "i"
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
                                 }
                               }
-                            }
+                            ]
                           }
                         }
                       ]
@@ -1461,25 +1515,27 @@
                       }
                     },
                     "condition": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "5"
+                      "expression": [
+                        {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "int": "5"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "i"
+                              }
+                            },
+                            "op": {
+                              "text": "<",
+                              "compare": true,
+                              "less": true
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "i"
-                            }
-                          },
-                          "op": {
-                            "text": "<",
-                            "compare": true,
-                            "less": true
                           }
                         }
-                      }
+                      ]
                     },
                     "unary": {
                       "op": {
@@ -1648,37 +1704,41 @@
                     "if": [
                       {
                         "then": {
-                          "throw": {
-                            "new": {
-                              "path": {
-                                "name": [
-                                  "java",
-                                  "io",
-                                  "IOException"
-                                ]
+                          "throw": [
+                            {
+                              "new": {
+                                "path": {
+                                  "name": [
+                                    "java",
+                                    "io",
+                                    "IOException"
+                                  ]
+                                }
                               }
                             }
-                          }
+                          ]
                         },
                         "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "null": "null"
+                          "expression": [
+                            {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "null": "null"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "name": "s"
+                                  }
+                                },
+                                "op": {
+                                  "text": "==",
+                                  "equals": true
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "s"
-                                }
-                              },
-                              "op": {
-                                "text": "==",
-                                "equals": true
                               }
                             }
-                          }
+                          ]
                         }
                       }
                     ]
@@ -1763,9 +1823,11 @@
                           ],
                           "condition": [
                             {
-                              "expression": {
-                                "name": "o"
-                              }
+                              "expression": [
+                                {
+                                  "name": "o"
+                                }
+                              ]
                             }
                           ]
                         }
