@@ -174,16 +174,200 @@ fn build_step(
 }
 
 // =============================================================================
-// EXTRACT (stub for iter 236)
+// EXTRACT
 // =============================================================================
+//
+// Canonical right-deep input shape:
+//
+//   <member>                            -- one access step (rightmost)
+//     <object>RECEIVER</object>           -- receiver subtree
+//     <property><name>X</name></property> -- the .X access
+//   </member>
+//
+//   <call>                              -- one invocation step
+//     CALLEE                              -- first element child:
+//                                          (a) <member>...</member> for method call
+//                                          (b) <call>...</call> for result-invocation
+//                                          (c) any other element for top-level call
+//     <argument>...</argument>*           -- args follow as siblings
+//   </call>
+//
+// `<object>` and `<property>` are field-slot wrappers; their content
+// is the actual receiver / access expression. The outermost element
+// (the chain root) corresponds to the LAST source token in operator-
+// precedence order, with each child step nested deeper in source-
+// order direction.
+//
+// For a non-chain expression (just a bare identifier, an isolated
+// `f(args)` top-level call, etc.), extract_chain returns segments
+// that don't form a useful inverted chain — the caller should not
+// emit a `<chain>` wrapper for fewer than 2 segments.
 
 /// Walk a right-deep chain rooted at `node` and produce a segment
-/// list in source order. NOT YET IMPLEMENTED — input shapes vary
-/// per language and need per-language adaptors. Iter 236 will
-/// land the canonical-shape extractor + Java-pilot adaptor.
-#[allow(dead_code)]
-pub fn extract_chain(_xot: &Xot, _node: XotNode) -> Vec<ChainSegment> {
-    unimplemented!("iter 236 — extract from right-deep input")
+/// list in source order (leftmost-first).
+///
+/// The function is non-mutating: it returns references to existing
+/// nodes in the input tree. The caller (typically
+/// `invert_chain_nesting` in iter 237) is responsible for
+/// detaching the originals before passing them to `emit_chain`.
+///
+/// For inputs that don't match the canonical shape, the function
+/// degrades gracefully: any element that isn't `<member>` or
+/// `<call>` is pushed as a `Receiver` segment and recursion stops.
+pub fn extract_chain(xot: &Xot, node: XotNode) -> Vec<ChainSegment> {
+    let mut out = Vec::new();
+    walk_chain(xot, node, &mut out);
+    out
+}
+
+fn walk_chain(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
+    let element_name = get_element_name(xot, node);
+    match element_name.as_deref() {
+        Some("member") => walk_member(xot, node, out),
+        Some("call") => walk_call(xot, node, out),
+        _ => {
+            // Base case: this is the leftmost receiver.
+            out.push(ChainSegment::Receiver(node));
+        }
+    }
+}
+
+fn walk_member(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
+    let object_slot = find_named_child(xot, node, "object");
+    let property_slot = find_named_child(xot, node, "property");
+
+    // Recurse into the receiver first so earlier links land before
+    // this access in the segment list.
+    if let Some(slot) = object_slot {
+        if let Some(inner) = first_element_child(xot, slot) {
+            walk_chain(xot, inner, out);
+        }
+    }
+
+    let name_node = property_slot
+        .and_then(|p| first_element_child(xot, p))
+        .unwrap_or(node);
+    let markers = collect_markers(xot, node);
+    out.push(ChainSegment::Member { name_node, markers });
+}
+
+fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
+    // First non-marker element child is the callee.
+    let callee = first_non_marker_element_child(xot, node);
+    let args = collect_call_args(xot, node, callee);
+    let markers = collect_markers(xot, node);
+
+    match callee {
+        Some(c) => match get_element_name(xot, c).as_deref() {
+            Some("member") => {
+                // Method call: recurse into the member's receiver,
+                // then push the call segment with the property's
+                // name as the method name.
+                let object_slot = find_named_child(xot, c, "object");
+                if let Some(slot) = object_slot {
+                    if let Some(inner) = first_element_child(xot, slot) {
+                        walk_chain(xot, inner, out);
+                    }
+                }
+                let property_slot = find_named_child(xot, c, "property");
+                let method_name = property_slot
+                    .and_then(|p| first_element_child(xot, p));
+                out.push(ChainSegment::Call {
+                    name_node: method_name,
+                    args,
+                    markers,
+                });
+            }
+            Some("call") => {
+                // Result-invocation: callee is itself a chain.
+                walk_chain(xot, c, out);
+                out.push(ChainSegment::Call {
+                    name_node: None,
+                    args,
+                    markers,
+                });
+            }
+            _ => {
+                // Top-level call (e.g. `f(args)` where f is a bare
+                // <name>) or invocation on a complex receiver.
+                // Treat the callee as the chain receiver.
+                walk_chain(xot, c, out);
+                // The presence of a method name here depends on
+                // whether the callee is a name-shaped element. For
+                // simple `f(args)`, we typically don't want a
+                // separate Call segment — the function reference
+                // IS the receiver and the args belong to it. But
+                // for semantic uniformity with method calls, we
+                // emit a Call with no name_node so the caller can
+                // decide what to do.
+                out.push(ChainSegment::Call {
+                    name_node: None,
+                    args,
+                    markers,
+                });
+            }
+        },
+        None => {
+            // No callee element — degenerate input.
+            out.push(ChainSegment::Receiver(node));
+        }
+    }
+}
+
+// ---- Helpers ----------------------------------------------------------
+
+fn find_named_child(xot: &Xot, parent: XotNode, name: &str) -> Option<XotNode> {
+    xot.children(parent)
+        .find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some(name)
+        })
+}
+
+fn first_element_child(xot: &Xot, parent: XotNode) -> Option<XotNode> {
+    xot.children(parent).find(|&c| xot.element(c).is_some())
+}
+
+fn first_non_marker_element_child(xot: &Xot, parent: XotNode) -> Option<XotNode> {
+    xot.children(parent).find(|&c| {
+        xot.element(c).is_some() && !is_marker_element(xot, c)
+    })
+}
+
+/// A marker is an empty self-closing element (no element children
+/// and no text content) — typically `<optional/>`, `<async/>`,
+/// `<prefix/>`, etc.
+fn is_marker_element(xot: &Xot, node: XotNode) -> bool {
+    if xot.element(node).is_none() {
+        return false;
+    }
+    !xot.children(node).any(|c| xot.element(c).is_some() || xot.text_str(c).is_some())
+}
+
+/// Collect marker children (self-closing, no content) of `node`.
+fn collect_markers(xot: &Xot, node: XotNode) -> Vec<XotNode> {
+    xot.children(node)
+        .filter(|&c| is_marker_element(xot, c))
+        .collect()
+}
+
+/// Collect `<argument>` (or any non-callee, non-marker, non-slot)
+/// element children of a `<call>`. The callee is the first
+/// non-marker element child; everything after it (excluding slot
+/// wrappers like `<object>`/`<property>` if any leak through) is
+/// considered an argument.
+fn collect_call_args(
+    xot: &Xot,
+    call_node: XotNode,
+    callee: Option<XotNode>,
+) -> Vec<XotNode> {
+    xot.children(call_node)
+        .filter(|&c| {
+            xot.element(c).is_some()
+                && !is_marker_element(xot, c)
+                && Some(c) != callee
+        })
+        .collect()
 }
 
 /// In-place wrapper: extract the chain at `node`, emit the
@@ -543,5 +727,227 @@ mod tests {
         let (mut xot, _root) = fresh_xot();
         let recv = new_text_element(&mut xot, "name", "a");
         let _ = emit_chain(&mut xot, vec![ChainSegment::Receiver(recv)]);
+    }
+
+    // ===================================================================
+    // EXTRACT — synthetic right-deep input → segment list IR
+    // ===================================================================
+
+    /// Build `<member><object>OBJ</object><property><name>P</name></property></member>`
+    fn build_member(xot: &mut Xot, object: XotNode, prop_name: &str) -> XotNode {
+        let member = new_named_element(xot, "member");
+        let obj_slot = new_named_element(xot, "object");
+        xot.append(obj_slot, object).unwrap();
+        let prop_slot = new_named_element(xot, "property");
+        let name = new_text_element(xot, "name", prop_name);
+        xot.append(prop_slot, name).unwrap();
+        xot.append(member, obj_slot).unwrap();
+        xot.append(member, prop_slot).unwrap();
+        member
+    }
+
+    /// Build a call wrapping a callee + zero or more args.
+    fn build_call(xot: &mut Xot, callee: XotNode, args: Vec<XotNode>) -> XotNode {
+        let call = new_named_element(xot, "call");
+        xot.append(call, callee).unwrap();
+        for arg in args {
+            xot.append(call, arg).unwrap();
+        }
+        call
+    }
+
+    /// Inspect helper: get the text content of a segment's primary
+    /// node. Returns None for receivers without a single text leaf,
+    /// or for segments whose primary node is missing.
+    fn segment_text(xot: &Xot, seg: &ChainSegment) -> Option<String> {
+        let node = match seg {
+            ChainSegment::Receiver(n) => Some(*n),
+            ChainSegment::Member { name_node, .. } => Some(*name_node),
+            ChainSegment::Call { name_node, .. } => *name_node,
+            ChainSegment::Subscript { index_node, .. } => Some(*index_node),
+        }?;
+        xot.children(node).find_map(|c| xot.text_str(c).map(|s| s.to_string()))
+    }
+
+    fn segment_kind(seg: &ChainSegment) -> &'static str {
+        match seg {
+            ChainSegment::Receiver(_) => "Receiver",
+            ChainSegment::Member { .. } => "Member",
+            ChainSegment::Call { .. } => "Call",
+            ChainSegment::Subscript { .. } => "Subscript",
+        }
+    }
+
+    fn render_segments(xot: &Xot, segments: &[ChainSegment]) -> String {
+        segments.iter()
+            .map(|s| match (segment_kind(s), segment_text(xot, s)) {
+                (k, Some(t)) => format!("{}:{}", k, t),
+                (k, None) => k.to_string(),
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    #[test]
+    fn extract_simple_member_access() {
+        // a.b
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m = build_member(&mut xot, a, "b");
+        let segs = extract_chain(&xot, m);
+        assert_eq!(render_segments(&xot, &segs), "Receiver:a, Member:b");
+    }
+
+    #[test]
+    fn extract_multi_link_member_chain() {
+        // a.b.c.d
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m1 = build_member(&mut xot, a, "b");
+        let m2 = build_member(&mut xot, m1, "c");
+        let m3 = build_member(&mut xot, m2, "d");
+        let segs = extract_chain(&xot, m3);
+        assert_eq!(
+            render_segments(&xot, &segs),
+            "Receiver:a, Member:b, Member:c, Member:d"
+        );
+    }
+
+    #[test]
+    fn extract_terminal_method_call() {
+        // a.b()  →  call(callee=member(a, b))
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let callee = build_member(&mut xot, a, "b");
+        let call = build_call(&mut xot, callee, vec![]);
+        let segs = extract_chain(&xot, call);
+        assert_eq!(render_segments(&xot, &segs), "Receiver:a, Call:b");
+    }
+
+    #[test]
+    fn extract_multi_link_call_chain() {
+        // a.b.c.d()
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m1 = build_member(&mut xot, a, "b");
+        let m2 = build_member(&mut xot, m1, "c");
+        let callee = build_member(&mut xot, m2, "d");
+        let call = build_call(&mut xot, callee, vec![]);
+        let segs = extract_chain(&xot, call);
+        assert_eq!(
+            render_segments(&xot, &segs),
+            "Receiver:a, Member:b, Member:c, Call:d"
+        );
+    }
+
+    #[test]
+    fn extract_mixed_member_and_call_steps() {
+        // a.b().c.d()
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let callee_b = build_member(&mut xot, a, "b");
+        let call_b = build_call(&mut xot, callee_b, vec![]);
+        let m_c = build_member(&mut xot, call_b, "c");
+        let callee_d = build_member(&mut xot, m_c, "d");
+        let call_d = build_call(&mut xot, callee_d, vec![]);
+        let segs = extract_chain(&xot, call_d);
+        assert_eq!(
+            render_segments(&xot, &segs),
+            "Receiver:a, Call:b, Member:c, Call:d"
+        );
+    }
+
+    #[test]
+    fn extract_call_with_args() {
+        // a.b(x, y)
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let callee = build_member(&mut xot, a, "b");
+        let arg1 = new_text_element(&mut xot, "argument", "x");
+        let arg2 = new_text_element(&mut xot, "argument", "y");
+        let call = build_call(&mut xot, callee, vec![arg1, arg2]);
+        let segs = extract_chain(&xot, call);
+        assert_eq!(segs.len(), 2);
+        let ChainSegment::Call { args, .. } = &segs[1] else {
+            panic!("expected Call segment");
+        };
+        assert_eq!(args.len(), 2);
+    }
+
+    #[test]
+    fn extract_top_level_call_no_chain() {
+        // f(x) — bare callee, no chain at all
+        let (mut xot, _root) = fresh_xot();
+        let f = new_text_element(&mut xot, "name", "f");
+        let arg = new_text_element(&mut xot, "argument", "x");
+        let call = build_call(&mut xot, f, vec![arg]);
+        let segs = extract_chain(&xot, call);
+        // Receiver:f, Call (no name)
+        assert_eq!(segs.len(), 2);
+        assert!(matches!(segs[0], ChainSegment::Receiver(_)));
+        assert!(matches!(segs[1], ChainSegment::Call { name_node: None, .. }));
+    }
+
+    #[test]
+    fn extract_bare_identifier_no_chain() {
+        // Just a name, not a chain.
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let segs = extract_chain(&xot, a);
+        assert_eq!(segs.len(), 1);
+        assert!(matches!(segs[0], ChainSegment::Receiver(_)));
+    }
+
+    #[test]
+    fn extract_complex_receiver_passes_through() {
+        // (cast).b — receiver is a <cast>, not a bare <name>
+        let (mut xot, _root) = fresh_xot();
+        let cast = new_named_element(&mut xot, "cast");
+        let xn = new_text_element(&mut xot, "name", "x");
+        xot.append(cast, xn).unwrap();
+        let m = build_member(&mut xot, cast, "b");
+        let segs = extract_chain(&xot, m);
+        assert_eq!(segs.len(), 2);
+        // Receiver should be the <cast> element.
+        let ChainSegment::Receiver(r) = segs[0] else {
+            panic!("expected Receiver");
+        };
+        assert_eq!(get_element_name(&xot, r).as_deref(), Some("cast"));
+        assert!(matches!(segs[1], ChainSegment::Member { .. }));
+    }
+
+    #[test]
+    fn extract_result_invocation_double_call() {
+        // f()(args) — call where callee is itself a call
+        let (mut xot, _root) = fresh_xot();
+        let f = new_text_element(&mut xot, "name", "f");
+        let inner_call = build_call(&mut xot, f, vec![]);
+        let outer_arg = new_text_element(&mut xot, "argument", "x");
+        let outer_call = build_call(&mut xot, inner_call, vec![outer_arg]);
+        let segs = extract_chain(&xot, outer_call);
+        // Expected: Receiver:f, Call (no name, inner) , Call (no name, outer with arg)
+        assert_eq!(segs.len(), 3);
+        assert!(matches!(segs[0], ChainSegment::Receiver(_)));
+        assert!(matches!(segs[1], ChainSegment::Call { name_node: None, args: ref a, .. } if a.is_empty()));
+        let ChainSegment::Call { name_node: None, args, .. } = &segs[2] else {
+            panic!("expected outer Call");
+        };
+        assert_eq!(args.len(), 1);
+    }
+
+    #[test]
+    fn extract_marker_collected_on_member_step() {
+        // a?.b — optional marker on the <member>
+        let (mut xot, _root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m = build_member(&mut xot, a, "b");
+        let opt = new_named_element(&mut xot, "optional");
+        xot.append(m, opt).unwrap();
+        let segs = extract_chain(&xot, m);
+        assert_eq!(segs.len(), 2);
+        let ChainSegment::Member { markers, .. } = &segs[1] else {
+            panic!("expected Member");
+        };
+        assert_eq!(markers.len(), 1);
     }
 }
