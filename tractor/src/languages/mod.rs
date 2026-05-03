@@ -1428,6 +1428,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    go_tag_multi_target_expressions(xot, root)?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
@@ -1497,6 +1498,58 @@ fn go_retag_singleton_closure_body(xot: &mut Xot, root: XotNode) -> Result<(), x
             .collect();
         for t in text_targets {
             xot.detach(t)?;
+        }
+    }
+    Ok(())
+}
+
+/// Tag multiple `<expression>` siblings under `<left>` / `<right>`
+/// with `list="expression"` so multi-target Go assignment / short-var
+/// declarations render as JSON arrays:
+///   `x, y := 1, 2` →
+///   `{ left: { expression: [{name:"x"},{name:"y"}] },
+///      right: { expression: [{int:"1"},{int:"2"}] } }`
+///
+/// Targeted (not bulk distribute) because `<left>` / `<right>` are
+/// also used for binary-operator operands where they hold a single
+/// `<expression>` (binary `a + b` keeps `left.expression: {...}` as
+/// singleton). Only multi-target sites need list= per Principle #19
+/// — and the cardinality test (multiple element children) is the
+/// distinguisher.
+fn go_tag_multi_target_expressions(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_attr, get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if matches!(name.as_str(), "left" | "right") {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+
+    for slot in targets {
+        let exprs: Vec<XotNode> = xot.children(slot)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("expression")
+            })
+            .collect();
+        if exprs.len() < 2 { continue; }
+        for e in exprs {
+            if get_attr(xot, e, "list").is_none() {
+                xot.with_attr(e, "list", "expression");
+            }
         }
     }
     Ok(())

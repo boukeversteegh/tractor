@@ -478,6 +478,15 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 189: Go multi-target left/right expression list — new
+  `go_tag_multi_target_expressions` post-pass tags multiple
+  `<expression>` siblings under `<left>`/`<right>` with
+  `list="expression"`. Multi-target assignments (`x, y := 1, 2`)
+  now render `left.expression: [{...}, {...}]` array instead of
+  first-singleton-rest-overflow. Cardinality discriminator (>=2
+  exprs) keeps singleton binary operands (`a + b`) untouched. Go
+  audit 40 → 20 (-20, 50% reduction). Same pattern likely benefits
+  Python tuple-unpacking (queued).
 - [x] iter 188: Rust `self_parameter` Custom handler — strips the
   inner `<self>` element + `<mutable_specifier>` element + bare `&`
   text leaves; prepends `<self/>` (always), `<borrowed/>` (for

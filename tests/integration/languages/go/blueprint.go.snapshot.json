@@ -739,15 +739,14 @@
                 }
               },
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "_"
+                  },
+                  {
                     "name": "x"
                   }
-                ],
-                "expression": {
-                  "name": "_"
-                }
+                ]
               }
             }
           }
@@ -833,15 +832,14 @@
                 }
               },
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "_"
+                  },
+                  {
                     "name": "x"
                   }
-                ],
-                "expression": {
-                  "name": "_"
-                }
+                ]
               }
             }
           }
@@ -938,15 +936,14 @@
                     },
                     "short": true,
                     "left": {
-                      "children": [
+                      "expression": [
                         {
-                          "$type": "expression",
+                          "name": "_"
+                        },
+                        {
                           "name": "ok"
                         }
-                      ],
-                      "expression": {
-                        "name": "_"
-                      }
+                      ]
                     }
                   },
                   "condition": {
@@ -971,15 +968,14 @@
                 }
               },
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "_"
+                  },
+                  {
                     "name": "x"
                   }
-                ],
-                "expression": {
-                  "name": "_"
-                }
+                ]
               }
             }
           }
@@ -1069,15 +1065,14 @@
                 }
               },
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "_"
+                  },
+                  {
                     "name": "v"
                   }
-                ],
-                "expression": {
-                  "name": "_"
-                }
+                ]
               }
             }
           }
@@ -1282,47 +1277,42 @@
               }
             },
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "_"
+                },
+                {
                   "name": "_"
                 }
-              ],
-              "expression": {
-                "name": "_"
-              }
+              ]
             }
           },
           {
             "right": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "chRecvOnly"
+                },
+                {
                   "name": "mapper"
                 },
                 {
-                  "$type": "expression",
                   "name": "sub"
                 }
-              ],
-              "expression": {
-                "name": "chRecvOnly"
-              }
+              ]
             },
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
+                  "name": "_"
+                },
+                {
                   "name": "_"
                 }
-              ],
-              "expression": {
-                "name": "_"
-              }
+              ]
             }
           }
         ],
@@ -1796,26 +1786,24 @@
               "assign": [
                 {
                   "right": {
-                    "children": [
+                    "expression": [
                       {
-                        "$type": "expression",
+                        "name": "k"
+                      },
+                      {
                         "name": "v"
                       }
-                    ],
-                    "expression": {
-                      "name": "k"
-                    }
+                    ]
                   },
                   "left": {
-                    "children": [
+                    "expression": [
                       {
-                        "$type": "expression",
+                        "name": "_"
+                      },
+                      {
                         "name": "_"
                       }
-                    ],
-                    "expression": {
-                      "name": "_"
-                    }
+                    ]
                   }
                 }
               ]
@@ -1858,15 +1846,14 @@
                 }
               },
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "k"
+                  },
+                  {
                     "name": "v"
                   }
-                ],
-                "expression": {
-                  "name": "k"
-                }
+                ]
               }
             }
           },
@@ -1998,15 +1985,14 @@
                           }
                         },
                         "left": {
-                          "children": [
+                          "expression": [
                             {
-                              "$type": "expression",
+                              "name": "v"
+                            },
+                            {
                               "name": "ok"
                             }
-                          ],
-                          "expression": {
-                            "name": "v"
-                          }
+                          ]
                         }
                       },
                       "if": {
@@ -2078,30 +2064,28 @@
         "variable": [
           {
             "right": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "string": {
+                    "text": "`no \"escapes\" here`",
+                    "raw": true
+                  }
+                },
+                {
                   "char": "'A'"
                 }
-              ],
-              "expression": {
-                "string": {
-                  "text": "`no \"escapes\" here`",
-                  "raw": true
-                }
-              }
+              ]
             },
             "short": true,
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "raw"
+                },
+                {
                   "name": "ch"
                 }
-              ],
-              "expression": {
-                "name": "raw"
-              }
+              ]
             }
           },
           {
@@ -2119,9 +2103,42 @@
           },
           {
             "right": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "unary": {
+                    "literal": {
+                      "body": {
+                        "pair": [
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "1"
+                              }
+                            },
+                            "name": "X"
+                          },
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "2"
+                              }
+                            },
+                            "name": "Y"
+                          }
+                        ]
+                      },
+                      "type": {
+                        "name": "Point"
+                      }
+                    },
+                    "op": {
+                      "text": "&",
+                      "bitwise": true,
+                      "and": true
+                    }
+                  }
+                },
+                {
                   "literal": {
                     "body": {
                       "pair": [
@@ -2158,53 +2175,18 @@
                     }
                   }
                 }
-              ],
-              "expression": {
-                "unary": {
-                  "literal": {
-                    "body": {
-                      "pair": [
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "1"
-                            }
-                          },
-                          "name": "X"
-                        },
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "2"
-                            }
-                          },
-                          "name": "Y"
-                        }
-                      ]
-                    },
-                    "type": {
-                      "name": "Point"
-                    }
-                  },
-                  "op": {
-                    "text": "&",
-                    "bitwise": true,
-                    "and": true
-                  }
-                }
-              }
+              ]
             },
             "short": true,
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "pt"
+                },
+                {
                   "name": "pts"
                 }
-              ],
-              "expression": {
-                "name": "pt"
-              }
+              ]
             }
           },
           {
@@ -2284,15 +2266,14 @@
               },
               "short": true,
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "x"
+                  },
+                  {
                     "name": "err"
                   }
-                ],
-                "expression": {
-                  "name": "x"
-                }
+                ]
               }
             },
             "condition": {
@@ -2356,15 +2337,14 @@
               },
               "short": true,
               "left": {
-                "children": [
+                "expression": [
                   {
-                    "$type": "expression",
+                    "name": "s"
+                  },
+                  {
                     "name": "ok"
                   }
-                ],
-                "expression": {
-                  "name": "s"
-                }
+                ]
               }
             },
             "condition": {
@@ -2456,25 +2436,23 @@
         "assign": [
           {
             "right": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "raw"
+                },
+                {
                   "name": "ch"
                 },
                 {
-                  "$type": "expression",
                   "name": "pt"
                 },
                 {
-                  "$type": "expression",
                   "name": "pts"
                 },
                 {
-                  "$type": "expression",
                   "name": "m"
                 },
                 {
-                  "$type": "expression",
                   "call": {
                     "arguments": [
                       "42"
@@ -2482,37 +2460,29 @@
                     "name": "UserID"
                   }
                 }
-              ],
-              "expression": {
-                "name": "raw"
-              }
+              ]
             },
             "left": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
                   "name": "_"
                 },
                 {
-                  "$type": "expression",
+                  "name": "_"
+                },
+                {
                   "name": "_"
                 }
-              ],
-              "expression": {
-                "name": "_"
-              }
+              ]
             }
           }
         ]
