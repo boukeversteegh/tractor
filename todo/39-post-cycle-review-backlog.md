@@ -179,31 +179,17 @@ before committing a non-trivial change.
 
 ### Iter 258 user-flagged
 
-- [ ] **Rust `expression/expression[try]` repeated parent-child name**
-  *(Principle #15 / `tree_invariants::no_repeated_parent_child_name`,
-  severity MED)*
-  - User flagged inline (iter 258) after CI repro: `xot.with_a(node)?;`
-    produces
-    ```
-    body/expression/
-      ├─ expression[try]/
-      │   ├─ object[access]/
-      │   │   ├─ name = "xot"
-      │   │   └─ call/...
-      │   └─ "?"
-      └─ ";"
-    ```
-    The outer `<expression>` (statement host) wraps an inner
-    `<expression[try]>` — same element name nested. The
-    `await_expression` C# handler already uses a "lift marker onto
-    parent + flatten self" pattern to avoid this; Rust's
-    `try_expression` should use the same approach so the result is
-    `expression[try]/object[access]/...` with a single `<expression>`
-    host carrying the `<try/>` marker.
-  - Fix sketch: in Rust `try_expression` handler, if parent is
-    already `<expression>`, lift the `<try/>` marker onto the
-    parent and `Flatten` self. Otherwise keep current shape.
-  - Effort: 1-iter.
+- [x] iter 259 — **Rust `expression/expression[try]` repeated
+  parent-child name fixed.** Applied the same "parent-is-expression
+  → lift marker + flatten" pattern that C#'s `await_expression`
+  already used (transformations.rs:207). Both Rust `try_expression`
+  and `await_expression` now lift their marker onto an existing
+  `<expression>` parent rather than emit a nested second host.
+  Pinned by `transform/errors.rs::rust_try_postfix_no_double_host`
+  (asserts `//body/expression[try]/call` matches and
+  `//expression/expression` does NOT match). Blueprint snapshots
+  unchanged (the only Rust try in the blueprint sat under `<value>`,
+  not `<expression>`).
 
 ### Cold-read findings (iter 233 review)
 

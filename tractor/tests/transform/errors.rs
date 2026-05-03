@@ -162,3 +162,28 @@ fn ruby() {
         "#),
         1);
 }
+
+/// Rust's `?` postfix operator promotes the operand to an
+/// `<expression>` host with a trailing `<try/>` marker (Principle
+/// #15). When the parent is already `<expression>` (the
+/// statement-level host from `expression_statement`'s rename),
+/// the marker lifts onto the parent instead of producing a nested
+/// `<expression>/<expression[try]>` pair. This test pins the
+/// no-double-host shape; without the lift the
+/// `tree_invariants::no_repeated_parent_child_name` invariant
+/// would trip on real source like `xot.with_a(node)?;`.
+#[test]
+fn rust_try_postfix_no_double_host() {
+    let mut tree = parse_src("rust", r#"
+        fn t() -> Result<(), Error> {
+            foo()?;
+            bar();
+        }
+    "#);
+
+    claim("Rust `foo()?;` produces a single <expression[try]> host (no double-wrap)",
+        &mut tree, "//body/expression[try]/call[name='foo']", 1);
+
+    claim("Rust statement-level body has no <expression>/<expression> nesting",
+        &mut tree, "//expression/expression", 0);
+}

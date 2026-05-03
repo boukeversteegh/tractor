@@ -148,7 +148,24 @@ pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Erro
 /// `try_expression` — `foo()?`. Promote to `<expression>` host with a
 /// trailing `<try/>` marker (postfix in source, marker order matches).
 /// See [Principle #15: Stable Expression Hosts].
+///
+/// When the parent is already `<expression>` (e.g. from
+/// `expression_statement`'s rename), avoid double-wrapping: append
+/// the `<try/>` marker onto the parent and flatten this node so its
+/// children become direct siblings of the marker. Catches the
+/// `<expression>/<expression[try]>` shape flagged by
+/// `tree_invariants::no_repeated_parent_child_name`. Mirrors C#'s
+/// `await_expression` lift pattern.
 pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let parent_is_expression = get_parent(xot, node)
+        .and_then(|p| get_element_name(xot, p))
+        .as_deref()
+        == Some("expression");
+    if parent_is_expression {
+        let parent = get_parent(xot, node).expect("parent_is_expression checked above");
+        xot.with_appended_marker_from(parent, Try, node)?;
+        return Ok(TransformAction::Flatten);
+    }
     xot.with_renamed(node, Expression)
         .with_appended_marker(node, Try)?;
     Ok(TransformAction::Continue)
@@ -157,8 +174,17 @@ pub fn try_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 /// `await_expression` — `foo().await`. Rust's `.await` is postfix, so
 /// the marker trails the operand. Promote to `<expression>` host with
 /// a trailing `<await/>` marker. See [Principle #15: Stable Expression
-/// Hosts].
+/// Hosts]. Same parent-is-expression lift pattern as `try_expression`.
 pub fn await_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let parent_is_expression = get_parent(xot, node)
+        .and_then(|p| get_element_name(xot, p))
+        .as_deref()
+        == Some("expression");
+    if parent_is_expression {
+        let parent = get_parent(xot, node).expect("parent_is_expression checked above");
+        xot.with_appended_marker_from(parent, Await, node)?;
+        return Ok(TransformAction::Flatten);
+    }
     xot.with_renamed(node, Expression)
         .with_appended_marker(node, Await)?;
     Ok(TransformAction::Continue)
