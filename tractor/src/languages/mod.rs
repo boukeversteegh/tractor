@@ -339,6 +339,18 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // doesn't reach this pass.
             ("variable", "declarator"),
             ("field", "declarator"),
+            // Tuple deconstruction pattern `var (cnt, tg) = pair;`
+            // produces `<pattern[tuple]>` with multiple `<name>`
+            // siblings (one per binding slot). Mirrors Ruby/Python
+            // iter 273.
+            ("pattern", "name"),
+            // Alternative patterns (`x is 1 or 2 or 3`) — same
+            // archetype as Python/Ruby. Mirrors iter 273.
+            ("pattern", "int"),
+            ("pattern", "string"),
+            // Multi-argument indexer `arr[1, 2, 3]` — `<index>`
+            // parent with multiple `<argument>` siblings.
+            ("index", "argument"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;

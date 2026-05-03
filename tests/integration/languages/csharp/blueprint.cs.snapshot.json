@@ -2008,34 +2008,31 @@
                             "name": "var"
                           },
                           "pattern": {
-                            "children": [
+                            "names": [
+                              "cnt",
                               "tg"
                             ],
-                            "tuple": true,
-                            "name": "cnt"
+                            "tuple": true
                           }
                         },
                         {
                           "index": {
-                            "children": [
+                            "arguments": [
                               {
-                                "$type": "argument",
+                                "int": "1"
+                              },
+                              {
                                 "int": "2"
                               },
                               {
-                                "$type": "argument",
                                 "int": "3"
                               },
                               {
-                                "$type": "argument",
                                 "range": {
                                   "name": "odds"
                                 }
                               }
-                            ],
-                            "argument": {
-                              "int": "1"
-                            }
+                            ]
                           },
                           "type": {
                             "arguments": [

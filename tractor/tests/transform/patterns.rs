@@ -205,3 +205,31 @@ fn csharp_type_pattern_no_marker_collision() {
         "//pattern/type[not(*) and not(text())]",
         0);
 }
+
+/// C# `var (cnt, tg) = pair;` (tuple deconstruction) produces
+/// `<pattern[tuple]>` with multiple `<name>` siblings (one per
+/// binding). Per Principle #19 they're role-uniform; tag with
+/// `list="names"`. Mirrors Ruby/Python iter 273.
+#[test]
+fn csharp_tuple_deconstruction_pattern_lists_names() {
+    claim("C# tuple deconstruction tags each <name> with list='names'",
+        &mut parse_src("csharp", r#"
+        class T { void M() {
+            var (cnt, tg) = pair;
+        } }
+    "#),
+        "//pattern[tuple]/name[@list='names']",
+        2);
+}
+
+/// C# multi-argument indexer `arr[1, 2, 3]` produces `<index>`
+/// with multiple `<argument>` siblings. Per Principle #19 they're
+/// role-uniform — tagged with `list="arguments"` so JSON renders
+/// as a uniform array.
+#[test]
+fn csharp_multi_arg_indexer_lists_arguments() {
+    claim("C# multi-arg indexer tags each <argument> with list='arguments'",
+        &mut parse_src("csharp", "class T { void M() { var x = arr[1, 2, 3]; } }"),
+        "//index/argument[@list='arguments']",
+        3);
+}
