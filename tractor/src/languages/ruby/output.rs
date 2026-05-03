@@ -58,6 +58,9 @@ pub enum TractorNode {
     // Call role wrapper for `obj.method(...)` receiver
     // (Principle #19: distinguish receiver from method name).
     Object,
+    // Chain inversion (iter 246): `[access]` distinguishes
+    // member-access chains from object literals.
+    Access,
 }
 
 impl TractorNode {
@@ -80,6 +83,7 @@ impl TractorNode {
         let (marker, container, syntax) = match self {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
+            | Self::Access
             | Self::List | Self::Dict | Self::Delimited | Self::Singleton           => (true, false, Default),
             Self::Keyword | Self::Default | Self::Splat | Self::Kwsplat             => (true, false, Default),
             Self::Alternative | Self::As | Self::Find | Self::Test | Self::Forward

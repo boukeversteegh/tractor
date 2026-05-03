@@ -1507,7 +1507,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // chain inverter expects `<call><member><object/><property/></member>...args</call>`,
     // so pre-wrap the `<object>`+`<name>` pair into a synthetic
     // `<member>` first.
-    java_wrap_call_member(xot, root)?;
+    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
     crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
@@ -1542,96 +1542,6 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 /// identifier path; the segments are *names*, not types (Principle
 /// #14). Walk every `<path>` and collapse `<type>` segment wrappers to
 /// bare `<name>` children.
-/// Pre-pass for chain inversion: rewrite Java's flat `<call>`
-/// shape into the canonical right-deep input.
-///
-/// Java emits:
-///   `<call><object>RECEIVER</object><name>method</name>...args</call>`
-///
-/// The chain inverter wants:
-///   `<call><member><object>RECEIVER</object><property><name>method</name></property></member>...args</call>`
-///
-/// Walk the tree, find every `<call>` that has both an `<object>`
-/// child and a sibling `<name>` (method name), wrap them in a
-/// synthetic `<member>` with `<property>` around the name, and
-/// place the `<member>` as the call's first child.
-fn java_wrap_call_member(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::helpers::{get_element_name, XotWithExt};
-    let root = if xot.is_document(root) {
-        xot.document_element(root).unwrap_or(root)
-    } else {
-        root
-    };
-    let mut calls: Vec<XotNode> = Vec::new();
-    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-        if xot.element(node).is_some()
-            && get_element_name(xot, node).as_deref() == Some("call")
-        {
-            out.push(node);
-        }
-        for c in xot.children(node) {
-            collect(xot, c, out);
-        }
-    }
-    collect(xot, root, &mut calls);
-    for call in calls {
-        // Find the `<object>` slot child (the receiver) and the
-        // bare `<name>` sibling (the method name). For top-level
-        // calls (no receiver), no `<object>` exists — skip those.
-        let object_slot = xot.children(call).find(|&c| {
-            xot.element(c).is_some()
-                && get_element_name(xot, c).as_deref() == Some("object")
-        });
-        let object_slot = match object_slot {
-            Some(o) => o,
-            None => continue,
-        };
-        // The method name is the first `<name>` AFTER the <object>
-        // slot (avoid grabbing names inside arguments).
-        let mut name_node: Option<XotNode> = None;
-        let mut found_object = false;
-        for c in xot.children(call) {
-            if xot.element(c).is_none() {
-                continue;
-            }
-            if c == object_slot {
-                found_object = true;
-                continue;
-            }
-            if !found_object {
-                continue;
-            }
-            if get_element_name(xot, c).as_deref() == Some("name") {
-                name_node = Some(c);
-                break;
-            }
-        }
-        let name_node = match name_node {
-            Some(n) => n,
-            None => continue,
-        };
-
-        // Build <property><name>X</name></property>.
-        let property_id = xot.add_name("property");
-        let property = xot.new_element(property_id);
-        xot.with_source_location_from(property, name_node);
-        xot.with_detach(name_node)?
-            .with_append(property, name_node)?;
-
-        // Build <member><object>RECV</object><property>NAME</property></member>.
-        let member_id = xot.add_name("member");
-        let member = xot.new_element(member_id);
-        xot.with_source_location_from(member, object_slot);
-        // Insert <member> just before <object>, then move <object>
-        // and <property> into it.
-        xot.with_insert_before(object_slot, member)?
-            .with_detach(object_slot)?
-            .with_append(member, object_slot)?
-            .with_append(member, property)?;
-    }
-    Ok(())
-}
-
 fn java_unwrap_type_in_path(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     use crate::transform::helpers::get_element_name;
     let mut paths: Vec<XotNode> = Vec::new();
@@ -2092,6 +2002,10 @@ fn php_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 ///    value — so value-producing children of body containers are
 ///    real expression positions and should carry the host.
 fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Ruby uses Java's flat call shape (`<call><object/>NAME...</call>`).
+    // Wrap object+name into canonical `<member>` callee, then invert.
+    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

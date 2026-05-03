@@ -388,6 +388,96 @@ fn collect_call_args(
 }
 
 // =============================================================================
+// PRE-PASS: wrap_flat_call_member (for Tier B / C languages)
+// =============================================================================
+
+/// Normalise a flat `<call>` shape — `<object>RECV</object>` +
+/// bare `<name>METHOD</name>` siblings — into the canonical
+/// right-deep input shape:
+///
+///   `<call><member><object>RECV</object><property><name>METHOD</name></property></member>...args</call>`
+///
+/// Use as a pre-pass before `invert_chains_in_tree` for languages
+/// whose tree-sitter grammars emit method invocations as a flat
+/// call (Java's `method_invocation`, Ruby's `call`, …) — both have
+/// the receiver in `<object>` and the method name as a bare
+/// `<name>` sibling rather than nested under a `<member>` callee.
+///
+/// Idempotent: skips calls that don't have both an `<object>`
+/// slot and a bare `<name>` sibling. Top-level `f(args)` calls
+/// (no receiver, no `<object>` slot) are left alone.
+pub fn wrap_flat_call_member(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut calls: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("call")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut calls);
+    for call in calls {
+        let object_slot = xot.children(call).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("object")
+        });
+        let object_slot = match object_slot {
+            Some(o) => o,
+            None => continue,
+        };
+        // The method name is the first `<name>` AFTER the <object>
+        // slot (avoid grabbing names inside arguments).
+        let mut name_node: Option<XotNode> = None;
+        let mut found_object = false;
+        for c in xot.children(call) {
+            if xot.element(c).is_none() {
+                continue;
+            }
+            if c == object_slot {
+                found_object = true;
+                continue;
+            }
+            if !found_object {
+                continue;
+            }
+            if get_element_name(xot, c).as_deref() == Some("name") {
+                name_node = Some(c);
+                break;
+            }
+        }
+        let name_node = match name_node {
+            Some(n) => n,
+            None => continue,
+        };
+
+        // Build <property><name>X</name></property>.
+        let property_id = xot.add_name("property");
+        let property = xot.new_element(property_id);
+        copy_source_location(xot, name_node, property);
+        xot.detach(name_node)?;
+        xot.append(property, name_node)?;
+
+        // Build <member><object>RECV</object><property>NAME</property></member>.
+        let member_id = xot.add_name("member");
+        let member = xot.new_element(member_id);
+        copy_source_location(xot, object_slot, member);
+        xot.insert_before(object_slot, member)?;
+        xot.detach(object_slot)?;
+        xot.append(member, object_slot)?;
+        xot.append(member, property)?;
+    }
+    Ok(())
+}
+
+// =============================================================================
 // TREE-WIDE: invert_chains_in_tree
 // =============================================================================
 

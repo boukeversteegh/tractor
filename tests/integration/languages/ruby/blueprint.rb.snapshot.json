@@ -21,11 +21,12 @@
       },
       "condition": {
         "expression": {
-          "call": {
-            "name": "zero?",
-            "object": {
-              "name": "MAX_RETRIES"
-            }
+          "object": {
+            "call": {
+              "name": "zero?"
+            },
+            "access": true,
+            "name": "MAX_RETRIES"
           }
         }
       }
@@ -163,90 +164,6 @@
               "block": {
                 "value": {
                   "expression": {
-                    "if": {
-                      "else": {
-                        "if": {
-                          "condition": {
-                            "expression": {
-                              "false": "false"
-                            }
-                          },
-                          "body": {
-                            "redo": true
-                          }
-                        },
-                        "assign": {
-                          "right": {
-                            "expression": {
-                              "name": "x"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "total"
-                            }
-                          }
-                        }
-                      },
-                      "condition": {
-                        "expression": {
-                          "call": {
-                            "name": "nil?",
-                            "object": {
-                              "name": "x"
-                            }
-                          }
-                        }
-                      },
-                      "then": {
-                        "next": true
-                      },
-                      "else_if": {
-                        "then": {
-                          "break": true
-                        },
-                        "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "symbol": ":stop"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "x"
-                                }
-                              },
-                              "op": {
-                                "text": "==",
-                                "equals": true
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "do": true,
-                "parameters": [
-                  {
-                    "name": "x"
-                  }
-                ]
-              },
-              "object": {
-                "name": "items"
-              },
-              "name": "each"
-            }
-          },
-          {
-            "call": {
-              "block": {
-                "value": {
-                  "expression": {
                     "break": true
                   }
                 }
@@ -324,64 +241,116 @@
                 "rest",
                 "flag"
               ],
-              "calls": [
+              "objects": [
                 {
-                  "arguments": [
-                    "1",
-                    "2"
-                  ],
-                  "object": {
-                    "name": "adder"
+                  "call": {
+                    "arguments": [
+                      "1",
+                      "2"
+                    ],
+                    "name": "call"
                   },
-                  "name": "call"
+                  "access": true,
+                  "name": "adder"
                 },
                 {
-                  "arguments": [
-                    "3"
-                  ],
-                  "object": {
-                    "name": "doubler"
+                  "call": {
+                    "arguments": [
+                      "3"
+                    ],
+                    "name": "call"
                   },
-                  "name": "call"
+                  "access": true,
+                  "name": "doubler"
                 }
               ]
             }
           }
         ],
-        "fors": [
+        "objects": [
           {
-            "body": {
-              "dos": [
-                {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "name": "j"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
+            "call": {
+              "block": {
+                "value": {
+                  "expression": {
+                    "if": {
+                      "else": {
+                        "if": {
+                          "condition": {
+                            "expression": {
+                              "false": "false"
+                            }
+                          },
+                          "body": {
+                            "redo": true
+                          }
+                        },
+                        "assign": {
+                          "right": {
+                            "expression": {
+                              "name": "x"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "total"
+                            }
+                          }
+                        }
+                      },
+                      "condition": {
+                        "expression": {
+                          "object": {
+                            "call": {
+                              "name": "nil?"
+                            },
+                            "access": true,
+                            "name": "x"
+                          }
+                        }
+                      },
+                      "then": {
+                        "next": true
+                      },
+                      "else_if": {
+                        "then": {
+                          "break": true
+                        },
+                        "condition": {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "symbol": ":stop"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "x"
+                                }
+                              },
+                              "op": {
+                                "text": "==",
+                                "equals": true
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
-                }
-              ]
-            },
-            "name": "j",
-            "value": {
-              "expression": {
-                "range": {
-                  "to": {
-                    "int": "3"
-                  },
-                  "inclusive": true,
-                  "from": {
-                    "int": "1"
+                },
+                "do": true,
+                "parameters": [
+                  {
+                    "name": "x"
                   }
-                }
-              }
-            }
+                ]
+              },
+              "name": "each"
+            },
+            "access": true,
+            "name": "items"
           }
         ],
         "assigns": [
@@ -443,14 +412,13 @@
                         }
                       },
                       "body": {
-                        "expressions": [
+                        "objects": [
                           {
                             "call": {
-                              "name": "clear",
-                              "object": {
-                                "name": "items"
-                              }
-                            }
+                              "name": "clear"
+                            },
+                            "access": true,
+                            "name": "items"
                           }
                         ]
                       }
@@ -459,11 +427,12 @@
                   "unless": {
                     "condition": {
                       "expression": {
-                        "call": {
-                          "name": "any?",
-                          "object": {
-                            "name": "items"
-                          }
+                        "object": {
+                          "call": {
+                            "name": "any?"
+                          },
+                          "access": true,
+                          "name": "items"
                         }
                       }
                     },
@@ -480,23 +449,23 @@
                       ]
                     }
                   },
-                  "call": {
-                    "name": "first",
-                    "object": {
-                      "name": "items"
-                    }
+                  "object": {
+                    "call": {
+                      "name": "first"
+                    },
+                    "access": true,
+                    "name": "items"
                   },
                   "rescue": {
                     "body": {
                       "thens": [
                         {
-                          "expression": {
+                          "object": {
                             "call": {
-                              "name": "message",
-                              "object": {
-                                "name": "e"
-                              }
-                            }
+                              "name": "message"
+                            },
+                            "access": true,
+                            "name": "e"
                           },
                           "if": {
                             "condition": {
@@ -724,11 +693,12 @@
                   },
                   "condition": {
                     "expression": {
-                      "call": {
-                        "name": "zero?",
-                        "object": {
-                          "name": "total"
-                        }
+                      "object": {
+                        "call": {
+                          "name": "zero?"
+                        },
+                        "access": true,
+                        "name": "total"
                       }
                     }
                   },
@@ -963,6 +933,42 @@
               }
             }
           }
+        ],
+        "fors": [
+          {
+            "body": {
+              "dos": [
+                {
+                  "assign": {
+                    "right": {
+                      "expression": {
+                        "name": "j"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "total"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "name": "j",
+            "value": {
+              "expression": {
+                "range": {
+                  "to": {
+                    "int": "3"
+                  },
+                  "inclusive": true,
+                  "from": {
+                    "int": "1"
+                  }
+                }
+              }
+            }
+          }
         ]
       },
       "name": "control",
@@ -1015,11 +1021,12 @@
                               "binary": {
                                 "right": {
                                   "expression": {
-                                    "call": {
-                                      "name": "size",
-                                      "object": {
-                                        "name": "tail"
-                                      }
+                                    "object": {
+                                      "call": {
+                                        "name": "size"
+                                      },
+                                      "access": true,
+                                      "name": "tail"
                                     }
                                   }
                                 },
@@ -1048,14 +1055,15 @@
                       "if": {
                         "condition": {
                           "expression": {
-                            "call": {
-                              "arguments": [
-                                "Integer"
-                              ],
-                              "object": {
-                                "name": "head"
+                            "object": {
+                              "call": {
+                                "arguments": [
+                                  "Integer"
+                                ],
+                                "name": "is_a?"
                               },
-                              "name": "is_a?"
+                              "access": true,
+                              "name": "head"
                             }
                           }
                         }
@@ -1270,18 +1278,17 @@
     },
     {
       "body": {
-        "expressions": [
+        "objects": [
           {
             "call": {
               "arguments": [
                 "x",
                 "y"
               ],
-              "object": {
-                "name": "block"
-              },
               "name": "call"
-            }
+            },
+            "access": true,
+            "name": "block"
           }
         ]
       },
@@ -1446,11 +1453,12 @@
                                 },
                                 "left": {
                                   "expression": {
-                                    "call": {
-                                      "name": "name",
-                                      "object": {
-                                        "name": "other"
-                                      }
+                                    "object": {
+                                      "call": {
+                                        "name": "name"
+                                      },
+                                      "access": true,
+                                      "name": "other"
                                     }
                                   }
                                 },
@@ -1463,14 +1471,15 @@
                           },
                           "left": {
                             "expression": {
-                              "call": {
-                                "arguments": [
-                                  "Base"
-                                ],
-                                "object": {
-                                  "name": "other"
+                              "object": {
+                                "call": {
+                                  "arguments": [
+                                    "Base"
+                                  ],
+                                  "name": "is_a?"
                                 },
-                                "name": "is_a?"
+                                "access": true,
+                                "name": "other"
                               }
                             }
                           },
@@ -1549,11 +1558,12 @@
                                   "name": "msg"
                                 },
                                 {
-                                  "call": {
-                                    "name": "inspect",
-                                    "object": {
-                                      "name": "opts"
-                                    }
+                                  "object": {
+                                    "call": {
+                                      "name": "inspect"
+                                    },
+                                    "access": true,
+                                    "name": "opts"
                                   }
                                 }
                               ]
@@ -1562,11 +1572,12 @@
                         },
                         "condition": {
                           "expression": {
-                            "call": {
-                              "name": "empty?",
-                              "object": {
-                                "name": "opts"
-                              }
+                            "object": {
+                              "call": {
+                                "name": "empty?"
+                              },
+                              "access": true,
+                              "name": "opts"
                             }
                           }
                         },
@@ -1693,11 +1704,12 @@
                       {
                         "right": {
                           "expression": {
-                            "call": {
-                              "name": "upcase",
-                              "object": {
-                                "name": "@name"
-                              }
+                            "object": {
+                              "call": {
+                                "name": "upcase"
+                              },
+                              "access": true,
+                              "name": "@name"
                             }
                           }
                         },
@@ -1718,50 +1730,50 @@
                         "binary": {
                           "right": {
                             "expression": {
-                              "call": {
-                                "name": "keys",
-                                "object": {
-                                  "name": "meta"
-                                }
+                              "object": {
+                                "call": {
+                                  "name": "keys"
+                                },
+                                "access": true,
+                                "name": "meta"
                               }
                             }
                           },
                           "left": {
                             "expression": {
-                              "call": {
-                                "block": {
-                                  "value": {
-                                    "expression": {
-                                      "string": {
-                                        "interpolations": [
-                                          {
-                                            "name": "i"
-                                          },
-                                          {
-                                            "name": "it"
-                                          }
-                                        ]
-                                      }
-                                    }
-                                  },
-                                  "parameters": [
-                                    {
-                                      "name": "it"
-                                    },
-                                    {
-                                      "name": "i"
-                                    }
-                                  ]
-                                },
-                                "object": {
+                              "object": {
+                                "call": {
                                   "call": {
-                                    "name": "each_with_index",
-                                    "object": {
-                                      "name": "items"
-                                    }
-                                  }
+                                    "block": {
+                                      "value": {
+                                        "expression": {
+                                          "string": {
+                                            "interpolations": [
+                                              {
+                                                "name": "i"
+                                              },
+                                              {
+                                                "name": "it"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "parameters": [
+                                        {
+                                          "name": "it"
+                                        },
+                                        {
+                                          "name": "i"
+                                        }
+                                      ]
+                                    },
+                                    "name": "map"
+                                  },
+                                  "name": "each_with_index"
                                 },
-                                "name": "map"
+                                "access": true,
+                                "name": "items"
                               }
                             }
                           },
@@ -1975,15 +1987,13 @@
                 },
                 {
                   "call": {
-                    "arguments": [
-                      {
-                        "$type": "call",
-                        "object": {
-                          "name": "Module"
-                        },
+                    "object": {
+                      "call": {
                         "name": "new"
-                      }
-                    ],
+                      },
+                      "access": true,
+                      "name": "Module"
+                    },
                     "name": "prepend"
                   }
                 },
@@ -2240,15 +2250,16 @@
     {
       "right": {
         "expression": {
-          "call": {
-            "arguments": [
-              "arg"
-            ],
-            "optional": true,
-            "object": {
-              "name": "obj"
+          "object": {
+            "call": {
+              "arguments": [
+                "arg"
+              ],
+              "optional": true,
+              "name": "method"
             },
-            "name": "method"
+            "access": true,
+            "name": "obj"
           }
         }
       },

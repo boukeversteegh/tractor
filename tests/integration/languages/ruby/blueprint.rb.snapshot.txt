@@ -55,15 +55,16 @@ program/
   │       │           ├─ name = "=="
   │       │           ├─ parameter/name = "other"
   │       │           └─ body/expression/binary/
-  │       │               ├─ left/expression/call/
-  │       │               │   ├─ object/name = "other"
-  │       │               │   ├─ name = "is_a?"
-  │       │               │   └─ name = "Base"
+  │       │               ├─ left/expression/object[access]/
+  │       │               │   ├─ name = "other"
+  │       │               │   └─ call/
+  │       │               │       ├─ name = "is_a?"
+  │       │               │       └─ name = "Base"
   │       │               ├─ op[logical and and] = "&&"
   │       │               └─ right/expression/binary/
-  │       │                   ├─ left/expression/call/
-  │       │                   │   ├─ object/name = "other"
-  │       │                   │   └─ name = "name"
+  │       │                   ├─ left/expression/object[access]/
+  │       │                   │   ├─ name = "other"
+  │       │                   │   └─ call/name = "name"
   │       │                   ├─ op[equals] = "=="
   │       │                   └─ right/expression/name = "@name"
   │       └─ class/
@@ -78,9 +79,9 @@ program/
   │               │   └─ name = "Logging"
   │               ├─ expression/call/
   │               │   ├─ name = "prepend"
-  │               │   └─ call/
-  │               │       ├─ object/name = "Module"
-  │               │       └─ name = "new"
+  │               │   └─ object[access]/
+  │               │       ├─ name = "Module"
+  │               │       └─ call/name = "new"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "SINGLE"
   │               │   └─ right/expression/string = "'single-quoted \\n'"
@@ -147,42 +148,43 @@ program/
   │               │       │       ├─ then/expression/yield/name = "msg"
   │               │       │       └─ else/expression/name = "msg"
   │               │       └─ ternary/
-  │               │           ├─ condition/expression/call/
-  │               │           │   ├─ object/name = "opts"
-  │               │           │   └─ name = "empty?"
+  │               │           ├─ condition/expression/object[access]/
+  │               │           │   ├─ name = "opts"
+  │               │           │   └─ call/name = "empty?"
   │               │           ├─ then/expression/name = "msg"
   │               │           └─ else/expression/string/
   │               │               ├─ interpolation/name = "msg"
-  │               │               └─ interpolation/call/
-  │               │                   ├─ object/name = "opts"
-  │               │                   └─ name = "inspect"
+  │               │               └─ interpolation/object[access]/
+  │               │                   ├─ name = "opts"
+  │               │                   └─ call/name = "inspect"
   │               ├─ method/
   │               │   ├─ name = "shout!"
   │               │   └─ body/assign/
   │               │       ├─ left/expression/name = "@name"
-  │               │       └─ right/expression/call/
-  │               │           ├─ object/name = "@name"
-  │               │           └─ name = "upcase"
+  │               │       └─ right/expression/object[access]/
+  │               │           ├─ name = "@name"
+  │               │           └─ call/name = "upcase"
   │               ├─ method/
   │               │   ├─ name = "collect"
   │               │   ├─ parameter[splat]/name = "items"
   │               │   ├─ parameter[kwsplat]/name = "meta"
   │               │   └─ body/expression/binary/
-  │               │       ├─ left/expression/call/
-  │               │       │   ├─ object/call/
-  │               │       │   │   ├─ object/name = "items"
-  │               │       │   │   └─ name = "each_with_index"
-  │               │       │   ├─ name = "map"
-  │               │       │   └─ block/
-  │               │       │       ├─ parameter/name = "it"
-  │               │       │       ├─ parameter/name = "i"
-  │               │       │       └─ value/expression/string/
-  │               │       │           ├─ interpolation/name = "i"
-  │               │       │           └─ interpolation/name = "it"
+  │               │       ├─ left/expression/object[access]/
+  │               │       │   ├─ name = "items"
+  │               │       │   └─ call/
+  │               │       │       ├─ name = "each_with_index"
+  │               │       │       └─ call/
+  │               │       │           ├─ name = "map"
+  │               │       │           └─ block/
+  │               │       │               ├─ parameter/name = "it"
+  │               │       │               ├─ parameter/name = "i"
+  │               │       │               └─ value/expression/string/
+  │               │       │                   ├─ interpolation/name = "i"
+  │               │       │                   └─ interpolation/name = "it"
   │               │       ├─ op[plus] = "+"
-  │               │       └─ right/expression/call/
-  │               │           ├─ object/name = "meta"
-  │               │           └─ name = "keys"
+  │               │       └─ right/expression/object[access]/
+  │               │           ├─ name = "meta"
+  │               │           └─ call/name = "keys"
   │               ├─ expression/name = "private"
   │               ├─ method/
   │               │   ├─ name = "secret"
@@ -271,29 +273,30 @@ program/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
   │       │   └─ right/expression/int = "0"
-  │       ├─ expression/call/
-  │       │   ├─ object/name = "items"
-  │       │   ├─ name = "each"
-  │       │   └─ block[do]/
-  │       │       ├─ parameter/name = "x"
-  │       │       └─ value/expression/if/
-  │       │           ├─ condition/expression/call/
-  │       │           │   ├─ object/name = "x"
-  │       │           │   └─ name = "nil?"
-  │       │           ├─ then[next]
-  │       │           ├─ else_if/
-  │       │           │   ├─ condition/expression/binary/
-  │       │           │   │   ├─ left/expression/name = "x"
-  │       │           │   │   ├─ op[equals] = "=="
-  │       │           │   │   └─ right/expression/symbol = ":stop"
-  │       │           │   └─ then[break]
-  │       │           └─ else/
-  │       │               ├─ assign/
-  │       │               │   ├─ left/expression/name = "total"
-  │       │               │   └─ right/expression/name = "x"
-  │       │               └─ if/
-  │       │                   ├─ body[redo]
-  │       │                   └─ condition/expression/false = "false"
+  │       ├─ object[access]/
+  │       │   ├─ name = "items"
+  │       │   └─ call/
+  │       │       ├─ name = "each"
+  │       │       └─ block[do]/
+  │       │           ├─ parameter/name = "x"
+  │       │           └─ value/expression/if/
+  │       │               ├─ condition/expression/object[access]/
+  │       │               │   ├─ name = "x"
+  │       │               │   └─ call/name = "nil?"
+  │       │               ├─ then[next]
+  │       │               ├─ else_if/
+  │       │               │   ├─ condition/expression/binary/
+  │       │               │   │   ├─ left/expression/name = "x"
+  │       │               │   │   ├─ op[equals] = "=="
+  │       │               │   │   └─ right/expression/symbol = ":stop"
+  │       │               │   └─ then[break]
+  │       │               └─ else/
+  │       │                   ├─ assign/
+  │       │                   │   ├─ left/expression/name = "total"
+  │       │                   │   └─ right/expression/name = "x"
+  │       │                   └─ if/
+  │       │                       ├─ body[redo]
+  │       │                       └─ condition/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "i"
   │       │   └─ right/expression/int = "0"
@@ -331,12 +334,12 @@ program/
   │       │       │   ├─ body/expression/call/
   │       │       │   │   ├─ name = "raise"
   │       │       │   │   └─ string = "'boom'"
-  │       │       │   └─ condition/expression/call/
-  │       │       │       ├─ object/name = "items"
-  │       │       │       └─ name = "any?"
-  │       │       ├─ call/
-  │       │       │   ├─ object/name = "items"
-  │       │       │   └─ name = "first"
+  │       │       │   └─ condition/expression/object[access]/
+  │       │       │       ├─ name = "items"
+  │       │       │       └─ call/name = "any?"
+  │       │       ├─ object[access]/
+  │       │       │   ├─ name = "items"
+  │       │       │   └─ call/name = "first"
   │       │       ├─ rescue/
   │       │       │   ├─ exceptions/name = "StandardError"
   │       │       │   ├─ variable/name = "e"
@@ -344,14 +347,14 @@ program/
   │       │       │       ├─ if/
   │       │       │       │   ├─ body[retry]
   │       │       │       │   └─ condition/expression/false = "false"
-  │       │       │       └─ expression/call/
-  │       │       │           ├─ object/name = "e"
-  │       │       │           └─ name = "message"
+  │       │       │       └─ object[access]/
+  │       │       │           ├─ name = "e"
+  │       │       │           └─ call/name = "message"
   │       │       ├─ else/expression/string = "'ok'"
   │       │       └─ ensure/if/
-  │       │           ├─ body/expression/call/
-  │       │           │   ├─ object/name = "items"
-  │       │           │   └─ name = "clear"
+  │       │           ├─ body/object[access]/
+  │       │           │   ├─ name = "items"
+  │       │           │   └─ call/name = "clear"
   │       │           └─ condition/expression/binary/
   │       │               ├─ left/expression/unary/
   │       │               │   ├─ op[defined] = "defined?"
@@ -406,9 +409,9 @@ program/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
   │       │   └─ right/expression/ternary/
-  │       │       ├─ condition/expression/call/
-  │       │       │   ├─ object/name = "total"
-  │       │       │   └─ name = "zero?"
+  │       │       ├─ condition/expression/object[access]/
+  │       │       │   ├─ name = "total"
+  │       │       │   └─ call/name = "zero?"
   │       │       ├─ then/expression/symbol = ":empty"
   │       │       └─ else/expression/symbol = ":filled"
   │       ├─ assign/
@@ -457,24 +460,26 @@ program/
   │       │           └─ name = "flag"
   │       └─ expression/array/
   │           ├─ name = "result"
-  │           ├─ call/
-  │           │   ├─ object/name = "adder"
-  │           │   ├─ name = "call"
-  │           │   ├─ int = "1"
-  │           │   └─ int = "2"
-  │           ├─ call/
-  │           │   ├─ object/name = "doubler"
-  │           │   ├─ name = "call"
-  │           │   └─ int = "3"
+  │           ├─ object[access]/
+  │           │   ├─ name = "adder"
+  │           │   └─ call/
+  │           │       ├─ name = "call"
+  │           │       ├─ int = "1"
+  │           │       └─ int = "2"
+  │           ├─ object[access]/
+  │           │   ├─ name = "doubler"
+  │           │   └─ call/
+  │           │       ├─ name = "call"
+  │           │       └─ int = "3"
   │           ├─ name = "ternary"
   │           ├─ name = "a"
   │           ├─ name = "b"
   │           ├─ name = "rest"
   │           └─ name = "flag"
   ├─ unless/
-  │   ├─ condition/expression/call/
-  │   │   ├─ object/name = "MAX_RETRIES"
-  │   │   └─ name = "zero?"
+  │   ├─ condition/expression/object[access]/
+  │   │   ├─ name = "MAX_RETRIES"
+  │   │   └─ call/name = "zero?"
   │   └─ then/expression/call/
   │       ├─ name = "puts"
   │       └─ string/interpolation/name = "MAX_RETRIES"
@@ -495,16 +500,17 @@ program/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   └─ parameter[splat]/name = "tail"
-  │       │       │   ├─ if/condition/expression/call/
-  │       │       │   │   ├─ object/name = "head"
-  │       │       │   │   ├─ name = "is_a?"
-  │       │       │   │   └─ name = "Integer"
+  │       │       │   ├─ if/condition/expression/object[access]/
+  │       │       │   │   ├─ name = "head"
+  │       │       │   │   └─ call/
+  │       │       │   │       ├─ name = "is_a?"
+  │       │       │   │       └─ name = "Integer"
   │       │       │   └─ body/then/expression/binary/
   │       │       │       ├─ left/expression/name = "head"
   │       │       │       ├─ op[plus] = "+"
-  │       │       │       └─ right/expression/call/
-  │       │       │           ├─ object/name = "tail"
-  │       │       │           └─ name = "size"
+  │       │       │       └─ right/expression/object[access]/
+  │       │       │           ├─ name = "tail"
+  │       │       │           └─ call/name = "size"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
   │       │       │   │   ├─ name = "first"
@@ -561,11 +567,12 @@ program/
   │   │   ├─ name = "x"
   │   │   └─ name = "y"
   │   ├─ parameter[block]/name = "block"
-  │   └─ body/expression/call/
-  │       ├─ object/name = "block"
-  │       ├─ name = "call"
-  │       ├─ name = "x"
-  │       └─ name = "y"
+  │   └─ body/object[access]/
+  │       ├─ name = "block"
+  │       └─ call/
+  │           ├─ name = "call"
+  │           ├─ name = "x"
+  │           └─ name = "y"
   ├─ assign/
   │   ├─ left/expression/left/expression/left/
   │   │   ├─ expression[destructured]
@@ -577,10 +584,11 @@ program/
   ├─ comment[leading] = "# Safe-navigation operator `&.` — `<call[optional]>` shape parallels\n# C# `?.` so cross-language `//call[optional]` finds either form."
   ├─ assign/
   │   ├─ left/expression/name = "maybe"
-  │   └─ right/expression/call[optional]/
-  │       ├─ object/name = "obj"
-  │       ├─ name = "method"
-  │       └─ name = "arg"
+  │   └─ right/expression/object[access]/
+  │       ├─ name = "obj"
+  │       └─ call[optional]/
+  │           ├─ name = "method"
+  │           └─ name = "arg"
   └─ block[end]/call/
       ├─ name = "puts"
       └─ string = "\"shutting down\""
