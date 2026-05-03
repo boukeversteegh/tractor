@@ -1690,7 +1690,9 @@
                       }
                     }
                   },
-                  "pattern": "_"
+                  "pattern": {
+                    "wildcard": true
+                  }
                 }
               ]
             },
@@ -2595,7 +2597,9 @@
                       }
                     }
                   },
-                  "pattern": "_"
+                  "pattern": {
+                    "wildcard": true
+                  }
                 }
               ]
             },

@@ -452,6 +452,44 @@ pub fn keyword_pattern(
     Ok(TransformAction::Continue)
 }
 
+/// `case_pattern` — every Python `match` arm pattern. Wildcard
+/// `case _:` arrives from tree-sitter as a `<case_pattern>` whose
+/// only content is the bare text `_` (no element children). All
+/// other patterns are structural (`<pattern[tuple]>`,
+/// `<pattern[list]>`, integer literal child, name child, …).
+///
+/// Re-shape the wildcard form to `<pattern[wildcard]/>` (empty
+/// marker) so it joins the existing `pattern[X]` family
+/// (`pattern[tuple]`, `pattern[union]`, `pattern[splat]`,
+/// `pattern[dict]`, `pattern[complex]`). Principle #13: markers
+/// stay off text-only leaves; the wildcard underscore is now a
+/// flag, not content.
+pub fn case_pattern(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{Pattern as PatternName, Wildcard};
+    let element_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    let text_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.text_str(c).is_some())
+        .collect();
+    let trimmed_text: String = text_children.iter()
+        .filter_map(|&c| xot.text_str(c).map(|s| s.trim().to_string()))
+        .collect::<Vec<_>>()
+        .join("");
+    let is_wildcard = element_children.is_empty() && trimmed_text == "_";
+    xot.with_renamed(node, PatternName);
+    if is_wildcard {
+        for child in text_children {
+            xot.detach(child)?;
+        }
+        xot.with_appended_marker(node, Wildcard)?;
+    }
+    Ok(TransformAction::Continue)
+}
+
 // ---------------------------------------------------------------------
 // Local helpers used by handlers above.
 // ---------------------------------------------------------------------

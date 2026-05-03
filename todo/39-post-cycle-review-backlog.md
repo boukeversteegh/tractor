@@ -268,17 +268,14 @@ before committing a non-trivial change.
   - Effort: 1-iter.
   - Source: iter 233 cold-read.
 
-- [ ] **Python `match` wildcard `pattern = "_"` as bare text leaf**
-  *(Principle #13, severity LOW)*
-  - File: `tests/integration/languages/python/blueprint.py.snapshot.txt:429`.
-  - Current: `arm/{ pattern = "_", then/return/expression/none = "None"}`
-    — `<pattern>` here is a text-only leaf with content "_".
-  - Other patterns are structural: `pattern[list]/...`,
-    `pattern[union]/...`, `pattern[splat]/...`.
-  - Desired: `<pattern[wildcard]/>` (empty marker, joining the
-    `pattern[X]` family) or `pattern/wildcard = "_"`.
-  - Effort: trivial.
-  - Source: iter 233 cold-read.
+- [x] **Python `match` wildcard `pattern = "_"` as bare text leaf** —
+  closed iter 234. New `case_pattern` Custom handler (replaces
+  `Rename(Pattern)`) detects element-children-empty + trimmed-text-
+  is-`_` and emits `<pattern[wildcard]/>` (empty marker, joining
+  `pattern[tuple]` / `pattern[list]` / `pattern[union]` /
+  `pattern[splat]` / `pattern[dict]` / `pattern[complex]` family).
+  JSON: `"pattern": "_"` → `{"pattern": {"wildcard": true}}`.
+  2 fixture sites; 829 tests green.
 
 - [ ] **TypeScript `body[break]` switch-case marker on body**
   *(Principle #11 / #13, severity LOW)*

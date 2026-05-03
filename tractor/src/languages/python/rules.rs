@@ -119,7 +119,9 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::BreakStatement        => RenameStripKeyword(Break, "break"),
         PyKind::Call                  => Rename(Call),
         PyKind::CaseClause            => Rename(Arm),
-        PyKind::CasePattern           => Rename(Pattern),
+        // `case _:` becomes `<pattern[wildcard]/>` (marker form);
+        // structural patterns rename normally.
+        PyKind::CasePattern           => Custom(transformations::case_pattern),
         PyKind::ClassDefinition       => Rename(Class),
         PyKind::ContinueStatement     => RenameStripKeyword(Continue, "continue"),
         PyKind::Decorator             => Rename(Decorator),

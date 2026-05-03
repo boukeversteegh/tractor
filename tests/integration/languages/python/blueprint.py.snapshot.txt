@@ -426,7 +426,7 @@ module/
   │           │   │   └─ string = "\"Y\""
   │           │   └─ then/return/expression/true = "True"
   │           └─ arm/
-  │               ├─ pattern = "_"
+  │               ├─ pattern[wildcard]
   │               └─ then/return/expression/none = "None"
   ├─ function/
   │   ├─ name = "comprehensions"
@@ -669,7 +669,7 @@ module/
           │       │           ├─ op[minus] = "-"
           │       │           └─ int = "1"
           │       └─ arm/
-          │           ├─ pattern = "_"
+          │           ├─ pattern[wildcard]
           │           └─ then/assign/
           │               ├─ left/expression/name = "matched"
           │               └─ right/expression/int = "0"
