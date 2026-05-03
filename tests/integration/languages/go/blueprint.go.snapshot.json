@@ -83,14 +83,18 @@
               "\"not found\""
             ],
             "member": {
-              "property": {
-                "name": "New"
-              },
-              "object": {
-                "name": [
-                  "errors"
-                ]
-              }
+              "property": [
+                {
+                  "name": "New"
+                }
+              ],
+              "object": [
+                {
+                  "name": [
+                    "errors"
+                  ]
+                }
+              ]
             }
           }
         }
@@ -99,7 +103,9 @@
     },
     {
       "type": {
-        "name": "int"
+        "name": [
+          "int"
+        ]
       },
       "name": "globalCount"
     },
@@ -127,17 +133,25 @@
         {
           "$type": "type",
           "approximation": true,
-          "type": {
-            "name": "float64"
-          }
+          "type": [
+            {
+              "name": [
+                "float64"
+              ]
+            }
+          ]
         }
       ],
       "exported": true,
       "name": "Number",
       "type": {
-        "type": {
-          "name": "int"
-        },
+        "type": [
+          {
+            "name": [
+              "int"
+            ]
+          }
+        ],
         "approximation": true
       }
     },
@@ -146,7 +160,9 @@
         "returns": {
           "type": [
             {
-              "name": "string"
+              "name": [
+                "string"
+              ]
             }
           ]
         },
@@ -160,7 +176,9 @@
         "returns": {
           "type": [
             {
-              "name": "error"
+              "name": [
+                "error"
+              ]
             }
           ]
         },
@@ -171,15 +189,21 @@
       "extends": [
         {
           "type": {
-            "name": "Reader",
-            "package": {
-              "name": "io"
-            }
+            "name": [
+              "Reader"
+            ],
+            "package": [
+              {
+                "name": "io"
+              }
+            ]
           }
         },
         {
           "type": {
-            "name": "Stringer"
+            "name": [
+              "Stringer"
+            ]
           }
         }
       ]
@@ -188,10 +212,14 @@
   "alias": [
     {
       "type": {
-        "name": "Context",
-        "package": {
-          "name": "context"
-        }
+        "name": [
+          "Context"
+        ],
+        "package": [
+          {
+            "name": "context"
+          }
+        ]
       },
       "exported": true,
       "name": "Alias"
@@ -199,44 +227,64 @@
   ],
   "type": [
     {
-      "type": {
-        "name": "int64"
-      },
+      "type": [
+        {
+          "name": [
+            "int64"
+          ]
+        }
+      ],
       "exported": true,
-      "name": "UserID"
+      "name": [
+        "UserID"
+      ]
     },
     {
-      "type": {
-        "returns": {
-          "type": [
+      "type": [
+        {
+          "returns": [
             {
-              "name": "error"
+              "type": [
+                {
+                  "name": [
+                    "error"
+                  ]
+                }
+              ]
             }
-          ]
-        },
-        "function": true,
-        "parameters": [
-          {
-            "$type": "parameter",
-            "name": "ctx",
-            "type": {
-              "name": "Context",
-              "package": {
-                "name": "context"
+          ],
+          "function": true,
+          "parameters": [
+            {
+              "$type": "parameter",
+              "name": "ctx",
+              "type": {
+                "name": [
+                  "Context"
+                ],
+                "package": [
+                  {
+                    "name": "context"
+                  }
+                ]
+              }
+            },
+            {
+              "$type": "parameter",
+              "name": "id",
+              "type": {
+                "name": [
+                  "UserID"
+                ]
               }
             }
-          },
-          {
-            "$type": "parameter",
-            "name": "id",
-            "type": {
-              "name": "UserID"
-            }
-          }
-        ]
-      },
+          ]
+        }
+      ],
       "exported": true,
-      "name": "Handler"
+      "name": [
+        "Handler"
+      ]
     }
   ],
   "struct": [
@@ -244,7 +292,9 @@
       "field": {
         "slice": {
           "type": {
-            "name": "T"
+            "name": [
+              "T"
+            ]
           }
         },
         "unexported": true,
@@ -257,7 +307,9 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": "any"
+            "name": [
+              "any"
+            ]
           }
         }
       ]
@@ -265,7 +317,9 @@
     {
       "field": {
         "type": {
-          "name": "string"
+          "name": [
+            "string"
+          ]
         },
         "unexported": true,
         "name": "msg"
@@ -280,7 +334,9 @@
           "exported": true,
           "name": "Name",
           "type": {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           },
           "string": {
             "text": "`json:\"name\"`",
@@ -301,7 +357,9 @@
           "Y"
         ],
         "type": {
-          "name": "int"
+          "name": [
+            "int"
+          ]
         }
       }
     },
@@ -312,7 +370,9 @@
           "exported": true,
           "name": "Tag",
           "type": {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           }
         },
         {
@@ -328,7 +388,9 @@
           "struct": {
             "field": {
               "type": {
-                "name": "int64"
+                "name": [
+                  "int64"
+                ]
               },
               "exported": true,
               "name": "Created"
@@ -340,7 +402,9 @@
       "name": "Labeled",
       "field": {
         "type": {
-          "name": "Point"
+          "name": [
+            "Point"
+          ]
         },
         "unexported": true
       }
@@ -357,14 +421,18 @@
                   "arguments": [
                     {
                       "$type": "member",
-                      "object": {
-                        "name": [
-                          "c"
-                        ]
-                      },
-                      "property": {
-                        "name": "items"
-                      }
+                      "object": [
+                        {
+                          "name": [
+                            "c"
+                          ]
+                        }
+                      ],
+                      "property": [
+                        {
+                          "name": "items"
+                        }
+                      ]
                     },
                     "v"
                   ],
@@ -375,14 +443,18 @@
             "left": {
               "expression": {
                 "member": {
-                  "property": {
-                    "name": "items"
-                  },
-                  "object": {
-                    "name": [
-                      "c"
-                    ]
-                  }
+                  "property": [
+                    {
+                      "name": "items"
+                    }
+                  ],
+                  "object": [
+                    {
+                      "name": [
+                        "c"
+                      ]
+                    }
+                  ]
                 }
               }
             }
@@ -400,13 +472,17 @@
               "arguments": [
                 {
                   "$type": "type",
-                  "name": "T"
+                  "name": [
+                    "T"
+                  ]
                 }
               ],
               "generic": true,
               "type": [
                 {
-                  "name": "Container"
+                  "name": [
+                    "Container"
+                  ]
                 }
               ]
             }
@@ -416,7 +492,9 @@
           "$type": "parameter",
           "name": "v",
           "type": {
-            "name": "T"
+            "name": [
+              "T"
+            ]
           }
         }
       ]
@@ -431,36 +509,48 @@
                   "\"(%d,%d)\"",
                   {
                     "$type": "member",
-                    "object": {
-                      "name": [
-                        "p"
-                      ]
-                    },
-                    "property": {
-                      "name": "X"
-                    }
+                    "object": [
+                      {
+                        "name": [
+                          "p"
+                        ]
+                      }
+                    ],
+                    "property": [
+                      {
+                        "name": "X"
+                      }
+                    ]
                   },
                   {
                     "$type": "member",
-                    "object": {
-                      "name": [
-                        "p"
-                      ]
-                    },
-                    "property": {
-                      "name": "Y"
-                    }
+                    "object": [
+                      {
+                        "name": [
+                          "p"
+                        ]
+                      }
+                    ],
+                    "property": [
+                      {
+                        "name": "Y"
+                      }
+                    ]
                   }
                 ],
                 "member": {
-                  "property": {
-                    "name": "Sprintf"
-                  },
-                  "object": {
-                    "name": [
-                      "fmt"
-                    ]
-                  }
+                  "property": [
+                    {
+                      "name": "Sprintf"
+                    }
+                  ],
+                  "object": [
+                    {
+                      "name": [
+                        "fmt"
+                      ]
+                    }
+                  ]
                 }
               }
             }
@@ -473,7 +563,9 @@
           "$type": "parameter",
           "name": "p",
           "type": {
-            "name": "Point"
+            "name": [
+              "Point"
+            ]
           }
         }
       ],
@@ -481,7 +573,9 @@
       "returns": {
         "type": [
           {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           }
         ]
       }
@@ -498,14 +592,18 @@
             "left": {
               "expression": {
                 "member": {
-                  "property": {
-                    "name": "X"
-                  },
-                  "object": {
-                    "name": [
-                      "p"
-                    ]
-                  }
+                  "property": [
+                    {
+                      "name": "X"
+                    }
+                  ],
+                  "object": [
+                    {
+                      "name": [
+                        "p"
+                      ]
+                    }
+                  ]
                 }
               }
             }
@@ -519,14 +617,18 @@
             "left": {
               "expression": {
                 "member": {
-                  "property": {
-                    "name": "Y"
-                  },
-                  "object": {
-                    "name": [
-                      "p"
-                    ]
-                  }
+                  "property": [
+                    {
+                      "name": "Y"
+                    }
+                  ],
+                  "object": [
+                    {
+                      "name": [
+                        "p"
+                      ]
+                    }
+                  ]
                 }
               }
             }
@@ -541,7 +643,9 @@
           "name": "p",
           "pointer": {
             "type": {
-              "name": "Point"
+              "name": [
+                "Point"
+              ]
             }
           }
         },
@@ -552,7 +656,9 @@
             "dy"
           ],
           "type": {
-            "name": "int"
+            "name": [
+              "int"
+            ]
           }
         }
       ]
@@ -563,14 +669,18 @@
           {
             "expression": {
               "member": {
-                "property": {
-                  "name": "msg"
-                },
-                "object": {
-                  "name": [
-                    "e"
-                  ]
-                }
+                "property": [
+                  {
+                    "name": "msg"
+                  }
+                ],
+                "object": [
+                  {
+                    "name": [
+                      "e"
+                    ]
+                  }
+                ]
               }
             }
           }
@@ -583,7 +693,9 @@
           "name": "e",
           "pointer": {
             "type": {
-              "name": "MyErr"
+              "name": [
+                "MyErr"
+              ]
             }
           }
         }
@@ -592,7 +704,9 @@
       "returns": {
         "type": [
           {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           }
         ]
       }
@@ -610,14 +724,18 @@
                   "err"
                 ],
                 "member": {
-                  "property": {
-                    "name": "Errorf"
-                  },
-                  "object": {
-                    "name": [
-                      "fmt"
-                    ]
-                  }
+                  "property": [
+                    {
+                      "name": "Errorf"
+                    }
+                  ],
+                  "object": [
+                    {
+                      "name": [
+                        "fmt"
+                      ]
+                    }
+                  ]
                 }
               }
             }
@@ -631,14 +749,18 @@
           "$type": "parameter",
           "name": "err",
           "type": {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         }
       ],
       "returns": {
         "type": [
           {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         ]
       }
@@ -658,7 +780,9 @@
       "returns": {
         "type": [
           {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         ]
       }
@@ -684,10 +808,14 @@
       "returns": {
         "type": [
           {
-            "name": "int"
+            "name": [
+              "int"
+            ]
           },
           {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         ]
       }
@@ -710,7 +838,9 @@
                     {
                       "$type": "slice",
                       "type": {
-                        "name": "U"
+                        "name": [
+                          "U"
+                        ]
                       }
                     },
                     "0",
@@ -791,7 +921,9 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": "any"
+            "name": [
+              "any"
+            ]
           },
           "children": [
             "U"
@@ -804,7 +936,9 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": "T"
+              "name": [
+                "T"
+              ]
             }
           }
         },
@@ -812,19 +946,25 @@
           "$type": "parameter",
           "name": "f",
           "type": {
-            "returns": {
-              "type": [
-                {
-                  "name": "U"
-                }
-              ]
-            },
+            "returns": [
+              {
+                "type": [
+                  {
+                    "name": [
+                      "U"
+                    ]
+                  }
+                ]
+              }
+            ],
             "function": true,
             "parameters": [
               {
                 "$type": "parameter",
                 "type": {
-                  "name": "T"
+                  "name": [
+                    "T"
+                  ]
                 }
               }
             ]
@@ -835,7 +975,9 @@
         "slice": [
           {
             "type": {
-              "name": "U"
+              "name": [
+                "U"
+              ]
             }
           }
         ]
@@ -889,7 +1031,9 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": "Number"
+            "name": [
+              "Number"
+            ]
           }
         }
       ],
@@ -899,7 +1043,9 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": "T"
+              "name": [
+                "T"
+              ]
             }
           }
         }
@@ -907,7 +1053,9 @@
       "returns": {
         "type": [
           {
-            "name": "T"
+            "name": [
+              "T"
+            ]
           }
         ]
       }
@@ -1034,7 +1182,9 @@
                         }
                       },
                       "type": {
-                        "name": "T"
+                        "name": [
+                          "T"
+                        ]
                       }
                     }
                   ]
@@ -1057,7 +1207,9 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": "comparable"
+            "name": [
+              "comparable"
+            ]
           }
         }
       ],
@@ -1067,7 +1219,9 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": "T"
+              "name": [
+                "T"
+              ]
             }
           }
         }
@@ -1076,7 +1230,9 @@
         "slice": [
           {
             "type": {
-              "name": "T"
+              "name": [
+                "T"
+              ]
             }
           }
         ]
@@ -1212,14 +1368,18 @@
                       "$type": "parameter",
                       "name": "n",
                       "type": {
-                        "name": "int"
+                        "name": [
+                          "int"
+                        ]
                       }
                     }
                   ],
                   "returns": {
                     "type": [
                       {
-                        "name": "int"
+                        "name": [
+                          "int"
+                        ]
                       }
                     ]
                   }
@@ -1278,24 +1438,32 @@
           "$type": "parameter",
           "name": "prefix",
           "type": {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           }
         },
         {
           "$type": "parameter",
           "name": "vals",
           "type": {
-            "name": "int"
+            "name": [
+              "int"
+            ]
           }
         }
       ],
       "returns": {
         "type": [
           {
-            "name": "int"
+            "name": [
+              "int"
+            ]
           },
           {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         ]
       }
@@ -1381,7 +1549,9 @@
                     {
                       "type": [
                         {
-                          "name": "int"
+                          "name": [
+                            "int"
+                          ]
                         }
                       ],
                       "int": [
@@ -1396,7 +1566,9 @@
             "array": {
               "type": [
                 {
-                  "name": "int"
+                  "name": [
+                    "int"
+                  ]
                 }
               ],
               "int": [
@@ -1423,7 +1595,9 @@
                     {
                       "type": [
                         {
-                          "name": "int"
+                          "name": [
+                            "int"
+                          ]
                         }
                       ],
                       "implicit": true
@@ -1468,7 +1642,9 @@
                   "chan": {
                     "value": {
                       "type": {
-                        "name": "int"
+                        "name": [
+                          "int"
+                        ]
                       }
                     }
                   }
@@ -1489,17 +1665,23 @@
                   "arguments": [
                     {
                       "$type": "type",
-                      "name": "int"
+                      "name": [
+                        "int"
+                      ]
                     },
                     {
                       "$type": "type",
-                      "name": "string"
+                      "name": [
+                        "string"
+                      ]
                     }
                   ],
                   "generic": true,
                   "type": [
                     {
-                      "name": "Map"
+                      "name": [
+                        "Map"
+                      ]
                     }
                   ]
                 }
@@ -1574,14 +1756,18 @@
                         "v"
                       ],
                       "member": {
-                        "property": {
-                          "name": "Sprintf"
-                        },
-                        "object": {
-                          "name": [
-                            "fmt"
-                          ]
-                        }
+                        "property": [
+                          {
+                            "name": "Sprintf"
+                          }
+                        ],
+                        "object": [
+                          {
+                            "name": [
+                              "fmt"
+                            ]
+                          }
+                        ]
                       }
                     }
                   }
@@ -1607,22 +1793,30 @@
                   }
                 },
                 "type": {
-                  "name": "nil"
+                  "name": [
+                    "nil"
+                  ]
                 }
               },
               {
                 "children": [
                   {
                     "$type": "type",
-                    "name": "int32"
+                    "name": [
+                      "int32"
+                    ]
                   },
                   {
                     "$type": "type",
-                    "name": "int64"
+                    "name": [
+                      "int64"
+                    ]
                   }
                 ],
                 "type": {
-                  "name": "int"
+                  "name": [
+                    "int"
+                  ]
                 },
                 "return": {
                   "expression": {
@@ -1652,7 +1846,9 @@
                   }
                 },
                 "type": {
-                  "name": "string"
+                  "name": [
+                    "string"
+                  ]
                 }
               },
               {
@@ -1660,20 +1856,26 @@
                   "expression": {
                     "call": {
                       "member": {
-                        "property": {
-                          "name": "String"
-                        },
-                        "object": {
-                          "name": [
-                            "v"
-                          ]
-                        }
+                        "property": [
+                          {
+                            "name": "String"
+                          }
+                        ],
+                        "object": [
+                          {
+                            "name": [
+                              "v"
+                            ]
+                          }
+                        ]
                       }
                     }
                   }
                 },
                 "type": {
-                  "name": "Stringer"
+                  "name": [
+                    "Stringer"
+                  ]
                 }
               }
             ]
@@ -1687,14 +1889,18 @@
           "$type": "parameter",
           "name": "x",
           "type": {
-            "name": "any"
+            "name": [
+              "any"
+            ]
           }
         }
       ],
       "returns": {
         "type": [
           {
-            "name": "string"
+            "name": [
+              "string"
+            ]
           }
         ]
       }
@@ -1726,10 +1932,14 @@
                   "arguments": [
                     {
                       "$type": "type",
-                      "package": {
-                        "name": "myio"
-                      },
-                      "name": "PipeReader"
+                      "package": [
+                        {
+                          "name": "myio"
+                        }
+                      ],
+                      "name": [
+                        "PipeReader"
+                      ]
                     }
                   ],
                   "name": "new"
@@ -1738,16 +1948,22 @@
             },
             "name": "r",
             "type": {
-              "name": "Reader",
-              "package": {
-                "name": "io"
-              }
+              "name": [
+                "Reader"
+              ],
+              "package": [
+                {
+                  "name": "io"
+                }
+              ]
             }
           },
           {
             "pointer": {
               "type": {
-                "name": "MyErr"
+                "name": [
+                  "MyErr"
+                ]
               }
             },
             "name": "target"
@@ -1913,11 +2129,15 @@
                       {
                         "value": {
                           "type": {
-                            "name": "int"
+                            "name": [
+                              "int"
+                            ]
                           }
                         },
                         "type": {
-                          "name": "string"
+                          "name": [
+                            "string"
+                          ]
                         }
                       }
                     ]
@@ -1978,14 +2198,18 @@
                         "\"bg\""
                       ],
                       "member": {
-                        "property": {
-                          "name": "Println"
-                        },
-                        "object": {
-                          "name": [
-                            "fmt"
-                          ]
-                        }
+                        "property": [
+                          {
+                            "name": "Println"
+                          }
+                        ],
+                        "object": [
+                          {
+                            "name": [
+                              "fmt"
+                            ]
+                          }
+                        ]
                       }
                     }
                   }
@@ -2000,9 +2224,63 @@
               "body": {
                 "select": [
                   {
-                    "children": [
+                    "case": [
                       {
-                        "$type": "case",
+                        "send": {
+                          "value": {
+                            "expression": {
+                              "name": "v"
+                            }
+                          },
+                          "name": "out"
+                        },
+                        "receive": {
+                          "right": {
+                            "expression": {
+                              "unary": {
+                                "name": "in",
+                                "op": {
+                                  "text": "<-",
+                                  "receive": true
+                                }
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": [
+                              {
+                                "name": "v"
+                              },
+                              {
+                                "name": "ok"
+                              }
+                            ]
+                          }
+                        },
+                        "if": {
+                          "then": {
+                            "break": {
+                              "label": "Outer"
+                            }
+                          },
+                          "condition": {
+                            "expression": {
+                              "unary": {
+                                "name": "ok",
+                                "op": {
+                                  "text": "!",
+                                  "logical": true,
+                                  "not": true
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "continue": {
+                          "label": "Outer"
+                        },
                         "send": {
                           "value": {
                             "expression": {
@@ -2010,27 +2288,30 @@
                             }
                           },
                           "name": "out"
-                        },
-                        "continue": {
-                          "label": "Outer"
                         }
                       },
                       {
-                        "$type": "case",
+                        "goto": {
+                          "label": "cleanup"
+                        },
                         "receive": {
                           "right": {
                             "expression": {
                               "unary": {
                                 "call": {
                                   "member": {
-                                    "property": {
-                                      "name": "Done"
-                                    },
-                                    "object": {
-                                      "name": [
-                                        "ctx"
-                                      ]
-                                    }
+                                    "property": [
+                                      {
+                                        "name": "Done"
+                                      }
+                                    ],
+                                    "object": [
+                                      {
+                                        "name": [
+                                          "ctx"
+                                        ]
+                                      }
+                                    ]
                                   }
                                 },
                                 "op": {
@@ -2040,64 +2321,9 @@
                               }
                             }
                           }
-                        },
-                        "goto": {
-                          "label": "cleanup"
                         }
                       }
-                    ],
-                    "case": {
-                      "send": {
-                        "value": {
-                          "expression": {
-                            "name": "v"
-                          }
-                        },
-                        "name": "out"
-                      },
-                      "receive": {
-                        "right": {
-                          "expression": {
-                            "unary": {
-                              "name": "in",
-                              "op": {
-                                "text": "<-",
-                                "receive": true
-                              }
-                            }
-                          }
-                        },
-                        "left": {
-                          "expression": [
-                            {
-                              "name": "v"
-                            },
-                            {
-                              "name": "ok"
-                            }
-                          ]
-                        }
-                      },
-                      "if": {
-                        "then": {
-                          "break": {
-                            "label": "Outer"
-                          }
-                        },
-                        "condition": {
-                          "expression": {
-                            "unary": {
-                              "name": "ok",
-                              "op": {
-                                "text": "!",
-                                "logical": true,
-                                "not": true
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
+                    ]
                   }
                 ]
               }
@@ -2114,7 +2340,9 @@
                         "$type": "chan",
                         "value": {
                           "type": {
-                            "name": "int"
+                            "name": [
+                              "int"
+                            ]
                           }
                         }
                       },
@@ -2214,7 +2442,9 @@
                       ],
                       "type": [
                         {
-                          "name": "Point"
+                          "name": [
+                            "Point"
+                          ]
                         }
                       ]
                     },
@@ -2260,7 +2490,9 @@
                     "slice": [
                       {
                         "type": {
-                          "name": "Point"
+                          "name": [
+                            "Point"
+                          ]
                         }
                       }
                     ]
@@ -2309,11 +2541,15 @@
                     {
                       "value": {
                         "type": {
-                          "name": "Point"
+                          "name": [
+                            "Point"
+                          ]
                         }
                       },
                       "type": {
-                        "name": "string"
+                        "name": [
+                          "string"
+                        ]
                       }
                     }
                   ]
@@ -2349,14 +2585,18 @@
                 "expression": {
                   "call": {
                     "member": {
-                      "property": {
-                        "name": "Pipe"
-                      },
-                      "object": {
-                        "name": [
-                          "io"
-                        ]
-                      }
+                      "property": [
+                        {
+                          "name": "Pipe"
+                        }
+                      ],
+                      "object": [
+                        {
+                          "name": [
+                            "io"
+                          ]
+                        }
+                      ]
                     }
                   }
                 }
@@ -2426,7 +2666,9 @@
                 "expression": {
                   "assert": {
                     "type": {
-                      "name": "Stringer"
+                      "name": [
+                        "Stringer"
+                      ]
                     },
                     "name": "r"
                   }
@@ -2484,14 +2726,18 @@
                           "ErrNotFound"
                         ],
                         "member": {
-                          "property": {
-                            "name": "Is"
-                          },
-                          "object": {
-                            "name": [
-                              "errors"
-                            ]
-                          }
+                          "property": [
+                            {
+                              "name": "Is"
+                            }
+                          ],
+                          "object": [
+                            {
+                              "name": [
+                                "errors"
+                              ]
+                            }
+                          ]
                         }
                       }
                     }
@@ -2512,14 +2758,18 @@
                           }
                         ],
                         "member": {
-                          "property": {
-                            "name": "As"
-                          },
-                          "object": {
-                            "name": [
-                              "errors"
-                            ]
-                          }
+                          "property": [
+                            {
+                              "name": "As"
+                            }
+                          ],
+                          "object": [
+                            {
+                              "name": [
+                                "errors"
+                              ]
+                            }
+                          ]
                         }
                       }
                     }
@@ -2595,10 +2845,14 @@
           "$type": "parameter",
           "name": "ctx",
           "type": {
-            "name": "Context",
-            "package": {
-              "name": "context"
-            }
+            "name": [
+              "Context"
+            ],
+            "package": [
+              {
+                "name": "context"
+              }
+            ]
           }
         },
         {
@@ -2607,7 +2861,9 @@
           "chan": {
             "value": {
               "type": {
-                "name": "int"
+                "name": [
+                  "int"
+                ]
               }
             }
           }
@@ -2618,7 +2874,9 @@
           "chan": {
             "value": {
               "type": {
-                "name": "int"
+                "name": [
+                  "int"
+                ]
               }
             }
           }
@@ -2627,7 +2885,9 @@
       "returns": {
         "type": [
           {
-            "name": "error"
+            "name": [
+              "error"
+            ]
           }
         ]
       }

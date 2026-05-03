@@ -91,7 +91,9 @@
                         },
                         "inclusive": true,
                         "from": {
-                          "int": "1"
+                          "int": [
+                            "1"
+                          ]
                         }
                       }
                     ]
@@ -401,7 +403,9 @@
                   },
                   "inclusive": true,
                   "from": {
-                    "int": "1"
+                    "int": [
+                      "1"
+                    ]
                   }
                 }
               }
@@ -1304,12 +1308,18 @@
           },
           {
             "member": {
-              "name": "Defaults",
+              "name": [
+                "Defaults"
+              ],
               "static": true,
-              "member": {
-                "name": "Configuration",
-                "static": true
-              }
+              "member": [
+                {
+                  "name": [
+                    "Configuration"
+                  ],
+                  "static": true
+                }
+              ]
             }
           },
           {
@@ -2171,7 +2181,9 @@
                         },
                         "inclusive": true,
                         "from": {
-                          "int": "1"
+                          "int": [
+                            "1"
+                          ]
                         }
                       }
                     }
@@ -2191,7 +2203,9 @@
                         },
                         "exclusive": true,
                         "from": {
-                          "int": "1"
+                          "int": [
+                            "1"
+                          ]
                         }
                       }
                     }
@@ -2241,7 +2255,9 @@
             "extends": [
               {
                 "type": {
-                  "name": "Base"
+                  "name": [
+                    "Base"
+                  ]
                 }
               }
             ]

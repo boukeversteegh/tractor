@@ -35,84 +35,97 @@
   ],
   "from": [
     {
-      "import": {
-        "name": "OrderedDict"
-      },
-      "path": {
-        "name": [
-          "collections"
-        ]
-      }
+      "import": [
+        {
+          "name": "OrderedDict"
+        }
+      ],
+      "path": [
+        {
+          "name": [
+            "collections"
+          ]
+        }
+      ]
     },
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
+          "name": "Optional"
+        },
+        {
           "name": "Union"
         }
       ],
-      "path": {
-        "name": [
-          "typing"
-        ]
-      },
-      "import": {
-        "name": "Optional"
-      }
+      "path": [
+        {
+          "name": [
+            "typing"
+          ]
+        }
+      ]
     },
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
+          "name": "dataclass"
+        },
+        {
           "name": "field"
         }
       ],
-      "path": {
-        "name": [
-          "dataclasses"
-        ]
-      },
-      "import": {
-        "name": "dataclass"
-      }
+      "path": [
+        {
+          "name": [
+            "dataclasses"
+          ]
+        }
+      ]
     },
     {
-      "import": {
-        "name": "sibling"
-      },
+      "import": [
+        {
+          "name": "sibling"
+        }
+      ],
       "relative": true
     },
     {
-      "import": {
-        "aliased": {
-          "name": "h"
-        },
-        "alias": true,
-        "name": "helper"
-      },
-      "relative": true,
-      "path": {
-        "name": [
-          "utils"
-        ]
-      }
-    },
-    {
-      "children": [
+      "import": [
         {
-          "$type": "import",
-          "wildcard": true,
-          "text": "*"
+          "aliased": {
+            "name": "h"
+          },
+          "alias": true,
+          "name": "helper"
         }
       ],
-      "path": {
-        "name": [
-          "os"
-        ]
-      },
-      "import": {
-        "name": "path"
-      }
+      "relative": true,
+      "path": [
+        {
+          "name": [
+            "utils"
+          ]
+        }
+      ]
+    },
+    {
+      "import": [
+        {
+          "name": "path"
+        },
+        {
+          "text": "*",
+          "wildcard": true
+        }
+      ],
+      "path": [
+        {
+          "name": [
+            "os"
+          ]
+        }
+      ]
     }
   ],
   "assign": [
@@ -128,7 +141,9 @@
         }
       },
       "type": {
-        "name": "bool"
+        "name": [
+          "bool"
+        ]
       }
     },
     {
@@ -143,7 +158,9 @@
         }
       },
       "type": {
-        "name": "float"
+        "name": [
+          "float"
+        ]
       }
     },
     {
@@ -185,136 +202,188 @@
     {
       "right": {
         "type": {
-          "type": {
-            "name": "T"
-          },
-          "generic": true,
-          "name": "list"
-        }
-      },
-      "left": {
-        "type": {
-          "type": {
-            "name": "T"
-          },
-          "generic": true,
-          "name": "Vec"
-        }
-      }
-    },
-    {
-      "right": {
-        "type": {
-          "binary": {
-            "right": {
-              "expression": {
-                "name": "str"
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "int"
-              }
-            },
-            "op": {
-              "text": "|",
-              "bitwise": true,
-              "or": true
-            }
-          }
-        }
-      },
-      "left": {
-        "type": {
-          "name": "IntOrStr"
-        }
-      }
-    },
-    {
-      "right": {
-        "type": {
           "type": [
             {
-              "name": "T"
-            },
-            {
-              "name": "U"
-            },
-            {
-              "type": {
-                "name": "Ts",
-                "splat": true
-              }
-            }
-          ],
-          "generic": true,
-          "name": "tuple"
-        }
-      },
-      "left": {
-        "type": {
-          "type": [
-            {
-              "type": {
-                "type": [
-                  {
-                    "name": "T"
-                  },
-                  {
-                    "name": "int"
-                  }
-                ],
-                "constrained": true
-              }
-            },
-            {
-              "type": {
-                "type": [
-                  {
-                    "name": "U"
-                  },
-                  {
-                    "tuple": {
-                      "name": [
-                        "int",
-                        "str"
-                      ]
-                    }
-                  }
-                ],
-                "constrained": true
-              }
-            },
-            {
-              "type": {
-                "name": "Ts",
-                "splat": true
-              }
-            }
-          ],
-          "generic": true,
-          "name": "Pair"
-        }
-      }
-    },
-    {
-      "right": {
-        "type": {
-          "member": {
-            "property": {
-              "name": "Foo"
-            },
-            "object": {
               "name": [
-                "OrderedDict"
+                "T"
               ]
             }
-          }
+          ],
+          "generic": true,
+          "name": [
+            "list"
+          ]
         }
       },
       "left": {
         "type": {
-          "name": "Containing"
+          "type": [
+            {
+              "name": [
+                "T"
+              ]
+            }
+          ],
+          "generic": true,
+          "name": [
+            "Vec"
+          ]
+        }
+      }
+    },
+    {
+      "right": {
+        "type": {
+          "binary": [
+            {
+              "right": {
+                "expression": {
+                  "name": "str"
+                }
+              },
+              "left": {
+                "expression": {
+                  "name": "int"
+                }
+              },
+              "op": {
+                "text": "|",
+                "bitwise": true,
+                "or": true
+              }
+            }
+          ]
+        }
+      },
+      "left": {
+        "type": {
+          "name": [
+            "IntOrStr"
+          ]
+        }
+      }
+    },
+    {
+      "right": {
+        "type": {
+          "type": [
+            {
+              "name": [
+                "T"
+              ]
+            },
+            {
+              "name": [
+                "U"
+              ]
+            },
+            {
+              "type": [
+                {
+                  "name": [
+                    "Ts"
+                  ],
+                  "splat": true
+                }
+              ]
+            }
+          ],
+          "generic": true,
+          "name": [
+            "tuple"
+          ]
+        }
+      },
+      "left": {
+        "type": {
+          "type": [
+            {
+              "type": [
+                {
+                  "type": [
+                    {
+                      "name": [
+                        "T"
+                      ]
+                    },
+                    {
+                      "name": [
+                        "int"
+                      ]
+                    }
+                  ],
+                  "constrained": true
+                }
+              ]
+            },
+            {
+              "type": [
+                {
+                  "type": [
+                    {
+                      "name": [
+                        "U"
+                      ]
+                    },
+                    {
+                      "tuple": [
+                        {
+                          "name": [
+                            "int",
+                            "str"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "constrained": true
+                }
+              ]
+            },
+            {
+              "type": [
+                {
+                  "name": [
+                    "Ts"
+                  ],
+                  "splat": true
+                }
+              ]
+            }
+          ],
+          "generic": true,
+          "name": [
+            "Pair"
+          ]
+        }
+      }
+    },
+    {
+      "right": {
+        "type": {
+          "member": [
+            {
+              "property": [
+                {
+                  "name": "Foo"
+                }
+              ],
+              "object": [
+                {
+                  "name": [
+                    "OrderedDict"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "left": {
+        "type": {
+          "name": [
+            "Containing"
+          ]
         }
       }
     }
@@ -345,7 +414,9 @@
       "name": "Box",
       "generic": {
         "type": {
-          "name": "T"
+          "name": [
+            "T"
+          ]
         }
       }
     },
@@ -364,7 +435,9 @@
               }
             },
             "type": {
-              "name": "int"
+              "name": [
+                "int"
+              ]
             }
           },
           {
@@ -379,7 +452,9 @@
               }
             },
             "type": {
-              "name": "int"
+              "name": [
+                "int"
+              ]
             }
           },
           {
@@ -407,11 +482,17 @@
               }
             },
             "type": {
-              "type": {
-                "name": "str"
-              },
+              "type": [
+                {
+                  "name": [
+                    "str"
+                  ]
+                }
+              ],
               "generic": true,
-              "name": "list"
+              "name": [
+                "list"
+              ]
             }
           }
         ],
@@ -440,7 +521,9 @@
       "extends": [
         {
           "type": {
-            "name": "type"
+            "name": [
+              "type"
+            ]
           }
         }
       ]
@@ -460,14 +543,18 @@
                   "left": {
                     "expression": {
                       "member": {
-                        "property": {
-                          "name": "name"
-                        },
-                        "object": {
-                          "name": [
-                            "self"
-                          ]
-                        }
+                        "property": [
+                          {
+                            "name": "name"
+                          }
+                        ],
+                        "object": [
+                          {
+                            "name": [
+                              "self"
+                            ]
+                          }
+                        ]
                       }
                     }
                   }
@@ -485,7 +572,9 @@
                 "$type": "parameter",
                 "name": "name",
                 "type": {
-                  "name": "str"
+                  "name": [
+                    "str"
+                  ]
                 }
               }
             ]
@@ -502,14 +591,18 @@
                             "children": [
                               {
                                 "$type": "member",
-                                "object": {
-                                  "name": [
-                                    "other"
-                                  ]
-                                },
-                                "property": {
-                                  "name": "name"
-                                }
+                                "object": [
+                                  {
+                                    "name": [
+                                      "other"
+                                    ]
+                                  }
+                                ],
+                                "property": [
+                                  {
+                                    "name": "name"
+                                  }
+                                ]
                               }
                             ],
                             "op": {
@@ -517,14 +610,18 @@
                               "equals": true
                             },
                             "member": {
-                              "property": {
-                                "name": "name"
-                              },
-                              "object": {
-                                "name": [
-                                  "self"
-                                ]
-                              }
+                              "property": [
+                                {
+                                  "name": "name"
+                                }
+                              ],
+                              "object": [
+                                {
+                                  "name": [
+                                    "self"
+                                  ]
+                                }
+                              ]
                             }
                           }
                         }
@@ -595,7 +692,9 @@
       "extends": [
         {
           "type": {
-            "name": "Base"
+            "name": [
+              "Base"
+            ]
           }
         }
       ],
@@ -763,7 +862,9 @@
       "name": "identity",
       "generic": {
         "type": {
-          "name": "T"
+          "name": [
+            "T"
+          ]
         }
       },
       "parameters": [
@@ -771,14 +872,18 @@
           "$type": "parameter",
           "name": "v",
           "type": {
-            "name": "T"
+            "name": [
+              "T"
+            ]
           }
         }
       ],
       "returns": {
         "type": [
           {
-            "name": "T"
+            "name": [
+              "T"
+            ]
           }
         ]
       }
@@ -826,7 +931,9 @@
               }
             },
             "type": {
-              "name": "int"
+              "name": [
+                "int"
+              ]
             }
           },
           {
@@ -918,18 +1025,26 @@
           "$type": "parameter",
           "name": "x",
           "type": {
-            "name": "int"
+            "name": [
+              "int"
+            ]
           }
         },
         {
           "$type": "parameter",
           "name": "y",
           "type": {
-            "type": {
-              "name": "str"
-            },
+            "type": [
+              {
+                "name": [
+                  "str"
+                ]
+              }
+            ],
             "generic": true,
-            "name": "Optional"
+            "name": [
+              "Optional"
+            ]
           },
           "value": {
             "expression": {
@@ -941,21 +1056,31 @@
           "$type": "parameter",
           "name": "z",
           "type": {
-            "type": {
-              "type": [
-                {
-                  "type": {
-                    "name": "int"
+            "type": [
+              {
+                "type": [
+                  {
+                    "type": [
+                      {
+                        "name": [
+                          "int"
+                        ]
+                      }
+                    ],
+                    "generic": true,
+                    "name": [
+                      "list"
+                    ]
                   },
-                  "generic": true,
-                  "name": "list"
-                },
-                {
-                  "none": "None"
-                }
-              ],
-              "union": true
-            }
+                  {
+                    "none": [
+                      "None"
+                    ]
+                  }
+                ],
+                "union": true
+              }
+            ]
           },
           "value": {
             "expression": {
@@ -969,14 +1094,20 @@
           {
             "type": [
               {
-                "name": "int"
+                "name": [
+                  "int"
+                ]
               },
               {
-                "none": "None"
+                "none": [
+                  "None"
+                ]
               }
             ],
             "generic": true,
-            "name": "Union"
+            "name": [
+              "Union"
+            ]
           }
         ]
       }
@@ -1021,14 +1152,18 @@
                     "expression": {
                       "call": {
                         "member": {
-                          "property": {
-                            "name": "read"
-                          },
-                          "object": {
-                            "name": [
-                              "conn"
-                            ]
-                          }
+                          "property": [
+                            {
+                              "name": "read"
+                            }
+                          ],
+                          "object": [
+                            {
+                              "name": [
+                                "conn"
+                              ]
+                            }
+                          ]
                         }
                       },
                       "await": true
@@ -1066,14 +1201,18 @@
           "$type": "parameter",
           "name": "url",
           "type": {
-            "name": "str"
+            "name": [
+              "str"
+            ]
           }
         }
       ],
       "returns": {
         "type": [
           {
-            "name": "bytes"
+            "name": [
+              "bytes"
+            ]
           }
         ]
       }
@@ -1562,28 +1701,36 @@
                 {
                   "call": {
                     "member": {
-                      "property": {
-                        "name": "read"
-                      },
-                      "object": {
-                        "name": [
-                          "fa"
-                        ]
-                      }
+                      "property": [
+                        {
+                          "name": "read"
+                        }
+                      ],
+                      "object": [
+                        {
+                          "name": [
+                            "fa"
+                          ]
+                        }
+                      ]
                     }
                   }
                 },
                 {
                   "call": {
                     "member": {
-                      "property": {
-                        "name": "read"
-                      },
-                      "object": {
-                        "name": [
-                          "fb"
-                        ]
-                      }
+                      "property": [
+                        {
+                          "name": "read"
+                        }
+                      ],
+                      "object": [
+                        {
+                          "name": [
+                            "fb"
+                          ]
+                        }
+                      ]
                     }
                   }
                 }
@@ -1911,14 +2058,18 @@
                       "expression": {
                         "call": {
                           "member": {
-                            "property": {
-                              "name": "items"
-                            },
-                            "object": {
-                              "name": [
-                                "data"
-                              ]
-                            }
+                            "property": [
+                              {
+                                "name": "items"
+                              }
+                            ],
+                            "object": [
+                              {
+                                "name": [
+                                  "data"
+                                ]
+                              }
+                            ]
                           }
                         }
                       }
@@ -2691,7 +2842,9 @@
         "assign": [
           {
             "type": {
-              "name": "int"
+              "name": [
+                "int"
+              ]
             },
             "left": {
               "expression": {
