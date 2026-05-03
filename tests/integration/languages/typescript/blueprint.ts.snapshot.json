@@ -90,24 +90,23 @@
     },
     {
       "type": {
-        "children": [
+        "parameter": [
           {
-            "$type": "parameter",
-            "optional": true,
-            "name": "tail",
+            "type": {
+              "name": "number"
+            },
+            "required": true,
+            "name": "head"
+          },
+          {
             "type": {
               "name": "string"
-            }
+            },
+            "optional": true,
+            "name": "tail"
           }
         ],
-        "tuple": true,
-        "parameter": {
-          "type": {
-            "name": "number"
-          },
-          "required": true,
-          "name": "head"
-        }
+        "tuple": true
       },
       "name": "OptionalSlot"
     },
@@ -481,22 +480,21 @@
             }
           },
           "type": {
-            "children": [
+            "property": [
               {
-                "$type": "property",
-                "name": "label",
+                "type": {
+                  "name": "number"
+                },
+                "name": "scale"
+              },
+              {
                 "type": {
                   "name": "string"
-                }
+                },
+                "name": "label"
               }
             ],
-            "object": true,
-            "property": {
-              "type": {
-                "name": "number"
-              },
-              "name": "scale"
-            }
+            "object": true
           },
           "value": {
             "expression": {
@@ -1050,22 +1048,21 @@
             }
           },
           "type": {
-            "children": [
+            "property": [
               {
-                "$type": "property",
-                "name": "b",
                 "type": {
                   "name": "number"
-                }
+                },
+                "name": "a"
+              },
+              {
+                "type": {
+                  "name": "number"
+                },
+                "name": "b"
               }
             ],
-            "object": true,
-            "property": {
-              "type": {
-                "name": "number"
-              },
-              "name": "a"
-            }
+            "object": true
           }
         },
         {
@@ -1219,22 +1216,21 @@
     {
       "alias": {
         "type": {
-          "children": [
+          "property": [
             {
-              "$type": "property",
-              "name": "y",
               "type": {
                 "name": "number"
-              }
+              },
+              "name": "x"
+            },
+            {
+              "type": {
+                "name": "number"
+              },
+              "name": "y"
             }
           ],
-          "object": true,
-          "property": {
-            "type": {
-              "name": "number"
-            },
-            "name": "x"
-          }
+          "object": true
         },
         "name": "Point"
       }

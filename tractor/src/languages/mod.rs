@@ -950,6 +950,15 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    // TS function-type / object-type signatures: `<type>` parent with
+    // multiple `<parameter>` (function type) or `<property>` (object
+    // type) siblings — uniform-role children inside a role-MIXED
+    // parent (since `<type>` is also used as a singleton type wrapper).
+    // Targeted via tag_multi_role_children rather than bulk distribute.
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("type", "parameter"), ("type", "property")],
+    )?;
     typescript_restructure_import(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(

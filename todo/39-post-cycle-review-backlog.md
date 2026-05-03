@@ -548,6 +548,11 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 215: TS function-type / object-type signatures targeted
+  list= via `tag_multi_role_children(&[("type", "parameter"),
+  ("type", "property")])`. TS audit 12 → 8 (-4). Properly scoped
+  alternative to bulk-distributing `<type>` (which would tag the
+  type-wrapper case wrongly).
 - [x] iter 214: PHP class-constant access (`Foo::BAR`) Custom
   handler — wraps two `<name>` siblings in `<object>` /
   `<property>` (matching iter-178 C# member-access). Removed
