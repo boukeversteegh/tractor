@@ -311,8 +311,25 @@ pub fn conditional_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    xot.with_wrapped_field_child(node, "alternative", Else)?
-        .with_renamed(node, Ternary);
+    use super::output::TractorNode::{Condition, Then};
+    // Python `a if b else c` — three element children in source
+    // order: consequence (then) / condition / alternative (else).
+    // No tree-sitter `field=` attributes, so wrap by position.
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    if elem_children.len() == 3 {
+        let wrappers = [(elem_children[0], Then),
+                        (elem_children[1], Condition),
+                        (elem_children[2], Else)];
+        for (child, wrapper) in wrappers {
+            let wrap_id = xot.add_name(wrapper.as_str());
+            let wrap_node = xot.new_element(wrap_id);
+            xot.with_source_location_from(wrap_node, child)
+                .with_wrap_child(child, wrap_node)?;
+        }
+    }
+    xot.with_renamed(node, Ternary);
     Ok(TransformAction::Continue)
 }
 

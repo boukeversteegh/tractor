@@ -548,6 +548,14 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 219: Python ternary then/condition/else role wraps —
+  rewrote `conditional_expression` Custom handler to position-wrap
+  the 3 element children (then/condition/else) instead of relying
+  on field-wrap (tree-sitter Python doesn't tag conditional_expression
+  operands with field=). Cross-language Principle #5: matches Ruby
+  (iter 179), C# / Java / PHP / TS ternary shape with role-named
+  slots. Python audit 18 → 17 (-1 net; ternary closed but other
+  patterns remain). Test xpath updated.
 - [x] iter 218: Java method reference list= — added
   `("reference", "name")` to Java's tag_multi_role_children.
   `String::valueOf` (`<reference>` with class + method `<name>`s)

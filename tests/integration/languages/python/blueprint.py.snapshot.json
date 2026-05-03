@@ -779,11 +779,17 @@
           {
             "expression": {
               "ternary": {
-                "children": [
-                  "result"
-                ],
-                "name": "result",
-                "none": "None"
+                "else": {
+                  "none": "None"
+                },
+                "then": {
+                  "name": "result"
+                },
+                "condition": {
+                  "expression": {
+                    "name": "result"
+                  }
+                }
               }
             }
           }
@@ -2139,16 +2145,24 @@
             "right": {
               "expression": {
                 "ternary": {
-                  "none": "None",
-                  "subscript": {
-                    "int": "0",
-                    "value": {
-                      "expression": {
-                        "name": "items"
+                  "else": {
+                    "none": "None"
+                  },
+                  "then": {
+                    "subscript": {
+                      "int": "0",
+                      "value": {
+                        "expression": {
+                          "name": "items"
+                        }
                       }
                     }
                   },
-                  "name": "items"
+                  "condition": {
+                    "expression": {
+                      "name": "items"
+                    }
+                  }
                 }
               }
             },

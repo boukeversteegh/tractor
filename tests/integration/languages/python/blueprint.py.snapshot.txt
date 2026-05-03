@@ -156,9 +156,9 @@ module/
   │       │   ├─ op[assign and matmul] = "@="
   │       │   └─ right/expression/name = "matrix"
   │       └─ return/expression/ternary/
-  │           ├─ name = "result"
-  │           ├─ name = "result"
-  │           └─ none = "None"
+  │           ├─ then/name = "result"
+  │           ├─ condition/expression/name = "result"
+  │           └─ else/none = "None"
   ├─ function[async]/
   │   ├─ name = "async_work"
   │   ├─ parameter/
@@ -506,11 +506,11 @@ module/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "first"
   │       │   └─ right/expression/ternary/
-  │       │       ├─ subscript/
+  │       │       ├─ then/subscript/
   │       │       │   ├─ value/expression/name = "items"
   │       │       │   └─ int = "0"
-  │       │       ├─ name = "items"
-  │       │       └─ none = "None"
+  │       │       ├─ condition/expression/name = "items"
+  │       │       └─ else/none = "None"
   │       ├─ if/
   │       │   ├─ condition/expression/compare/
   │       │   │   ├─ assign/

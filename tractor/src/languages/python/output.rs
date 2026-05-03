@@ -20,7 +20,7 @@ pub enum TractorNode {
     Type,
     // Control flow
     Return, If, ElseIf, Else, For, While, Try, Except, Finally, With, Raise, Pass, Break,
-    Continue, Match, Arm, Pattern,
+    Continue, Match, Arm, Pattern, Then, Condition,
     // Imports / names
     Import, From, Assert, Delete, Global, Nonlocal,
     // Python 2 leftovers (kept as own elements; rare in modern code)
