@@ -446,20 +446,26 @@
                         "expression": [
                           {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "Id"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "Id"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "id"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "id"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "==",
-                                "equals": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "==",
+                                  "equals": true
+                                }
+                              ]
                             }
                           }
                         ]
@@ -838,52 +844,58 @@
                 "body": {
                   "binary": [
                     {
-                      "right": {
-                        "expression": {
-                          "string": "\"!\""
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "call": {
-                            "member": [
-                              {
-                                "property": [
-                                  {
-                                    "name": "ToUpperInvariant"
-                                  }
-                                ],
-                                "instance": true,
-                                "object": [
-                                  {
-                                    "member": [
-                                      {
-                                        "property": [
-                                          {
-                                            "name": "Name"
-                                          }
-                                        ],
-                                        "instance": true,
-                                        "object": [
-                                          {
-                                            "name": [
-                                              "w"
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            ]
+                      "right": [
+                        {
+                          "expression": {
+                            "string": "\"!\""
                           }
                         }
-                      },
-                      "op": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "call": {
+                              "member": [
+                                {
+                                  "property": [
+                                    {
+                                      "name": "ToUpperInvariant"
+                                    }
+                                  ],
+                                  "instance": true,
+                                  "object": [
+                                    {
+                                      "member": [
+                                        {
+                                          "property": [
+                                            {
+                                              "name": "Name"
+                                            }
+                                          ],
+                                          "instance": true,
+                                          "object": [
+                                            {
+                                              "name": [
+                                                "w"
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ],
+                      "op": [
+                        {
+                          "text": "+",
+                          "plus": true
+                        }
+                      ]
                     }
                   ]
                 },
@@ -929,90 +941,81 @@
                         {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "member": {
-                                    "property": [
-                                      {
-                                        "name": "Length"
-                                      }
-                                    ],
-                                    "instance": true,
-                                    "object": [
-                                      {
-                                        "name": [
-                                          "shouted"
-                                        ]
-                                      }
-                                    ]
+                              "right": [
+                                {
+                                  "expression": {
+                                    "member": {
+                                      "property": [
+                                        {
+                                          "name": "Length"
+                                        }
+                                      ],
+                                      "instance": true,
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "shouted"
+                                          ]
+                                        }
+                                      ]
+                                    }
                                   }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "ternary": {
-                                          "else": {
-                                            "int": "1"
-                                          },
-                                          "condition": {
-                                            "expression": [
-                                              {
-                                                "binary": {
-                                                  "right": {
-                                                    "expression": {
-                                                      "name": "kind"
-                                                    }
-                                                  },
-                                                  "left": {
-                                                    "expression": {
-                                                      "name": "label"
-                                                    }
-                                                  },
-                                                  "op": {
-                                                    "text": "==",
-                                                    "equals": true
-                                                  }
-                                                }
-                                              }
-                                            ]
-                                          },
-                                          "then": {
-                                            "int": [
-                                              "0"
-                                            ]
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "binary": {
-                                          "right": {
-                                            "expression": {
-                                              "member": {
-                                                "property": [
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "binary": {
+                                      "right": [
+                                        {
+                                          "expression": {
+                                            "ternary": {
+                                              "else": {
+                                                "int": "1"
+                                              },
+                                              "condition": {
+                                                "expression": [
                                                   {
-                                                    "name": "Length"
+                                                    "binary": {
+                                                      "right": [
+                                                        {
+                                                          "expression": {
+                                                            "name": "kind"
+                                                          }
+                                                        }
+                                                      ],
+                                                      "left": [
+                                                        {
+                                                          "expression": {
+                                                            "name": "label"
+                                                          }
+                                                        }
+                                                      ],
+                                                      "op": [
+                                                        {
+                                                          "text": "==",
+                                                          "equals": true
+                                                        }
+                                                      ]
+                                                    }
                                                   }
-                                                ],
-                                                "instance": true,
-                                                "object": [
-                                                  {
-                                                    "name": [
-                                                      "raw"
-                                                    ]
-                                                  }
+                                                ]
+                                              },
+                                              "then": {
+                                                "int": [
+                                                  "0"
                                                 ]
                                               }
                                             }
-                                          },
-                                          "left": {
-                                            "expression": {
-                                              "binary": {
-                                                "right": {
+                                          }
+                                        }
+                                      ],
+                                      "left": [
+                                        {
+                                          "expression": {
+                                            "binary": {
+                                              "right": [
+                                                {
                                                   "expression": {
                                                     "member": {
                                                       "property": [
@@ -1024,144 +1027,201 @@
                                                       "object": [
                                                         {
                                                           "name": [
-                                                            "interp"
+                                                            "raw"
                                                           ]
                                                         }
                                                       ]
                                                     }
                                                   }
-                                                },
-                                                "left": {
+                                                }
+                                              ],
+                                              "left": [
+                                                {
                                                   "expression": {
                                                     "binary": {
-                                                      "right": {
-                                                        "expression": {
-                                                          "member": {
-                                                            "property": [
-                                                              {
-                                                                "name": "Length"
-                                                              }
-                                                            ],
-                                                            "instance": true,
-                                                            "object": [
-                                                              {
-                                                                "name": [
-                                                                  "verbatim"
-                                                                ]
-                                                              }
-                                                            ]
-                                                          }
-                                                        }
-                                                      },
-                                                      "left": {
-                                                        "expression": {
-                                                          "binary": {
-                                                            "right": {
-                                                              "expression": {
-                                                                "member": {
-                                                                  "property": [
-                                                                    {
-                                                                      "name": "Length"
-                                                                    }
-                                                                  ],
-                                                                  "instance": true,
-                                                                  "object": [
-                                                                    {
-                                                                      "name": [
-                                                                        "plain"
-                                                                      ]
-                                                                    }
+                                                      "right": [
+                                                        {
+                                                          "expression": {
+                                                            "member": {
+                                                              "property": [
+                                                                {
+                                                                  "name": "Length"
+                                                                }
+                                                              ],
+                                                              "instance": true,
+                                                              "object": [
+                                                                {
+                                                                  "name": [
+                                                                    "interp"
                                                                   ]
                                                                 }
-                                                              }
-                                                            },
-                                                            "left": {
-                                                              "expression": {
-                                                                "binary": {
-                                                                  "right": {
-                                                                    "expression": {
-                                                                      "member": {
-                                                                        "property": [
-                                                                          {
-                                                                            "name": "Count"
-                                                                          }
-                                                                        ],
-                                                                        "instance": true,
-                                                                        "object": [
-                                                                          {
-                                                                            "name": [
-                                                                              "map"
-                                                                            ]
-                                                                          }
-                                                                        ]
-                                                                      }
-                                                                    }
-                                                                  },
-                                                                  "left": {
-                                                                    "expression": {
-                                                                      "member": {
-                                                                        "property": [
-                                                                          {
-                                                                            "name": "Count"
-                                                                          }
-                                                                        ],
-                                                                        "instance": true,
-                                                                        "object": [
-                                                                          {
-                                                                            "name": [
-                                                                              "list"
-                                                                            ]
-                                                                          }
-                                                                        ]
-                                                                      }
-                                                                    }
-                                                                  },
-                                                                  "op": {
-                                                                    "text": "+",
-                                                                    "plus": true
-                                                                  }
-                                                                }
-                                                              }
-                                                            },
-                                                            "op": {
-                                                              "text": "+",
-                                                              "plus": true
+                                                              ]
                                                             }
                                                           }
                                                         }
-                                                      },
-                                                      "op": {
-                                                        "text": "+",
-                                                        "plus": true
-                                                      }
+                                                      ],
+                                                      "left": [
+                                                        {
+                                                          "expression": {
+                                                            "binary": {
+                                                              "right": [
+                                                                {
+                                                                  "expression": {
+                                                                    "member": {
+                                                                      "property": [
+                                                                        {
+                                                                          "name": "Length"
+                                                                        }
+                                                                      ],
+                                                                      "instance": true,
+                                                                      "object": [
+                                                                        {
+                                                                          "name": [
+                                                                            "verbatim"
+                                                                          ]
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                }
+                                                              ],
+                                                              "left": [
+                                                                {
+                                                                  "expression": {
+                                                                    "binary": {
+                                                                      "right": [
+                                                                        {
+                                                                          "expression": {
+                                                                            "member": {
+                                                                              "property": [
+                                                                                {
+                                                                                  "name": "Length"
+                                                                                }
+                                                                              ],
+                                                                              "instance": true,
+                                                                              "object": [
+                                                                                {
+                                                                                  "name": [
+                                                                                    "plain"
+                                                                                  ]
+                                                                                }
+                                                                              ]
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      ],
+                                                                      "left": [
+                                                                        {
+                                                                          "expression": {
+                                                                            "binary": {
+                                                                              "right": [
+                                                                                {
+                                                                                  "expression": {
+                                                                                    "member": {
+                                                                                      "property": [
+                                                                                        {
+                                                                                          "name": "Count"
+                                                                                        }
+                                                                                      ],
+                                                                                      "instance": true,
+                                                                                      "object": [
+                                                                                        {
+                                                                                          "name": [
+                                                                                            "map"
+                                                                                          ]
+                                                                                        }
+                                                                                      ]
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              ],
+                                                                              "left": [
+                                                                                {
+                                                                                  "expression": {
+                                                                                    "member": {
+                                                                                      "property": [
+                                                                                        {
+                                                                                          "name": "Count"
+                                                                                        }
+                                                                                      ],
+                                                                                      "instance": true,
+                                                                                      "object": [
+                                                                                        {
+                                                                                          "name": [
+                                                                                            "list"
+                                                                                          ]
+                                                                                        }
+                                                                                      ]
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              ],
+                                                                              "op": [
+                                                                                {
+                                                                                  "text": "+",
+                                                                                  "plus": true
+                                                                                }
+                                                                              ]
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      ],
+                                                                      "op": [
+                                                                        {
+                                                                          "text": "+",
+                                                                          "plus": true
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                }
+                                                              ],
+                                                              "op": [
+                                                                {
+                                                                  "text": "+",
+                                                                  "plus": true
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        }
+                                                      ],
+                                                      "op": [
+                                                        {
+                                                          "text": "+",
+                                                          "plus": true
+                                                        }
+                                                      ]
                                                     }
                                                   }
-                                                },
-                                                "op": {
+                                                }
+                                              ],
+                                              "op": [
+                                                {
                                                   "text": "+",
                                                   "plus": true
                                                 }
-                                              }
+                                              ]
                                             }
-                                          },
-                                          "op": {
-                                            "text": "+",
-                                            "plus": true
                                           }
                                         }
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "+",
-                                      "plus": true
+                                      ],
+                                      "op": [
+                                        {
+                                          "text": "+",
+                                          "plus": true
+                                        }
+                                      ]
                                     }
                                   }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         }
@@ -1242,20 +1302,26 @@
                           "body": {
                             "binary": [
                               {
-                                "right": {
-                                  "expression": {
-                                    "name": "x"
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "name": "x"
+                                    }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "x"
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "name": "x"
+                                    }
                                   }
-                                },
-                                "op": {
-                                  "text": "*",
-                                  "multiply": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": "*",
+                                    "multiply": true
+                                  }
+                                ]
                               }
                             ]
                           },
@@ -1476,31 +1542,41 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "2"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "2"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "i"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "i"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "<",
-                                    "compare": true,
-                                    "less": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "<",
+                                      "compare": true,
+                                      "less": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
                           },
                           "unary": {
-                            "op": {
-                              "text": "++",
-                              "increment": true
-                            },
-                            "name": "i"
+                            "op": [
+                              {
+                                "text": "++",
+                                "increment": true
+                              }
+                            ],
+                            "name": [
+                              "i"
+                            ]
                           }
                         }
                       ],
@@ -1564,27 +1640,37 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "2"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "unary": {
-                                        "op": {
-                                          "text": "++",
-                                          "increment": true
-                                        },
-                                        "name": "j"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "2"
                                       }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "<",
-                                    "compare": true,
-                                    "less": true
-                                  }
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "unary": {
+                                          "op": [
+                                            {
+                                              "text": "++",
+                                              "increment": true
+                                            }
+                                          ],
+                                          "name": [
+                                            "j"
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "<",
+                                      "compare": true,
+                                      "less": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -1593,225 +1679,234 @@
                       ],
                       "try": [
                         {
-                          "children": [
+                          "finally": [
                             {
-                              "$type": "catch",
+                              "block": {
+                                "expression": [
+                                  {
+                                    "call": {
+                                      "member": [
+                                        {
+                                          "property": [
+                                            {
+                                              "name": "Flush"
+                                            }
+                                          ],
+                                          "instance": true,
+                                          "object": [
+                                            {
+                                              "name": [
+                                                "scope"
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ],
+                          "body": [
+                            {
+                              "block": [
+                                {
+                                  "throw": [
+                                    {
+                                      "new": {
+                                        "arguments": [
+                                          {
+                                            "$type": "argument",
+                                            "string": "\"boom\""
+                                          }
+                                        ],
+                                        "type": {
+                                          "name": [
+                                            "InvalidOperationException"
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "using": [
+                                    {
+                                      "body": {
+                                        "block": [
+                                          {
+                                            "expression": [
+                                              {
+                                                "call": {
+                                                  "arguments": [
+                                                    {
+                                                      "$type": "argument",
+                                                      "int": "1"
+                                                    }
+                                                  ],
+                                                  "member": [
+                                                    {
+                                                      "property": [
+                                                        {
+                                                          "name": "WriteByte"
+                                                        }
+                                                      ],
+                                                      "instance": true,
+                                                      "object": [
+                                                        {
+                                                          "name": [
+                                                            "inner"
+                                                          ]
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "variable": {
+                                        "declarator": {
+                                          "new": {
+                                            "path": {
+                                              "name": [
+                                                "System",
+                                                "IO",
+                                                "MemoryStream"
+                                              ]
+                                            }
+                                          },
+                                          "name": "inner"
+                                        },
+                                        "type": {
+                                          "name": [
+                                            "var"
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ],
+                          "catch": [
+                            {
+                              "body": {
+                                "block": [
+                                  {
+                                    "expression": [
+                                      {
+                                        "call": {
+                                          "arguments": [
+                                            {
+                                              "$type": "argument",
+                                              "member": {
+                                                "property": [
+                                                  {
+                                                    "name": "Message"
+                                                  }
+                                                ],
+                                                "instance": true,
+                                                "object": [
+                                                  {
+                                                    "name": [
+                                                      "ex"
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ],
+                                          "name": [
+                                            "log"
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
                               "declaration": {
+                                "name": "ex",
                                 "type": {
                                   "name": [
-                                    "Exception"
+                                    "InvalidOperationException"
                                   ]
                                 }
                               },
+                              "filter": {
+                                "binary": {
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "0"
+                                      }
+                                    }
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "member": {
+                                          "property": [
+                                            {
+                                              "name": "Length"
+                                            }
+                                          ],
+                                          "instance": true,
+                                          "object": [
+                                            {
+                                              "member": [
+                                                {
+                                                  "property": [
+                                                    {
+                                                      "name": "Message"
+                                                    }
+                                                  ],
+                                                  "instance": true,
+                                                  "object": [
+                                                    {
+                                                      "name": [
+                                                        "ex"
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": ">",
+                                      "compare": true,
+                                      "greater": true
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
                               "body": {
                                 "block": [
                                   {
                                     "throw": true
                                   }
                                 ]
-                              }
-                            }
-                          ],
-                          "body": {
-                            "block": [
-                              {
-                                "throw": [
-                                  {
-                                    "new": {
-                                      "arguments": [
-                                        {
-                                          "$type": "argument",
-                                          "string": "\"boom\""
-                                        }
-                                      ],
-                                      "type": {
-                                        "name": [
-                                          "InvalidOperationException"
-                                        ]
-                                      }
-                                    }
-                                  }
-                                ],
-                                "using": [
-                                  {
-                                    "body": {
-                                      "block": [
-                                        {
-                                          "expression": [
-                                            {
-                                              "call": {
-                                                "arguments": [
-                                                  {
-                                                    "$type": "argument",
-                                                    "int": "1"
-                                                  }
-                                                ],
-                                                "member": [
-                                                  {
-                                                    "property": [
-                                                      {
-                                                        "name": "WriteByte"
-                                                      }
-                                                    ],
-                                                    "instance": true,
-                                                    "object": [
-                                                      {
-                                                        "name": [
-                                                          "inner"
-                                                        ]
-                                                      }
-                                                    ]
-                                                  }
-                                                ]
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    },
-                                    "variable": {
-                                      "declarator": {
-                                        "new": {
-                                          "path": {
-                                            "name": [
-                                              "System",
-                                              "IO",
-                                              "MemoryStream"
-                                            ]
-                                          }
-                                        },
-                                        "name": "inner"
-                                      },
-                                      "type": {
-                                        "name": [
-                                          "var"
-                                        ]
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            ]
-                          },
-                          "catch": {
-                            "body": {
-                              "block": [
-                                {
-                                  "expression": [
-                                    {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "$type": "argument",
-                                            "member": {
-                                              "property": [
-                                                {
-                                                  "name": "Message"
-                                                }
-                                              ],
-                                              "instance": true,
-                                              "object": [
-                                                {
-                                                  "name": [
-                                                    "ex"
-                                                  ]
-                                                }
-                                              ]
-                                            }
-                                          }
-                                        ],
-                                        "name": [
-                                          "log"
-                                        ]
-                                      }
-                                    }
+                              },
+                              "declaration": {
+                                "type": {
+                                  "name": [
+                                    "Exception"
                                   ]
                                 }
-                              ]
-                            },
-                            "declaration": {
-                              "name": "ex",
-                              "type": {
-                                "name": [
-                                  "InvalidOperationException"
-                                ]
-                              }
-                            },
-                            "filter": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "0"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "member": {
-                                      "property": [
-                                        {
-                                          "name": "Length"
-                                        }
-                                      ],
-                                      "instance": true,
-                                      "object": [
-                                        {
-                                          "member": [
-                                            {
-                                              "property": [
-                                                {
-                                                  "name": "Message"
-                                                }
-                                              ],
-                                              "instance": true,
-                                              "object": [
-                                                {
-                                                  "name": [
-                                                    "ex"
-                                                  ]
-                                                }
-                                              ]
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  }
-                                },
-                                "op": {
-                                  "text": ">",
-                                  "compare": true,
-                                  "greater": true
-                                }
                               }
                             }
-                          },
-                          "finally": {
-                            "block": {
-                              "expression": [
-                                {
-                                  "call": {
-                                    "member": [
-                                      {
-                                        "property": [
-                                          {
-                                            "name": "Flush"
-                                          }
-                                        ],
-                                        "instance": true,
-                                        "object": [
-                                          {
-                                            "name": [
-                                              "scope"
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                }
-                              ]
-                            }
-                          }
+                          ]
                         }
                       ],
                       "do": [
@@ -1820,21 +1915,27 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "2"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "2"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "k"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "k"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "<",
-                                    "compare": true,
-                                    "less": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "<",
+                                      "compare": true,
+                                      "less": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -1845,11 +1946,15 @@
                                 "expression": [
                                   {
                                     "unary": {
-                                      "op": {
-                                        "text": "++",
-                                        "increment": true
-                                      },
-                                      "name": "k"
+                                      "op": [
+                                        {
+                                          "text": "++",
+                                          "increment": true
+                                        }
+                                      ],
+                                      "name": [
+                                        "k"
+                                      ]
                                     }
                                   }
                                 ]
@@ -1896,36 +2001,42 @@
                         {
                           "declarator": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "new": {
-                                    "arguments": [
-                                      {
-                                        "$type": "argument",
-                                        "int": "1"
-                                      },
-                                      {
-                                        "$type": "argument",
-                                        "string": "\"alpha\""
+                              "right": [
+                                {
+                                  "expression": {
+                                    "new": {
+                                      "arguments": [
+                                        {
+                                          "$type": "argument",
+                                          "int": "1"
+                                        },
+                                        {
+                                          "$type": "argument",
+                                          "string": "\"alpha\""
+                                        }
+                                      ],
+                                      "type": {
+                                        "name": [
+                                          "Widget"
+                                        ]
                                       }
-                                    ],
-                                    "type": {
-                                      "name": [
-                                        "Widget"
-                                      ]
                                     }
                                   }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "maybe"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "maybe"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "??",
+                                  "nullish": true
+                                }
+                              ]
                             },
                             "name": "widget"
                           },
@@ -1938,39 +2049,45 @@
                         {
                           "declarator": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "string": "\"n/a\""
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "call": {
-                                    "member": [
-                                      {
-                                        "name": [
-                                          "Shout"
-                                        ],
-                                        "instance": true,
-                                        "optional": true,
-                                        "condition": [
-                                          {
-                                            "expression": [
-                                              {
-                                                "name": "widget"
-                                              }
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
+                              "right": [
+                                {
+                                  "expression": {
+                                    "string": "\"n/a\""
                                   }
                                 }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
-                              }
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "call": {
+                                      "member": [
+                                        {
+                                          "name": [
+                                            "Shout"
+                                          ],
+                                          "instance": true,
+                                          "optional": true,
+                                          "condition": [
+                                            {
+                                              "expression": [
+                                                {
+                                                  "name": "widget"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              ],
+                              "op": [
+                                {
+                                  "text": "??",
+                                  "nullish": true
+                                }
+                              ]
                             },
                             "name": "shouted"
                           },
@@ -2093,35 +2210,41 @@
                                   },
                                   "when": {
                                     "binary": {
-                                      "right": {
-                                        "expression": {
-                                          "int": "100"
-                                        }
-                                      },
-                                      "left": {
-                                        "expression": {
-                                          "member": {
-                                            "property": [
-                                              {
-                                                "name": "Id"
-                                              }
-                                            ],
-                                            "instance": true,
-                                            "object": [
-                                              {
-                                                "name": [
-                                                  "w"
-                                                ]
-                                              }
-                                            ]
+                                      "right": [
+                                        {
+                                          "expression": {
+                                            "int": "100"
                                           }
                                         }
-                                      },
-                                      "op": {
-                                        "text": ">",
-                                        "compare": true,
-                                        "greater": true
-                                      }
+                                      ],
+                                      "left": [
+                                        {
+                                          "expression": {
+                                            "member": {
+                                              "property": [
+                                                {
+                                                  "name": "Id"
+                                                }
+                                              ],
+                                              "instance": true,
+                                              "object": [
+                                                {
+                                                  "name": [
+                                                    "w"
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "op": [
+                                        {
+                                          "text": ">",
+                                          "compare": true,
+                                          "greater": true
+                                        }
+                                      ]
                                     }
                                   }
                                 },
@@ -2162,20 +2285,26 @@
                               "select": {
                                 "binary": [
                                   {
-                                    "right": {
-                                      "expression": {
-                                        "name": "n"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "name": "n"
+                                        }
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "n"
+                                    ],
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "name": "n"
+                                        }
                                       }
-                                    },
-                                    "op": {
-                                      "text": "*",
-                                      "multiply": true
-                                    }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": "*",
+                                        "multiply": true
+                                      }
+                                    ]
                                   }
                                 ]
                               },
@@ -2187,35 +2316,47 @@
                               },
                               "where": {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "0"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "0"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "binary": {
-                                        "right": {
-                                          "expression": {
-                                            "int": "2"
-                                          }
-                                        },
-                                        "left": {
-                                          "expression": {
-                                            "name": "n"
-                                          }
-                                        },
-                                        "op": {
-                                          "text": "%",
-                                          "modulo": true
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "binary": {
+                                          "right": [
+                                            {
+                                              "expression": {
+                                                "int": "2"
+                                              }
+                                            }
+                                          ],
+                                          "left": [
+                                            {
+                                              "expression": {
+                                                "name": "n"
+                                              }
+                                            }
+                                          ],
+                                          "op": [
+                                            {
+                                              "text": "%",
+                                              "modulo": true
+                                            }
+                                          ]
                                         }
                                       }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
+                                  ]
                                 }
                               },
                               "order": {
@@ -2252,20 +2393,26 @@
                                                 "value": {
                                                   "expression": {
                                                     "binary": {
-                                                      "right": {
-                                                        "expression": {
-                                                          "int": "1"
+                                                      "right": [
+                                                        {
+                                                          "expression": {
+                                                            "int": "1"
+                                                          }
                                                         }
-                                                      },
-                                                      "left": {
-                                                        "expression": {
-                                                          "name": "n"
+                                                      ],
+                                                      "left": [
+                                                        {
+                                                          "expression": {
+                                                            "name": "n"
+                                                          }
                                                         }
-                                                      },
-                                                      "op": {
-                                                        "text": "+",
-                                                        "plus": true
-                                                      }
+                                                      ],
+                                                      "op": [
+                                                        {
+                                                          "text": "+",
+                                                          "plus": true
+                                                        }
+                                                      ]
                                                     }
                                                   }
                                                 },
@@ -2292,35 +2439,47 @@
                                                             "value": {
                                                               "expression": {
                                                                 "binary": {
-                                                                  "right": {
-                                                                    "expression": {
-                                                                      "int": "0"
+                                                                  "right": [
+                                                                    {
+                                                                      "expression": {
+                                                                        "int": "0"
+                                                                      }
                                                                     }
-                                                                  },
-                                                                  "left": {
-                                                                    "expression": {
-                                                                      "binary": {
-                                                                        "right": {
-                                                                          "expression": {
-                                                                            "int": "2"
-                                                                          }
-                                                                        },
-                                                                        "left": {
-                                                                          "expression": {
-                                                                            "name": "n"
-                                                                          }
-                                                                        },
-                                                                        "op": {
-                                                                          "text": "%",
-                                                                          "modulo": true
+                                                                  ],
+                                                                  "left": [
+                                                                    {
+                                                                      "expression": {
+                                                                        "binary": {
+                                                                          "right": [
+                                                                            {
+                                                                              "expression": {
+                                                                                "int": "2"
+                                                                              }
+                                                                            }
+                                                                          ],
+                                                                          "left": [
+                                                                            {
+                                                                              "expression": {
+                                                                                "name": "n"
+                                                                              }
+                                                                            }
+                                                                          ],
+                                                                          "op": [
+                                                                            {
+                                                                              "text": "%",
+                                                                              "modulo": true
+                                                                            }
+                                                                          ]
                                                                         }
                                                                       }
                                                                     }
-                                                                  },
-                                                                  "op": {
-                                                                    "text": "!=",
-                                                                    "inequality": true
-                                                                  }
+                                                                  ],
+                                                                  "op": [
+                                                                    {
+                                                                      "text": "!=",
+                                                                      "inequality": true
+                                                                    }
+                                                                  ]
                                                                 }
                                                               }
                                                             },
@@ -2372,35 +2531,47 @@
                               "value": {
                                 "expression": {
                                   "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "x"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "name": "x"
+                                        }
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "binary": {
-                                          "right": {
-                                            "expression": {
-                                              "name": "x"
-                                            }
-                                          },
-                                          "left": {
-                                            "expression": {
-                                              "name": "x"
-                                            }
-                                          },
-                                          "op": {
-                                            "text": "*",
-                                            "multiply": true
+                                    ],
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "binary": {
+                                            "right": [
+                                              {
+                                                "expression": {
+                                                  "name": "x"
+                                                }
+                                              }
+                                            ],
+                                            "left": [
+                                              {
+                                                "expression": {
+                                                  "name": "x"
+                                                }
+                                              }
+                                            ],
+                                            "op": [
+                                              {
+                                                "text": "*",
+                                                "multiply": true
+                                              }
+                                            ]
                                           }
                                         }
                                       }
-                                    },
-                                    "op": {
-                                      "text": "*",
-                                      "multiply": true
-                                    }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": "*",
+                                        "multiply": true
+                                      }
+                                    ]
                                   }
                                 }
                               },
@@ -2439,20 +2610,26 @@
                                       {
                                         "expression": {
                                           "binary": {
-                                            "right": {
-                                              "expression": {
-                                                "int": "1"
+                                            "right": [
+                                              {
+                                                "expression": {
+                                                  "int": "1"
+                                                }
                                               }
-                                            },
-                                            "left": {
-                                              "expression": {
-                                                "name": "x"
+                                            ],
+                                            "left": [
+                                              {
+                                                "expression": {
+                                                  "name": "x"
+                                                }
                                               }
-                                            },
-                                            "op": {
-                                              "text": "+",
-                                              "plus": true
-                                            }
+                                            ],
+                                            "op": [
+                                              {
+                                                "text": "+",
+                                                "plus": true
+                                              }
+                                            ]
                                           }
                                         }
                                       }
@@ -3080,46 +3257,56 @@
                 "body": {
                   "binary": [
                     {
-                      "right": {
-                        "expression": {
-                          "binary": {
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "p"
-                              }
+                      "right": [
+                        {
+                          "expression": {
+                            "binary": {
+                              "op": [
+                                {
+                                  "text": "==",
+                                  "equals": true
+                                }
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "p"
+                                  }
+                                }
+                              ]
                             }
                           }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "is": {
-                            "pattern": {
-                              "name": [
-                                "p"
-                              ],
-                              "declaration": true,
-                              "type": [
-                                {
-                                  "name": [
-                                    "Point"
-                                  ]
-                                }
-                              ]
-                            },
-                            "name": "o"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "is": {
+                              "pattern": {
+                                "name": [
+                                  "p"
+                                ],
+                                "declaration": true,
+                                "type": [
+                                  {
+                                    "name": [
+                                      "Point"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "name": "o"
+                            }
                           }
                         }
-                      },
-                      "op": {
-                        "text": "&&",
-                        "logical": true,
-                        "and": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "&&",
+                          "logical": true,
+                          "and": true
+                        }
+                      ]
                     }
                   ]
                 },
@@ -3239,95 +3426,107 @@
                         {
                           "$type": "argument",
                           "binary": {
-                            "right": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "X"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "b"
-                                      ]
-                                    }
-                                  ]
+                            "right": [
+                              {
+                                "expression": {
+                                  "member": {
+                                    "property": [
+                                      {
+                                        "name": "X"
+                                      }
+                                    ],
+                                    "instance": true,
+                                    "object": [
+                                      {
+                                        "name": [
+                                          "b"
+                                        ]
+                                      }
+                                    ]
+                                  }
                                 }
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "X"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "a"
-                                      ]
-                                    }
-                                  ]
+                            ],
+                            "left": [
+                              {
+                                "expression": {
+                                  "member": {
+                                    "property": [
+                                      {
+                                        "name": "X"
+                                      }
+                                    ],
+                                    "instance": true,
+                                    "object": [
+                                      {
+                                        "name": [
+                                          "a"
+                                        ]
+                                      }
+                                    ]
+                                  }
                                 }
                               }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            }
+                            ],
+                            "op": [
+                              {
+                                "text": "+",
+                                "plus": true
+                              }
+                            ]
                           }
                         },
                         {
                           "$type": "argument",
                           "binary": {
-                            "right": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "Y"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "b"
-                                      ]
-                                    }
-                                  ]
+                            "right": [
+                              {
+                                "expression": {
+                                  "member": {
+                                    "property": [
+                                      {
+                                        "name": "Y"
+                                      }
+                                    ],
+                                    "instance": true,
+                                    "object": [
+                                      {
+                                        "name": [
+                                          "b"
+                                        ]
+                                      }
+                                    ]
+                                  }
                                 }
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "Y"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "a"
-                                      ]
-                                    }
-                                  ]
+                            ],
+                            "left": [
+                              {
+                                "expression": {
+                                  "member": {
+                                    "property": [
+                                      {
+                                        "name": "Y"
+                                      }
+                                    ],
+                                    "instance": true,
+                                    "object": [
+                                      {
+                                        "name": [
+                                          "a"
+                                        ]
+                                      }
+                                    ]
+                                  }
                                 }
                               }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            }
+                            ],
+                            "op": [
+                              {
+                                "text": "+",
+                                "plus": true
+                              }
+                            ]
                           }
                         }
                       ]
@@ -3366,107 +3565,125 @@
                 "body": {
                   "binary": [
                     {
-                      "right": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "Y"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "b"
+                      "right": [
+                        {
+                          "expression": {
+                            "binary": {
+                              "right": [
+                                {
+                                  "expression": {
+                                    "member": {
+                                      "property": [
+                                        {
+                                          "name": "Y"
+                                        }
+                                      ],
+                                      "instance": true,
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "b"
+                                          ]
+                                        }
                                       ]
                                     }
-                                  ]
+                                  }
                                 }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "Y"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "a"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "member": {
+                                      "property": [
+                                        {
+                                          "name": "Y"
+                                        }
+                                      ],
+                                      "instance": true,
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "a"
+                                          ]
+                                        }
                                       ]
                                     }
-                                  ]
+                                  }
                                 }
-                              }
-                            },
-                            "op": {
-                              "text": "==",
-                              "equals": true
+                              ],
+                              "op": [
+                                {
+                                  "text": "==",
+                                  "equals": true
+                                }
+                              ]
                             }
                           }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "X"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "b"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "binary": {
+                              "right": [
+                                {
+                                  "expression": {
+                                    "member": {
+                                      "property": [
+                                        {
+                                          "name": "X"
+                                        }
+                                      ],
+                                      "instance": true,
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "b"
+                                          ]
+                                        }
                                       ]
                                     }
-                                  ]
+                                  }
                                 }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "member": {
-                                  "property": [
-                                    {
-                                      "name": "X"
-                                    }
-                                  ],
-                                  "instance": true,
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "a"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "member": {
+                                      "property": [
+                                        {
+                                          "name": "X"
+                                        }
+                                      ],
+                                      "instance": true,
+                                      "object": [
+                                        {
+                                          "name": [
+                                            "a"
+                                          ]
+                                        }
                                       ]
                                     }
-                                  ]
+                                  }
                                 }
-                              }
-                            },
-                            "op": {
-                              "text": "==",
-                              "equals": true
+                              ],
+                              "op": [
+                                {
+                                  "text": "==",
+                                  "equals": true
+                                }
+                              ]
                             }
                           }
                         }
-                      },
-                      "op": {
-                        "text": "&&",
-                        "logical": true,
-                        "and": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "&&",
+                          "logical": true,
+                          "and": true
+                        }
+                      ]
                     }
                   ]
                 },
@@ -3502,27 +3719,37 @@
                 "body": {
                   "unary": [
                     {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
-                          }
-                        },
-                        "op": {
-                          "text": "==",
-                          "equals": true
+                      "binary": [
+                        {
+                          "right": [
+                            {
+                              "expression": {
+                                "name": "b"
+                              }
+                            }
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "a"
+                              }
+                            }
+                          ],
+                          "op": [
+                            {
+                              "text": "==",
+                              "equals": true
+                            }
+                          ]
                         }
-                      },
-                      "op": {
-                        "text": "!",
-                        "logical": true,
-                        "not": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "!",
+                          "logical": true,
+                          "not": true
+                        }
+                      ]
                     }
                   ]
                 },
@@ -3811,15 +4038,19 @@
                         {
                           "declarator": {
                             "with": {
-                              "literal": {
-                                "string": [
-                                  "\"EUR\""
-                                ],
-                                "name": [
-                                  "Currency"
-                                ]
-                              },
-                              "name": "m"
+                              "literal": [
+                                {
+                                  "string": [
+                                    "\"EUR\""
+                                  ],
+                                  "name": [
+                                    "Currency"
+                                  ]
+                                }
+                              ],
+                              "name": [
+                                "m"
+                              ]
                             },
                             "name": "m2"
                           },
@@ -3973,44 +4204,50 @@
                         {
                           "declarator": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "throw": {
-                                    "new": {
-                                      "arguments": [
-                                        {
-                                          "$type": "argument",
-                                          "call": {
-                                            "arguments": [
-                                              {
-                                                "$type": "argument",
-                                                "name": "s"
-                                              }
-                                            ],
-                                            "name": [
-                                              "nameof"
-                                            ]
+                              "right": [
+                                {
+                                  "expression": {
+                                    "throw": {
+                                      "new": {
+                                        "arguments": [
+                                          {
+                                            "$type": "argument",
+                                            "call": {
+                                              "arguments": [
+                                                {
+                                                  "$type": "argument",
+                                                  "name": "s"
+                                                }
+                                              ],
+                                              "name": [
+                                                "nameof"
+                                              ]
+                                            }
                                           }
+                                        ],
+                                        "type": {
+                                          "name": [
+                                            "ArgumentNullException"
+                                          ]
                                         }
-                                      ],
-                                      "type": {
-                                        "name": [
-                                          "ArgumentNullException"
-                                        ]
                                       }
                                     }
                                   }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "s"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "s"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "??",
+                                  "nullish": true
+                                }
+                              ]
                             },
                             "name": "s2"
                           },
@@ -4035,20 +4272,26 @@
                                   "right": {
                                     "expression": {
                                       "binary": {
-                                        "right": {
-                                          "expression": {
-                                            "int": "1"
+                                        "right": [
+                                          {
+                                            "expression": {
+                                              "int": "1"
+                                            }
                                           }
-                                        },
-                                        "left": {
-                                          "expression": {
-                                            "name": "n"
+                                        ],
+                                        "left": [
+                                          {
+                                            "expression": {
+                                              "name": "n"
+                                            }
                                           }
-                                        },
-                                        "op": {
-                                          "text": "+",
-                                          "plus": true
-                                        }
+                                        ],
+                                        "op": [
+                                          {
+                                            "text": "+",
+                                            "plus": true
+                                          }
+                                        ]
                                       }
                                     }
                                   },
@@ -4136,11 +4379,15 @@
                             "expression": [
                               {
                                 "unary": {
-                                  "op": {
-                                    "text": "++",
-                                    "increment": true
-                                  },
-                                  "name": "n"
+                                  "op": [
+                                    {
+                                      "text": "++",
+                                      "increment": true
+                                    }
+                                  ],
+                                  "name": [
+                                    "n"
+                                  ]
                                 }
                               }
                             ]

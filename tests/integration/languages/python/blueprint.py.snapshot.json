@@ -236,21 +236,27 @@
         "type": {
           "binary": [
             {
-              "right": {
-                "expression": {
-                  "name": "str"
+              "right": [
+                {
+                  "expression": {
+                    "name": "str"
+                  }
                 }
-              },
-              "left": {
-                "expression": {
-                  "name": "int"
+              ],
+              "left": [
+                {
+                  "expression": {
+                    "name": "int"
+                  }
                 }
-              },
-              "op": {
-                "text": "|",
-                "bitwise": true,
-                "or": true
-              }
+              ],
+              "op": [
+                {
+                  "text": "|",
+                  "bitwise": true,
+                  "or": true
+                }
+              ]
             }
           ]
         }
@@ -505,7 +511,9 @@
         ]
       },
       "decorator": {
-        "name": "dataclass"
+        "name": [
+          "dataclass"
+        ]
       },
       "name": "Point"
     },
@@ -587,65 +595,71 @@
                 {
                   "expression": {
                     "logical": {
-                      "right": {
-                        "expression": {
-                          "compare": {
-                            "children": [
-                              {
-                                "$type": "member",
-                                "object": [
-                                  {
-                                    "name": [
-                                      "other"
-                                    ]
-                                  }
-                                ],
+                      "right": [
+                        {
+                          "expression": {
+                            "compare": {
+                              "children": [
+                                {
+                                  "$type": "member",
+                                  "object": [
+                                    {
+                                      "name": [
+                                        "other"
+                                      ]
+                                    }
+                                  ],
+                                  "property": [
+                                    {
+                                      "name": "name"
+                                    }
+                                  ]
+                                }
+                              ],
+                              "op": {
+                                "text": "==",
+                                "equals": true
+                              },
+                              "member": {
                                 "property": [
                                   {
                                     "name": "name"
                                   }
+                                ],
+                                "object": [
+                                  {
+                                    "name": [
+                                      "self"
+                                    ]
+                                  }
                                 ]
                               }
-                            ],
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            },
-                            "member": {
-                              "property": [
-                                {
-                                  "name": "name"
-                                }
+                            }
+                          }
+                        }
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "call": {
+                              "arguments": [
+                                "other",
+                                "Derived"
                               ],
-                              "object": [
-                                {
-                                  "name": [
-                                    "self"
-                                  ]
-                                }
+                              "name": [
+                                "isinstance"
                               ]
                             }
                           }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "call": {
-                            "arguments": [
-                              "other",
-                              "Derived"
-                            ],
-                            "name": [
-                              "isinstance"
-                            ]
-                          }
+                      ],
+                      "op": [
+                        {
+                          "text": "and",
+                          "logical": true,
+                          "and": true
                         }
-                      },
-                      "op": {
-                        "text": "and",
-                        "logical": true,
-                        "and": true
-                      }
+                      ]
                     }
                   }
                 }
@@ -719,35 +733,47 @@
           {
             "expression": {
               "binary": {
-                "right": {
-                  "expression": {
-                    "name": "kw_only"
+                "right": [
+                  {
+                    "expression": {
+                      "name": "kw_only"
+                    }
                   }
-                },
-                "left": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "b"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "a"
-                        }
-                      },
-                      "op": {
-                        "text": "+",
-                        "plus": true
+                ],
+                "left": [
+                  {
+                    "expression": {
+                      "binary": {
+                        "right": [
+                          {
+                            "expression": {
+                              "name": "b"
+                            }
+                          }
+                        ],
+                        "left": [
+                          {
+                            "expression": {
+                              "name": "a"
+                            }
+                          }
+                        ],
+                        "op": [
+                          {
+                            "text": "+",
+                            "plus": true
+                          }
+                        ]
                       }
                     }
                   }
-                },
-                "op": {
-                  "text": "+",
-                  "plus": true
-                }
+                ],
+                "op": [
+                  {
+                    "text": "+",
+                    "plus": true
+                  }
+                ]
               }
             }
           }
@@ -1120,85 +1146,93 @@
       "body": {
         "with": [
           {
-            "body": {
-              "return": [
-                {
-                  "expression": {
-                    "name": "data"
-                  }
-                }
-              ],
-              "for": [
-                {
-                  "body": {
-                    "yield": [
-                      {
-                        "name": "chunk"
-                      }
-                    ]
-                  },
-                  "async": true,
-                  "left": {
-                    "expression": {
-                      "name": "chunk"
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "name": "conn"
-                    }
-                  }
-                }
-              ],
-              "assign": [
-                {
-                  "right": {
-                    "expression": {
-                      "call": {
-                        "member": [
-                          {
-                            "property": [
-                              {
-                                "name": "read"
-                              }
-                            ],
-                            "object": [
-                              {
-                                "name": [
-                                  "conn"
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      "await": true
-                    }
-                  },
-                  "left": {
+            "body": [
+              {
+                "return": [
+                  {
                     "expression": {
                       "name": "data"
                     }
                   }
-                }
-              ]
-            },
+                ],
+                "for": [
+                  {
+                    "body": {
+                      "yield": [
+                        {
+                          "name": "chunk"
+                        }
+                      ]
+                    },
+                    "async": true,
+                    "left": {
+                      "expression": {
+                        "name": "chunk"
+                      }
+                    },
+                    "right": {
+                      "expression": {
+                        "name": "conn"
+                      }
+                    }
+                  }
+                ],
+                "assign": [
+                  {
+                    "right": {
+                      "expression": {
+                        "call": {
+                          "member": [
+                            {
+                              "property": [
+                                {
+                                  "name": "read"
+                                }
+                              ],
+                              "object": [
+                                {
+                                  "name": [
+                                    "conn"
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "await": true
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "data"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
             "async": true,
-            "value": {
-              "expression": {
-                "as": {
-                  "name": "conn",
-                  "call": {
-                    "arguments": [
-                      "url"
-                    ],
+            "value": [
+              {
+                "expression": {
+                  "as": {
                     "name": [
-                      "open_conn"
+                      "conn"
+                    ],
+                    "call": [
+                      {
+                        "arguments": [
+                          "url"
+                        ],
+                        "name": [
+                          "open_conn"
+                        ]
+                      }
                     ]
                   }
                 }
               }
-            }
+            ]
           }
         ]
       },
@@ -1234,20 +1268,26 @@
                 "n",
                 {
                   "$type": "binary",
-                  "left": {
-                    "expression": {
-                      "name": "n"
+                  "left": [
+                    {
+                      "expression": {
+                        "name": "n"
+                      }
                     }
-                  },
-                  "op": {
-                    "text": "*",
-                    "multiply": true
-                  },
-                  "right": {
-                    "expression": {
-                      "int": "2"
+                  ],
+                  "op": [
+                    {
+                      "text": "*",
+                      "multiply": true
                     }
-                  }
+                  ],
+                  "right": [
+                    {
+                      "expression": {
+                        "int": "2"
+                      }
+                    }
+                  ]
                 }
               ],
               "name": [
@@ -1398,18 +1438,22 @@
       "children": [
         {
           "$type": "decorator",
-          "call": {
-            "arguments": [
-              "3"
-            ],
-            "name": [
-              "repeat"
-            ]
-          }
+          "call": [
+            {
+              "arguments": [
+                "3"
+              ],
+              "name": [
+                "repeat"
+              ]
+            }
+          ]
         }
       ],
       "decorator": {
-        "name": "staticmethod"
+        "name": [
+          "staticmethod"
+        ]
       },
       "name": "stacked",
       "body": {
@@ -1615,167 +1659,185 @@
         ],
         "try": [
           {
-            "children": [
+            "finally": [
               {
-                "$type": "except",
-                "pass": true,
-                "value": {
-                  "expression": {
-                    "name": "Exception"
+                "expression": {
+                  "call": {
+                    "name": [
+                      "cleanup"
+                    ]
                   }
                 }
               }
             ],
-            "body": {
-              "expression": [
-                {
-                  "call": {
-                    "name": [
-                      "risky"
-                    ]
-                  }
-                }
-              ]
-            },
-            "except": {
-              "raise": {
-                "name": "e",
-                "call": {
-                  "arguments": [
-                    "\"bad\""
-                  ],
-                  "name": [
-                    "RuntimeError"
-                  ]
-                }
-              },
-              "value": {
-                "expression": {
-                  "as": {
-                    "name": "e",
-                    "tuple": {
-                      "name": [
-                        "ValueError",
-                        "TypeError"
-                      ]
-                    }
-                  }
-                }
-              }
-            },
-            "else": {
-              "body": {
-                "assign": [
+            "body": [
+              {
+                "expression": [
                   {
-                    "right": {
-                      "expression": {
-                        "int": "1"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
-                      }
-                    },
-                    "op": {
-                      "text": "+=",
-                      "assign": true,
-                      "plus": true
+                    "call": {
+                      "name": [
+                        "risky"
+                      ]
                     }
                   }
                 ]
               }
-            },
-            "finally": {
-              "expression": {
-                "call": {
-                  "name": [
-                    "cleanup"
-                  ]
-                }
-              }
-            }
-          }
-        ],
-        "with": [
-          {
-            "children": [
+            ],
+            "except": [
               {
-                "$type": "value",
-                "expression": {
-                  "as": {
-                    "name": "fb",
-                    "call": {
-                      "arguments": [
-                        "\"b\""
-                      ],
+                "raise": {
+                  "name": "e",
+                  "call": {
+                    "arguments": [
+                      "\"bad\""
+                    ],
+                    "name": [
+                      "RuntimeError"
+                    ]
+                  }
+                },
+                "value": {
+                  "expression": {
+                    "as": {
                       "name": [
-                        "open"
+                        "e"
+                      ],
+                      "tuple": [
+                        {
+                          "name": [
+                            "ValueError",
+                            "TypeError"
+                          ]
+                        }
                       ]
                     }
                   }
                 }
-              }
-            ],
-            "value": {
-              "expression": {
-                "as": {
-                  "name": "fa",
-                  "call": {
-                    "arguments": [
-                      "\"a\""
-                    ],
-                    "name": [
-                      "open"
-                    ]
-                  }
-                }
-              }
-            },
-            "body": {
-              "expression": [
-                {
-                  "call": {
-                    "member": [
-                      {
-                        "property": [
-                          {
-                            "name": "read"
-                          }
-                        ],
-                        "object": [
-                          {
-                            "name": [
-                              "fa"
-                            ]
-                          }
-                        ]
-                      }
-                    ]
+              },
+              {
+                "value": {
+                  "expression": {
+                    "name": "Exception"
                   }
                 },
-                {
-                  "call": {
-                    "member": [
+                "pass": true
+              }
+            ],
+            "else": [
+              {
+                "body": {
+                  "assign": [
+                    {
+                      "right": {
+                        "expression": {
+                          "int": "1"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "total"
+                        }
+                      },
+                      "op": {
+                        "text": "+=",
+                        "assign": true,
+                        "plus": true
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "with": [
+          {
+            "body": [
+              {
+                "expression": [
+                  {
+                    "call": {
+                      "member": [
+                        {
+                          "property": [
+                            {
+                              "name": "read"
+                            }
+                          ],
+                          "object": [
+                            {
+                              "name": [
+                                "fa"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "call": {
+                      "member": [
+                        {
+                          "property": [
+                            {
+                              "name": "read"
+                            }
+                          ],
+                          "object": [
+                            {
+                              "name": [
+                                "fb"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "value": [
+              {
+                "expression": {
+                  "as": {
+                    "name": [
+                      "fa"
+                    ],
+                    "call": [
                       {
-                        "property": [
-                          {
-                            "name": "read"
-                          }
+                        "arguments": [
+                          "\"a\""
                         ],
-                        "object": [
-                          {
-                            "name": [
-                              "fb"
-                            ]
-                          }
+                        "name": [
+                          "open"
                         ]
                       }
                     ]
                   }
                 }
-              ]
-            }
+              },
+              {
+                "expression": {
+                  "as": {
+                    "name": [
+                      "fb"
+                    ],
+                    "call": [
+                      {
+                        "arguments": [
+                          "\"b\""
+                        ],
+                        "name": [
+                          "open"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
           }
         ]
       },
@@ -2028,20 +2090,26 @@
                     {
                       "binary": [
                         {
-                          "right": {
-                            "expression": {
-                              "name": "x"
+                          "right": [
+                            {
+                              "expression": {
+                                "name": "x"
+                              }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "x"
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "x"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "*",
+                              "multiply": true
+                            }
+                          ]
                         }
                       ]
                     }
@@ -2493,20 +2561,26 @@
                           "value": {
                             "expression": {
                               "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "2"
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "int": "2"
+                                    }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "v"
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "name": "v"
+                                    }
                                   }
-                                },
-                                "op": {
-                                  "text": "*",
-                                  "multiply": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": "*",
+                                    "multiply": true
+                                  }
+                                ]
                               }
                             }
                           }
@@ -2753,42 +2827,14 @@
         ],
         "try": [
           {
-            "except": {
-              "assign": {
-                "right": {
-                  "expression": {
-                    "list": {
-                      "text": "[]",
-                      "literal": true
-                    }
-                  }
-                },
-                "left": {
-                  "expression": {
-                    "name": "result"
-                  }
-                }
-              },
-              "group": true,
-              "tuple": {
-                "name": [
-                  "ValueError",
-                  "TypeError"
-                ]
-              }
-            },
-            "body": {
-              "assign": [
-                {
+            "except": [
+              {
+                "assign": {
                   "right": {
                     "expression": {
-                      "call": {
-                        "arguments": [
-                          "items"
-                        ],
-                        "name": [
-                          "list"
-                        ]
+                      "list": {
+                        "text": "[]",
+                        "literal": true
                       }
                     }
                   },
@@ -2797,9 +2843,41 @@
                       "name": "result"
                     }
                   }
+                },
+                "group": true,
+                "tuple": {
+                  "name": [
+                    "ValueError",
+                    "TypeError"
+                  ]
                 }
-              ]
-            }
+              }
+            ],
+            "body": [
+              {
+                "assign": [
+                  {
+                    "right": {
+                      "expression": {
+                        "call": {
+                          "arguments": [
+                            "items"
+                          ],
+                          "name": [
+                            "list"
+                          ]
+                        }
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "result"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ],
         "match": [
@@ -2813,20 +2891,26 @@
                         "right": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "b"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "b"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "a"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "a"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -2865,11 +2949,15 @@
                         "right": {
                           "expression": {
                             "unary": {
-                              "int": "1",
-                              "op": {
-                                "text": "-",
-                                "minus": true
-                              }
+                              "int": [
+                                "1"
+                              ],
+                              "op": [
+                                {
+                                  "text": "-",
+                                  "minus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -2934,12 +3022,16 @@
             "right": {
               "expression": {
                 "unary": {
-                  "name": "matched",
-                  "op": {
-                    "text": "not",
-                    "logical": true,
-                    "not": true
-                  }
+                  "name": [
+                    "matched"
+                  ],
+                  "op": [
+                    {
+                      "text": "not",
+                      "logical": true,
+                      "not": true
+                    }
+                  ]
                 }
               }
             },

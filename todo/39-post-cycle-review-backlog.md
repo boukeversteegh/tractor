@@ -525,6 +525,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 212: extend distribute — try/with/decorator/as/logical/binary/unary.
+  Closed 2 sites: csharp 2→1, python 10→8. Total 39 → 37 (-87%
+  from baseline). Diminishing returns suggest the bulk-distribute
+  approach is plateauing.
 - [x] iter 211: extend TSQL distribute config — `select`/`insert`/
   `from`/`call`/`case`/`constraint`. TSQL has its own
   `tsql_post_transform` distribute call (separate config), so

@@ -132,53 +132,71 @@
                           "expression": [
                             {
                               "binary": {
-                                "right": {
-                                  "expression": {
-                                    "binary": {
-                                      "right": {
-                                        "expression": {
-                                          "int": "0"
-                                        }
-                                      },
-                                      "left": {
-                                        "expression": {
-                                          "name": "y"
-                                        }
-                                      },
-                                      "op": {
-                                        "text": "<",
-                                        "compare": true,
-                                        "less": true
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "binary": {
+                                        "right": [
+                                          {
+                                            "expression": {
+                                              "int": "0"
+                                            }
+                                          }
+                                        ],
+                                        "left": [
+                                          {
+                                            "expression": {
+                                              "name": "y"
+                                            }
+                                          }
+                                        ],
+                                        "op": [
+                                          {
+                                            "text": "<",
+                                            "compare": true,
+                                            "less": true
+                                          }
+                                        ]
                                       }
                                     }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "binary": {
-                                      "right": {
-                                        "expression": {
-                                          "int": "0"
-                                        }
-                                      },
-                                      "left": {
-                                        "expression": {
-                                          "name": "x"
-                                        }
-                                      },
-                                      "op": {
-                                        "text": "<",
-                                        "compare": true,
-                                        "less": true
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "binary": {
+                                        "right": [
+                                          {
+                                            "expression": {
+                                              "int": "0"
+                                            }
+                                          }
+                                        ],
+                                        "left": [
+                                          {
+                                            "expression": {
+                                              "name": "x"
+                                            }
+                                          }
+                                        ],
+                                        "op": [
+                                          {
+                                            "text": "<",
+                                            "compare": true,
+                                            "less": true
+                                          }
+                                        ]
                                       }
                                     }
                                   }
-                                },
-                                "op": {
-                                  "text": "||",
-                                  "logical": true,
-                                  "or": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": "||",
+                                    "logical": true,
+                                    "or": true
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -470,20 +488,26 @@
                     "expression": [
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "null": "null"
+                          "right": [
+                            {
+                              "expression": {
+                                "null": "null"
+                              }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "input"
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "input"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": "==",
-                            "equals": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "==",
+                              "equals": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -518,12 +542,16 @@
                       "expression": [
                         {
                           "unary": {
-                            "name": "ready",
-                            "op": {
-                              "text": "!",
-                              "logical": true,
-                              "not": true
-                            }
+                            "name": [
+                              "ready"
+                            ],
+                            "op": [
+                              {
+                                "text": "!",
+                                "logical": true,
+                                "not": true
+                              }
+                            ]
                           }
                         }
                       ]
@@ -583,21 +611,27 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "0"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "0"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "n"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "n"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "<",
-                                    "compare": true,
-                                    "less": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "<",
+                                      "compare": true,
+                                      "less": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -613,21 +647,27 @@
                         "expression": [
                           {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "int": "0"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "int": "0"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "n"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "n"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": ">",
-                                "compare": true,
-                                "greater": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": ">",
+                                  "compare": true,
+                                  "greater": true
+                                }
+                              ]
                             }
                           }
                         ]
@@ -753,20 +793,26 @@
                           "right": {
                             "expression": {
                               "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "1"
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "int": "1"
+                                    }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "i"
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "name": "i"
+                                    }
                                   }
-                                },
-                                "op": {
-                                  "text": "+",
-                                  "plus": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": "+",
+                                    "plus": true
+                                  }
+                                ]
                               }
                             }
                           },
@@ -784,21 +830,27 @@
                     "expression": [
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "3"
+                          "right": [
+                            {
+                              "expression": {
+                                "int": "3"
+                              }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "i"
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "i"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": "<",
-                            "compare": true,
-                            "less": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "<",
+                              "compare": true,
+                              "less": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -844,20 +896,26 @@
                             {
                               "expression": {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "i"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "name": "i"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "string": "\"int \""
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "string": "\"int \""
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "+",
+                                      "plus": true
+                                    }
+                                  ]
                                 }
                               },
                               "label": {
@@ -883,42 +941,52 @@
                             {
                               "expression": {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "s"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "name": "s"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "string": "\"non-empty: \""
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "string": "\"non-empty: \""
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "+",
+                                      "plus": true
+                                    }
+                                  ]
                                 }
                               },
                               "label": {
                                 "guard": {
                                   "unary": {
-                                    "call": {
-                                      "name": [
-                                        "isEmpty"
-                                      ],
-                                      "object": [
-                                        {
-                                          "name": [
-                                            "s"
-                                          ]
-                                        }
-                                      ]
-                                    },
-                                    "op": {
-                                      "text": "!",
-                                      "logical": true,
-                                      "not": true
-                                    }
+                                    "call": [
+                                      {
+                                        "name": [
+                                          "isEmpty"
+                                        ],
+                                        "object": [
+                                          {
+                                            "name": [
+                                              "s"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": "!",
+                                        "logical": true,
+                                        "not": true
+                                      }
+                                    ]
                                   }
                                 },
                                 "pattern": {
@@ -1373,21 +1441,27 @@
                     "expression": [
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "3"
+                          "right": [
+                            {
+                              "expression": {
+                                "int": "3"
+                              }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "k"
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "k"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": "<",
-                            "compare": true,
-                            "less": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "<",
+                              "compare": true,
+                              "less": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -1396,11 +1470,15 @@
                     "expression": [
                       {
                         "unary": {
-                          "op": {
-                            "text": "++",
-                            "increment": true
-                          },
-                          "name": "k"
+                          "op": [
+                            {
+                              "text": "++",
+                              "increment": true
+                            }
+                          ],
+                          "name": [
+                            "k"
+                          ]
                         }
                       }
                     ]
@@ -1411,22 +1489,28 @@
                 {
                   "string": "\"non-negative\"",
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "int": "0"
+                    "right": [
+                      {
+                        "expression": {
+                          "int": "0"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "n"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "n"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": ">=",
-                      "compare": true,
-                      "greater": true,
-                      "equal": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": ">=",
+                        "compare": true,
+                        "greater": true,
+                        "equal": true
+                      }
+                    ]
                   }
                 }
               ],
@@ -1447,20 +1531,26 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "1"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "1"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "i"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "i"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -1478,20 +1568,26 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "3"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "int": "3"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "i"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "i"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -1518,31 +1614,41 @@
                       "expression": [
                         {
                           "binary": {
-                            "right": {
-                              "expression": {
-                                "int": "5"
+                            "right": [
+                              {
+                                "expression": {
+                                  "int": "5"
+                                }
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "i"
+                            ],
+                            "left": [
+                              {
+                                "expression": {
+                                  "name": "i"
+                                }
                               }
-                            },
-                            "op": {
-                              "text": "<",
-                              "compare": true,
-                              "less": true
-                            }
+                            ],
+                            "op": [
+                              {
+                                "text": "<",
+                                "compare": true,
+                                "less": true
+                              }
+                            ]
                           }
                         }
                       ]
                     },
                     "unary": {
-                      "op": {
-                        "text": "++",
-                        "increment": true
-                      },
-                      "name": "i"
+                      "op": [
+                        {
+                          "text": "++",
+                          "increment": true
+                        }
+                      ],
+                      "name": [
+                        "i"
+                      ]
                     }
                   },
                   "name": "outer"
@@ -1660,89 +1766,101 @@
               ],
               "try": [
                 {
-                  "catch": {
-                    "body": {
-                      "throw": [
-                        {
-                          "name": "e"
+                  "catch": [
+                    {
+                      "body": {
+                        "throw": [
+                          {
+                            "name": "e"
+                          }
+                        ]
+                      },
+                      "parameter": {
+                        "name": "e",
+                        "path": {
+                          "name": [
+                            "java",
+                            "io",
+                            "IOException"
+                          ]
+                        },
+                        "type": {
+                          "name": [
+                            "RuntimeException"
+                          ]
                         }
-                      ]
-                    },
-                    "parameter": {
-                      "name": "e",
+                      }
+                    }
+                  ],
+                  "resource": true,
+                  "variable": [
+                    {
+                      "value": {
+                        "expression": {
+                          "null": "null"
+                        }
+                      },
                       "path": {
                         "name": [
                           "java",
                           "io",
-                          "IOException"
+                          "InputStream"
                         ]
                       },
-                      "type": {
-                        "name": [
-                          "RuntimeException"
-                        ]
-                      }
+                      "name": "s"
                     }
-                  },
-                  "resource": true,
-                  "variable": {
-                    "value": {
-                      "expression": {
-                        "null": "null"
-                      }
-                    },
-                    "path": {
-                      "name": [
-                        "java",
-                        "io",
-                        "InputStream"
-                      ]
-                    },
-                    "name": "s"
-                  },
-                  "body": {
-                    "if": [
-                      {
-                        "then": {
-                          "throw": [
-                            {
-                              "new": {
-                                "path": {
-                                  "name": [
-                                    "java",
-                                    "io",
-                                    "IOException"
+                  ],
+                  "body": [
+                    {
+                      "if": [
+                        {
+                          "then": {
+                            "throw": [
+                              {
+                                "new": {
+                                  "path": {
+                                    "name": [
+                                      "java",
+                                      "io",
+                                      "IOException"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "condition": {
+                            "expression": [
+                              {
+                                "binary": {
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "null": "null"
+                                      }
+                                    }
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "s"
+                                      }
+                                    }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
                                   ]
                                 }
                               }
-                            }
-                          ]
-                        },
-                        "condition": {
-                          "expression": [
-                            {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "null": "null"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "s"
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
-                                }
-                              }
-                            }
-                          ]
+                            ]
+                          }
                         }
-                      }
-                    ]
-                  }
+                      ]
+                    }
+                  ]
                 }
               ]
             },

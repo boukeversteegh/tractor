@@ -782,11 +782,15 @@
                       "value": {
                         "expression": {
                           "unary": {
-                            "name": "ptr",
-                            "op": {
-                              "text": "*",
-                              "multiply": true
-                            }
+                            "name": [
+                              "ptr"
+                            ],
+                            "op": [
+                              {
+                                "text": "*",
+                                "multiply": true
+                              }
+                            ]
                           }
                         }
                       }
@@ -1380,20 +1384,26 @@
                   "value": {
                     "expression": {
                       "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
+                        "right": [
+                          {
+                            "expression": {
+                              "name": "b"
+                            }
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
+                        ],
+                        "left": [
+                          {
+                            "expression": {
+                              "name": "a"
+                            }
                           }
-                        },
-                        "op": {
-                          "text": "+",
-                          "plus": true
-                        }
+                        ],
+                        "op": [
+                          {
+                            "text": "+",
+                            "plus": true
+                          }
+                        ]
                       }
                     }
                   },
@@ -1933,20 +1943,26 @@
                         "value": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "y"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "y"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "x"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "x"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -1956,20 +1972,26 @@
                               "expression": [
                                 {
                                   "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "y"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "name": "y"
+                                        }
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "x"
+                                    ],
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "name": "x"
+                                        }
                                       }
-                                    },
-                                    "op": {
-                                      "text": "==",
-                                      "equals": true
-                                    }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": "==",
+                                        "equals": true
+                                      }
+                                    ]
                                   }
                                 }
                               ]
@@ -2001,20 +2023,26 @@
                               "value": {
                                 "expression": {
                                   "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "h"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "name": "h"
+                                        }
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "w"
+                                    ],
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "name": "w"
+                                        }
                                       }
-                                    },
-                                    "op": {
-                                      "text": "*",
-                                      "multiply": true
-                                    }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": "*",
+                                        "multiply": true
+                                      }
+                                    ]
                                   }
                                 }
                               }
@@ -2027,21 +2055,27 @@
                               "expression": [
                                 {
                                   "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "int": "0"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "int": "0"
+                                        }
                                       }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "w"
+                                    ],
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "name": "w"
+                                        }
                                       }
-                                    },
-                                    "op": {
-                                      "text": ">",
-                                      "compare": true,
-                                      "greater": true
-                                    }
+                                    ],
+                                    "op": [
+                                      {
+                                        "text": ">",
+                                        "compare": true,
+                                        "greater": true
+                                      }
+                                    ]
                                   }
                                 }
                               ]
@@ -2127,11 +2161,15 @@
                         "value": {
                           "expression": {
                             "unary": {
-                              "int": "99",
-                              "op": {
-                                "text": "-",
-                                "minus": true
-                              }
+                              "int": [
+                                "99"
+                              ],
+                              "op": [
+                                {
+                                  "text": "-",
+                                  "minus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -2372,36 +2410,48 @@
                           "expression": [
                             {
                               "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "20"
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "int": "20"
+                                    }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "binary": {
-                                      "right": {
-                                        "expression": {
-                                          "name": "j"
-                                        }
-                                      },
-                                      "left": {
-                                        "expression": {
-                                          "name": "i"
-                                        }
-                                      },
-                                      "op": {
-                                        "text": "*",
-                                        "multiply": true
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "binary": {
+                                        "right": [
+                                          {
+                                            "expression": {
+                                              "name": "j"
+                                            }
+                                          }
+                                        ],
+                                        "left": [
+                                          {
+                                            "expression": {
+                                              "name": "i"
+                                            }
+                                          }
+                                        ],
+                                        "op": [
+                                          {
+                                            "text": "*",
+                                            "multiply": true
+                                          }
+                                        ]
                                       }
                                     }
                                   }
-                                },
-                                "op": {
-                                  "text": ">",
-                                  "compare": true,
-                                  "greater": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": ">",
+                                    "compare": true,
+                                    "greater": true
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -2463,21 +2513,27 @@
               "expression": [
                 {
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "int": "3"
+                    "right": [
+                      {
+                        "expression": {
+                          "int": "3"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "n"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "n"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": "<",
-                      "compare": true,
-                      "less": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": "<",
+                        "compare": true,
+                        "less": true
+                      }
+                    ]
                   }
                 }
               ]
@@ -2756,20 +2812,26 @@
                 "block": {
                   "binary": [
                     {
-                      "right": {
-                        "expression": {
-                          "int": "2"
+                      "right": [
+                        {
+                          "expression": {
+                            "int": "2"
+                          }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "int": "1u32"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "int": "1u32"
+                          }
                         }
-                      },
-                      "op": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "+",
+                          "plus": true
+                        }
+                      ]
                     }
                   ],
                   "async": true
@@ -2815,11 +2877,15 @@
               "value": {
                 "expression": {
                   "unary": {
-                    "name": "r",
-                    "op": {
-                      "text": "*",
-                      "multiply": true
-                    }
+                    "name": [
+                      "r"
+                    ],
+                    "op": [
+                      {
+                        "text": "*",
+                        "multiply": true
+                      }
+                    ]
                   }
                 }
               }
@@ -2994,49 +3060,55 @@
       "body": {
         "binary": [
           {
-            "right": {
-              "expression": {
-                "index": {
-                  "int": [
-                    "0"
-                  ],
-                  "name": [
-                    "triples"
-                  ]
+            "right": [
+              {
+                "expression": {
+                  "index": {
+                    "int": [
+                      "0"
+                    ],
+                    "name": [
+                      "triples"
+                    ]
+                  }
                 }
               }
-            },
-            "left": {
-              "expression": {
-                "cast": {
-                  "type": {
-                    "name": [
-                      "i32"
-                    ]
-                  },
-                  "value": {
-                    "expression": {
-                      "call": {
-                        "field": [
-                          {
-                            "name": "len",
-                            "value": {
-                              "expression": {
-                                "name": "v"
+            ],
+            "left": [
+              {
+                "expression": {
+                  "cast": {
+                    "type": {
+                      "name": [
+                        "i32"
+                      ]
+                    },
+                    "value": {
+                      "expression": {
+                        "call": {
+                          "field": [
+                            {
+                              "name": "len",
+                              "value": {
+                                "expression": {
+                                  "name": "v"
+                                }
                               }
                             }
-                          }
-                        ]
+                          ]
+                        }
                       }
                     }
                   }
                 }
               }
-            },
-            "op": {
-              "text": "+",
-              "plus": true
-            }
+            ],
+            "op": [
+              {
+                "text": "+",
+                "plus": true
+              }
+            ]
           }
         ],
         "expression": [
@@ -3045,20 +3117,26 @@
               "right": {
                 "expression": {
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "head_tail"
+                    "right": [
+                      {
+                        "expression": {
+                          "name": "head_tail"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "total"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": "+",
+                        "plus": true
+                      }
+                    ]
                   }
                 }
               },
@@ -3116,20 +3194,26 @@
                 {
                   "expression": {
                     "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "x"
+                      "right": [
+                        {
+                          "expression": {
+                            "name": "x"
+                          }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "ix"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "name": "ix"
+                          }
                         }
-                      },
-                      "op": {
-                        "text": "+",
-                        "plus": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "+",
+                          "plus": true
+                        }
+                      ]
                     }
                   }
                 }
@@ -3184,21 +3268,27 @@
                 },
                 {
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "int": "0"
+                    "right": [
+                      {
+                        "expression": {
+                          "int": "0"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "ix"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "ix"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": ">",
-                      "compare": true,
-                      "greater": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": ">",
+                        "compare": true,
+                        "greater": true
+                      }
+                    ]
                   }
                 }
               ]
@@ -3259,20 +3349,26 @@
                         "value": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "b"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "b"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "a"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "a"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -3323,35 +3419,47 @@
                         "value": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "c"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "c"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "b"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "a"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "+",
-                                      "plus": true
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "binary": {
+                                      "right": [
+                                        {
+                                          "expression": {
+                                            "name": "b"
+                                          }
+                                        }
+                                      ],
+                                      "left": [
+                                        {
+                                          "expression": {
+                                            "name": "a"
+                                          }
+                                        }
+                                      ],
+                                      "op": [
+                                        {
+                                          "text": "+",
+                                          "plus": true
+                                        }
+                                      ]
                                     }
                                   }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -3412,20 +3520,26 @@
                         "value": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "last"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "name": "last"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "first"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "first"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -3451,11 +3565,15 @@
                         "value": {
                           "expression": {
                             "unary": {
-                              "name": "only",
-                              "op": {
-                                "text": "*",
-                                "multiply": true
-                              }
+                              "name": [
+                                "only"
+                              ],
+                              "op": [
+                                {
+                                  "text": "*",
+                                  "multiply": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -3525,36 +3643,48 @@
                 "array": {
                   "binary": [
                     {
-                      "right": {
-                        "expression": {
-                          "int": "2"
+                      "right": [
+                        {
+                          "expression": {
+                            "int": "2"
+                          }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "counter"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "name": "counter"
+                          }
                         }
-                      },
-                      "op": {
-                        "text": "*",
-                        "multiply": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "*",
+                          "multiply": true
+                        }
+                      ]
                     },
                     {
-                      "right": {
-                        "expression": {
-                          "int": "3"
+                      "right": [
+                        {
+                          "expression": {
+                            "int": "3"
+                          }
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "counter"
+                      ],
+                      "left": [
+                        {
+                          "expression": {
+                            "name": "counter"
+                          }
                         }
-                      },
-                      "op": {
-                        "text": "*",
-                        "multiply": true
-                      }
+                      ],
+                      "op": [
+                        {
+                          "text": "*",
+                          "multiply": true
+                        }
+                      ]
                     }
                   ],
                   "name": [
@@ -3631,11 +3761,15 @@
                   "value": {
                     "expression": {
                       "unary": {
-                        "int": "1i32",
-                        "op": {
-                          "text": "-",
-                          "minus": true
-                        }
+                        "int": [
+                          "1i32"
+                        ],
+                        "op": [
+                          {
+                            "text": "-",
+                            "minus": true
+                          }
+                        ]
                       }
                     }
                   }

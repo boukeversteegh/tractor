@@ -265,20 +265,26 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "symbol": ":stop"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "symbol": ":stop"
+                                      }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "x"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "x"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -326,62 +332,74 @@
           },
           {
             "binary": {
-              "right": {
-                "expression": {
-                  "false": "false"
+              "right": [
+                {
+                  "expression": {
+                    "false": "false"
+                  }
                 }
-              },
-              "left": {
-                "expression": {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "true": "true"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "flag"
+              ],
+              "left": [
+                {
+                  "expression": {
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "true": "true"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "flag"
+                        }
                       }
                     }
                   }
                 }
-              },
-              "op": {
-                "text": "and",
-                "logical": true,
-                "and": true
-              }
+              ],
+              "op": [
+                {
+                  "text": "and",
+                  "logical": true,
+                  "and": true
+                }
+              ]
             }
           },
           {
             "binary": {
-              "right": {
-                "expression": {
-                  "false": "false"
+              "right": [
+                {
+                  "expression": {
+                    "false": "false"
+                  }
                 }
-              },
-              "left": {
-                "expression": {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "true": "true"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "flag"
+              ],
+              "left": [
+                {
+                  "expression": {
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "true": "true"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "flag"
+                        }
                       }
                     }
                   }
                 }
-              },
-              "op": {
-                "text": "or",
-                "logical": true,
-                "or": true
-              }
+              ],
+              "op": [
+                {
+                  "text": "or",
+                  "logical": true,
+                  "or": true
+                }
+              ]
             }
           },
           {
@@ -507,27 +525,37 @@
                         "expression": [
                           {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "false": "false"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "false": "false"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "unary": {
-                                    "name": "items",
-                                    "op": {
-                                      "text": "defined?",
-                                      "defined": true
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "unary": {
+                                      "name": [
+                                        "items"
+                                      ],
+                                      "op": [
+                                        {
+                                          "text": "defined?",
+                                          "defined": true
+                                        }
+                                      ]
                                     }
                                   }
                                 }
-                              },
-                              "op": {
-                                "text": "&&",
-                                "logical": true,
-                                "and": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "&&",
+                                  "logical": true,
+                                  "and": true
+                                }
+                              ]
                             }
                           }
                         ]
@@ -663,20 +691,26 @@
                   "value": {
                     "expression": {
                       "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
+                        "right": [
+                          {
+                            "expression": {
+                              "name": "b"
+                            }
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
+                        ],
+                        "left": [
+                          {
+                            "expression": {
+                              "name": "a"
+                            }
                           }
-                        },
-                        "op": {
-                          "text": "+",
-                          "plus": true
-                        }
+                        ],
+                        "op": [
+                          {
+                            "text": "+",
+                            "plus": true
+                          }
+                        ]
                       }
                     }
                   },
@@ -708,20 +742,26 @@
                       "value": {
                         "expression": {
                           "binary": {
-                            "right": {
-                              "expression": {
-                                "int": "2"
+                            "right": [
+                              {
+                                "expression": {
+                                  "int": "2"
+                                }
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
+                            ],
+                            "left": [
+                              {
+                                "expression": {
+                                  "name": "n"
+                                }
                               }
-                            },
-                            "op": {
-                              "text": "*",
-                              "multiply": true
-                            }
+                            ],
+                            "op": [
+                              {
+                                "text": "*",
+                                "multiply": true
+                              }
+                            ]
                           }
                         }
                       },
@@ -765,20 +805,26 @@
                           },
                           {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "int": "1"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "int": "1"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "n"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "n"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "+",
-                                "plus": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              ]
                             }
                           }
                         ]
@@ -821,20 +867,26 @@
                       },
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "1"
+                          "right": [
+                            {
+                              "expression": {
+                                "int": "1"
+                              }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "n"
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "name": "n"
+                              }
                             }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "+",
+                              "plus": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -913,20 +965,26 @@
             "right": {
               "expression": {
                 "binary": {
-                  "right": {
-                    "expression": {
-                      "int": "1"
+                  "right": [
+                    {
+                      "expression": {
+                        "int": "1"
+                      }
                     }
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "total"
+                  ],
+                  "left": [
+                    {
+                      "expression": {
+                        "name": "total"
+                      }
                     }
-                  },
-                  "op": {
-                    "text": "+",
-                    "plus": true
-                  }
+                  ],
+                  "op": [
+                    {
+                      "text": "+",
+                      "plus": true
+                    }
+                  ]
                 }
               }
             },
@@ -973,51 +1031,71 @@
             "right": {
               "expression": {
                 "binary": {
-                  "right": {
-                    "expression": {
-                      "unary": {
-                        "name": "flag",
-                        "op": {
-                          "text": "!",
-                          "logical": true,
-                          "not": true
+                  "right": [
+                    {
+                      "expression": {
+                        "unary": {
+                          "name": [
+                            "flag"
+                          ],
+                          "op": [
+                            {
+                              "text": "!",
+                              "logical": true,
+                              "not": true
+                            }
+                          ]
                         }
                       }
                     }
-                  },
-                  "left": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "flag"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "unary": {
-                              "name": "flag",
-                              "op": {
-                                "text": "not",
-                                "logical": true,
-                                "not": true
+                  ],
+                  "left": [
+                    {
+                      "expression": {
+                        "binary": {
+                          "right": [
+                            {
+                              "expression": {
+                                "name": "flag"
                               }
                             }
-                          }
-                        },
-                        "op": {
-                          "text": "&&",
-                          "logical": true,
-                          "and": true
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "unary": {
+                                  "name": [
+                                    "flag"
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "not",
+                                      "logical": true,
+                                      "not": true
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ],
+                          "op": [
+                            {
+                              "text": "&&",
+                              "logical": true,
+                              "and": true
+                            }
+                          ]
                         }
                       }
                     }
-                  },
-                  "op": {
-                    "text": "||",
-                    "logical": true,
-                    "or": true
-                  }
+                  ],
+                  "op": [
+                    {
+                      "text": "||",
+                      "logical": true,
+                      "or": true
+                    }
+                  ]
                 }
               }
             },
@@ -1052,21 +1130,27 @@
               "expression": [
                 {
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "int": "3"
+                    "right": [
+                      {
+                        "expression": {
+                          "int": "3"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "i"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "i"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": "<",
-                      "compare": true,
-                      "less": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": "<",
+                        "compare": true,
+                        "less": true
+                      }
+                    ]
                   }
                 }
               ]
@@ -1097,22 +1181,28 @@
               "expression": [
                 {
                   "binary": {
-                    "right": {
-                      "expression": {
-                        "int": "6"
+                    "right": [
+                      {
+                        "expression": {
+                          "int": "6"
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "i"
+                    ],
+                    "left": [
+                      {
+                        "expression": {
+                          "name": "i"
+                        }
                       }
-                    },
-                    "op": {
-                      "text": ">=",
-                      "compare": true,
-                      "greater": true,
-                      "equal": true
-                    }
+                    ],
+                    "op": [
+                      {
+                        "text": ">=",
+                        "compare": true,
+                        "greater": true,
+                        "equal": true
+                      }
+                    ]
                   }
                 }
               ]
@@ -1172,31 +1262,37 @@
                             "expression": [
                               {
                                 "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "call": {
-                                        "name": [
-                                          "size"
-                                        ],
-                                        "object": [
-                                          {
-                                            "name": [
-                                              "tail"
-                                            ]
-                                          }
-                                        ]
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "call": {
+                                          "name": [
+                                            "size"
+                                          ],
+                                          "object": [
+                                            {
+                                              "name": [
+                                                "tail"
+                                              ]
+                                            }
+                                          ]
+                                        }
                                       }
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "head"
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "name": "head"
+                                      }
                                     }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "+",
+                                      "plus": true
+                                    }
+                                  ]
                                 }
                               }
                             ]
@@ -1269,20 +1365,26 @@
                           "expression": [
                             {
                               "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "last"
+                                "right": [
+                                  {
+                                    "expression": {
+                                      "name": "last"
+                                    }
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "first"
+                                ],
+                                "left": [
+                                  {
+                                    "expression": {
+                                      "name": "first"
+                                    }
                                   }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
-                                }
+                                ],
+                                "op": [
+                                  {
+                                    "text": "==",
+                                    "equals": true
+                                  }
+                                ]
                               }
                             }
                           ]
@@ -1618,21 +1720,27 @@
                         "right": {
                           "expression": {
                             "binary": {
-                              "right": {
-                                "expression": {
-                                  "int": "0"
+                              "right": [
+                                {
+                                  "expression": {
+                                    "int": "0"
+                                  }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "id"
+                              ],
+                              "left": [
+                                {
+                                  "expression": {
+                                    "name": "id"
+                                  }
                                 }
-                              },
-                              "op": {
-                                "text": "||",
-                                "logical": true,
-                                "or": true
-                              }
+                              ],
+                              "op": [
+                                {
+                                  "text": "||",
+                                  "logical": true,
+                                  "or": true
+                                }
+                              ]
                             }
                           }
                         },
@@ -1667,61 +1775,73 @@
                     "expression": [
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "@name"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "call": {
-                                      "name": [
-                                        "name"
-                                      ],
-                                      "object": [
-                                        {
+                          "right": [
+                            {
+                              "expression": {
+                                "binary": {
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "name": "@name"
+                                      }
+                                    }
+                                  ],
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "call": {
                                           "name": [
-                                            "other"
+                                            "name"
+                                          ],
+                                          "object": [
+                                            {
+                                              "name": [
+                                                "other"
+                                              ]
+                                            }
                                           ]
                                         }
-                                      ]
+                                      }
                                     }
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
+                                  ],
+                                  "op": [
+                                    {
+                                      "text": "==",
+                                      "equals": true
+                                    }
+                                  ]
                                 }
                               }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "call": {
-                                "arguments": [
-                                  "Base"
-                                ],
-                                "object": [
-                                  {
-                                    "name": [
-                                      "other"
-                                    ]
-                                  }
-                                ],
-                                "name": [
-                                  "is_a?"
-                                ]
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "call": {
+                                  "arguments": [
+                                    "Base"
+                                  ],
+                                  "object": [
+                                    {
+                                      "name": [
+                                        "other"
+                                      ]
+                                    }
+                                  ],
+                                  "name": [
+                                    "is_a?"
+                                  ]
+                                }
                               }
                             }
-                          },
-                          "op": {
-                            "text": "&&",
-                            "logical": true,
-                            "and": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "&&",
+                              "logical": true,
+                              "and": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -2003,81 +2123,87 @@
                     "expression": [
                       {
                         "binary": {
-                          "right": {
-                            "expression": {
-                              "call": {
-                                "name": [
-                                  "keys"
-                                ],
-                                "object": [
-                                  {
-                                    "name": [
-                                      "meta"
-                                    ]
-                                  }
-                                ]
+                          "right": [
+                            {
+                              "expression": {
+                                "call": {
+                                  "name": [
+                                    "keys"
+                                  ],
+                                  "object": [
+                                    {
+                                      "name": [
+                                        "meta"
+                                      ]
+                                    }
+                                  ]
+                                }
                               }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "call": {
-                                "block": [
-                                  {
-                                    "value": {
-                                      "expression": {
-                                        "string": {
-                                          "interpolation": [
+                          ],
+                          "left": [
+                            {
+                              "expression": {
+                                "call": {
+                                  "block": [
+                                    {
+                                      "value": {
+                                        "expression": {
+                                          "string": {
+                                            "interpolation": [
+                                              {
+                                                "name": "i"
+                                              },
+                                              {
+                                                "name": "it"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "parameters": [
+                                        {
+                                          "$type": "parameter",
+                                          "name": "it"
+                                        },
+                                        {
+                                          "$type": "parameter",
+                                          "name": "i"
+                                        }
+                                      ]
+                                    }
+                                  ],
+                                  "object": [
+                                    {
+                                      "call": [
+                                        {
+                                          "name": [
+                                            "each_with_index"
+                                          ],
+                                          "object": [
                                             {
-                                              "name": "i"
-                                            },
-                                            {
-                                              "name": "it"
+                                              "name": [
+                                                "items"
+                                              ]
                                             }
                                           ]
                                         }
-                                      }
-                                    },
-                                    "parameters": [
-                                      {
-                                        "$type": "parameter",
-                                        "name": "it"
-                                      },
-                                      {
-                                        "$type": "parameter",
-                                        "name": "i"
-                                      }
-                                    ]
-                                  }
-                                ],
-                                "object": [
-                                  {
-                                    "call": [
-                                      {
-                                        "name": [
-                                          "each_with_index"
-                                        ],
-                                        "object": [
-                                          {
-                                            "name": [
-                                              "items"
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                ],
-                                "name": [
-                                  "map"
-                                ]
+                                      ]
+                                    }
+                                  ],
+                                  "name": [
+                                    "map"
+                                  ]
+                                }
                               }
                             }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
+                          ],
+                          "op": [
+                            {
+                              "text": "+",
+                              "plus": true
+                            }
+                          ]
                         }
                       }
                     ]
