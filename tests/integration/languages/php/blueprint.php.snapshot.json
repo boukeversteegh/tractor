@@ -1977,9 +1977,33 @@
         ],
         "fors": [
           {
-            "children": [
+            "body": {
+              "comments": [
+                "/* ... */"
+              ]
+            },
+            "assigns": [
               {
-                "$type": "assign",
+                "right": {
+                  "expression": {
+                    "int": "0"
+                  }
+                },
+                "left": {
+                  "expression": {
+                    "variable": {
+                      "name": "i"
+                    }
+                  }
+                },
+                "op": "="
+              },
+              {
+                "right": {
+                  "expression": {
+                    "int": "10"
+                  }
+                },
                 "left": {
                   "expression": {
                     "variable": {
@@ -1987,39 +2011,9 @@
                     }
                   }
                 },
-                "op": "=",
-                "right": {
-                  "expression": {
-                    "int": "10"
-                  }
-                }
-              },
-              {
-                "$type": "unary",
-                "variable": {
-                  "name": "j"
-                },
-                "op": {
-                  "text": "--",
-                  "decrement": true
-                }
+                "op": "="
               }
             ],
-            "assign": {
-              "right": {
-                "expression": {
-                  "int": "0"
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "i"
-                  }
-                }
-              },
-              "op": "="
-            },
             "condition": {
               "expression": {
                 "binary": {
@@ -2045,20 +2039,26 @@
                 }
               }
             },
-            "unary": {
-              "op": {
-                "text": "++",
-                "increment": true
+            "unaries": [
+              {
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "variable": {
+                  "name": "i"
+                }
               },
-              "variable": {
-                "name": "i"
+              {
+                "op": {
+                  "text": "--",
+                  "decrement": true
+                },
+                "variable": {
+                  "name": "j"
+                }
               }
-            },
-            "body": {
-              "comments": [
-                "/* ... */"
-              ]
-            }
+            ]
           }
         ],
         "labels": [

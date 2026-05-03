@@ -441,6 +441,26 @@ fn php() {
         1);
 }
 
+/// PHP C-style `for ($i=0, $j=10; ...; $i++, $j--)` produces
+/// `<for>` with multiple `<assign>` (init) AND multiple `<unary>`
+/// (post-update) siblings. Both role-uniform per Principle #19.
+#[test]
+fn php_for_multi_init_and_update_lists() {
+    let mut tree = parse_src(
+        "php",
+        "<?php for ($i = 0, $j = 10; $i < $j; $i++, $j--) {}\n",
+    );
+    claim("PHP for-loop with two init assigns tags each <assign> with list='assigns'",
+        &mut tree,
+        "//for/assign[@list='assigns']",
+        2);
+
+    claim("PHP for-loop with two post-updates tags each <unary> with list='unaries'",
+        &mut tree,
+        "//for/unary[@list='unaries']",
+        2);
+}
+
 /// C-style `for` loops with comma-separated post-update produce
 /// multiple `<unary>` siblings under `<for>`. Per Principle #19
 /// they're role-uniform (each is one update step); tag with

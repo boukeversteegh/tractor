@@ -2185,6 +2185,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     php_restructure_use(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
+    crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_role_children(
         xot, root,
         &[
@@ -2193,6 +2194,13 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // entity). Tag with `list="uses"` so JSON renders as
             // `uses: [...]` array. Mirrors Rust iter 267.
             ("use", "use"),
+            // C-style for header `for ($i=0, $j=10; ...; $i++, $j--)`
+            // produces `<for>` with multiple `<assign>` siblings (init
+            // sequence) AND multiple `<unary>` siblings (post-update
+            // sequence). Both role-uniform per Principle #19. The
+            // unary tagging mirrors TypeScript iter 269.
+            ("for", "assign"),
+            ("for", "unary"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
