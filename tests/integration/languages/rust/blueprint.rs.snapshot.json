@@ -501,9 +501,7 @@
               {
                 "$type": "parameter",
                 "self": true,
-                "children": [
-                  "self"
-                ]
+                "borrowed": true
               }
             ],
             "returns": {
@@ -539,9 +537,7 @@
               {
                 "$type": "parameter",
                 "self": true,
-                "children": [
-                  "self"
-                ]
+                "borrowed": true
               },
               {
                 "$type": "parameter",
@@ -657,9 +653,7 @@
               {
                 "$type": "parameter",
                 "self": true,
-                "children": [
-                  "self"
-                ]
+                "borrowed": true
               }
             ],
             "returns": {
@@ -858,9 +852,7 @@
               {
                 "$type": "parameter",
                 "self": true,
-                "children": [
-                  "self"
-                ]
+                "borrowed": true
               },
               {
                 "$type": "parameter",

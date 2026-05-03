@@ -221,7 +221,13 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::ReturnExpression         => Rename(Return),
         RustKind::ScopedIdentifier         => Rename(Path),
         RustKind::ScopedTypeIdentifier     => Rename(Path),
-        RustKind::SelfParameter            => RenameWithMarker(Parameter, Self_),
+        // `self_parameter` — Custom handler strips the inner `<self>`
+        // element + bare `&`/`mut` text leaves, prepends `<self/>` (and
+        // `<borrowed/>`/`<mut/>` markers as applicable), then renames
+        // to `<parameter>`. Replaces the previous `RenameWithMarker`
+        // which left the `<self>self</self>` element to collide with
+        // the marker on JSON `self` key (iter 188).
+        RustKind::SelfParameter            => Custom(transformations::self_parameter),
         RustKind::ShorthandFieldInitializer => Rename(Field),
         RustKind::SourceFile               => Rename(File),
         RustKind::StringLiteral            => Rename(String),

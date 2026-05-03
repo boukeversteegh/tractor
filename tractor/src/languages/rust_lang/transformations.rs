@@ -14,7 +14,7 @@ use super::input::RustKind;
 use super::output::TractorNode::{
     self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Extern,
     Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Parameter, Pattern,
-    Private, Pub, Raw, Static, String as RustString, Super, Trailing, Try, Type, Unsafe,
+    Private, Pub, Raw, Self_, Static, String as RustString, Super, Trailing, Try, Type, Unsafe,
     Use as UseName,
 };
 
@@ -408,6 +408,76 @@ pub fn closure_parameters(
         }
     }
     Ok(TransformAction::Flatten)
+}
+
+/// `self_parameter` — `self`, `&self`, `&mut self`, `mut self`.
+/// Pre-iter-188 used `RenameWithMarker(Parameter, Self_)`, which
+/// prepended the `<self/>` marker but left tree-sitter's inner
+/// `<self>self</self>` element AND the bare `&` text in place. In
+/// JSON, the marker `self: true` and the wrapper `<self>` collided
+/// on the `self` key, dumping the wrapper's "self" text into the
+/// anonymous `children` overflow.
+///
+/// Custom handler:
+/// 1. Detaches the inner `<self>` element (its content is already
+///    captured by the marker).
+/// 2. Strips bare `&`, `&mut`, `mut` text leaves (Principle #2 / #13;
+///    they're keywords, not values).
+/// 3. Prepends `<borrowed/>` for `&self`/`&mut self`,
+///    `<mut/>` for `mut self`/`&mut self`, and the `<self/>` marker.
+/// 4. Renames the node to `<parameter>`.
+pub fn self_parameter(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let texts = get_text_children(xot, node);
+    let has_amp = texts.iter().any(|t| t.contains('&'));
+
+    // Detect `mut` via `<mutable_specifier>` element child (it's still
+    // wrapped at this walk step; Pure-Flatten runs later for it).
+    let mut_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            xot.element(c).is_some()
+                && get_kind(xot, c).as_deref() == Some("mutable_specifier")
+        })
+        .collect();
+    let has_mut = !mut_children.is_empty();
+    for c in mut_children {
+        xot.detach(c)?;
+    }
+
+    // Drop the inner `<self>` element (kind="self", emits "self" text).
+    let self_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some(Self_.as_str())
+        })
+        .collect();
+    for c in self_children {
+        xot.detach(c)?;
+    }
+
+    // Strip the bare `&` text leaf.
+    let text_targets: Vec<XotNode> = xot.children(node)
+        .filter(|&c| {
+            xot.text_str(c)
+                .map(|s| s.trim() == "&")
+                .unwrap_or(false)
+        })
+        .collect();
+    for t in text_targets {
+        xot.detach(t)?;
+    }
+
+    if has_amp {
+        xot.with_prepended_marker(node, Borrowed)?;
+    }
+    if has_mut {
+        xot.with_prepended_marker(node, Mut)?;
+    }
+    xot.with_prepended_marker(node, Self_)?;
+    xot.with_renamed(node, Parameter);
+    Ok(TransformAction::Continue)
 }
 
 /// `static_item` — `static FOO: T = …` and `static mut FOO: T = …`.

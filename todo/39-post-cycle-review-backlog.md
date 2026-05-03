@@ -478,6 +478,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 188: Rust `self_parameter` Custom handler — strips the
+  inner `<self>` element + `<mutable_specifier>` element + bare `&`
+  text leaves; prepends `<self/>` (always), `<borrowed/>` (for
+  `&self`/`&mut self`), and `<mut/>` (for `mut self`/`&mut self`)
+  markers. Rust audit 46 → 42 (-4). All four self-form variants now
+  clean: `{self: true}`, `{self: true, borrowed: true}`,
+  `{self: true, mut: true}`, `{self: true, borrowed: true, mut: true}`.
 - [x] iter 187: Rust closure multi-param `list="parameters"` —
   iter-186 review finding closed. `closure_parameters` Custom
   handler now sets list= on each wrapped `<parameter>` so JSON
