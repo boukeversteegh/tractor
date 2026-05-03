@@ -34,6 +34,8 @@ pub enum TractorNode {
     Tag, Interpolation, Attribute,
     // Identifiers / comments / pair / op
     Name, Comment, Pair, Op,
+    // Slot wrappers (iter 286).
+    Value,
     // Comment markers
     Trailing, Leading,
     // Visibility / access modifiers

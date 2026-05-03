@@ -188,7 +188,11 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::FinallyClause             => Rename(Finally),
         PhpKind::Float                     => Rename(Float),
         PhpKind::ForStatement              => Rename(For),
-        PhpKind::ForeachStatement          => Rename(Foreach),
+        // PHP `foreach ($arr as $x)` — wrap iterable in `<value>`
+        // to avoid JSON variable-key collision when the binding is
+        // also a bare `<variable>`. Mirrors iter 285's subscript
+        // fix.
+        PhpKind::ForeachStatement          => Custom(transformations::foreach_statement),
         PhpKind::FunctionCallExpression    => Rename(Call),
         PhpKind::FunctionDefinition        => Rename(Function),
         PhpKind::GotoStatement             => RenameStripKeyword(Goto, "goto"),
@@ -257,7 +261,11 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         //      catch-all `_` arm when `map_element_name` returned `None`).
 
         // Already matches our vocabulary.
-        PhpKind::Name | PhpKind::Pair => Passthrough,
+        PhpKind::Name => Passthrough,
+        // PHP `<pair>` (key => value) — wrap value-side in
+        // `<value>` slot to avoid two `<variable>` siblings
+        // colliding on JSON. Iter 286.
+        PhpKind::Pair => Custom(transformations::pair),
 
         // `update_expression` covers `$x++` / `$x--` / `++$x` / `--$x`.
         // Custom dispatch detects prefix-vs-postfix from child order and

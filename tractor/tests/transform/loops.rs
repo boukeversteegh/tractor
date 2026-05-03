@@ -430,11 +430,15 @@ fn php() {
         "//do[body][condition]",
         1);
 
-    claim("PHP foreach lists the iterable then the binding (no <left>/<right>, no <name>/<value> wrappers)",
+    // Iter 286: foreach iterable wraps in <value> slot to avoid
+    // colliding on the JSON `variable` key with the binding-side
+    // `<variable>`. Iterable is `<value>/<expression>/<variable>`,
+    // binding stays as a bare `<variable>` direct child.
+    claim("PHP foreach iterable wraps in <value> slot, binding stays bare",
         &mut tree,
         &multi_xpath(r#"
             //foreach
-                [variable/name='items']
+                [value/expression/variable/name='items']
                 [variable/name='item']
                 [body]
         "#),

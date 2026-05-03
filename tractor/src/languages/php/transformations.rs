@@ -16,9 +16,9 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Arrow, Comment as CommentName, Constant, Function, Global, Index, Leading, Member, Object,
-    Prefix, Primitive, Private, Property, Protected, Public, String as PhpString, Trailing, Type,
-    Unary, Variable,
+    Arrow, Comment as CommentName, Constant, Foreach, Function, Global, Index, Leading, Member,
+    Object, Pair, Prefix, Primitive, Private, Property, Protected, Public, String as PhpString,
+    Trailing, Type, Unary, Value, Variable,
 };
 
 /// `class_constant_access_expression` — `Foo::BAR`. Tree-sitter
@@ -78,6 +78,56 @@ pub fn subscript_expression(
             .with_wrap_child(operand, object_node)?;
     }
     xot.with_renamed(node, Index);
+    Ok(TransformAction::Continue)
+}
+
+/// `pair` — PHP foreach `$key => $item` and array `[$k => $v]`.
+/// Tree-sitter emits two `<variable>` (or other expression)
+/// siblings without `field=` attributes. Both become `<variable>`
+/// after rename, colliding on the JSON `variable` key.
+///
+/// Wrap the SECOND element child (the value-side) in `<value>`.
+/// First (key-side) stays bare. Mirrors iter 285's subscript fix
+/// pattern (slot-wrap one of two role-mixed siblings).
+pub fn pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    if elem_children.len() >= 2 {
+        let value_target = elem_children[1];
+        let value_id = xot.add_name(Value.as_str());
+        let value_node = xot.new_element(value_id);
+        xot.with_source_location_from(value_node, value_target)
+            .with_wrap_child(value_target, value_node)?;
+    }
+    xot.with_renamed(node, Pair);
+    Ok(TransformAction::Continue)
+}
+
+/// `foreach_statement` — `foreach ($arr as $x) {}` or
+/// `foreach ($arr as $key => $val) {}`. Tree-sitter emits the
+/// iterable (`$arr`) and the binding ($x or `<pair>`) as
+/// positional element children. When the binding is a bare
+/// `<variable>` (single-binding form), it collides with the
+/// iterable's `<variable>` on the JSON `variable` key.
+///
+/// Wrap the FIRST element child (the iterable) in `<value>` so
+/// the binding-side `<variable>` keeps the singleton key.
+/// Multi-binding form (key=>value `<pair>`) doesn't collide,
+/// but the wrap is consistent regardless.
+pub fn foreach_statement(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let first_elem = xot.children(node)
+        .find(|&c| xot.element(c).is_some());
+    if let Some(iterable) = first_elem {
+        let value_id = xot.add_name(Value.as_str());
+        let value_node = xot.new_element(value_id);
+        xot.with_source_location_from(value_node, iterable)
+            .with_wrap_child(iterable, value_node)?;
+    }
+    xot.with_renamed(node, Foreach);
     Ok(TransformAction::Continue)
 }
 

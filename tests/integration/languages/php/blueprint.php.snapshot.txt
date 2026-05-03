@@ -184,10 +184,10 @@ program/
   │       │       │   ├─ op = "="
   │       │       │   └─ right/expression/array = "[]"
   │       │       ├─ foreach/
-  │       │       │   ├─ variable/name = "items"
+  │       │       │   ├─ value/expression/variable/name = "items"
   │       │       │   ├─ pair/
   │       │       │   │   ├─ variable/name = "key"
-  │       │       │   │   └─ variable/name = "item"
+  │       │       │   │   └─ value/expression/variable/name = "item"
   │       │       │   └─ body/
   │       │       │       ├─ if/
   │       │       │       │   ├─ condition/expression/binary/
@@ -412,7 +412,7 @@ program/
   │       │       ├─ object/variable/name = "items"
   │       │       └─ int = "0"
   │       ├─ foreach/
-  │       │   ├─ variable/name = "items"
+  │       │   ├─ value/expression/variable/name = "items"
   │       │   ├─ variable/name = "x"
   │       │   └─ body/expression/assign/
   │       │       ├─ left/expression/variable/name = "x"

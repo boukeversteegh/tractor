@@ -896,16 +896,21 @@
                       }
                     ]
                   },
-                  "variable": {
-                    "name": "items"
+                  "value": {
+                    "expression": {
+                      "variable": {
+                        "name": "items"
+                      }
+                    }
                   },
                   "pair": {
-                    "children": [
-                      {
-                        "$type": "variable",
-                        "name": "item"
+                    "value": {
+                      "expression": {
+                        "variable": {
+                          "name": "item"
+                        }
                       }
-                    ],
+                    },
                     "variable": {
                       "name": "key"
                     }
@@ -1925,15 +1930,6 @@
         ],
         "foreaches": [
           {
-            "children": [
-              {
-                "$type": "variable",
-                "name": "x"
-              }
-            ],
-            "variable": {
-              "name": "items"
-            },
             "body": {
               "expressions": [
                 {
@@ -1958,6 +1954,16 @@
                   }
                 }
               ]
+            },
+            "value": {
+              "expression": {
+                "variable": {
+                  "name": "items"
+                }
+              }
+            },
+            "variable": {
+              "name": "x"
             }
           }
         ],
