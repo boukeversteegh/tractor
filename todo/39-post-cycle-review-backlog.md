@@ -525,6 +525,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 202: Go shared-type parameter multi-name list= —
+  extended Go's `tag_multi_role_children` to include `("parameter",
+  "name")`. `func f(x, y int)` now renders
+  `parameter.name: ["x", "y"]`. Audit 18 → 17 (-1).
 - [x] iter 201: Go struct field multi-name list= — added
   `tag_multi_role_children(&[("field", "name")])` to Go's
   post_transform. Fields like `var x, y int` (multi-name with

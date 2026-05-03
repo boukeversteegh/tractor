@@ -523,13 +523,13 @@
         },
         {
           "$type": "parameter",
-          "name": "dx",
+          "name": [
+            "dx",
+            "dy"
+          ],
           "type": {
             "name": "int"
-          },
-          "children": [
-            "dy"
-          ]
+          }
         }
       ]
     },
