@@ -312,13 +312,12 @@
                     },
                     "left": {
                       "expression": {
-                        "member": {
-                          "property": {
+                        "object": {
+                          "member": {
                             "name": "name"
                           },
-                          "object": {
-                            "this": "this"
-                          }
+                          "access": true,
+                          "this": "this"
                         }
                       }
                     },
@@ -350,14 +349,15 @@
               "returns": [
                 {
                   "expression": {
-                    "call": {
-                      "arguments": [
-                        "\"hello\""
-                      ],
-                      "object": {
-                        "name": "mapper"
+                    "object": {
+                      "call": {
+                        "arguments": [
+                          "\"hello\""
+                        ],
+                        "name": "apply"
                       },
-                      "name": "apply"
+                      "access": true,
+                      "name": "mapper"
                     }
                   }
                 }
@@ -789,11 +789,12 @@
                               "label": {
                                 "guard": {
                                   "unary": {
-                                    "call": {
-                                      "name": "isEmpty",
-                                      "object": {
-                                        "name": "s"
-                                      }
+                                    "object": {
+                                      "call": {
+                                        "name": "isEmpty"
+                                      },
+                                      "access": true,
+                                      "name": "s"
                                     },
                                     "op": {
                                       "text": "!",
@@ -1029,23 +1030,27 @@
               "returns": [
                 {
                   "expression": {
-                    "call": {
-                      "arguments": [
-                        "\"hello from %s\"",
-                        {
-                          "$type": "call",
-                          "object": {
-                            "call": {
-                              "name": "getClass"
+                    "object": {
+                      "call": {
+                        "object": {
+                          "children": [
+                            {
+                              "$type": "call",
+                              "name": "getSimpleName"
                             }
-                          },
-                          "name": "getSimpleName"
-                        }
-                      ],
-                      "object": {
-                        "name": "String"
+                          ],
+                          "access": true,
+                          "call": {
+                            "name": "getClass"
+                          }
+                        },
+                        "name": "format",
+                        "arguments": [
+                          "\"hello from %s\""
+                        ]
                       },
-                      "name": "format"
+                      "access": true,
+                      "name": "String"
                     }
                   }
                 }

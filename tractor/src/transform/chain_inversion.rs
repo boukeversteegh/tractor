@@ -301,7 +301,11 @@ fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
                 });
             }
             Some("call") => {
-                // Result-invocation: callee is itself a chain.
+                // Nested call as receiver: `f()(args)` where the
+                // inner `f()` is itself a complete chain. Recurse
+                // into the inner call (treats it as a sub-chain),
+                // then push the outer call as a result-invocation
+                // (no name).
                 walk_chain(xot, c, out);
                 out.push(ChainSegment::Call {
                     name_node: None,
@@ -310,23 +314,14 @@ fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
                 });
             }
             _ => {
-                // Top-level call (e.g. `f(args)` where f is a bare
-                // <name>) or invocation on a complex receiver.
-                // Treat the callee as the chain receiver.
-                walk_chain(xot, c, out);
-                // The presence of a method name here depends on
-                // whether the callee is a name-shaped element. For
-                // simple `f(args)`, we typically don't want a
-                // separate Call segment — the function reference
-                // IS the receiver and the args belong to it. But
-                // for semantic uniformity with method calls, we
-                // emit a Call with no name_node so the caller can
-                // decide what to do.
-                out.push(ChainSegment::Call {
-                    name_node: None,
-                    args,
-                    markers,
-                });
+                // Bare-name callee or other simple form. This is
+                // a self-contained call (no receiver chain to
+                // unfold). Treat the WHOLE node as an opaque
+                // Receiver — preserves the call shape verbatim
+                // when it sits inside a larger chain (e.g. Java's
+                // `getClass().getSimpleName()` where the inner
+                // `getClass()` is the chain's receiver).
+                out.push(ChainSegment::Receiver(node));
             }
         },
         None => {
@@ -1092,16 +1087,16 @@ mod tests {
 
     #[test]
     fn extract_top_level_call_no_chain() {
-        // f(x) — bare callee, no chain at all
+        // f(x) — bare callee, no chain at all. The whole <call>
+        // becomes a single opaque Receiver — preserves the call
+        // shape verbatim (would be left untouched by the inverter).
         let (mut xot, _root) = fresh_xot();
         let f = new_text_element(&mut xot, "name", "f");
         let arg = new_text_element(&mut xot, "argument", "x");
         let call = build_call(&mut xot, f, vec![arg]);
         let segs = extract_chain(&xot, call);
-        // Receiver:f, Call (no name)
-        assert_eq!(segs.len(), 2);
+        assert_eq!(segs.len(), 1);
         assert!(matches!(segs[0], ChainSegment::Receiver(_)));
-        assert!(matches!(segs[1], ChainSegment::Call { name_node: None, .. }));
     }
 
     #[test]
@@ -1134,18 +1129,24 @@ mod tests {
 
     #[test]
     fn extract_result_invocation_double_call() {
-        // f()(args) — call where callee is itself a call
+        // f()(args) — call where callee is itself a call. The
+        // inner `f()` (bare-name callee, no chain) is preserved
+        // as an opaque Receiver. The outer call adds a result-
+        // invocation step (no method name, just args).
         let (mut xot, _root) = fresh_xot();
         let f = new_text_element(&mut xot, "name", "f");
         let inner_call = build_call(&mut xot, f, vec![]);
         let outer_arg = new_text_element(&mut xot, "argument", "x");
         let outer_call = build_call(&mut xot, inner_call, vec![outer_arg]);
         let segs = extract_chain(&xot, outer_call);
-        // Expected: Receiver:f, Call (no name, inner) , Call (no name, outer with arg)
-        assert_eq!(segs.len(), 3);
-        assert!(matches!(segs[0], ChainSegment::Receiver(_)));
-        assert!(matches!(segs[1], ChainSegment::Call { name_node: None, args: ref a, .. } if a.is_empty()));
-        let ChainSegment::Call { name_node: None, args, .. } = &segs[2] else {
+        // Expected: Receiver(inner_call), Call(no name, outer with arg)
+        assert_eq!(segs.len(), 2);
+        let ChainSegment::Receiver(rcv) = segs[0] else {
+            panic!("expected Receiver");
+        };
+        // The receiver IS the inner <call> element (opaque).
+        assert_eq!(get_element_name(&xot, rcv).as_deref(), Some("call"));
+        let ChainSegment::Call { name_node: None, args, .. } = &segs[1] else {
             panic!("expected outer Call");
         };
         assert_eq!(args.len(), 1);

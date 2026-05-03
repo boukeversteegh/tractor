@@ -57,6 +57,9 @@ pub enum TractorNode {
     Default,
     // Unary-shape marker
     Prefix,
+    // Chain inversion (iter 244): `[access]` distinguishes
+    // member-access chains from object literals.
+    Access,
 }
 
 impl TractorNode {
@@ -83,6 +86,7 @@ impl TractorNode {
             | Self::Super                                                           => (true, false, Keyword),
             Self::Void | Self::Variadic | Self::Compact | Self::Prefix
             | Self::Receiver | Self::Resource
+            | Self::Access
             | Self::Exports | Self::Opens | Self::Provides | Self::Requires | Self::Uses => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------

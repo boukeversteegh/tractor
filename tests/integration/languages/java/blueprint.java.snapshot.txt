@@ -74,9 +74,9 @@ program/
   │       │   └─ body/
   │       │       ├─ call[super]
   │       │       └─ expression/assign/
-  │       │           ├─ left/expression/member/
-  │       │           │   ├─ object/this = "this"
-  │       │           │   └─ property/name = "name"
+  │       │           ├─ left/expression/object[access]/
+  │       │           │   ├─ this = "this"
+  │       │           │   └─ member/name = "name"
   │       │           ├─ op = "="
   │       │           └─ right/expression/name = "name"
   │       ├─ method[public and static]/
@@ -89,10 +89,11 @@ program/
   │       │   │   │   ├─ type/name = "String"
   │       │   │   │   └─ type/name = "R"
   │       │   │   └─ name = "mapper"
-  │       │   └─ body/return/expression/call/
-  │       │       ├─ object/name = "mapper"
-  │       │       ├─ name = "apply"
-  │       │       └─ string = "\"hello\""
+  │       │   └─ body/return/expression/object[access]/
+  │       │       ├─ name = "mapper"
+  │       │       └─ call/
+  │       │           ├─ name = "apply"
+  │       │           └─ string = "\"hello\""
   │       ├─ method[public and synchronized]/
   │       │   ├─ annotation/name = "Override"
   │       │   ├─ returns/type/name = "T"
@@ -196,9 +197,9 @@ program/
   │       │           │   │   │   └─ name = "s"
   │       │           │   │   └─ guard/unary/
   │       │           │   │       ├─ op[logical and not] = "!"
-  │       │           │   │       └─ call/
-  │       │           │   │           ├─ object/name = "s"
-  │       │           │   │           └─ name = "isEmpty"
+  │       │           │   │       └─ object[access]/
+  │       │           │   │           ├─ name = "s"
+  │       │           │   │           └─ call/name = "isEmpty"
   │       │           │   └─ expression/binary/
   │       │           │       ├─ left/expression/string = "\"non-empty: \""
   │       │           │       ├─ op[plus] = "+"
@@ -264,13 +265,14 @@ program/
   │   └─ body/method[package]/
   │       ├─ returns/type/name = "String"
   │       ├─ name = "greet"
-  │       └─ body/return/expression/call/
-  │           ├─ object/name = "String"
-  │           ├─ name = "format"
-  │           ├─ string = "\"hello from %s\""
+  │       └─ body/return/expression/object[access]/
+  │           ├─ name = "String"
   │           └─ call/
-  │               ├─ object/call/name = "getClass"
-  │               └─ name = "getSimpleName"
+  │               ├─ name = "format"
+  │               ├─ string = "\"hello from %s\""
+  │               └─ object[access]/
+  │                   ├─ call/name = "getClass"
+  │                   └─ call/name = "getSimpleName"
   ├─ comment = "// Iter 19: new shapes — control flow, expressions, literals, patterns."
   ├─ comment[leading] = "/** @interface (annotation type) with a constant. */"
   ├─ interface[annotation]/
