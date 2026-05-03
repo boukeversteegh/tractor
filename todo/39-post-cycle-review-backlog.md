@@ -177,6 +177,138 @@ before committing a non-trivial change.
 
 ## Open
 
+### Cold-read findings (iter 233 review)
+
+- [ ] **Python `from`-import singleton/plural shape inconsistency**
+  *(Principle #12 violation, severity MED)*
+  - File: `tests/integration/languages/python/blueprint.py.snapshot.json:36-114`.
+  - Current: same `<from>` element renders as `"import": {…}` for
+    single-name imports (lines 38, 78, 84) AND as `"imports": [...]`
+    for multi-name (lines 48, 63, 99). Two JSON keys for the same
+    role.
+  - Cause: `tag_multi_role_children([("from", "import")])` only
+    fires when the parent has 2+ matching children (cardinality
+    discriminator), so single-name imports get no `list=` and
+    serialize as singleton key.
+  - Desired: always `"imports": [...]` regardless of cardinality
+    (Principle #12: list= drives JSON array uniformly). Likely
+    needs a Python-specific tag pass that sets `list="imports"`
+    on every `<import>` child of `<from>` (no cardinality gate).
+  - Effort: 1-iter.
+  - Source: iter 233 cold-read.
+
+- [ ] **`else_if` raw element name (underscore leak) in 5 languages**
+  *(Principle #2 violation, severity MED)*
+  - Files / line numbers:
+    - `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:438,447` (2 occurrences)
+    - `tests/integration/languages/python/blueprint.py.snapshot.txt:324`
+    - `tests/integration/languages/java/blueprint.java.snapshot.txt:112`
+    - `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:284`
+    - `tests/integration/languages/php/blueprint.php.snapshot.txt:114`
+  - Current: `else_if/` element. Iters 8 / 19 / 25 deliberately
+    chose `<else_if>` as the spelling for the collapsed elif chain
+    shape — flagged here because the underscore violates Principle
+    #2's "no grammar-leaked names with underscores."
+  - Whack-a-mole risk: HIGH. The flat-`<else_if>` shape was a
+    deliberate cross-language alignment (replaces nested
+    `else/if/...`). Renaming the spelling is OK; reverting the
+    shape is NOT.
+  - Desired (one of):
+    - `<elif>` (Python keyword, hyphen-free, lowercase).
+    - `<elseif>` (single word, common spelling).
+    - Recurse `<else>/<if>/...` (nested) — REJECTED by prior iters,
+      do not re-litigate without explicit reasoning.
+  - Effort: trivial (rename in each per-language config; tree
+    invariants whitelist update; snapshot regen).
+  - Source: iter 233 cold-read.
+
+- [ ] **Go `body[return]` marker semantics misleading**
+  *(Principle #11 / #13, severity LOW)*
+  - File: `tests/integration/languages/go/blueprint.go.snapshot.txt:254,272,318`.
+  - Current shape (line 254): `body[return]/for/...` — the `[return]`
+    marker on `<body>` says "function ends with bare return", but
+    structurally the bare `return` statement is invisible (its
+    children include for/defer/etc. but no `<return/>` element).
+  - Reads as "body is return-flavored" rather than "body has a
+    final naked return statement." Marker mode (Principle #13)
+    expects markers off text-only leaves; here the marker is on a
+    structural body, which is fine, but the semantics are unclear.
+  - Desired (one of):
+    - Emit a structural final child `<return/>` (no value) so the
+      bare return is a normal trailing statement; drop the marker.
+    - Rename marker to `body[naked-return]` to clarify intent.
+  - Effort: 1-iter.
+  - Source: iter 233 cold-read.
+
+- [ ] **Java `field/declarator/` is a tree-sitter grammar leak**
+  *(Principle #2 / #11, severity LOW)*
+  - File: `tests/integration/languages/java/blueprint.java.snapshot.txt:43-65`.
+  - Current: `field/.../ type/name="int", declarator/{name=MAX, value/...}`
+    — `<declarator>` is `variable_declarator` from tree-sitter.
+  - Java fields semantically have `name` and optional `value`;
+    `<declarator>` exists only because tree-sitter's grammar
+    supports `int a, b, c` multi-declarator form with shared type.
+  - Desired: for single-declarator fields, flatten to
+    `field/{name, value}` (drop `<declarator>` wrapper). For
+    multi-declarator (rare in practice), keep the wrapper or
+    emit multiple `<field>` siblings sharing a `<type>` reference.
+  - Effort: 1-iter (Custom handler).
+  - Source: iter 233 cold-read.
+
+- [ ] **Python `yield from` keyword erasure**
+  *(Principle #11, severity LOW)*
+  - File: `tests/integration/languages/python/blueprint.py.snapshot.txt:195-201`.
+  - Source: `yield from range(n, n*2)`.
+  - Current: `yield/call/{name=range, name=n, binary/...}` — the
+    `from` keyword is fully erased; structurally identical to
+    `yield range(n, n*2)`.
+  - Desired: `yield[from]/call/...` (marker) or `yield/from/call/...`
+    (wrapper). Keyword `yield from` has distinct generator-delegate
+    semantics; consumers have no way to tell them apart today.
+  - Effort: 1-iter.
+  - Source: iter 233 cold-read.
+
+- [ ] **Python `match` wildcard `pattern = "_"` as bare text leaf**
+  *(Principle #13, severity LOW)*
+  - File: `tests/integration/languages/python/blueprint.py.snapshot.txt:429`.
+  - Current: `arm/{ pattern = "_", then/return/expression/none = "None"}`
+    — `<pattern>` here is a text-only leaf with content "_".
+  - Other patterns are structural: `pattern[list]/...`,
+    `pattern[union]/...`, `pattern[splat]/...`.
+  - Desired: `<pattern[wildcard]/>` (empty marker, joining the
+    `pattern[X]` family) or `pattern/wildcard = "_"`.
+  - Effort: trivial.
+  - Source: iter 233 cold-read.
+
+- [ ] **TypeScript `body[break]` switch-case marker on body**
+  *(Principle #11 / #13, severity LOW)*
+  - File: `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:465,473`.
+  - Current: `case/{value/expression/string="ready", body[break]}` —
+    `body[break]` is a marker-on-empty-body for "case body that
+    just `break`s." The break statement itself is structurally
+    invisible.
+  - Desired: emit `body/break/` (the `break` is a normal statement)
+    and drop the special marker. Same archetype as the Go
+    `body[return]` finding — both should pick the same approach
+    for cross-language consistency (Principle #5).
+  - Effort: 1-iter (or 1-iter combined with the Go finding).
+  - Source: iter 233 cold-read.
+
+- [ ] **Go for-while drops `<condition>` wrapper**
+  *(Principle #5 within Go, severity MED)*
+  - File: `tests/integration/languages/go/blueprint.go.snapshot.txt:554-561`.
+  - Source: `for n < 3 { n++ }` (while-form `for`).
+  - Current: `for/binary/...` (no `<condition>` wrapper).
+  - Compare lines 504-515 same file (C-style `for`):
+    `for/{variable[short]/..., condition/expression/binary/..., unary/...}`.
+  - Same `for` construct, two structural shapes for the boolean
+    test. `<condition>` wrapper is missing on the while-form.
+  - Desired: `for/condition/expression/binary/...` for the
+    while-form too. Within-Go Principle #5 — same concept, same
+    name.
+  - Effort: 1-iter (Go custom handler / field-wrap addition).
+  - Source: iter 233 cold-read.
+
 ### Format note for new items
 
 Open items are written so they can be acted on with no conversation
