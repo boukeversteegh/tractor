@@ -1704,27 +1704,23 @@
       "body": {
         "returns": [
           {
-            "children": [
+            "expressions": [
               {
-                "$type": "expression",
+                "name": "squares"
+              },
+              {
                 "name": "pairs"
               },
               {
-                "$type": "expression",
                 "name": "uniq"
               },
               {
-                "$type": "expression",
                 "name": "gen"
               },
               {
-                "$type": "expression",
                 "name": "matrix"
               }
-            ],
-            "expression": {
-              "name": "squares"
-            }
+            ]
           }
         ],
         "assigns": [
@@ -2007,39 +2003,32 @@
       "body": {
         "returns": [
           {
-            "children": [
+            "expressions": [
               {
-                "$type": "expression",
+                "name": "first"
+              },
+              {
                 "name": "greeting"
               },
               {
-                "$type": "expression",
                 "name": "doubled"
               },
               {
-                "$type": "expression",
                 "name": "head"
               },
               {
-                "$type": "expression",
                 "name": "mid"
               },
               {
-                "$type": "expression",
                 "name": "tail"
               },
               {
-                "$type": "expression",
                 "name": "merged"
               },
               {
-                "$type": "expression",
                 "name": "combined"
               }
-            ],
-            "expression": {
-              "name": "first"
-            }
+            ]
           }
         ],
         "ifs": [
@@ -2416,27 +2405,23 @@
       "body": {
         "returns": [
           {
-            "children": [
+            "expressions": [
               {
-                "$type": "expression",
+                "name": "matched"
+              },
+              {
                 "name": "result"
               },
               {
-                "$type": "expression",
                 "name": "flag"
               },
               {
-                "$type": "expression",
                 "name": "bundle"
               },
               {
-                "$type": "expression",
                 "name": "banner"
               }
-            ],
-            "expression": {
-              "name": "matched"
-            }
+            ]
           }
         ],
         "expressions": [

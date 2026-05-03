@@ -424,25 +424,17 @@ member-access receiver). But several transform sites still
 
 ### Java method-call shape divergence
 
-- [ ] **Java method-invocation has `<call><object/><name="method"/>...</call>`**
-  (flat shape, iter 148); **Python/Go method calls have**
-  `<call><member><object/><property/></member>...args</call>`
-  (nested via `<member>`); **TypeScript uses**
-  `<call><callee><member>...</member></callee>...</call>`.
-  - **Concrete examples**:
-    - Java `mapper.apply("x")` → `<call><object/>mapper<name>apply</name>...</call>` (flat).
-    - Python/Go `obj.method(x)` → `<call><member><object/><property/></member>...</call>`.
-    - TS same `obj.method(x)` → `<call><callee><member>...</member></callee>...</call>`.
-  - **Three different call shapes across four PLs** for the same
-    syntactic construct. Within-language consistency is intact
-    (`feedback_principle5_scope.md` permits this), but cross-language
-    `//call/member/property/name='X'` queries are language-specific.
-  - **Decision needed**: align to one of (a) Java's flat, (b)
-    Python/Go's nested member, (c) TS's callee+member. Each has
-    trade-offs the user should weigh.
-  - **Effort**: 30 minutes (subagent design review) + 1-2 iters
-    (per-language migration) once decided.
-  - **Source**: iters 143-148 review.
+- [x] iter 265 — **Java method-call shape divergence** —
+  RESOLVED by chain inversion. The pre-iter-239 divergence
+  (Java flat, Python/Go nested-member, TS callee+member) is
+  obsolete: chain inversion (iters 239-248) unified all
+  call-chain shapes to canonical `<object[access]>` with
+  receiver-first, nested step spine. Verified `obj.method("x")`
+  produces identical `<object[access]><name>obj</name><call>
+  <name>method</name><string>"x"</string></call></object>`
+  across Java, Python, Go, TypeScript. The cross-language
+  query `//object[access]/name='obj'/call[name='method']`
+  works uniformly.
 
 ### Stale doc-comment sweep — round 2
 
@@ -510,13 +502,13 @@ member-access receiver). But several transform sites still
 
 ### Ruby member-access role-wrap (fold into call-shape backlog)
 
-- [ ] **Ruby `obj.method(arg)` adds a 4th call-shape variant** —
-  flat `call[optional]/<name><name>...` at
-  `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:554-557`.
-  Already-tracked Java method-call divergence backlog item lists
-  3 distinct shapes; Ruby is a 4th. Fold into that item when the
-  cross-language alignment design call is made. (severity: med;
-  effort: small once decided)
+- [x] iter 265 — **Ruby `obj.method(arg)` 4th call-shape variant** —
+  RESOLVED by chain inversion (iter 246 Ruby pilot). Verified
+  `obj.method(x)` produces canonical `<object[access]>/<name>obj
+  </name>/<call>{name=method, name=x}</call>` matching
+  Java/Python/Go/TS. The "4th variant" was the pre-iter-246 flat
+  `call[optional]/<name><name>` shape which the chain inverter
+  consumed.
 
 ### Findings from iter-175 post-cycle review (iters 170-174 cluster)
 

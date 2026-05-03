@@ -1439,6 +1439,13 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // <compare> and collide on the singleton `object`
             // JSON key without this tag.
             ("compare", "object"),
+            // Multi-value returns (`return a, b, c`) — after
+            // `wrap_expression_positions` each becomes a sibling
+            // <expression> direct child of <return>; tag them so
+            // JSON renders as `expressions: [...]` instead of
+            // colliding on the singleton `expression` key and
+            // overflowing into `children`.
+            ("return", "expression"),
         ],
     )?;
     python_restructure_imports(xot, root)?;

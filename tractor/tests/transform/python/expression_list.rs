@@ -36,4 +36,17 @@ def triple():
                 [expression/name='b']
         "#),
         1);
+
+    // Multi-value `return a, b, c` produces multiple <expression>
+    // sibling direct children of <return>. Per Principle #19 they
+    // are role-uniform (each is a return value); tag with
+    // `list="expressions"` so JSON renders as `expressions: [...]`
+    // array rather than overflowing to `children`.
+    claim("Python multi-value return tags each <expression> with list='expressions'",
+        &mut parse_src("python", r#"
+def f():
+    return a, b, c
+"#),
+        "//return/expression[@list='expressions']",
+        3);
 }
