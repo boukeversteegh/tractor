@@ -267,6 +267,26 @@ fn go_inc_dec_statement_extracts_op() {
         1);
 }
 
+/// Go `arr[i]` index expression — wraps the operand (the array)
+/// in `<object>` to match member-access vocabulary and avoid
+/// JSON name-key collision when both array and index are
+/// identifiers (`seen[x]` would otherwise produce two
+/// `<name>` siblings). Unary expressions are NOT touched (they
+/// also use `field="operand"` but only have one operand, no
+/// collision).
+#[test]
+fn go_index_expression_wraps_operand() {
+    claim("Go index `seen[x]` wraps the array operand in <object>",
+        &mut parse_src("go", "package m\nfunc f(seen []int, x int) { _ = seen[x] }"),
+        "//index[object/name='seen'][name='x']",
+        1);
+
+    claim("Go unary `-x` is unchanged (still bare <name> operand, no <object> wrap)",
+        &mut parse_src("go", "package m\nfunc f(x int) { _ = -x }"),
+        "//unary[name='x'][not(object)]",
+        1);
+}
+
 #[test]
 fn php_update_prefix_vs_postfix() {
     claim("`++$x` extracts <op[increment]> AND carries <prefix>",

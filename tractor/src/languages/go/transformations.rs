@@ -15,8 +15,8 @@ use crate::transform::{TransformAction, helpers::*};
 use super::input::GoKind;
 use super::output::TractorNode::{
     self, Alias, Blank, Comment as CommentName, Dot, Else, Exported, Field, For, Function, If,
-    Import, Interface, Leading, Method, Name, Path, Raw, Short, String as GoString, Struct,
-    Trailing, Type, Unexported, Variable,
+    Import, Index, Interface, Leading, Method, Name, Object, Path, Raw, Short, String as GoString,
+    Struct, Trailing, Type, Unexported, Variable,
 };
 
 /// `qualified_type` — `pkg.Name`. Wraps the package identifier in
@@ -284,6 +284,27 @@ pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
     let marker = get_export_marker(xot, node);
     xot.with_prepended_marker(node, marker)?
         .with_renamed(node, Alias);
+    Ok(TransformAction::Continue)
+}
+
+/// `index_expression` — `arr[i]`. Tree-sitter tags the array with
+/// `field="operand"` and the index with `field="index"`. Both
+/// surface as `<name>` after rename when both are identifiers
+/// (e.g. `seen[x]`), creating a JSON name-key collision (first
+/// `<name>` becomes singleton, second overflows to children).
+///
+/// Wrap the operand in `<object>` (matching member-access
+/// vocabulary — the array IS the object being indexed). The
+/// index stays as a direct sibling.
+///
+/// Custom (not field-wrap): `field="operand"` also appears in
+/// `unary_expression` (e.g. `-x`) where it's the unary operand.
+/// Field-wrap is global per language, so wrapping there too
+/// would change Unary shape unnecessarily. The Custom handler
+/// scopes the wrap to `index_expression`.
+pub fn index_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_wrapped_field_child(node, "operand", Object)?
+        .with_renamed(node, Index);
     Ok(TransformAction::Continue)
 }
 

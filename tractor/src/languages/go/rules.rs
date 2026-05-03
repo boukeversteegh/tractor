@@ -125,7 +125,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::ImportSpec               => Custom(transformations::import_spec),
         GoKind::ImportSpecList           => Custom(transformations::import_spec_list),
         GoKind::IncStatement             => ExtractOpThenRename(Unary),
-        GoKind::IndexExpression          => Rename(Index),
+        GoKind::IndexExpression          => Custom(transformations::index_expression),
         GoKind::InterfaceType            => Rename(Interface),
         GoKind::InterpretedStringLiteral => Rename(String),
         GoKind::IntLiteral               => Rename(Int),

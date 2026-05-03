@@ -855,10 +855,10 @@
                         "left": {
                           "expression": {
                             "index": {
-                              "children": [
-                                "x"
-                              ],
-                              "name": "seen"
+                              "name": "x",
+                              "object": {
+                                "name": "seen"
+                              }
                             }
                           }
                         }
@@ -887,10 +887,10 @@
                     "right": {
                       "expression": {
                         "index": {
-                          "children": [
-                            "x"
-                          ],
-                          "name": "seen"
+                          "name": "x",
+                          "object": {
+                            "name": "seen"
+                          }
                         }
                       }
                     },
@@ -1460,7 +1460,9 @@
                 "expression": {
                   "index": {
                     "int": "0",
-                    "name": "implicit"
+                    "object": {
+                      "name": "implicit"
+                    }
                   }
                 }
               }
