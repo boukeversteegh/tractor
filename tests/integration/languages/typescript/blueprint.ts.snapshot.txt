@@ -382,12 +382,12 @@ program/
   │       │   │   ├─ name = "head"
   │       │   │   └─ rest/name = "rest"
   │       │   └─ value/expression/object[access]/
-  │       │       ├─ name = "String"
+  │       │       ├─ call/
+  │       │       │   ├─ name = "String"
+  │       │       │   └─ name = "input"
   │       │       └─ call/
-  │       │           ├─ name = "input"
-  │       │           └─ call/
-  │       │               ├─ name = "split"
-  │       │               └─ string = "\"\""
+  │       │           ├─ name = "split"
+  │       │           └─ string = "\"\""
   │       ├─ comment[trailing] = "// array destructure + rest"
   │       ├─ variable[const]/
   │       │   ├─ name = "spread"

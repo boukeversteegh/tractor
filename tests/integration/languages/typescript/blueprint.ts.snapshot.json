@@ -307,19 +307,22 @@
                 "value": {
                   "expression": {
                     "object": {
-                      "call": {
-                        "call": {
+                      "children": [
+                        {
+                          "$type": "call",
+                          "name": "split",
                           "arguments": [
                             "\"\""
-                          ],
-                          "name": "split"
-                        },
+                          ]
+                        }
+                      ],
+                      "access": true,
+                      "call": {
                         "arguments": [
                           "input"
-                        ]
-                      },
-                      "access": true,
-                      "name": "String"
+                        ],
+                        "name": "String"
+                      }
                     }
                   }
                 },
