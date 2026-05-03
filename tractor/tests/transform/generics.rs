@@ -268,3 +268,27 @@ fn csharp_where() {
         "#),
         1);
 }
+
+/// Rust `impl Trait for Type` distinguishes the trait position from
+/// the impl-target position via an `<implements>` slot wrapper —
+/// matches Java/TS/C# vocabulary (Principle #5). Inherent
+/// `impl Type {}` blocks lack the wrapper. Custom handler scopes
+/// the wrap to `impl_item` so other tree-sitter `field="trait"`
+/// uses (`dyn Trait` etc.) are unaffected.
+#[test]
+fn rust_impl_implements_slot() {
+    claim("Rust `impl Drawable for Point` wraps trait in <implements>",
+        &mut parse_src("rust", "impl Drawable for Point {}"),
+        "//impl[implements/type/name='Drawable'][type/name='Point']",
+        1);
+
+    claim("Rust inherent `impl Point` keeps just the type (no <implements>)",
+        &mut parse_src("rust", "impl Point {}"),
+        "//impl[type/name='Point'][not(implements)]",
+        1);
+
+    claim("Rust `dyn Trait` uses `<type[dynamic]>` — NOT wrapped in <implements>",
+        &mut parse_src("rust", "fn f() -> Box<dyn Drawable> { todo!() }"),
+        "//type[dynamic]/implements",
+        0);
+}

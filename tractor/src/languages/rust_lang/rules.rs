@@ -205,7 +205,7 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         RustKind::FunctionModifiers        => Custom(transformations::function_modifiers),
         RustKind::FunctionSignatureItem    => Rename(Signature),
         RustKind::IfExpression             => Rename(If),
-        RustKind::ImplItem                 => Rename(Impl),
+        RustKind::ImplItem                 => Custom(transformations::impl_item),
         RustKind::IndexExpression          => Rename(Index),
         RustKind::IntegerLiteral           => Rename(Int),
         RustKind::Lifetime                 => Rename(Lifetime),

@@ -217,7 +217,7 @@ file/
   ├─ impl/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/name = "T"
-  │   ├─ type/name = "Drawable"
+  │   ├─ implements/type/name = "Drawable"
   │   ├─ type[generic]/
   │   │   ├─ name = "Point"
   │   │   ├─ lifetime/name = "a"

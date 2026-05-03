@@ -21,7 +21,7 @@ pub enum TractorNode {
     Self_,
     Field, Variant, Lifetime, Attribute,
     // Types / generics (Generic dual-use)
-    Type, Generic, Generics, Path, Bounds, Bound, Extends, Where,
+    Type, Generic, Generics, Path, Bounds, Bound, Extends, Implements, Where,
     // Statements / control flow.
     // NOTE: `ElseIf` serializes as `else_if` — intentional
     // underscore. See `transform/conditionals.rs` and design.md

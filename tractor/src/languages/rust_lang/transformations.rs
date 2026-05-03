@@ -13,9 +13,9 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::RustKind;
 use super::output::TractorNode::{
     self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Exclusive, Expression,
-    Extern, From, Generic, Generics, In as InName, Inclusive, Inner, Leading, Let, Literal, Mut,
-    Name, Parameter, Pattern, Private, Pub, Range as RangeNode, Raw, Self_, Static,
-    String as RustString, Super, To, Trailing, Try, Type, Unsafe, Use as UseName,
+    Extern, From, Generic, Generics, Impl, Implements, In as InName, Inclusive, Inner, Leading,
+    Let, Literal, Mut, Name, Parameter, Pattern, Private, Pub, Range as RangeNode, Raw, Self_,
+    Static, String as RustString, Super, To, Trailing, Try, Type, Unsafe, Use as UseName,
 };
 
 /// `closure_expression` — `|x| x` or `|x| { ... }`. Tree-sitter wraps
@@ -143,6 +143,41 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 /// migration proceeds. Drops the wrapper, promotes children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `impl_item` — `impl Type {}` (inherent) or `impl Trait for Type {}`
+/// (trait impl). Tree-sitter tags both the trait position and the
+/// impl target with `field="trait"` and `field="type"` — both
+/// surface as `<type>` elements, which collide on the JSON `type`
+/// key (the second overflows to `children`).
+///
+/// Wrap the trait position only (when present) in `<implements>`
+/// so JSON renders both distinctly: `implements: {type: {...}}` +
+/// `type: {...}`. Inherent impls lack `field="trait"`, so the
+/// wrapper is simply absent.
+///
+/// Field-wrap can't do this because tree-sitter uses
+/// `field="trait"` in other constructs too (`dynamic_type`,
+/// `higher_ranked_trait_bound`, `removed_trait_bound`) where the
+/// trait IS the type rather than something being implemented.
+/// Custom handler scopes the wrap to `impl_item` only.
+///
+/// Element name `<implements>` matches Java/TS's vocabulary for
+/// trait/interface implementation (cross-language Principle #5).
+pub fn impl_item(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let trait_child = xot.children(node)
+        .find(|&c| {
+            xot.element(c).is_some()
+                && get_attr(xot, c, "field").as_deref() == Some("trait")
+        });
+    if let Some(child) = trait_child {
+        let wrapper_id = xot.add_name(Implements.as_str());
+        let wrapper_node = xot.new_element(wrapper_id);
+        xot.with_source_location_from(wrapper_node, child)
+            .with_wrap_child(child, wrapper_node)?;
+    }
+    xot.with_renamed(node, Impl);
+    Ok(TransformAction::Continue)
 }
 
 /// `range_expression` / `range_pattern` — `0..10` (exclusive end),

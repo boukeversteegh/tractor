@@ -762,66 +762,6 @@
       }
     },
     {
-      "children": [
-        {
-          "$type": "type",
-          "generic": true,
-          "name": "Point",
-          "arguments": [
-            {
-              "$type": "lifetime",
-              "name": "a"
-            },
-            {
-              "$type": "type",
-              "name": "T"
-            }
-          ]
-        }
-      ],
-      "generics": [
-        {
-          "$type": "lifetime",
-          "name": "a"
-        },
-        {
-          "name": "T"
-        }
-      ],
-      "type": {
-        "name": "Drawable"
-      },
-      "where": {
-        "bound": {
-          "extends": [
-            {
-              "type": {
-                "name": "Clone"
-              }
-            },
-            {
-              "type": {
-                "name": "Send"
-              }
-            },
-            {
-              "type": {
-                "name": "Debug"
-              }
-            },
-            {
-              "lifetime": {
-                "name": "static"
-              }
-            }
-          ],
-          "left": {
-            "type": {
-              "name": "T"
-            }
-          }
-        }
-      },
       "body": {
         "functions": [
           {
@@ -864,6 +804,65 @@
             "name": "Canvas"
           }
         ]
+      },
+      "generics": [
+        {
+          "$type": "lifetime",
+          "name": "a"
+        },
+        {
+          "name": "T"
+        }
+      ],
+      "implements": {
+        "type": {
+          "name": "Drawable"
+        }
+      },
+      "type": {
+        "arguments": [
+          {
+            "$type": "lifetime",
+            "name": "a"
+          },
+          {
+            "$type": "type",
+            "name": "T"
+          }
+        ],
+        "generic": true,
+        "name": "Point"
+      },
+      "where": {
+        "bound": {
+          "extends": [
+            {
+              "type": {
+                "name": "Clone"
+              }
+            },
+            {
+              "type": {
+                "name": "Send"
+              }
+            },
+            {
+              "type": {
+                "name": "Debug"
+              }
+            },
+            {
+              "lifetime": {
+                "name": "static"
+              }
+            }
+          ],
+          "left": {
+            "type": {
+              "name": "T"
+            }
+          }
+        }
       }
     }
   ],
