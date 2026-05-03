@@ -1870,6 +1870,11 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // Go multi-target var: `var x, y = 1, 2` produces
             // `<var>` with multiple `<name>` siblings.
             ("var", "name"),
+            // Go struct fields: `type T struct { A int; B string }`
+            // produces `<struct>` with multiple `<field>` siblings
+            // (each a member declaration, role-uniform per
+            // Principle #19). Tag so JSON renders `fields: [...]`.
+            ("struct", "field"),
             // Go interfaces with multiple methods + type-set elements.
             ("interface", "method"),
             ("interface", "type"),

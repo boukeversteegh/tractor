@@ -48,3 +48,26 @@ fn go() {
         "#),
         1);
 }
+
+/// Multi-field struct declarations tag each `<field>` sibling with
+/// `list="fields"` so JSON renders as `fields: [...]` array.
+/// Single-field struct keeps the singleton `<field>` JSON key
+/// (cardinality discriminator on `tag_multi_role_children`).
+#[test]
+fn go_multi_field_struct_lists_fields() {
+    claim("Go 2+ struct fields tag with list='fields'",
+        &mut parse_src("go", r#"
+        package main
+        type Pair struct { A int; B string }
+    "#),
+        "//struct/field[@list='fields']",
+        2);
+
+    claim("Go single-field struct keeps singleton <field> (no list= tagging)",
+        &mut parse_src("go", r#"
+        package main
+        type One struct { Only int }
+    "#),
+        "//struct/field[not(@list)]",
+        1);
+}

@@ -259,57 +259,57 @@
       "name": "MyErr"
     },
     {
-      "children": [
+      "fields": [
         {
-          "$type": "field",
+          "string": {
+            "text": "`json:\"x,omitempty\"`",
+            "raw": true
+          },
+          "exported": true,
+          "names": [
+            "X",
+            "Y"
+          ],
+          "type": {
+            "name": "int"
+          }
+        },
+        {
+          "string": {
+            "text": "`json:\"name\"`",
+            "raw": true
+          },
           "exported": true,
           "name": "Name",
           "type": {
             "name": "string"
-          },
-          "string": {
-            "text": "`json:\"name\"`",
-            "raw": true
           }
         }
       ],
       "exported": true,
-      "name": "Point",
-      "field": {
-        "string": {
-          "text": "`json:\"x,omitempty\"`",
-          "raw": true
-        },
-        "exported": true,
-        "names": [
-          "X",
-          "Y"
-        ],
-        "type": {
-          "name": "int"
-        }
-      }
+      "name": "Point"
     },
     {
-      "children": [
+      "fields": [
         {
-          "$type": "field",
-          "exported": true,
-          "name": "Tag",
+          "type": {
+            "name": "Point"
+          },
+          "unexported": true
+        },
+        {
           "type": {
             "name": "string"
-          }
-        },
-        {
-          "$type": "field",
-          "unexported": true,
-          "name": "_",
-          "struct": "struct{}"
-        },
-        {
-          "$type": "field",
+          },
           "exported": true,
-          "name": "Meta",
+          "name": "Tag"
+        },
+        {
+          "struct": "struct{}",
+          "unexported": true,
+          "name": "_"
+        },
+        {
           "struct": {
             "field": {
               "type": {
@@ -318,17 +318,13 @@
               "exported": true,
               "name": "Created"
             }
-          }
+          },
+          "exported": true,
+          "name": "Meta"
         }
       ],
       "exported": true,
-      "name": "Labeled",
-      "field": {
-        "type": {
-          "name": "Point"
-        },
-        "unexported": true
-      }
+      "name": "Labeled"
     }
   ],
   "methods": [
