@@ -447,7 +447,7 @@ fn java() {
         &mut tree,
         &multi_xpath(r#"
             //class[name='Demo']/body
-                [field[declarator/name='count']]
+                [field[name='count']]
                 [comment[.='// trailing single']
                     [trailing]
                 ]
@@ -455,7 +455,7 @@ fn java() {
                     [contains(., 'leading second')]
                     [leading]
                 ]
-                [field[declarator/name='name']]
+                [field[name='name']]
                 [comment[.='/* leading block */']
                     [leading]
                 ]

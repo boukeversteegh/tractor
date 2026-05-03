@@ -349,6 +349,13 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // its handler ran.
     crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "call"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
+    // Flatten single-declarator wrappers in fields and locals so
+    // `int x = 1;` becomes `field/{type, name, value}` instead of
+    // `field/{type, declarator/{name, value}}`. Multi-declarator
+    // (`int a, b = 5`) keeps the wrapper — each declarator is a
+    // role-mixed name+value group whose pairing depends on the
+    // wrapper. See cold-read backlog iter 233.
+    crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root,
         &["body", "block", "unit", "namespace", "section", "import", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
@@ -1736,6 +1743,12 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         xot, root,
         &["body", "block", "then", "else", "call"],
     )?;
+    // Single-declarator fields and locals lose their <declarator>
+    // wrapper (`int x = 1;` → `field/{type, name, value}`).
+    // Multi-declarator (`int a, b = 5`) keeps wrappers — each is a
+    // role-mixed name+value group whose pairing depends on the
+    // wrapper. See cold-read backlog iter 233.
+    crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;

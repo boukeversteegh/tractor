@@ -3,10 +3,12 @@
 
 use crate::support::semantic::*;
 
-/// Principle #2 — `variable_declarator` renames to <declarator>
-/// (no underscores in the final vocabulary, short but not
-/// abbreviated). Each declarator in a multi-variable declaration
-/// is its own <declarator>.
+/// Principle #2 — `variable_declarator` renames to <declarator>.
+/// Multi-declarator declarations (rare in practice, but valid syntax)
+/// keep the <declarator> wrapper because each is a role-mixed
+/// name+value group whose name↔value pairing depends on the
+/// wrapper. Single-declarator declarations flatten the wrapper
+/// (see java_single_declarator_flattens below).
 #[test]
 fn java() {
     claim("multi-variable declaration shape has one variable with two declarators",
@@ -26,6 +28,62 @@ fn java() {
                 ]
                 [count(declarator)=2]
         "#),
+        1);
+}
+
+/// Single-declarator Java fields and locals flatten the
+/// `<declarator>` wrapper so `int x = 1;` produces
+/// `field/{type, name, value}` rather than
+/// `field/{type, declarator/{name, value}}`. Multi-declarator
+/// keeps the wrapper (see `java` above for the multi-declarator
+/// case). Same flatten applies to local variables (within-Java
+/// Principle #5: fields and locals share shape).
+#[test]
+fn java_single_declarator_flattens() {
+    let mut tree = parse_src("java", r#"
+        class T {
+            int x = 1;
+            String name;
+            void f() { int y = 2; }
+        }
+    "#);
+
+    claim("single-declarator Java field exposes name as a direct child (no <declarator>)",
+        &mut tree,
+        "//field[name='x'][not(declarator)][value/expression/int='1']",
+        1);
+
+    claim("single-declarator Java field without initializer exposes name directly",
+        &mut tree,
+        "//field[name='name'][not(declarator)][not(value)]",
+        1);
+
+    claim("single-declarator Java local variable also flattens",
+        &mut tree,
+        "//variable[name='y'][not(declarator)][value/expression/int='2']",
+        1);
+}
+
+/// Same archetype for C#: single-declarator fields and locals
+/// flatten; multi-declarator (rare in C#) keeps wrappers.
+#[test]
+fn csharp_single_declarator_flattens() {
+    let mut tree = parse_src("csharp", r#"
+        class T {
+            int X = 1;
+            string name;
+            void M() { int y = 2; }
+        }
+    "#);
+
+    claim("single-declarator C# field exposes name directly (no <declarator>)",
+        &mut tree,
+        "//field[name='X'][not(declarator)]",
+        1);
+
+    claim("single-declarator C# local variable flattens",
+        &mut tree,
+        "//variable[name='y'][not(declarator)]",
         1);
 }
 

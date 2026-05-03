@@ -316,8 +316,8 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("simple `name!.Length` puts <expression[non_null]> as the chain receiver",
         &mut tree,
         &multi_xpath(r#"
-            //variable[declarator/name='simple']
-                /declarator/object[access]
+            //variable[name='simple']
+                /object[access]
                     [expression[non_null]/name='nullable']
                     [member/name='Length']
         "#),
@@ -326,8 +326,8 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("chained `name!.A().B` keeps the non-null marker on the innermost receiver",
         &mut tree,
         &multi_xpath(r#"
-            //variable[declarator/name='chained']
-                /declarator/object[access]
+            //variable[name='chained']
+                /object[access]
                     [expression[non_null]/name='nullable']
                     [.//call/name='ToUpper']
                     [.//member/name='Length']
@@ -337,8 +337,8 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("binary `first!.Length + second!.Length` carries non-null host under both operands",
         &mut tree,
         &multi_xpath(r#"
-            //variable[declarator/name='combined']
-                /declarator/binary
+            //variable[name='combined']
+                /binary
                     [op[plus]]
                     [left/expression/object[access][expression[non_null]/name='first'][member/name='Length']]
                     [right/expression/object[access][expression[non_null]/name='second'][member/name='Length']]

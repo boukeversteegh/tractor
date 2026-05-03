@@ -39,11 +39,11 @@ fn csharp_vocabulary() {
                 [extends/type[name='Animal']]
                 [extends/type[name='IBarker']]
                 [body/field
-                    [declarator/name='Owner']
+                    [name='Owner']
                     [type[name='T']]
                     [not(variable)]]
                 [body/field
-                    [declarator/name='Tags']
+                    [name='Tags']
                     [type[name='List']
                         [generic]
                         [type[name='string']]]
@@ -88,25 +88,25 @@ fn java_vocabulary() {
                 [implements/type[name='Barker']]
                 [implements/type[name='Runner']]
                 [body/field
-                    [declarator/name='a']
+                    [name='a']
                     [type[name='int']]]
                 [body/field
-                    [declarator/name='b']
+                    [name='b']
                     [type[name='double']]]
                 [body/field
-                    [declarator/name='c']
+                    [name='c']
                     [type[name='boolean']]]
                 [body/field
-                    [declarator/name='e']
+                    [name='e']
                     [type[name='Foo']]]
                 [body/field
-                    [declarator/name='l']
+                    [name='l']
                     [type[name='List']]]
                 [body/field
-                    [declarator/name='owner']
+                    [name='owner']
                     [type[name='T']]]
                 [body/field
-                    [declarator/name='tags']
+                    [name='tags']
                     [type[name='List']
                         [generic]
                         [type[name='String']]]]

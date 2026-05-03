@@ -302,6 +302,75 @@ pub fn wrap_relationship_targets_in_type(
 /// (`path.path.path.name` collisions). With it, every path is a flat
 /// list of segments — `//path/name[1]='com'`,
 /// `//path/name[last()]='foo'` work positionally.
+/// Flatten a single `<declarator>` child by lifting its children up
+/// into the parent. Applies to elements named in `parent_names`
+/// (typically `["field", "variable"]` for Java / C#) and only when
+/// the parent has EXACTLY ONE `<declarator>` child.
+///
+/// Source shape (Java / C# `int x = 1`):
+///   `<field><type/>...<declarator><name>x</name><value/></declarator></field>`
+///
+/// After:
+///   `<field><type/>...<name>x</name><value/></field>`
+///
+/// Multi-declarator parents (`int a, b = 5, c`) keep their
+/// `<declarator>` wrappers — each is genuinely role-mixed (a
+/// name/value group) and flattening would lose the name↔value
+/// binding. TypeScript already unconditionally flattens declarators
+/// via `Flatten` rule; that's a known gap (multi-declarator binding
+/// loss) tracked separately in the cold-read backlog.
+///
+/// Idempotent: parents without `<declarator>` children are skipped.
+pub fn flatten_single_declarator_children(
+    xot: &mut Xot,
+    root: XotNode,
+    parent_names: &[&str],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    if parent_names.is_empty() {
+        return Ok(());
+    }
+    let root = find_content_root(xot, root);
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(
+        xot: &Xot,
+        node: XotNode,
+        parent_names: &[&str],
+        out: &mut Vec<XotNode>,
+    ) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if parent_names.contains(&name.as_str()) {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, parent_names, out);
+        }
+    }
+    collect(xot, root, parent_names, &mut targets);
+    for parent in targets {
+        let declarators: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("declarator")
+            })
+            .collect();
+        if declarators.len() != 1 {
+            continue;
+        }
+        let declarator = declarators[0];
+        let inner_children: Vec<XotNode> = xot.children(declarator).collect();
+        for child in inner_children {
+            xot.detach(child)?;
+            xot.insert_before(declarator, child)?;
+        }
+        xot.detach(declarator)?;
+    }
+    Ok(())
+}
+
 pub fn flatten_nested_paths(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     use helpers::*;
     let root = find_content_root(xot, root);

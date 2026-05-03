@@ -213,34 +213,28 @@
         ],
         "fields": [
           {
-            "declarator": {
-              "value": {
-                "expression": {
-                  "int": "100"
-                }
-              },
-              "name": "MAX"
+            "value": {
+              "expression": {
+                "int": "100"
+              }
             },
             "public": true,
             "static": true,
             "final": true,
             "type": {
               "name": "int"
-            }
+            },
+            "name": "MAX"
           },
           {
-            "declarator": {
-              "name": "name"
-            },
+            "name": "name",
             "private": true,
             "type": {
               "name": "String"
             }
           },
           {
-            "declarator": {
-              "name": "items"
-            },
+            "name": "items",
             "protected": true,
             "type": {
               "arguments": [
@@ -265,18 +259,14 @@
             }
           },
           {
-            "declarator": {
-              "name": "pkg"
-            },
+            "name": "pkg",
             "package": true,
             "type": {
               "name": "int"
             }
           },
           {
-            "declarator": {
-              "name": "ready"
-            },
+            "name": "ready",
             "package": true,
             "transient": true,
             "volatile": true,
@@ -619,30 +609,26 @@
               ],
               "variables": [
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "int": "0"
-                      }
-                    },
-                    "name": "total"
+                  "value": {
+                    "expression": {
+                      "int": "0"
+                    }
                   },
                   "type": {
                     "name": "int"
-                  }
+                  },
+                  "name": "total"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "int": "0"
-                      }
-                    },
-                    "name": "i"
+                  "value": {
+                    "expression": {
+                      "int": "0"
+                    }
                   },
                   "type": {
                     "name": "int"
-                  }
+                  },
+                  "name": "i"
                 }
               ],
               "whiles": [
@@ -1076,73 +1062,64 @@
             "body": {
               "variables": [
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "array": {
-                          "ints": [
-                            "1",
-                            "2",
-                            "3"
-                          ]
-                        }
+                  "value": {
+                    "expression": {
+                      "array": {
+                        "ints": [
+                          "1",
+                          "2",
+                          "3"
+                        ]
                       }
-                    },
-                    "name": "arr"
+                    }
                   },
                   "type": {
                     "type": {
                       "name": "int"
                     },
                     "array": true
-                  }
+                  },
+                  "name": "arr"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "char": "'A'"
-                      }
-                    },
-                    "name": "ch"
+                  "value": {
+                    "expression": {
+                      "char": "'A'"
+                    }
                   },
                   "type": {
                     "name": "char"
-                  }
+                  },
+                  "name": "ch"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
+                  "value": {
+                    "expression": {
+                      "type": {
                         "type": {
-                          "type": {
-                            "name": "String"
-                          },
-                          "class": true
-                        }
+                          "name": "String"
+                        },
+                        "class": true
                       }
-                    },
-                    "name": "cls"
+                    }
                   },
                   "type": {
                     "name": "Class",
                     "generic": true,
                     "wildcard": true
-                  }
+                  },
+                  "name": "cls"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "reference": {
-                          "names": [
-                            "String",
-                            "valueOf"
-                          ]
-                        }
+                  "value": {
+                    "expression": {
+                      "reference": {
+                        "names": [
+                          "String",
+                          "valueOf"
+                        ]
                       }
-                    },
-                    "name": "ref"
+                    }
                   },
                   "type": {
                     "arguments": [
@@ -1157,7 +1134,8 @@
                     ],
                     "generic": true,
                     "name": "java.util.function.Function"
-                  }
+                  },
+                  "name": "ref"
                 }
               ]
             },
@@ -1295,17 +1273,15 @@
                       ]
                     },
                     "variable": {
-                      "declarator": {
-                        "value": {
-                          "expression": {
-                            "int": "0"
-                          }
-                        },
-                        "name": "i"
+                      "value": {
+                        "expression": {
+                          "int": "0"
+                        }
                       },
                       "type": {
                         "name": "int"
-                      }
+                      },
+                      "name": "i"
                     },
                     "condition": {
                       "expression": {
@@ -1341,63 +1317,57 @@
               ],
               "variables": [
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "cast": {
-                          "value": {
-                            "expression": {
-                              "int": "0L"
-                            }
-                          },
-                          "type": {
-                            "name": "int"
+                  "value": {
+                    "expression": {
+                      "cast": {
+                        "value": {
+                          "expression": {
+                            "int": "0L"
                           }
+                        },
+                        "type": {
+                          "name": "int"
                         }
                       }
-                    },
-                    "name": "n"
+                    }
                   },
                   "type": {
                     "name": "int"
-                  }
+                  },
+                  "name": "n"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "instanceof": {
-                          "right": {
-                            "type": {
-                              "name": "String"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "o"
-                            }
+                  "value": {
+                    "expression": {
+                      "instanceof": {
+                        "right": {
+                          "type": {
+                            "name": "String"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "o"
                           }
                         }
                       }
-                    },
-                    "name": "isStr"
+                    }
                   },
                   "type": {
                     "name": "boolean"
-                  }
+                  },
+                  "name": "isStr"
                 },
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "int": "0"
-                      }
-                    },
-                    "name": "k"
+                  "value": {
+                    "expression": {
+                      "int": "0"
+                    }
                   },
                   "type": {
                     "name": "int"
-                  }
+                  },
+                  "name": "k"
                 }
               ]
             },
@@ -1541,58 +1511,56 @@
               ],
               "variables": [
                 {
-                  "declarator": {
-                    "value": {
-                      "expression": {
-                        "switch": {
-                          "bodies": [
-                            {
-                              "arms": [
-                                {
-                                  "expression": {
-                                    "name": "i"
-                                  },
-                                  "label": {
+                  "value": {
+                    "expression": {
+                      "switch": {
+                        "bodies": [
+                          {
+                            "arms": [
+                              {
+                                "expression": {
+                                  "name": "i"
+                                },
+                                "label": {
+                                  "pattern": {
                                     "pattern": {
-                                      "pattern": {
-                                        "children": [
-                                          {
-                                            "$type": "type",
-                                            "name": "Integer"
-                                          }
-                                        ],
-                                        "type": true,
-                                        "name": "i"
-                                      }
+                                      "children": [
+                                        {
+                                          "$type": "type",
+                                          "name": "Integer"
+                                        }
+                                      ],
+                                      "type": true,
+                                      "name": "i"
                                     }
                                   }
-                                },
-                                {
-                                  "yield": {
-                                    "int": "0"
-                                  },
-                                  "label": {
-                                    "default": true
-                                  }
                                 }
-                              ]
-                            }
-                          ],
-                          "conditions": [
-                            {
-                              "expression": {
-                                "name": "o"
+                              },
+                              {
+                                "yield": {
+                                  "int": "0"
+                                },
+                                "label": {
+                                  "default": true
+                                }
                               }
+                            ]
+                          }
+                        ],
+                        "conditions": [
+                          {
+                            "expression": {
+                              "name": "o"
                             }
-                          ]
-                        }
+                          }
+                        ]
                       }
-                    },
-                    "name": "v"
+                    }
                   },
                   "type": {
                     "name": "int"
-                  }
+                  },
+                  "name": "v"
                 }
               ]
             },
@@ -1615,9 +1583,7 @@
         ],
         "fields": [
           {
-            "declarator": {
-              "name": "SEED"
-            },
+            "name": "SEED",
             "package": true,
             "static": true,
             "final": true,

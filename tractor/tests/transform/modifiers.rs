@@ -47,16 +47,16 @@ fn java() {
         &mut tree,
         &multi_xpath(r#"
             //class[name='Modifiers']/body
-                [field[declarator/name='PUB']
+                [field[name='PUB']
                     [public]
                     [static]
                     [final]
                 ]
-                [field[declarator/name='priv']
+                [field[name='priv']
                     [private]]
-                [field[declarator/name='prot']
+                [field[name='prot']
                     [protected]]
-                [field[declarator/name='pkg']
+                [field[name='pkg']
                     [package]]
                 [method[name='sync']
                     [public]

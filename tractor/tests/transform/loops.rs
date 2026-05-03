@@ -61,7 +61,7 @@ fn java() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [variable[type/name='int'][declarator/name='i']]
+                [variable[type/name='int'][name='i']]
                 [condition/expression/binary]
                 [unary[op[increment]]]
                 [body]
@@ -118,7 +118,7 @@ fn csharp() {
         &mut tree,
         &multi_xpath(r#"
             //for
-                [variable[type/name='int'][declarator/name='i']]
+                [variable[type/name='int'][name='i']]
                 [condition/expression/binary]
                 [unary[op[increment]]]
                 [body/block]

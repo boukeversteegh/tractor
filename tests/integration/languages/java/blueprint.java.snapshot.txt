@@ -42,12 +42,11 @@ program/
   │       ├─ comment[leading] = "/* block comment */"
   │       ├─ field[public and static and final]/
   │       │   ├─ type/name = "int"
-  │       │   └─ declarator/
-  │       │       ├─ name = "MAX"
-  │       │       └─ value/expression/int = "100"
+  │       │   ├─ name = "MAX"
+  │       │   └─ value/expression/int = "100"
   │       ├─ field[private]/
   │       │   ├─ type/name = "String"
-  │       │   └─ declarator/name = "name"
+  │       │   └─ name = "name"
   │       ├─ field[protected]/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "List"
@@ -55,14 +54,14 @@ program/
   │       │   │       ├─ name = "Map"
   │       │   │       ├─ type/name = "String"
   │       │   │       └─ type/name = "T"
-  │       │   └─ declarator/name = "items"
+  │       │   └─ name = "items"
   │       ├─ field[package]/
   │       │   ├─ type/name = "int"
-  │       │   └─ declarator/name = "pkg"
+  │       │   └─ name = "pkg"
   │       ├─ comment[trailing] = "// trailing line comment"
   │       ├─ field[package and transient and volatile]/
   │       │   ├─ type/name = "boolean"
-  │       │   └─ declarator/name = "ready"
+  │       │   └─ name = "ready"
   │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
   │       │   └─ body/call[this]/null = "null"
@@ -144,9 +143,8 @@ program/
   │       │   └─ body/
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
-  │       │       │   └─ declarator/
-  │       │       │       ├─ name = "total"
-  │       │       │       └─ value/expression/int = "0"
+  │       │       │   ├─ name = "total"
+  │       │       │   └─ value/expression/int = "0"
   │       │       ├─ foreach/
   │       │       │   ├─ type/name = "int"
   │       │       │   ├─ name = "x"
@@ -157,9 +155,8 @@ program/
   │       │       │       └─ right/expression/name = "x"
   │       │       ├─ variable/
   │       │       │   ├─ type/name = "int"
-  │       │       │   └─ declarator/
-  │       │       │       ├─ name = "i"
-  │       │       │       └─ value/expression/int = "0"
+  │       │       │   ├─ name = "i"
+  │       │       │   └─ value/expression/int = "0"
   │       │       ├─ while/
   │       │       │   ├─ condition/expression/binary/
   │       │       │   │   ├─ left/expression/name = "i"
@@ -292,7 +289,7 @@ program/
       └─ body/
           ├─ field[package and static and final]/
           │   ├─ type/name = "int"
-          │   └─ declarator/name = "SEED"
+          │   └─ name = "SEED"
           ├─ block[static]/expression/assign/
           │   ├─ left/expression/name = "SEED"
           │   ├─ op = "="
@@ -304,32 +301,28 @@ program/
           │   └─ body/
           │       ├─ variable/
           │       │   ├─ type[array]/type/name = "int"
-          │       │   └─ declarator/
-          │       │       ├─ name = "arr"
-          │       │       └─ value/expression/array/
-          │       │           ├─ int = "1"
-          │       │           ├─ int = "2"
-          │       │           └─ int = "3"
+          │       │   ├─ name = "arr"
+          │       │   └─ value/expression/array/
+          │       │       ├─ int = "1"
+          │       │       ├─ int = "2"
+          │       │       └─ int = "3"
           │       ├─ variable/
           │       │   ├─ type/name = "char"
-          │       │   └─ declarator/
-          │       │       ├─ name = "ch"
-          │       │       └─ value/expression/char = "'A'"
+          │       │   ├─ name = "ch"
+          │       │   └─ value/expression/char = "'A'"
           │       ├─ variable/
           │       │   ├─ type[generic and wildcard]/name = "Class"
-          │       │   └─ declarator/
-          │       │       ├─ name = "cls"
-          │       │       └─ value/expression/type[class]/type/name = "String"
+          │       │   ├─ name = "cls"
+          │       │   └─ value/expression/type[class]/type/name = "String"
           │       └─ variable/
           │           ├─ type[generic]/
           │           │   ├─ name = "java.util.function.Function"
           │           │   ├─ type/name = "Object"
           │           │   └─ type/name = "String"
-          │           └─ declarator/
-          │               ├─ name = "ref"
-          │               └─ value/expression/reference/
-          │                   ├─ name = "String"
-          │                   └─ name = "valueOf"
+          │           ├─ name = "ref"
+          │           └─ value/expression/reference/
+          │               ├─ name = "String"
+          │               └─ name = "valueOf"
           ├─ comment[leading] = "/** Cast, instanceof, assert, break/continue with label. */"
           ├─ method[package]/
           │   ├─ returns/type[void]/name = "void"
@@ -340,11 +333,10 @@ program/
           │   └─ body/
           │       ├─ variable/
           │       │   ├─ type/name = "int"
-          │       │   └─ declarator/
-          │       │       ├─ name = "n"
-          │       │       └─ value/expression/cast/
-          │       │           ├─ type/name = "int"
-          │       │           └─ value/expression/int = "0L"
+          │       │   ├─ name = "n"
+          │       │   └─ value/expression/cast/
+          │       │       ├─ type/name = "int"
+          │       │       └─ value/expression/int = "0L"
           │       ├─ assert/
           │       │   ├─ binary/
           │       │   │   ├─ left/expression/name = "n"
@@ -353,19 +345,17 @@ program/
           │       │   └─ string = "\"non-negative\""
           │       ├─ variable/
           │       │   ├─ type/name = "boolean"
-          │       │   └─ declarator/
-          │       │       ├─ name = "isStr"
-          │       │       └─ value/expression/instanceof/
-          │       │           ├─ left/expression/name = "o"
-          │       │           └─ right/type/name = "String"
+          │       │   ├─ name = "isStr"
+          │       │   └─ value/expression/instanceof/
+          │       │       ├─ left/expression/name = "o"
+          │       │       └─ right/type/name = "String"
           │       ├─ label/
           │       │   ├─ name = "outer"
           │       │   └─ for/
           │       │       ├─ variable/
           │       │       │   ├─ type/name = "int"
-          │       │       │   └─ declarator/
-          │       │       │       ├─ name = "i"
-          │       │       │       └─ value/expression/int = "0"
+          │       │       │   ├─ name = "i"
+          │       │       │   └─ value/expression/int = "0"
           │       │       ├─ condition/expression/binary/
           │       │       │   ├─ left/expression/name = "i"
           │       │       │   ├─ op[compare and less] = "<"
@@ -388,9 +378,8 @@ program/
           │       │               └─ then/break/name = "outer"
           │       ├─ variable/
           │       │   ├─ type/name = "int"
-          │       │   └─ declarator/
-          │       │       ├─ name = "k"
-          │       │       └─ value/expression/int = "0"
+          │       │   ├─ name = "k"
+          │       │   └─ value/expression/int = "0"
           │       └─ do/
           │           ├─ body/expression/unary/
           │           │   ├─ name = "k"
@@ -444,17 +433,16 @@ program/
               └─ body/
                   ├─ variable/
                   │   ├─ type/name = "int"
-                  │   └─ declarator/
-                  │       ├─ name = "v"
-                  │       └─ value/expression/switch/
-                  │           ├─ condition/expression/name = "o"
-                  │           └─ body/
-                  │               ├─ arm/
-                  │               │   ├─ label/pattern/pattern[type]/
-                  │               │   │   ├─ type/name = "Integer"
-                  │               │   │   └─ name = "i"
-                  │               │   └─ expression/name = "i"
-                  │               └─ arm/
-                  │                   ├─ label[default]
-                  │                   └─ yield/int = "0"
+                  │   ├─ name = "v"
+                  │   └─ value/expression/switch/
+                  │       ├─ condition/expression/name = "o"
+                  │       └─ body/
+                  │           ├─ arm/
+                  │           │   ├─ label/pattern/pattern[type]/
+                  │           │   │   ├─ type/name = "Integer"
+                  │           │   │   └─ name = "i"
+                  │           │   └─ expression/name = "i"
+                  │           └─ arm/
+                  │               ├─ label[default]
+                  │               └─ yield/int = "0"
                   └─ return/expression/name = "v"

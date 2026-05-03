@@ -96,32 +96,27 @@
             ],
             "fields": [
               {
-                "declarator": {
-                  "int": "128",
-                  "name": "MaxNameLength"
-                },
+                "int": "128",
                 "public": true,
                 "const": true,
                 "type": {
                   "name": "int"
-                }
+                },
+                "name": "MaxNameLength"
               },
               {
-                "declarator": {
-                  "new": {
-                    "arguments": [
-                      {
-                        "int": "1970"
-                      },
-                      {
-                        "int": "1"
-                      },
-                      {
-                        "int": "1"
-                      }
-                    ]
-                  },
-                  "name": "Epoch"
+                "new": {
+                  "arguments": [
+                    {
+                      "int": "1970"
+                    },
+                    {
+                      "int": "1"
+                    },
+                    {
+                      "int": "1"
+                    }
+                  ]
                 },
                 "protected": true,
                 "internal": true,
@@ -129,12 +124,11 @@
                 "readonly": true,
                 "type": {
                   "name": "DateTime"
-                }
+                },
+                "name": "Epoch"
               },
               {
-                "declarator": {
-                  "name": "_version"
-                },
+                "name": "_version",
                 "private": true,
                 "type": {
                   "name": "int"
@@ -227,9 +221,7 @@
             "events": [
               {
                 "variable": {
-                  "declarator": {
-                    "name": "Changed"
-                  },
+                  "name": "Changed",
                   "type": {
                     "type": {
                       "arguments": [
@@ -524,9 +516,7 @@
             "events": [
               {
                 "variable": {
-                  "declarator": {
-                    "name": "Added"
-                  },
+                  "name": "Added",
                   "type": {
                     "type": {
                       "arguments": [
@@ -1133,13 +1123,11 @@
                             ]
                           },
                           "variable": {
-                            "declarator": {
-                              "int": "0",
-                              "name": "i"
-                            },
+                            "int": "0",
                             "type": {
                               "name": "var"
-                            }
+                            },
+                            "name": "i"
                           },
                           "condition": {
                             "expression": {
@@ -1298,21 +1286,19 @@
                                       ]
                                     },
                                     "variable": {
-                                      "declarator": {
-                                        "new": {
-                                          "path": {
-                                            "names": [
-                                              "System",
-                                              "IO",
-                                              "MemoryStream"
-                                            ]
-                                          }
-                                        },
-                                        "name": "inner"
+                                      "new": {
+                                        "path": {
+                                          "names": [
+                                            "System",
+                                            "IO",
+                                            "MemoryStream"
+                                          ]
+                                        }
                                       },
                                       "type": {
                                         "name": "var"
-                                      }
+                                      },
+                                      "name": "inner"
                                     }
                                   }
                                 ]
@@ -1475,425 +1461,270 @@
                       ],
                       "variables": [
                         {
-                          "declarator": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "new": {
-                                    "arguments": [
-                                      {
-                                        "int": "1"
-                                      },
-                                      {
-                                        "string": "\"alpha\""
-                                      }
-                                    ],
-                                    "type": {
-                                      "name": "Widget"
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "new": {
+                                  "arguments": [
+                                    {
+                                      "int": "1"
+                                    },
+                                    {
+                                      "string": "\"alpha\""
                                     }
+                                  ],
+                                  "type": {
+                                    "name": "Widget"
                                   }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "maybe"
-                                }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
                               }
                             },
-                            "name": "widget"
+                            "left": {
+                              "expression": {
+                                "name": "maybe"
+                              }
+                            },
+                            "op": {
+                              "text": "??",
+                              "nullish": true
+                            }
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "widget"
                         },
                         {
-                          "declarator": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "string": "\"n/a\""
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "object": {
-                                    "call": {
-                                      "name": "Shout",
-                                      "optional": true
-                                    },
-                                    "access": true,
-                                    "name": "widget"
-                                  }
-                                }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "string": "\"n/a\""
                               }
                             },
-                            "name": "shouted"
+                            "left": {
+                              "expression": {
+                                "object": {
+                                  "call": {
+                                    "name": "Shout",
+                                    "optional": true
+                                  },
+                                  "access": true,
+                                  "name": "widget"
+                                }
+                              }
+                            },
+                            "op": {
+                              "text": "??",
+                              "nullish": true
+                            }
                           },
                           "type": {
                             "name": "var"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "ternary": {
-                              "else": {
-                                "string": "\"blank\""
-                              },
-                              "condition": {
-                                "expression": {
-                                  "is": {
-                                    "pattern": {
-                                      "properties": {
-                                        "subpattern": {
-                                          "pattern": {
-                                            "int": "0",
-                                            "relational": true
-                                          },
-                                          "object": {
-                                            "member": {
-                                              "name": "Length"
-                                            },
-                                            "access": true,
-                                            "name": "Name"
-                                          }
-                                        }
-                                      },
-                                      "recursive": true
-                                    },
-                                    "name": "widget"
-                                  }
-                                }
-                              },
-                              "then": {
-                                "string": "\"named\""
-                              }
-                            },
-                            "name": "label"
                           },
-                          "type": {
-                            "name": "var"
-                          }
+                          "name": "shouted"
                         },
                         {
-                          "declarator": {
-                            "switch": {
-                              "arms": [
-                                {
-                                  "string": "\"hot\"",
+                          "ternary": {
+                            "else": {
+                              "string": "\"blank\""
+                            },
+                            "condition": {
+                              "expression": {
+                                "is": {
                                   "pattern": {
                                     "properties": {
                                       "subpattern": {
                                         "pattern": {
-                                          "object": {
-                                            "member": {
-                                              "name": "High"
-                                            },
-                                            "access": true,
-                                            "name": "Priority"
-                                          },
-                                          "constant": true
+                                          "int": "0",
+                                          "relational": true
                                         },
-                                        "name": "Priority"
+                                        "object": {
+                                          "member": {
+                                            "name": "Length"
+                                          },
+                                          "access": true,
+                                          "name": "Name"
+                                        }
                                       }
                                     },
                                     "recursive": true
-                                  }
-                                },
-                                {
-                                  "string": "\"big\"",
-                                  "pattern": {
-                                    "name": "w",
-                                    "declaration": true,
-                                    "type": {
-                                      "name": "Widget"
-                                    }
                                   },
-                                  "when": {
-                                    "binary": {
-                                      "right": {
-                                        "expression": {
-                                          "int": "100"
-                                        }
-                                      },
-                                      "left": {
-                                        "expression": {
-                                          "object": {
-                                            "member": {
-                                              "name": "Id"
-                                            },
-                                            "access": true,
-                                            "name": "w"
-                                          }
-                                        }
-                                      },
-                                      "op": {
-                                        "text": ">",
-                                        "compare": true,
-                                        "greater": true
-                                      }
-                                    }
-                                  }
-                                },
-                                {
-                                  "string": "\"plain\"",
-                                  "discard": "_"
+                                  "name": "widget"
                                 }
-                              ],
-                              "names": [
-                                "widget"
-                              ]
-                            },
-                            "name": "kind"
-                          },
-                          "type": {
-                            "name": "string"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "expression": {
-                              "name": "widget",
-                              "non_null": true
-                            },
-                            "name": "token"
-                          },
-                          "type": {
-                            "name": "object"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "query": {
-                              "select": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "n"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "n"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "*",
-                                    "multiply": true
-                                  }
-                                }
-                              },
-                              "from": {
-                                "children": [
-                                  "numbers"
-                                ],
-                                "name": "n"
-                              },
-                              "where": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "0"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "binary": {
-                                        "right": {
-                                          "expression": {
-                                            "int": "2"
-                                          }
-                                        },
-                                        "left": {
-                                          "expression": {
-                                            "name": "n"
-                                          }
-                                        },
-                                        "op": {
-                                          "text": "%",
-                                          "modulo": true
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "==",
-                                    "equals": true
-                                  }
-                                }
-                              },
-                              "order": {
-                                "name": "n"
                               }
                             },
-                            "name": "evens"
+                            "then": {
+                              "string": "\"named\""
+                            }
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "label"
                         },
                         {
-                          "declarator": {
-                            "object": {
-                              "call": {
-                                "call": {
-                                  "call": {
-                                    "name": "ToList"
-                                  },
-                                  "name": "Select",
-                                  "arguments": [
-                                    {
-                                      "lambda": {
-                                        "value": {
-                                          "expression": {
-                                            "binary": {
-                                              "right": {
-                                                "expression": {
-                                                  "int": "1"
-                                                }
-                                              },
-                                              "left": {
-                                                "expression": {
-                                                  "name": "n"
-                                                }
-                                              },
-                                              "op": {
-                                                "text": "+",
-                                                "plus": true
-                                              }
-                                            }
-                                          }
+                          "switch": {
+                            "arms": [
+                              {
+                                "string": "\"hot\"",
+                                "pattern": {
+                                  "properties": {
+                                    "subpattern": {
+                                      "pattern": {
+                                        "object": {
+                                          "member": {
+                                            "name": "High"
+                                          },
+                                          "access": true,
+                                          "name": "Priority"
                                         },
-                                        "parameter": "n"
-                                      }
-                                    }
-                                  ]
-                                },
-                                "name": "Where",
-                                "arguments": [
-                                  {
-                                    "lambda": {
-                                      "value": {
-                                        "expression": {
-                                          "binary": {
-                                            "right": {
-                                              "expression": {
-                                                "int": "0"
-                                              }
-                                            },
-                                            "left": {
-                                              "expression": {
-                                                "binary": {
-                                                  "right": {
-                                                    "expression": {
-                                                      "int": "2"
-                                                    }
-                                                  },
-                                                  "left": {
-                                                    "expression": {
-                                                      "name": "n"
-                                                    }
-                                                  },
-                                                  "op": {
-                                                    "text": "%",
-                                                    "modulo": true
-                                                  }
-                                                }
-                                              }
-                                            },
-                                            "op": {
-                                              "text": "!=",
-                                              "inequality": true
-                                            }
-                                          }
-                                        }
+                                        "constant": true
                                       },
-                                      "parameter": "n"
+                                      "name": "Priority"
                                     }
-                                  }
-                                ]
+                                  },
+                                  "recursive": true
+                                }
                               },
-                              "access": true,
-                              "name": "numbers"
-                            },
-                            "name": "odds"
-                          },
-                          "type": {
-                            "name": "var"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "lambda": {
-                              "value": {
-                                "expression": {
+                              {
+                                "string": "\"big\"",
+                                "pattern": {
+                                  "name": "w",
+                                  "declaration": true,
+                                  "type": {
+                                    "name": "Widget"
+                                  }
+                                },
+                                "when": {
                                   "binary": {
                                     "right": {
                                       "expression": {
-                                        "name": "x"
+                                        "int": "100"
                                       }
                                     },
                                     "left": {
                                       "expression": {
-                                        "binary": {
-                                          "right": {
-                                            "expression": {
-                                              "name": "x"
-                                            }
+                                        "object": {
+                                          "member": {
+                                            "name": "Id"
                                           },
-                                          "left": {
-                                            "expression": {
-                                              "name": "x"
-                                            }
-                                          },
-                                          "op": {
-                                            "text": "*",
-                                            "multiply": true
-                                          }
+                                          "access": true,
+                                          "name": "w"
                                         }
                                       }
                                     },
                                     "op": {
-                                      "text": "*",
-                                      "multiply": true
+                                      "text": ">",
+                                      "compare": true,
+                                      "greater": true
                                     }
                                   }
                                 }
                               },
-                              "parameter": "x"
-                            },
-                            "name": "cube"
-                          },
-                          "type": {
-                            "arguments": [
                               {
-                                "$type": "type",
-                                "name": "int"
-                              },
-                              {
-                                "$type": "type",
-                                "name": "int"
+                                "string": "\"plain\"",
+                                "discard": "_"
                               }
                             ],
-                            "generic": true,
-                            "name": "Func"
-                          }
+                            "names": [
+                              "widget"
+                            ]
+                          },
+                          "type": {
+                            "name": "string"
+                          },
+                          "name": "kind"
                         },
                         {
-                          "declarator": {
-                            "lambda": {
-                              "body": {
-                                "blocks": [
+                          "expression": {
+                            "name": "widget",
+                            "non_null": true
+                          },
+                          "type": {
+                            "name": "object"
+                          },
+                          "name": "token"
+                        },
+                        {
+                          "query": {
+                            "select": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "name": "n"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "name": "n"
+                                  }
+                                },
+                                "op": {
+                                  "text": "*",
+                                  "multiply": true
+                                }
+                              }
+                            },
+                            "from": {
+                              "children": [
+                                "numbers"
+                              ],
+                              "name": "n"
+                            },
+                            "where": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "int": "0"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "binary": {
+                                      "right": {
+                                        "expression": {
+                                          "int": "2"
+                                        }
+                                      },
+                                      "left": {
+                                        "expression": {
+                                          "name": "n"
+                                        }
+                                      },
+                                      "op": {
+                                        "text": "%",
+                                        "modulo": true
+                                      }
+                                    }
+                                  }
+                                },
+                                "op": {
+                                  "text": "==",
+                                  "equals": true
+                                }
+                              }
+                            },
+                            "order": {
+                              "name": "n"
+                            }
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "evens"
+                        },
+                        {
+                          "object": {
+                            "call": {
+                              "call": {
+                                "call": {
+                                  "name": "ToList"
+                                },
+                                "name": "Select",
+                                "arguments": [
                                   {
-                                    "returns": [
-                                      {
+                                    "lambda": {
+                                      "value": {
                                         "expression": {
                                           "binary": {
                                             "right": {
@@ -1903,7 +1734,7 @@
                                             },
                                             "left": {
                                               "expression": {
-                                                "name": "x"
+                                                "name": "n"
                                               }
                                             },
                                             "op": {
@@ -1912,14 +1743,102 @@
                                             }
                                           }
                                         }
-                                      }
-                                    ]
+                                      },
+                                      "parameter": "n"
+                                    }
                                   }
                                 ]
                               },
-                              "parameter": "x"
+                              "name": "Where",
+                              "arguments": [
+                                {
+                                  "lambda": {
+                                    "value": {
+                                      "expression": {
+                                        "binary": {
+                                          "right": {
+                                            "expression": {
+                                              "int": "0"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "binary": {
+                                                "right": {
+                                                  "expression": {
+                                                    "int": "2"
+                                                  }
+                                                },
+                                                "left": {
+                                                  "expression": {
+                                                    "name": "n"
+                                                  }
+                                                },
+                                                "op": {
+                                                  "text": "%",
+                                                  "modulo": true
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "!=",
+                                            "inequality": true
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "parameter": "n"
+                                  }
+                                }
+                              ]
                             },
-                            "name": "blockLambda"
+                            "access": true,
+                            "name": "numbers"
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "odds"
+                        },
+                        {
+                          "lambda": {
+                            "value": {
+                              "expression": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "name": "x"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "binary": {
+                                        "right": {
+                                          "expression": {
+                                            "name": "x"
+                                          }
+                                        },
+                                        "left": {
+                                          "expression": {
+                                            "name": "x"
+                                          }
+                                        },
+                                        "op": {
+                                          "text": "*",
+                                          "multiply": true
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "*",
+                                    "multiply": true
+                                  }
+                                }
+                              }
+                            },
+                            "parameter": "x"
                           },
                           "type": {
                             "arguments": [
@@ -1934,30 +1853,76 @@
                             ],
                             "generic": true,
                             "name": "Func"
-                          }
+                          },
+                          "name": "cube"
                         },
                         {
-                          "declarator": {
-                            "lambda": {
-                              "value": {
-                                "expression": {
-                                  "object": {
-                                    "call": {
-                                      "arguments": [
-                                        {
-                                          "name": "msg"
+                          "lambda": {
+                            "body": {
+                              "blocks": [
+                                {
+                                  "returns": [
+                                    {
+                                      "expression": {
+                                        "binary": {
+                                          "right": {
+                                            "expression": {
+                                              "int": "1"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "name": "x"
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "+",
+                                            "plus": true
+                                          }
                                         }
-                                      ],
-                                      "name": "WriteLine"
-                                    },
-                                    "access": true,
-                                    "name": "Console"
-                                  }
+                                      }
+                                    }
+                                  ]
                                 }
-                              },
-                              "parameter": "msg"
+                              ]
                             },
-                            "name": "log"
+                            "parameter": "x"
+                          },
+                          "type": {
+                            "arguments": [
+                              {
+                                "$type": "type",
+                                "name": "int"
+                              },
+                              {
+                                "$type": "type",
+                                "name": "int"
+                              }
+                            ],
+                            "generic": true,
+                            "name": "Func"
+                          },
+                          "name": "blockLambda"
+                        },
+                        {
+                          "lambda": {
+                            "value": {
+                              "expression": {
+                                "object": {
+                                  "call": {
+                                    "arguments": [
+                                      {
+                                        "name": "msg"
+                                      }
+                                    ],
+                                    "name": "WriteLine"
+                                  },
+                                  "access": true,
+                                  "name": "Console"
+                                }
+                              }
+                            },
+                            "parameter": "msg"
                           },
                           "type": {
                             "arguments": [
@@ -1968,62 +1933,54 @@
                             ],
                             "generic": true,
                             "name": "Action"
-                          }
+                          },
+                          "name": "log"
                         },
                         {
-                          "declarator": {
-                            "int": "0",
-                            "name": "j"
-                          },
+                          "int": "0",
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "j"
                         },
                         {
-                          "declarator": {
-                            "int": "0",
-                            "name": "k"
-                          },
+                          "int": "0",
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "k"
                         },
                         {
-                          "declarator": {
-                            "new": {
-                              "path": {
-                                "names": [
-                                  "System",
-                                  "IO",
-                                  "MemoryStream"
-                                ]
-                              }
-                            },
-                            "name": "scope"
+                          "new": {
+                            "path": {
+                              "names": [
+                                "System",
+                                "IO",
+                                "MemoryStream"
+                              ]
+                            }
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "scope"
                         },
                         {
-                          "declarator": {
-                            "tuple": {
-                              "arguments": [
-                                {
-                                  "object": {
-                                    "member": {
-                                      "name": "Count"
-                                    },
-                                    "access": true,
-                                    "name": "odds"
-                                  }
-                                },
-                                {
-                                  "string": "\"odd\""
+                          "tuple": {
+                            "arguments": [
+                              {
+                                "object": {
+                                  "member": {
+                                    "name": "Count"
+                                  },
+                                  "access": true,
+                                  "name": "odds"
                                 }
-                              ]
-                            },
-                            "name": "pair"
+                              },
+                              {
+                                "string": "\"odd\""
+                              }
+                            ]
                           },
                           "type": {
                             "children": [
@@ -2042,47 +1999,43 @@
                                 "name": "int"
                               }
                             }
-                          }
+                          },
+                          "name": "pair"
                         },
                         {
-                          "declarator": {
-                            "name": "pair",
-                            "pattern": {
-                              "children": [
-                                "tg"
-                              ],
-                              "tuple": true,
-                              "name": "cnt"
-                            }
-                          },
+                          "name": "pair",
                           "type": {
                             "name": "var"
+                          },
+                          "pattern": {
+                            "children": [
+                              "tg"
+                            ],
+                            "tuple": true,
+                            "name": "cnt"
                           }
                         },
                         {
-                          "declarator": {
-                            "index": {
-                              "children": [
-                                {
-                                  "$type": "argument",
-                                  "int": "2"
-                                },
-                                {
-                                  "$type": "argument",
-                                  "int": "3"
-                                },
-                                {
-                                  "$type": "argument",
-                                  "range": {
-                                    "name": "odds"
-                                  }
+                          "index": {
+                            "children": [
+                              {
+                                "$type": "argument",
+                                "int": "2"
+                              },
+                              {
+                                "$type": "argument",
+                                "int": "3"
+                              },
+                              {
+                                "$type": "argument",
+                                "range": {
+                                  "name": "odds"
                                 }
-                              ],
-                              "argument": {
-                                "int": "1"
                               }
-                            },
-                            "name": "list"
+                            ],
+                            "argument": {
+                              "int": "1"
+                            }
                           },
                           "type": {
                             "arguments": [
@@ -2093,51 +2046,49 @@
                             ],
                             "generic": true,
                             "name": "List"
-                          }
+                          },
+                          "name": "list"
                         },
                         {
-                          "declarator": {
-                            "new": {
-                              "literal": {
-                                "assigns": [
-                                  {
-                                    "right": {
-                                      "expression": {
-                                        "int": "1"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "index": {
-                                          "argument": {
-                                            "string": "\"a\""
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "op": "="
+                          "new": {
+                            "literal": {
+                              "assigns": [
+                                {
+                                  "right": {
+                                    "expression": {
+                                      "int": "1"
+                                    }
                                   },
-                                  {
-                                    "right": {
-                                      "expression": {
-                                        "int": "2"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "index": {
-                                          "argument": {
-                                            "string": "\"b\""
-                                          }
+                                  "left": {
+                                    "expression": {
+                                      "index": {
+                                        "argument": {
+                                          "string": "\"a\""
                                         }
                                       }
-                                    },
-                                    "op": "="
-                                  }
-                                ]
-                              }
-                            },
-                            "name": "map"
+                                    }
+                                  },
+                                  "op": "="
+                                },
+                                {
+                                  "right": {
+                                    "expression": {
+                                      "int": "2"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "index": {
+                                        "argument": {
+                                          "string": "\"b\""
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "op": "="
+                                }
+                              ]
+                            }
                           },
                           "type": {
                             "arguments": [
@@ -2152,52 +2103,45 @@
                             ],
                             "generic": true,
                             "name": "Dictionary"
-                          }
+                          },
+                          "name": "map"
                         },
                         {
-                          "declarator": {
-                            "string": "\"hello\"",
-                            "name": "plain"
+                          "string": "\"hello\"",
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "plain"
+                        },
+                        {
+                          "string": "@\"C:\\path\\file.txt\"",
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "verbatim"
+                        },
+                        {
+                          "string": {
+                            "interpolations": [
+                              {
+                                "name": "cnt"
+                              },
+                              {
+                                "name": "tg"
+                              }
+                            ]
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "interp"
                         },
                         {
-                          "declarator": {
-                            "string": "@\"C:\\path\\file.txt\"",
-                            "name": "verbatim"
-                          },
+                          "string": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\"",
                           "type": {
                             "name": "var"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "string": {
-                              "interpolations": [
-                                {
-                                  "name": "cnt"
-                                },
-                                {
-                                  "name": "tg"
-                                }
-                              ]
-                            },
-                            "name": "interp"
                           },
-                          "type": {
-                            "name": "var"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "string": "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\"",
-                            "name": "raw"
-                          },
-                          "type": {
-                            "name": "var"
-                          }
+                          "name": "raw"
                         }
                       ]
                     }
@@ -2351,9 +2295,7 @@
             "events": [
               {
                 "variable": {
-                  "declarator": {
-                    "name": "Added"
-                  },
+                  "name": "Added",
                   "type": {
                     "type": {
                       "arguments": [
@@ -2928,235 +2870,209 @@
                     {
                       "variables": [
                         {
-                          "declarator": {
-                            "cast": {
-                              "value": {
-                                "expression": {
-                                  "float": "3.14"
-                                }
-                              },
-                              "type": {
-                                "name": "int"
+                          "cast": {
+                            "value": {
+                              "expression": {
+                                "float": "3.14"
                               }
                             },
-                            "name": "n"
+                            "type": {
+                              "name": "int"
+                            }
                           },
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "n"
                         },
                         {
-                          "declarator": {
-                            "char": "'A'",
-                            "name": "ch"
-                          },
+                          "char": "'A'",
                           "type": {
                             "name": "char"
-                          }
+                          },
+                          "name": "ch"
                         },
                         {
-                          "declarator": {
-                            "int": "0",
-                            "name": "unreachable"
-                          },
+                          "int": "0",
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "unreachable"
                         },
                         {
-                          "declarator": {
-                            "new": {
-                              "arguments": [
-                                {
-                                  "float": "1.0m"
-                                },
-                                {
-                                  "string": "\"USD\""
-                                }
-                              ],
-                              "type": {
-                                "name": "Money"
+                          "new": {
+                            "arguments": [
+                              {
+                                "float": "1.0m"
+                              },
+                              {
+                                "string": "\"USD\""
                               }
+                            ],
+                            "type": {
+                              "name": "Money"
+                            }
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "m"
+                        },
+                        {
+                          "with": {
+                            "literal": {
+                              "strings": [
+                                "\"EUR\""
+                              ],
+                              "names": [
+                                "Currency"
+                              ]
                             },
                             "name": "m"
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "m2"
                         },
                         {
-                          "declarator": {
-                            "with": {
-                              "literal": {
-                                "strings": [
-                                  "\"EUR\""
-                                ],
-                                "names": [
-                                  "Currency"
-                                ]
-                              },
-                              "name": "m"
-                            },
-                            "name": "m2"
+                          "new": {
+                            "children": [
+                              "Value"
+                            ],
+                            "anonymous": true,
+                            "string": "\"foo\"",
+                            "name": "Name",
+                            "int": "42"
                           },
                           "type": {
                             "name": "var"
-                          }
+                          },
+                          "name": "anon"
                         },
                         {
-                          "declarator": {
-                            "new": {
-                              "children": [
-                                "Value"
-                              ],
-                              "anonymous": true,
-                              "string": "\"foo\"",
-                              "name": "Name",
-                              "int": "42"
+                          "new": {
+                            "literal": {
+                              "ints": [
+                                "1",
+                                "2",
+                                "3"
+                              ]
                             },
-                            "name": "anon"
-                          },
-                          "type": {
-                            "name": "var"
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "new": {
-                              "literal": {
-                                "ints": [
-                                  "1",
-                                  "2",
-                                  "3"
-                                ]
-                              },
-                              "array": true,
-                              "type": {
-                                "type": {
-                                  "name": "int"
-                                },
-                                "array": true
-                              }
-                            },
-                            "name": "arr"
-                          },
-                          "type": {
+                            "array": true,
                             "type": {
-                              "name": "int"
-                            },
-                            "array": true
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "new": {
-                              "literal": {
-                                "ints": [
-                                  "4",
-                                  "5",
-                                  "6"
-                                ]
-                              },
-                              "array": true
-                            },
-                            "name": "arr2"
-                          },
-                          "type": {
-                            "type": {
-                              "name": "int"
-                            },
-                            "array": true
-                          }
-                        },
-                        {
-                          "declarator": {
-                            "typeof": {
                               "type": {
                                 "name": "int"
-                              }
+                              },
+                              "array": true
+                            }
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
                             },
-                            "name": "t"
+                            "array": true
+                          },
+                          "name": "arr"
+                        },
+                        {
+                          "new": {
+                            "literal": {
+                              "ints": [
+                                "4",
+                                "5",
+                                "6"
+                              ]
+                            },
+                            "array": true
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
+                            },
+                            "array": true
+                          },
+                          "name": "arr2"
+                        },
+                        {
+                          "typeof": {
+                            "type": {
+                              "name": "int"
+                            }
                           },
                           "type": {
                             "name": "Type"
-                          }
+                          },
+                          "name": "t"
                         },
                         {
-                          "declarator": {
-                            "sizeof": {
-                              "type": {
-                                "name": "int"
-                              }
-                            },
-                            "name": "sz"
+                          "sizeof": {
+                            "type": {
+                              "name": "int"
+                            }
                           },
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "sz"
                         },
                         {
-                          "declarator": {
-                            "default": {
-                              "type": {
-                                "name": "int"
-                              }
-                            },
-                            "name": "def"
+                          "default": {
+                            "type": {
+                              "name": "int"
+                            }
                           },
                           "type": {
                             "name": "int"
-                          }
+                          },
+                          "name": "def"
                         },
                         {
-                          "declarator": {
-                            "null": "null",
-                            "name": "s"
-                          },
+                          "null": "null",
                           "type": {
                             "name": "string"
-                          }
+                          },
+                          "name": "s"
                         },
                         {
-                          "declarator": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "throw": {
-                                    "new": {
-                                      "arguments": [
-                                        {
-                                          "call": {
-                                            "arguments": [
-                                              {
-                                                "name": "s"
-                                              }
-                                            ],
-                                            "name": "nameof"
-                                          }
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "throw": {
+                                  "new": {
+                                    "arguments": [
+                                      {
+                                        "call": {
+                                          "arguments": [
+                                            {
+                                              "name": "s"
+                                            }
+                                          ],
+                                          "name": "nameof"
                                         }
-                                      ],
-                                      "type": {
-                                        "name": "ArgumentNullException"
                                       }
+                                    ],
+                                    "type": {
+                                      "name": "ArgumentNullException"
                                     }
                                   }
                                 }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "s"
-                                }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
                               }
                             },
-                            "name": "s2"
+                            "left": {
+                              "expression": {
+                                "name": "s"
+                              }
+                            },
+                            "op": {
+                              "text": "??",
+                              "nullish": true
+                            }
                           },
                           "type": {
                             "name": "string"
-                          }
+                          },
+                          "name": "s2"
                         }
                       ],
                       "gotos": [

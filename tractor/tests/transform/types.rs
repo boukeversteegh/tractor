@@ -65,15 +65,15 @@ fn csharp_markers() {
         &multi_xpath(r#"
             //class[name='X']/body
                 [field
-                    [declarator/name='a']
+                    [name='a']
                     [type[array]]
                     [not(variable)]]
                 [field
-                    [declarator/name='t']
+                    [name='t']
                     [type[tuple]]
                     [not(variable)]]
                 [field
-                    [declarator/name='n']
+                    [name='n']
                     [type[nullable]]
                     [not(variable)]]
         "#),

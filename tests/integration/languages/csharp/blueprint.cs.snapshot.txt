@@ -69,7 +69,7 @@ unit/
   │   │           ├─ type/type[generic]/
   │   │           │   ├─ name = "EventHandler"
   │   │           │   └─ type/name = "T"
-  │   │           └─ declarator/name = "Added"
+  │   │           └─ name = "Added"
   │   ├─ struct[public and readonly]/
   │   │   ├─ name = "Point"
   │   │   ├─ parameter/
@@ -212,20 +212,18 @@ unit/
   │   │   └─ body/
   │   │       ├─ field[public and const]/
   │   │       │   ├─ type/name = "int"
-  │   │       │   └─ declarator/
-  │   │       │       ├─ name = "MaxNameLength"
-  │   │       │       └─ int = "128"
+  │   │       │   ├─ name = "MaxNameLength"
+  │   │       │   └─ int = "128"
   │   │       ├─ field[protected and internal and static and readonly]/
   │   │       │   ├─ type/name = "DateTime"
-  │   │       │   └─ declarator/
-  │   │       │       ├─ name = "Epoch"
-  │   │       │       └─ new/
-  │   │       │           ├─ argument/int = "1970"
-  │   │       │           ├─ argument/int = "1"
-  │   │       │           └─ argument/int = "1"
+  │   │       │   ├─ name = "Epoch"
+  │   │       │   └─ new/
+  │   │       │       ├─ argument/int = "1970"
+  │   │       │       ├─ argument/int = "1"
+  │   │       │       └─ argument/int = "1"
   │   │       ├─ field[private]/
   │   │       │   ├─ type/name = "int"
-  │   │       │   └─ declarator/name = "_version"
+  │   │       │   └─ name = "_version"
   │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "int"
   │   │       │   ├─ name = "Id"
@@ -257,7 +255,7 @@ unit/
   │   │       │   ├─ type/type[generic]/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ type/name = "EntityBase"
-  │   │       │   └─ declarator/name = "Changed"
+  │   │       │   └─ name = "Changed"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   └─ call[this]/argument/int = "0"
@@ -295,7 +293,7 @@ unit/
   │   │       │   ├─ type/type[generic]/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ type/name = "Widget"
-  │   │       │   └─ declarator/name = "Added"
+  │   │       │   └─ name = "Added"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
   │   │       │   └─ call[base]/argument/int = "0"
@@ -403,73 +401,68 @@ unit/
   │           └─ body/block/
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "widget"
-  │               │       └─ binary/
-  │               │           ├─ left/expression/name = "maybe"
-  │               │           ├─ op[nullish] = "??"
-  │               │           └─ right/expression/new/
-  │               │               ├─ type/name = "Widget"
-  │               │               ├─ argument/int = "1"
-  │               │               └─ argument/string = "\"alpha\""
+  │               │   ├─ name = "widget"
+  │               │   └─ binary/
+  │               │       ├─ left/expression/name = "maybe"
+  │               │       ├─ op[nullish] = "??"
+  │               │       └─ right/expression/new/
+  │               │           ├─ type/name = "Widget"
+  │               │           ├─ argument/int = "1"
+  │               │           └─ argument/string = "\"alpha\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "shouted"
-  │               │       └─ binary/
-  │               │           ├─ left/expression/object[access]/
-  │               │           │   ├─ name = "widget"
-  │               │           │   └─ call[optional]/name = "Shout"
-  │               │           ├─ op[nullish] = "??"
-  │               │           └─ right/expression/string = "\"n/a\""
+  │               │   ├─ name = "shouted"
+  │               │   └─ binary/
+  │               │       ├─ left/expression/object[access]/
+  │               │       │   ├─ name = "widget"
+  │               │       │   └─ call[optional]/name = "Shout"
+  │               │       ├─ op[nullish] = "??"
+  │               │       └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "label"
-  │               │       └─ ternary/
-  │               │           ├─ condition/expression/is/
-  │               │           │   ├─ name = "widget"
-  │               │           │   └─ pattern[recursive]/properties/subpattern/
-  │               │           │       ├─ object[access]/
-  │               │           │       │   ├─ name = "Name"
-  │               │           │       │   └─ member/name = "Length"
-  │               │           │       └─ pattern[relational]/int = "0"
-  │               │           ├─ then/string = "\"named\""
-  │               │           └─ else/string = "\"blank\""
+  │               │   ├─ name = "label"
+  │               │   └─ ternary/
+  │               │       ├─ condition/expression/is/
+  │               │       │   ├─ name = "widget"
+  │               │       │   └─ pattern[recursive]/properties/subpattern/
+  │               │       │       ├─ object[access]/
+  │               │       │       │   ├─ name = "Name"
+  │               │       │       │   └─ member/name = "Length"
+  │               │       │       └─ pattern[relational]/int = "0"
+  │               │       ├─ then/string = "\"named\""
+  │               │       └─ else/string = "\"blank\""
   │               ├─ comment[leading] = "// switch expression + pattern matching"
   │               ├─ variable/
   │               │   ├─ type/name = "string"
-  │               │   └─ declarator/
-  │               │       ├─ name = "kind"
-  │               │       └─ switch/
-  │               │           ├─ name = "widget"
-  │               │           ├─ arm/
-  │               │           │   ├─ pattern[recursive]/properties/subpattern/
-  │               │           │   │   ├─ name = "Priority"
-  │               │           │   │   └─ pattern[constant]/object[access]/
-  │               │           │   │       ├─ name = "Priority"
-  │               │           │   │       └─ member/name = "High"
-  │               │           │   └─ string = "\"hot\""
-  │               │           ├─ arm/
-  │               │           │   ├─ pattern[declaration]/
-  │               │           │   │   ├─ type/name = "Widget"
-  │               │           │   │   └─ name = "w"
-  │               │           │   ├─ when/binary/
-  │               │           │   │   ├─ left/expression/object[access]/
-  │               │           │   │   │   ├─ name = "w"
-  │               │           │   │   │   └─ member/name = "Id"
-  │               │           │   │   ├─ op[compare and greater] = ">"
-  │               │           │   │   └─ right/expression/int = "100"
-  │               │           │   └─ string = "\"big\""
-  │               │           └─ arm/
-  │               │               ├─ discard = "_"
-  │               │               └─ string = "\"plain\""
+  │               │   ├─ name = "kind"
+  │               │   └─ switch/
+  │               │       ├─ name = "widget"
+  │               │       ├─ arm/
+  │               │       │   ├─ pattern[recursive]/properties/subpattern/
+  │               │       │   │   ├─ name = "Priority"
+  │               │       │   │   └─ pattern[constant]/object[access]/
+  │               │       │   │       ├─ name = "Priority"
+  │               │       │   │       └─ member/name = "High"
+  │               │       │   └─ string = "\"hot\""
+  │               │       ├─ arm/
+  │               │       │   ├─ pattern[declaration]/
+  │               │       │   │   ├─ type/name = "Widget"
+  │               │       │   │   └─ name = "w"
+  │               │       │   ├─ when/binary/
+  │               │       │   │   ├─ left/expression/object[access]/
+  │               │       │   │   │   ├─ name = "w"
+  │               │       │   │   │   └─ member/name = "Id"
+  │               │       │   │   ├─ op[compare and greater] = ">"
+  │               │       │   │   └─ right/expression/int = "100"
+  │               │       │   └─ string = "\"big\""
+  │               │       └─ arm/
+  │               │           ├─ discard = "_"
+  │               │           └─ string = "\"plain\""
   │               ├─ comment[leading] = "// switch statement + is-type-pattern"
   │               ├─ variable/
   │               │   ├─ type/name = "object"
-  │               │   └─ declarator/
-  │               │       ├─ name = "token"
-  │               │       └─ expression[non_null]/name = "widget"
+  │               │   ├─ name = "token"
+  │               │   └─ expression[non_null]/name = "widget"
   │               ├─ switch/
   │               │   ├─ value/expression/name = "token"
   │               │   └─ body/
@@ -504,50 +497,48 @@ unit/
   │               ├─ comment[leading] = "// LINQ query syntax + method syntax"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "evens"
-  │               │       └─ query/
-  │               │           ├─ from/
-  │               │           │   ├─ name = "n"
-  │               │           │   └─ name = "numbers"
-  │               │           ├─ where/binary/
-  │               │           │   ├─ left/expression/binary/
-  │               │           │   │   ├─ left/expression/name = "n"
-  │               │           │   │   ├─ op[modulo] = "%"
-  │               │           │   │   └─ right/expression/int = "2"
-  │               │           │   ├─ op[equals] = "=="
-  │               │           │   └─ right/expression/int = "0"
-  │               │           ├─ order/name = "n"
-  │               │           └─ select/binary/
-  │               │               ├─ left/expression/name = "n"
-  │               │               ├─ op[multiply] = "*"
-  │               │               └─ right/expression/name = "n"
+  │               │   ├─ name = "evens"
+  │               │   └─ query/
+  │               │       ├─ from/
+  │               │       │   ├─ name = "n"
+  │               │       │   └─ name = "numbers"
+  │               │       ├─ where/binary/
+  │               │       │   ├─ left/expression/binary/
+  │               │       │   │   ├─ left/expression/name = "n"
+  │               │       │   │   ├─ op[modulo] = "%"
+  │               │       │   │   └─ right/expression/int = "2"
+  │               │       │   ├─ op[equals] = "=="
+  │               │       │   └─ right/expression/int = "0"
+  │               │       ├─ order/name = "n"
+  │               │       └─ select/binary/
+  │               │           ├─ left/expression/name = "n"
+  │               │           ├─ op[multiply] = "*"
+  │               │           └─ right/expression/name = "n"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "odds"
-  │               │       └─ object[access]/
-  │               │           ├─ name = "numbers"
+  │               │   ├─ name = "odds"
+  │               │   └─ object[access]/
+  │               │       ├─ name = "numbers"
+  │               │       └─ call/
+  │               │           ├─ name = "Where"
+  │               │           ├─ argument/lambda/
+  │               │           │   ├─ parameter = "n"
+  │               │           │   └─ value/expression/binary/
+  │               │           │       ├─ left/expression/binary/
+  │               │           │       │   ├─ left/expression/name = "n"
+  │               │           │       │   ├─ op[modulo] = "%"
+  │               │           │       │   └─ right/expression/int = "2"
+  │               │           │       ├─ op[inequality] = "!="
+  │               │           │       └─ right/expression/int = "0"
   │               │           └─ call/
-  │               │               ├─ name = "Where"
+  │               │               ├─ name = "Select"
   │               │               ├─ argument/lambda/
   │               │               │   ├─ parameter = "n"
   │               │               │   └─ value/expression/binary/
-  │               │               │       ├─ left/expression/binary/
-  │               │               │       │   ├─ left/expression/name = "n"
-  │               │               │       │   ├─ op[modulo] = "%"
-  │               │               │       │   └─ right/expression/int = "2"
-  │               │               │       ├─ op[inequality] = "!="
-  │               │               │       └─ right/expression/int = "0"
-  │               │               └─ call/
-  │               │                   ├─ name = "Select"
-  │               │                   ├─ argument/lambda/
-  │               │                   │   ├─ parameter = "n"
-  │               │                   │   └─ value/expression/binary/
-  │               │                   │       ├─ left/expression/name = "n"
-  │               │                   │       ├─ op[plus] = "+"
-  │               │                   │       └─ right/expression/int = "1"
-  │               │                   └─ call/name = "ToList"
+  │               │               │       ├─ left/expression/name = "n"
+  │               │               │       ├─ op[plus] = "+"
+  │               │               │       └─ right/expression/int = "1"
+  │               │               └─ call/name = "ToList"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
   │               │   ├─ type/name = "int"
@@ -564,43 +555,40 @@ unit/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ type/name = "int"
   │               │   │   └─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "cube"
-  │               │       └─ lambda/
-  │               │           ├─ parameter = "x"
-  │               │           └─ value/expression/binary/
-  │               │               ├─ left/expression/binary/
-  │               │               │   ├─ left/expression/name = "x"
-  │               │               │   ├─ op[multiply] = "*"
-  │               │               │   └─ right/expression/name = "x"
-  │               │               ├─ op[multiply] = "*"
-  │               │               └─ right/expression/name = "x"
+  │               │   ├─ name = "cube"
+  │               │   └─ lambda/
+  │               │       ├─ parameter = "x"
+  │               │       └─ value/expression/binary/
+  │               │           ├─ left/expression/binary/
+  │               │           │   ├─ left/expression/name = "x"
+  │               │           │   ├─ op[multiply] = "*"
+  │               │           │   └─ right/expression/name = "x"
+  │               │           ├─ op[multiply] = "*"
+  │               │           └─ right/expression/name = "x"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Func"
   │               │   │   ├─ type/name = "int"
   │               │   │   └─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "blockLambda"
-  │               │       └─ lambda/
-  │               │           ├─ parameter = "x"
-  │               │           └─ body/block/return/expression/binary/
-  │               │               ├─ left/expression/name = "x"
-  │               │               ├─ op[plus] = "+"
-  │               │               └─ right/expression/int = "1"
+  │               │   ├─ name = "blockLambda"
+  │               │   └─ lambda/
+  │               │       ├─ parameter = "x"
+  │               │       └─ body/block/return/expression/binary/
+  │               │           ├─ left/expression/name = "x"
+  │               │           ├─ op[plus] = "+"
+  │               │           └─ right/expression/int = "1"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Action"
   │               │   │   └─ type/name = "string"
-  │               │   └─ declarator/
-  │               │       ├─ name = "log"
-  │               │       └─ lambda/
-  │               │           ├─ parameter = "msg"
-  │               │           └─ value/expression/object[access]/
-  │               │               ├─ name = "Console"
-  │               │               └─ call/
-  │               │                   ├─ name = "WriteLine"
-  │               │                   └─ argument/name = "msg"
+  │               │   ├─ name = "log"
+  │               │   └─ lambda/
+  │               │       ├─ parameter = "msg"
+  │               │       └─ value/expression/object[access]/
+  │               │           ├─ name = "Console"
+  │               │           └─ call/
+  │               │               ├─ name = "WriteLine"
+  │               │               └─ argument/name = "msg"
   │               ├─ expression/call/
   │               │   ├─ name = "log"
   │               │   └─ argument/string/
@@ -617,9 +605,8 @@ unit/
   │               ├─ for/
   │               │   ├─ variable/
   │               │   │   ├─ type/name = "var"
-  │               │   │   └─ declarator/
-  │               │   │       ├─ name = "i"
-  │               │   │       └─ int = "0"
+  │               │   │   ├─ name = "i"
+  │               │   │   └─ int = "0"
   │               │   ├─ condition/expression/binary/
   │               │   │   ├─ left/expression/name = "i"
   │               │   │   ├─ op[compare and less] = "<"
@@ -630,9 +617,8 @@ unit/
   │               │   └─ body/block/comment = "/* for */"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "j"
-  │               │       └─ int = "0"
+  │               │   ├─ name = "j"
+  │               │   └─ int = "0"
   │               ├─ while/condition/expression/binary/
   │               │   ├─ left/expression/unary/
   │               │   │   ├─ name = "j"
@@ -641,9 +627,8 @@ unit/
   │               │   └─ right/expression/int = "2"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "k"
-  │               │       └─ int = "0"
+  │               │   ├─ name = "k"
+  │               │   └─ int = "0"
   │               ├─ do/
   │               │   ├─ body/block/expression/unary/
   │               │   │   ├─ name = "k"
@@ -664,23 +649,21 @@ unit/
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "scope"
-  │               │       └─ new/path/
-  │               │           ├─ name = "System"
-  │               │           ├─ name = "IO"
-  │               │           └─ name = "MemoryStream"
+  │               │   ├─ name = "scope"
+  │               │   └─ new/path/
+  │               │       ├─ name = "System"
+  │               │       ├─ name = "IO"
+  │               │       └─ name = "MemoryStream"
   │               ├─ try/
   │               │   ├─ body/block/
   │               │   │   ├─ using/
   │               │   │   │   ├─ variable/
   │               │   │   │   │   ├─ type/name = "var"
-  │               │   │   │   │   └─ declarator/
-  │               │   │   │   │       ├─ name = "inner"
-  │               │   │   │   │       └─ new/path/
-  │               │   │   │   │           ├─ name = "System"
-  │               │   │   │   │           ├─ name = "IO"
-  │               │   │   │   │           └─ name = "MemoryStream"
+  │               │   │   │   │   ├─ name = "inner"
+  │               │   │   │   │   └─ new/path/
+  │               │   │   │   │       ├─ name = "System"
+  │               │   │   │   │       ├─ name = "IO"
+  │               │   │   │   │       └─ name = "MemoryStream"
   │               │   │   │   └─ body/block/expression/object[access]/
   │               │   │   │       ├─ name = "inner"
   │               │   │   │       └─ call/
@@ -721,70 +704,62 @@ unit/
   │               │   │   └─ element/
   │               │   │       ├─ type/name = "string"
   │               │   │       └─ name = "tag"
-  │               │   └─ declarator/
-  │               │       ├─ name = "pair"
-  │               │       └─ tuple/
-  │               │           ├─ argument/object[access]/
-  │               │           │   ├─ name = "odds"
-  │               │           │   └─ member/name = "Count"
-  │               │           └─ argument/string = "\"odd\""
+  │               │   ├─ name = "pair"
+  │               │   └─ tuple/
+  │               │       ├─ argument/object[access]/
+  │               │       │   ├─ name = "odds"
+  │               │       │   └─ member/name = "Count"
+  │               │       └─ argument/string = "\"odd\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ pattern[tuple]/
-  │               │       │   ├─ name = "cnt"
-  │               │       │   └─ name = "tg"
-  │               │       └─ name = "pair"
+  │               │   ├─ pattern[tuple]/
+  │               │   │   ├─ name = "cnt"
+  │               │   │   └─ name = "tg"
+  │               │   └─ name = "pair"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "List"
   │               │   │   └─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "list"
-  │               │       └─ index/
-  │               │           ├─ argument/int = "1"
-  │               │           ├─ argument/int = "2"
-  │               │           ├─ argument/int = "3"
-  │               │           └─ argument/range/name = "odds"
+  │               │   ├─ name = "list"
+  │               │   └─ index/
+  │               │       ├─ argument/int = "1"
+  │               │       ├─ argument/int = "2"
+  │               │       ├─ argument/int = "3"
+  │               │       └─ argument/range/name = "odds"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Dictionary"
   │               │   │   ├─ type/name = "string"
   │               │   │   └─ type/name = "int"
-  │               │   └─ declarator/
-  │               │       ├─ name = "map"
-  │               │       └─ new/literal/
-  │               │           ├─ assign/
-  │               │           │   ├─ left/expression/index/argument/string = "\"a\""
-  │               │           │   ├─ op = "="
-  │               │           │   └─ right/expression/int = "1"
-  │               │           └─ assign/
-  │               │               ├─ left/expression/index/argument/string = "\"b\""
-  │               │               ├─ op = "="
-  │               │               └─ right/expression/int = "2"
+  │               │   ├─ name = "map"
+  │               │   └─ new/literal/
+  │               │       ├─ assign/
+  │               │       │   ├─ left/expression/index/argument/string = "\"a\""
+  │               │       │   ├─ op = "="
+  │               │       │   └─ right/expression/int = "1"
+  │               │       └─ assign/
+  │               │           ├─ left/expression/index/argument/string = "\"b\""
+  │               │           ├─ op = "="
+  │               │           └─ right/expression/int = "2"
   │               ├─ comment[leading] = "// string literals"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "plain"
-  │               │       └─ string = "\"hello\""
+  │               │   ├─ name = "plain"
+  │               │   └─ string = "\"hello\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "verbatim"
-  │               │       └─ string = "@\"C:\\path\\file.txt\""
+  │               │   ├─ name = "verbatim"
+  │               │   └─ string = "@\"C:\\path\\file.txt\""
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "interp"
-  │               │       └─ string/
-  │               │           ├─ interpolation/name = "cnt"
-  │               │           └─ interpolation/name = "tg"
+  │               │   ├─ name = "interp"
+  │               │   └─ string/
+  │               │       ├─ interpolation/name = "cnt"
+  │               │       └─ interpolation/name = "tg"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
-  │               │   └─ declarator/
-  │               │       ├─ name = "raw"
-  │               │       └─ string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
+  │               │   ├─ name = "raw"
+  │               │   └─ string = "\"\"\"\n                {\n                    \"kind\": \"raw\"\n                }\n                \"\"\""
   │               └─ return/expression/binary/
   │                   ├─ left/expression/binary/
   │                   │   ├─ left/expression/binary/
@@ -859,17 +834,15 @@ unit/
               │       ├─ comment[leading] = "// cast expression"
               │       ├─ variable/
               │       │   ├─ type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "n"
-              │       │       └─ cast/
-              │       │           ├─ type/name = "int"
-              │       │           └─ value/expression/float = "3.14"
+              │       │   ├─ name = "n"
+              │       │   └─ cast/
+              │       │       ├─ type/name = "int"
+              │       │       └─ value/expression/float = "3.14"
               │       ├─ comment[leading] = "// char literal"
               │       ├─ variable/
               │       │   ├─ type/name = "char"
-              │       │   └─ declarator/
-              │       │       ├─ name = "ch"
-              │       │       └─ char = "'A'"
+              │       │   ├─ name = "ch"
+              │       │   └─ char = "'A'"
               │       ├─ comment[leading] = "// checked statement + yield return (via iterator method below)"
               │       ├─ checked/block/expression/assign/
               │       │   ├─ left/expression/name = "n"
@@ -882,9 +855,8 @@ unit/
               │       ├─ goto/name = "skip"
               │       ├─ variable/
               │       │   ├─ type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "unreachable"
-              │       │       └─ int = "0"
+              │       │   ├─ name = "unreachable"
+              │       │   └─ int = "0"
               │       ├─ label/
               │       │   ├─ name = "skip"
               │       │   └─ expression/assign/
@@ -900,85 +872,75 @@ unit/
               │       ├─ comment[leading] = "// with expression (record update)"
               │       ├─ variable/
               │       │   ├─ type/name = "var"
-              │       │   └─ declarator/
-              │       │       ├─ name = "m"
-              │       │       └─ new/
-              │       │           ├─ type/name = "Money"
-              │       │           ├─ argument/float = "1.0m"
-              │       │           └─ argument/string = "\"USD\""
+              │       │   ├─ name = "m"
+              │       │   └─ new/
+              │       │       ├─ type/name = "Money"
+              │       │       ├─ argument/float = "1.0m"
+              │       │       └─ argument/string = "\"USD\""
               │       ├─ variable/
               │       │   ├─ type/name = "var"
-              │       │   └─ declarator/
-              │       │       ├─ name = "m2"
-              │       │       └─ with/
-              │       │           ├─ name = "m"
-              │       │           └─ literal/
-              │       │               ├─ name = "Currency"
-              │       │               └─ string = "\"EUR\""
+              │       │   ├─ name = "m2"
+              │       │   └─ with/
+              │       │       ├─ name = "m"
+              │       │       └─ literal/
+              │       │           ├─ name = "Currency"
+              │       │           └─ string = "\"EUR\""
               │       ├─ comment[leading] = "// anonymous object creation"
               │       ├─ variable/
               │       │   ├─ type/name = "var"
-              │       │   └─ declarator/
-              │       │       ├─ name = "anon"
-              │       │       └─ new[anonymous]/
-              │       │           ├─ name = "Name"
-              │       │           ├─ string = "\"foo\""
-              │       │           ├─ name = "Value"
-              │       │           └─ int = "42"
+              │       │   ├─ name = "anon"
+              │       │   └─ new[anonymous]/
+              │       │       ├─ name = "Name"
+              │       │       ├─ string = "\"foo\""
+              │       │       ├─ name = "Value"
+              │       │       └─ int = "42"
               │       ├─ comment[leading] = "// array creation"
               │       ├─ variable/
               │       │   ├─ type[array]/type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "arr"
-              │       │       └─ new[array]/
-              │       │           ├─ type[array]/type/name = "int"
-              │       │           └─ literal/
-              │       │               ├─ int = "1"
-              │       │               ├─ int = "2"
-              │       │               └─ int = "3"
+              │       │   ├─ name = "arr"
+              │       │   └─ new[array]/
+              │       │       ├─ type[array]/type/name = "int"
+              │       │       └─ literal/
+              │       │           ├─ int = "1"
+              │       │           ├─ int = "2"
+              │       │           └─ int = "3"
               │       ├─ variable/
               │       │   ├─ type[array]/type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "arr2"
-              │       │       └─ new[array]/literal/
-              │       │           ├─ int = "4"
-              │       │           ├─ int = "5"
-              │       │           └─ int = "6"
+              │       │   ├─ name = "arr2"
+              │       │   └─ new[array]/literal/
+              │       │       ├─ int = "4"
+              │       │       ├─ int = "5"
+              │       │       └─ int = "6"
               │       ├─ comment[leading] = "// typeof + sizeof"
               │       ├─ variable/
               │       │   ├─ type/name = "Type"
-              │       │   └─ declarator/
-              │       │       ├─ name = "t"
-              │       │       └─ typeof/type/name = "int"
+              │       │   ├─ name = "t"
+              │       │   └─ typeof/type/name = "int"
               │       ├─ variable/
               │       │   ├─ type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "sz"
-              │       │       └─ sizeof/type/name = "int"
+              │       │   ├─ name = "sz"
+              │       │   └─ sizeof/type/name = "int"
               │       ├─ comment[leading] = "// default expression"
               │       ├─ variable/
               │       │   ├─ type/name = "int"
-              │       │   └─ declarator/
-              │       │       ├─ name = "def"
-              │       │       └─ default/type/name = "int"
+              │       │   ├─ name = "def"
+              │       │   └─ default/type/name = "int"
               │       ├─ comment[leading] = "// throw expression (in null-coalescing context)"
               │       ├─ variable/
               │       │   ├─ type/name = "string"
-              │       │   └─ declarator/
-              │       │       ├─ name = "s"
-              │       │       └─ null = "null"
+              │       │   ├─ name = "s"
+              │       │   └─ null = "null"
               │       └─ variable/
               │           ├─ type/name = "string"
-              │           └─ declarator/
-              │               ├─ name = "s2"
-              │               └─ binary/
-              │                   ├─ left/expression/name = "s"
-              │                   ├─ op[nullish] = "??"
-              │                   └─ right/expression/throw/new/
-              │                       ├─ type/name = "ArgumentNullException"
-              │                       └─ argument/call/
-              │                           ├─ name = "nameof"
-              │                           └─ argument/name = "s"
+              │           ├─ name = "s2"
+              │           └─ binary/
+              │               ├─ left/expression/name = "s"
+              │               ├─ op[nullish] = "??"
+              │               └─ right/expression/throw/new/
+              │                   ├─ type/name = "ArgumentNullException"
+              │                   └─ argument/call/
+              │                       ├─ name = "nameof"
+              │                       └─ argument/name = "s"
               ├─ method[public and static]/
               │   ├─ returns/type[generic]/
               │   │   ├─ name = "IEnumerable"

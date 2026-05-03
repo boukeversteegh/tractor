@@ -237,20 +237,49 @@ before committing a non-trivial change.
   `<continue/>`, `<fallthrough/>`) — not specific to return.
   No fix needed.
 
-- [ ] **Java `field/declarator/` is a tree-sitter grammar leak**
-  *(Principle #2 / #11, severity LOW)*
-  - File: `tests/integration/languages/java/blueprint.java.snapshot.txt:43-65`.
-  - Current: `field/.../ type/name="int", declarator/{name=MAX, value/...}`
-    — `<declarator>` is `variable_declarator` from tree-sitter.
-  - Java fields semantically have `name` and optional `value`;
-    `<declarator>` exists only because tree-sitter's grammar
-    supports `int a, b, c` multi-declarator form with shared type.
-  - Desired: for single-declarator fields, flatten to
-    `field/{name, value}` (drop `<declarator>` wrapper). For
-    multi-declarator (rare in practice), keep the wrapper or
-    emit multiple `<field>` siblings sharing a `<type>` reference.
-  - Effort: 1-iter (Custom handler).
-  - Source: iter 233 cold-read.
+- [x] iter 263 — **Java/C# single-declarator fields and locals
+  flatten the `<declarator>` wrapper.** New shared post-pass
+  `flatten_single_declarator_children(xot, root, &["field",
+  "variable"])` runs in both `java_post_transform` and
+  `csharp_post_transform`. Lifts the children of a single
+  `<declarator>` up into the parent so `int x = 1;` produces
+  `field/{type, name, value}` instead of
+  `field/{type, declarator/{name, value}}`. Multi-declarator
+  parents (`int a, b = 5, c`) keep the wrappers because each
+  `<declarator>` is a role-mixed name+value group whose
+  pairing depends on the wrapper. Subagent review (general-
+  purpose, AMEND-then-ship): originally proposed cross-language
+  flat-with-`list=` for multi-declarator too, but that loses
+  pairing for mixed-init multi-declarator (`int a, b = 5, c`)
+  per Principle #19 — kept conservative single-only flatten.
+  TS's existing unconditional Flatten remains a separate gap
+  (logged below). Tests: new `java_single_declarator_flattens`
+  + `csharp_single_declarator_flattens` in transform/variables.rs;
+  the existing `java` multi-declarator test still pins the
+  wrapper-kept behavior for `int x = 1, y = 2`. Updated 7
+  cross-cutting tests (comments / generics / literals / loops /
+  modifiers / operators / types) that referenced
+  `[declarator/name='X']` to use the flat `[name='X']` shape.
+  Snapshot diff: ~600 lines across Java + C# blueprints (every
+  single-declarator field/variable lost its wrapper).
+
+- [ ] **TypeScript multi-declarator binding loss**
+  *(Principle #19 violation, severity LOW, surfaced iter 263
+  during the Java/C# fix)*
+  - TS `VariableDeclarator => Flatten` is unconditional, so
+    `let i = 0, j = 100` becomes flat `name="i" / value=0 /
+    name="j" / value=100` siblings under `variable[let]`. Each
+    `<declarator>` was role-mixed (name+value group) but
+    Flatten merged them — pairing is now position-only, JSON
+    consumers can't reliably reconstruct which name goes with
+    which value.
+  - Visible at `tests/integration/languages/typescript/
+    blueprint.ts.snapshot.txt:748-752` (for-loop init with
+    multiple bindings).
+  - Fix: switch TS `VariableDeclarator` from unconditional
+    `Flatten` to a Custom that flattens only single-declarator
+    cases (mirroring the Java/C# iter 263 approach).
+  - Effort: 1-iter.
 
 - [x] iter 253 — **Python `yield from` keyword erasure** —
   Custom `yield_expression` handler detects "from" in the text

@@ -32,19 +32,19 @@ fn java() {
     "#);
 
     claim("Java integer literal renders as <int>",
-        &mut tree, "//field[declarator/name='retries']/declarator/value/int='3'", 1);
+        &mut tree, "//field[name='retries']/value/int='3'", 1);
 
     claim("Java floating-point literal renders as <float>",
-        &mut tree, "//field[declarator/name='pi']/declarator/value/float='3.14'", 1);
+        &mut tree, "//field[name='pi']/value/float='3.14'", 1);
 
     claim("Java true keyword renders as <true> (split element)",
-        &mut tree, "//field[declarator/name='enabled']/declarator/value/true='true'", 1);
+        &mut tree, "//field[name='enabled']/value/true='true'", 1);
 
     claim("Java false keyword renders as <false> (split element)",
-        &mut tree, "//field[declarator/name='disabled']/declarator/value/false='false'", 1);
+        &mut tree, "//field[name='disabled']/value/false='false'", 1);
 
     claim("Java null keyword renders as <null>",
-        &mut tree, "//field[declarator/name='missing']/declarator/value/null='null'", 1);
+        &mut tree, "//field[name='missing']/value/null='null'", 1);
 }
 
 #[test]
@@ -59,16 +59,16 @@ fn csharp() {
     "#);
 
     claim("C# integer literal renders as <int>",
-        &mut tree, "//field[declarator/name='retries']/declarator/int='3'", 1);
+        &mut tree, "//field[name='retries']/int='3'", 1);
 
     claim("C# floating-point literal renders as <float>",
-        &mut tree, "//field[declarator/name='pi']/declarator/float='3.14'", 1);
+        &mut tree, "//field[name='pi']/float='3.14'", 1);
 
     claim("C# true keyword renders as <bool> with text 'true'",
-        &mut tree, "//field[declarator/name='enabled']/declarator/bool='true'", 1);
+        &mut tree, "//field[name='enabled']/bool='true'", 1);
 
     claim("C# null keyword renders as <null>",
-        &mut tree, "//field[declarator/name='missing']/declarator/null='null'", 1);
+        &mut tree, "//field[name='missing']/null='null'", 1);
 }
 
 #[test]
