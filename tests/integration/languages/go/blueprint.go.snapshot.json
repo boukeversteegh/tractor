@@ -82,22 +82,16 @@
             "arguments": [
               "\"not found\""
             ],
-            "member": [
-              {
-                "property": [
-                  {
-                    "name": "New"
-                  }
-                ],
-                "object": [
-                  {
-                    "name": [
-                      "errors"
-                    ]
-                  }
+            "member": {
+              "property": {
+                "name": "New"
+              },
+              "object": {
+                "name": [
+                  "errors"
                 ]
               }
-            ]
+            }
           }
         }
       },
@@ -105,9 +99,7 @@
     },
     {
       "type": {
-        "name": [
-          "int"
-        ]
+        "name": "int"
       },
       "name": "globalCount"
     },
@@ -135,38 +127,26 @@
         {
           "$type": "type",
           "approximation": true,
-          "type": [
-            {
-              "name": [
-                "float64"
-              ]
-            }
-          ]
+          "type": {
+            "name": "float64"
+          }
         }
       ],
       "exported": true,
       "name": "Number",
       "type": {
-        "type": [
-          {
-            "name": [
-              "int"
-            ]
-          }
-        ],
+        "type": {
+          "name": "int"
+        },
         "approximation": true
       }
     },
     {
       "method": {
         "returns": {
-          "type": [
-            {
-              "name": [
-                "string"
-              ]
-            }
-          ]
+          "type": {
+            "name": "string"
+          }
         },
         "name": "String"
       },
@@ -176,13 +156,9 @@
     {
       "method": {
         "returns": {
-          "type": [
-            {
-              "name": [
-                "error"
-              ]
-            }
-          ]
+          "type": {
+            "name": "error"
+          }
         },
         "name": "Close"
       },
@@ -191,21 +167,15 @@
       "extends": [
         {
           "type": {
-            "name": [
-              "Reader"
-            ],
-            "package": [
-              {
-                "name": "io"
-              }
-            ]
+            "name": "Reader",
+            "package": {
+              "name": "io"
+            }
           }
         },
         {
           "type": {
-            "name": [
-              "Stringer"
-            ]
+            "name": "Stringer"
           }
         }
       ]
@@ -214,14 +184,10 @@
   "alias": [
     {
       "type": {
-        "name": [
-          "Context"
-        ],
-        "package": [
-          {
-            "name": "context"
-          }
-        ]
+        "name": "Context",
+        "package": {
+          "name": "context"
+        }
       },
       "exported": true,
       "name": "Alias"
@@ -229,64 +195,42 @@
   ],
   "type": [
     {
-      "type": [
-        {
-          "name": [
-            "int64"
-          ]
-        }
-      ],
+      "type": {
+        "name": "int64"
+      },
       "exported": true,
-      "name": [
-        "UserID"
-      ]
+      "name": "UserID"
     },
     {
-      "type": [
-        {
-          "returns": [
-            {
-              "type": [
-                {
-                  "name": [
-                    "error"
-                  ]
-                }
-              ]
-            }
-          ],
-          "function": true,
-          "parameters": [
-            {
-              "$type": "parameter",
-              "name": "ctx",
-              "type": {
-                "name": [
-                  "Context"
-                ],
-                "package": [
-                  {
-                    "name": "context"
-                  }
-                ]
-              }
-            },
-            {
-              "$type": "parameter",
-              "name": "id",
-              "type": {
-                "name": [
-                  "UserID"
-                ]
+      "type": {
+        "returns": {
+          "type": {
+            "name": "error"
+          }
+        },
+        "function": true,
+        "parameters": [
+          {
+            "$type": "parameter",
+            "name": "ctx",
+            "type": {
+              "name": "Context",
+              "package": {
+                "name": "context"
               }
             }
-          ]
-        }
-      ],
+          },
+          {
+            "$type": "parameter",
+            "name": "id",
+            "type": {
+              "name": "UserID"
+            }
+          }
+        ]
+      },
       "exported": true,
-      "name": [
-        "Handler"
-      ]
+      "name": "Handler"
     }
   ],
   "struct": [
@@ -294,9 +238,7 @@
       "field": {
         "slice": {
           "type": {
-            "name": [
-              "T"
-            ]
+            "name": "T"
           }
         },
         "unexported": true,
@@ -309,9 +251,7 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": [
-              "any"
-            ]
+            "name": "any"
           }
         }
       ]
@@ -319,9 +259,7 @@
     {
       "field": {
         "type": {
-          "name": [
-            "string"
-          ]
+          "name": "string"
         },
         "unexported": true,
         "name": "msg"
@@ -336,9 +274,7 @@
           "exported": true,
           "name": "Name",
           "type": {
-            "name": [
-              "string"
-            ]
+            "name": "string"
           },
           "string": {
             "text": "`json:\"name\"`",
@@ -359,9 +295,7 @@
           "Y"
         ],
         "type": {
-          "name": [
-            "int"
-          ]
+          "name": "int"
         }
       }
     },
@@ -372,9 +306,7 @@
           "exported": true,
           "name": "Tag",
           "type": {
-            "name": [
-              "string"
-            ]
+            "name": "string"
           }
         },
         {
@@ -390,9 +322,7 @@
           "struct": {
             "field": {
               "type": {
-                "name": [
-                  "int64"
-                ]
+                "name": "int64"
               },
               "exported": true,
               "name": "Created"
@@ -404,9 +334,7 @@
       "name": "Labeled",
       "field": {
         "type": {
-          "name": [
-            "Point"
-          ]
+          "name": "Point"
         },
         "unexported": true
       }
@@ -423,42 +351,32 @@
                   "arguments": [
                     {
                       "$type": "member",
-                      "object": [
-                        {
-                          "name": [
-                            "c"
-                          ]
-                        }
-                      ],
-                      "property": [
-                        {
-                          "name": "items"
-                        }
-                      ]
+                      "object": {
+                        "name": [
+                          "c"
+                        ]
+                      },
+                      "property": {
+                        "name": "items"
+                      }
                     },
                     "v"
                   ],
-                  "name": [
-                    "append"
-                  ]
+                  "name": "append"
                 }
               }
             },
             "left": {
               "expression": {
                 "member": {
-                  "property": [
-                    {
-                      "name": "items"
-                    }
-                  ],
-                  "object": [
-                    {
-                      "name": [
-                        "c"
-                      ]
-                    }
-                  ]
+                  "property": {
+                    "name": "items"
+                  },
+                  "object": {
+                    "name": [
+                      "c"
+                    ]
+                  }
                 }
               }
             }
@@ -476,17 +394,13 @@
               "arguments": [
                 {
                   "$type": "type",
-                  "name": [
-                    "T"
-                  ]
+                  "name": "T"
                 }
               ],
               "generic": true,
               "type": [
                 {
-                  "name": [
-                    "Container"
-                  ]
+                  "name": "Container"
                 }
               ]
             }
@@ -496,9 +410,7 @@
           "$type": "parameter",
           "name": "v",
           "type": {
-            "name": [
-              "T"
-            ]
+            "name": "T"
           }
         }
       ]
@@ -513,51 +425,37 @@
                   "\"(%d,%d)\"",
                   {
                     "$type": "member",
-                    "object": [
-                      {
-                        "name": [
-                          "p"
-                        ]
-                      }
-                    ],
-                    "property": [
-                      {
-                        "name": "X"
-                      }
-                    ]
+                    "object": {
+                      "name": [
+                        "p"
+                      ]
+                    },
+                    "property": {
+                      "name": "X"
+                    }
                   },
                   {
                     "$type": "member",
-                    "object": [
-                      {
-                        "name": [
-                          "p"
-                        ]
-                      }
-                    ],
-                    "property": [
-                      {
-                        "name": "Y"
-                      }
-                    ]
+                    "object": {
+                      "name": [
+                        "p"
+                      ]
+                    },
+                    "property": {
+                      "name": "Y"
+                    }
                   }
                 ],
-                "member": [
-                  {
-                    "property": [
-                      {
-                        "name": "Sprintf"
-                      }
-                    ],
-                    "object": [
-                      {
-                        "name": [
-                          "fmt"
-                        ]
-                      }
+                "member": {
+                  "property": {
+                    "name": "Sprintf"
+                  },
+                  "object": {
+                    "name": [
+                      "fmt"
                     ]
                   }
-                ]
+                }
               }
             }
           }
@@ -569,21 +467,15 @@
           "$type": "parameter",
           "name": "p",
           "type": {
-            "name": [
-              "Point"
-            ]
+            "name": "Point"
           }
         }
       ],
       "name": "String",
       "returns": {
-        "type": [
-          {
-            "name": [
-              "string"
-            ]
-          }
-        ]
+        "type": {
+          "name": "string"
+        }
       }
     },
     {
@@ -598,18 +490,14 @@
             "left": {
               "expression": {
                 "member": {
-                  "property": [
-                    {
-                      "name": "X"
-                    }
-                  ],
-                  "object": [
-                    {
-                      "name": [
-                        "p"
-                      ]
-                    }
-                  ]
+                  "property": {
+                    "name": "X"
+                  },
+                  "object": {
+                    "name": [
+                      "p"
+                    ]
+                  }
                 }
               }
             }
@@ -623,18 +511,14 @@
             "left": {
               "expression": {
                 "member": {
-                  "property": [
-                    {
-                      "name": "Y"
-                    }
-                  ],
-                  "object": [
-                    {
-                      "name": [
-                        "p"
-                      ]
-                    }
-                  ]
+                  "property": {
+                    "name": "Y"
+                  },
+                  "object": {
+                    "name": [
+                      "p"
+                    ]
+                  }
                 }
               }
             }
@@ -649,9 +533,7 @@
           "name": "p",
           "pointer": {
             "type": {
-              "name": [
-                "Point"
-              ]
+              "name": "Point"
             }
           }
         },
@@ -662,9 +544,7 @@
             "dy"
           ],
           "type": {
-            "name": [
-              "int"
-            ]
+            "name": "int"
           }
         }
       ]
@@ -675,18 +555,14 @@
           {
             "expression": {
               "member": {
-                "property": [
-                  {
-                    "name": "msg"
-                  }
-                ],
-                "object": [
-                  {
-                    "name": [
-                      "e"
-                    ]
-                  }
-                ]
+                "property": {
+                  "name": "msg"
+                },
+                "object": {
+                  "name": [
+                    "e"
+                  ]
+                }
               }
             }
           }
@@ -699,22 +575,16 @@
           "name": "e",
           "pointer": {
             "type": {
-              "name": [
-                "MyErr"
-              ]
+              "name": "MyErr"
             }
           }
         }
       ],
       "name": "Error",
       "returns": {
-        "type": [
-          {
-            "name": [
-              "string"
-            ]
-          }
-        ]
+        "type": {
+          "name": "string"
+        }
       }
     }
   ],
@@ -729,22 +599,16 @@
                   "\"wrap: %w\"",
                   "err"
                 ],
-                "member": [
-                  {
-                    "property": [
-                      {
-                        "name": "Errorf"
-                      }
-                    ],
-                    "object": [
-                      {
-                        "name": [
-                          "fmt"
-                        ]
-                      }
+                "member": {
+                  "property": {
+                    "name": "Errorf"
+                  },
+                  "object": {
+                    "name": [
+                      "fmt"
                     ]
                   }
-                ]
+                }
               }
             }
           }
@@ -757,20 +621,14 @@
           "$type": "parameter",
           "name": "err",
           "type": {
-            "name": [
-              "error"
-            ]
+            "name": "error"
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "error"
-            ]
-          }
-        ]
+        "type": {
+          "name": "error"
+        }
       }
     },
     {
@@ -786,13 +644,9 @@
       "unexported": true,
       "name": "doThing",
       "returns": {
-        "type": [
-          {
-            "name": [
-              "error"
-            ]
-          }
-        ]
+        "type": {
+          "name": "error"
+        }
       }
     },
     {
@@ -814,18 +668,15 @@
       "unexported": true,
       "name": "risky",
       "returns": {
-        "type": [
+        "children": [
           {
-            "name": [
-              "int"
-            ]
-          },
-          {
-            "name": [
-              "error"
-            ]
+            "$type": "type",
+            "name": "error"
           }
-        ]
+        ],
+        "type": {
+          "name": "int"
+        }
       }
     },
     {
@@ -846,25 +697,19 @@
                     {
                       "$type": "slice",
                       "type": {
-                        "name": [
-                          "U"
-                        ]
+                        "name": "U"
                       }
                     },
                     "0",
                     {
                       "$type": "call",
-                      "name": [
-                        "len"
-                      ],
+                      "name": "len",
                       "arguments": [
                         "xs"
                       ]
                     }
                   ],
-                  "name": [
-                    "make"
-                  ]
+                  "name": "make"
                 }
               }
             },
@@ -888,17 +733,13 @@
                           "out",
                           {
                             "$type": "call",
-                            "name": [
-                              "f"
-                            ],
+                            "name": "f",
                             "arguments": [
                               "x"
                             ]
                           }
                         ],
-                        "name": [
-                          "append"
-                        ]
+                        "name": "append"
                       }
                     }
                   },
@@ -911,25 +752,21 @@
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "name": "xs"
+              "right": {
+                "expression": {
+                  "name": "xs"
+                }
+              },
+              "left": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "x"
                   }
-                }
-              ],
-              "left": [
-                {
-                  "expression": [
-                    {
-                      "name": "_"
-                    },
-                    {
-                      "name": "x"
-                    }
-                  ]
-                }
-              ]
+                ]
+              }
             }
           }
         ]
@@ -941,9 +778,7 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": [
-              "any"
-            ]
+            "name": "any"
           },
           "children": [
             "U"
@@ -956,9 +791,7 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": [
-                "T"
-              ]
+              "name": "T"
             }
           }
         },
@@ -966,25 +799,17 @@
           "$type": "parameter",
           "name": "f",
           "type": {
-            "returns": [
-              {
-                "type": [
-                  {
-                    "name": [
-                      "U"
-                    ]
-                  }
-                ]
+            "returns": {
+              "type": {
+                "name": "U"
               }
-            ],
+            },
             "function": true,
             "parameters": [
               {
                 "$type": "parameter",
                 "type": {
-                  "name": [
-                    "T"
-                  ]
+                  "name": "T"
                 }
               }
             ]
@@ -992,15 +817,11 @@
         }
       ],
       "returns": {
-        "slice": [
-          {
-            "type": {
-              "name": [
-                "U"
-              ]
-            }
+        "slice": {
+          "type": {
+            "name": "U"
           }
-        ]
+        }
       }
     },
     {
@@ -1024,25 +845,21 @@
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "name": "xs"
+              "right": {
+                "expression": {
+                  "name": "xs"
+                }
+              },
+              "left": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "x"
                   }
-                }
-              ],
-              "left": [
-                {
-                  "expression": [
-                    {
-                      "name": "_"
-                    },
-                    {
-                      "name": "x"
-                    }
-                  ]
-                }
-              ]
+                ]
+              }
             }
           }
         ],
@@ -1055,9 +872,7 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": [
-              "Number"
-            ]
+            "name": "Number"
           }
         }
       ],
@@ -1067,21 +882,15 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": [
-                "T"
-              ]
+              "name": "T"
             }
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "T"
-            ]
-          }
-        ]
+        "type": {
+          "name": "T"
+        }
       }
     },
     {
@@ -1092,29 +901,14 @@
               "if": [
                 {
                   "then": {
-                    "assign": [
+                    "children": [
                       {
-                        "right": {
-                          "expression": {
-                            "literal": {
-                              "struct": [
-                                "struct{}"
-                              ]
-                            }
-                          }
-                        },
+                        "$type": "assign",
                         "left": {
                           "expression": {
-                            "index": {
-                              "name": [
-                                "seen",
-                                "x"
-                              ]
-                            }
+                            "name": "out"
                           }
-                        }
-                      },
-                      {
+                        },
                         "right": {
                           "expression": {
                             "call": {
@@ -1122,28 +916,42 @@
                                 "out",
                                 "x"
                               ],
-                              "name": [
-                                "append"
-                              ]
+                              "name": "append"
                             }
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "out"
                           }
                         }
                       }
-                    ]
+                    ],
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "literal": {
+                            "struct": [
+                              "struct{}"
+                            ]
+                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "index": {
+                            "children": [
+                              "x"
+                            ],
+                            "name": "seen"
+                          }
+                        }
+                      }
+                    }
                   },
                   "variable": {
                     "right": {
                       "expression": {
                         "index": {
-                          "name": [
-                            "seen",
+                          "children": [
                             "x"
-                          ]
+                          ],
+                          "name": "seen"
                         }
                       }
                     },
@@ -1160,46 +968,36 @@
                     }
                   },
                   "condition": {
-                    "expression": [
-                      {
-                        "unary": {
-                          "name": [
-                            "ok"
-                          ],
-                          "op": [
-                            {
-                              "text": "!",
-                              "logical": true,
-                              "not": true
-                            }
-                          ]
+                    "expression": {
+                      "unary": {
+                        "name": "ok",
+                        "op": {
+                          "text": "!",
+                          "logical": true,
+                          "not": true
                         }
                       }
-                    ]
+                    }
                   }
                 }
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "name": "xs"
+              "right": {
+                "expression": {
+                  "name": "xs"
+                }
+              },
+              "left": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "x"
                   }
-                }
-              ],
-              "left": [
-                {
-                  "expression": [
-                    {
-                      "name": "_"
-                    },
-                    {
-                      "name": "x"
-                    }
-                  ]
-                }
-              ]
+                ]
+              }
             }
           }
         ],
@@ -1217,9 +1015,7 @@
                         }
                       },
                       "type": {
-                        "name": [
-                          "T"
-                        ]
+                        "name": "T"
                       }
                     }
                   ]
@@ -1242,9 +1038,7 @@
           "$type": "generic",
           "name": "T",
           "type": {
-            "name": [
-              "comparable"
-            ]
+            "name": "comparable"
           }
         }
       ],
@@ -1254,23 +1048,17 @@
           "name": "xs",
           "slice": {
             "type": {
-              "name": [
-                "T"
-              ]
+              "name": "T"
             }
           }
         }
       ],
       "returns": {
-        "slice": [
-          {
-            "type": {
-              "name": [
-                "T"
-              ]
-            }
+        "slice": {
+          "type": {
+            "name": "T"
           }
-        ]
+        }
       }
     },
     {
@@ -1294,25 +1082,21 @@
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "name": "vals"
+              "right": {
+                "expression": {
+                  "name": "vals"
+                }
+              },
+              "left": {
+                "expression": [
+                  {
+                    "name": "_"
+                  },
+                  {
+                    "name": "v"
                   }
-                }
-              ],
-              "left": [
-                {
-                  "expression": [
-                    {
-                      "name": "_"
-                    },
-                    {
-                      "name": "v"
-                    }
-                  ]
-                }
-              ]
+                ]
+              }
             }
           }
         ],
@@ -1320,30 +1104,26 @@
         "defer": [
           {
             "call": {
-              "closure": [
-                {
-                  "value": {
-                    "expression": {
-                      "assign": {
-                        "right": {
-                          "expression": {
-                            "call": {
-                              "name": [
-                                "recover"
-                              ]
-                            }
+              "closure": {
+                "value": {
+                  "expression": {
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "call": {
+                            "name": "recover"
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "_"
-                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "_"
                         }
                       }
                     }
                   }
                 }
-              ]
+              }
             }
           }
         ],
@@ -1357,26 +1137,20 @@
                       {
                         "expression": {
                           "binary": {
-                            "right": [
-                              {
-                                "expression": {
-                                  "int": "2"
-                                }
+                            "right": {
+                              "expression": {
+                                "int": "2"
                               }
-                            ],
-                            "left": [
-                              {
-                                "expression": {
-                                  "name": "x"
-                                }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "x"
                               }
-                            ],
-                            "op": [
-                              {
-                                "text": "*",
-                                "multiply": true
-                              }
-                            ]
+                            },
+                            "op": {
+                              "text": "*",
+                              "multiply": true
+                            }
                           }
                         }
                       }
@@ -1386,26 +1160,20 @@
                         "right": {
                           "expression": {
                             "binary": {
-                              "right": [
-                                {
-                                  "expression": {
-                                    "int": "1"
-                                  }
+                              "right": {
+                                "expression": {
+                                  "int": "1"
                                 }
-                              ],
-                              "left": [
-                                {
-                                  "expression": {
-                                    "name": "n"
-                                  }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "n"
                                 }
-                              ],
-                              "op": [
-                                {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              ]
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              }
                             }
                           }
                         },
@@ -1423,20 +1191,14 @@
                       "$type": "parameter",
                       "name": "n",
                       "type": {
-                        "name": [
-                          "int"
-                        ]
+                        "name": "int"
                       }
                     }
                   ],
                   "returns": {
-                    "type": [
-                      {
-                        "name": [
-                          "int"
-                        ]
-                      }
-                    ]
+                    "type": {
+                      "name": "int"
+                    }
                   }
                 }
               }
@@ -1457,9 +1219,7 @@
                   "arguments": [
                     "3"
                   ],
-                  "name": [
-                    "multiStmt"
-                  ]
+                  "name": "multiStmt"
                 }
               }
             },
@@ -1476,9 +1236,7 @@
                   "arguments": [
                     "prefix"
                   ],
-                  "name": [
-                    "ToUpper"
-                  ]
+                  "name": "ToUpper"
                 }
               }
             },
@@ -1497,34 +1255,27 @@
           "$type": "parameter",
           "name": "prefix",
           "type": {
-            "name": [
-              "string"
-            ]
+            "name": "string"
           }
         },
         {
           "$type": "parameter",
           "name": "vals",
           "type": {
-            "name": [
-              "int"
-            ]
+            "name": "int"
           }
         }
       ],
       "returns": {
-        "type": [
+        "children": [
           {
-            "name": [
-              "int"
-            ]
-          },
-          {
-            "name": [
-              "error"
-            ]
+            "$type": "type",
+            "name": "error"
           }
-        ]
+        ],
+        "type": {
+          "name": "int"
+        }
       }
     },
     {
@@ -1539,16 +1290,12 @@
                     {
                       "$type": "spread",
                       "index": {
-                        "name": [
-                          "fixed"
-                        ],
+                        "name": "fixed",
                         "slice": true
                       }
                     }
                   ],
-                  "name": [
-                    "variadic"
-                  ]
+                  "name": "variadic"
                 }
               }
             },
@@ -1612,9 +1359,7 @@
                     {
                       "type": [
                         {
-                          "name": [
-                            "int"
-                          ]
+                          "name": "int"
                         }
                       ],
                       "int": [
@@ -1629,9 +1374,7 @@
             "array": {
               "type": [
                 {
-                  "name": [
-                    "int"
-                  ]
+                  "name": "int"
                 }
               ],
               "int": [
@@ -1658,9 +1401,7 @@
                     {
                       "type": [
                         {
-                          "name": [
-                            "int"
-                          ]
+                          "name": "int"
                         }
                       ],
                       "implicit": true
@@ -1680,14 +1421,12 @@
             "right": {
               "expression": {
                 "index": {
-                  "int": [
-                    "1",
+                  "children": [
                     "3"
                   ],
                   "slice": true,
-                  "name": [
-                    "fixed"
-                  ]
+                  "name": "fixed",
+                  "int": "1"
                 }
               }
             },
@@ -1702,21 +1441,15 @@
             "right": {
               "expression": {
                 "call": {
-                  "nil": [
-                    "nil"
-                  ],
+                  "nil": "nil",
                   "type": true,
-                  "chan": [
-                    {
-                      "value": {
-                        "type": {
-                          "name": [
-                            "int"
-                          ]
-                        }
+                  "chan": {
+                    "value": {
+                      "type": {
+                        "name": "int"
                       }
                     }
-                  ]
+                  }
                 }
               }
             },
@@ -1734,23 +1467,17 @@
                   "arguments": [
                     {
                       "$type": "type",
-                      "name": [
-                        "int"
-                      ]
+                      "name": "int"
                     },
                     {
                       "$type": "type",
-                      "name": [
-                        "string"
-                      ]
+                      "name": "string"
                     }
                   ],
                   "generic": true,
                   "type": [
                     {
-                      "name": [
-                        "Map"
-                      ]
+                      "name": "Map"
                     }
                   ]
                 }
@@ -1768,49 +1495,39 @@
           {
             "case": [
               {
-                "value": [
-                  {
-                    "expression": {
-                      "int": "10"
-                    }
+                "value": {
+                  "expression": {
+                    "int": "10"
                   }
-                ],
+                },
                 "fallthrough": true
               },
               {
-                "assign": [
-                  {
-                    "right": {
-                      "expression": {
-                        "name": "sub"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "_"
-                      }
-                    }
-                  }
-                ],
-                "value": [
-                  {
+                "assign": {
+                  "right": {
                     "expression": {
-                      "int": "20"
+                      "name": "sub"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "_"
                     }
                   }
-                ]
+                },
+                "value": {
+                  "expression": {
+                    "int": "20"
+                  }
+                }
               }
             ],
             "value": [
               {
                 "expression": {
                   "index": {
-                    "int": [
-                      "0"
-                    ],
-                    "name": [
-                      "implicit"
-                    ]
+                    "int": "0",
+                    "name": "implicit"
                   }
                 }
               }
@@ -1834,22 +1551,16 @@
                         "\"%T\"",
                         "v"
                       ],
-                      "member": [
-                        {
-                          "property": [
-                            {
-                              "name": "Sprintf"
-                            }
-                          ],
-                          "object": [
-                            {
-                              "name": [
-                                "fmt"
-                              ]
-                            }
+                      "member": {
+                        "property": {
+                          "name": "Sprintf"
+                        },
+                        "object": {
+                          "name": [
+                            "fmt"
                           ]
                         }
-                      ]
+                      }
                     }
                   }
                 }
@@ -1868,116 +1579,80 @@
             ],
             "case": [
               {
-                "return": [
-                  {
-                    "expression": {
-                      "string": "\"nil\""
-                    }
+                "return": {
+                  "expression": {
+                    "string": "\"nil\""
                   }
-                ],
-                "type": [
-                  {
-                    "name": [
-                      "nil"
-                    ]
-                  }
-                ]
+                },
+                "type": {
+                  "name": "nil"
+                }
               },
               {
-                "return": [
+                "children": [
                   {
-                    "expression": {
-                      "string": "\"int-ish\""
-                    }
+                    "$type": "type",
+                    "name": "int32"
+                  },
+                  {
+                    "$type": "type",
+                    "name": "int64"
                   }
                 ],
-                "type": [
-                  {
-                    "name": [
-                      "int"
-                    ]
-                  },
-                  {
-                    "name": [
-                      "int32"
-                    ]
-                  },
-                  {
-                    "name": [
-                      "int64"
-                    ]
+                "type": {
+                  "name": "int"
+                },
+                "return": {
+                  "expression": {
+                    "string": "\"int-ish\""
                   }
-                ]
+                }
               },
               {
-                "return": [
-                  {
-                    "expression": {
-                      "binary": {
-                        "right": [
-                          {
-                            "expression": {
-                              "name": "v"
-                            }
-                          }
-                        ],
-                        "left": [
-                          {
-                            "expression": {
-                              "string": "\"string:\""
-                            }
-                          }
-                        ],
-                        "op": [
-                          {
-                            "text": "+",
-                            "plus": true
-                          }
-                        ]
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "v"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "string": "\"string:\""
+                        }
+                      },
+                      "op": {
+                        "text": "+",
+                        "plus": true
                       }
                     }
                   }
-                ],
-                "type": [
-                  {
-                    "name": [
-                      "string"
-                    ]
-                  }
-                ]
+                },
+                "type": {
+                  "name": "string"
+                }
               },
               {
-                "return": [
-                  {
-                    "expression": {
-                      "call": {
-                        "member": [
-                          {
-                            "property": [
-                              {
-                                "name": "String"
-                              }
-                            ],
-                            "object": [
-                              {
-                                "name": [
-                                  "v"
-                                ]
-                              }
-                            ]
-                          }
-                        ]
+                "return": {
+                  "expression": {
+                    "call": {
+                      "member": {
+                        "property": {
+                          "name": "String"
+                        },
+                        "object": {
+                          "name": [
+                            "v"
+                          ]
+                        }
                       }
                     }
                   }
-                ],
-                "type": [
-                  {
-                    "name": [
-                      "Stringer"
-                    ]
-                  }
-                ]
+                },
+                "type": {
+                  "name": "Stringer"
+                }
               }
             ]
           }
@@ -1990,20 +1665,14 @@
           "$type": "parameter",
           "name": "x",
           "type": {
-            "name": [
-              "any"
-            ]
+            "name": "any"
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "string"
-            ]
-          }
-        ]
+        "type": {
+          "name": "string"
+        }
       }
     },
     {
@@ -2021,9 +1690,7 @@
               "arguments": [
                 "buffered"
               ],
-              "name": [
-                "close"
-              ]
+              "name": "close"
             }
           }
         ],
@@ -2035,40 +1702,28 @@
                   "arguments": [
                     {
                       "$type": "type",
-                      "package": [
-                        {
-                          "name": "myio"
-                        }
-                      ],
-                      "name": [
-                        "PipeReader"
-                      ]
+                      "package": {
+                        "name": "myio"
+                      },
+                      "name": "PipeReader"
                     }
                   ],
-                  "name": [
-                    "new"
-                  ]
+                  "name": "new"
                 }
               }
             },
             "name": "r",
             "type": {
-              "name": [
-                "Reader"
-              ],
-              "package": [
-                {
-                  "name": "io"
-                }
-              ]
+              "name": "Reader",
+              "package": {
+                "name": "io"
+              }
             }
           },
           {
             "pointer": {
               "type": {
-                "name": [
-                  "MyErr"
-                ]
+                "name": "MyErr"
               }
             },
             "name": "target"
@@ -2083,32 +1738,24 @@
                     "continue": true
                   },
                   "condition": {
-                    "expression": [
-                      {
-                        "binary": {
-                          "right": [
-                            {
-                              "expression": {
-                                "int": "5"
-                              }
-                            }
-                          ],
-                          "left": [
-                            {
-                              "expression": {
-                                "name": "i"
-                              }
-                            }
-                          ],
-                          "op": [
-                            {
-                              "text": "==",
-                              "equals": true
-                            }
-                          ]
+                    "expression": {
+                      "binary": {
+                        "right": {
+                          "expression": {
+                            "int": "5"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "i"
+                          }
+                        },
+                        "op": {
+                          "text": "==",
+                          "equals": true
                         }
                       }
-                    ]
+                    }
                   }
                 }
               ]
@@ -2127,44 +1774,32 @@
               }
             },
             "condition": {
-              "expression": [
-                {
-                  "binary": {
-                    "right": [
-                      {
-                        "expression": {
-                          "int": "10"
-                        }
-                      }
-                    ],
-                    "left": [
-                      {
-                        "expression": {
-                          "name": "i"
-                        }
-                      }
-                    ],
-                    "op": [
-                      {
-                        "text": "<",
-                        "compare": true,
-                        "less": true
-                      }
-                    ]
+              "expression": {
+                "binary": {
+                  "right": {
+                    "expression": {
+                      "int": "10"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "i"
+                    }
+                  },
+                  "op": {
+                    "text": "<",
+                    "compare": true,
+                    "less": true
                   }
                 }
-              ]
+              }
             },
             "unary": {
-              "op": [
-                {
-                  "text": "++",
-                  "increment": true
-                }
-              ],
-              "name": [
-                "i"
-              ]
+              "op": {
+                "text": "++",
+                "increment": true
+              },
+              "name": "i"
             }
           },
           {
@@ -2185,20 +1820,16 @@
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "int": "5"
-                  }
+              "right": {
+                "expression": {
+                  "int": "5"
                 }
-              ],
-              "left": [
-                {
-                  "expression": {
-                    "name": "i"
-                  }
+              },
+              "left": {
+                "expression": {
+                  "name": "i"
                 }
-              ]
+              }
             }
           },
           {
@@ -2229,139 +1860,113 @@
               ]
             },
             "range": {
-              "right": [
-                {
-                  "expression": {
-                    "literal": {
-                      "body": [
-                        {
-                          "pair": [
-                            {
-                              "value": {
-                                "expression": {
-                                  "int": "1"
-                                }
-                              },
-                              "string": "\"a\""
+              "right": {
+                "expression": {
+                  "literal": {
+                    "body": [
+                      {
+                        "pair": [
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "1"
+                              }
                             },
-                            {
-                              "value": {
-                                "expression": {
-                                  "int": "2"
-                                }
-                              },
-                              "string": "\"b\""
-                            }
-                          ]
-                        }
-                      ],
-                      "map": [
-                        {
-                          "value": {
-                            "type": {
-                              "name": [
-                                "int"
-                              ]
-                            }
+                            "string": "\"a\""
                           },
-                          "type": {
-                            "name": [
-                              "string"
-                            ]
+                          {
+                            "value": {
+                              "expression": {
+                                "int": "2"
+                              }
+                            },
+                            "string": "\"b\""
                           }
+                        ]
+                      }
+                    ],
+                    "map": [
+                      {
+                        "value": {
+                          "type": {
+                            "name": "int"
+                          }
+                        },
+                        "type": {
+                          "name": "string"
                         }
-                      ]
-                    }
+                      }
+                    ]
                   }
                 }
-              ],
-              "left": [
-                {
-                  "expression": [
-                    {
-                      "name": "k"
-                    },
-                    {
-                      "name": "v"
-                    }
-                  ]
-                }
-              ]
+              },
+              "left": {
+                "expression": [
+                  {
+                    "name": "k"
+                  },
+                  {
+                    "name": "v"
+                  }
+                ]
+              }
             }
           },
           {
             "body": {
               "unary": [
                 {
-                  "op": [
-                    {
-                      "text": "++",
-                      "increment": true
-                    }
-                  ],
-                  "name": [
-                    "n"
-                  ]
+                  "op": {
+                    "text": "++",
+                    "increment": true
+                  },
+                  "name": "n"
                 }
               ]
             },
             "binary": {
-              "right": [
-                {
-                  "expression": {
-                    "int": "3"
-                  }
+              "right": {
+                "expression": {
+                  "int": "3"
                 }
-              ],
-              "left": [
-                {
-                  "expression": {
-                    "name": "n"
-                  }
+              },
+              "left": {
+                "expression": {
+                  "name": "n"
                 }
-              ],
-              "op": [
-                {
-                  "text": "<",
-                  "compare": true,
-                  "less": true
-                }
-              ]
+              },
+              "op": {
+                "text": "<",
+                "compare": true,
+                "less": true
+              }
             }
           }
         ],
         "go": [
           {
             "call": {
-              "closure": [
-                {
-                  "value": {
-                    "expression": {
-                      "call": {
-                        "arguments": [
-                          "\"bg\""
-                        ],
-                        "member": [
-                          {
-                            "property": [
-                              {
-                                "name": "Println"
-                              }
-                            ],
-                            "object": [
-                              {
-                                "name": [
-                                  "fmt"
-                                ]
-                              }
-                            ]
-                          }
-                        ]
+              "closure": {
+                "value": {
+                  "expression": {
+                    "call": {
+                      "arguments": [
+                        "\"bg\""
+                      ],
+                      "member": {
+                        "property": {
+                          "name": "Println"
+                        },
+                        "object": {
+                          "name": [
+                            "fmt"
+                          ]
+                        }
                       }
                     }
                   }
                 }
-              ]
+              }
             }
           }
         ],
@@ -2371,138 +1976,104 @@
               "body": {
                 "select": [
                   {
-                    "case": [
+                    "children": [
                       {
-                        "send": [
-                          {
-                            "value": {
-                              "expression": {
-                                "name": "v"
-                              }
-                            },
-                            "name": "out"
-                          }
-                        ],
-                        "receive": [
-                          {
-                            "right": {
-                              "expression": {
-                                "unary": {
-                                  "name": [
-                                    "in"
-                                  ],
-                                  "op": [
-                                    {
-                                      "text": "<-",
-                                      "receive": true
-                                    }
-                                  ]
-                                }
-                              }
-                            },
-                            "left": {
-                              "expression": [
-                                {
-                                  "name": "v"
-                                },
-                                {
-                                  "name": "ok"
-                                }
-                              ]
+                        "$type": "case",
+                        "send": {
+                          "value": {
+                            "expression": {
+                              "int": "42"
                             }
-                          }
-                        ],
-                        "if": [
-                          {
-                            "then": {
-                              "break": [
-                                {
-                                  "label": "Outer"
-                                }
-                              ]
-                            },
-                            "condition": {
-                              "expression": [
-                                {
-                                  "unary": {
-                                    "name": [
-                                      "ok"
-                                    ],
-                                    "op": [
-                                      {
-                                        "text": "!",
-                                        "logical": true,
-                                        "not": true
-                                      }
-                                    ]
-                                  }
-                                }
-                              ]
-                            }
-                          }
-                        ]
+                          },
+                          "name": "out"
+                        },
+                        "continue": {
+                          "label": "Outer"
+                        }
                       },
                       {
-                        "continue": [
-                          {
-                            "label": "Outer"
-                          }
-                        ],
-                        "send": [
-                          {
-                            "value": {
-                              "expression": {
-                                "int": "42"
-                              }
-                            },
-                            "name": "out"
-                          }
-                        ]
-                      },
-                      {
-                        "goto": [
-                          {
-                            "label": "cleanup"
-                          }
-                        ],
-                        "receive": [
-                          {
-                            "right": {
-                              "expression": {
-                                "unary": {
-                                  "call": [
-                                    {
-                                      "member": [
-                                        {
-                                          "property": [
-                                            {
-                                              "name": "Done"
-                                            }
-                                          ],
-                                          "object": [
-                                            {
-                                              "name": [
-                                                "ctx"
-                                              ]
-                                            }
-                                          ]
-                                        }
+                        "$type": "case",
+                        "receive": {
+                          "right": {
+                            "expression": {
+                              "unary": {
+                                "call": {
+                                  "member": {
+                                    "property": {
+                                      "name": "Done"
+                                    },
+                                    "object": {
+                                      "name": [
+                                        "ctx"
                                       ]
                                     }
-                                  ],
-                                  "op": [
-                                    {
-                                      "text": "<-",
-                                      "receive": true
-                                    }
-                                  ]
+                                  }
+                                },
+                                "op": {
+                                  "text": "<-",
+                                  "receive": true
                                 }
                               }
                             }
                           }
-                        ]
+                        },
+                        "goto": {
+                          "label": "cleanup"
+                        }
                       }
-                    ]
+                    ],
+                    "case": {
+                      "send": {
+                        "value": {
+                          "expression": {
+                            "name": "v"
+                          }
+                        },
+                        "name": "out"
+                      },
+                      "receive": {
+                        "right": {
+                          "expression": {
+                            "unary": {
+                              "name": "in",
+                              "op": {
+                                "text": "<-",
+                                "receive": true
+                              }
+                            }
+                          }
+                        },
+                        "left": {
+                          "expression": [
+                            {
+                              "name": "v"
+                            },
+                            {
+                              "name": "ok"
+                            }
+                          ]
+                        }
+                      },
+                      "if": {
+                        "then": {
+                          "break": {
+                            "label": "Outer"
+                          }
+                        },
+                        "condition": {
+                          "expression": {
+                            "unary": {
+                              "name": "ok",
+                              "op": {
+                                "text": "!",
+                                "logical": true,
+                                "not": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 ]
               }
@@ -2519,17 +2090,13 @@
                         "$type": "chan",
                         "value": {
                           "type": {
-                            "name": [
-                              "int"
-                            ]
+                            "name": "int"
                           }
                         }
                       },
                       "4"
                     ],
-                    "name": [
-                      "make"
-                    ]
+                    "name": "make"
                   }
                 }
               },
@@ -2598,46 +2165,40 @@
               "expression": [
                 {
                   "unary": {
-                    "literal": [
-                      {
-                        "body": [
-                          {
-                            "pair": [
-                              {
-                                "value": {
-                                  "expression": {
-                                    "int": "1"
-                                  }
-                                },
-                                "name": "X"
+                    "literal": {
+                      "body": [
+                        {
+                          "pair": [
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "1"
+                                }
                               },
-                              {
-                                "value": {
-                                  "expression": {
-                                    "int": "2"
-                                  }
-                                },
-                                "name": "Y"
-                              }
-                            ]
-                          }
-                        ],
-                        "type": [
-                          {
-                            "name": [
-                              "Point"
-                            ]
-                          }
-                        ]
-                      }
-                    ],
-                    "op": [
-                      {
-                        "text": "&",
-                        "bitwise": true,
-                        "and": true
-                      }
-                    ]
+                              "name": "X"
+                            },
+                            {
+                              "value": {
+                                "expression": {
+                                  "int": "2"
+                                }
+                              },
+                              "name": "Y"
+                            }
+                          ]
+                        }
+                      ],
+                      "type": [
+                        {
+                          "name": "Point"
+                        }
+                      ]
+                    },
+                    "op": {
+                      "text": "&",
+                      "bitwise": true,
+                      "and": true
+                    }
                   }
                 },
                 {
@@ -2675,9 +2236,7 @@
                     "slice": [
                       {
                         "type": {
-                          "name": [
-                            "Point"
-                          ]
+                          "name": "Point"
                         }
                       }
                     ]
@@ -2726,15 +2285,11 @@
                     {
                       "value": {
                         "type": {
-                          "name": [
-                            "Point"
-                          ]
+                          "name": "Point"
                         }
                       },
                       "type": {
-                        "name": [
-                          "string"
-                        ]
+                        "name": "string"
                       }
                     }
                   ]
@@ -2769,22 +2324,16 @@
               "right": {
                 "expression": {
                   "call": {
-                    "member": [
-                      {
-                        "property": [
-                          {
-                            "name": "Pipe"
-                          }
-                        ],
-                        "object": [
-                          {
-                            "name": [
-                              "io"
-                            ]
-                          }
+                    "member": {
+                      "property": {
+                        "name": "Pipe"
+                      },
+                      "object": {
+                        "name": [
+                          "io"
                         ]
                       }
-                    ]
+                    }
                   }
                 }
               },
@@ -2801,75 +2350,59 @@
               }
             },
             "condition": {
-              "expression": [
-                {
-                  "binary": {
-                    "right": [
-                      {
-                        "expression": {
-                          "nil": "nil"
-                        }
-                      }
-                    ],
-                    "left": [
-                      {
-                        "expression": {
-                          "name": "err"
-                        }
-                      }
-                    ],
-                    "op": [
-                      {
-                        "text": "!=",
-                        "inequality": true
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            "then": {
-              "return": [
-                {
-                  "expression": {
-                    "call": {
-                      "arguments": [
-                        "err"
-                      ],
-                      "name": [
-                        "wrap"
-                      ]
-                    }
-                  }
-                }
-              ]
-            }
-          },
-          {
-            "then": {
-              "assign": [
-                {
+              "expression": {
+                "binary": {
                   "right": {
                     "expression": {
-                      "name": "s"
+                      "nil": "nil"
                     }
                   },
                   "left": {
                     "expression": {
-                      "name": "_"
+                      "name": "err"
                     }
+                  },
+                  "op": {
+                    "text": "!=",
+                    "inequality": true
                   }
                 }
-              ]
+              }
+            },
+            "then": {
+              "return": {
+                "expression": {
+                  "call": {
+                    "arguments": [
+                      "err"
+                    ],
+                    "name": "wrap"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "then": {
+              "assign": {
+                "right": {
+                  "expression": {
+                    "name": "s"
+                  }
+                },
+                "left": {
+                  "expression": {
+                    "name": "_"
+                  }
+                }
+              }
             },
             "variable": {
               "right": {
                 "expression": {
                   "assert": {
                     "type": {
-                      "name": [
-                        "Stringer"
-                      ]
+                      "name": "Stringer"
                     },
                     "name": "r"
                   }
@@ -2888,30 +2421,24 @@
               }
             },
             "condition": {
-              "expression": [
-                {
-                  "name": "ok"
-                }
-              ]
+              "expression": {
+                "name": "ok"
+              }
             }
           },
           {
             "then": {
-              "return": [
-                {
-                  "expression": {
-                    "name": "err"
-                  }
+              "return": {
+                "expression": {
+                  "name": "err"
                 }
-              ]
+              }
             },
             "variable": {
               "right": {
                 "expression": {
                   "call": {
-                    "name": [
-                      "doThing"
-                    ]
+                    "name": "doThing"
                   }
                 }
               },
@@ -2923,87 +2450,63 @@
               }
             },
             "condition": {
-              "expression": [
-                {
-                  "binary": {
-                    "right": [
-                      {
-                        "expression": {
-                          "call": {
-                            "arguments": [
-                              "err",
-                              "ErrNotFound"
-                            ],
-                            "member": [
-                              {
-                                "property": [
-                                  {
-                                    "name": "Is"
-                                  }
-                                ],
-                                "object": [
-                                  {
-                                    "name": [
-                                      "errors"
-                                    ]
-                                  }
-                                ]
-                              }
+              "expression": {
+                "binary": {
+                  "right": {
+                    "expression": {
+                      "call": {
+                        "arguments": [
+                          "err",
+                          "ErrNotFound"
+                        ],
+                        "member": {
+                          "property": {
+                            "name": "Is"
+                          },
+                          "object": {
+                            "name": [
+                              "errors"
                             ]
                           }
                         }
                       }
-                    ],
-                    "left": [
-                      {
-                        "expression": {
-                          "call": {
-                            "arguments": [
-                              "err",
-                              {
-                                "$type": "unary",
-                                "op": [
-                                  {
-                                    "text": "&",
-                                    "bitwise": true,
-                                    "and": true
-                                  }
-                                ],
-                                "name": [
-                                  "target"
-                                ]
-                              }
-                            ],
-                            "member": [
-                              {
-                                "property": [
-                                  {
-                                    "name": "As"
-                                  }
-                                ],
-                                "object": [
-                                  {
-                                    "name": [
-                                      "errors"
-                                    ]
-                                  }
-                                ]
-                              }
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "call": {
+                        "arguments": [
+                          "err",
+                          {
+                            "$type": "unary",
+                            "op": {
+                              "text": "&",
+                              "bitwise": true,
+                              "and": true
+                            },
+                            "name": "target"
+                          }
+                        ],
+                        "member": {
+                          "property": {
+                            "name": "As"
+                          },
+                          "object": {
+                            "name": [
+                              "errors"
                             ]
                           }
                         }
                       }
-                    ],
-                    "op": [
-                      {
-                        "text": "||",
-                        "logical": true,
-                        "or": true
-                      }
-                    ]
+                    }
+                  },
+                  "op": {
+                    "text": "||",
+                    "logical": true,
+                    "or": true
                   }
                 }
-              ]
+              }
             }
           }
         ],
@@ -3031,9 +2534,7 @@
                     "arguments": [
                       "42"
                     ],
-                    "name": [
-                      "UserID"
-                    ]
+                    "name": "UserID"
                   }
                 }
               ]
@@ -3070,14 +2571,10 @@
           "$type": "parameter",
           "name": "ctx",
           "type": {
-            "name": [
-              "Context"
-            ],
-            "package": [
-              {
-                "name": "context"
-              }
-            ]
+            "name": "Context",
+            "package": {
+              "name": "context"
+            }
           }
         },
         {
@@ -3086,9 +2583,7 @@
           "chan": {
             "value": {
               "type": {
-                "name": [
-                  "int"
-                ]
+                "name": "int"
               }
             }
           }
@@ -3099,22 +2594,16 @@
           "chan": {
             "value": {
               "type": {
-                "name": [
-                  "int"
-                ]
+                "name": "int"
               }
             }
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "error"
-            ]
-          }
-        ]
+        "type": {
+          "name": "error"
+        }
       }
     }
   ]

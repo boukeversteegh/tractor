@@ -35,97 +35,84 @@
   ],
   "from": [
     {
-      "import": [
-        {
-          "name": "OrderedDict"
-        }
-      ],
-      "path": [
-        {
-          "name": [
-            "collections"
-          ]
-        }
-      ]
+      "import": {
+        "name": "OrderedDict"
+      },
+      "path": {
+        "name": [
+          "collections"
+        ]
+      }
     },
     {
-      "import": [
+      "children": [
         {
-          "name": "Optional"
-        },
-        {
+          "$type": "import",
           "name": "Union"
         }
       ],
-      "path": [
-        {
-          "name": [
-            "typing"
-          ]
-        }
-      ]
+      "path": {
+        "name": [
+          "typing"
+        ]
+      },
+      "import": {
+        "name": "Optional"
+      }
     },
     {
-      "import": [
+      "children": [
         {
-          "name": "dataclass"
-        },
-        {
+          "$type": "import",
           "name": "field"
         }
       ],
-      "path": [
-        {
-          "name": [
-            "dataclasses"
-          ]
-        }
-      ]
+      "path": {
+        "name": [
+          "dataclasses"
+        ]
+      },
+      "import": {
+        "name": "dataclass"
+      }
     },
     {
-      "import": [
-        {
-          "name": "sibling"
-        }
-      ],
+      "import": {
+        "name": "sibling"
+      },
       "relative": true
     },
     {
-      "import": [
-        {
-          "aliased": {
-            "name": "h"
-          },
-          "alias": true,
-          "name": "helper"
-        }
-      ],
+      "import": {
+        "aliased": {
+          "name": "h"
+        },
+        "alias": true,
+        "name": "helper"
+      },
       "relative": true,
-      "path": [
-        {
-          "name": [
-            "utils"
-          ]
-        }
-      ]
+      "path": {
+        "name": [
+          "utils"
+        ]
+      }
     },
     {
-      "import": [
+      "children": [
         {
-          "name": "path"
-        },
-        {
-          "text": "*",
-          "wildcard": true
+          "$type": "import",
+          "wildcard": true,
+          "text": "*"
         }
       ],
-      "path": [
-        {
-          "name": [
-            "os"
-          ]
-        }
-      ]
+      "path": {
+        "name": [
+          "os"
+        ]
+      },
+      "import": {
+        "name": "path"
+      }
     }
   ],
   "assign": [
@@ -141,9 +128,7 @@
         }
       },
       "type": {
-        "name": [
-          "bool"
-        ]
+        "name": "bool"
       }
     },
     {
@@ -158,9 +143,7 @@
         }
       },
       "type": {
-        "name": [
-          "float"
-        ]
+        "name": "float"
       }
     },
     {
@@ -202,194 +185,136 @@
     {
       "right": {
         "type": {
-          "type": [
-            {
-              "name": [
-                "T"
-              ]
-            }
-          ],
+          "type": {
+            "name": "T"
+          },
           "generic": true,
-          "name": [
-            "list"
-          ]
+          "name": "list"
         }
       },
       "left": {
         "type": {
-          "type": [
-            {
-              "name": [
-                "T"
-              ]
-            }
-          ],
+          "type": {
+            "name": "T"
+          },
           "generic": true,
-          "name": [
-            "Vec"
-          ]
+          "name": "Vec"
         }
       }
     },
     {
       "right": {
         "type": {
-          "binary": [
+          "binary": {
+            "right": {
+              "expression": {
+                "name": "str"
+              }
+            },
+            "left": {
+              "expression": {
+                "name": "int"
+              }
+            },
+            "op": {
+              "text": "|",
+              "bitwise": true,
+              "or": true
+            }
+          }
+        }
+      },
+      "left": {
+        "type": {
+          "name": "IntOrStr"
+        }
+      }
+    },
+    {
+      "right": {
+        "type": {
+          "type": [
             {
-              "right": [
-                {
-                  "expression": {
-                    "name": "str"
-                  }
-                }
-              ],
-              "left": [
-                {
-                  "expression": {
+              "name": "T"
+            },
+            {
+              "name": "U"
+            },
+            {
+              "type": {
+                "name": "Ts",
+                "splat": true
+              }
+            }
+          ],
+          "generic": true,
+          "name": "tuple"
+        }
+      },
+      "left": {
+        "type": {
+          "type": [
+            {
+              "type": {
+                "type": [
+                  {
+                    "name": "T"
+                  },
+                  {
                     "name": "int"
                   }
-                }
-              ],
-              "op": [
-                {
-                  "text": "|",
-                  "bitwise": true,
-                  "or": true
-                }
-              ]
+                ],
+                "constrained": true
+              }
+            },
+            {
+              "type": {
+                "type": [
+                  {
+                    "name": "U"
+                  },
+                  {
+                    "tuple": {
+                      "name": [
+                        "int",
+                        "str"
+                      ]
+                    }
+                  }
+                ],
+                "constrained": true
+              }
+            },
+            {
+              "type": {
+                "name": "Ts",
+                "splat": true
+              }
             }
-          ]
-        }
-      },
-      "left": {
-        "type": {
-          "name": [
-            "IntOrStr"
-          ]
+          ],
+          "generic": true,
+          "name": "Pair"
         }
       }
     },
     {
       "right": {
         "type": {
-          "type": [
-            {
-              "name": [
-                "T"
-              ]
+          "member": {
+            "property": {
+              "name": "Foo"
             },
-            {
+            "object": {
               "name": [
-                "U"
-              ]
-            },
-            {
-              "type": [
-                {
-                  "name": [
-                    "Ts"
-                  ],
-                  "splat": true
-                }
+                "OrderedDict"
               ]
             }
-          ],
-          "generic": true,
-          "name": [
-            "tuple"
-          ]
+          }
         }
       },
       "left": {
         "type": {
-          "type": [
-            {
-              "type": [
-                {
-                  "type": [
-                    {
-                      "name": [
-                        "T"
-                      ]
-                    },
-                    {
-                      "name": [
-                        "int"
-                      ]
-                    }
-                  ],
-                  "constrained": true
-                }
-              ]
-            },
-            {
-              "type": [
-                {
-                  "type": [
-                    {
-                      "name": [
-                        "U"
-                      ]
-                    },
-                    {
-                      "tuple": [
-                        {
-                          "name": [
-                            "int",
-                            "str"
-                          ]
-                        }
-                      ]
-                    }
-                  ],
-                  "constrained": true
-                }
-              ]
-            },
-            {
-              "type": [
-                {
-                  "name": [
-                    "Ts"
-                  ],
-                  "splat": true
-                }
-              ]
-            }
-          ],
-          "generic": true,
-          "name": [
-            "Pair"
-          ]
-        }
-      }
-    },
-    {
-      "right": {
-        "type": {
-          "member": [
-            {
-              "property": [
-                {
-                  "name": "Foo"
-                }
-              ],
-              "object": [
-                {
-                  "name": [
-                    "OrderedDict"
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "left": {
-        "type": {
-          "name": [
-            "Containing"
-          ]
+          "name": "Containing"
         }
       }
     }
@@ -420,9 +345,7 @@
       "name": "Box",
       "generic": {
         "type": {
-          "name": [
-            "T"
-          ]
+          "name": "T"
         }
       }
     },
@@ -441,9 +364,7 @@
               }
             },
             "type": {
-              "name": [
-                "int"
-              ]
+              "name": "int"
             }
           },
           {
@@ -458,9 +379,7 @@
               }
             },
             "type": {
-              "name": [
-                "int"
-              ]
+              "name": "int"
             }
           },
           {
@@ -478,9 +397,7 @@
                       }
                     }
                   ],
-                  "name": [
-                    "field"
-                  ]
+                  "name": "field"
                 }
               }
             },
@@ -490,17 +407,11 @@
               }
             },
             "type": {
-              "type": [
-                {
-                  "name": [
-                    "str"
-                  ]
-                }
-              ],
+              "type": {
+                "name": "str"
+              },
               "generic": true,
-              "name": [
-                "list"
-              ]
+              "name": "list"
             }
           }
         ],
@@ -511,9 +422,7 @@
         ]
       },
       "decorator": {
-        "name": [
-          "dataclass"
-        ]
+        "name": "dataclass"
       },
       "name": "Point"
     },
@@ -531,9 +440,7 @@
       "extends": [
         {
           "type": {
-            "name": [
-              "type"
-            ]
+            "name": "type"
           }
         }
       ]
@@ -553,18 +460,14 @@
                   "left": {
                     "expression": {
                       "member": {
-                        "property": [
-                          {
-                            "name": "name"
-                          }
-                        ],
-                        "object": [
-                          {
-                            "name": [
-                              "self"
-                            ]
-                          }
-                        ]
+                        "property": {
+                          "name": "name"
+                        },
+                        "object": {
+                          "name": [
+                            "self"
+                          ]
+                        }
                       }
                     }
                   }
@@ -582,9 +485,7 @@
                 "$type": "parameter",
                 "name": "name",
                 "type": {
-                  "name": [
-                    "str"
-                  ]
+                  "name": "str"
                 }
               }
             ]
@@ -595,71 +496,55 @@
                 {
                   "expression": {
                     "logical": {
-                      "right": [
-                        {
-                          "expression": {
-                            "compare": {
-                              "children": [
-                                {
-                                  "$type": "member",
-                                  "object": [
-                                    {
-                                      "name": [
-                                        "other"
-                                      ]
-                                    }
-                                  ],
-                                  "property": [
-                                    {
-                                      "name": "name"
-                                    }
+                      "right": {
+                        "expression": {
+                          "compare": {
+                            "children": [
+                              {
+                                "$type": "member",
+                                "object": {
+                                  "name": [
+                                    "other"
                                   ]
+                                },
+                                "property": {
+                                  "name": "name"
                                 }
-                              ],
-                              "op": {
-                                "text": "==",
-                                "equals": true
+                              }
+                            ],
+                            "op": {
+                              "text": "==",
+                              "equals": true
+                            },
+                            "member": {
+                              "property": {
+                                "name": "name"
                               },
-                              "member": {
-                                "property": [
-                                  {
-                                    "name": "name"
-                                  }
-                                ],
-                                "object": [
-                                  {
-                                    "name": [
-                                      "self"
-                                    ]
-                                  }
+                              "object": {
+                                "name": [
+                                  "self"
                                 ]
                               }
                             }
                           }
                         }
-                      ],
-                      "left": [
-                        {
-                          "expression": {
-                            "call": {
-                              "arguments": [
-                                "other",
-                                "Derived"
-                              ],
-                              "name": [
-                                "isinstance"
-                              ]
-                            }
+                      },
+                      "left": {
+                        "expression": {
+                          "call": {
+                            "arguments": [
+                              "other",
+                              "Derived"
+                            ],
+                            "name": "isinstance"
                           }
                         }
-                      ],
-                      "op": [
-                        {
-                          "text": "and",
-                          "logical": true,
-                          "and": true
-                        }
-                      ]
+                      },
+                      "op": {
+                        "text": "and",
+                        "logical": true,
+                        "and": true
+                      }
                     }
                   }
                 }
@@ -710,9 +595,7 @@
       "extends": [
         {
           "type": {
-            "name": [
-              "Base"
-            ]
+            "name": "Base"
           }
         }
       ],
@@ -733,47 +616,35 @@
           {
             "expression": {
               "binary": {
-                "right": [
-                  {
-                    "expression": {
-                      "name": "kw_only"
-                    }
+                "right": {
+                  "expression": {
+                    "name": "kw_only"
                   }
-                ],
-                "left": [
-                  {
-                    "expression": {
-                      "binary": {
-                        "right": [
-                          {
-                            "expression": {
-                              "name": "b"
-                            }
-                          }
-                        ],
-                        "left": [
-                          {
-                            "expression": {
-                              "name": "a"
-                            }
-                          }
-                        ],
-                        "op": [
-                          {
-                            "text": "+",
-                            "plus": true
-                          }
-                        ]
+                },
+                "left": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "b"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "text": "+",
+                        "plus": true
                       }
                     }
                   }
-                ],
-                "op": [
-                  {
-                    "text": "+",
-                    "plus": true
-                  }
-                ]
+                },
+                "op": {
+                  "text": "+",
+                  "plus": true
+                }
               }
             }
           }
@@ -892,9 +763,7 @@
       "name": "identity",
       "generic": {
         "type": {
-          "name": [
-            "T"
-          ]
+          "name": "T"
         }
       },
       "parameters": [
@@ -902,20 +771,14 @@
           "$type": "parameter",
           "name": "v",
           "type": {
-            "name": [
-              "T"
-            ]
+            "name": "T"
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "T"
-            ]
-          }
-        ]
+        "type": {
+          "name": "T"
+        }
       }
     },
     {
@@ -961,9 +824,7 @@
               }
             },
             "type": {
-              "name": [
-                "int"
-              ]
+              "name": "int"
             }
           },
           {
@@ -1055,26 +916,18 @@
           "$type": "parameter",
           "name": "x",
           "type": {
-            "name": [
-              "int"
-            ]
+            "name": "int"
           }
         },
         {
           "$type": "parameter",
           "name": "y",
           "type": {
-            "type": [
-              {
-                "name": [
-                  "str"
-                ]
-              }
-            ],
+            "type": {
+              "name": "str"
+            },
             "generic": true,
-            "name": [
-              "Optional"
-            ]
+            "name": "Optional"
           },
           "value": {
             "expression": {
@@ -1086,31 +939,21 @@
           "$type": "parameter",
           "name": "z",
           "type": {
-            "type": [
-              {
-                "type": [
-                  {
-                    "type": [
-                      {
-                        "name": [
-                          "int"
-                        ]
-                      }
-                    ],
-                    "generic": true,
-                    "name": [
-                      "list"
-                    ]
+            "type": {
+              "type": [
+                {
+                  "type": {
+                    "name": "int"
                   },
-                  {
-                    "none": [
-                      "None"
-                    ]
-                  }
-                ],
-                "union": true
-              }
-            ]
+                  "generic": true,
+                  "name": "list"
+                },
+                {
+                  "none": "None"
+                }
+              ],
+              "union": true
+            }
           },
           "value": {
             "expression": {
@@ -1120,119 +963,95 @@
         }
       ],
       "returns": {
-        "type": [
-          {
-            "type": [
-              {
-                "name": [
-                  "int"
-                ]
-              },
-              {
-                "none": [
-                  "None"
-                ]
-              }
-            ],
-            "generic": true,
-            "name": [
-              "Union"
-            ]
-          }
-        ]
+        "type": {
+          "type": [
+            {
+              "name": "int"
+            },
+            {
+              "none": "None"
+            }
+          ],
+          "generic": true,
+          "name": "Union"
+        }
       }
     },
     {
       "body": {
         "with": [
           {
-            "body": [
-              {
-                "return": [
-                  {
+            "body": {
+              "return": [
+                {
+                  "expression": {
+                    "name": "data"
+                  }
+                }
+              ],
+              "for": [
+                {
+                  "body": {
+                    "yield": [
+                      {
+                        "name": "chunk"
+                      }
+                    ]
+                  },
+                  "async": true,
+                  "left": {
+                    "expression": {
+                      "name": "chunk"
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "name": "conn"
+                    }
+                  }
+                }
+              ],
+              "assign": [
+                {
+                  "right": {
+                    "expression": {
+                      "call": {
+                        "member": {
+                          "property": {
+                            "name": "read"
+                          },
+                          "object": {
+                            "name": [
+                              "conn"
+                            ]
+                          }
+                        }
+                      },
+                      "await": true
+                    }
+                  },
+                  "left": {
                     "expression": {
                       "name": "data"
                     }
                   }
-                ],
-                "for": [
-                  {
-                    "body": {
-                      "yield": [
-                        {
-                          "name": "chunk"
-                        }
-                      ]
-                    },
-                    "async": true,
-                    "left": {
-                      "expression": {
-                        "name": "chunk"
-                      }
-                    },
-                    "right": {
-                      "expression": {
-                        "name": "conn"
-                      }
-                    }
-                  }
-                ],
-                "assign": [
-                  {
-                    "right": {
-                      "expression": {
-                        "call": {
-                          "member": [
-                            {
-                              "property": [
-                                {
-                                  "name": "read"
-                                }
-                              ],
-                              "object": [
-                                {
-                                  "name": [
-                                    "conn"
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        "await": true
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "data"
-                      }
-                    }
-                  }
-                ]
-              }
-            ],
+                }
+              ]
+            },
             "async": true,
-            "value": [
-              {
-                "expression": {
-                  "as": {
-                    "name": [
-                      "conn"
+            "value": {
+              "expression": {
+                "as": {
+                  "name": "conn",
+                  "call": {
+                    "arguments": [
+                      "url"
                     ],
-                    "call": [
-                      {
-                        "arguments": [
-                          "url"
-                        ],
-                        "name": [
-                          "open_conn"
-                        ]
-                      }
-                    ]
+                    "name": "open_conn"
                   }
                 }
               }
-            ]
+            }
           }
         ]
       },
@@ -1243,20 +1062,14 @@
           "$type": "parameter",
           "name": "url",
           "type": {
-            "name": [
-              "str"
-            ]
+            "name": "str"
           }
         }
       ],
       "returns": {
-        "type": [
-          {
-            "name": [
-              "bytes"
-            ]
-          }
-        ]
+        "type": {
+          "name": "bytes"
+        }
       }
     },
     {
@@ -1268,31 +1081,23 @@
                 "n",
                 {
                   "$type": "binary",
-                  "left": [
-                    {
-                      "expression": {
-                        "name": "n"
-                      }
+                  "left": {
+                    "expression": {
+                      "name": "n"
                     }
-                  ],
-                  "op": [
-                    {
-                      "text": "*",
-                      "multiply": true
+                  },
+                  "op": {
+                    "text": "*",
+                    "multiply": true
+                  },
+                  "right": {
+                    "expression": {
+                      "int": "2"
                     }
-                  ],
-                  "right": [
-                    {
-                      "expression": {
-                        "int": "2"
-                      }
-                    }
-                  ]
+                  }
                 }
               ],
-              "name": [
-                "range"
-              ]
+              "name": "range"
             }
           }
         ],
@@ -1316,9 +1121,7 @@
                   "arguments": [
                     "n"
                   ],
-                  "name": [
-                    "range"
-                  ]
+                  "name": "range"
                 }
               }
             }
@@ -1373,9 +1176,7 @@
                                     "name": "kw"
                                   }
                                 ],
-                                "name": [
-                                  "fn"
-                                ]
+                                "name": "fn"
                               }
                             }
                           ]
@@ -1391,9 +1192,7 @@
                               "arguments": [
                                 "times"
                               ],
-                              "name": [
-                                "range"
-                              ]
+                              "name": "range"
                             }
                           }
                         }
@@ -1438,22 +1237,16 @@
       "children": [
         {
           "$type": "decorator",
-          "call": [
-            {
-              "arguments": [
-                "3"
-              ],
-              "name": [
-                "repeat"
-              ]
-            }
-          ]
+          "call": {
+            "arguments": [
+              "3"
+            ],
+            "name": "repeat"
+          }
         }
       ],
       "decorator": {
-        "name": [
-          "staticmethod"
-        ]
+        "name": "staticmethod"
       },
       "name": "stacked",
       "body": {
@@ -1510,9 +1303,7 @@
                   "arguments": [
                     "items"
                   ],
-                  "name": [
-                    "enumerate"
-                  ]
+                  "name": "enumerate"
                 }
               }
             },
@@ -1543,19 +1334,17 @@
                     }
                   },
                   "condition": {
-                    "expression": [
-                      {
-                        "compare": {
-                          "int": "0",
-                          "name": "v",
-                          "op": {
-                            "text": "<",
-                            "compare": true,
-                            "less": true
-                          }
+                    "expression": {
+                      "compare": {
+                        "int": "0",
+                        "name": "v",
+                        "op": {
+                          "text": "<",
+                          "compare": true,
+                          "less": true
                         }
                       }
-                    ]
+                    }
                   },
                   "then": {
                     "text": "continue",
@@ -1567,18 +1356,16 @@
                       "break": true
                     },
                     "condition": {
-                      "expression": [
-                        {
-                          "compare": {
-                            "int": "0",
-                            "name": "v",
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            }
+                      "expression": {
+                        "compare": {
+                          "int": "0",
+                          "name": "v",
+                          "op": {
+                            "text": "==",
+                            "equals": true
                           }
                         }
-                      ]
+                      }
                     }
                   }
                 }
@@ -1620,19 +1407,17 @@
               }
             },
             "condition": {
-              "expression": [
-                {
-                  "compare": {
-                    "int": "10",
-                    "name": "n",
-                    "op": {
-                      "text": "<",
-                      "compare": true,
-                      "less": true
-                    }
+              "expression": {
+                "compare": {
+                  "int": "10",
+                  "name": "n",
+                  "op": {
+                    "text": "<",
+                    "compare": true,
+                    "less": true
                   }
                 }
-              ]
+              }
             },
             "body": {
               "assign": [
@@ -1659,185 +1444,145 @@
         ],
         "try": [
           {
-            "finally": [
+            "children": [
               {
-                "expression": {
-                  "call": {
-                    "name": [
-                      "cleanup"
-                    ]
-                  }
-                }
-              }
-            ],
-            "body": [
-              {
-                "expression": [
-                  {
-                    "call": {
-                      "name": [
-                        "risky"
-                      ]
-                    }
-                  }
-                ]
-              }
-            ],
-            "except": [
-              {
-                "raise": {
-                  "name": "e",
-                  "call": {
-                    "arguments": [
-                      "\"bad\""
-                    ],
-                    "name": [
-                      "RuntimeError"
-                    ]
-                  }
-                },
-                "value": {
-                  "expression": {
-                    "as": {
-                      "name": [
-                        "e"
-                      ],
-                      "tuple": [
-                        {
-                          "name": [
-                            "ValueError",
-                            "TypeError"
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-              {
+                "$type": "except",
+                "pass": true,
                 "value": {
                   "expression": {
                     "name": "Exception"
                   }
-                },
-                "pass": true
-              }
-            ],
-            "else": [
-              {
-                "body": {
-                  "assign": [
-                    {
-                      "right": {
-                        "expression": {
-                          "int": "1"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "total"
-                        }
-                      },
-                      "op": {
-                        "text": "+=",
-                        "assign": true,
-                        "plus": true
-                      }
-                    }
-                  ]
                 }
               }
-            ]
-          }
-        ],
-        "with": [
-          {
-            "body": [
-              {
-                "expression": [
-                  {
-                    "call": {
-                      "member": [
-                        {
-                          "property": [
-                            {
-                              "name": "read"
-                            }
-                          ],
-                          "object": [
-                            {
-                              "name": [
-                                "fa"
-                              ]
-                            }
-                          ]
-                        }
+            ],
+            "body": {
+              "expression": [
+                {
+                  "call": {
+                    "name": "risky"
+                  }
+                }
+              ]
+            },
+            "except": {
+              "raise": {
+                "name": "e",
+                "call": {
+                  "arguments": [
+                    "\"bad\""
+                  ],
+                  "name": "RuntimeError"
+                }
+              },
+              "value": {
+                "expression": {
+                  "as": {
+                    "name": "e",
+                    "tuple": {
+                      "name": [
+                        "ValueError",
+                        "TypeError"
                       ]
                     }
-                  },
+                  }
+                }
+              }
+            },
+            "else": {
+              "body": {
+                "assign": [
                   {
-                    "call": {
-                      "member": [
-                        {
-                          "property": [
-                            {
-                              "name": "read"
-                            }
-                          ],
-                          "object": [
-                            {
-                              "name": [
-                                "fb"
-                              ]
-                            }
-                          ]
-                        }
-                      ]
+                    "right": {
+                      "expression": {
+                        "int": "1"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "total"
+                      }
+                    },
+                    "op": {
+                      "text": "+=",
+                      "assign": true,
+                      "plus": true
                     }
                   }
                 ]
               }
-            ],
-            "value": [
-              {
-                "expression": {
-                  "as": {
-                    "name": [
-                      "fa"
-                    ],
-                    "call": [
-                      {
-                        "arguments": [
-                          "\"a\""
-                        ],
-                        "name": [
-                          "open"
-                        ]
-                      }
-                    ]
-                  }
+            },
+            "finally": {
+              "expression": {
+                "call": {
+                  "name": "cleanup"
                 }
-              },
+              }
+            }
+          }
+        ],
+        "with": [
+          {
+            "children": [
               {
+                "$type": "value",
                 "expression": {
                   "as": {
-                    "name": [
-                      "fb"
-                    ],
-                    "call": [
-                      {
-                        "arguments": [
-                          "\"b\""
-                        ],
-                        "name": [
-                          "open"
-                        ]
-                      }
-                    ]
+                    "name": "fb",
+                    "call": {
+                      "arguments": [
+                        "\"b\""
+                      ],
+                      "name": "open"
+                    }
                   }
                 }
               }
-            ]
+            ],
+            "value": {
+              "expression": {
+                "as": {
+                  "name": "fa",
+                  "call": {
+                    "arguments": [
+                      "\"a\""
+                    ],
+                    "name": "open"
+                  }
+                }
+              }
+            },
+            "body": {
+              "expression": [
+                {
+                  "call": {
+                    "member": {
+                      "property": {
+                        "name": "read"
+                      },
+                      "object": {
+                        "name": [
+                          "fa"
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "call": {
+                    "member": {
+                      "property": {
+                        "name": "read"
+                      },
+                      "object": {
+                        "name": [
+                          "fb"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
           }
         ]
       },
@@ -1857,44 +1602,35 @@
               "arm": [
                 {
                   "then": {
-                    "return": [
-                      {
-                        "expression": {
-                          "name": "pid"
-                        }
+                    "return": {
+                      "expression": {
+                        "name": "pid"
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "value": [
-                          {
-                            "expression": {
-                              "pattern": {
-                                "string": [
-                                  "\"ping\""
-                                ]
-                              }
-                            }
-                          },
-                          {
-                            "expression": {
-                              "pattern": {
-                                "name": [
-                                  "pid"
-                                ]
-                              }
+                    "pattern": {
+                      "children": [
+                        "\"id\"",
+                        {
+                          "$type": "value",
+                          "expression": {
+                            "pattern": {
+                              "name": "pid"
                             }
                           }
-                        ],
-                        "dict": true,
-                        "string": [
-                          "\"type\"",
-                          "\"id\""
-                        ]
+                        }
+                      ],
+                      "dict": true,
+                      "string": "\"type\"",
+                      "value": {
+                        "expression": {
+                          "pattern": {
+                            "string": "\"ping\""
+                          }
+                        }
                       }
-                    ]
+                    }
                   },
                   "compare": {
                     "int": "0",
@@ -1908,123 +1644,91 @@
                 },
                 {
                   "then": {
-                    "return": [
-                      {
-                        "expression": {
-                          "name": "rest"
-                        }
+                    "return": {
+                      "expression": {
+                        "name": "rest"
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "pattern": [
-                          {
-                            "int": [
-                              "1"
-                            ]
-                          },
-                          {
-                            "int": [
-                              "2"
-                            ]
-                          },
-                          {
-                            "pattern": [
-                              {
-                                "name": [
-                                  "rest"
-                                ],
-                                "splat": true
-                              }
-                            ]
+                    "pattern": {
+                      "pattern": [
+                        {
+                          "int": "1"
+                        },
+                        {
+                          "int": "2"
+                        },
+                        {
+                          "pattern": {
+                            "name": "rest",
+                            "splat": true
                           }
-                        ],
-                        "list": true
-                      }
-                    ]
+                        }
+                      ],
+                      "list": true
+                    }
                   }
                 },
                 {
                   "then": {
-                    "return": [
-                      {
-                        "expression": {
-                          "name": "y"
-                        }
+                    "return": {
+                      "expression": {
+                        "name": "y"
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "pattern": [
-                          {
-                            "pattern": [
-                              {
-                                "int": [
-                                  "0"
-                                ],
-                                "keyword": true,
-                                "name": [
-                                  "x"
-                                ]
-                              }
-                            ]
-                          },
-                          {
-                            "pattern": [
-                              {
-                                "name": [
-                                  "y",
-                                  "y"
-                                ],
-                                "keyword": true
-                              }
-                            ]
+                    "pattern": {
+                      "pattern": [
+                        {
+                          "pattern": {
+                            "int": "0",
+                            "keyword": true,
+                            "name": "x"
                           }
-                        ],
-                        "class": true,
-                        "name": [
-                          "Point"
-                        ]
-                      }
-                    ]
+                        },
+                        {
+                          "pattern": {
+                            "children": [
+                              "y"
+                            ],
+                            "keyword": true,
+                            "name": "y"
+                          }
+                        }
+                      ],
+                      "class": true,
+                      "name": "Point"
+                    }
                   }
                 },
                 {
                   "then": {
-                    "return": [
-                      {
-                        "expression": {
-                          "true": "True"
-                        }
+                    "return": {
+                      "expression": {
+                        "true": "True"
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "string": [
-                          "\"yes\"",
-                          "\"y\"",
-                          "\"Y\""
-                        ],
-                        "union": true
-                      }
-                    ]
+                    "pattern": {
+                      "children": [
+                        "\"y\"",
+                        "\"Y\""
+                      ],
+                      "union": true,
+                      "string": "\"yes\""
+                    }
                   }
                 },
                 {
                   "then": {
-                    "return": [
-                      {
-                        "expression": {
-                          "none": "None"
-                        }
+                    "return": {
+                      "expression": {
+                        "none": "None"
                       }
-                    ]
+                    }
                   },
                   "pattern": "_"
                 }
@@ -2090,26 +1794,20 @@
                     {
                       "binary": [
                         {
-                          "right": [
-                            {
-                              "expression": {
-                                "name": "x"
-                              }
+                          "right": {
+                            "expression": {
+                              "name": "x"
                             }
-                          ],
-                          "left": [
-                            {
-                              "expression": {
-                                "name": "x"
-                              }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "x"
                             }
-                          ],
-                          "op": [
-                            {
-                              "text": "*",
-                              "multiply": true
-                            }
-                          ]
+                          },
+                          "op": {
+                            "text": "*",
+                            "multiply": true
+                          }
                         }
                       ]
                     }
@@ -2175,22 +1873,16 @@
                     {
                       "expression": {
                         "call": {
-                          "member": [
-                            {
-                              "property": [
-                                {
-                                  "name": "items"
-                                }
-                              ],
-                              "object": [
-                                {
-                                  "name": [
-                                    "data"
-                                  ]
-                                }
+                          "member": {
+                            "property": {
+                              "name": "items"
+                            },
+                            "object": {
+                              "name": [
+                                "data"
                               ]
                             }
-                          ]
+                          }
                         }
                       }
                     }
@@ -2237,47 +1929,41 @@
             "right": {
               "expression": {
                 "generator": {
-                  "name": [
-                    "x"
-                  ],
-                  "body": [
+                  "children": [
                     {
-                      "name": [
-                        "x"
-                      ]
-                    }
-                  ],
-                  "left": [
-                    {
-                      "expression": {
-                        "name": "x"
-                      }
-                    },
-                    {
+                      "$type": "left",
                       "expression": {
                         "name": "_"
                       }
-                    }
-                  ],
-                  "right": [
-                    {
-                      "expression": {
-                        "name": "data"
-                      }
                     },
                     {
+                      "$type": "right",
                       "expression": {
                         "call": {
                           "arguments": [
                             "2"
                           ],
-                          "name": [
-                            "range"
-                          ]
+                          "name": "range"
                         }
                       }
                     }
-                  ]
+                  ],
+                  "body": {
+                    "name": [
+                      "x"
+                    ]
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "x"
+                    }
+                  },
+                  "right": {
+                    "expression": {
+                      "name": "data"
+                    }
+                  },
+                  "name": "x"
                 }
               }
             },
@@ -2335,9 +2021,7 @@
                           "arguments": [
                             "3"
                           ],
-                          "name": [
-                            "range"
-                          ]
+                          "name": "range"
                         }
                       }
                     },
@@ -2347,9 +2031,7 @@
                           "arguments": [
                             "3"
                           ],
-                          "name": [
-                            "range"
-                          ]
+                          "name": "range"
                         }
                       }
                     }
@@ -2415,59 +2097,51 @@
         "if": [
           {
             "then": {
-              "expression": [
-                {
-                  "call": {
-                    "arguments": [
-                      {
-                        "$type": "string",
-                        "interpolation": [
-                          {
-                            "name": "n"
-                          }
-                        ]
-                      }
-                    ],
-                    "name": [
-                      "print"
-                    ]
-                  }
+              "expression": {
+                "call": {
+                  "arguments": [
+                    {
+                      "$type": "string",
+                      "interpolation": [
+                        {
+                          "name": "n"
+                        }
+                      ]
+                    }
+                  ],
+                  "name": "print"
                 }
-              ]
+              }
             },
             "condition": {
-              "expression": [
-                {
-                  "compare": {
-                    "int": "3",
-                    "assign": {
-                      "value": {
-                        "expression": {
-                          "call": {
-                            "arguments": [
-                              "items"
-                            ],
-                            "name": [
-                              "len"
-                            ]
-                          }
+              "expression": {
+                "compare": {
+                  "int": "3",
+                  "assign": {
+                    "value": {
+                      "expression": {
+                        "call": {
+                          "arguments": [
+                            "items"
+                          ],
+                          "name": "len"
                         }
-                      },
-                      "name": "n",
-                      "op": {
-                        "text": ":=",
-                        "assign": true,
-                        "walrus": true
                       }
                     },
+                    "name": "n",
                     "op": {
-                      "text": ">",
-                      "compare": true,
-                      "greater": true
+                      "text": ":=",
+                      "assign": true,
+                      "walrus": true
                     }
+                  },
+                  "op": {
+                    "text": ">",
+                    "compare": true,
+                    "greater": true
                   }
                 }
-              ]
+              }
             }
           }
         ],
@@ -2551,9 +2225,7 @@
                   "arguments": [
                     {
                       "$type": "call",
-                      "name": [
-                        "map"
-                      ],
+                      "name": "map",
                       "arguments": [
                         {
                           "$type": "lambda",
@@ -2561,26 +2233,20 @@
                           "value": {
                             "expression": {
                               "binary": {
-                                "right": [
-                                  {
-                                    "expression": {
-                                      "int": "2"
-                                    }
+                                "right": {
+                                  "expression": {
+                                    "int": "2"
                                   }
-                                ],
-                                "left": [
-                                  {
-                                    "expression": {
-                                      "name": "v"
-                                    }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "name": "v"
                                   }
-                                ],
-                                "op": [
-                                  {
-                                    "text": "*",
-                                    "multiply": true
-                                  }
-                                ]
+                                },
+                                "op": {
+                                  "text": "*",
+                                  "multiply": true
+                                }
                               }
                             }
                           }
@@ -2589,9 +2255,7 @@
                       ]
                     }
                   ],
-                  "name": [
-                    "list"
-                  ]
+                  "name": "list"
                 }
               }
             },
@@ -2827,14 +2491,40 @@
         ],
         "try": [
           {
-            "except": [
-              {
-                "assign": {
+            "except": {
+              "assign": {
+                "right": {
+                  "expression": {
+                    "list": {
+                      "text": "[]",
+                      "literal": true
+                    }
+                  }
+                },
+                "left": {
+                  "expression": {
+                    "name": "result"
+                  }
+                }
+              },
+              "group": true,
+              "tuple": {
+                "name": [
+                  "ValueError",
+                  "TypeError"
+                ]
+              }
+            },
+            "body": {
+              "assign": [
+                {
                   "right": {
                     "expression": {
-                      "list": {
-                        "text": "[]",
-                        "literal": true
+                      "call": {
+                        "arguments": [
+                          "items"
+                        ],
+                        "name": "list"
                       }
                     }
                   },
@@ -2843,41 +2533,9 @@
                       "name": "result"
                     }
                   }
-                },
-                "group": true,
-                "tuple": {
-                  "name": [
-                    "ValueError",
-                    "TypeError"
-                  ]
                 }
-              }
-            ],
-            "body": [
-              {
-                "assign": [
-                  {
-                    "right": {
-                      "expression": {
-                        "call": {
-                          "arguments": [
-                            "items"
-                          ],
-                          "name": [
-                            "list"
-                          ]
-                        }
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "result"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
+              ]
+            }
           }
         ],
         "match": [
@@ -2886,117 +2544,93 @@
               "arm": [
                 {
                   "then": {
-                    "assign": [
-                      {
-                        "right": {
-                          "expression": {
-                            "binary": {
-                              "right": [
-                                {
-                                  "expression": {
-                                    "name": "b"
-                                  }
-                                }
-                              ],
-                              "left": [
-                                {
-                                  "expression": {
-                                    "name": "a"
-                                  }
-                                }
-                              ],
-                              "op": [
-                                {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              ]
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "name": "b"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "a"
+                              }
+                            },
+                            "op": {
+                              "text": "+",
+                              "plus": true
                             }
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "matched"
-                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "matched"
                         }
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "pattern": [
-                          {
-                            "name": [
-                              "a"
-                            ]
-                          },
-                          {
-                            "name": [
-                              "b"
-                            ]
-                          }
-                        ],
-                        "tuple": true
-                      }
-                    ]
+                    "pattern": {
+                      "pattern": [
+                        {
+                          "name": "a"
+                        },
+                        {
+                          "name": "b"
+                        }
+                      ],
+                      "tuple": true
+                    }
                   }
                 },
                 {
                   "then": {
-                    "assign": [
-                      {
-                        "right": {
-                          "expression": {
-                            "unary": {
-                              "int": [
-                                "1"
-                              ],
-                              "op": [
-                                {
-                                  "text": "-",
-                                  "minus": true
-                                }
-                              ]
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "unary": {
+                            "int": "1",
+                            "op": {
+                              "text": "-",
+                              "minus": true
                             }
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "matched"
-                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "matched"
                         }
                       }
-                    ]
+                    }
                   },
                   "pattern": {
-                    "pattern": [
-                      {
-                        "int": [
-                          "1",
-                          "2j"
-                        ],
-                        "complex": true
-                      }
-                    ]
+                    "pattern": {
+                      "children": [
+                        "2j"
+                      ],
+                      "complex": true,
+                      "int": "1"
+                    }
                   }
                 },
                 {
                   "then": {
-                    "assign": [
-                      {
-                        "right": {
-                          "expression": {
-                            "int": "0"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "matched"
-                          }
+                    "assign": {
+                      "right": {
+                        "expression": {
+                          "int": "0"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "matched"
                         }
                       }
-                    ]
+                    }
                   },
                   "pattern": "_"
                 }
@@ -3008,9 +2642,7 @@
         "assign": [
           {
             "type": {
-              "name": [
-                "int"
-              ]
+              "name": "int"
             },
             "left": {
               "expression": {
@@ -3022,16 +2654,12 @@
             "right": {
               "expression": {
                 "unary": {
-                  "name": [
-                    "matched"
-                  ],
-                  "op": [
-                    {
-                      "text": "not",
-                      "logical": true,
-                      "not": true
-                    }
-                  ]
+                  "name": "matched",
+                  "op": {
+                    "text": "not",
+                    "logical": true,
+                    "not": true
+                  }
                 }
               }
             },

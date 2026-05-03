@@ -86,6 +86,29 @@ before committing a non-trivial change.
   kind instead. Iter 179 was caught by test; would have been a quiet
   regression otherwise. (Sister to the "all N languages done" lesson:
   changes that look universal often aren't.)
+- **Bulk `distribute_member_list_attrs` is a coverage-vs-correctness
+  trade-off and SILENTLY REVERSES singleton-role-slot designs.**
+  Iters 205-212 closed 121 audit overflow sites but created ~2,389
+  new 1-element arrays — net JSON-shape regression. The audit metric
+  (`"children": [` count) only measures ONE failure mode
+  (anonymous-key overflow) and IGNORES the dual failure mode (1-elem
+  arrays on singleton role slots). Concretely reversed prior
+  iter decisions: 178 (`<member>` object/property), 179 (`<ternary>`
+  condition/then/else), 180 (`<range>` from/to), 195 (Ruby `<call>`
+  object), 212 (`<binary>`/`<unary>`/`<logical>` left/op/right).
+  Before adding ANY element name to a distribute config, classify
+  it: role-uniform (siblings are interchangeable list members —
+  body/program/file/tuple/list/dict/array/hash/object/switch/
+  literal/template) vs role-MIXED (siblings are distinct named
+  slots — call/binary/member/ternary/range/try/with/decorator/as/
+  logical/unary/condition/then/from/index/case). Only role-uniform
+  parents are safe to bulk-distribute.
+- **When extending a config-driven sweep (distribute, field-wrap,
+  tag-multi), grep prior commits with `--grep=<element_name>` for
+  EACH added name** — config sweeps are particularly prone to
+  undoing prior single-element handler decisions because the audit
+  metric doesn't surface the regression. The whack-a-mole check
+  must apply per-name, not per-iter.
 - **Field-wrap can be silently undone by a per-language Skip
   dispatcher.** TSQL `tractor/src/languages/tsql/transform.rs:29`
   routes builder-inserted `<left>`/`<right>`/`<value>` wrappers to
@@ -525,6 +548,19 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 213: post-cycle review of iters 205-212 + revert role-mixed
+  parents from distribute config. Review found 5 silent reversals
+  of prior single-element handler decisions (iters 178/179/180/195/
+  212 — `<member>`, `<ternary>`, `<range>`, Ruby `<call>`, `<binary>`/
+  `<unary>`/`<logical>`) AND ~2,389 new 1-element arrays. Removed
+  22 role-mixed entries from distribute configs cross-language;
+  kept 18 role-uniform: body/block/unit/namespace/section/import/
+  file/program/module/tuple/list/dict/array/hash/object/switch/
+  literal/macro/template/string/repetition. Children-overflow
+  rebounded from 37 → ~89 (still down from 283 baseline by 69%);
+  saved thousands of 1-element-array regressions. 2 new Lessons:
+  bulk distribute trade-off; per-name whack-a-mole check on
+  config sweeps.
 - [x] iter 212: extend distribute — try/with/decorator/as/logical/binary/unary.
   Closed 2 sites: csharp 2→1, python 10→8. Total 39 → 37 (-87%
   from baseline). Diminishing returns suggest the bulk-distribute
