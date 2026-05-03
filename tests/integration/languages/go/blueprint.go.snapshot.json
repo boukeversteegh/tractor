@@ -29,14 +29,11 @@
       "path": "io"
     },
     {
-      "children": [
-        {
-          "$type": "alias",
-          "name": "myio"
-        }
-      ],
-      "path": "io",
-      "alias": true
+      "aliased": {
+        "name": "myio"
+      },
+      "alias": true,
+      "path": "io"
     },
     {
       "path": "strings",

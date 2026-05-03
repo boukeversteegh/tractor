@@ -463,7 +463,10 @@ pub fn import_spec(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
                 xot.with_prepended_marker(node, Dot)?;
             }
             PrefixKind::Alias => {
-                let alias_elt = xot.add_name(Alias.as_str());
+                // Wrapper element name is `<aliased>` (renamed iter 184
+                // cross-language) so it doesn't collide with the
+                // `<alias/>` marker on the same `<import>` JSON key.
+                let alias_elt = xot.add_name("aliased");
                 let alias_node = xot.new_element(alias_elt);
                 xot.append(node, alias_node)?;
                 let name_elt = xot.add_name(Name.as_str());

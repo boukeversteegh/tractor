@@ -7,7 +7,7 @@ file/
   ├─ import/path = "io"
   ├─ import[alias]/
   │   ├─ path = "io"
-  │   └─ alias/name = "myio"
+  │   └─ aliased/name = "myio"
   ├─ import[dot]/path = "strings"
   ├─ import[blank]/path = "net/http/pprof"
   ├─ const/

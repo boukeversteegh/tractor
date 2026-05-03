@@ -525,6 +525,14 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 200: Go alias→aliased rename — closes the iter-184
+  cross-language rename gap (Go was missed). `go/transformations.rs`
+  `import_spec` Custom handler at line 466 used
+  `Alias.as_str()` for the wrapper element; now uses literal
+  `"aliased"`. Added `Aliased` variant to Go's TractorNode enum.
+  Go audit 20 → 19 (-1; only one aliased import in fixture).
+  iter-184 was retroactively wrong about "all 4 languages" — Go
+  had the same pattern in a different file.
 - [x] iter 199: TSQL operand re-wrap — `tsql_wrap_binary_operands`
   post-pass wraps compare/assign/between operands with field= attr
   in `<left>`/`<right>` slots. Closed 9 sites (TSQL 20 → 11).
