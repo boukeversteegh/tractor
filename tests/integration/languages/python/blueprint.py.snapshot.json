@@ -1992,14 +1992,14 @@
                     }
                   },
                   "compare": {
-                    "children": [
+                    "name": [
+                      "i",
                       "j"
                     ],
                     "op": {
                       "text": "!=",
                       "inequality": true
-                    },
-                    "name": "i"
+                    }
                   }
                 }
               }

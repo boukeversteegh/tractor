@@ -525,6 +525,14 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 204: Python `<compare>` name siblings list= — added
+  `("compare", "name")` pair to Python's `tag_multi_role_children`.
+  Tree-sitter `comparison_operator` doesn't tag operands with
+  field=left/right (unlike binary_operator), so multi-name chains
+  `a < b < c` overflowed. Python audit 30 → 29 (-1).
+  Heterogeneous-operand compares (`obj.x < y`) still overflow —
+  needs uniform `<expression>` wrapping or a different shape
+  decision (deferred).
 - [x] iter 203: C# qualified_name → `<path>` rename — closes the
   C# pattern of bare `<name>` siblings under `<new>` / `<using>` /
   etc. Mirrors Java's `ScopedIdentifier => Rename(Path)`. Also added

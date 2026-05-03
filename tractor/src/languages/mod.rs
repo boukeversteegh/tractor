@@ -1131,7 +1131,16 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
-    crate::transform::tag_multi_role_children(xot, root, &[("string", "interpolation")])?;
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[
+            ("string", "interpolation"),
+            // Python's `comparison_operator` doesn't tag operands
+            // with field=left/right (unlike binary_operator), so
+            // multi-name compare chains overflow without this.
+            ("compare", "name"),
+        ],
+    )?;
     python_restructure_imports(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
