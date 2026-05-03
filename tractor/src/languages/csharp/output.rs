@@ -89,6 +89,9 @@ pub enum TractorNode {
     // (`enum Color : uint`). Distinct from `<extends>` since enums
     // don't inherit; the slot is "storage type", not "parent type".
     Underlying,
+    // Chain inversion (iter 245): `[access]` distinguishes
+    // member-access chains from object literals.
+    Access,
 }
 
 impl TractorNode {
@@ -116,7 +119,8 @@ impl TractorNode {
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
             | Self::Anonymous | Self::Stackalloc | Self::File
-            | Self::Base | Self::Underlying                                     => (true, false, Default),
+            | Self::Base | Self::Underlying
+            | Self::Access                                                      => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::New | Self::Const                                             => (true, true,  Keyword),

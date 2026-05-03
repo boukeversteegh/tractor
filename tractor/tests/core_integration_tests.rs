@@ -176,15 +176,18 @@ fn test_csharp_null_forgiving_operator() {
     assert_eq!(errors.len(), 0, "Should have no ERROR nodes - null-forgiving operator should parse correctly");
 
     // Can query for member access on null-forgiving expression.
-    // Post-iter-178: receiver is wrapped in <object> per Principle #19.
+    // Post iter-245 (C# chain inversion): the chain is
+    // `<object[access]><expression[non_null]>name</expression><member>Length</member></object>`,
+    // so the non-null expression is the chain receiver (a direct
+    // child of the chain wrapper).
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//member[object/expression[non_null]]",
+        "//object[access]/expression[non_null]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find member access with non-null host child");
+    assert_eq!(matches.len(), 1, "Should find non-null expression as the chain receiver");
 }
 
 // ============================================================================

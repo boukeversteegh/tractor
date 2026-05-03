@@ -310,15 +310,16 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("`name!` is NOT classified as a unary not-operator",
         &mut tree, "//unary[op[logical[not]]]", 0);
 
-    // Iter 178: C# member-access wraps receiver in <object> and
-    // property in <property>. XPaths updated to reflect that.
-    claim("simple `name!.Length` exposes <member> with non-null host on the receiver",
+    // Iter 245: C# chain inversion. Member access becomes
+    // `<object[access]>` with the non-null expression as the
+    // chain receiver (a direct child of the chain wrapper).
+    claim("simple `name!.Length` puts <expression[non_null]> as the chain receiver",
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='simple']
-                /declarator/member
-                    [object/expression[non_null]/name='nullable']
-                    [property/name='Length']
+                /declarator/object[access]
+                    [expression[non_null]/name='nullable']
+                    [member/name='Length']
         "#),
         1);
 
@@ -326,9 +327,10 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='chained']
-                /declarator/member
-                    [object/call/member/object/expression[non_null]/name='nullable']
-                    [property/name='Length']
+                /declarator/object[access]
+                    [expression[non_null]/name='nullable']
+                    [.//call/name='ToUpper']
+                    [.//member/name='Length']
         "#),
         1);
 
@@ -338,8 +340,8 @@ fn csharp_null_forgiving_postfix_unary() {
             //variable[declarator/name='combined']
                 /declarator/binary
                     [op[plus]]
-                    [left/expression/member[object/expression[non_null]/name='first'][property/name='Length']]
-                    [right/expression/member[object/expression[non_null]/name='second'][property/name='Length']]
+                    [left/expression/object[access][expression[non_null]/name='first'][member/name='Length']]
+                    [right/expression/object[access][expression[non_null]/name='second'][member/name='Length']]
         "#),
         1);
 }

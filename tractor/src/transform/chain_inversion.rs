@@ -458,9 +458,27 @@ fn is_chain_root(xot: &Xot, node: XotNode) -> bool {
     let parent_name = get_element_name(xot, parent);
     match element_name.as_str() {
         "member" => {
-            // Not a chain root if it's a receiver (parent=<object>)
-            // or a callee (parent=<call>).
-            !matches!(parent_name.as_deref(), Some("object") | Some("call"))
+            // Not a chain root when the <member> is acting as a
+            // receiver/callee inside an enclosing chain step:
+            // - parent=<object>: this <member> is a receiver inside
+            //   another <member>/<call>. Skip; the outer chain
+            //   walker absorbs it.
+            // - parent=<call> AND we are the FIRST element child:
+            //   we're the callee. Skip.
+            // A <member> that is a NON-first child of <call> is an
+            // argument expression — it IS its own chain root and
+            // must be inverted (covers the Go shape where member-
+            // access expressions sit as bare arguments next to a
+            // top-level bare-name callee).
+            match parent_name.as_deref() {
+                Some("object") => false,
+                Some("call") => {
+                    // Callee = first non-marker element child.
+                    let first = first_non_marker_element_child(xot, parent);
+                    first != Some(node)
+                }
+                _ => true,
+            }
         }
         "call" => {
             // Not a chain root if it's a receiver (parent=<object>).

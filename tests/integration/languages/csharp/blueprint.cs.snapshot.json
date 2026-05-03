@@ -176,14 +176,13 @@
               {
                 "value": {
                   "expression": {
-                    "member": {
-                      "property": {
-                        "name": "Low"
+                    "object": {
+                      "member": {
+                        "name": "Low",
+                        "instance": true
                       },
-                      "instance": true,
-                      "object": {
-                        "name": "Priority"
-                      }
+                      "access": true,
+                      "name": "Priority"
                     }
                   }
                 },
@@ -207,14 +206,13 @@
               {
                 "value": {
                   "expression": {
-                    "member": {
-                      "property": {
-                        "name": "Length"
+                    "object": {
+                      "member": {
+                        "name": "Length",
+                        "instance": true
                       },
-                      "instance": true,
-                      "object": {
-                        "name": "key"
-                      }
+                      "access": true,
+                      "name": "key"
                     }
                   }
                 },
@@ -431,21 +429,17 @@
                       ],
                       "expressions": [
                         {
-                          "call": {
-                            "arguments": [
-                              {
-                                "int": "1"
-                              }
-                            ],
-                            "member": {
-                              "property": {
-                                "name": "Delay"
-                              },
-                              "instance": true,
-                              "object": {
-                                "name": "Task"
-                              }
-                            }
+                          "object": {
+                            "call": {
+                              "arguments": [
+                                {
+                                  "int": "1"
+                                }
+                              ],
+                              "name": "Delay"
+                            },
+                            "access": true,
+                            "name": "Task"
                           },
                           "await": true
                         }
@@ -708,24 +702,16 @@
                       },
                       "left": {
                         "expression": {
-                          "call": {
+                          "object": {
                             "member": {
-                              "property": {
+                              "call": {
                                 "name": "ToUpperInvariant"
                               },
                               "instance": true,
-                              "object": {
-                                "member": {
-                                  "property": {
-                                    "name": "Name"
-                                  },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "w"
-                                  }
-                                }
-                              }
-                            }
+                              "name": "Name"
+                            },
+                            "access": true,
+                            "name": "w"
                           }
                         }
                       },
@@ -773,14 +759,13 @@
                             "binary": {
                               "right": {
                                 "expression": {
-                                  "member": {
-                                    "property": {
-                                      "name": "Length"
+                                  "object": {
+                                    "member": {
+                                      "name": "Length",
+                                      "instance": true
                                     },
-                                    "instance": true,
-                                    "object": {
-                                      "name": "shouted"
-                                    }
+                                    "access": true,
+                                    "name": "shouted"
                                   }
                                 }
                               },
@@ -824,14 +809,13 @@
                                         "binary": {
                                           "right": {
                                             "expression": {
-                                              "member": {
-                                                "property": {
-                                                  "name": "Length"
+                                              "object": {
+                                                "member": {
+                                                  "name": "Length",
+                                                  "instance": true
                                                 },
-                                                "instance": true,
-                                                "object": {
-                                                  "name": "raw"
-                                                }
+                                                "access": true,
+                                                "name": "raw"
                                               }
                                             }
                                           },
@@ -840,14 +824,13 @@
                                               "binary": {
                                                 "right": {
                                                   "expression": {
-                                                    "member": {
-                                                      "property": {
-                                                        "name": "Length"
+                                                    "object": {
+                                                      "member": {
+                                                        "name": "Length",
+                                                        "instance": true
                                                       },
-                                                      "instance": true,
-                                                      "object": {
-                                                        "name": "interp"
-                                                      }
+                                                      "access": true,
+                                                      "name": "interp"
                                                     }
                                                   }
                                                 },
@@ -856,14 +839,13 @@
                                                     "binary": {
                                                       "right": {
                                                         "expression": {
-                                                          "member": {
-                                                            "property": {
-                                                              "name": "Length"
+                                                          "object": {
+                                                            "member": {
+                                                              "name": "Length",
+                                                              "instance": true
                                                             },
-                                                            "instance": true,
-                                                            "object": {
-                                                              "name": "verbatim"
-                                                            }
+                                                            "access": true,
+                                                            "name": "verbatim"
                                                           }
                                                         }
                                                       },
@@ -872,14 +854,13 @@
                                                           "binary": {
                                                             "right": {
                                                               "expression": {
-                                                                "member": {
-                                                                  "property": {
-                                                                    "name": "Length"
+                                                                "object": {
+                                                                  "member": {
+                                                                    "name": "Length",
+                                                                    "instance": true
                                                                   },
-                                                                  "instance": true,
-                                                                  "object": {
-                                                                    "name": "plain"
-                                                                  }
+                                                                  "access": true,
+                                                                  "name": "plain"
                                                                 }
                                                               }
                                                             },
@@ -888,27 +869,25 @@
                                                                 "binary": {
                                                                   "right": {
                                                                     "expression": {
-                                                                      "member": {
-                                                                        "property": {
-                                                                          "name": "Count"
+                                                                      "object": {
+                                                                        "member": {
+                                                                          "name": "Count",
+                                                                          "instance": true
                                                                         },
-                                                                        "instance": true,
-                                                                        "object": {
-                                                                          "name": "map"
-                                                                        }
+                                                                        "access": true,
+                                                                        "name": "map"
                                                                       }
                                                                     }
                                                                   },
                                                                   "left": {
                                                                     "expression": {
-                                                                      "member": {
-                                                                        "property": {
-                                                                          "name": "Count"
+                                                                      "object": {
+                                                                        "member": {
+                                                                          "name": "Count",
+                                                                          "instance": true
                                                                         },
-                                                                        "instance": true,
-                                                                        "object": {
-                                                                          "name": "list"
-                                                                        }
+                                                                        "access": true,
+                                                                        "name": "list"
                                                                       }
                                                                     }
                                                                   },
@@ -966,29 +945,24 @@
                         {
                           "then": {
                             "expression": {
-                              "call": {
-                                "arguments": [
-                                  {
-                                    "member": {
-                                      "property": {
-                                        "name": "Id"
-                                      },
-                                      "instance": true,
+                              "object": {
+                                "call": {
+                                  "arguments": [
+                                    {
                                       "object": {
+                                        "member": {
+                                          "name": "Id",
+                                          "instance": true
+                                        },
+                                        "access": true,
                                         "name": "probe"
                                       }
                                     }
-                                  }
-                                ],
-                                "member": {
-                                  "property": {
-                                    "name": "WriteLine"
-                                  },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "Console"
-                                  }
-                                }
+                                  ],
+                                  "name": "WriteLine"
+                                },
+                                "access": true,
+                                "name": "Console"
                               }
                             }
                           },
@@ -1052,31 +1026,23 @@
                                 {
                                   "expressions": [
                                     {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "call": {
-                                              "member": {
-                                                "property": {
+                                      "object": {
+                                        "call": {
+                                          "arguments": [
+                                            {
+                                              "object": {
+                                                "call": {
                                                   "name": "Describe"
                                                 },
-                                                "instance": true,
-                                                "object": {
-                                                  "name": "w"
-                                                }
+                                                "access": true,
+                                                "name": "w"
                                               }
                                             }
-                                          }
-                                        ],
-                                        "member": {
-                                          "property": {
-                                            "name": "WriteLine"
-                                          },
-                                          "instance": true,
-                                          "object": {
-                                            "name": "Console"
-                                          }
-                                        }
+                                          ],
+                                          "name": "WriteLine"
+                                        },
+                                        "access": true,
+                                        "name": "Console"
                                       }
                                     }
                                   ],
@@ -1132,16 +1098,12 @@
                                 "string": {
                                   "interpolations": [
                                     {
-                                      "call": {
-                                        "member": {
-                                          "property": {
-                                            "name": "Sum"
-                                          },
-                                          "instance": true,
-                                          "object": {
-                                            "name": "evens"
-                                          }
-                                        }
+                                      "object": {
+                                        "call": {
+                                          "name": "Sum"
+                                        },
+                                        "access": true,
+                                        "name": "evens"
                                       }
                                     },
                                     {
@@ -1230,16 +1192,12 @@
                                 "call": {
                                   "arguments": [
                                     {
-                                      "call": {
-                                        "member": {
-                                          "property": {
-                                            "name": "ToString"
-                                          },
-                                          "instance": true,
-                                          "object": {
-                                            "name": "n"
-                                          }
-                                        }
+                                      "object": {
+                                        "call": {
+                                          "name": "ToString"
+                                        },
+                                        "access": true,
+                                        "name": "n"
                                       }
                                     }
                                   ],
@@ -1300,16 +1258,12 @@
                             "block": {
                               "expressions": [
                                 {
-                                  "call": {
-                                    "member": {
-                                      "property": {
-                                        "name": "Flush"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "name": "scope"
-                                      }
-                                    }
+                                  "object": {
+                                    "call": {
+                                      "name": "Flush"
+                                    },
+                                    "access": true,
+                                    "name": "scope"
                                   }
                                 }
                               ]
@@ -1339,21 +1293,17 @@
                                         {
                                           "expressions": [
                                             {
-                                              "call": {
-                                                "arguments": [
-                                                  {
-                                                    "int": "1"
-                                                  }
-                                                ],
-                                                "member": {
-                                                  "property": {
-                                                    "name": "WriteByte"
-                                                  },
-                                                  "instance": true,
-                                                  "object": {
-                                                    "name": "inner"
-                                                  }
-                                                }
+                                              "object": {
+                                                "call": {
+                                                  "arguments": [
+                                                    {
+                                                      "int": "1"
+                                                    }
+                                                  ],
+                                                  "name": "WriteByte"
+                                                },
+                                                "access": true,
+                                                "name": "inner"
                                               }
                                             }
                                           ]
@@ -1392,14 +1342,13 @@
                                         "call": {
                                           "arguments": [
                                             {
-                                              "member": {
-                                                "property": {
-                                                  "name": "Message"
+                                              "object": {
+                                                "member": {
+                                                  "name": "Message",
+                                                  "instance": true
                                                 },
-                                                "instance": true,
-                                                "object": {
-                                                  "name": "ex"
-                                                }
+                                                "access": true,
+                                                "name": "ex"
                                               }
                                             }
                                           ],
@@ -1425,22 +1374,17 @@
                                   },
                                   "left": {
                                     "expression": {
-                                      "member": {
-                                        "property": {
-                                          "name": "Length"
-                                        },
-                                        "instance": true,
-                                        "object": {
+                                      "object": {
+                                        "member": {
                                           "member": {
-                                            "property": {
-                                              "name": "Message"
-                                            },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "ex"
-                                            }
-                                          }
-                                        }
+                                            "name": "Length",
+                                            "instance": true
+                                          },
+                                          "instance": true,
+                                          "name": "Message"
+                                        },
+                                        "access": true,
+                                        "name": "ex"
                                       }
                                     }
                                   },
@@ -1633,14 +1577,13 @@
                                             "int": "0",
                                             "relational": true
                                           },
-                                          "member": {
-                                            "property": {
-                                              "name": "Length"
+                                          "object": {
+                                            "member": {
+                                              "name": "Length",
+                                              "instance": true
                                             },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "Name"
-                                            }
+                                            "access": true,
+                                            "name": "Name"
                                           }
                                         }
                                       },
@@ -1670,14 +1613,13 @@
                                     "properties": {
                                       "subpattern": {
                                         "pattern": {
-                                          "member": {
-                                            "property": {
-                                              "name": "High"
+                                          "object": {
+                                            "member": {
+                                              "name": "High",
+                                              "instance": true
                                             },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "Priority"
-                                            }
+                                            "access": true,
+                                            "name": "Priority"
                                           },
                                           "constant": true
                                         },
@@ -1705,14 +1647,13 @@
                                       },
                                       "left": {
                                         "expression": {
-                                          "member": {
-                                            "property": {
-                                              "name": "Id"
+                                          "object": {
+                                            "member": {
+                                              "name": "Id",
+                                              "instance": true
                                             },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "w"
-                                            }
+                                            "access": true,
+                                            "name": "w"
                                           }
                                         }
                                       },
@@ -1823,105 +1764,87 @@
                         },
                         {
                           "declarator": {
-                            "call": {
-                              "member": {
-                                "property": {
-                                  "name": "ToList"
-                                },
-                                "instance": true,
-                                "object": {
+                            "object": {
+                              "call": {
+                                "call": {
                                   "call": {
-                                    "arguments": [
-                                      {
-                                        "lambda": {
-                                          "value": {
-                                            "expression": {
-                                              "binary": {
-                                                "right": {
-                                                  "expression": {
-                                                    "int": "1"
+                                    "name": "ToList"
+                                  },
+                                  "name": "Select",
+                                  "arguments": [
+                                    {
+                                      "lambda": {
+                                        "value": {
+                                          "expression": {
+                                            "binary": {
+                                              "right": {
+                                                "expression": {
+                                                  "int": "1"
+                                                }
+                                              },
+                                              "left": {
+                                                "expression": {
+                                                  "name": "n"
+                                                }
+                                              },
+                                              "op": {
+                                                "text": "+",
+                                                "plus": true
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "parameter": "n"
+                                      }
+                                    }
+                                  ]
+                                },
+                                "name": "Where",
+                                "arguments": [
+                                  {
+                                    "lambda": {
+                                      "value": {
+                                        "expression": {
+                                          "binary": {
+                                            "right": {
+                                              "expression": {
+                                                "int": "0"
+                                              }
+                                            },
+                                            "left": {
+                                              "expression": {
+                                                "binary": {
+                                                  "right": {
+                                                    "expression": {
+                                                      "int": "2"
+                                                    }
+                                                  },
+                                                  "left": {
+                                                    "expression": {
+                                                      "name": "n"
+                                                    }
+                                                  },
+                                                  "op": {
+                                                    "text": "%",
+                                                    "modulo": true
                                                   }
-                                                },
-                                                "left": {
-                                                  "expression": {
-                                                    "name": "n"
-                                                  }
-                                                },
-                                                "op": {
-                                                  "text": "+",
-                                                  "plus": true
                                                 }
                                               }
-                                            }
-                                          },
-                                          "parameter": "n"
-                                        }
-                                      }
-                                    ],
-                                    "member": {
-                                      "property": {
-                                        "name": "Select"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "call": {
-                                          "arguments": [
-                                            {
-                                              "lambda": {
-                                                "value": {
-                                                  "expression": {
-                                                    "binary": {
-                                                      "right": {
-                                                        "expression": {
-                                                          "int": "0"
-                                                        }
-                                                      },
-                                                      "left": {
-                                                        "expression": {
-                                                          "binary": {
-                                                            "right": {
-                                                              "expression": {
-                                                                "int": "2"
-                                                              }
-                                                            },
-                                                            "left": {
-                                                              "expression": {
-                                                                "name": "n"
-                                                              }
-                                                            },
-                                                            "op": {
-                                                              "text": "%",
-                                                              "modulo": true
-                                                            }
-                                                          }
-                                                        }
-                                                      },
-                                                      "op": {
-                                                        "text": "!=",
-                                                        "inequality": true
-                                                      }
-                                                    }
-                                                  }
-                                                },
-                                                "parameter": "n"
-                                              }
-                                            }
-                                          ],
-                                          "member": {
-                                            "property": {
-                                              "name": "Where"
                                             },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "numbers"
+                                            "op": {
+                                              "text": "!=",
+                                              "inequality": true
                                             }
                                           }
                                         }
-                                      }
+                                      },
+                                      "parameter": "n"
                                     }
                                   }
-                                }
-                              }
+                                ]
+                              },
+                              "access": true,
+                              "name": "numbers"
                             },
                             "name": "odds"
                           },
@@ -2041,21 +1964,17 @@
                             "lambda": {
                               "value": {
                                 "expression": {
-                                  "call": {
-                                    "arguments": [
-                                      {
-                                        "name": "msg"
-                                      }
-                                    ],
-                                    "member": {
-                                      "property": {
-                                        "name": "WriteLine"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "name": "Console"
-                                      }
-                                    }
+                                  "object": {
+                                    "call": {
+                                      "arguments": [
+                                        {
+                                          "name": "msg"
+                                        }
+                                      ],
+                                      "name": "WriteLine"
+                                    },
+                                    "access": true,
+                                    "name": "Console"
                                   }
                                 }
                               },
@@ -2114,14 +2033,13 @@
                             "tuple": {
                               "arguments": [
                                 {
-                                  "member": {
-                                    "property": {
-                                      "name": "Count"
+                                  "object": {
+                                    "member": {
+                                      "name": "Count",
+                                      "instance": true
                                     },
-                                    "instance": true,
-                                    "object": {
-                                      "name": "odds"
-                                    }
+                                    "access": true,
+                                    "name": "odds"
                                   }
                                 },
                                 {
@@ -2595,25 +2513,21 @@
               },
               {
                 "body": {
-                  "calls": [
+                  "objects": [
                     {
-                      "arguments": [
-                        {
-                          "name": "X"
-                        },
-                        {
-                          "name": "Y"
-                        }
-                      ],
-                      "member": {
-                        "property": {
-                          "name": "Combine"
-                        },
-                        "instance": true,
-                        "object": {
-                          "name": "HashCode"
-                        }
-                      }
+                      "call": {
+                        "arguments": [
+                          {
+                            "name": "X"
+                          },
+                          {
+                            "name": "Y"
+                          }
+                        ],
+                        "name": "Combine"
+                      },
+                      "access": true,
+                      "name": "HashCode"
                     }
                   ]
                 },
@@ -2669,27 +2583,25 @@
                           "binary": {
                             "right": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "X"
+                                "object": {
+                                  "member": {
+                                    "name": "X",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "b"
-                                  }
+                                  "access": true,
+                                  "name": "b"
                                 }
                               }
                             },
                             "left": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "X"
+                                "object": {
+                                  "member": {
+                                    "name": "X",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "a"
-                                  }
+                                  "access": true,
+                                  "name": "a"
                                 }
                               }
                             },
@@ -2703,27 +2615,25 @@
                           "binary": {
                             "right": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "Y"
+                                "object": {
+                                  "member": {
+                                    "name": "Y",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "b"
-                                  }
+                                  "access": true,
+                                  "name": "b"
                                 }
                               }
                             },
                             "left": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "Y"
+                                "object": {
+                                  "member": {
+                                    "name": "Y",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "a"
-                                  }
+                                  "access": true,
+                                  "name": "a"
                                 }
                               }
                             },
@@ -2766,27 +2676,25 @@
                           "binary": {
                             "right": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "Y"
+                                "object": {
+                                  "member": {
+                                    "name": "Y",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "b"
-                                  }
+                                  "access": true,
+                                  "name": "b"
                                 }
                               }
                             },
                             "left": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "Y"
+                                "object": {
+                                  "member": {
+                                    "name": "Y",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "a"
-                                  }
+                                  "access": true,
+                                  "name": "a"
                                 }
                               }
                             },
@@ -2802,27 +2710,25 @@
                           "binary": {
                             "right": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "X"
+                                "object": {
+                                  "member": {
+                                    "name": "X",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "b"
-                                  }
+                                  "access": true,
+                                  "name": "b"
                                 }
                               }
                             },
                             "left": {
                               "expression": {
-                                "member": {
-                                  "property": {
-                                    "name": "X"
+                                "object": {
+                                  "member": {
+                                    "name": "X",
+                                    "instance": true
                                   },
-                                  "instance": true,
-                                  "object": {
-                                    "name": "a"
-                                  }
+                                  "access": true,
+                                  "name": "a"
                                 }
                               }
                             },
@@ -3020,15 +2926,14 @@
             "methods": [
               {
                 "body": {
-                  "members": [
+                  "objects": [
                     {
-                      "property": {
-                        "name": "Answer"
+                      "member": {
+                        "name": "Answer",
+                        "instance": true
                       },
-                      "instance": true,
-                      "object": {
-                        "name": "Hidden"
-                      }
+                      "access": true,
+                      "name": "Hidden"
                     }
                   ]
                 },
@@ -3569,18 +3474,14 @@
                                   }
                                 },
                                 {
-                                  "call": {
-                                    "member": {
-                                      "property": {
-                                        "name": "ToString"
-                                      },
-                                      "instance": true,
-                                      "object": {
-                                        "expression": {
-                                          "name": "x",
-                                          "non_null": true
-                                        }
-                                      }
+                                  "object": {
+                                    "call": {
+                                      "name": "ToString"
+                                    },
+                                    "access": true,
+                                    "expression": {
+                                      "name": "x",
+                                      "non_null": true
                                     }
                                   },
                                   "pattern": {

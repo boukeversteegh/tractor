@@ -128,9 +128,9 @@ file/
   │       │   └─ member/name = "items"
   │       └─ right/expression/call/
   │           ├─ name = "append"
-  │           ├─ member/
-  │           │   ├─ object/name = "c"
-  │           │   └─ property/name = "items"
+  │           ├─ object[access]/
+  │           │   ├─ name = "c"
+  │           │   └─ member/name = "items"
   │           └─ name = "v"
   ├─ method[exported]/
   │   ├─ parameter/
@@ -143,12 +143,12 @@ file/
   │       └─ call/
   │           ├─ name = "Sprintf"
   │           ├─ string = "\"(%d,%d)\""
-  │           ├─ member/
-  │           │   ├─ object/name = "p"
-  │           │   └─ property/name = "X"
-  │           └─ member/
-  │               ├─ object/name = "p"
-  │               └─ property/name = "Y"
+  │           ├─ object[access]/
+  │           │   ├─ name = "p"
+  │           │   └─ member/name = "X"
+  │           └─ object[access]/
+  │               ├─ name = "p"
+  │               └─ member/name = "Y"
   ├─ method[exported]/
   │   ├─ parameter/
   │   │   ├─ name = "p"

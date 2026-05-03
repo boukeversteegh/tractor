@@ -340,18 +340,16 @@
               "expression": {
                 "call": {
                   "arguments": [
-                    {
-                      "$type": "member",
-                      "object": {
-                        "name": "c"
-                      },
-                      "property": {
-                        "name": "items"
-                      }
-                    },
                     "v"
                   ],
-                  "name": "append"
+                  "name": "append",
+                  "object": {
+                    "member": {
+                      "name": "items"
+                    },
+                    "access": true,
+                    "name": "c"
+                  }
                 }
               }
             },
@@ -406,28 +404,27 @@
             "expression": {
               "object": {
                 "call": {
-                  "arguments": [
-                    "\"(%d,%d)\"",
+                  "children": [
                     {
-                      "$type": "member",
-                      "object": {
-                        "name": "p"
-                      },
-                      "property": {
-                        "name": "X"
-                      }
-                    },
-                    {
-                      "$type": "member",
-                      "object": {
-                        "name": "p"
-                      },
-                      "property": {
+                      "$type": "object",
+                      "access": true,
+                      "name": "p",
+                      "member": {
                         "name": "Y"
                       }
                     }
                   ],
-                  "name": "Sprintf"
+                  "name": "Sprintf",
+                  "arguments": [
+                    "\"(%d,%d)\""
+                  ],
+                  "object": {
+                    "member": {
+                      "name": "X"
+                    },
+                    "access": true,
+                    "name": "p"
+                  }
                 },
                 "access": true,
                 "name": "fmt"

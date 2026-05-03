@@ -33,26 +33,60 @@ Each iter:
 
 ### Tier A — canonical input, no normalization
 
-- [ ] iter 239 — **Python** pilot. Verified iter 237: shape
-  already matches canonical
-  (`<call><member><object/><property/></member>...args</call>`).
-- [ ] iter 240 — **Go**. Same shape as Python.
+- [x] iter 239 — **Python**. Canonical shape, no normalization.
+- [x] iter 242 — **Go**. Same shape as Python. Iter 245 fixed
+  `is_chain_root` to also invert `<member>` arguments
+  (non-first-child of `<call>`); this retroactively cleaned up
+  Go member-as-arg cases that pre-iter-245 stayed un-inverted.
 
-### Tier B — small normalization pass first
+### Tier B — normalization pass
 
-- [ ] iter 241 — **TypeScript**. Unwrap the `<callee>` wrapper
-  before extraction; the inner `<member>` becomes the canonical
-  callee.
-- [ ] iter 242 — **Java**. Flat call shape
-  (`<call><object/>NAME...args</call>`); wrap the receiver+name in
-  a synthetic `<member>` first.
+- [x] iter 243 — **TypeScript**. `typescript_unwrap_callee`
+  pre-pass strips the `<callee>` wrapper. Required tweaks to
+  `walk_call` for bare-name callees (now opaque Receiver).
+- [x] iter 244 — **Java**. `java_wrap_call_member` pre-pass wraps
+  flat `<call><object/>NAME...</call>` into canonical
+  `<call><member><object/><property/></member>...</call>`.
 
 ### Tier C — TBD-shape (sample blueprint per iter)
 
-- [ ] iter 243 — **C#**.
-- [ ] iter 244 — **Rust**.
-- [ ] iter 245 — **Ruby**.
-- [ ] iter 246 — **PHP** (note `->` operator instead of `.`).
+- [x] iter 245 — **C#** (partial). Canonical shape works for the
+  common case + 38 chains in blueprint. KNOWN GAPS captured below
+  in "Open chain follow-ups": conditional-access `?.` shape uses
+  `<condition>` slot (un-canonical); implicit-`this` member
+  access without `<object>` slot left untransformed.
+- [ ] iter 246 — **Ruby**.
+- [ ] iter 247 — **PHP** (note `->` operator instead of `.`).
+- [ ] iter 248 — **Rust**.
+
+## Open chain follow-ups (from iter 245 reviewer + cold-read)
+
+- [ ] **C# conditional-access (`?.`) doesn't fit canonical.**
+  Tree-sitter emits `<member[instance and optional]>` with a
+  `<condition>` slot wrapping the receiver instead of `<object>`.
+  4+ leftover sites in `csharp/blueprint.cs.snapshot.txt:283,
+  :318, :320, :420`. Need a C# pre-pass that rewrites the
+  `<condition>`-slot shape into canonical `<object>` slot before
+  `invert_chains_in_tree` runs.
+- [ ] **C# implicit-`this` member access has no `<object>` slot.**
+  `Priority` (used inside a getter body that returns
+  `this.Priority`) renders as `<member[instance]><property>...
+  </property></member>` with no `<object>` slot. Inverter
+  currently leaves this alone (treats as opaque Receiver, single
+  segment, not useful_chain). Decide: synthesize `<this/>`
+  receiver + invert, or document as expected non-chain.
+- [ ] **C# `<instance/>` marker policy across languages.** Only
+  C# carries `<instance/>` to distinguish static vs. instance
+  access. Other languages don't expose this. Decide whether to
+  propagate (e.g. Java has the same need), drop, or document
+  the asymmetry.
+- [ ] **Subscript chains aren't extracted.**
+  `chain_inversion::extract_chain` only walks `<member>`/`<call>`;
+  `<subscript>`/`<index>` elements act as opaque receivers, so
+  `arr[0].field` chains stop short. The `ChainSegment::Subscript`
+  variant exists in `emit_chain` but is never produced. Add
+  `walk_subscript`. Visible in TS at
+  `typescript/blueprint.ts.snapshot.txt:219-225`.
 
 ## Cross-cutting follow-ups
 

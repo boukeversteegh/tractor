@@ -315,6 +315,11 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
 fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_where_clause_constraints(xot, root)?;
     unify_file_scoped_namespace(xot, root)?;
+    // Invert right-deep <member>/<call> chains. C# already matches
+    // the canonical input shape (`<call><member><object/><property/></member>...args</call>`)
+    // plus an `<instance/>` marker on `<member>` which the inverter
+    // collects as a marker.
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
