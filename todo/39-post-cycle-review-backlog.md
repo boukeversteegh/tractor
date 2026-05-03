@@ -494,6 +494,53 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   trivially auditable via JSON `"children": [` grep — keep this in
   the post-cycle review checklist.
 
+### Iter 230 wind-down checkpoint
+
+**Audit progress** (set baseline at iter 181):
+- Baseline: 283 children-overflow sites cross-language.
+- Current (iter 230): 63 sites (-78%).
+- Per-language: csharp 6, ts 5, rust 17, java 3, go 11, python 12,
+  php 5, ruby 2, tsql 2.
+- 46 iters since audit baseline (181-230).
+- 829 tests + 149 fixtures continuously green throughout.
+
+**Patterns successfully addressed** (cumulative across the audit
+cluster):
+- Cross-language `<alias>` wrapper rename to `<aliased>` (iter 184).
+- Closure body archetype unification across all 8 PLs (iters 161-176).
+- Ruby case/when/match list distribution (iters 177, 183).
+- Ruby ternary, range, lambda outer-body collapse (iters 179, 180, 174).
+- C# member-access role-wrap (iter 178); PHP class-constant (iter 214).
+- Multiple cross-language `tag_multi_*_children` helpers (iters 190,
+  191, 194, 196).
+- TSQL post-transform addition + binary operand wrap (iters 182, 199, 211, 221).
+- Per-language Custom handlers for Python ternary, Rust self_param,
+  Go closure, etc.
+- Bulk `distribute_member_list_attrs` extension to literal collections
+  (iter 205) and follow-on container types (iters 206-212).
+- Critical mid-course correction iter 213: reverted role-mixed
+  parents from bulk distribute (was creating ~2,389 1-element arrays
+  in JSON; reviewer caught the regression).
+
+**Remaining 63 sites — what's left**:
+- Heterogeneous-content patterns (Rust pattern variants with bare
+  text leaves, Python class/decorator structure, Java switch-label
+  patterns) — need per-construct Custom handlers with specific
+  knowledge of tree-sitter shape.
+- Role-mixed parents that need targeted role-named slot wrappers
+  (PHP foreach iterable+binding, Go index operand+indices, etc.) —
+  cross-language design call: `<iterable>/<binding>` vs
+  `<value>/<as>` vs other.
+- Singletons that the bulk approach didn't reach because parent is
+  context-dependent (e.g. `<type>` is sometimes wrapper, sometimes
+  container).
+
+**Loop status**: paused at iter 230. Per-iter wins now ~1 site;
+remaining work is non-mechanical and benefits from user direction.
+Resume on explicit ask or when new findings/feedback land.
+
+---
+
 ### Findings from iter-186 post-cycle review (iters 175-185 cluster)
 
 - [x] **Rust closure multi-param overflow** — closed iter 187.
@@ -548,6 +595,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 230: wind-down checkpoint — audit at 63 sites (-78%
+  from 283 baseline; -220 sites closed across 46 iters since
+  iter 181). Remaining work is design-call territory or per-
+  construct surgery. Loop paused; resume on user direction.
 - [x] iter 228: Rust let-chain condition expression list= — added
   `("condition", "expression")` to Rust's tag_multi_role_children.
   `if let Some(x) = a && let Some(y) = b` produces `<condition>`
