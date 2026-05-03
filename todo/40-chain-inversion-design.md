@@ -408,17 +408,44 @@ Before per-language adoption, the helper must pass tests covering:
 
 ## Iter plan
 
-- **iter 232 (this iter)** — design doc (this file). No code.
-- **iter 233** — skeleton module + ChainSegment + extract_chain + ~6
-  unit tests for extraction.
-- **iter 234** — emit_flat_chain + 6 unit tests for emission.
-- **iter 235** — invert_chain_nesting wrapper + idempotency tests.
-- **iter 236** — pilot one language (Java suggested — already flat
-  at the call layer, smallest blast radius). Snapshot review.
-- **iters 237-243** — per-language adoption (TS, Python, Ruby, C#,
-  Go, Rust, PHP). One iter each.
-- **iter 244** — render module update (per-language source
+- **iter 232** — design doc (this file). No code. ✓
+- **iter 235** — emit_chain primitive + 14 unit tests. ✓
+- **iter 236** — extract_chain primitive + 11 unit tests. ✓
+- **iter 237** — invert_chain_nesting round-trip wrapper + 11
+  integration tests. ✓
+- **iter 238** *(NEXT, awaiting user go-ahead)* — pilot Python.
+  Verified iter 237: Python's current shape already matches the
+  canonical right-deep input
+  (`<call><member><object/><property/></member>…args</call>`) so
+  no normalization step is needed. Wire `invert_chain_nesting`
+  into `python_post_transform` after a chain-root finder.
+- **iters 239-244** — per-language adoption: Go (same shape as
+  Python), TS (callee wrapper to unwrap), Java (flat call to
+  rewrap), C# / Rust / Ruby / PHP. One iter each, with snapshot
+  review.
+- **iter 245** — render-module update (per-language source
   reconstruction from `<chain>` shape).
+- **iter 246** — design.md update documenting the chain shape as a
+  Decision section (with explicit user approval per loop rule 6).
+
+### Pilot readiness checklist (iter 238)
+
+- [x] emit_chain green on 14 cases.
+- [x] extract_chain green on 11 cases.
+- [x] invert_chain_nesting green on 11 round-trip cases.
+- [x] Source-location threading verified (line/column on `<chain>`
+  inherits from receiver; line/column on each step inherits from
+  the access name node).
+- [x] Useful-chain guard: top-level `f(args)` and bare identifiers
+  pass through untouched.
+- [ ] Chain-root finder helper (walks the tree, identifies
+  `<member>`/`<call>` whose parent is NOT `<object>` AND, for
+  `<member>`, also NOT a `<call>` callee position).
+- [ ] Tag chain steps for cardinality lists if needed
+  (`tag_multi_role_children` for `chain` parent + step
+  child-names? or rely on natural nesting?).
+- [ ] Update Python transform tests whose xpaths assume the
+  right-deep shape.
 
 ## Open questions for the user
 
