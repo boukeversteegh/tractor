@@ -2113,6 +2113,16 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     php_restructure_use(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[
+            // PHP `use Foo\{First, Second};` — `<use[group]>` parent
+            // with multiple inner `<use>` siblings (one per imported
+            // entity). Tag with `list="uses"` so JSON renders as
+            // `uses: [...]` array. Mirrors Rust iter 267.
+            ("use", "use"),
+        ],
+    )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;

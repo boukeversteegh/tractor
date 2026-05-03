@@ -28,9 +28,11 @@
       "name": "Logger"
     },
     {
-      "children": [
+      "uses": [
         {
-          "$type": "use",
+          "name": "First"
+        },
+        {
           "name": "Second"
         }
       ],
@@ -39,9 +41,6 @@
         "names": [
           "App"
         ]
-      },
-      "use": {
-        "name": "First"
       }
     }
   ],

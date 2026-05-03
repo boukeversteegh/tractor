@@ -117,6 +117,24 @@ fn python_from_import_list_attr_uniform() {
 /// renders as `uses: [...]` array rather than colliding on the
 /// singleton `use` JSON key. Plain non-group `use HashSet as Set;`
 /// is unaffected (no inner `<use>` siblings).
+/// PHP `use Foo\{First, Second};` produces `<use[group]>` with
+/// multiple inner `<use>` siblings (one per imported entity). Per
+/// Principle #19 those are role-uniform (each is an imported
+/// entity); tag with `list="uses"` so JSON renders as `uses: [...]`
+/// array. Mirrors Rust iter 267.
+#[test]
+fn php_use_group_lists_inner_uses() {
+    claim("PHP use-group tags each inner <use> with list='uses'",
+        &mut parse_src("php", "<?php use Foo\\{First, Second, Third};\n"),
+        "//use[group]/use[@list='uses']",
+        3);
+
+    claim("PHP plain non-group use is unaffected (no inner <use> siblings)",
+        &mut parse_src("php", "<?php use Foo\\Bar;\n"),
+        "//use/use",
+        0);
+}
+
 #[test]
 fn rust_use_group_lists_inner_uses() {
     claim("Rust use-group tags each inner <use> with list='uses'",
