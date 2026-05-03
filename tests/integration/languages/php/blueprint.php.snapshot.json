@@ -261,9 +261,12 @@
                     },
                     "left": {
                       "expression": {
-                        "member": {
-                          "name": "name",
-                          "instance": true,
+                        "object": {
+                          "member": {
+                            "name": "name",
+                            "instance": true
+                          },
+                          "access": true,
                           "variable": {
                             "name": "this"
                           }
@@ -284,9 +287,12 @@
                     },
                     "left": {
                       "expression": {
-                        "member": {
-                          "name": "count",
-                          "instance": true,
+                        "object": {
+                          "member": {
+                            "name": "count",
+                            "instance": true
+                          },
+                          "access": true,
                           "variable": {
                             "name": "this"
                           }
@@ -400,9 +406,12 @@
                         },
                         "left": {
                           "expression": {
-                            "member": {
-                              "name": "count",
-                              "instance": true,
+                            "object": {
+                              "member": {
+                                "name": "count",
+                                "instance": true
+                              },
+                              "access": true,
                               "variable": {
                                 "name": "this"
                               }
@@ -462,9 +471,12 @@
                           },
                           "left": {
                             "expression": {
-                              "member": {
-                                "name": "count",
-                                "instance": true,
+                              "object": {
+                                "member": {
+                                  "name": "count",
+                                  "instance": true
+                                },
+                                "access": true,
                                 "variable": {
                                   "name": "this"
                                 }
@@ -490,9 +502,12 @@
                         "binary": {
                           "right": {
                             "expression": {
-                              "member": {
-                                "name": "name",
-                                "instance": true,
+                              "object": {
+                                "member": {
+                                  "name": "name",
+                                  "instance": true
+                                },
+                                "access": true,
                                 "variable": {
                                   "name": "this"
                                 }
@@ -817,19 +832,22 @@
                               "assign": {
                                 "right": {
                                   "expression": {
-                                    "call": {
-                                      "arguments": [
-                                        {
-                                          "variable": {
-                                            "name": "item"
+                                    "object": {
+                                      "call": {
+                                        "arguments": [
+                                          {
+                                            "variable": {
+                                              "name": "item"
+                                            }
                                           }
-                                        }
-                                      ],
-                                      "instance": true,
+                                        ],
+                                        "instance": true,
+                                        "name": "transform"
+                                      },
+                                      "access": true,
                                       "variable": {
                                         "name": "this"
-                                      },
-                                      "name": "transform"
+                                      }
                                     }
                                   }
                                 },
@@ -1019,14 +1037,13 @@
       "attribute": {
         "arguments": [
           {
-            "member": {
-              "property": {
-                "name": "TARGET_CLASS"
+            "object": {
+              "member": {
+                "name": "TARGET_CLASS",
+                "constant": true
               },
-              "constant": true,
-              "object": {
-                "name": "Attribute"
-              }
+              "access": true,
+              "name": "Attribute"
             }
           }
         ],
@@ -1144,38 +1161,35 @@
                         "arms": [
                           {
                             "string": "\"✓\"",
-                            "member": {
-                              "property": {
-                                "name": "Active"
+                            "object": {
+                              "member": {
+                                "name": "Active",
+                                "constant": true
                               },
-                              "constant": true,
-                              "object": {
-                                "name": "Status"
-                              }
+                              "access": true,
+                              "name": "Status"
                             }
                           },
                           {
                             "string": "\"×\"",
-                            "member": {
-                              "property": {
-                                "name": "Inactive"
+                            "object": {
+                              "member": {
+                                "name": "Inactive",
+                                "constant": true
                               },
-                              "constant": true,
-                              "object": {
-                                "name": "Status"
-                              }
+                              "access": true,
+                              "name": "Status"
                             }
                           },
                           {
                             "string": "\"…\"",
-                            "member": {
-                              "property": {
-                                "name": "Pending"
+                            "object": {
+                              "member": {
+                                "name": "Pending",
+                                "constant": true
                               },
-                              "constant": true,
-                              "object": {
-                                "name": "Status"
-                              }
+                              "access": true,
+                              "name": "Status"
                             }
                           }
                         ]
@@ -1445,9 +1459,12 @@
             "assign": {
               "right": {
                 "expression": {
-                  "member": {
-                    "name": "name",
-                    "nullsafe": true,
+                  "object": {
+                    "member": {
+                      "name": "name",
+                      "nullsafe": true
+                    },
+                    "access": true,
                     "variable": {
                       "name": "thing"
                     }
@@ -1468,9 +1485,12 @@
             "assign": {
               "right": {
                 "expression": {
-                  "call": {
-                    "name": "describe",
-                    "nullsafe": true,
+                  "object": {
+                    "call": {
+                      "name": "describe",
+                      "nullsafe": true
+                    },
+                    "access": true,
                     "variable": {
                       "name": "thing"
                     }
@@ -2140,9 +2160,12 @@
         "returns": [
           {
             "expression": {
-              "call": {
-                "name": "size",
-                "instance": true,
+              "object": {
+                "call": {
+                  "name": "size",
+                  "instance": true
+                },
+                "access": true,
                 "variable": {
                   "name": "thing"
                 }

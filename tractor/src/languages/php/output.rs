@@ -52,6 +52,9 @@ pub enum TractorNode {
     // Iter 17: PHP-specific markers
     Nullsafe, Bottom, Intersection, Disjunctive, Global, Dynamic, Promoted,
     Heredoc, Nowdoc,
+    // Chain inversion (iter 247): `[access]` distinguishes
+    // member-access chains from object literals.
+    Access,
     // Import-shape (path container, alias dual-use, group marker)
     Path, Alias, Aliased, Group,
     // Dual-use names
@@ -83,6 +86,7 @@ impl TractorNode {
             | Self::Prefix
             | Self::Nullsafe | Self::Bottom | Self::Intersection | Self::Disjunctive
             | Self::Dynamic | Self::Promoted | Self::Heredoc | Self::Nowdoc
+            | Self::Access
             | Self::Group                                                                => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Final | Self::Abstract | Self::Readonly | Self::Global               => (true, false, Keyword),

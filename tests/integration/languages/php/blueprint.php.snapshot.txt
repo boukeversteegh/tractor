@@ -20,9 +20,9 @@ program/
   ├─ class[abstract]/
   │   ├─ attribute/
   │   │   ├─ name = "Attribute"
-  │   │   └─ argument/member[constant]/
-  │   │       ├─ object/name = "Attribute"
-  │   │       └─ property/name = "TARGET_CLASS"
+  │   │   └─ argument/object[access]/
+  │   │       ├─ name = "Attribute"
+  │   │       └─ member[constant]/name = "TARGET_CLASS"
   │   ├─ name = "Demo"
   │   ├─ extends/type/name = "Base"
   │   ├─ implements/type/name = "Speaker"
@@ -60,15 +60,15 @@ program/
   │       │   │   └─ int = "0"
   │       │   └─ body/
   │       │       ├─ expression/assign/
-  │       │       │   ├─ left/expression/member[instance]/
+  │       │       │   ├─ left/expression/object[access]/
   │       │       │   │   ├─ variable/name = "this"
-  │       │       │   │   └─ name = "name"
+  │       │       │   │   └─ member[instance]/name = "name"
   │       │       │   ├─ op = "="
   │       │       │   └─ right/expression/variable/name = "name"
   │       │       └─ expression/assign/
-  │       │           ├─ left/expression/member[instance]/
+  │       │           ├─ left/expression/object[access]/
   │       │           │   ├─ variable/name = "this"
-  │       │           │   └─ name = "count"
+  │       │           │   └─ member[instance]/name = "count"
   │       │           ├─ op = "="
   │       │           └─ right/expression/variable/name = "count"
   │       ├─ method[abstract and public]/
@@ -100,22 +100,22 @@ program/
   │       │       │   └─ right/expression/binary/
   │       │       │       ├─ left/expression/variable/name = "who"
   │       │       │       ├─ op[nullish] = "??"
-  │       │       │       └─ right/expression/member[instance]/
+  │       │       │       └─ right/expression/object[access]/
   │       │       │           ├─ variable/name = "this"
-  │       │       │           └─ name = "name"
+  │       │       │           └─ member[instance]/name = "name"
   │       │       └─ if/
   │       │           ├─ condition/expression/binary/
-  │       │           │   ├─ left/expression/member[instance]/
+  │       │           │   ├─ left/expression/object[access]/
   │       │           │   │   ├─ variable/name = "this"
-  │       │           │   │   └─ name = "count"
+  │       │           │   │   └─ member[instance]/name = "count"
   │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "10"
   │       │           ├─ body/return/expression/string/interpolation/variable/name = "target"
   │       │           ├─ else_if/
   │       │           │   ├─ condition/expression/binary/
-  │       │           │   │   ├─ left/expression/member[instance]/
+  │       │           │   │   ├─ left/expression/object[access]/
   │       │           │   │   │   ├─ variable/name = "this"
-  │       │           │   │   │   └─ name = "count"
+  │       │           │   │   │   └─ member[instance]/name = "count"
   │       │           │   │   ├─ op[compare and greater] = ">"
   │       │           │   │   └─ right/expression/int = "0"
   │       │           │   └─ body/return/expression/string/interpolation/variable/name = "target"
@@ -201,10 +201,11 @@ program/
   │       │       │           │   │   ├─ variable/name = "results"
   │       │       │           │   │   └─ variable/name = "key"
   │       │       │           │   ├─ op = "="
-  │       │       │           │   └─ right/expression/call[instance]/
+  │       │       │           │   └─ right/expression/object[access]/
   │       │       │           │       ├─ variable/name = "this"
-  │       │       │           │       ├─ name = "transform"
-  │       │       │           │       └─ argument/variable/name = "item"
+  │       │       │           │       └─ call[instance]/
+  │       │       │           │           ├─ name = "transform"
+  │       │       │           │           └─ argument/variable/name = "item"
   │       │       │           └─ catch/
   │       │       │               ├─ types/type/name = "Throwable"
   │       │       │               ├─ name = "$e"
@@ -259,19 +260,19 @@ program/
   │               ├─ condition/expression/variable/name = "this"
   │               └─ body/
   │                   ├─ arm/
-  │                   │   ├─ member[constant]/
-  │                   │   │   ├─ object/name = "Status"
-  │                   │   │   └─ property/name = "Active"
+  │                   │   ├─ object[access]/
+  │                   │   │   ├─ name = "Status"
+  │                   │   │   └─ member[constant]/name = "Active"
   │                   │   └─ string = "\"✓\""
   │                   ├─ arm/
-  │                   │   ├─ member[constant]/
-  │                   │   │   ├─ object/name = "Status"
-  │                   │   │   └─ property/name = "Inactive"
+  │                   │   ├─ object[access]/
+  │                   │   │   ├─ name = "Status"
+  │                   │   │   └─ member[constant]/name = "Inactive"
   │                   │   └─ string = "\"×\""
   │                   └─ arm/
-  │                       ├─ member[constant]/
-  │                       │   ├─ object/name = "Status"
-  │                       │   └─ property/name = "Pending"
+  │                       ├─ object[access]/
+  │                       │   ├─ name = "Status"
+  │                       │   └─ member[constant]/name = "Pending"
   │                       └─ string = "\"…\""
   ├─ function/
   │   ├─ name = "factory"
@@ -358,15 +359,15 @@ program/
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "name"
   │       │   ├─ op = "="
-  │       │   └─ right/expression/member[nullsafe]/
+  │       │   └─ right/expression/object[access]/
   │       │       ├─ variable/name = "thing"
-  │       │       └─ name = "name"
+  │       │       └─ member[nullsafe]/name = "name"
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "size"
   │       │   ├─ op = "="
-  │       │   └─ right/expression/call[nullsafe]/
+  │       │   └─ right/expression/object[access]/
   │       │       ├─ variable/name = "thing"
-  │       │       └─ name = "describe"
+  │       │       └─ call[nullsafe]/name = "describe"
   │       ├─ comment[leading] = "// Anonymous class."
   │       ├─ expression/assign/
   │       │   ├─ left/expression/variable/name = "anon"
@@ -532,9 +533,9 @@ program/
   │   │   │   └─ type/name = "Countable2"
   │   │   └─ name = "$thing"
   │   ├─ returns/type[primitive]/name = "int"
-  │   └─ body/return/expression/call[instance]/
+  │   └─ body/return/expression/object[access]/
   │       ├─ variable/name = "thing"
-  │       └─ name = "size"
+  │       └─ call[instance]/name = "size"
   ├─ comment[leading] = "// DNF type in parameter position."
   ├─ function/
   │   ├─ name = "dnf_demo"

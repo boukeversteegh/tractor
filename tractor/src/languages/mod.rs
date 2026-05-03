@@ -1807,6 +1807,14 @@ fn tsql_tag_select_columns(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
 /// positions in `<expression>` hosts (Principle #15) + restructure
 /// `<use>` elements into the unified path/alias/marker shape.
 fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // PHP's `<member>` and `<call>` use the `->` operator and emit
+    // unwrapped slots: receiver as a child with `field="object"`,
+    // access name as a bare `<name>` sibling (no `<property>`).
+    // Pre-pass wraps these into the canonical input shape, then
+    // chain inversion runs.
+    php_wrap_member_call_slots(xot, root)?;
+    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
@@ -1821,6 +1829,98 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;
+    Ok(())
+}
+
+/// Pre-pass for chain inversion: rewrite PHP's `<member>` and
+/// `<call>` shapes into the canonical right-deep input.
+///
+/// PHP emits:
+///   `<member><instance/>RECEIVER<name>X</name></member>` — receiver
+///   has `field="object"`, name is a bare sibling.
+///   `<call><instance/>CALLEE...args</call>` where CALLEE may be
+///   `<member>` for method calls or any other expression for direct
+///   function calls.
+///
+/// The chain inverter wants:
+///   `<member><object>RECEIVER</object><property><name>X</name></property></member>`
+///
+/// This pass walks every `<member>` element and:
+///   1. Wraps the `field="object"` child in an `<object>` slot.
+///   2. Wraps the trailing bare `<name>` in a `<property>` slot.
+///
+/// `<call>` elements need no rewriting: PHP's tree-sitter places
+/// the `<member>` callee as the first non-marker child, matching
+/// the canonical `<call><member>...</member>...args</call>` shape
+/// once the `<member>` itself is normalised.
+fn php_wrap_member_call_slots(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{copy_source_location, get_attr, get_element_name};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            let name = get_element_name(xot, node);
+            if matches!(name.as_deref(), Some("member") | Some("call")) {
+                out.push(node);
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+    for node in targets {
+        let elem_name = get_element_name(xot, node);
+        let is_member = elem_name.as_deref() == Some("member");
+        // Find the field=object child (the receiver).
+        let receiver = xot.children(node).find(|&c| {
+            xot.element(c).is_some()
+                && get_attr(xot, c, "field").as_deref() == Some("object")
+        });
+        // Skip if already canonical (has <object> slot child).
+        let has_object_slot = xot.children(node).any(|c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("object")
+        });
+        if has_object_slot {
+            continue;
+        }
+        let receiver = match receiver {
+            Some(r) => r,
+            None => continue,
+        };
+
+        // Wrap receiver in <object>.
+        let object_id = xot.add_name("object");
+        let object_slot = xot.new_element(object_id);
+        copy_source_location(xot, receiver, object_slot);
+        xot.insert_before(receiver, object_slot)?;
+        xot.detach(receiver)?;
+        xot.append(object_slot, receiver)?;
+
+        // For <member>: also wrap the trailing bare <name> in
+        // <property>. For <call>: leave the name bare —
+        // `wrap_flat_call_member` will package it under a
+        // synthetic <member> callee.
+        if is_member {
+            let name_node = xot.children(node).find(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("name")
+            });
+            if let Some(name_node) = name_node {
+                let property_id = xot.add_name("property");
+                let property_slot = xot.new_element(property_id);
+                copy_source_location(xot, name_node, property_slot);
+                xot.insert_before(name_node, property_slot)?;
+                xot.detach(name_node)?;
+                xot.append(property_slot, name_node)?;
+            }
+        }
+    }
     Ok(())
 }
 

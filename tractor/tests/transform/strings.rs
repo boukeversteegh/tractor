@@ -80,7 +80,7 @@ fn php_complex_interpolation() {
         &mut parse_src("php", "<?php \"x {$obj->method()}\";\n"),
         &multi_xpath(r#"
             //string
-                [interpolation/call]
+                [interpolation/object[access]/call]
         "#),
         1);
 }
