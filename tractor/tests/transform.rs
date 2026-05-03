@@ -66,6 +66,7 @@ mod support;
 
 #[path = "transform/accessors.rs"]   mod accessors;
 #[path = "transform/calls.rs"]       mod calls;
+#[path = "transform/chain.rs"]       mod chain;
 #[path = "transform/collections.rs"] mod collections;
 #[path = "transform/comments.rs"]    mod comments;
 #[path = "transform/decorators.rs"]  mod decorators;
