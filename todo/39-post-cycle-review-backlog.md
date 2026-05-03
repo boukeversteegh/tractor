@@ -548,6 +548,12 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 227: TS group-import same-name children — added a
+  SECOND `tag_multi_same_name_children(["import"])` call AFTER
+  `typescript_restructure_import` (the early call ran before
+  restructure created the group form). `import { a, b, c }` now
+  produces `import.import: [{name:"a"}, {name:"b"}, {name:"c"}]`
+  array. TS audit 6 → 5 (-1). Same fix pattern as Python iter-224.
 - [x] iter 226: Go interface multi-method/type list= — added
   `("interface", "method")` and `("interface", "type")` to Go's
   tag_multi_role_children. Interfaces with multiple methods and/or

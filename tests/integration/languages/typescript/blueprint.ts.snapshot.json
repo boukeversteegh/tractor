@@ -128,22 +128,21 @@
   ],
   "import": [
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
-          "alias": true,
-          "name": "namedB",
+          "name": "namedA"
+        },
+        {
           "aliased": {
             "name": "aliasedB"
-          }
+          },
+          "alias": true,
+          "name": "namedB"
         }
       ],
       "group": true,
       "path": "./barrel",
-      "name": "defaultExport",
-      "import": {
-        "name": "namedA"
-      }
+      "name": "defaultExport"
     },
     {
       "aliased": {

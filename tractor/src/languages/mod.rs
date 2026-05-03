@@ -972,6 +972,9 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         ],
     )?;
     typescript_restructure_import(xot, root)?;
+    // Run AFTER restructure_import so the `<import>` group-form
+    // element has its final inner `<import>` siblings.
+    crate::transform::tag_multi_same_name_children(xot, root, &["import"])?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
