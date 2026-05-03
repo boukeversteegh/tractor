@@ -20,7 +20,10 @@ operations:
                 }
 
         - id: chain-fluent-xot-with
-          xpath: "//body/expression[.//field[value//name='xot' and starts-with(name,'with_')] and following-sibling::*[1][self::expression][.//field[value//name='xot' and starts-with(name,'with_')]]]"
+          # Match expressions whose immediate chain (or try-wrapped chain) is xot.with_*.
+          # Descendant-axis would over-match: `if cond { xot.with_a(); }` followed by
+          # `xot.with_b();` is conditional + unconditional, NOT a chain candidate.
+          xpath: "//body/expression[(object[access][name='xot']/call[starts-with(name[1],'with_')]) or (expression[try]/object[access][name='xot']/call[starts-with(name[1],'with_')])][following-sibling::*[1][self::expression][(object[access][name='xot']/call[starts-with(name[1],'with_')]) or (expression[try]/object[access][name='xot']/call[starts-with(name[1],'with_')])]]"
           reason: "consecutive xot.with_* calls — chain them instead"
           severity: error
           message: "xot.with_* call is followed by another xot.with_* statement; chain them as xot.with_a(...).with_b(...) instead of writing separate statements"
@@ -82,7 +85,9 @@ operations:
                 }
 
         - id: keep-let-uses-adjacent
-          xpath: "//body/let[let $n := name, $uses := following-sibling::*[.//name = $n] return count($uses) > 0 and (count($uses[last()]/preceding-sibling::*) - count(preceding-sibling::*)) > count($uses)]"
+          # Comments are excluded from sibling counts so a comment block
+          # between consecutive uses doesn't register as a "gap."
+          xpath: "//body/let[let $n := name, $uses := following-sibling::*[not(self::comment) and .//name = $n] return count($uses) > 0 and (count($uses[last()]/preceding-sibling::*[not(self::comment)]) - count(preceding-sibling::*[not(self::comment)])) > count($uses)]"
           reason: "let binding's uses are scattered — keep uses adjacent to the definition"
           severity: error
           message: "let {value} has gaps between its uses; move the binding next to its uses (or split into separate lets)"

@@ -177,6 +177,34 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 258 user-flagged
+
+- [ ] **Rust `expression/expression[try]` repeated parent-child name**
+  *(Principle #15 / `tree_invariants::no_repeated_parent_child_name`,
+  severity MED)*
+  - User flagged inline (iter 258) after CI repro: `xot.with_a(node)?;`
+    produces
+    ```
+    body/expression/
+      ├─ expression[try]/
+      │   ├─ object[access]/
+      │   │   ├─ name = "xot"
+      │   │   └─ call/...
+      │   └─ "?"
+      └─ ";"
+    ```
+    The outer `<expression>` (statement host) wraps an inner
+    `<expression[try]>` — same element name nested. The
+    `await_expression` C# handler already uses a "lift marker onto
+    parent + flatten self" pattern to avoid this; Rust's
+    `try_expression` should use the same approach so the result is
+    `expression[try]/object[access]/...` with a single `<expression>`
+    host carrying the `<try/>` marker.
+  - Fix sketch: in Rust `try_expression` handler, if parent is
+    already `<expression>`, lift the `<try/>` marker onto the
+    parent and `Flatten` self. Otherwise keep current shape.
+  - Effort: 1-iter.
+
 ### Cold-read findings (iter 233 review)
 
 - [ ] **Python `from`-import singleton/plural shape inconsistency**

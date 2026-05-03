@@ -562,16 +562,39 @@ pub fn invert_chains_in_tree(
     let mut roots: Vec<XotNode> = Vec::new();
     collect_chain_roots(xot, root, &mut roots);
     for chain_root in roots {
-        // Skip nodes that have already been replaced (their parent
-        // is None after a prior detach in this loop). This can
-        // happen when an outer chain root absorbed an inner one
-        // during the same call, then we encounter the inner one
-        // here.
-        if xot.parent(chain_root).is_some() {
+        // Skip nodes whose ancestry no longer reaches `root` —
+        // they sit inside a subtree that a prior outer-chain
+        // inversion already detached. This catches the
+        // outer-call / inner-callee pair: when `f().g()` inverts,
+        // the inner `<call>` (callee of the outer) is consumed
+        // into the new `<object[access]>` tree, leaving the
+        // detached old tree adrift. Re-entering that adrift
+        // subtree would feed segments to `emit_chain` whose first
+        // entry is no longer a Receiver, since the receiver was
+        // moved during the outer inversion.
+        if is_attached_to(xot, chain_root, root) {
             invert_chain_nesting(xot, chain_root)?;
         }
     }
     Ok(())
+}
+
+/// Returns true iff `node`'s ancestor chain (parent, grandparent, …)
+/// reaches `ancestor`. After detach, a node still has its in-subtree
+/// `parent()` set, so a plain `parent.is_some()` check is not enough
+/// — we must walk all the way up.
+fn is_attached_to(xot: &Xot, node: XotNode, ancestor: XotNode) -> bool {
+    if node == ancestor {
+        return true;
+    }
+    let mut current = node;
+    while let Some(p) = xot.parent(current) {
+        if p == ancestor {
+            return true;
+        }
+        current = p;
+    }
+    false
 }
 
 fn collect_chain_roots(
@@ -1638,6 +1661,72 @@ mod tests {
         assert_eq!(
             render(&xot, surviving),
             "(object (access) (name obj) (call (name method) (argument x) (member (name other) (call (name thing)))))",
+        );
+    }
+
+    #[test]
+    fn tree_walker_skips_inner_call_after_outer_consumed_it() {
+        // Regression: `x.collect::<T>()` in Rust produces a tree
+        // where the OUTER call's callee is itself a `<call>` (the
+        // generic_function wrapper, marked with `<generic/>`).
+        // Both the outer and the inner `<call>` qualify as
+        // chain-root candidates by parent name. After the outer
+        // inversion absorbs the inner call's contents into the new
+        // <object[access]> tree, the inner call element is left
+        // adrift inside the detached old subtree. Re-entering it
+        // would feed `emit_chain` segments whose first entry is no
+        // longer a Receiver (the receiver moved into the new
+        // tree). The walker must check ancestor reachability, not
+        // just `parent.is_some()`, before re-entering a candidate.
+        //
+        // Shape (post per-language transforms, pre chain inversion):
+        //   <call>                  <- outer: parent = doc_root
+        //     <call>                <- inner: parent = outer call
+        //       <generic/>
+        //       <member>
+        //         <object>
+        //           <name>x</name>
+        //         </object>
+        //         <property>
+        //           <name>collect</name>
+        //         </property>
+        //       </member>
+        //       <type_args/>
+        //     </call>
+        //     <arguments/>
+        //   </call>
+        let (mut xot, doc_root) = fresh_xot();
+        let recv = new_text_element(&mut xot, "name", "x");
+        let inner_member = build_member(&mut xot, recv, "collect");
+        let inner_generic = new_named_element(&mut xot, "generic");
+        let inner_type_args = new_named_element(&mut xot, "type_args");
+        let inner_call = new_named_element(&mut xot, "call");
+        xot.append(inner_call, inner_generic).unwrap();
+        xot.append(inner_call, inner_member).unwrap();
+        xot.append(inner_call, inner_type_args).unwrap();
+        let outer_args = new_named_element(&mut xot, "arguments");
+        let outer_call = new_named_element(&mut xot, "call");
+        xot.append(outer_call, inner_call).unwrap();
+        xot.append(outer_call, outer_args).unwrap();
+        xot.append(doc_root, outer_call).unwrap();
+        // Pre-fix: this panicked at `first segment must be Receiver`
+        // when invert_chains_in_tree re-entered the detached inner
+        // call.
+        invert_chains_in_tree(&mut xot, doc_root).unwrap();
+        let surviving = xot.children(doc_root)
+            .find(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(&xot, c).as_deref() == Some("object")
+            })
+            .expect("outer call inverted to <object>");
+        // The inner call merges into a single Call segment whose
+        // markers (`<generic/>`) and args (`<type_args>`) come from
+        // the inner `<call>`, plus the method name from the
+        // member's `<property>`. The outer call adds a nameless
+        // result-invocation step holding the outer `<arguments>`.
+        assert_eq!(
+            render(&xot, surviving),
+            "(object (access) (name x) (call (generic) (type_args) (name collect) (call (arguments))))",
         );
     }
 

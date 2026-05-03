@@ -475,8 +475,8 @@ pub fn self_parameter(
     if has_mut {
         xot.with_prepended_marker(node, Mut)?;
     }
-    xot.with_prepended_marker(node, Self_)?;
-    xot.with_renamed(node, Parameter);
+    xot.with_prepended_marker(node, Self_)?
+        .with_renamed(node, Parameter);
     Ok(TransformAction::Continue)
 }
 

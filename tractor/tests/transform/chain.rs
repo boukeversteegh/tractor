@@ -256,10 +256,13 @@ fn cross_language_uniformity() {
     );
 
     // Ruby is the deliberate exception — every step is <call>.
+    // Both claims spell out the literal xpath inline (rather
+    // than reusing `canonical_xpath`) so the let binding's uses
+    // stay adjacent to its definition.
     claim(
         "ruby: canonical xpath does NOT match (Ruby treats . as method call)",
         &mut parse_src("ruby", "obj.foo.bar.baz\n"),
-        canonical_xpath,
+        "//object[access]/call[name='foo']/member[name='bar']/call[name='baz']",
         0,
     );
     claim(
@@ -279,27 +282,24 @@ fn cross_language_uniformity() {
 /// `<subscript>` step in the inverted output.
 #[test]
 fn subscript_typescript() {
-    let mut tree = parse_src("typescript", "arr[0].field;\n");
     claim("TS subscript chain produces <subscript> step inside chain",
-        &mut tree,
+        &mut parse_src("typescript", "arr[0].field;\n"),
         "//object[access][name='arr']/subscript[number='0']/member[name='field']",
         1);
 }
 
 #[test]
 fn subscript_python() {
-    let mut tree = parse_src("python", "arr[0].field\n");
     claim("Python subscript chain produces <subscript> step inside chain",
-        &mut tree,
+        &mut parse_src("python", "arr[0].field\n"),
         "//object[access][name='arr']/subscript[int='0']/member[name='field']",
         1);
 }
 
 #[test]
 fn subscript_rust() {
-    let mut tree = parse_src("rust", "fn main() { let _ = arr[0].field; }");
     claim("Rust subscript chain produces <subscript> step inside chain",
-        &mut tree,
+        &mut parse_src("rust", "fn main() { let _ = arr[0].field; }"),
         "//object[access][name='arr']/subscript[int='0']/member[name='field']",
         1);
 }
