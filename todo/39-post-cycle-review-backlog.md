@@ -286,20 +286,18 @@ before committing a non-trivial change.
   - Effort: 1-iter (or 1-iter combined with the Go finding).
   - Source: iter 233 cold-read.
 
-- [ ] **Go for-while drops `<condition>` wrapper**
-  *(Principle #5 within Go, severity MED)*
-  - File: `tests/integration/languages/go/blueprint.go.snapshot.txt:554-561`.
-  - Source: `for n < 3 { n++ }` (while-form `for`).
-  - Current: `for/binary/...` (no `<condition>` wrapper).
-  - Compare lines 504-515 same file (C-style `for`):
-    `for/{variable[short]/..., condition/expression/binary/..., unary/...}`.
-  - Same `for` construct, two structural shapes for the boolean
-    test. `<condition>` wrapper is missing on the while-form.
-  - Desired: `for/condition/expression/binary/...` for the
-    while-form too. Within-Go Principle #5 — same concept, same
-    name.
-  - Effort: 1-iter (Go custom handler / field-wrap addition).
-  - Source: iter 233 cold-read.
+- [x] iter 261 — **Go for-while gains `<condition>` wrapper.**
+  New `for_statement` Custom handler detects "while-form" (no
+  `for_clause`/`range_clause` child) and wraps the bare expression
+  child in `<condition>`; the shared `wrap_expression_positions`
+  pass adds the inner `<expression>` host. Now both `for n < 3 {}`
+  and `for i := 0; i < 3; i++ {}` produce
+  `for/condition/expression/binary/...` — within-Go Principle #5
+  satisfied. Cross-language verified against Java/Python/TS/Rust
+  `while` shapes (all use `<condition>/<expression>`). Reviewer
+  confirmed ship via `general-purpose` agent. Pinned by
+  `transform/loops.rs::go` (added while-form claim, bumped
+  expected count from 3 to 4 fors).
 
 ### Format note for new items
 

@@ -117,7 +117,7 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         GoKind::False                    => Rename(False),
         GoKind::FieldIdentifier          => Rename(Name),
         GoKind::FloatLiteral             => Rename(Float),
-        GoKind::ForStatement             => Rename(For),
+        GoKind::ForStatement             => Custom(transformations::for_statement),
         GoKind::FuncLiteral              => Rename(Closure),
         GoKind::GoStatement              => RenameStripKeyword(Go, "go"),
         GoKind::GotoStatement            => RenameStripKeyword(Goto, "goto"),

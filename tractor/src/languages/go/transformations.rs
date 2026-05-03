@@ -14,9 +14,9 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::GoKind;
 use super::output::TractorNode::{
-    self, Alias, Blank, Comment as CommentName, Dot, Else, Exported, Field, Function, If, Import,
-    Interface, Leading, Method, Name, Path, Raw, Short, String as GoString, Struct, Trailing, Type,
-    Unexported, Variable,
+    self, Alias, Blank, Comment as CommentName, Dot, Else, Exported, Field, For, Function, If,
+    Import, Interface, Leading, Method, Name, Path, Raw, Short, String as GoString, Struct,
+    Trailing, Type, Unexported, Variable,
 };
 
 /// `qualified_type` — `pkg.Name`. Wraps the package identifier in
@@ -295,6 +295,63 @@ pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 pub fn if_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_wrapped_field_child(node, "alternative", Else)?
         .with_renamed(node, If);
+    Ok(TransformAction::Continue)
+}
+
+/// `for_statement` — Go's `for` covers four forms with three different
+/// child shapes:
+///
+/// 1. Infinite (`for { ... }`): only a `<block field="body">` child.
+/// 2. While (`for cond { ... }`): bare expression child + body block.
+///    Tree-sitter doesn't tag the expression with `field="condition"`,
+///    so the field-wrap pass leaves it un-wrapped — the result is
+///    `<for><binary>...</binary><block>...</block></for>`.
+/// 3. C-style (`for init; cond; post { ... }`): `<for_clause>` child
+///    holding init / condition / post + body block. The field-wrap
+///    DOES tag the inner condition (`field="condition"` on the
+///    `for_clause`'s binary child), so the C-style already gets
+///    `<for>/<condition>/<expression>/<binary>...` once `for_clause`
+///    flattens.
+/// 4. Range (`for x := range y { ... }`): `<range_clause>` child +
+///    body block. Range stays as-is.
+///
+/// Cross-language `while` loops in Java/Python/TS/Rust all emit
+/// `<while>/<condition>/<expression>/...` (verified via blueprint
+/// snapshots). Within Go, the C-style already wraps in `<condition>`.
+/// Only the while-form is asymmetric. This handler closes the gap:
+/// when the only non-body, non-clause child is an expression, wrap
+/// it in `<condition>`. The shared `wrap_expression_positions` pass
+/// (driven by `"condition"` slot) then adds the inner `<expression>`
+/// host. Fixes Principle #5 (Unified Concepts) within Go and aligns
+/// with the cross-language `while` shape.
+pub fn for_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let element_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    let has_clause = element_children.iter().any(|&c| {
+        matches!(
+            get_kind(xot, c).and_then(|k| k.parse::<GoKind>().ok()),
+            Some(GoKind::ForClause | GoKind::RangeClause)
+        )
+    });
+    if !has_clause {
+        // While-form (or infinite): the only non-body child, if any,
+        // is the loop condition. Wrap it in <condition>. The body
+        // is already wrapped in `<body>` by the field-wrap pass
+        // (`("body", "body")` in `GO_FIELD_WRAPPINGS`), so the body
+        // wrapper has element name "body" — distinguish on that
+        // rather than the inner `@field="body"` attribute.
+        let condition_child = element_children.iter().copied().find(|&c| {
+            get_element_name(xot, c).as_deref() != Some("body")
+        });
+        if let Some(cond) = condition_child {
+            let condition_id = xot.add_name("condition");
+            let condition_node = xot.new_element(condition_id);
+            xot.with_source_location_from(condition_node, cond)
+                .with_wrap_child(cond, condition_node)?;
+        }
+    }
+    xot.with_renamed(node, For);
     Ok(TransformAction::Continue)
 }
 

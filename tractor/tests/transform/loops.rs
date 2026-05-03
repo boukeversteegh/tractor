@@ -294,6 +294,9 @@ fn go() {
             for i := 0; i < attempts; i = i + 1 {
                 tick()
             }
+            for n < 3 {
+                tick()
+            }
             for {
                 break
             }
@@ -303,10 +306,10 @@ fn go() {
         }
     "#);
 
-    claim("Go renders three <for> elements covering C-style, infinite, and range forms",
+    claim("Go renders four <for> elements covering C-style, while, infinite, and range forms",
         &mut tree,
         "//function[name='run']/body/for",
-        3);
+        4);
 
     claim("Go C-style for has <variable[short]> init, <condition>, <assign> update, and body",
         &mut tree,
@@ -317,6 +320,14 @@ fn go() {
                 [assign[left/expression/name='i']]
                 [body]
         "#),
+        1);
+
+    // Within-Go Principle #5: the while-form's loop test wraps in
+    // <condition>/<expression>/... matching the C-style and the
+    // cross-language while-loop shape (Java/Python/TS/Rust).
+    claim("Go while-form `for cond {}` wraps the loop test in <condition> (no init/update)",
+        &mut tree,
+        "//for[not(variable)][not(range)][condition/expression/binary[left/expression/name='n']][body]",
         1);
 
     claim("Go infinite for has only a body (no init, condition, or update)",

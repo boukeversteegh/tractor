@@ -552,7 +552,7 @@ file/
           │   ├─ left/expression/name = "n"
           │   └─ right/expression/int = "0"
           ├─ for/
-          │   ├─ binary/
+          │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "n"
           │   │   ├─ op[compare and less] = "<"
           │   │   └─ right/expression/int = "3"
