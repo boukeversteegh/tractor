@@ -46,6 +46,9 @@ pub enum TractorNode {
     Negative,
     // Import-shape markers (Group, Wildcard, Reexport on `<use>`)
     Group, Wildcard, Reexport,
+    // Chain inversion (iter 248): canonical member-access shape.
+    // Member element + object/property slot wrappers + access marker.
+    Member, Object, Property, Access,
 }
 
 impl TractorNode {
@@ -84,6 +87,7 @@ impl TractorNode {
             Self::Capture | Self::Rest | Self::Binding | Self::Definition
             | Self::Foreign | Self::Higher | Self::Optional | Self::Turbofish
             | Self::Variadic | Self::Negative
+            | Self::Access
             | Self::Group | Self::Wildcard | Self::Reexport                            => (true, false, Default),
             Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
             | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),

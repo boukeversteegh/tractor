@@ -24,42 +24,42 @@ fn rust_method_call() {
         "#),
         1);
 
-    claim("Rust field-call callee carries receiver and method name",
+    claim("Rust method call inverts to <object[access]> chain shape (iter 248)",
         &mut parse_src("rust", r#"
         fn use_calls(v: Vec<i32>) {
             let n = v.len();
         }
     "#),
         &multi_xpath(r#"
-            //call/field
-                [value/expression/name='v']
-                [name='len']
+            //object[access]
+                [name='v']
+                [call/name='len']
         "#),
         1);
 
-    claim("Rust field-call callee can use a literal receiver",
+    claim("Rust method call on literal receiver inverts to <object[access]>",
         &mut parse_src("rust", r#"
         fn use_calls() {
             let s = "hi".to_string();
         }
     "#),
         &multi_xpath(r#"
-            //call/field
-                [value/expression/string]
-                [name='to_string']
+            //object[access]
+                [string]
+                [call/name='to_string']
         "#),
         1);
 
-    claim("Rust expression statement method call keeps field-call shape",
+    claim("Rust expression statement method call inverts to <object[access]>",
         &mut parse_src("rust", r#"
         fn use_calls(s: String) {
             s.to_uppercase();
         }
     "#),
         &multi_xpath(r#"
-            //call/field
-                [value/expression/name='s']
-                [name='to_uppercase']
+            //object[access]
+                [name='s']
+                [call/name='to_uppercase']
         "#),
         1);
 }

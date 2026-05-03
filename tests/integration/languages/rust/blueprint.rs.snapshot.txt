@@ -196,9 +196,9 @@ file/
   │       │   ├─ name = "async_clone"
   │       │   ├─ parameter[self and borrowed]
   │       │   ├─ returns/type/name = "Self"
-  │       │   └─ body/call/field/
-  │       │       ├─ value/expression/self = "self"
-  │       │       └─ name = "clone"
+  │       │   └─ body/object[access]/
+  │       │       ├─ self = "self"
+  │       │       └─ call/name = "clone"
   │       ├─ function[pub and const]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
@@ -209,11 +209,11 @@ file/
   │           │   ├─ name = "ptr"
   │           │   └─ type[pointer]/type/name = "T"
   │           ├─ returns/type/name = "T"
-  │           └─ body/call/field/
-  │               ├─ value/expression/unary/
+  │           └─ body/object[access]/
+  │               ├─ unary/
   │               │   ├─ op[multiply] = "*"
   │               │   └─ name = "ptr"
-  │               └─ name = "clone"
+  │               └─ call/name = "clone"
   ├─ impl/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/name = "T"
@@ -403,15 +403,14 @@ file/
   │       │           └─ int = "3"
   │       └─ let/
   │           ├─ name = "parsed"
-  │           └─ value/expression/call/
-  │               ├─ field/
-  │               │   ├─ value/expression/call/call[generic]/
-  │               │   │   ├─ field/
-  │               │   │   │   ├─ value/expression/string = "\"42\""
-  │               │   │   │   └─ name = "parse"
-  │               │   │   └─ type/name = "i32"
-  │               │   └─ name = "unwrap_or"
-  │               └─ int = "0"
+  │           └─ value/expression/object[access]/
+  │               ├─ string = "\"42\""
+  │               └─ call[generic]/
+  │                   ├─ name = "parse"
+  │                   ├─ type/name = "i32"
+  │                   └─ call/call/
+  │                       ├─ name = "unwrap_or"
+  │                       └─ int = "0"
   ├─ function[pub]/
   │   ├─ name = "patterns"
   │   ├─ parameter/
@@ -439,9 +438,9 @@ file/
   │       │           ├─ field/
   │       │           │   ├─ name = "y"
   │       │           │   └─ value/expression/int = "20"
-  │       │           └─ field[base]/call/field/
-  │       │               ├─ value/expression/name = "p"
-  │       │               └─ name = "clone"
+  │       │           └─ field[base]/object[access]/
+  │       │               ├─ name = "p"
+  │       │               └─ call/name = "clone"
   │       ├─ let/
   │       │   ├─ name = "result"
   │       │   └─ value/expression/match/
@@ -505,9 +504,9 @@ file/
   │       │           │   │   │   └─ name = "Labeled"
   │       │           │   │   └─ pattern[ref]/name = "name"
   │       │           │   └─ value/expression/cast/
-  │       │           │       ├─ value/expression/call/field/
-  │       │           │       │   ├─ value/expression/name = "name"
-  │       │           │       │   └─ name = "len"
+  │       │           │       ├─ value/expression/object[access]/
+  │       │           │       │   ├─ name = "name"
+  │       │           │       │   └─ call/name = "len"
   │       │           │       └─ type/name = "i32"
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
@@ -542,20 +541,20 @@ file/
   │       │   └─ then/let/value/expression/name = "v"
   │       ├─ let[mut]/
   │       │   ├─ name = "it"
-  │       │   └─ value/expression/call/field/
-  │       │       ├─ value/expression/macro/
+  │       │   └─ value/expression/object[access]/
+  │       │       ├─ macro/
   │       │       │   ├─ name = "vec"
   │       │       │   ├─ int = "1"
   │       │       │   ├─ int = "2"
   │       │       │   └─ int = "3"
-  │       │       └─ name = "into_iter"
+  │       │       └─ call/name = "into_iter"
   │       ├─ while/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "x"
-  │       │   │   └─ expression/value/expression/call/field/
-  │       │   │       ├─ value/expression/name = "it"
-  │       │   │       └─ name = "next"
+  │       │   │   └─ expression/value/expression/object[access]/
+  │       │   │       ├─ name = "it"
+  │       │   │       └─ call/name = "next"
   │       │   └─ body/
   │       │       ├─ let/
   │       │       │   ├─ name = "_shadow"
@@ -618,9 +617,9 @@ file/
   │       ├─ let/
   │       │   ├─ name = "parsed"
   │       │   ├─ type/name = "i32"
-  │       │   └─ value/expression[try]/call/field/
-  │       │       ├─ value/expression/string = "\"10\""
-  │       │       └─ name = "parse"
+  │       │   └─ value/expression[try]/object[access]/
+  │       │       ├─ string = "\"10\""
+  │       │       └─ call/name = "parse"
   │       ├─ let/
   │       │   ├─ name = "casted"
   │       │   └─ value/expression/cast/
@@ -941,9 +940,9 @@ file/
   │       │       └─ name = "new"
   │       └─ binary/
   │           ├─ left/expression/cast/
-  │           │   ├─ value/expression/call/field/
-  │           │   │   ├─ value/expression/name = "v"
-  │           │   │   └─ name = "len"
+  │           │   ├─ value/expression/object[access]/
+  │           │   │   ├─ name = "v"
+  │           │   │   └─ call/name = "len"
   │           │   └─ type/name = "i32"
   │           ├─ op[plus] = "+"
   │           └─ right/expression/index/

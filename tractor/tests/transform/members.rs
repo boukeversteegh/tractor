@@ -130,13 +130,12 @@ fn rust_field_unification() {
         "#),
         1);
 
-    claim("field access expression is <field> with value-receiver and name leaf",
+    claim("field access expression inverts to <object[access]> chain (iter 248)",
         &mut tree,
         &multi_xpath(r#"
-            //field
-                [value/expression/name='p']
-                [name='x']
-                [not(type)]
+            //object[access]
+                [name='p']
+                [member/name='x']
         "#),
         1);
 }

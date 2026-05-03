@@ -644,6 +644,13 @@ fn append_constraint_to_generic(
 /// The expression-position pass runs after `collapse_conditionals` so the
 /// `then`/`else` slots produced by the conditional collapse get hosts too.
 fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Rust's `field_expression` (`obj.foo`) renames to `<field>`
+    // alongside FieldDeclaration / FieldInitializer / etc. The
+    // chain inverter expects the canonical `<member>` shape, so
+    // pre-pass converts the field-expression flavor to canonical
+    // first.
+    rust_normalize_field_expression(xot, root)?;
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
@@ -684,6 +691,91 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
 /// rename the identifier to `<name>a</name>`. Normalize the
 /// declaration-position form to match: strip a leading `'` from any
 /// `<name>` text whose parent is a `<lifetime>`. Idempotent.
+/// Pre-pass for chain inversion: convert Rust `field_expression`-derived
+/// `<field>` elements to canonical `<member>`/`<object>`/`<property>`.
+///
+/// Rust emits:
+///   `<field><value><expression>RECEIVER</expression></value><name>X</name></field>`
+///
+/// The chain inverter wants:
+///   `<member><object>RECEIVER</object><property><name>X</name></property></member>`
+///
+/// Identifies the field-expression flavor by the presence of a
+/// `<value>` child slot (Rust's other `<field>` uses — declarations,
+/// initializers — don't have this shape). Skips non-matching `<field>`
+/// elements. Idempotent.
+fn rust_normalize_field_expression(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{copy_source_location, get_attr, get_element_name, rename};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut fields: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("field")
+            // Discriminate by tree-sitter kind. `<field>` is shared
+            // by FieldDeclaration / FieldExpression /
+            // FieldInitializer / ShorthandFieldInitializer (all
+            // renamed to Field in rules.rs). Only the expression
+            // flavour participates in member-access chains.
+            && get_attr(xot, node, "kind").as_deref() == Some("field_expression")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut fields);
+    for field in fields {
+        // Field-expression always has a <value> slot (the receiver).
+        let value_slot = xot.children(field).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("value")
+        });
+        let value_slot = match value_slot {
+            Some(v) => v,
+            None => continue,
+        };
+        // Rename element: <field> → <member>.
+        rename(xot, field, "member");
+        // Rename slot: <value> → <object>.
+        rename(xot, value_slot, "object");
+        // Unwrap the inner <expression> host so <object>RECV</object>
+        // is direct (matches canonical shape — Python/Go don't have an
+        // <expression> host inside <object>).
+        let expr_inner = xot.children(value_slot).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("expression")
+        });
+        if let Some(expr) = expr_inner {
+            // Lift expression's children up into <object>.
+            let children: Vec<XotNode> = xot.children(expr).collect();
+            for c in children {
+                xot.detach(c)?;
+                xot.insert_before(expr, c)?;
+            }
+            xot.detach(expr)?;
+        }
+        // Wrap bare <name> in <property>.
+        let name_node = xot.children(field).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("name")
+        });
+        if let Some(name_node) = name_node {
+            let property_id = xot.add_name("property");
+            let property_slot = xot.new_element(property_id);
+            copy_source_location(xot, name_node, property_slot);
+            xot.insert_before(name_node, property_slot)?;
+            xot.detach(name_node)?;
+            xot.append(property_slot, name_node)?;
+        }
+    }
+    Ok(())
+}
+
 fn rust_normalize_lifetime_names(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     use crate::transform::helpers::*;
     let root = if xot.is_document(root) {

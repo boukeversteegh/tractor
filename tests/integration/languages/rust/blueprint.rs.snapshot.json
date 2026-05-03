@@ -624,16 +624,13 @@
           },
           {
             "body": {
-              "calls": [
+              "objects": [
                 {
-                  "field": {
-                    "name": "clone",
-                    "value": {
-                      "expression": {
-                        "self": "self"
-                      }
-                    }
-                  }
+                  "call": {
+                    "name": "clone"
+                  },
+                  "access": true,
+                  "self": "self"
                 }
               ]
             },
@@ -669,20 +666,17 @@
           },
           {
             "body": {
-              "calls": [
+              "objects": [
                 {
-                  "field": {
-                    "name": "clone",
-                    "value": {
-                      "expression": {
-                        "unary": {
-                          "name": "ptr",
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
-                        }
-                      }
+                  "call": {
+                    "name": "clone"
+                  },
+                  "access": true,
+                  "unary": {
+                    "name": "ptr",
+                    "op": {
+                      "text": "*",
+                      "multiply": true
                     }
                   }
                 }
@@ -1452,36 +1446,27 @@
           {
             "value": {
               "expression": {
-                "call": {
-                  "arguments": [
-                    "0"
-                  ],
-                  "field": {
-                    "name": "unwrap_or",
-                    "value": {
-                      "expression": {
-                        "call": {
-                          "call": {
-                            "arguments": [
-                              {
-                                "$type": "type",
-                                "name": "i32"
-                              }
-                            ],
-                            "generic": true,
-                            "field": {
-                              "name": "parse",
-                              "value": {
-                                "expression": {
-                                  "string": "\"42\""
-                                }
-                              }
-                            }
-                          }
-                        }
+                "object": {
+                  "call": {
+                    "call": {
+                      "call": {
+                        "arguments": [
+                          "0"
+                        ],
+                        "name": "unwrap_or"
                       }
-                    }
-                  }
+                    },
+                    "generic": true,
+                    "name": "parse",
+                    "arguments": [
+                      {
+                        "$type": "type",
+                        "name": "i32"
+                      }
+                    ]
+                  },
+                  "access": true,
+                  "string": "\"42\""
                 }
               }
             },
@@ -1577,15 +1562,12 @@
                           "name": "y"
                         },
                         {
-                          "call": {
-                            "field": {
-                              "name": "clone",
-                              "value": {
-                                "expression": {
-                                  "name": "p"
-                                }
-                              }
-                            }
+                          "object": {
+                            "call": {
+                              "name": "clone"
+                            },
+                            "access": true,
+                            "name": "p"
                           },
                           "base": true
                         }
@@ -1788,15 +1770,12 @@
                               },
                               "value": {
                                 "expression": {
-                                  "call": {
-                                    "field": {
-                                      "name": "len",
-                                      "value": {
-                                        "expression": {
-                                          "name": "name"
-                                        }
-                                      }
-                                    }
+                                  "object": {
+                                    "call": {
+                                      "name": "len"
+                                    },
+                                    "access": true,
+                                    "name": "name"
                                   }
                                 }
                               }
@@ -1913,23 +1892,20 @@
           {
             "value": {
               "expression": {
-                "call": {
-                  "field": {
-                    "name": "into_iter",
-                    "value": {
-                      "expression": {
-                        "macro": {
-                          "ints": [
-                            "1",
-                            "2",
-                            "3"
-                          ],
-                          "names": [
-                            "vec"
-                          ]
-                        }
-                      }
-                    }
+                "object": {
+                  "call": {
+                    "name": "into_iter"
+                  },
+                  "access": true,
+                  "macro": {
+                    "ints": [
+                      "1",
+                      "2",
+                      "3"
+                    ],
+                    "names": [
+                      "vec"
+                    ]
                   }
                 }
               }
@@ -1980,15 +1956,12 @@
                 {
                   "value": {
                     "expression": {
-                      "call": {
-                        "field": {
-                          "name": "next",
-                          "value": {
-                            "expression": {
-                              "name": "it"
-                            }
-                          }
-                        }
+                      "object": {
+                        "call": {
+                          "name": "next"
+                        },
+                        "access": true,
+                        "name": "it"
                       }
                     }
                   }
@@ -2196,15 +2169,12 @@
           {
             "value": {
               "expression": {
-                "call": {
-                  "field": {
-                    "name": "parse",
-                    "value": {
-                      "expression": {
-                        "string": "\"10\""
-                      }
-                    }
-                  }
+                "object": {
+                  "call": {
+                    "name": "parse"
+                  },
+                  "access": true,
+                  "string": "\"10\""
                 },
                 "try": true
               }
@@ -2587,15 +2557,12 @@
                   },
                   "value": {
                     "expression": {
-                      "call": {
-                        "field": {
-                          "name": "len",
-                          "value": {
-                            "expression": {
-                              "name": "v"
-                            }
-                          }
-                        }
+                      "object": {
+                        "call": {
+                          "name": "len"
+                        },
+                        "access": true,
+                        "name": "v"
                       }
                     }
                   }
