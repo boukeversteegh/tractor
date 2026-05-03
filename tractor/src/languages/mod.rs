@@ -1631,9 +1631,12 @@ fn tsql_wrap_binary_operands(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             .collect();
         for child in elem_children {
             let field = get_attr(xot, child, "field");
+            // BETWEEN's low/high → <low>/<high>; binary operands → <left>/<right>.
             let wrapper = match field.as_deref() {
                 Some("left") => "left",
                 Some("right") => "right",
+                Some("low") => "low",
+                Some("high") => "high",
                 _ => continue,
             };
             let wrapper_id = xot.add_name(wrapper);

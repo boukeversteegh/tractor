@@ -258,15 +258,17 @@
         "where": [
           {
             "between": {
-              "children": [
-                "65"
-              ],
+              "high": {
+                "literal": "65"
+              },
               "left": {
                 "column": {
                   "name": "Age"
                 }
               },
-              "literal": "18"
+              "low": {
+                "literal": "18"
+              }
             }
           }
         ],
