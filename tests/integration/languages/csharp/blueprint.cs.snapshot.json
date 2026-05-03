@@ -185,9 +185,7 @@
                       },
                       "instance": true,
                       "object": {
-                        "name": [
-                          "Priority"
-                        ]
+                        "name": "Priority"
                       }
                     }
                   }
@@ -218,9 +216,7 @@
                       },
                       "instance": true,
                       "object": {
-                        "name": [
-                          "key"
-                        ]
+                        "name": "key"
                       }
                     }
                   }
@@ -459,9 +455,7 @@
                               },
                               "instance": true,
                               "object": {
-                                "name": [
-                                  "Task"
-                                ]
+                                "name": "Task"
                               }
                             }
                           },
@@ -742,19 +736,15 @@
                               },
                               "instance": true,
                               "object": {
-                                "member": [
-                                  {
-                                    "property": {
-                                      "name": "Name"
-                                    },
-                                    "instance": true,
-                                    "object": {
-                                      "name": [
-                                        "w"
-                                      ]
-                                    }
+                                "member": {
+                                  "property": {
+                                    "name": "Name"
+                                  },
+                                  "instance": true,
+                                  "object": {
+                                    "name": "w"
                                   }
-                                ]
+                                }
                               }
                             }
                           }
@@ -811,9 +801,7 @@
                                     },
                                     "instance": true,
                                     "object": {
-                                      "name": [
-                                        "shouted"
-                                      ]
+                                      "name": "shouted"
                                     }
                                   }
                                 }
@@ -864,9 +852,7 @@
                                                 },
                                                 "instance": true,
                                                 "object": {
-                                                  "name": [
-                                                    "raw"
-                                                  ]
+                                                  "name": "raw"
                                                 }
                                               }
                                             }
@@ -882,9 +868,7 @@
                                                       },
                                                       "instance": true,
                                                       "object": {
-                                                        "name": [
-                                                          "interp"
-                                                        ]
+                                                        "name": "interp"
                                                       }
                                                     }
                                                   }
@@ -900,9 +884,7 @@
                                                             },
                                                             "instance": true,
                                                             "object": {
-                                                              "name": [
-                                                                "verbatim"
-                                                              ]
+                                                              "name": "verbatim"
                                                             }
                                                           }
                                                         }
@@ -918,9 +900,7 @@
                                                                   },
                                                                   "instance": true,
                                                                   "object": {
-                                                                    "name": [
-                                                                      "plain"
-                                                                    ]
+                                                                    "name": "plain"
                                                                   }
                                                                 }
                                                               }
@@ -936,9 +916,7 @@
                                                                         },
                                                                         "instance": true,
                                                                         "object": {
-                                                                          "name": [
-                                                                            "map"
-                                                                          ]
+                                                                          "name": "map"
                                                                         }
                                                                       }
                                                                     }
@@ -951,9 +929,7 @@
                                                                         },
                                                                         "instance": true,
                                                                         "object": {
-                                                                          "name": [
-                                                                            "list"
-                                                                          ]
+                                                                          "name": "list"
                                                                         }
                                                                       }
                                                                     }
@@ -1022,9 +998,7 @@
                                       },
                                       "instance": true,
                                       "object": {
-                                        "name": [
-                                          "probe"
-                                        ]
+                                        "name": "probe"
                                       }
                                     }
                                   }
@@ -1035,9 +1009,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "Console"
-                                    ]
+                                    "name": "Console"
                                   }
                                 }
                               }
@@ -1115,9 +1087,7 @@
                                                 },
                                                 "instance": true,
                                                 "object": {
-                                                  "name": [
-                                                    "w"
-                                                  ]
+                                                  "name": "w"
                                                 }
                                               }
                                             }
@@ -1129,9 +1099,7 @@
                                           },
                                           "instance": true,
                                           "object": {
-                                            "name": [
-                                              "Console"
-                                            ]
+                                            "name": "Console"
                                           }
                                         }
                                       }
@@ -1197,9 +1165,7 @@
                                           },
                                           "instance": true,
                                           "object": {
-                                            "name": [
-                                              "evens"
-                                            ]
+                                            "name": "evens"
                                           }
                                         }
                                       }
@@ -1300,9 +1266,7 @@
                                           },
                                           "instance": true,
                                           "object": {
-                                            "name": [
-                                              "n"
-                                            ]
+                                            "name": "n"
                                           }
                                         }
                                       }
@@ -1416,9 +1380,7 @@
                                                   },
                                                   "instance": true,
                                                   "object": {
-                                                    "name": [
-                                                      "inner"
-                                                    ]
+                                                    "name": "inner"
                                                   }
                                                 }
                                               }
@@ -1465,9 +1427,7 @@
                                               },
                                               "instance": true,
                                               "object": {
-                                                "name": [
-                                                  "ex"
-                                                ]
+                                                "name": "ex"
                                               }
                                             }
                                           }
@@ -1500,19 +1460,15 @@
                                       },
                                       "instance": true,
                                       "object": {
-                                        "member": [
-                                          {
-                                            "property": {
-                                              "name": "Message"
-                                            },
-                                            "instance": true,
-                                            "object": {
-                                              "name": [
-                                                "ex"
-                                              ]
-                                            }
+                                        "member": {
+                                          "property": {
+                                            "name": "Message"
+                                          },
+                                          "instance": true,
+                                          "object": {
+                                            "name": "ex"
                                           }
-                                        ]
+                                        }
                                       }
                                     }
                                   }
@@ -1536,9 +1492,7 @@
                                       },
                                       "instance": true,
                                       "object": {
-                                        "name": [
-                                          "scope"
-                                        ]
+                                        "name": "scope"
                                       }
                                     }
                                   }
@@ -1720,9 +1674,7 @@
                                             },
                                             "instance": true,
                                             "object": {
-                                              "name": [
-                                                "Name"
-                                              ]
+                                              "name": "Name"
                                             }
                                           }
                                         }
@@ -1759,9 +1711,7 @@
                                             },
                                             "instance": true,
                                             "object": {
-                                              "name": [
-                                                "Priority"
-                                              ]
+                                              "name": "Priority"
                                             }
                                           },
                                           "constant": true
@@ -1796,9 +1746,7 @@
                                             },
                                             "instance": true,
                                             "object": {
-                                              "name": [
-                                                "w"
-                                              ]
+                                              "name": "w"
                                             }
                                           }
                                         }
@@ -1917,104 +1865,98 @@
                                 },
                                 "instance": true,
                                 "object": {
-                                  "call": [
-                                    {
-                                      "arguments": [
-                                        {
-                                          "$type": "argument",
-                                          "lambda": {
-                                            "value": {
-                                              "expression": {
-                                                "binary": {
-                                                  "right": {
-                                                    "expression": {
-                                                      "int": "1"
-                                                    }
-                                                  },
-                                                  "left": {
-                                                    "expression": {
-                                                      "name": "n"
-                                                    }
-                                                  },
-                                                  "op": {
-                                                    "text": "+",
-                                                    "plus": true
+                                  "call": {
+                                    "arguments": [
+                                      {
+                                        "$type": "argument",
+                                        "lambda": {
+                                          "value": {
+                                            "expression": {
+                                              "binary": {
+                                                "right": {
+                                                  "expression": {
+                                                    "int": "1"
                                                   }
-                                                }
-                                              }
-                                            },
-                                            "parameter": "n"
-                                          }
-                                        }
-                                      ],
-                                      "member": {
-                                        "property": {
-                                          "name": "Select"
-                                        },
-                                        "instance": true,
-                                        "object": {
-                                          "call": [
-                                            {
-                                              "arguments": [
-                                                {
-                                                  "$type": "argument",
-                                                  "lambda": {
-                                                    "value": {
-                                                      "expression": {
-                                                        "binary": {
-                                                          "right": {
-                                                            "expression": {
-                                                              "int": "0"
-                                                            }
-                                                          },
-                                                          "left": {
-                                                            "expression": {
-                                                              "binary": {
-                                                                "right": {
-                                                                  "expression": {
-                                                                    "int": "2"
-                                                                  }
-                                                                },
-                                                                "left": {
-                                                                  "expression": {
-                                                                    "name": "n"
-                                                                  }
-                                                                },
-                                                                "op": {
-                                                                  "text": "%",
-                                                                  "modulo": true
-                                                                }
-                                                              }
-                                                            }
-                                                          },
-                                                          "op": {
-                                                            "text": "!=",
-                                                            "inequality": true
-                                                          }
-                                                        }
-                                                      }
-                                                    },
-                                                    "parameter": "n"
-                                                  }
-                                                }
-                                              ],
-                                              "member": {
-                                                "property": {
-                                                  "name": "Where"
                                                 },
-                                                "instance": true,
-                                                "object": {
-                                                  "name": [
-                                                    "numbers"
-                                                  ]
+                                                "left": {
+                                                  "expression": {
+                                                    "name": "n"
+                                                  }
+                                                },
+                                                "op": {
+                                                  "text": "+",
+                                                  "plus": true
                                                 }
                                               }
                                             }
-                                          ]
+                                          },
+                                          "parameter": "n"
+                                        }
+                                      }
+                                    ],
+                                    "member": {
+                                      "property": {
+                                        "name": "Select"
+                                      },
+                                      "instance": true,
+                                      "object": {
+                                        "call": {
+                                          "arguments": [
+                                            {
+                                              "$type": "argument",
+                                              "lambda": {
+                                                "value": {
+                                                  "expression": {
+                                                    "binary": {
+                                                      "right": {
+                                                        "expression": {
+                                                          "int": "0"
+                                                        }
+                                                      },
+                                                      "left": {
+                                                        "expression": {
+                                                          "binary": {
+                                                            "right": {
+                                                              "expression": {
+                                                                "int": "2"
+                                                              }
+                                                            },
+                                                            "left": {
+                                                              "expression": {
+                                                                "name": "n"
+                                                              }
+                                                            },
+                                                            "op": {
+                                                              "text": "%",
+                                                              "modulo": true
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      "op": {
+                                                        "text": "!=",
+                                                        "inequality": true
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "parameter": "n"
+                                              }
+                                            }
+                                          ],
+                                          "member": {
+                                            "property": {
+                                              "name": "Where"
+                                            },
+                                            "instance": true,
+                                            "object": {
+                                              "name": "numbers"
+                                            }
+                                          }
                                         }
                                       }
                                     }
-                                  ]
+                                  }
                                 }
                               }
                             },
@@ -2149,9 +2091,7 @@
                                       },
                                       "instance": true,
                                       "object": {
-                                        "name": [
-                                          "Console"
-                                        ]
+                                        "name": "Console"
                                       }
                                     }
                                   }
@@ -2218,9 +2158,7 @@
                                     },
                                     "instance": true,
                                     "object": {
-                                      "name": [
-                                        "odds"
-                                      ]
+                                      "name": "odds"
                                     }
                                   }
                                 },
@@ -2722,9 +2660,7 @@
                         },
                         "instance": true,
                         "object": {
-                          "name": [
-                            "HashCode"
-                          ]
+                          "name": "HashCode"
                         }
                       }
                     }
@@ -2789,9 +2725,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "b"
-                                    ]
+                                    "name": "b"
                                   }
                                 }
                               }
@@ -2804,9 +2738,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "a"
-                                    ]
+                                    "name": "a"
                                   }
                                 }
                               }
@@ -2828,9 +2760,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "b"
-                                    ]
+                                    "name": "b"
                                   }
                                 }
                               }
@@ -2843,9 +2773,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "a"
-                                    ]
+                                    "name": "a"
                                   }
                                 }
                               }
@@ -2897,9 +2825,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "b"
-                                    ]
+                                    "name": "b"
                                   }
                                 }
                               }
@@ -2912,9 +2838,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "a"
-                                    ]
+                                    "name": "a"
                                   }
                                 }
                               }
@@ -2937,9 +2861,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "b"
-                                    ]
+                                    "name": "b"
                                   }
                                 }
                               }
@@ -2952,9 +2874,7 @@
                                   },
                                   "instance": true,
                                   "object": {
-                                    "name": [
-                                      "a"
-                                    ]
+                                    "name": "a"
                                   }
                                 }
                               }
@@ -3173,9 +3093,7 @@
                       },
                       "instance": true,
                       "object": {
-                        "name": [
-                          "Hidden"
-                        ]
+                        "name": "Hidden"
                       }
                     }
                   ]
@@ -3729,12 +3647,10 @@
                                       },
                                       "instance": true,
                                       "object": {
-                                        "expression": [
-                                          {
-                                            "name": "x",
-                                            "non_null": true
-                                          }
-                                        ]
+                                        "expression": {
+                                          "name": "x",
+                                          "non_null": true
+                                        }
                                       }
                                     }
                                   },

@@ -305,9 +305,7 @@
               "name": "Foo"
             },
             "object": {
-              "name": [
-                "OrderedDict"
-              ]
+              "name": "OrderedDict"
             }
           }
         }
@@ -464,9 +462,7 @@
                           "name": "name"
                         },
                         "object": {
-                          "name": [
-                            "self"
-                          ]
+                          "name": "self"
                         }
                       }
                     }
@@ -503,9 +499,7 @@
                               {
                                 "$type": "member",
                                 "object": {
-                                  "name": [
-                                    "other"
-                                  ]
+                                  "name": "other"
                                 },
                                 "property": {
                                   "name": "name"
@@ -521,9 +515,7 @@
                                 "name": "name"
                               },
                               "object": {
-                                "name": [
-                                  "self"
-                                ]
+                                "name": "self"
                               }
                             }
                           }
@@ -1021,9 +1013,7 @@
                             "name": "read"
                           },
                           "object": {
-                            "name": [
-                              "conn"
-                            ]
+                            "name": "conn"
                           }
                         }
                       },
@@ -1560,9 +1550,7 @@
                         "name": "read"
                       },
                       "object": {
-                        "name": [
-                          "fa"
-                        ]
+                        "name": "fa"
                       }
                     }
                   }
@@ -1574,9 +1562,7 @@
                         "name": "read"
                       },
                       "object": {
-                        "name": [
-                          "fb"
-                        ]
+                        "name": "fb"
                       }
                     }
                   }
@@ -1878,9 +1864,7 @@
                               "name": "items"
                             },
                             "object": {
-                              "name": [
-                                "data"
-                              ]
+                              "name": "data"
                             }
                           }
                         }

@@ -548,6 +548,14 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 214: PHP class-constant access (`Foo::BAR`) Custom
+  handler — wraps two `<name>` siblings in `<object>` /
+  `<property>` (matching iter-178 C# member-access). Removed
+  `object` from bulk distribute config (was over-tagging the
+  iter-178/195/214 role wrappers' `<name>` child as 1-element
+  array). PHP audit 9→5 (-4); TS 10→12 (+2 from removing object
+  literal distribute); net -2. JSON: `member.object: {name: "Foo"},
+  member.property: {name: "BAR"}` clean.
 - [x] iter 213: post-cycle review of iters 205-212 + revert role-mixed
   parents from distribute config. Review found 5 silent reversals
   of prior single-element handler decisions (iters 178/179/180/195/

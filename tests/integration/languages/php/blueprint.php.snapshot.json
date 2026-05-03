@@ -1041,11 +1041,13 @@
           {
             "$type": "argument",
             "member": {
-              "children": [
-                "TARGET_CLASS"
-              ],
+              "property": {
+                "name": "TARGET_CLASS"
+              },
               "constant": true,
-              "name": "Attribute"
+              "object": {
+                "name": "Attribute"
+              }
             }
           }
         ],
@@ -1167,31 +1169,37 @@
                           {
                             "string": "\"✓\"",
                             "member": {
-                              "children": [
-                                "Active"
-                              ],
+                              "property": {
+                                "name": "Active"
+                              },
                               "constant": true,
-                              "name": "Status"
+                              "object": {
+                                "name": "Status"
+                              }
                             }
                           },
                           {
                             "string": "\"×\"",
                             "member": {
-                              "children": [
-                                "Inactive"
-                              ],
+                              "property": {
+                                "name": "Inactive"
+                              },
                               "constant": true,
-                              "name": "Status"
+                              "object": {
+                                "name": "Status"
+                              }
                             }
                           },
                           {
                             "string": "\"…\"",
                             "member": {
-                              "children": [
-                                "Pending"
-                              ],
+                              "property": {
+                                "name": "Pending"
+                              },
                               "constant": true,
-                              "name": "Status"
+                              "object": {
+                                "name": "Status"
+                              }
                             }
                           }
                         ]

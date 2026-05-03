@@ -21,8 +21,8 @@ program/
   │   ├─ attribute/
   │   │   ├─ name = "Attribute"
   │   │   └─ argument/member[constant]/
-  │   │       ├─ name = "Attribute"
-  │   │       └─ name = "TARGET_CLASS"
+  │   │       ├─ object/name = "Attribute"
+  │   │       └─ property/name = "TARGET_CLASS"
   │   ├─ name = "Demo"
   │   ├─ extends/type/name = "Base"
   │   ├─ implements/type/name = "Speaker"
@@ -260,18 +260,18 @@ program/
   │               └─ body/
   │                   ├─ arm/
   │                   │   ├─ member[constant]/
-  │                   │   │   ├─ name = "Status"
-  │                   │   │   └─ name = "Active"
+  │                   │   │   ├─ object/name = "Status"
+  │                   │   │   └─ property/name = "Active"
   │                   │   └─ string = "\"✓\""
   │                   ├─ arm/
   │                   │   ├─ member[constant]/
-  │                   │   │   ├─ name = "Status"
-  │                   │   │   └─ name = "Inactive"
+  │                   │   │   ├─ object/name = "Status"
+  │                   │   │   └─ property/name = "Inactive"
   │                   │   └─ string = "\"×\""
   │                   └─ arm/
   │                       ├─ member[constant]/
-  │                       │   ├─ name = "Status"
-  │                       │   └─ name = "Pending"
+  │                       │   ├─ object/name = "Status"
+  │                       │   └─ property/name = "Pending"
   │                       └─ string = "\"…\""
   ├─ function/
   │   ├─ name = "factory"

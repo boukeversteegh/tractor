@@ -321,16 +321,14 @@
                             "name": "split"
                           },
                           "object": {
-                            "call": [
-                              {
-                                "arguments": [
-                                  "input"
-                                ],
-                                "callee": {
-                                  "name": "String"
-                                }
+                            "call": {
+                              "arguments": [
+                                "input"
+                              ],
+                              "callee": {
+                                "name": "String"
                               }
-                            ]
+                            }
                           }
                         }
                       }
@@ -350,28 +348,26 @@
                 "value": {
                   "expression": {
                     "object": {
-                      "pair": [
+                      "children": [
                         {
-                          "name": "label"
-                        },
-                        {
+                          "$type": "pair",
                           "name": "head"
                         },
                         {
+                          "$type": "pair",
                           "name": "rest"
                         }
                       ],
-                      "spread": [
-                        {
-                          "object": {
-                            "pair": [
-                              {
-                                "name": "scale"
-                              }
-                            ]
+                      "spread": {
+                        "object": {
+                          "pair": {
+                            "name": "scale"
                           }
                         }
-                      ]
+                      },
+                      "pair": {
+                        "name": "label"
+                      }
                     }
                   }
                 },
@@ -412,9 +408,7 @@
                                   "name": "scale"
                                 },
                                 "object": {
-                                  "name": [
-                                    "spread"
-                                  ]
+                                  "name": "spread"
                                 }
                               }
                             }
@@ -613,9 +607,7 @@
                             "name": "name"
                           },
                           "object": {
-                            "member": [
-                              "new.target"
-                            ]
+                            "member": "new.target"
                           },
                           "member": {
                             "text": "?.",
@@ -967,9 +959,7 @@
                             "name": "length"
                           },
                           "object": {
-                            "name": [
-                              "rest"
-                            ]
+                            "name": "rest"
                           }
                         }
                       }
@@ -1464,18 +1454,14 @@
                               "name": "size"
                             },
                             "object": {
-                              "member": [
-                                {
-                                  "property": {
-                                    "name": "_cache"
-                                  },
-                                  "object": {
-                                    "this": [
-                                      "this"
-                                    ]
-                                  }
+                              "member": {
+                                "property": {
+                                  "name": "_cache"
+                                },
+                                "object": {
+                                  "this": "this"
                                 }
-                              ]
+                              }
                             }
                           }
                         }
@@ -1510,18 +1496,14 @@
                                 "name": "set"
                               },
                               "object": {
-                                "member": [
-                                  {
-                                    "property": {
-                                      "name": "_cache"
-                                    },
-                                    "object": {
-                                      "this": [
-                                        "this"
-                                      ]
-                                    }
+                                "member": {
+                                  "property": {
+                                    "name": "_cache"
+                                  },
+                                  "object": {
+                                    "this": "this"
                                   }
-                                ]
+                                }
                               }
                             }
                           }
@@ -1562,18 +1544,14 @@
                                 "name": "set"
                               },
                               "object": {
-                                "member": [
-                                  {
-                                    "property": {
-                                      "name": "_cache"
-                                    },
-                                    "object": {
-                                      "this": [
-                                        "this"
-                                      ]
-                                    }
+                                "member": {
+                                  "property": {
+                                    "name": "_cache"
+                                  },
+                                  "object": {
+                                    "this": "this"
                                   }
-                                ]
+                                }
                               }
                             }
                           }
@@ -1634,9 +1612,7 @@
                           "name": "now"
                         },
                         "object": {
-                          "name": [
-                            "Date"
-                          ]
+                          "name": "Date"
                         }
                       }
                     }
@@ -1724,9 +1700,7 @@
                               "name": "#counter"
                             },
                             "object": {
-                              "name": [
-                                "Widget"
-                              ]
+                              "name": "Widget"
                             }
                           }
                         }
@@ -1802,25 +1776,19 @@
                                       "name": "label"
                                     },
                                     "object": {
-                                      "index": [
-                                        {
-                                          "number": "0",
-                                          "object": {
-                                            "member": [
-                                              {
-                                                "property": {
-                                                  "name": "items"
-                                                },
-                                                "object": {
-                                                  "this": [
-                                                    "this"
-                                                  ]
-                                                }
-                                              }
-                                            ]
+                                      "index": {
+                                        "number": "0",
+                                        "object": {
+                                          "member": {
+                                            "property": {
+                                              "name": "items"
+                                            },
+                                            "object": {
+                                              "this": "this"
+                                            }
                                           }
                                         }
-                                      ]
+                                      }
                                     },
                                     "member": {
                                       "text": "?.",
@@ -1867,18 +1835,14 @@
                                     {
                                       "name": "i",
                                       "object": {
-                                        "member": [
-                                          {
-                                            "property": {
-                                              "name": "items"
-                                            },
-                                            "object": {
-                                              "this": [
-                                                "this"
-                                              ]
-                                            }
+                                        "member": {
+                                          "property": {
+                                            "name": "items"
+                                          },
+                                          "object": {
+                                            "this": "this"
                                           }
-                                        ]
+                                        }
                                       }
                                     }
                                   ],
@@ -1909,18 +1873,14 @@
                                       "name": "length"
                                     },
                                     "object": {
-                                      "member": [
-                                        {
-                                          "property": {
-                                            "name": "items"
-                                          },
-                                          "object": {
-                                            "this": [
-                                              "this"
-                                            ]
-                                          }
+                                      "member": {
+                                        "property": {
+                                          "name": "items"
+                                        },
+                                        "object": {
+                                          "this": "this"
                                         }
-                                      ]
+                                      }
                                     }
                                   }
                                 }
@@ -1991,18 +1951,14 @@
                                         "name": "length"
                                       },
                                       "object": {
-                                        "member": [
-                                          {
-                                            "property": {
-                                              "name": "items"
-                                            },
-                                            "object": {
-                                              "this": [
-                                                "this"
-                                              ]
-                                            }
+                                        "member": {
+                                          "property": {
+                                            "name": "items"
+                                          },
+                                          "object": {
+                                            "this": "this"
                                           }
-                                        ]
+                                        }
                                       }
                                     }
                                   }
@@ -2022,9 +1978,7 @@
                                         "name": "items"
                                       },
                                       "object": {
-                                        "this": [
-                                          "this"
-                                        ]
+                                        "this": "this"
                                       }
                                     }
                                   }
@@ -2465,24 +2419,25 @@
                   "value": {
                     "expression": {
                       "object": {
-                        "pair": [
+                        "children": [
                           {
-                            "value": {
-                              "expression": {
-                                "number": "1"
-                              }
-                            },
-                            "name": "a"
-                          },
-                          {
+                            "$type": "pair",
+                            "name": "b",
                             "value": {
                               "expression": {
                                 "number": "2"
                               }
-                            },
-                            "name": "b"
+                            }
                           }
-                        ]
+                        ],
+                        "pair": {
+                          "value": {
+                            "expression": {
+                              "number": "1"
+                            }
+                          },
+                          "name": "a"
+                        }
                       }
                     }
                   },
@@ -2522,9 +2477,7 @@
                                   "index": {
                                     "name": "k",
                                     "object": {
-                                      "name": [
-                                        "obj"
-                                      ]
+                                      "name": "obj"
                                     }
                                   },
                                   "non_null": true
@@ -2590,9 +2543,7 @@
                               "name": "entries"
                             },
                             "object": {
-                              "name": [
-                                "Object"
-                              ]
+                              "name": "Object"
                             }
                           }
                         }
@@ -2813,9 +2764,7 @@
                                       "index": {
                                         "name": "i",
                                         "object": {
-                                          "name": [
-                                            "vals"
-                                          ]
+                                          "name": "vals"
                                         }
                                       }
                                     }
@@ -2863,9 +2812,7 @@
                         "name": "reduce"
                       },
                       "object": {
-                        "name": [
-                          "parts"
-                        ]
+                        "name": "parts"
                       }
                     }
                   }
@@ -2910,9 +2857,7 @@
                 "index": {
                   "number": "0",
                   "object": {
-                    "name": [
-                      "xs"
-                    ]
+                    "name": "xs"
                   }
                 }
               }
@@ -3003,15 +2948,13 @@
                   "name": "map"
                 },
                 "object": {
-                  "array": [
-                    {
-                      "number": [
-                        "1",
-                        "2",
-                        "3"
-                      ]
-                    }
-                  ]
+                  "array": {
+                    "number": [
+                      "1",
+                      "2",
+                      "3"
+                    ]
+                  }
                 }
               }
             }
@@ -3213,9 +3156,7 @@
               "name": "url"
             },
             "object": {
-              "member": [
-                "import.meta"
-              ]
+              "member": "import.meta"
             }
           }
         }
@@ -3231,9 +3172,7 @@
               "name": "counter"
             },
             "object": {
-              "name": [
-                "StaticBlock"
-              ]
+              "name": "StaticBlock"
             }
           }
         }
@@ -3277,9 +3216,7 @@
                                   "name": "counter"
                                 },
                                 "object": {
-                                  "name": [
-                                    "StaticBlock"
-                                  ]
+                                  "name": "StaticBlock"
                                 }
                               }
                             }

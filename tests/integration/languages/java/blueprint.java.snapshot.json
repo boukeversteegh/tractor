@@ -319,9 +319,7 @@
                             "name": "name"
                           },
                           "object": {
-                            "this": [
-                              "this"
-                            ]
+                            "this": "this"
                           }
                         }
                       }
@@ -360,9 +358,7 @@
                         "\"hello\""
                       ],
                       "object": {
-                        "name": [
-                          "mapper"
-                        ]
+                        "name": "mapper"
                       },
                       "name": "apply"
                     }
@@ -804,9 +800,7 @@
                                     "call": {
                                       "name": "isEmpty",
                                       "object": {
-                                        "name": [
-                                          "s"
-                                        ]
+                                        "name": "s"
                                       }
                                     },
                                     "op": {
@@ -1053,19 +1047,15 @@
                         {
                           "$type": "call",
                           "object": {
-                            "call": [
-                              {
-                                "name": "getClass"
-                              }
-                            ]
+                            "call": {
+                              "name": "getClass"
+                            }
                           },
                           "name": "getSimpleName"
                         }
                       ],
                       "object": {
-                        "name": [
-                          "String"
-                        ]
+                        "name": "String"
                       },
                       "name": "format"
                     }

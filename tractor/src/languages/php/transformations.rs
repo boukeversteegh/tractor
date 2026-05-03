@@ -16,9 +16,43 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Arrow, Comment as CommentName, Function, Global, Leading, Prefix, Primitive, Private, Protected,
-    Public, String as PhpString, Trailing, Type, Unary, Variable,
+    Arrow, Comment as CommentName, Constant, Function, Global, Leading, Member, Object, Prefix,
+    Primitive, Private, Property, Protected, Public, String as PhpString, Trailing, Type, Unary,
+    Variable,
 };
+
+/// `class_constant_access_expression` — `Foo::BAR`. Tree-sitter
+/// emits two `<name>` siblings (class name + constant name) with no
+/// `field=` attributes. Wrap them by position: first → `<object>`,
+/// second → `<property>`. Mirrors C# member-access (iter 178).
+/// Renames to `<member>` and adds the `<constant/>` marker.
+pub fn class_constant_access(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let elem_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    // Find the two `<name>` children (skip pre-existing markers).
+    let names: Vec<XotNode> = elem_children.iter()
+        .copied()
+        .filter(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+        .collect();
+    if names.len() == 2 {
+        // First name = class (object); second = constant (property).
+        let object_id = xot.add_name(Object.as_str());
+        let object_node = xot.new_element(object_id);
+        xot.with_source_location_from(object_node, names[0])
+            .with_wrap_child(names[0], object_node)?;
+        let property_id = xot.add_name(Property.as_str());
+        let property_node = xot.new_element(property_id);
+        xot.with_source_location_from(property_node, names[1])
+            .with_wrap_child(names[1], property_node)?;
+    }
+    xot.with_renamed(node, Member)
+        .with_prepended_marker(node, Constant)?;
+    Ok(TransformAction::Continue)
+}
 
 /// Pure-grammar wrappers (parenthesized expressions, etc.) — drop
 /// the wrapper, promote children to parent.

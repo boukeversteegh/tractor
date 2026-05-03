@@ -87,9 +87,7 @@
                 "name": "New"
               },
               "object": {
-                "name": [
-                  "errors"
-                ]
+                "name": "errors"
               }
             }
           }
@@ -352,9 +350,7 @@
                     {
                       "$type": "member",
                       "object": {
-                        "name": [
-                          "c"
-                        ]
+                        "name": "c"
                       },
                       "property": {
                         "name": "items"
@@ -373,9 +369,7 @@
                     "name": "items"
                   },
                   "object": {
-                    "name": [
-                      "c"
-                    ]
+                    "name": "c"
                   }
                 }
               }
@@ -426,9 +420,7 @@
                   {
                     "$type": "member",
                     "object": {
-                      "name": [
-                        "p"
-                      ]
+                      "name": "p"
                     },
                     "property": {
                       "name": "X"
@@ -437,9 +429,7 @@
                   {
                     "$type": "member",
                     "object": {
-                      "name": [
-                        "p"
-                      ]
+                      "name": "p"
                     },
                     "property": {
                       "name": "Y"
@@ -451,9 +441,7 @@
                     "name": "Sprintf"
                   },
                   "object": {
-                    "name": [
-                      "fmt"
-                    ]
+                    "name": "fmt"
                   }
                 }
               }
@@ -494,9 +482,7 @@
                     "name": "X"
                   },
                   "object": {
-                    "name": [
-                      "p"
-                    ]
+                    "name": "p"
                   }
                 }
               }
@@ -515,9 +501,7 @@
                     "name": "Y"
                   },
                   "object": {
-                    "name": [
-                      "p"
-                    ]
+                    "name": "p"
                   }
                 }
               }
@@ -559,9 +543,7 @@
                   "name": "msg"
                 },
                 "object": {
-                  "name": [
-                    "e"
-                  ]
+                  "name": "e"
                 }
               }
             }
@@ -604,9 +586,7 @@
                     "name": "Errorf"
                   },
                   "object": {
-                    "name": [
-                      "fmt"
-                    ]
+                    "name": "fmt"
                   }
                 }
               }
@@ -1556,9 +1536,7 @@
                           "name": "Sprintf"
                         },
                         "object": {
-                          "name": [
-                            "fmt"
-                          ]
+                          "name": "fmt"
                         }
                       }
                     }
@@ -1642,9 +1620,7 @@
                           "name": "String"
                         },
                         "object": {
-                          "name": [
-                            "v"
-                          ]
+                          "name": "v"
                         }
                       }
                     }
@@ -1958,9 +1934,7 @@
                           "name": "Println"
                         },
                         "object": {
-                          "name": [
-                            "fmt"
-                          ]
+                          "name": "fmt"
                         }
                       }
                     }
@@ -2003,9 +1977,7 @@
                                       "name": "Done"
                                     },
                                     "object": {
-                                      "name": [
-                                        "ctx"
-                                      ]
+                                      "name": "ctx"
                                     }
                                   }
                                 },
@@ -2329,9 +2301,7 @@
                         "name": "Pipe"
                       },
                       "object": {
-                        "name": [
-                          "io"
-                        ]
+                        "name": "io"
                       }
                     }
                   }
@@ -2464,9 +2434,7 @@
                             "name": "Is"
                           },
                           "object": {
-                            "name": [
-                              "errors"
-                            ]
+                            "name": "errors"
                           }
                         }
                       }
@@ -2492,9 +2460,7 @@
                             "name": "As"
                           },
                           "object": {
-                            "name": [
-                              "errors"
-                            ]
+                            "name": "errors"
                           }
                         }
                       }

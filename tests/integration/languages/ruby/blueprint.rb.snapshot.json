@@ -24,9 +24,7 @@
           "call": {
             "name": "zero?",
             "object": {
-              "name": [
-                "MAX_RETRIES"
-              ]
+              "name": "MAX_RETRIES"
             }
           }
         }
@@ -196,9 +194,7 @@
                           "call": {
                             "name": "nil?",
                             "object": {
-                              "name": [
-                                "x"
-                              ]
+                              "name": "x"
                             }
                           }
                         }
@@ -243,9 +239,7 @@
                 ]
               },
               "object": {
-                "name": [
-                  "items"
-                ]
+                "name": "items"
               },
               "name": "each"
             }
@@ -339,9 +333,7 @@
                     "2"
                   ],
                   "object": {
-                    "name": [
-                      "adder"
-                    ]
+                    "name": "adder"
                   },
                   "name": "call"
                 },
@@ -350,9 +342,7 @@
                     "3"
                   ],
                   "object": {
-                    "name": [
-                      "doubler"
-                    ]
+                    "name": "doubler"
                   },
                   "name": "call"
                 }
@@ -460,9 +450,7 @@
                             "call": {
                               "name": "clear",
                               "object": {
-                                "name": [
-                                  "items"
-                                ]
+                                "name": "items"
                               }
                             }
                           }
@@ -476,9 +464,7 @@
                         "call": {
                           "name": "any?",
                           "object": {
-                            "name": [
-                              "items"
-                            ]
+                            "name": "items"
                           }
                         }
                       }
@@ -499,9 +485,7 @@
                   "call": {
                     "name": "first",
                     "object": {
-                      "name": [
-                        "items"
-                      ]
+                      "name": "items"
                     }
                   },
                   "rescue": {
@@ -512,9 +496,7 @@
                             "call": {
                               "name": "message",
                               "object": {
-                                "name": [
-                                  "e"
-                                ]
+                                "name": "e"
                               }
                             }
                           },
@@ -752,9 +734,7 @@
                       "call": {
                         "name": "zero?",
                         "object": {
-                          "name": [
-                            "total"
-                          ]
+                          "name": "total"
                         }
                       }
                     }
@@ -1046,9 +1026,7 @@
                                     "call": {
                                       "name": "size",
                                       "object": {
-                                        "name": [
-                                          "tail"
-                                        ]
+                                        "name": "tail"
                                       }
                                     }
                                   }
@@ -1083,9 +1061,7 @@
                                 "Integer"
                               ],
                               "object": {
-                                "name": [
-                                  "head"
-                                ]
+                                "name": "head"
                               },
                               "name": "is_a?"
                             }
@@ -1313,9 +1289,7 @@
                 "y"
               ],
               "object": {
-                "name": [
-                  "block"
-                ]
+                "name": "block"
               },
               "name": "call"
             }
@@ -1492,9 +1466,7 @@
                                     "call": {
                                       "name": "name",
                                       "object": {
-                                        "name": [
-                                          "other"
-                                        ]
+                                        "name": "other"
                                       }
                                     }
                                   }
@@ -1513,9 +1485,7 @@
                                   "Base"
                                 ],
                                 "object": {
-                                  "name": [
-                                    "other"
-                                  ]
+                                  "name": "other"
                                 },
                                 "name": "is_a?"
                               }
@@ -1601,9 +1571,7 @@
                                   "call": {
                                     "name": "inspect",
                                     "object": {
-                                      "name": [
-                                        "opts"
-                                      ]
+                                      "name": "opts"
                                     }
                                   }
                                 }
@@ -1616,9 +1584,7 @@
                             "call": {
                               "name": "empty?",
                               "object": {
-                                "name": [
-                                  "opts"
-                                ]
+                                "name": "opts"
                               }
                             }
                           }
@@ -1753,9 +1719,7 @@
                             "call": {
                               "name": "upcase",
                               "object": {
-                                "name": [
-                                  "@name"
-                                ]
+                                "name": "@name"
                               }
                             }
                           }
@@ -1780,9 +1744,7 @@
                               "call": {
                                 "name": "keys",
                                 "object": {
-                                  "name": [
-                                    "meta"
-                                  ]
+                                  "name": "meta"
                                 }
                               }
                             }
@@ -1817,16 +1779,12 @@
                                   ]
                                 },
                                 "object": {
-                                  "call": [
-                                    {
-                                      "name": "each_with_index",
-                                      "object": {
-                                        "name": [
-                                          "items"
-                                        ]
-                                      }
+                                  "call": {
+                                    "name": "each_with_index",
+                                    "object": {
+                                      "name": "items"
                                     }
-                                  ]
+                                  }
                                 },
                                 "name": "map"
                               }
@@ -2048,9 +2006,7 @@
                       {
                         "$type": "call",
                         "object": {
-                          "name": [
-                            "Module"
-                          ]
+                          "name": "Module"
                         },
                         "name": "new"
                       }
@@ -2317,9 +2273,7 @@
             ],
             "optional": true,
             "object": {
-              "name": [
-                "obj"
-              ]
+              "name": "obj"
             },
             "name": "method"
           }

@@ -51,7 +51,11 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         // single-expression body wraps in `<expression>` host
         // (Principle #15). Mirrors iter 161/162/167.
         PhpKind::ArrowFunction                  => Custom(transformations::arrow_function),
-        PhpKind::ClassConstantAccessExpression  => RenameWithMarker(Member, Constant),
+        // `class_constant_access_expression` — `Foo::BAR`. Custom
+        // handler wraps the two `<name>` siblings in `<object>` /
+        // `<property>` so JSON doesn't collide them on the `name`
+        // key (matches iter-178 C# member-access shape).
+        PhpKind::ClassConstantAccessExpression  => Custom(transformations::class_constant_access),
         PhpKind::MatchDefaultExpression         => RenameWithMarker(Arm, Default),
         PhpKind::MemberAccessExpression         => RenameWithMarker(Member, Instance),
         PhpKind::MemberCallExpression           => RenameWithMarker(Call, Instance),
