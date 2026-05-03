@@ -741,14 +741,10 @@
                               "label": {
                                 "pattern": {
                                   "pattern": {
-                                    "children": [
-                                      {
-                                        "$type": "type",
-                                        "name": "Integer"
-                                      }
-                                    ],
-                                    "type": true,
-                                    "name": "i"
+                                    "name": "i",
+                                    "type": {
+                                      "name": "Integer"
+                                    }
                                   }
                                 }
                               }
@@ -791,14 +787,10 @@
                                 },
                                 "pattern": {
                                   "pattern": {
-                                    "children": [
-                                      {
-                                        "$type": "type",
-                                        "name": "String"
-                                      }
-                                    ],
-                                    "type": true,
-                                    "name": "s"
+                                    "name": "s",
+                                    "type": {
+                                      "name": "String"
+                                    }
                                   }
                                 }
                               }
@@ -1524,14 +1516,10 @@
                                 "label": {
                                   "pattern": {
                                     "pattern": {
-                                      "children": [
-                                        {
-                                          "$type": "type",
-                                          "name": "Integer"
-                                        }
-                                      ],
-                                      "type": true,
-                                      "name": "i"
+                                      "name": "i",
+                                      "type": {
+                                        "name": "Integer"
+                                      }
                                     }
                                   }
                                 }

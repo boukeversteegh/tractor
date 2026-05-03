@@ -46,7 +46,17 @@ pub fn rule(k: JavaKind) -> Rule<TractorNode> {
         JavaKind::CompactConstructorDeclaration => RenameWithMarker(Constructor, Compact),
         JavaKind::RecordPattern                 => RenameWithMarker(Pattern, Record),
         JavaKind::SpreadParameter               => RenameWithMarker(Parameter, Variadic),
-        JavaKind::TypePattern                   => RenameWithMarker(Pattern, Type),
+        // `case Integer i ->`. The structural `<type>` child already
+        // signals "this is a type pattern"; the `[type]` marker we
+        // used to add was redundant AND created a JSON marker-vs-
+        // wrapper collision (boolean `type: true` vs wrapper
+        // `type: {...}`). Drop the marker; `//pattern[type]` still
+        // queries structurally. See iter 184 marker-collision lesson
+        // (the analogous `<alias/>` marker + `<alias>` wrapper case
+        // that resolved by renaming the wrapper to `<aliased>`; here
+        // dropping the marker is cleaner since `<type>` is the
+        // canonical name for the structural child).
+        JavaKind::TypePattern                   => Rename(Pattern),
 
         // ---- Flatten with field distribution ---------------------------
         JavaKind::ArgumentList     => Flatten { distribute_list: Some("arguments") },

@@ -148,3 +148,60 @@ fn ruby_array_pattern_lists_names() {
         "//pattern/name[@list='names']",
         2);
 }
+
+/// Java type patterns (`case Integer i ->`) and C# type patterns
+/// (`case Integer i:`) used to emit a `[type]` marker alongside
+/// the structural `<type>` child. The marker collided with the
+/// wrapper on the JSON `type` key (boolean `type: true` vs
+/// wrapper `type: {...}`), forcing the wrapper into `children`
+/// overflow. Iter 275 dropped the redundant marker — the
+/// structural `<type>` child already signals "this is a type
+/// pattern", and `//pattern[type]` works via that child rather
+/// than via the marker.
+#[test]
+fn java_type_pattern_no_marker_collision() {
+    let mut tree = parse_src("java", r#"
+        class T {
+            String f(Object o) {
+                return switch (o) {
+                    case Integer i -> "int";
+                    default -> "other";
+                };
+            }
+        }
+    "#);
+
+    claim("Java type pattern has structural <type> child",
+        &mut tree,
+        "//pattern[type/name='Integer'][name='i']",
+        1);
+
+    claim("Java type pattern has NO empty <type/> marker",
+        &mut tree,
+        "//pattern/type[not(*) and not(text())]",
+        0);
+}
+
+#[test]
+fn csharp_type_pattern_no_marker_collision() {
+    let mut tree = parse_src("csharp", r#"
+        class T {
+            string F(object o) {
+                return o switch {
+                    int i => "int",
+                    _ => "other",
+                };
+            }
+        }
+    "#);
+
+    claim("C# type pattern has structural <type> child",
+        &mut tree,
+        "//pattern[type/name='int'][name='i']",
+        1);
+
+    claim("C# type pattern has NO empty <type/> marker",
+        &mut tree,
+        "//pattern/type[not(*) and not(text())]",
+        0);
+}

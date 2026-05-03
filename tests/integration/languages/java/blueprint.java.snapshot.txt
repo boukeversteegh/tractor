@@ -180,7 +180,7 @@ program/
   │       │       ├─ condition/expression/name = "o"
   │       │       └─ body/
   │       │           ├─ arm/
-  │       │           │   ├─ label/pattern/pattern[type]/
+  │       │           │   ├─ label/pattern/pattern/
   │       │           │   │   ├─ type/name = "Integer"
   │       │           │   │   └─ name = "i"
   │       │           │   └─ expression/binary/
@@ -189,7 +189,7 @@ program/
   │       │           │       └─ right/expression/name = "i"
   │       │           ├─ arm/
   │       │           │   ├─ label/
-  │       │           │   │   ├─ pattern/pattern[type]/
+  │       │           │   │   ├─ pattern/pattern/
   │       │           │   │   │   ├─ type/name = "String"
   │       │           │   │   │   └─ name = "s"
   │       │           │   │   └─ guard/unary/
@@ -438,7 +438,7 @@ program/
                   │       ├─ condition/expression/name = "o"
                   │       └─ body/
                   │           ├─ arm/
-                  │           │   ├─ label/pattern/pattern[type]/
+                  │           │   ├─ label/pattern/pattern/
                   │           │   │   ├─ type/name = "Integer"
                   │           │   │   └─ name = "i"
                   │           │   └─ expression/name = "i"

@@ -979,7 +979,7 @@ unit/
                       │   │   └─ right/expression/pattern[constant]/null = "null"
                       │   └─ string = "\"string or null\""
                       ├─ arm/
-                      │   ├─ pattern[negated]/pattern[type]/type/name = "string"
+                      │   ├─ pattern[negated]/pattern/type/name = "string"
                       │   └─ string = "\"not string\""
                       └─ arm/
                           ├─ pattern[declaration]/

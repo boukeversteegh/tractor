@@ -237,7 +237,12 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::NegatedPattern          => RenameWithMarker(Pattern, Negated),
         CsKind::ListPattern             => RenameWithMarker(Pattern, List),
         CsKind::VarPattern              => RenameWithMarker(Pattern, Var),
-        CsKind::TypePattern             => RenameWithMarker(Pattern, Type),
+        // C# type pattern (`case Integer i:`). Drop the `[type]`
+        // marker for the same reason as Java (iter 275): the
+        // structural `<type>` child already signals it; the
+        // redundant marker collides with the wrapper on the JSON
+        // `type` key.
+        CsKind::TypePattern             => Rename(Pattern),
         CsKind::ParenthesizedPattern    => Flatten { distribute_list: None },
 
         // `as_expression` (`x as Foo`) and `is_expression` (`obj is

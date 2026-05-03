@@ -3345,13 +3345,9 @@
                                   "string": "\"not string\"",
                                   "pattern": {
                                     "pattern": {
-                                      "children": [
-                                        {
-                                          "$type": "type",
-                                          "name": "string"
-                                        }
-                                      ],
-                                      "type": true
+                                      "type": {
+                                        "name": "string"
+                                      }
                                     },
                                     "negated": true
                                   }
