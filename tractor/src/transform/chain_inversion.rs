@@ -340,10 +340,17 @@ fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
                 let property_slot = find_named_child(xot, c, "property");
                 let method_name = property_slot
                     .and_then(|p| first_element_child(xot, p));
+                // Markers on the inner <member> callee
+                // (`[instance]`, `[optional]`, etc.) describe THIS
+                // method invocation — promote them onto the Call
+                // segment in addition to any markers on the <call>
+                // element itself.
+                let mut combined_markers = markers;
+                combined_markers.extend(collect_markers(xot, c));
                 out.push(ChainSegment::Call {
                     name_node: method_name,
                     args,
-                    markers,
+                    markers: combined_markers,
                 });
             }
             Some("call") => {

@@ -315,10 +315,13 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
 fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_where_clause_constraints(xot, root)?;
     unify_file_scoped_namespace(xot, root)?;
-    // Invert right-deep <member>/<call> chains. C# already matches
-    // the canonical input shape (`<call><member><object/><property/></member>...args</call>`)
-    // plus an `<instance/>` marker on `<member>` which the inverter
-    // collects as a marker.
+    // Conditional access (`obj?.Method`) emits as
+    // `<member[optional]><condition><expression>RECV</expression></condition><name>X</name></member>`.
+    // Pre-pass converts the `<condition>` slot to canonical `<object>`
+    // and wraps the bare `<name>` in `<property>` so the chain
+    // inverter can process it.
+    csharp_normalize_conditional_access(xot, root)?;
+    // Invert right-deep <member>/<call> chains.
     crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
@@ -440,6 +443,83 @@ fn merge_adjacent_same_named(xot: &mut Xot, parent: XotNode) -> Result<(), xot::
         }
         if !merged {
             break;
+        }
+    }
+    Ok(())
+}
+
+/// Pre-pass for chain inversion: convert C# conditional-access
+/// (`obj?.Method`) shape to canonical input.
+///
+/// C# emits:
+///   `<member[instance and optional]><condition><expression>RECV</expression></condition><name>X</name></member>`
+///
+/// The chain inverter wants:
+///   `<member[instance and optional]><object>RECV</object><property><name>X</name></property></member>`
+///
+/// Walks every `<member>` with a `<condition>` child and:
+///   1. Renames `<condition>` → `<object>`.
+///   2. Unwraps the inner `<expression>` host so the receiver is a
+///      direct child of `<object>`.
+///   3. Wraps the trailing bare `<name>` in `<property>`.
+///
+/// Idempotent: a `<member>` already in canonical shape (with
+/// `<object>` slot, no `<condition>`) is skipped.
+fn csharp_normalize_conditional_access(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{copy_source_location, get_element_name, rename};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut members: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("member")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut members);
+    for member in members {
+        let condition_slot = xot.children(member).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("condition")
+        });
+        let condition_slot = match condition_slot {
+            Some(c) => c,
+            None => continue,
+        };
+        // Rename <condition> → <object>.
+        rename(xot, condition_slot, "object");
+        // Unwrap the inner <expression> host.
+        let expr_inner = xot.children(condition_slot).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("expression")
+        });
+        if let Some(expr) = expr_inner {
+            let children: Vec<XotNode> = xot.children(expr).collect();
+            for child in children {
+                xot.detach(child)?;
+                xot.insert_before(expr, child)?;
+            }
+            xot.detach(expr)?;
+        }
+        // Wrap bare <name> in <property>.
+        let name_node = xot.children(member).find(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("name")
+        });
+        if let Some(name_node) = name_node {
+            let property_id = xot.add_name("property");
+            let property_slot = xot.new_element(property_id);
+            copy_source_location(xot, name_node, property_slot);
+            xot.insert_before(name_node, property_slot)?;
+            xot.detach(name_node)?;
+            xot.append(property_slot, name_node)?;
         }
     }
     Ok(())

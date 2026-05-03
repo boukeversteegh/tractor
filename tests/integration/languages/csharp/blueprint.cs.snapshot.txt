@@ -175,7 +175,7 @@ unit/
   │   │           ├─ name = "GetHashCode"
   │   │           └─ body/object[access]/
   │   │               ├─ name = "HashCode"
-  │   │               └─ call/
+  │   │               └─ call[instance]/
   │   │                   ├─ name = "Combine"
   │   │                   ├─ argument/name = "X"
   │   │                   └─ argument/name = "Y"
@@ -279,11 +279,11 @@ unit/
   │   │       └─ method[protected and virtual]/
   │   │           ├─ returns/type/name = "void"
   │   │           ├─ name = "OnChanged"
-  │   │           └─ body/call/
-  │   │               ├─ member[instance and optional]/
-  │   │               │   ├─ condition/expression/name = "Changed"
-  │   │               │   └─ name = "Invoke"
-  │   │               └─ argument = "this"
+  │   │           └─ body/object[access]/
+  │   │               ├─ name = "Changed"
+  │   │               └─ call[instance and optional]/
+  │   │                   ├─ name = "Invoke"
+  │   │                   └─ argument = "this"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
   │   │   ├─ extends/type/name = "EntityBase"
@@ -348,7 +348,7 @@ unit/
   │   │       │   └─ body/block/
   │   │       │       ├─ expression[await]/object[access]/
   │   │       │       │   ├─ name = "Task"
-  │   │       │       │   └─ call/
+  │   │       │       │   └─ call[instance]/
   │   │       │       │       ├─ name = "Delay"
   │   │       │       │       └─ argument/int = "1"
   │   │       │       └─ return/expression/index/argument = "this"
@@ -382,7 +382,7 @@ unit/
   │   │           │   ├─ name = "w"
   │   │           │   └─ member[instance]/
   │   │           │       ├─ name = "Name"
-  │   │           │       └─ call/name = "ToUpperInvariant"
+  │   │           │       └─ call[instance]/name = "ToUpperInvariant"
   │   │           ├─ op[plus] = "+"
   │   │           └─ right/expression/string = "\"!\""
   │   └─ class[internal and static]/
@@ -417,9 +417,9 @@ unit/
   │               │   └─ declarator/
   │               │       ├─ name = "shouted"
   │               │       └─ binary/
-  │               │           ├─ left/expression/call/member[instance and optional]/
-  │               │           │   ├─ condition/expression/name = "widget"
-  │               │           │   └─ name = "Shout"
+  │               │           ├─ left/expression/object[access]/
+  │               │           │   ├─ name = "widget"
+  │               │           │   └─ call[instance and optional]/name = "Shout"
   │               │           ├─ op[nullish] = "??"
   │               │           └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
@@ -479,11 +479,11 @@ unit/
   │               │       │   │   └─ name = "w"
   │               │       │   └─ expression/object[access]/
   │               │       │       ├─ name = "Console"
-  │               │       │       └─ call/
+  │               │       │       └─ call[instance]/
   │               │       │           ├─ name = "WriteLine"
   │               │       │           └─ argument/object[access]/
   │               │       │               ├─ name = "w"
-  │               │       │               └─ call/name = "Describe"
+  │               │       │               └─ call[instance]/name = "Describe"
   │               │       ├─ section/
   │               │       │   ├─ pattern[constant]/null = "null"
   │               │       │   └─ throw/new/type/name = "InvalidOperationException"
@@ -496,7 +496,7 @@ unit/
   │               │   │       └─ name = "probe"
   │               │   └─ then/expression/object[access]/
   │               │       ├─ name = "Console"
-  │               │       └─ call/
+  │               │       └─ call[instance]/
   │               │           ├─ name = "WriteLine"
   │               │           └─ argument/object[access]/
   │               │               ├─ name = "probe"
@@ -528,7 +528,7 @@ unit/
   │               │       ├─ name = "odds"
   │               │       └─ object[access]/
   │               │           ├─ name = "numbers"
-  │               │           └─ call/
+  │               │           └─ call[instance]/
   │               │               ├─ name = "Where"
   │               │               ├─ argument/lambda/
   │               │               │   ├─ parameter = "n"
@@ -539,7 +539,7 @@ unit/
   │               │               │       │   └─ right/expression/int = "2"
   │               │               │       ├─ op[inequality] = "!="
   │               │               │       └─ right/expression/int = "0"
-  │               │               └─ call/
+  │               │               └─ call[instance]/
   │               │                   ├─ name = "Select"
   │               │                   ├─ argument/lambda/
   │               │                   │   ├─ parameter = "n"
@@ -547,7 +547,7 @@ unit/
   │               │                   │       ├─ left/expression/name = "n"
   │               │                   │       ├─ op[plus] = "+"
   │               │                   │       └─ right/expression/int = "1"
-  │               │                   └─ call/name = "ToList"
+  │               │                   └─ call[instance]/name = "ToList"
   │               ├─ comment[leading] = "// local function + lambda"
   │               ├─ method/
   │               │   ├─ type/name = "int"
@@ -598,7 +598,7 @@ unit/
   │               │           ├─ parameter = "msg"
   │               │           └─ value/expression/object[access]/
   │               │               ├─ name = "Console"
-  │               │               └─ call/
+  │               │               └─ call[instance]/
   │               │                   ├─ name = "WriteLine"
   │               │                   └─ argument/name = "msg"
   │               ├─ expression/call/
@@ -606,7 +606,7 @@ unit/
   │               │   └─ argument/string/
   │               │       ├─ interpolation/object[access]/
   │               │       │   ├─ name = "evens"
-  │               │       │   └─ call/name = "Sum"
+  │               │       │   └─ call[instance]/name = "Sum"
   │               │       ├─ interpolation/call/
   │               │       │   ├─ name = "cube"
   │               │       │   └─ argument/int = "3"
@@ -660,7 +660,7 @@ unit/
   │               │       ├─ name = "log"
   │               │       └─ argument/object[access]/
   │               │           ├─ name = "n"
-  │               │           └─ call/name = "ToString"
+  │               │           └─ call[instance]/name = "ToString"
   │               ├─ comment[leading] = "// try/catch/finally with when + using declaration + using statement"
   │               ├─ variable/
   │               │   ├─ type/name = "var"
@@ -683,7 +683,7 @@ unit/
   │               │   │   │   │           └─ name = "MemoryStream"
   │               │   │   │   └─ body/block/expression/object[access]/
   │               │   │   │       ├─ name = "inner"
-  │               │   │   │       └─ call/
+  │               │   │   │       └─ call[instance]/
   │               │   │   │           ├─ name = "WriteByte"
   │               │   │   │           └─ argument/int = "1"
   │               │   │   └─ throw/new/
@@ -711,7 +711,7 @@ unit/
   │               │   │   └─ body/block[throw]
   │               │   └─ finally/block/expression/object[access]/
   │               │       ├─ name = "scope"
-  │               │       └─ call/name = "Flush"
+  │               │       └─ call[instance]/name = "Flush"
   │               ├─ comment[leading] = "// tuples + deconstruction + target-typed new + collection expression"
   │               ├─ variable/
   │               │   ├─ type[tuple]/
@@ -1025,4 +1025,4 @@ unit/
                           │   └─ name = "x"
                           └─ object[access]/
                               ├─ expression[non_null]/name = "x"
-                              └─ call/name = "ToString"
+                              └─ call[instance]/name = "ToString"
