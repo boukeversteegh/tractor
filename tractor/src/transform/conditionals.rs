@@ -24,7 +24,7 @@
 
 use xot::{Xot, Node as XotNode};
 
-use super::helpers::{copy_source_location, get_element_children, get_element_name, rename};
+use super::helpers::{copy_source_location, get_attr, get_element_children, get_element_name, rename, XotWithExt};
 
 // /specs/tractor-parse/semantic-tree/transformations.md: Conditional shape
 /// Collapse a nested `else`/`if` chain under `if_node` into the flat
@@ -123,6 +123,23 @@ pub fn collapse_else_if_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot
                 anchor = Some(alt);
             }
             _ => break,
+        }
+    }
+
+    // Tag multiple <else_if> siblings with list="else_ifs" so JSON
+    // renders chained elseifs as an array. Single elseif stays
+    // singleton (rendered as `"else_if": {...}` JSON key).
+    let else_ifs: Vec<xot::Node> = xot.children(if_node)
+        .filter(|&c| {
+            xot.element(c).is_some()
+                && get_element_name(xot, c).as_deref() == Some("else_if")
+        })
+        .collect();
+    if else_ifs.len() >= 2 {
+        for ei in else_ifs {
+            if get_attr(xot, ei, "list").is_none() {
+                xot.with_attr(ei, "list", "else_ifs");
+            }
         }
     }
 

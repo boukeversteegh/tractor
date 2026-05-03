@@ -217,3 +217,40 @@ fn typescript() {
         "//ternary[then][else]",
         1);
 }
+
+/// Multi-elseif chains tag each `<else_if>` sibling with
+/// `list="else_ifs"` so JSON renders them as `else_ifs: [...]`
+/// array. Single-elseif keeps the singleton `else_if` JSON key.
+/// The tagging happens in the shared `collapse_else_if_chain`
+/// helper, so every language that uses it benefits uniformly.
+#[test]
+fn multi_elseif_chain_lists_else_ifs() {
+    claim("TypeScript 2+ elseifs tag with list='else_ifs'",
+        &mut parse_src("typescript", r#"
+        if (a) x = 1;
+        else if (b) x = 2;
+        else if (c) x = 3;
+        else x = 4;
+    "#),
+        "//if/else_if[@list='else_ifs']",
+        2);
+
+    claim("TypeScript single elseif stays singleton (no list= tagging)",
+        &mut parse_src("typescript", r#"
+        if (a) x = 1;
+        else if (b) x = 2;
+    "#),
+        "//if/else_if[not(@list)]",
+        1);
+
+    claim("Java 2+ elseifs tag with list='else_ifs'",
+        &mut parse_src("java", r#"
+        class T { void f() {
+            if (a) x = 1;
+            else if (b) x = 2;
+            else if (c) x = 3;
+        } }
+    "#),
+        "//if/else_if[@list='else_ifs']",
+        2);
+}

@@ -2165,49 +2165,23 @@
               ],
               "ifs": [
                 {
-                  "children": [
-                    {
-                      "$type": "else_if",
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "number": "10"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": "<",
-                              "compare": true,
-                              "less": true
-                            }
+                  "else": {
+                    "expression": {
+                      "assign": {
+                        "right": {
+                          "expression": {
+                            "string": "\"ready\""
                           }
-                        }
-                      },
-                      "then": {
-                        "expression": {
-                          "assign": {
-                            "right": {
-                              "expression": {
-                                "string": "\"loading\""
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "status"
-                              }
-                            },
-                            "op": "="
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "status"
                           }
-                        }
+                        },
+                        "op": "="
                       }
                     }
-                  ],
+                  },
                   "condition": {
                     "expression": {
                       "binary": {
@@ -2246,63 +2220,88 @@
                       }
                     }
                   },
-                  "else_if": {
-                    "then": {
-                      "expression": {
-                        "assign": {
-                          "right": {
-                            "expression": {
-                              "string": "\"idle\""
+                  "else_ifs": [
+                    {
+                      "then": {
+                        "expression": {
+                          "assign": {
+                            "right": {
+                              "expression": {
+                                "string": "\"idle\""
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "status"
+                              }
+                            },
+                            "op": "="
+                          }
+                        }
+                      },
+                      "condition": {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "number": "0"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "text": "===",
+                              "equals": true,
+                              "strict": true
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "status"
-                            }
-                          },
-                          "op": "="
+                          }
                         }
                       }
                     },
-                    "condition": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "number": "0"
+                    {
+                      "then": {
+                        "expression": {
+                          "assign": {
+                            "right": {
+                              "expression": {
+                                "string": "\"loading\""
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "status"
+                              }
+                            },
+                            "op": "="
+                          }
+                        }
+                      },
+                      "condition": {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "number": "10"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "n"
+                              }
+                            },
+                            "op": {
+                              "text": "<",
+                              "compare": true,
+                              "less": true
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "n"
-                            }
-                          },
-                          "op": {
-                            "text": "===",
-                            "equals": true,
-                            "strict": true
                           }
                         }
                       }
                     }
-                  },
-                  "else": {
-                    "expression": {
-                      "assign": {
-                        "right": {
-                          "expression": {
-                            "string": "\"ready\""
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "status"
-                          }
-                        },
-                        "op": "="
-                      }
-                    }
-                  }
+                  ]
                 }
               ],
               "variables": [

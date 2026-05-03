@@ -119,13 +119,11 @@ fn python_from_import_list_attr_uniform() {
 /// is unaffected (no inner `<use>` siblings).
 #[test]
 fn rust_use_group_lists_inner_uses() {
-    let mut tree = parse_src(
-        "rust",
-        "use std::fmt::{Display, Write as IoWrite, self};\n",
-    );
-
     claim("Rust use-group tags each inner <use> with list='uses'",
-        &mut tree,
+        &mut parse_src(
+            "rust",
+            "use std::fmt::{Display, Write as IoWrite, self};\n",
+        ),
         "//use[group]/use[@list='uses']",
         3);
 
