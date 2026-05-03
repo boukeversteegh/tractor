@@ -1440,6 +1440,9 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    // Go struct fields can declare multiple names with one type:
+    // `x, y int` → `<field>` with two `<name>` siblings + `<type>`.
+    crate::transform::tag_multi_role_children(xot, root, &[("field", "name")])?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;

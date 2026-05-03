@@ -283,17 +283,17 @@
       "exported": true,
       "name": "Point",
       "field": {
-        "children": [
-          "Y"
-        ],
-        "exported": true,
-        "name": "X",
-        "type": {
-          "name": "int"
-        },
         "string": {
           "text": "`json:\"x,omitempty\"`",
           "raw": true
+        },
+        "exported": true,
+        "name": [
+          "X",
+          "Y"
+        ],
+        "type": {
+          "name": "int"
         }
       }
     },
