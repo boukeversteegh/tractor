@@ -35,9 +35,11 @@
   ],
   "froms": [
     {
-      "import": {
-        "name": "OrderedDict"
-      },
+      "imports": [
+        {
+          "name": "OrderedDict"
+        }
+      ],
       "path": {
         "names": [
           "collections"
@@ -75,19 +77,23 @@
       }
     },
     {
-      "import": {
-        "name": "sibling"
-      },
+      "imports": [
+        {
+          "name": "sibling"
+        }
+      ],
       "relative": true
     },
     {
-      "import": {
-        "aliased": {
-          "name": "h"
-        },
-        "alias": true,
-        "name": "helper"
-      },
+      "imports": [
+        {
+          "aliased": {
+            "name": "h"
+          },
+          "alias": true,
+          "name": "helper"
+        }
+      ],
       "relative": true,
       "path": {
         "names": [

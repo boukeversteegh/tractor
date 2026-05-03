@@ -1415,10 +1415,16 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     python_restructure_imports(xot, root)?;
     // Run AFTER restructure_imports so the `<from>` element has its
     // final `<import>` siblings (the restructure pass rewires them).
+    // `<from>`/`<import>` is tagged unconditionally — single-name
+    // and multi-name imports both render as `imports: [...]` in
+    // JSON. Per Principle #12, the `<import>` role is always a
+    // list inside `<from>`; the cardinality discriminator used
+    // elsewhere would split the JSON shape (`"import": {...}` vs
+    // `"imports": [...]`) and force consumers to branch on count.
+    python_tag_from_imports_uniform(xot, root)?;
     crate::transform::tag_multi_role_children(
         xot, root,
         &[
-            ("from", "import"),
             // Python `with X as a, Y as b: ...` — `<with>` parent
             // with multiple `<value>` (as-clause) siblings.
             ("with", "value"),
@@ -1433,6 +1439,33 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "module", "tuple", "list", "dict", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;
+    Ok(())
+}
+
+/// Tag every `<import>` child of `<from>` with `list="imports"`,
+/// regardless of cardinality. Mirrors `tag_multi_role_children`'s
+/// (`from`, `import`) entry but without the `>= 2` gate. Per
+/// Principle #12 the `<import>` role inside `<from>` is always a
+/// list; the cardinality-gated tag would split the JSON shape
+/// (`"import": {...}` for single, `"imports": [...]` for multi) and
+/// force consumers to branch on count.
+fn python_tag_from_imports_uniform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{XotWithExt, get_attr, get_element_name};
+    let mut froms: Vec<XotNode> = Vec::new();
+    collect_named_elements(xot, root, "from", &mut froms);
+    for from in froms {
+        let kids: Vec<XotNode> = xot.children(from)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("import")
+            })
+            .collect();
+        for k in kids {
+            if get_attr(xot, k, "list").is_none() {
+                xot.with_attr(k, "list", "imports");
+            }
+        }
+    }
     Ok(())
 }
 

@@ -193,23 +193,19 @@ before committing a non-trivial change.
 
 ### Cold-read findings (iter 233 review)
 
-- [ ] **Python `from`-import singleton/plural shape inconsistency**
-  *(Principle #12 violation, severity MED)*
-  - File: `tests/integration/languages/python/blueprint.py.snapshot.json:36-114`.
-  - Current: same `<from>` element renders as `"import": {…}` for
-    single-name imports (lines 38, 78, 84) AND as `"imports": [...]`
-    for multi-name (lines 48, 63, 99). Two JSON keys for the same
-    role.
-  - Cause: `tag_multi_role_children([("from", "import")])` only
-    fires when the parent has 2+ matching children (cardinality
-    discriminator), so single-name imports get no `list=` and
-    serialize as singleton key.
-  - Desired: always `"imports": [...]` regardless of cardinality
-    (Principle #12: list= drives JSON array uniformly). Likely
-    needs a Python-specific tag pass that sets `list="imports"`
-    on every `<import>` child of `<from>` (no cardinality gate).
-  - Effort: 1-iter.
-  - Source: iter 233 cold-read.
+- [x] iter 260 — **Python `from`-import singleton/plural shape
+  inconsistency fixed.** New helper
+  `python_tag_from_imports_uniform` runs after
+  `python_restructure_imports`; tags every `<import>` child of
+  `<from>` with `list="imports"` regardless of cardinality. Both
+  `from collections import OrderedDict` (single) and
+  `from typing import Optional, Union` (multi) now render as
+  `imports: [...]` in JSON. The `(from, import)` pair was removed
+  from the cardinality-gated `tag_multi_role_children` call to
+  avoid double-tagging. Pinned by
+  `transform/imports.rs::python_from_import_list_attr_uniform`
+  (asserts `//from/import[@list='imports']` matches both single
+  and multi cases).
 
 - [x] **`else_if` element name** — REJECTED. Iter 252 attempted
   to rename `<else_if>` → `<elseif>` across 8 languages on the

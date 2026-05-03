@@ -89,6 +89,27 @@ fn python_from_import() {
         0);
 }
 
+/// `<from>`/`<import>` carries `list="imports"` regardless of how
+/// many entities are imported. Per Principle #12, the `<import>`
+/// role inside `<from>` is always a list — JSON consumers see
+/// `imports: [...]` for both `from x import y` (single) and
+/// `from x import a, b, c` (multi). The cardinality-gated
+/// `tag_multi_role_children` helper would split the JSON shape
+/// here; `python_tag_from_imports_uniform` overrides that for
+/// this specific (parent, child) pair.
+#[test]
+fn python_from_import_list_attr_uniform() {
+    claim("Single-name from-import has list='imports' on its <import> child",
+        &mut parse_src("python", "from foo import bar\n"),
+        "//from/import[@list='imports']",
+        1);
+
+    claim("Multi-name from-import has list='imports' on every <import> child",
+        &mut parse_src("python", "from foo import a, b, c\n"),
+        "//from/import[@list='imports']",
+        3);
+}
+
 #[test]
 fn java_import_and_package() {
     let mut tree = parse_src("java", r#"
