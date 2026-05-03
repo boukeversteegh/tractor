@@ -110,6 +110,31 @@ fn python_from_import_list_attr_uniform() {
         3);
 }
 
+/// Rust `use std::fmt::{Display, Write as IoWrite};` produces
+/// `<use[group]>` containing multiple inner `<use>` siblings (one
+/// per imported entity). Per Principle #19 those are role-uniform
+/// (each is an imported entity); tag with `list="uses"` so JSON
+/// renders as `uses: [...]` array rather than colliding on the
+/// singleton `use` JSON key. Plain non-group `use HashSet as Set;`
+/// is unaffected (no inner `<use>` siblings).
+#[test]
+fn rust_use_group_lists_inner_uses() {
+    let mut tree = parse_src(
+        "rust",
+        "use std::fmt::{Display, Write as IoWrite, self};\n",
+    );
+
+    claim("Rust use-group tags each inner <use> with list='uses'",
+        &mut tree,
+        "//use[group]/use[@list='uses']",
+        3);
+
+    claim("Rust plain use (no group) is unaffected — no inner <use> siblings",
+        &mut parse_src("rust", "use std::collections::HashMap;\n"),
+        "//use/use",
+        0);
+}
+
 #[test]
 fn java_import_and_package() {
     let mut tree = parse_src("java", r#"

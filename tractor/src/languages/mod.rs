@@ -768,7 +768,16 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // multiple `<expression>` siblings (one per let-clause).
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("condition", "expression")],
+        &[
+            ("condition", "expression"),
+            // Rust `use std::fmt::{Display, Write as IoWrite}` —
+            // `<use[group]>` parent with multiple inner `<use>`
+            // siblings (one per imported entity). Tag with
+            // `list="uses"` so JSON renders as `uses: [...]` array
+            // rather than colliding on the singleton `use` key
+            // and overflowing into `children`.
+            ("use", "use"),
+        ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;

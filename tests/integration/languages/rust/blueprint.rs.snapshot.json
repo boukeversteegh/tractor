@@ -197,14 +197,16 @@
   ],
   "uses": [
     {
-      "children": [
+      "uses": [
         {
-          "$type": "use",
-          "alias": true,
-          "name": "HashSet",
+          "name": "HashMap"
+        },
+        {
           "aliased": {
             "name": "Set"
-          }
+          },
+          "alias": true,
+          "name": "HashSet"
         }
       ],
       "group": true,
@@ -213,19 +215,17 @@
           "std",
           "collections"
         ]
-      },
-      "use": {
-        "name": "HashMap"
       }
     },
     {
-      "children": [
+      "uses": [
         {
-          "$type": "use",
+          "name": "Debug"
+        },
+        {
           "name": "Display"
         },
         {
-          "$type": "use",
           "self": true
         }
       ],
@@ -235,9 +235,6 @@
           "std",
           "fmt"
         ]
-      },
-      "use": {
-        "name": "Debug"
       }
     },
     {
@@ -268,14 +265,20 @@
       }
     },
     {
-      "children": [
+      "uses": [
         {
-          "$type": "use",
+          "aliased": {
+            "name": "IoRead"
+          },
           "alias": true,
-          "name": "Write",
+          "name": "Read"
+        },
+        {
           "aliased": {
             "name": "IoWrite"
-          }
+          },
+          "alias": true,
+          "name": "Write"
         }
       ],
       "group": true,
@@ -284,13 +287,6 @@
           "std",
           "io"
         ]
-      },
-      "use": {
-        "aliased": {
-          "name": "IoRead"
-        },
-        "alias": true,
-        "name": "Read"
       }
     },
     {
