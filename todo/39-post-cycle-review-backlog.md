@@ -498,16 +498,14 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
   Removed (8 lines) from transform/mod.rs; all callers use
   `tag_multi_same_name_children` directly.
 
-- [ ] **TSQL operand re-wrap post-pass** *(severity MED, ~14 sites,
-  closes the mystery)*. ROOT CAUSE FOUND iter 197: TSQL's
-  `tractor/src/languages/tsql/transform.rs:29` intentionally maps
-  `"value" | "left" | "right"` wrappers to
-  `TransformAction::Skip`, which detaches the builder-inserted
-  wrappers. Was a deliberate design choice from earlier work. To
-  fix the compare/assign/between operand overflow, ADD A POST-PASS
-  `tsql_wrap_binary_operands` that finds `<compare>` / `<assign>`
-  / `<between>` parents and re-wraps their first/second non-`<op>`
-  element children as `<left>` / `<right>`.
+- [x] **TSQL operand re-wrap** — closed iter 199. New post-pass
+  `tsql_wrap_binary_operands` walks `<compare>`/`<assign>`/`<between>`
+  parents and wraps children with `field="left"`/`field="right"`
+  attributes in `<left>`/`<right>` elements. Closed 9 of TSQL's
+  remaining 20 audit sites. Iter-197's identified mystery (intentional
+  Skip dispatch in `tsql/transform.rs:29` strips builder wrappers)
+  doesn't need to change — operands kept their `field=` attributes
+  so re-wrapping is local + minimally invasive.
 
 - [ ] **Document the TSQL Skip-by-design choice in design.md**
   *(severity LOW, small)*. The trap "field-wrap config identical to
@@ -527,6 +525,9 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 199: TSQL operand re-wrap — `tsql_wrap_binary_operands`
+  post-pass wraps compare/assign/between operands with field= attr
+  in `<left>`/`<right>` slots. Closed 9 sites (TSQL 20 → 11).
 - [x] iter 198: delete `tag_multi_type_children` shim — 2-line
   redundant wrapper post-iter-194's generalization. -8 lines.
 - [x] iter 197: post-cycle review of iters 186-196. Audit

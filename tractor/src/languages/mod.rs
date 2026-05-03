@@ -1527,12 +1527,65 @@ fn go_retag_singleton_closure_body(xot: &mut Xot, root: XotNode) -> Result<(), x
 /// targeted handlers that tag only the multi-instance child role —
 /// out of scope for this iter.
 fn tsql_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    tsql_wrap_binary_operands(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         xot,
         root,
         &["file", "transaction", "union", "columns", "list"],
     )?;
     tsql_tag_select_columns(xot, root)?;
+    Ok(())
+}
+
+/// Wrap `<compare>` / `<assign>` / `<between>` operand children in
+/// role-named `<left>` / `<right>` slots based on their `field=`
+/// attribute. TSQL's transform dispatcher (`tsql/transform.rs:29`)
+/// intentionally Skip-routes builder-inserted `<left>` / `<right>`
+/// wrappers, so this post-pass re-wraps the operands that retained
+/// their `field="left"` / `field="right"` attributes from the raw
+/// tree-sitter input.
+///
+/// Closes the iter-185 deferred mystery (root cause SOLVED iter-197
+/// review).
+fn tsql_wrap_binary_operands(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_attr, get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut parents: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                if matches!(name.as_str(), "compare" | "assign" | "between") {
+                    out.push(node);
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut parents);
+
+    for parent in parents {
+        let elem_children: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for child in elem_children {
+            let field = get_attr(xot, child, "field");
+            let wrapper = match field.as_deref() {
+                Some("left") => "left",
+                Some("right") => "right",
+                _ => continue,
+            };
+            let wrapper_id = xot.add_name(wrapper);
+            let wrapper_node = xot.new_element(wrapper_id);
+            xot.with_source_location_from(wrapper_node, child)
+                .with_wrap_child(child, wrapper_node)?;
+        }
+    }
     Ok(())
 }
 
