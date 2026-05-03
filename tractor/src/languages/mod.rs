@@ -1883,6 +1883,16 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // (each a member declaration, role-uniform per
             // Principle #19). Tag so JSON renders `fields: [...]`.
             ("struct", "field"),
+            // Go generics with shared constraint — `func F[T, U any]`
+            // produces `<generic>` with multiple `<name>` siblings
+            // (one per type-parameter name) plus a singleton `<type>`
+            // constraint. Tag the names; the type stays singleton.
+            ("generic", "name"),
+            // Go type switch with multiple types per case —
+            // `case int, int32, int64:` produces `<case>` with
+            // multiple `<type>` siblings (one per alternative).
+            // Role-uniform alternatives per Principle #19.
+            ("case", "type"),
             // Go interfaces with multiple methods + type-set elements.
             ("interface", "method"),
             ("interface", "type"),

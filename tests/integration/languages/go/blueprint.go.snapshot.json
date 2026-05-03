@@ -722,13 +722,13 @@
       "name": "Map",
       "generics": [
         {
-          "children": [
-            "U"
-          ],
-          "name": "T",
           "type": {
             "name": "any"
-          }
+          },
+          "names": [
+            "T",
+            "U"
+          ]
         }
       ],
       "parameters": [
@@ -1519,24 +1519,22 @@
                 }
               },
               {
-                "children": [
-                  {
-                    "$type": "type",
-                    "name": "int32"
-                  },
-                  {
-                    "$type": "type",
-                    "name": "int64"
-                  }
-                ],
-                "type": {
-                  "name": "int"
-                },
                 "return": {
                   "expression": {
                     "string": "\"int-ish\""
                   }
-                }
+                },
+                "types": [
+                  {
+                    "name": "int"
+                  },
+                  {
+                    "name": "int32"
+                  },
+                  {
+                    "name": "int64"
+                  }
+                ]
               },
               {
                 "return": {
