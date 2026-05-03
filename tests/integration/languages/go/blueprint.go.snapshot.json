@@ -121,23 +121,22 @@
   ],
   "interface": [
     {
-      "children": [
+      "type": [
         {
-          "$type": "type",
-          "approximation": true,
+          "type": {
+            "name": "int"
+          },
+          "approximation": true
+        },
+        {
           "type": {
             "name": "float64"
-          }
+          },
+          "approximation": true
         }
       ],
       "exported": true,
-      "name": "Number",
-      "type": {
-        "type": {
-          "name": "int"
-        },
-        "approximation": true
-      }
+      "name": "Number"
     },
     {
       "method": {

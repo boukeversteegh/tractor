@@ -548,6 +548,11 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 226: Go interface multi-method/type list= — added
+  `("interface", "method")` and `("interface", "type")` to Go's
+  tag_multi_role_children. Interfaces with multiple methods and/or
+  type-set elements now render as uniform arrays. Go audit 12 → 11
+  (-1).
 - [x] iter 225: Python with/try multi-clause list= — added
   `("with", "value")` and `("try", "except")` to the post-restructure
   tag_multi_role_children call. Python audit 14 → 12 (-2).

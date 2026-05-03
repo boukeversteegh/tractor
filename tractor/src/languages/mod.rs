@@ -1508,6 +1508,9 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // Go multi-target var: `var x, y = 1, 2` produces
             // `<var>` with multiple `<name>` siblings.
             ("var", "name"),
+            // Go interfaces with multiple methods + type-set elements.
+            ("interface", "method"),
+            ("interface", "type"),
         ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
