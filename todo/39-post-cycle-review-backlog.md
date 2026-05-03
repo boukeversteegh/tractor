@@ -86,6 +86,18 @@ before committing a non-trivial change.
   kind instead. Iter 179 was caught by test; would have been a quiet
   regression otherwise. (Sister to the "all N languages done" lesson:
   changes that look universal often aren't.)
+- **Marker name = wrapper name → JSON key collision.** When a
+  concept has both a boolean marker (e.g. `<alias/>` empty) AND a
+  structural wrapper (e.g. `<alias>X</alias>`) on the SAME parent,
+  the JSON serializer collides on the same key — the marker lifts
+  as `alias: true` and the wrapper falls through to anonymous
+  `children:` overflow. Iter 184 resolved by renaming wrapper to
+  `<aliased>` (kept `[alias]` marker for query stability). When
+  introducing any new structural wrapper, grep for an existing
+  marker by the same name; if found, pick a distinct wrapper name
+  (`<aliased>`, `<bound>`, `<wrapped>`, …) BEFORE landing. Iter 180
+  (range bounds) avoided this trap by using distinct from/to;
+  iter 184 retroactively fixed an old collision.
 - **Read BOTH snapshot surfaces.** Every iter that touches
   transforms produces two diffs per affected language: the
   `.snapshot.txt` (tree shape, markers, `[@list="X"]` attrs) and
@@ -439,6 +451,22 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   trivially auditable via JSON `"children": [` grep — keep this in
   the post-cycle review checklist.
 
+### Findings from iter-186 post-cycle review (iters 175-185 cluster)
+
+- [ ] **Rust closure 2-param case overflows** *(severity MED)*.
+  Site: `tests/integration/languages/rust/blueprint.rs.snapshot.json:1198-1208`.
+  Concrete: `closure: { children: [{ $type: "parameter", name: "b" }],
+  parameter: { name: "a" }, value: ... }` — first param singleton-
+  lifted, second falls through to `children`. Fix: ensure every
+  `<parameter>` child of `<closure>` carries `list="parameters"`.
+  Likely missing distribute_member_list_attrs entry or a Rust-
+  specific tag pass. Effort: small (1 iter).
+
+- [ ] **Investigate Rust/Python `<pattern>` overflow** *(severity
+  LOW-MED)*. Pattern-binding sites overflow consistently in
+  multiple JSON parents. Cite specific paths in next iter that
+  picks this up.
+
 ### Standing items (re-flag every cycle)
 
 - [ ] Snapshot cold-read pass every ~5 cycles — fresh eyes on every
@@ -451,6 +479,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 186: post-cycle review of iters 175-185. Audit total
+  283 → 261 (-22, mostly TSQL). Cluster overall PASS — alias
+  rename verified, closure archetype intact across 8 PLs, no
+  whack-a-mole regressions. New Lesson added (marker-name =
+  wrapper-name → JSON key collision). Two new backlog items
+  surfaced: Rust closure 2-param overflow + Rust/Python
+  `<pattern>` overflow.
 - [x] iter 185: TSQL `<select>` / `<insert>` column-list tagging —
   targeted post-pass adds `list="column"` to `<column>` children
   (skips role-mixed singleton clauses like `<from>`/`<where>`).
