@@ -1301,8 +1301,8 @@
         {
           "$type": "parameter",
           "destructured": true,
-          "name": "x",
-          "children": [
+          "name": [
+            "x",
             "y"
           ]
         },

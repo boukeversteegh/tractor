@@ -1898,6 +1898,12 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
+    // Ruby destructured params `proc { |(x, y)| ... }` produce a
+    // `<parameter[destructured]>` with multiple `<name>` siblings.
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("parameter", "name")],
+    )?;
     crate::transform::wrap_body_value_children(
         xot,
         root,
