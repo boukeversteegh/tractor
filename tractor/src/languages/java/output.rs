@@ -19,7 +19,10 @@ pub enum TractorNode {
     Parameter, Generic, Generics, Extends, Implements,
     // Type vocabulary (Type dual-use)
     Type, Path, Returns, Dimensions,
-    // Control flow
+    // Control flow.
+    // NOTE: `ElseIf` serializes as `else_if` — intentional
+    // underscore. See `transform/conditionals.rs` and design.md
+    // § 17 (canonical allowed-exception). Do not rename.
     Return, If, Else, ElseIf, For, Foreach, While, Try, Catch, Finally, Throw, Throws,
     Switch, Arm, Label, Case, Pattern, Guard, Body,
     // Control flow additions

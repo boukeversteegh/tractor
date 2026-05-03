@@ -14,7 +14,10 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 pub enum TractorNode {
     // Top-level / declarations
     Program, Module, Class, Method,
-    // Statements / control flow (Begin dual-use)
+    // Statements / control flow (Begin dual-use).
+    // NOTE: `ElseIf` serializes as `else_if` — intentional
+    // underscore. See `transform/conditionals.rs` and design.md
+    // § 17 (canonical allowed-exception). Do not rename.
     If, Unless, Else, ElseIf, Case, Then, While, Until, For, Begin, Rescue, Ensure, Break, Continue,
     // Members / parameters
     Parameter, Argument, Variable,

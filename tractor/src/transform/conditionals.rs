@@ -4,6 +4,23 @@
 //! `<elsif>` shape) into the flat `<if>[condition][then][else_if*][else?]`
 //! shape called for by the semantic-tree spec. Languages call
 //! [`collapse_else_if_chain`] from their post-transform passes.
+//!
+//! ## DO NOT RENAME `<else_if>`
+//!
+//! The element name `else_if` is the canonical *allowed exception*
+//! to Principle #17 (Avoid Compound Node Names) in
+//! `specs/tractor-parse/semantic-tree/design.md` § 17:
+//!
+//! > The bar is high — the obvious test case is `else_if`, where
+//! > the concept is genuinely the *combination* of two keywords
+//! > and neither half alone names it. Rare; expect to justify
+//! > each one individually.
+//!
+//! Iter 252 renamed it to `<elseif>` based on a misread of the
+//! Principle #2 underscore rule and was reverted (commit
+//! 85e58e29). If you're considering renaming this name to
+//! `<elseif>` / `<elif>` / nesting `<else>/<if>/...` etc., DO NOT
+//! — go re-read design.md § 17 first.
 
 use xot::{Xot, Node as XotNode};
 

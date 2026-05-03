@@ -33,7 +33,10 @@ pub enum TractorNode {
     Pointer, Slice, Map, Chan, Array,
     // Inheritance / interface embedding (cross-language)
     Extends,
-    // Statements / control flow
+    // Statements / control flow.
+    // NOTE: `ElseIf` serializes as `else_if` — intentional
+    // underscore. See `transform/conditionals.rs` and design.md
+    // § 17 (canonical allowed-exception). Do not rename.
     Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
     Break, Continue, Goto, Labeled, Label, Send, Receive, Assign, Fallthrough,
     // Expressions

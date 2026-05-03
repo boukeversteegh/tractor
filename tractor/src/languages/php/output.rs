@@ -18,7 +18,10 @@ pub enum TractorNode {
     Parameter, Argument,
     // Inheritance
     Extends, Implements, Types,
-    // Statements / control flow
+    // Statements / control flow.
+    // NOTE: `ElseIf` serializes as `else_if` — intentional
+    // underscore. See `transform/conditionals.rs` and design.md
+    // § 17 (canonical allowed-exception). Do not rename.
     Return, If, Else, ElseIf, For, Foreach, While, Do, Switch, Case, Try, Catch, Finally, Throw,
     Echo, Continue, Break, Match, Arm, Yield, Require, Print, Exit, Declare, Goto,
     Clone, Unset, Label,

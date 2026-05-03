@@ -33,7 +33,10 @@ pub enum TractorNode {
     Name, Type, Accessors, Accessor, Attributes, Attribute, Arguments, Argument,
     Parameters, Parameter, Variable, Declarator, Extends, Properties, Element, Section, Arm,
     Label, Filter, When, Where, Path,
-    // Statements / control flow
+    // Statements / control flow.
+    // NOTE: `ElseIf` serializes as `else_if` — intentional
+    // underscore. See `transform/conditionals.rs` and design.md
+    // § 17 (canonical allowed-exception). Do not rename.
     Return, If, Else, ElseIf, For, Foreach, While, Do, Try, Catch, Finally, Throw,
     Using, Break, Continue, Switch, Block, Expression, Range,
     // Statement additions
