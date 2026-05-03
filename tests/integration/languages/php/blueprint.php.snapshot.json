@@ -2170,16 +2170,15 @@
         {
           "$type": "parameter",
           "type": {
-            "children": [
+            "type": [
               {
-                "$type": "type",
+                "name": "Stringable"
+              },
+              {
                 "name": "Countable2"
               }
             ],
-            "intersection": true,
-            "type": {
-              "name": "Stringable"
-            }
+            "intersection": true
           },
           "name": "$thing"
         }
@@ -2224,26 +2223,24 @@
         {
           "$type": "parameter",
           "type": {
-            "children": [
+            "type": [
               {
-                "$type": "type",
-                "primitive": true,
-                "name": "null"
+                "type": [
+                  {
+                    "name": "Stringable"
+                  },
+                  {
+                    "name": "Countable2"
+                  }
+                ],
+                "intersection": true
+              },
+              {
+                "name": "null",
+                "primitive": true
               }
             ],
-            "disjunctive": true,
-            "type": {
-              "children": [
-                {
-                  "$type": "type",
-                  "name": "Countable2"
-                }
-              ],
-              "intersection": true,
-              "type": {
-                "name": "Stringable"
-              }
-            }
+            "disjunctive": true
           },
           "name": "$thing"
         }

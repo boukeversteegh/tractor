@@ -70,22 +70,21 @@
     },
     {
       "type": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
-            "rest": true,
+            "name": "number"
+          },
+          {
             "type": {
               "type": {
                 "name": "string"
               },
               "array": true
-            }
+            },
+            "rest": true
           }
         ],
-        "tuple": true,
-        "type": {
-          "name": "number"
-        }
+        "tuple": true
       },
       "name": "RestArgs"
     },
@@ -114,17 +113,16 @@
     },
     {
       "type": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
-            "literal": true,
-            "string": "\"counter\""
+            "name": "StaticBlock"
+          },
+          {
+            "string": "\"counter\"",
+            "literal": true
           }
         ],
-        "lookup": true,
-        "type": {
-          "name": "StaticBlock"
-        }
+        "lookup": true
       },
       "name": "NestedTy"
     }
@@ -440,16 +438,15 @@
           "extends": [
             {
               "type": {
-                "children": [
+                "type": [
                   {
-                    "$type": "type",
+                    "name": "number"
+                  },
+                  {
                     "name": "string"
                   }
                 ],
-                "union": true,
-                "type": {
-                  "name": "number"
-                }
+                "union": true
               }
             }
           ]
@@ -1246,16 +1243,15 @@
     {
       "alias": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
+              "name": "string"
+            },
+            {
               "name": "number"
             }
           ],
-          "tuple": true,
-          "type": {
-            "name": "string"
-          }
+          "tuple": true
         },
         "name": "Pair"
       }
@@ -1263,38 +1259,35 @@
     {
       "alias": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
-              "literal": true,
-              "string": "\"error\""
-            }
-          ],
-          "union": true,
-          "type": {
-            "children": [
-              {
-                "$type": "type",
-                "literal": true,
-                "string": "\"ready\""
-              }
-            ],
-            "union": true,
-            "type": {
-              "children": [
+              "type": [
                 {
-                  "$type": "type",
-                  "literal": true,
-                  "string": "\"loading\""
+                  "type": [
+                    {
+                      "string": "\"idle\"",
+                      "literal": true
+                    },
+                    {
+                      "string": "\"loading\"",
+                      "literal": true
+                    }
+                  ],
+                  "union": true
+                },
+                {
+                  "string": "\"ready\"",
+                  "literal": true
                 }
               ],
-              "union": true,
-              "type": {
-                "string": "\"idle\"",
-                "literal": true
-              }
+              "union": true
+            },
+            {
+              "string": "\"error\"",
+              "literal": true
             }
-          }
+          ],
+          "union": true
         },
         "name": "Status"
       }
@@ -1334,16 +1327,15 @@
           "indexer": {
             "annotation": {
               "type": {
-                "children": [
+                "type": [
                   {
-                    "$type": "type",
+                    "name": "T"
+                  },
+                  {
                     "name": "K"
                   }
                 ],
-                "lookup": true,
-                "type": {
-                  "name": "T"
-                }
+                "lookup": true
               }
             },
             "name": "K",
@@ -1922,12 +1914,11 @@
                     {
                       "$type": "type",
                       "tuple": true,
-                      "type": {
-                        "name": "number"
-                      },
-                      "children": [
+                      "type": [
                         {
-                          "$type": "type",
+                          "name": "number"
+                        },
+                        {
                           "name": "T"
                         }
                       ]
@@ -2884,17 +2875,16 @@
             ],
             "returns": {
               "type": {
-                "children": [
+                "type": [
                   {
-                    "$type": "type",
-                    "literal": true,
-                    "undefined": "undefined"
+                    "name": "U"
+                  },
+                  {
+                    "undefined": "undefined",
+                    "literal": true
                   }
                 ],
-                "union": true,
-                "type": {
-                  "name": "U"
-                }
+                "union": true
               }
             }
           }
@@ -3034,17 +3024,16 @@
       "const": true,
       "name": "maybe",
       "type": {
-        "children": [
+        "type": [
           {
-            "$type": "type",
-            "literal": true,
-            "null": "null"
+            "name": "string"
+          },
+          {
+            "null": "null",
+            "literal": true
           }
         ],
-        "union": true,
-        "type": {
-          "name": "string"
-        }
+        "union": true
       }
     },
     {
@@ -3076,17 +3065,16 @@
         "expression": {
           "as": {
             "type": {
-              "children": [
+              "type": [
                 {
-                  "$type": "type",
-                  "literal": true,
-                  "null": "null"
+                  "name": "string"
+                },
+                {
+                  "null": "null",
+                  "literal": true
                 }
               ],
-              "union": true,
-              "type": {
-                "name": "string"
-              }
+              "union": true
             },
             "name": "maybe"
           },

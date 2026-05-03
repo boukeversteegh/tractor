@@ -944,6 +944,7 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     typescript_restructure_import(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(
@@ -1581,6 +1582,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     php_restructure_use(xot, root)?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;

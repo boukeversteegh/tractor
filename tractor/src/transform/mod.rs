@@ -498,6 +498,51 @@ pub fn tag_multi_target_expressions(
     Ok(())
 }
 
+/// Tag `<type>` siblings under union-shaped type containers with
+/// `list="type"` so JSON renders e.g. `type.type: [{...}, {...}]`
+/// arrays for `int | string` (PHP/TS union), `A & B` (PHP
+/// intersection), `(A & B) | C` (PHP disjunctive normal form), etc.
+///
+/// Discriminator: parent is `<type>` element AND it has 2+ direct
+/// `<type>` children. The cardinality test keeps singleton `<type>`
+/// containers (e.g. parameter declarations with a single typed
+/// child) untouched. Idempotent.
+pub fn tag_multi_type_children(
+    xot: &mut Xot,
+    root: XotNode,
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    let root = find_content_root(xot, root);
+    let mut targets: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("type")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut targets);
+
+    for parent in targets {
+        let types: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("type")
+            })
+            .collect();
+        if types.len() < 2 { continue; }
+        for t in types {
+            if get_attr(xot, t, "list").is_none() {
+                xot.with_attr(t, "list", "type");
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
 /// elements (and any other element name in `body_names`) recursively
 /// across the tree. C-family languages emit braces as anonymous text

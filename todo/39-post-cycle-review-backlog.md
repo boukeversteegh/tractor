@@ -478,6 +478,14 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 191: cross-language type-union/intersection list= — new
+  generic helper `tag_multi_type_children` tags `<type>` siblings
+  under `<type>` parents (PHP `int|string`, `A&B`, `(A&B)|C`; TS
+  `string | number`; etc.) with `list="type"`. Cardinality
+  discriminator (>=2) keeps singleton-typed parameters untouched.
+  PHP audit 17 → 14 (-3); TypeScript 27 → 15 (-12, biggest TS
+  cluster closed). Wired into `php_post_transform` and
+  `typescript_post_transform`.
 - [x] iter 190: cross-language multi-target list= — generalized
   iter-189's helper (was Go-only) into
   `crate::transform::tag_multi_target_expressions` and wired into
