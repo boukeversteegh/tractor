@@ -26,7 +26,8 @@ pub enum TractorNode {
     // TSQL's transform dispatcher (transform.rs:29) skips builder-
     // inserted `<left>`/`<right>` wrappers; iter 199 re-wraps via
     // post-pass to expose role-named operand slots in JSON output.
-    Left, Right,
+    // BETWEEN's bounds wrap as <low>/<high> by the same post-pass.
+    Left, Right, Low, High,
     // Functions / calls
     Call, Body, Arg,
     // Subqueries, CTEs, set operations
