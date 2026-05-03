@@ -95,8 +95,14 @@ pub fn rule(k: TsKind) -> Rule<TractorNode> {
         | TsKind::RegexPattern
         | TsKind::SequenceExpression
         | TsKind::StringFragment
-        | TsKind::TypeAnnotation
-        | TsKind::VariableDeclarator => Flatten { distribute_list: None },
+        | TsKind::TypeAnnotation                => Flatten { distribute_list: None },
+
+        // `variable_declarator` keeps the wrapper element so
+        // multi-declarator declarations preserve name↔value
+        // pairing; the post-pass `flatten_single_declarator_children`
+        // unwraps it for single-declarator cases. See
+        // `typescript_post_transform`.
+        TsKind::VariableDeclarator       => Rename(Declarator),
 
         // ---- Custom (language-specific logic in transformations.rs) ---
         TsKind::AbstractMethodSignature  => Custom(transformations::abstract_method_signature),

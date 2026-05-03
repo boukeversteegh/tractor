@@ -87,6 +87,38 @@ fn csharp_single_declarator_flattens() {
         1);
 }
 
+/// TypeScript multi-declarator (`let i = 0, j = 100`) keeps the
+/// `<declarator>` wrappers and tags them with `list="declarators"`
+/// so JSON renders as `declarators: [...]`. Pre-iter-264, TS
+/// unconditionally flattened the wrapper, which made name↔value
+/// pairing positional-only and caused JSON consumers to lose
+/// binding (children-overflow + singleton-key collision).
+/// Single-declarator (`const x = 1`) still flattens.
+#[test]
+fn typescript_multi_declarator_keeps_wrappers() {
+    claim("TS single-declarator `const x = 1` flattens (no <declarator>)",
+        &mut parse_src("typescript", "const x = 1;\n"),
+        "//variable[name='x'][not(declarator)][value/expression/number='1']",
+        1);
+
+    let mut tree = parse_src("typescript", "let i = 0, j = 100;\n");
+
+    claim("TS multi-declarator keeps two <declarator> children with name↔value pairing",
+        &mut tree,
+        &multi_xpath(r#"
+            //variable[let]
+                [declarator[name='i'][value/expression/number='0']]
+                [declarator[name='j'][value/expression/number='100']]
+                [count(declarator)=2]
+        "#),
+        1);
+
+    claim("TS multi-declarator declarators carry list='declarators' for JSON array shape",
+        &mut tree,
+        "//variable/declarator[@list='declarators']",
+        2);
+}
+
 /// Goal #5: augmented_assignment unifies with plain assignment
 /// as <assign> plus an <op> child carrying the compound operator.
 /// A single //assign query matches every assignment.

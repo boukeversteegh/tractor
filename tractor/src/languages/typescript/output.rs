@@ -15,7 +15,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 pub enum TractorNode {
     // Top-level / declarations (Function, Constructor, Generic, Alias dual-use)
     Program, Class, Interface, Enum, Function, Method, Property, Constructor, Indexer, Alias, Aliased,
-    Variable, Arrow,
+    Variable, Arrow, Declarator,
     // Members
     Field, Parameter, Extends, Implements,
     // Type vocabulary

@@ -746,10 +746,12 @@ program/
   │       │   ├─ name = "outer"
   │       │   └─ body/for/
   │       │       ├─ variable[let]/
-  │       │       │   ├─ name = "i"
-  │       │       │   ├─ value/expression/number = "0"
-  │       │       │   ├─ name = "j"
-  │       │       │   └─ value/expression/number = "100"
+  │       │       │   ├─ declarator/
+  │       │       │   │   ├─ name = "i"
+  │       │       │   │   └─ value/expression/number = "0"
+  │       │       │   └─ declarator/
+  │       │       │       ├─ name = "j"
+  │       │       │       └─ value/expression/number = "100"
   │       │       ├─ condition/expression/binary/
   │       │       │   ├─ left/expression/name = "i"
   │       │       │   ├─ op[compare and less] = "<"

@@ -659,22 +659,25 @@
                         }
                       ],
                       "variable": {
-                        "children": [
-                          "j",
+                        "declarators": [
                           {
-                            "$type": "value",
-                            "expression": {
-                              "number": "100"
-                            }
+                            "value": {
+                              "expression": {
+                                "number": "0"
+                              }
+                            },
+                            "name": "i"
+                          },
+                          {
+                            "value": {
+                              "expression": {
+                                "number": "100"
+                              }
+                            },
+                            "name": "j"
                           }
                         ],
-                        "let": true,
-                        "name": "i",
-                        "value": {
-                          "expression": {
-                            "number": "0"
-                          }
-                        }
+                        "let": true
                       },
                       "condition": {
                         "expression": {

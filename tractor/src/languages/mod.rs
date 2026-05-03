@@ -330,7 +330,16 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // siblings. Tag catches with `list="catch"`; body stays singleton.
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("try", "catch")],
+        &[
+            ("try", "catch"),
+            // Multi-declarator (`int x = 1, y = 2`) keeps
+            // `<declarator>` wrappers (per iter 263). Tag with
+            // `list="declarators"` so JSON renders them as an
+            // array; single-declarator is flattened earlier and
+            // doesn't reach this pass.
+            ("variable", "declarator"),
+            ("field", "declarator"),
+        ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::wrap_expression_positions(
@@ -1166,6 +1175,14 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             // TS object literals: `{a: 1, b: 2}` → `<object>` parent
             // with multiple `<pair>` siblings.
             ("object", "pair"),
+            // Multi-declarator (`let i = 0, j = 100`) keeps
+            // `<declarator>` wrappers (per iter 264) so JSON
+            // can render them as `declarators: [...]` array.
+            // Single-declarator is flattened by
+            // `flatten_single_declarator_children` and never
+            // reaches this tag pass.
+            ("variable", "declarator"),
+            ("field", "declarator"),
         ],
     )?;
     typescript_restructure_import(xot, root)?;
@@ -1173,6 +1190,11 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     // element has its final inner `<import>` siblings.
     crate::transform::tag_multi_same_name_children(xot, root, &["import"])?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;
+    // Single-declarator variable declarations flatten the
+    // <declarator> wrapper. Multi-declarator (`let i = 0, j = 100`)
+    // keeps wrappers so name↔value pairing is preserved per
+    // declarator. Mirrors Java/C# iter 263.
+    crate::transform::flatten_single_declarator_children(xot, root, &["variable", "field"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;
@@ -1735,7 +1757,16 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // discriminator (>=2) keeps singleton uses untouched.
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("reference", "name")],
+        &[
+            ("reference", "name"),
+            // Multi-declarator (`int x = 1, y = 2`) keeps
+            // `<declarator>` wrappers (per iter 263). Tag with
+            // `list="declarators"` so JSON renders them as an
+            // array; single-declarator is flattened by the
+            // post-pass below and doesn't reach this tag.
+            ("variable", "declarator"),
+            ("field", "declarator"),
+        ],
     )?;
     java_unwrap_type_in_path(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;

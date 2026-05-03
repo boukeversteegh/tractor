@@ -263,23 +263,23 @@ before committing a non-trivial change.
   Snapshot diff: ~600 lines across Java + C# blueprints (every
   single-declarator field/variable lost its wrapper).
 
-- [ ] **TypeScript multi-declarator binding loss**
-  *(Principle #19 violation, severity LOW, surfaced iter 263
-  during the Java/C# fix)*
-  - TS `VariableDeclarator => Flatten` is unconditional, so
-    `let i = 0, j = 100` becomes flat `name="i" / value=0 /
-    name="j" / value=100` siblings under `variable[let]`. Each
-    `<declarator>` was role-mixed (name+value group) but
-    Flatten merged them — pairing is now position-only, JSON
-    consumers can't reliably reconstruct which name goes with
-    which value.
-  - Visible at `tests/integration/languages/typescript/
-    blueprint.ts.snapshot.txt:748-752` (for-loop init with
-    multiple bindings).
-  - Fix: switch TS `VariableDeclarator` from unconditional
-    `Flatten` to a Custom that flattens only single-declarator
-    cases (mirroring the Java/C# iter 263 approach).
-  - Effort: 1-iter.
+- [x] iter 264 — **TypeScript multi-declarator binding loss
+  fixed.** Switched TS `VariableDeclarator` from unconditional
+  `Flatten` to `Rename(Declarator)`; added
+  `flatten_single_declarator_children` to TS post_transform
+  (same shared helper as iter 263). Multi-declarator
+  (`let i = 0, j = 100`) now keeps both `<declarator>` wrappers
+  with internal name↔value binding. Added `(variable, declarator)`
+  and `(field, declarator)` to TS / Java / C#
+  `tag_multi_role_children` calls so multi cases also get
+  `list="declarators"` and JSON renders as `declarators: [...]`
+  array. Pre-iter-264 JSON shape was broken: `children: ["j",
+  value]` overflow + `name=i, value=0` singleton collision.
+  Now: clean `declarators: [{name=i, value=0}, {name=j,
+  value=100}]`. Pinned by
+  `transform/variables.rs::typescript_multi_declarator_keeps_wrappers`.
+  Snapshot diff: 12 lines in TS `.txt` + JSON shift around
+  the for-loop multi-binding site.
 
 - [x] iter 253 — **Python `yield from` keyword erasure** —
   Custom `yield_expression` handler detects "from" in the text
