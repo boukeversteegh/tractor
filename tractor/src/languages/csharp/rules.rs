@@ -79,7 +79,6 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         | CsKind::InterpolationStart
         | CsKind::LocalDeclarationStatement
         | CsKind::ParenthesizedExpression
-        | CsKind::QualifiedName
         | CsKind::RawStringContent
         | CsKind::RawStringEnd
         | CsKind::RawStringStart
@@ -203,6 +202,7 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         CsKind::SwitchStatement                => Rename(Switch),
         CsKind::ThrowStatement                 => RenameStripKeyword(Throw, "throw"),
         CsKind::TryStatement                   => Rename(Try),
+        CsKind::QualifiedName                  => Rename(Path),
         CsKind::TupleElement                   => Rename(Element),
         CsKind::TupleExpression                => Rename(Tuple),
         CsKind::TypeParameter                  => Rename(Generic),

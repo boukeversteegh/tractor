@@ -525,6 +525,13 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 203: C# qualified_name → `<path>` rename — closes the
+  C# pattern of bare `<name>` siblings under `<new>` / `<using>` /
+  etc. Mirrors Java's `ScopedIdentifier => Rename(Path)`. Also added
+  `flatten_nested_paths` to C# post_transform. JSON now:
+  `new.path.name: ["System", "IO", "MemoryStream"]`.
+  C# audit 18 → 16 (-2). 1 transform-test xpath updated
+  (`csharp_using_renames_to_import` adds `/path` step).
 - [x] iter 202: Go shared-type parameter multi-name list= —
   extended Go's `tag_multi_role_children` to include `("parameter",
   "name")`. `func f(x, y int)` now renders

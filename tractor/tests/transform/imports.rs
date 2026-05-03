@@ -20,10 +20,10 @@ use crate::support::semantic::*;
 
 #[test]
 fn csharp_using_renames_to_import() {
-    claim("C# using directive renders as <import> with the namespace path as name children",
+    claim("C# using directive renders as <import> with the namespace path as name children (iter 203: wrapped in <path>)",
         &mut parse_src("csharp", "using System.Collections.Generic;\n"),
         &multi_xpath(r#"
-            //import
+            //import/path
                 [name='System']
                 [name='Collections']
                 [name='Generic']

@@ -1,18 +1,18 @@
 unit/
   ├─ comment = "// Kitchen-sink C# blueprint fixture. Exercises every major construct so\n// design-principle changes to the C# transform surface as visible snapshot diffs."
   ├─ import/name = "System"
-  ├─ import/
+  ├─ import/path/
   │   ├─ name = "System"
   │   ├─ name = "Collections"
   │   └─ name = "Generic"
-  ├─ import/
+  ├─ import/path/
   │   ├─ name = "System"
   │   └─ name = "Linq"
-  ├─ import/
+  ├─ import/path/
   │   ├─ name = "System"
   │   ├─ name = "Threading"
   │   └─ name = "Tasks"
-  ├─ import/
+  ├─ import/path/
   │   ├─ name = "System"
   │   └─ name = "Math"
   ├─ namespace/
@@ -668,7 +668,7 @@ unit/
   │               │   ├─ type/name = "var"
   │               │   └─ declarator/
   │               │       ├─ name = "scope"
-  │               │       └─ new/
+  │               │       └─ new/path/
   │               │           ├─ name = "System"
   │               │           ├─ name = "IO"
   │               │           └─ name = "MemoryStream"
@@ -679,7 +679,7 @@ unit/
   │               │   │   │   │   ├─ type/name = "var"
   │               │   │   │   │   └─ declarator/
   │               │   │   │   │       ├─ name = "inner"
-  │               │   │   │   │       └─ new/
+  │               │   │   │   │       └─ new/path/
   │               │   │   │   │           ├─ name = "System"
   │               │   │   │   │           ├─ name = "IO"
   │               │   │   │   │           └─ name = "MemoryStream"

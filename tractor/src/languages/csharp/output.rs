@@ -32,7 +32,7 @@ pub enum TractorNode {
     // Shared children
     Name, Type, Accessors, Accessor, Attributes, Attribute, Arguments, Argument,
     Parameters, Parameter, Variable, Declarator, Extends, Properties, Element, Section, Arm,
-    Label, Filter, When, Where,
+    Label, Filter, When, Where, Path,
     // Statements / control flow
     Return, If, Else, ElseIf, For, Foreach, While, Do, Try, Catch, Finally, Throw,
     Using, Break, Continue, Switch, Block, Expression, Range,

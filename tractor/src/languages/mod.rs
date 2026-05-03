@@ -318,6 +318,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
         root,
