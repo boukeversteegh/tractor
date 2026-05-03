@@ -754,7 +754,7 @@ fn inline_stdin_virtual_path_matches_include_glob() {
     // Rule has `include: ["src/**/*.js"]`. When stdin content is piped with
     // a virtual path under src/, the rule fires — proof that globs see the
     // virtual path instead of the old "<stdin>" sentinel that never matched.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript" "src/foo.js";
         expect => exit 1;
@@ -770,7 +770,7 @@ fn inline_stdin_virtual_path_matches_include_glob() {
 fn inline_stdin_virtual_path_outside_include_glob_is_clean() {
     // Same rule/content, but virtual path doesn't match `include:` — rule
     // doesn't fire. Mirrors the disk-file behaviour for non-matching paths.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript" "test/foo.js";
         expect => exit 0;
@@ -787,7 +787,7 @@ fn inline_string_virtual_path_appears_in_diagnostic_output() {
     // `-s` content + virtual path: the diagnostic should mention the virtual
     // path, never the "<string>" or "<stdin>" sentinel. Regression guard
     // against the sentinel leaking past the input boundary.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     let result = command([
         "check",
         "--config",
@@ -821,7 +821,7 @@ fn inline_stdin_pathless_does_not_match_include_globs() {
     // Pathless inline source (no positional path) cannot match any rule
     // with an `include:` pattern — preserves the prior behaviour and makes
     // the difference vs. virtual-path mode explicit.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript";
         expect => exit 0;

@@ -251,13 +251,20 @@ fn walk_member(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
     let object_slot = find_named_child(xot, node, "object");
     let property_slot = find_named_child(xot, node, "property");
 
+    // Without an `<object>` slot the member element isn't a
+    // canonical chain link — it's a self-contained expression in
+    // some other context. Treat the whole node as an opaque
+    // receiver rather than producing a Member segment with no
+    // preceding receiver.
+    let object_inner = object_slot.and_then(|slot| first_element_child(xot, slot));
+    if object_inner.is_none() {
+        out.push(ChainSegment::Receiver(node));
+        return;
+    }
+
     // Recurse into the receiver first so earlier links land before
     // this access in the segment list.
-    if let Some(slot) = object_slot {
-        if let Some(inner) = first_element_child(xot, slot) {
-            walk_chain(xot, inner, out);
-        }
-    }
+    walk_chain(xot, object_inner.unwrap(), out);
 
     let name_node = property_slot
         .and_then(|p| first_element_child(xot, p))
@@ -500,9 +507,24 @@ pub fn invert_chain_nesting(
         return Ok(None);
     }
 
+    // Capture the original node's END coordinates BEFORE detaching
+    // children — the chain spans from the leftmost source token
+    // (receiver) to the rightmost (last arg / close paren). The
+    // receiver's start is already threaded onto `<object>` by
+    // `emit_chain`; we extend the end here to match the original
+    // expression's full range.
+    let end_line = get_attr(xot, node, "end_line");
+    let end_column = get_attr(xot, node, "end_column");
+
     detach_segment_refs(xot, &segments)?;
 
     let new_chain = emit_chain(xot, segments)?;
+    if let Some(v) = end_line {
+        xot.with_attr(new_chain, "end_line", &v);
+    }
+    if let Some(v) = end_column {
+        xot.with_attr(new_chain, "end_column", &v);
+    }
 
     // Replace the original node with the new chain.
     xot.insert_before(node, new_chain)?;

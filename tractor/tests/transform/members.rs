@@ -14,25 +14,24 @@
 
 use crate::support::semantic::*;
 
-// ---- callee ---------------------------------------------------------------
+// ---- chain (post chain-inversion iter 243) -------------------------------
 
-/// TypeScript wraps the call-target field as <callee> (rather than
-/// <function>, which would collide with function declarations).
-/// Plain calls have a direct name child; method calls have a
-/// <member> child carrying receiver and property.
+/// After chain inversion, TypeScript calls match the canonical
+/// shape: `<call>` directly contains the callee (no `<callee>`
+/// wrapper). Method calls become `<object[access]>` chains.
 #[test]
 fn typescript_callee() {
-    claim("TypeScript plain call wraps the callee around the function name",
+    claim("TypeScript plain call has the function name as a direct call child",
         &mut parse_src("typescript", "f(1, 2);\n"),
-        "//call/callee/name='f'",
+        "//call/name='f'",
         1);
 
-    claim("TypeScript method call wraps callee around a member access",
+    claim("TypeScript method call inverts to <object[access]> chain shape",
         &mut parse_src("typescript", "console.log(x);\n"),
         &multi_xpath(r#"
-            //call/callee/member
-                [object/name='console']
-                [property/name='log']
+            //object[access]
+                [name='console']
+                [call/name='log']
         "#),
         1);
 }

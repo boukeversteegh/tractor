@@ -61,6 +61,9 @@ pub enum TractorNode {
     Signature, Hashbang, Attribute,
     // Import-shape markers
     Path, Group, Sideeffect, Reexport,
+    // Chain inversion (iter 243): `[access]` distinguishes
+    // member-access chains from object literals (both <object>).
+    Access,
 }
 
 impl TractorNode {
@@ -88,7 +91,8 @@ impl TractorNode {
             | Self::Parenthesized | Self::Conditional | Self::Infer | Self::Lookup
             | Self::Keyof | Self::Prefix
             | Self::Existential | Self::Typeof | Self::Static | Self::Asserts
-            | Self::Group | Self::Sideeffect | Self::Reexport                     => (true, false, Default),
+            | Self::Group | Self::Sideeffect | Self::Reexport
+            | Self::Access                                                          => (true, false, Default),
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async

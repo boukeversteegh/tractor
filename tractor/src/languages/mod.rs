@@ -955,6 +955,13 @@ fn rust_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> 
 /// TypeScript post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Normalise the call shape so it matches the canonical right-deep
+    // input expected by chain_inversion::extract_chain. TS wraps the
+    // call's callee in `<callee>` (via FIELD_WRAPPINGS); unwrap it so
+    // `<call>` directly contains the callee element (a `<member>` or
+    // bare `<name>`/`<call>`/etc.). Same shape as Python/Go.
+    typescript_unwrap_callee(xot, root)?;
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
@@ -985,6 +992,50 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     crate::transform::distribute_member_list_attrs(
         xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;
+    Ok(())
+}
+
+/// Unwrap `<callee>` field-wrapper inside `<call>` so the call's
+/// first element child is the actual callee (matching the canonical
+/// right-deep input that `chain_inversion::extract_chain` expects).
+///
+/// FIELD_WRAPPINGS routes tree-sitter `field="function"` to
+/// `<callee>X</callee>`, exposing the call target as a named slot.
+/// For chain inversion this wrapper is in the way: the extractor
+/// looks for the callee as the first non-marker child of `<call>`,
+/// not nested under `<callee>`. Unwrapping post-build (and pre-
+/// inversion) preserves the FIELD_WRAPPINGS contract for languages
+/// that don't run chain inversion while letting TS adopt the
+/// canonical shape.
+fn typescript_unwrap_callee(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{get_element_name, XotWithExt};
+    let root = if xot.is_document(root) {
+        xot.document_element(root).unwrap_or(root)
+    } else {
+        root
+    };
+    let mut callees: Vec<XotNode> = Vec::new();
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("callee")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+    collect(xot, root, &mut callees);
+    for callee in callees {
+        // Lift each child of <callee> up to the parent <call>, then
+        // detach the now-empty <callee>.
+        let children: Vec<XotNode> = xot.children(callee).collect();
+        for child in children {
+            xot.with_detach(child)?
+                .with_insert_before(callee, child)?;
+        }
+        xot.with_detach(callee)?;
+    }
     Ok(())
 }
 

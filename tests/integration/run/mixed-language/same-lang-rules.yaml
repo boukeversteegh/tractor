@@ -10,6 +10,6 @@ check:
       severity: error
     - id: no-console-log
       language: javascript
-      xpath: "//call[descendant::property[.='log']]"
+      xpath: "//object[access and call/name='log']"
       reason: "No console.log calls allowed"
       severity: warning

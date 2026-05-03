@@ -306,27 +306,20 @@
               {
                 "value": {
                   "expression": {
-                    "call": {
-                      "arguments": [
-                        "\"\""
-                      ],
-                      "callee": {
-                        "member": {
-                          "property": {
-                            "name": "split"
-                          },
-                          "object": {
-                            "call": {
-                              "arguments": [
-                                "input"
-                              ],
-                              "callee": {
-                                "name": "String"
-                              }
-                            }
-                          }
-                        }
-                      }
+                    "object": {
+                      "call": {
+                        "call": {
+                          "arguments": [
+                            "\"\""
+                          ],
+                          "name": "split"
+                        },
+                        "arguments": [
+                          "input"
+                        ]
+                      },
+                      "access": true,
+                      "name": "String"
                     }
                   }
                 },
@@ -396,20 +389,17 @@
                               }
                             },
                             {
-                              "member": {
-                                "property": {
+                              "object": {
+                                "member": {
                                   "name": "scale"
                                 },
-                                "object": {
-                                  "name": "spread"
-                                }
+                                "access": true,
+                                "name": "spread"
                               }
                             }
                           ]
                         },
-                        "callee": {
-                          "name": "tag"
-                        }
+                        "name": "tag"
                       }
                     }
                   }
@@ -590,17 +580,15 @@
                     },
                     "left": {
                       "expression": {
-                        "member": {
-                          "property": {
-                            "name": "name"
-                          },
-                          "object": {
-                            "member": "new.target"
-                          },
-                          "member": {
-                            "text": "?.",
-                            "optional": true
-                          }
+                        "object": {
+                          "children": [
+                            {
+                              "$type": "member",
+                              "name": "name"
+                            }
+                          ],
+                          "access": true,
+                          "member": "new.target"
                         }
                       }
                     },
@@ -940,13 +928,12 @@
                   "binary": {
                     "right": {
                       "expression": {
-                        "member": {
-                          "property": {
+                        "object": {
+                          "member": {
                             "name": "length"
                           },
-                          "object": {
-                            "name": "rest"
-                          }
+                          "access": true,
+                          "name": "rest"
                         }
                       }
                     },
@@ -1423,20 +1410,15 @@
                     "returns": [
                       {
                         "expression": {
-                          "member": {
-                            "property": {
-                              "name": "size"
-                            },
-                            "object": {
+                          "object": {
+                            "member": {
                               "member": {
-                                "property": {
-                                  "name": "_cache"
-                                },
-                                "object": {
-                                  "this": "this"
-                                }
-                              }
-                            }
+                                "name": "size"
+                              },
+                              "name": "_cache"
+                            },
+                            "access": true,
+                            "this": "this"
                           }
                         }
                       }
@@ -1459,28 +1441,19 @@
                   {
                     "expressions": [
                       {
-                        "call": {
-                          "arguments": [
-                            "\"primary\"",
-                            "value"
-                          ],
-                          "callee": {
-                            "member": {
-                              "property": {
-                                "name": "set"
-                              },
-                              "object": {
-                                "member": {
-                                  "property": {
-                                    "name": "_cache"
-                                  },
-                                  "object": {
-                                    "this": "this"
-                                  }
-                                }
-                              }
-                            }
-                          }
+                        "object": {
+                          "member": {
+                            "call": {
+                              "arguments": [
+                                "\"primary\"",
+                                "value"
+                              ],
+                              "name": "set"
+                            },
+                            "name": "_cache"
+                          },
+                          "access": true,
+                          "this": "this"
                         }
                       }
                     ]
@@ -1506,28 +1479,19 @@
                   {
                     "expressions": [
                       {
-                        "call": {
-                          "arguments": [
-                            "key",
-                            "value"
-                          ],
-                          "callee": {
-                            "member": {
-                              "property": {
-                                "name": "set"
-                              },
-                              "object": {
-                                "member": {
-                                  "property": {
-                                    "name": "_cache"
-                                  },
-                                  "object": {
-                                    "this": "this"
-                                  }
-                                }
-                              }
-                            }
-                          }
+                        "object": {
+                          "member": {
+                            "call": {
+                              "arguments": [
+                                "key",
+                                "value"
+                              ],
+                              "name": "set"
+                            },
+                            "name": "_cache"
+                          },
+                          "access": true,
+                          "this": "this"
                         }
                       }
                     ]
@@ -1576,17 +1540,12 @@
             {
               "value": {
                 "expression": {
-                  "call": {
-                    "callee": {
-                      "member": {
-                        "property": {
-                          "name": "now"
-                        },
-                        "object": {
-                          "name": "Date"
-                        }
-                      }
-                    }
+                  "object": {
+                    "call": {
+                      "name": "now"
+                    },
+                    "access": true,
+                    "name": "Date"
                   }
                 }
               },
@@ -1654,9 +1613,7 @@
                           "arguments": [
                             "name"
                           ],
-                          "callee": {
-                            "super": "super"
-                          }
+                          "super": "super"
                         }
                       },
                       {
@@ -1665,13 +1622,12 @@
                             "text": "++",
                             "increment": true
                           },
-                          "member": {
-                            "property": {
+                          "object": {
+                            "member": {
                               "name": "#counter"
                             },
-                            "object": {
-                              "name": "Widget"
-                            }
+                            "access": true,
+                            "name": "Widget"
                           }
                         }
                       }
@@ -1739,28 +1695,23 @@
                               },
                               "left": {
                                 "expression": {
-                                  "member": {
-                                    "property": {
+                                  "object": {
+                                    "member": {
                                       "name": "label"
                                     },
-                                    "object": {
-                                      "index": {
-                                        "number": "0",
-                                        "object": {
-                                          "member": {
-                                            "property": {
-                                              "name": "items"
-                                            },
-                                            "object": {
-                                              "this": "this"
-                                            }
+                                    "access": true,
+                                    "index": {
+                                      "number": "0",
+                                      "object": {
+                                        "member": {
+                                          "property": {
+                                            "name": "items"
+                                          },
+                                          "object": {
+                                            "this": "this"
                                           }
                                         }
                                       }
-                                    },
-                                    "member": {
-                                      "text": "?.",
-                                      "optional": true
                                     }
                                   }
                                 }
@@ -1836,20 +1787,15 @@
                             "binary": {
                               "right": {
                                 "expression": {
-                                  "member": {
-                                    "property": {
-                                      "name": "length"
-                                    },
-                                    "object": {
+                                  "object": {
+                                    "member": {
                                       "member": {
-                                        "property": {
-                                          "name": "items"
-                                        },
-                                        "object": {
-                                          "this": "this"
-                                        }
-                                      }
-                                    }
+                                        "name": "length"
+                                      },
+                                      "name": "items"
+                                    },
+                                    "access": true,
+                                    "this": "this"
                                   }
                                 }
                               },
@@ -1914,20 +1860,15 @@
                               {
                                 "expressions": [
                                   {
-                                    "member": {
-                                      "property": {
-                                        "name": "length"
-                                      },
-                                      "object": {
+                                    "object": {
+                                      "member": {
                                         "member": {
-                                          "property": {
-                                            "name": "items"
-                                          },
-                                          "object": {
-                                            "this": "this"
-                                          }
-                                        }
-                                      }
+                                          "name": "length"
+                                        },
+                                        "name": "items"
+                                      },
+                                      "access": true,
+                                      "this": "this"
                                     }
                                   }
                                 ]
@@ -1941,13 +1882,12 @@
                               "returns": [
                                 {
                                   "expression": {
-                                    "member": {
-                                      "property": {
+                                    "object": {
+                                      "member": {
                                         "name": "items"
                                       },
-                                      "object": {
-                                        "this": "this"
-                                      }
+                                      "access": true,
+                                      "this": "this"
                                     }
                                   }
                                 }
@@ -1983,9 +1923,7 @@
                                               "arguments": [
                                                 "u"
                                               ],
-                                              "callee": {
-                                                "name": "fetch"
-                                              }
+                                              "name": "fetch"
                                             },
                                             "await": true
                                           }
@@ -2497,20 +2435,15 @@
                   },
                   "right": {
                     "expression": {
-                      "call": {
-                        "arguments": [
-                          "obj"
-                        ],
-                        "callee": {
-                          "member": {
-                            "property": {
-                              "name": "entries"
-                            },
-                            "object": {
-                              "name": "Object"
-                            }
-                          }
-                        }
+                      "object": {
+                        "call": {
+                          "arguments": [
+                            "obj"
+                          ],
+                          "name": "entries"
+                        },
+                        "access": true,
+                        "name": "Object"
                       }
                     }
                   }
@@ -2685,96 +2618,91 @@
           "arrow": {
             "value": {
               "expression": {
-                "call": {
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "name": "string"
-                    },
-                    {
-                      "$type": "arrow",
-                      "parameters": [
-                        {
-                          "name": "acc",
-                          "required": true
-                        },
-                        {
-                          "name": "p",
-                          "required": true
-                        },
-                        {
-                          "name": "i",
-                          "required": true
-                        }
-                      ],
-                      "value": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "string": "\"\""
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "index": {
-                                        "name": "i",
-                                        "object": {
-                                          "name": "vals"
+                "object": {
+                  "call": {
+                    "arguments": [
+                      {
+                        "$type": "type",
+                        "name": "string"
+                      },
+                      {
+                        "$type": "arrow",
+                        "parameters": [
+                          {
+                            "name": "acc",
+                            "required": true
+                          },
+                          {
+                            "name": "p",
+                            "required": true
+                          },
+                          {
+                            "name": "i",
+                            "required": true
+                          }
+                        ],
+                        "value": {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "string": "\"\""
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "index": {
+                                          "name": "i",
+                                          "object": {
+                                            "name": "vals"
+                                          }
                                         }
                                       }
+                                    },
+                                    "op": {
+                                      "text": "??",
+                                      "nullish": true
                                     }
-                                  },
-                                  "op": {
-                                    "text": "??",
-                                    "nullish": true
                                   }
                                 }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "p"
+                              },
+                              "left": {
+                                "expression": {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "name": "p"
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "name": "acc"
+                                      }
+                                    },
+                                    "op": {
+                                      "text": "+",
+                                      "plus": true
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "acc"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
                                   }
                                 }
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
                               }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
                             }
                           }
                         }
-                      }
-                    },
-                    "\"\""
-                  ],
-                  "callee": {
-                    "member": {
-                      "property": {
-                        "name": "reduce"
                       },
-                      "object": {
-                        "name": "parts"
-                      }
-                    }
-                  }
+                      "\"\""
+                    ],
+                    "name": "reduce"
+                  },
+                  "access": true,
+                  "name": "parts"
                 }
               }
             },
@@ -2859,58 +2787,53 @@
     {
       "value": {
         "expression": {
-          "call": {
-            "arguments": [
-              {
-                "$type": "arrow",
-                "parameters": [
-                  {
-                    "name": "x",
-                    "required": true
-                  }
-                ],
-                "returns": {
-                  "type": {
-                    "name": "number"
-                  }
-                },
-                "value": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "number": "2"
+          "object": {
+            "call": {
+              "arguments": [
+                {
+                  "$type": "arrow",
+                  "parameters": [
+                    {
+                      "name": "x",
+                      "required": true
+                    }
+                  ],
+                  "returns": {
+                    "type": {
+                      "name": "number"
+                    }
+                  },
+                  "value": {
+                    "expression": {
+                      "binary": {
+                        "right": {
+                          "expression": {
+                            "number": "2"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "x"
+                          }
+                        },
+                        "op": {
+                          "text": "*",
+                          "multiply": true
                         }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "x"
-                        }
-                      },
-                      "op": {
-                        "text": "*",
-                        "multiply": true
                       }
                     }
                   }
                 }
-              }
-            ],
-            "callee": {
-              "member": {
-                "property": {
-                  "name": "map"
-                },
-                "object": {
-                  "array": {
-                    "numbers": [
-                      "1",
-                      "2",
-                      "3"
-                    ]
-                  }
-                }
-              }
+              ],
+              "name": "map"
+            },
+            "access": true,
+            "array": {
+              "numbers": [
+                "1",
+                "2",
+                "3"
+              ]
             }
           }
         }
@@ -3092,9 +3015,7 @@
       "value": {
         "expression": {
           "call": {
-            "callee": {
-              "name": "arrayOf"
-            }
+            "name": "arrayOf"
           }
         }
       },
@@ -3104,13 +3025,15 @@
     {
       "value": {
         "expression": {
-          "member": {
-            "property": {
-              "name": "url"
-            },
-            "object": {
-              "member": "import.meta"
-            }
+          "object": {
+            "children": [
+              {
+                "$type": "member",
+                "name": "url"
+              }
+            ],
+            "access": true,
+            "member": "import.meta"
           }
         }
       },
@@ -3120,13 +3043,12 @@
     {
       "value": {
         "expression": {
-          "member": {
-            "property": {
+          "object": {
+            "member": {
               "name": "counter"
             },
-            "object": {
-              "name": "StaticBlock"
-            }
+            "access": true,
+            "name": "StaticBlock"
           }
         }
       },
@@ -3164,13 +3086,12 @@
                           },
                           "left": {
                             "expression": {
-                              "member": {
-                                "property": {
+                              "object": {
+                                "member": {
                                   "name": "counter"
                                 },
-                                "object": {
-                                  "name": "StaticBlock"
-                                }
+                                "access": true,
+                                "name": "StaticBlock"
                               }
                             }
                           },
