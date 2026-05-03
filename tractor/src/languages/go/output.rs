@@ -48,6 +48,9 @@ pub enum TractorNode {
     Path, Blank, Dot,
     // Marker-only
     Raw, Short, Exported, Unexported, Approximation, Generic, Implicit,
+    // Chain inversion (iter 242): `[access]` marker distinguishes
+    // member-access chains (`obj.method()`) from object literals.
+    Access,
 }
 
 impl TractorNode {
@@ -72,7 +75,8 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Raw | Self::Short | Self::Approximation
             | Self::Implicit
-            | Self::Blank | Self::Dot                                              => (true, false, Default),
+            | Self::Blank | Self::Dot
+            | Self::Access                                                          => (true, false, Default),
             // `Generic` is dual-use: marker `[generic]` on `<type>`
             // for generic-type instantiations AND container `<generic>`
             // for type-parameter declarations.

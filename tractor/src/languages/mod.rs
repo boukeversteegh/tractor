@@ -1506,6 +1506,11 @@ fn java_unwrap_type_in_path(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
 /// Go post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Invert right-deep `<member>`/`<call>` chains. Go's tree
+    // matches the canonical input shape exactly (same as Python),
+    // so no normalization step is needed. Run early so subsequent
+    // passes see the post-inversion shape.
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     go_retag_singleton_closure_body(xot, root)?;
     crate::transform::wrap_expression_positions(

@@ -78,18 +78,15 @@
     {
       "value": {
         "expression": {
-          "call": {
-            "arguments": [
-              "\"not found\""
-            ],
-            "member": {
-              "property": {
-                "name": "New"
-              },
-              "object": {
-                "name": "errors"
-              }
-            }
+          "object": {
+            "call": {
+              "arguments": [
+                "\"not found\""
+              ],
+              "name": "New"
+            },
+            "access": true,
+            "name": "errors"
           }
         }
       },
@@ -360,13 +357,12 @@
             },
             "left": {
               "expression": {
-                "member": {
-                  "property": {
+                "object": {
+                  "member": {
                     "name": "items"
                   },
-                  "object": {
-                    "name": "c"
-                  }
+                  "access": true,
+                  "name": "c"
                 }
               }
             }
@@ -408,36 +404,33 @@
         "returns": [
           {
             "expression": {
-              "call": {
-                "arguments": [
-                  "\"(%d,%d)\"",
-                  {
-                    "$type": "member",
-                    "object": {
-                      "name": "p"
+              "object": {
+                "call": {
+                  "arguments": [
+                    "\"(%d,%d)\"",
+                    {
+                      "$type": "member",
+                      "object": {
+                        "name": "p"
+                      },
+                      "property": {
+                        "name": "X"
+                      }
                     },
-                    "property": {
-                      "name": "X"
+                    {
+                      "$type": "member",
+                      "object": {
+                        "name": "p"
+                      },
+                      "property": {
+                        "name": "Y"
+                      }
                     }
-                  },
-                  {
-                    "$type": "member",
-                    "object": {
-                      "name": "p"
-                    },
-                    "property": {
-                      "name": "Y"
-                    }
-                  }
-                ],
-                "member": {
-                  "property": {
-                    "name": "Sprintf"
-                  },
-                  "object": {
-                    "name": "fmt"
-                  }
-                }
+                  ],
+                  "name": "Sprintf"
+                },
+                "access": true,
+                "name": "fmt"
               }
             }
           }
@@ -470,13 +463,12 @@
             },
             "left": {
               "expression": {
-                "member": {
-                  "property": {
+                "object": {
+                  "member": {
                     "name": "X"
                   },
-                  "object": {
-                    "name": "p"
-                  }
+                  "access": true,
+                  "name": "p"
                 }
               }
             }
@@ -489,13 +481,12 @@
             },
             "left": {
               "expression": {
-                "member": {
-                  "property": {
+                "object": {
+                  "member": {
                     "name": "Y"
                   },
-                  "object": {
-                    "name": "p"
-                  }
+                  "access": true,
+                  "name": "p"
                 }
               }
             }
@@ -529,13 +520,12 @@
         "returns": [
           {
             "expression": {
-              "member": {
-                "property": {
+              "object": {
+                "member": {
                   "name": "msg"
                 },
-                "object": {
-                  "name": "e"
-                }
+                "access": true,
+                "name": "e"
               }
             }
           }
@@ -566,19 +556,16 @@
         "returns": [
           {
             "expression": {
-              "call": {
-                "arguments": [
-                  "\"wrap: %w\"",
-                  "err"
-                ],
-                "member": {
-                  "property": {
-                    "name": "Errorf"
-                  },
-                  "object": {
-                    "name": "fmt"
-                  }
-                }
+              "object": {
+                "call": {
+                  "arguments": [
+                    "\"wrap: %w\"",
+                    "err"
+                  ],
+                  "name": "Errorf"
+                },
+                "access": true,
+                "name": "fmt"
               }
             }
           }
@@ -1502,19 +1489,16 @@
               {
                 "return": {
                   "expression": {
-                    "call": {
-                      "arguments": [
-                        "\"%T\"",
-                        "v"
-                      ],
-                      "member": {
-                        "property": {
-                          "name": "Sprintf"
-                        },
-                        "object": {
-                          "name": "fmt"
-                        }
-                      }
+                    "object": {
+                      "call": {
+                        "arguments": [
+                          "\"%T\"",
+                          "v"
+                        ],
+                        "name": "Sprintf"
+                      },
+                      "access": true,
+                      "name": "fmt"
                     }
                   }
                 }
@@ -1590,15 +1574,12 @@
               {
                 "return": {
                   "expression": {
-                    "call": {
-                      "member": {
-                        "property": {
-                          "name": "String"
-                        },
-                        "object": {
-                          "name": "v"
-                        }
-                      }
+                    "object": {
+                      "call": {
+                        "name": "String"
+                      },
+                      "access": true,
+                      "name": "v"
                     }
                   }
                 },
@@ -1900,18 +1881,15 @@
               "closure": {
                 "value": {
                   "expression": {
-                    "call": {
-                      "arguments": [
-                        "\"bg\""
-                      ],
-                      "member": {
-                        "property": {
-                          "name": "Println"
-                        },
-                        "object": {
-                          "name": "fmt"
-                        }
-                      }
+                    "object": {
+                      "call": {
+                        "arguments": [
+                          "\"bg\""
+                        ],
+                        "name": "Println"
+                      },
+                      "access": true,
+                      "name": "fmt"
                     }
                   }
                 }
@@ -1946,15 +1924,12 @@
                           "right": {
                             "expression": {
                               "unary": {
-                                "call": {
-                                  "member": {
-                                    "property": {
-                                      "name": "Done"
-                                    },
-                                    "object": {
-                                      "name": "ctx"
-                                    }
-                                  }
+                                "object": {
+                                  "call": {
+                                    "name": "Done"
+                                  },
+                                  "access": true,
+                                  "name": "ctx"
                                 },
                                 "op": {
                                   "text": "<-",
@@ -2270,15 +2245,12 @@
             "variable": {
               "right": {
                 "expression": {
-                  "call": {
-                    "member": {
-                      "property": {
-                        "name": "Pipe"
-                      },
-                      "object": {
-                        "name": "io"
-                      }
-                    }
+                  "object": {
+                    "call": {
+                      "name": "Pipe"
+                    },
+                    "access": true,
+                    "name": "io"
                   }
                 }
               },
@@ -2399,45 +2371,39 @@
                 "binary": {
                   "right": {
                     "expression": {
-                      "call": {
-                        "arguments": [
-                          "err",
-                          "ErrNotFound"
-                        ],
-                        "member": {
-                          "property": {
-                            "name": "Is"
-                          },
-                          "object": {
-                            "name": "errors"
-                          }
-                        }
+                      "object": {
+                        "call": {
+                          "arguments": [
+                            "err",
+                            "ErrNotFound"
+                          ],
+                          "name": "Is"
+                        },
+                        "access": true,
+                        "name": "errors"
                       }
                     }
                   },
                   "left": {
                     "expression": {
-                      "call": {
-                        "arguments": [
-                          "err",
-                          {
-                            "$type": "unary",
-                            "op": {
-                              "text": "&",
-                              "bitwise": true,
-                              "and": true
-                            },
-                            "name": "target"
-                          }
-                        ],
-                        "member": {
-                          "property": {
-                            "name": "As"
-                          },
-                          "object": {
-                            "name": "errors"
-                          }
-                        }
+                      "object": {
+                        "call": {
+                          "arguments": [
+                            "err",
+                            {
+                              "$type": "unary",
+                              "op": {
+                                "text": "&",
+                                "bitwise": true,
+                                "and": true
+                              },
+                              "name": "target"
+                            }
+                          ],
+                          "name": "As"
+                        },
+                        "access": true,
+                        "name": "errors"
                       }
                     }
                   },

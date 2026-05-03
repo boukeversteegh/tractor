@@ -22,11 +22,11 @@ file/
   ├─ const/name = "StatusError"
   ├─ var/
   │   ├─ name = "ErrNotFound"
-  │   └─ value/expression/call/
-  │       ├─ member/
-  │       │   ├─ object/name = "errors"
-  │       │   └─ property/name = "New"
-  │       └─ string = "\"not found\""
+  │   └─ value/expression/object[access]/
+  │       ├─ name = "errors"
+  │       └─ call/
+  │           ├─ name = "New"
+  │           └─ string = "\"not found\""
   ├─ var/
   │   ├─ name = "globalCount"
   │   └─ type/name = "int"
@@ -123,9 +123,9 @@ file/
   │   │   ├─ name = "v"
   │   │   └─ type/name = "T"
   │   └─ body/assign/
-  │       ├─ left/expression/member/
-  │       │   ├─ object/name = "c"
-  │       │   └─ property/name = "items"
+  │       ├─ left/expression/object[access]/
+  │       │   ├─ name = "c"
+  │       │   └─ member/name = "items"
   │       └─ right/expression/call/
   │           ├─ name = "append"
   │           ├─ member/
@@ -138,17 +138,17 @@ file/
   │   │   └─ type/name = "Point"
   │   ├─ name = "String"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/expression/call/
-  │       ├─ member/
-  │       │   ├─ object/name = "fmt"
-  │       │   └─ property/name = "Sprintf"
-  │       ├─ string = "\"(%d,%d)\""
-  │       ├─ member/
-  │       │   ├─ object/name = "p"
-  │       │   └─ property/name = "X"
-  │       └─ member/
-  │           ├─ object/name = "p"
-  │           └─ property/name = "Y"
+  │   └─ body/return/expression/object[access]/
+  │       ├─ name = "fmt"
+  │       └─ call/
+  │           ├─ name = "Sprintf"
+  │           ├─ string = "\"(%d,%d)\""
+  │           ├─ member/
+  │           │   ├─ object/name = "p"
+  │           │   └─ property/name = "X"
+  │           └─ member/
+  │               ├─ object/name = "p"
+  │               └─ property/name = "Y"
   ├─ method[exported]/
   │   ├─ parameter/
   │   │   ├─ name = "p"
@@ -160,14 +160,14 @@ file/
   │   │   └─ type/name = "int"
   │   └─ body/
   │       ├─ assign/
-  │       │   ├─ left/expression/member/
-  │       │   │   ├─ object/name = "p"
-  │       │   │   └─ property/name = "X"
+  │       │   ├─ left/expression/object[access]/
+  │       │   │   ├─ name = "p"
+  │       │   │   └─ member/name = "X"
   │       │   └─ right/expression/name = "dx"
   │       └─ assign/
-  │           ├─ left/expression/member/
-  │           │   ├─ object/name = "p"
-  │           │   └─ property/name = "Y"
+  │           ├─ left/expression/object[access]/
+  │           │   ├─ name = "p"
+  │           │   └─ member/name = "Y"
   │           └─ right/expression/name = "dy"
   ├─ method[exported]/
   │   ├─ parameter/
@@ -175,21 +175,21 @@ file/
   │   │   └─ pointer/type/name = "MyErr"
   │   ├─ name = "Error"
   │   ├─ returns/type/name = "string"
-  │   └─ body/return/expression/member/
-  │       ├─ object/name = "e"
-  │       └─ property/name = "msg"
+  │   └─ body/return/expression/object[access]/
+  │       ├─ name = "e"
+  │       └─ member/name = "msg"
   ├─ function[unexported]/
   │   ├─ name = "wrap"
   │   ├─ parameter/
   │   │   ├─ name = "err"
   │   │   └─ type/name = "error"
   │   ├─ returns/type/name = "error"
-  │   └─ body/return/expression/call/
-  │       ├─ member/
-  │       │   ├─ object/name = "fmt"
-  │       │   └─ property/name = "Errorf"
-  │       ├─ string = "\"wrap: %w\""
-  │       └─ name = "err"
+  │   └─ body/return/expression/object[access]/
+  │       ├─ name = "fmt"
+  │       └─ call/
+  │           ├─ name = "Errorf"
+  │           ├─ string = "\"wrap: %w\""
+  │           └─ name = "err"
   ├─ function[unexported]/
   │   ├─ name = "doThing"
   │   ├─ returns/type/name = "error"
@@ -452,15 +452,15 @@ file/
   │       │       └─ right/expression/name = "v"
   │       ├─ case/
   │       │   ├─ type/name = "Stringer"
-  │       │   └─ return/expression/call/member/
-  │       │       ├─ object/name = "v"
-  │       │       └─ property/name = "String"
-  │       └─ default/return/expression/call/
-  │           ├─ member/
-  │           │   ├─ object/name = "fmt"
-  │           │   └─ property/name = "Sprintf"
-  │           ├─ string = "\"%T\""
-  │           └─ name = "v"
+  │       │   └─ return/expression/object[access]/
+  │       │       ├─ name = "v"
+  │       │       └─ call/name = "String"
+  │       └─ default/return/expression/object[access]/
+  │           ├─ name = "fmt"
+  │           └─ call/
+  │               ├─ name = "Sprintf"
+  │               ├─ string = "\"%T\""
+  │               └─ name = "v"
   └─ function[unexported]/
       ├─ name = "controlFlow"
       ├─ parameter/
@@ -488,9 +488,9 @@ file/
           │   │   ├─ left/
           │   │   │   ├─ expression/name = "x"
           │   │   │   └─ expression/name = "err"
-          │   │   └─ right/expression/call/member/
-          │   │       ├─ object/name = "io"
-          │   │       └─ property/name = "Pipe"
+          │   │   └─ right/expression/object[access]/
+          │   │       ├─ name = "io"
+          │   │       └─ call/name = "Pipe"
           │   ├─ condition/expression/binary/
           │   │   ├─ left/expression/name = "err"
           │   │   ├─ op[inequality] = "!="
@@ -559,11 +559,11 @@ file/
           │   └─ body/unary/
           │       ├─ name = "n"
           │       └─ op[increment] = "++"
-          ├─ go/call/closure/value/expression/call/
-          │   ├─ member/
-          │   │   ├─ object/name = "fmt"
-          │   │   └─ property/name = "Println"
-          │   └─ string = "\"bg\""
+          ├─ go/call/closure/value/expression/object[access]/
+          │   ├─ name = "fmt"
+          │   └─ call/
+          │       ├─ name = "Println"
+          │       └─ string = "\"bg\""
           ├─ labeled/
           │   ├─ label = "Outer"
           │   └─ for/body/select/
@@ -591,9 +591,9 @@ file/
           │       └─ case/
           │           ├─ receive/right/expression/unary/
           │           │   ├─ op[receive] = "<-"
-          │           │   └─ call/member/
-          │           │       ├─ object/name = "ctx"
-          │           │       └─ property/name = "Done"
+          │           │   └─ object[access]/
+          │           │       ├─ name = "ctx"
+          │           │       └─ call/name = "Done"
           │           └─ goto/label = "cleanup"
           ├─ labeled/
           │   ├─ label = "cleanup"
@@ -678,21 +678,21 @@ file/
           │   │   ├─ left/expression/name = "err"
           │   │   └─ right/expression/call/name = "doThing"
           │   ├─ condition/expression/binary/
-          │   │   ├─ left/expression/call/
-          │   │   │   ├─ member/
-          │   │   │   │   ├─ object/name = "errors"
-          │   │   │   │   └─ property/name = "As"
-          │   │   │   ├─ name = "err"
-          │   │   │   └─ unary/
-          │   │   │       ├─ op[bitwise and and] = "&"
-          │   │   │       └─ name = "target"
+          │   │   ├─ left/expression/object[access]/
+          │   │   │   ├─ name = "errors"
+          │   │   │   └─ call/
+          │   │   │       ├─ name = "As"
+          │   │   │       ├─ name = "err"
+          │   │   │       └─ unary/
+          │   │   │           ├─ op[bitwise and and] = "&"
+          │   │   │           └─ name = "target"
           │   │   ├─ op[logical and or] = "||"
-          │   │   └─ right/expression/call/
-          │   │       ├─ member/
-          │   │       │   ├─ object/name = "errors"
-          │   │       │   └─ property/name = "Is"
-          │   │       ├─ name = "err"
-          │   │       └─ name = "ErrNotFound"
+          │   │   └─ right/expression/object[access]/
+          │   │       ├─ name = "errors"
+          │   │       └─ call/
+          │   │           ├─ name = "Is"
+          │   │           ├─ name = "err"
+          │   │           └─ name = "ErrNotFound"
           │   └─ then/return/expression/name = "err"
           ├─ assign/
           │   ├─ left/
