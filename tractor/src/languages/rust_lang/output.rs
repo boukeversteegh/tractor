@@ -28,6 +28,10 @@ pub enum TractorNode {
     // § 17 (canonical allowed-exception). Do not rename.
     Let, Return, If, Else, ElseIf, For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
     Send, Label, Yield,
+    // Range bounds (iter 270): `<from>` / `<to>` slot wrappers and
+    // `<inclusive/>` / `<exclusive/>` end-marker. Mirrors Ruby
+    // iter 180.
+    From, To, Inclusive, Exclusive,
     // Expressions (Ref, Tuple, Array dual-use; Await/Try are markers)
     Call, Index, Binary, Unary, Assign, Closure, Await, Try, Macro, Cast, Ref, Tuple, Unsafe,
     Literal, Block, Expression,
@@ -91,6 +95,7 @@ impl TractorNode {
             | Self::Foreign | Self::Higher | Self::Optional | Self::Turbofish
             | Self::Variadic | Self::Negative
             | Self::Access
+            | Self::Inclusive | Self::Exclusive
             | Self::Group | Self::Wildcard | Self::Reexport                            => (true, false, Default),
             Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
             | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),

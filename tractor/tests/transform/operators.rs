@@ -383,3 +383,45 @@ fn python_logical() {
         "#),
         1);
 }
+
+// ---- range -----------------------------------------------------------------
+
+/// Rust `0..10` (exclusive end), `0..=10` (inclusive end), open-
+/// ended `5..` / `..3`, and full `..` all emit `<range>` with
+/// `<from>` / `<to>` slot wrappers and an `<inclusive/>` /
+/// `<exclusive/>` end-marker (Principle #8: source must be
+/// reconstructable; `..` vs `..=` are semantically distinct).
+/// Mirrors Ruby iter 180.
+#[test]
+fn rust_range_bounds_and_inclusivity() {
+    let mut tree = parse_src("rust", r#"
+        fn f() {
+            let _ = (0..10, 1..=5, 5.., ..3, ..);
+        }
+    "#);
+
+    claim("Rust `0..10` is range[exclusive] with from/to slots",
+        &mut tree,
+        "//range[exclusive][from/int='0'][to/int='10']",
+        1);
+
+    claim("Rust `1..=5` is range[inclusive] with from/to slots",
+        &mut tree,
+        "//range[inclusive][from/int='1'][to/int='5']",
+        1);
+
+    claim("Rust `5..` is range[exclusive] with from but no to",
+        &mut tree,
+        "//range[exclusive][from/int='5'][not(to)]",
+        1);
+
+    claim("Rust `..3` is range[exclusive] with to but no from",
+        &mut tree,
+        "//range[exclusive][to/int='3'][not(from)]",
+        1);
+
+    claim("Rust pattern range `0..=9` reuses left/right field-wrap, renamed to from/to",
+        &mut parse_src("rust", "fn f(x: i32) { match x { 0..=9 => {}, _ => {} } }"),
+        "//pattern/range[inclusive][from/int='0'][to/int='9']",
+        1);
+}

@@ -519,14 +519,14 @@ file/
   │       │       ├─ value/expression/int = "5"
   │       │       └─ body/
   │       │           ├─ arm/
-  │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/expression/int = "0"
-  │       │           │   │   └─ right/expression/int = "9"
+  │       │           │   ├─ pattern/range[inclusive]/
+  │       │           │   │   ├─ from/int = "0"
+  │       │           │   │   └─ to/int = "9"
   │       │           │   └─ value/expression/string = "\"single\""
   │       │           ├─ arm/
-  │       │           │   ├─ pattern/range/
-  │       │           │   │   ├─ left/expression/int = "10"
-  │       │           │   │   └─ right/expression/int = "99"
+  │       │           │   ├─ pattern/range[inclusive]/
+  │       │           │   │   ├─ from/int = "10"
+  │       │           │   │   └─ to/int = "99"
   │       │           │   └─ value/expression/string = "\"double\""
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
@@ -572,14 +572,14 @@ file/
   │       ├─ for/
   │       │   ├─ label/name = "outer"
   │       │   ├─ name = "i"
-  │       │   ├─ value/expression/range/
-  │       │   │   ├─ int = "0"
-  │       │   │   └─ int = "10"
+  │       │   ├─ value/expression/range[exclusive]/
+  │       │   │   ├─ from/int = "0"
+  │       │   │   └─ to/int = "10"
   │       │   └─ body/for/
   │       │       ├─ name = "j"
-  │       │       ├─ value/expression/range/
-  │       │       │   ├─ int = "0"
-  │       │       │   └─ int = "10"
+  │       │       ├─ value/expression/range[exclusive]/
+  │       │       │   ├─ from/int = "0"
+  │       │       │   └─ to/int = "10"
   │       │       └─ body/if/
   │       │           ├─ condition/expression/binary/
   │       │           │   ├─ left/expression/binary/
@@ -808,9 +808,9 @@ file/
   │       │           │   ├─ pattern/pattern[ref]/pattern[tuple]/
   │       │           │   │   ├─ pattern[capture]/
   │       │           │   │   │   ├─ name = "a"
-  │       │           │   │   │   └─ range/
-  │       │           │   │   │       ├─ left/expression/int = "1"
-  │       │           │   │   │       └─ right/expression/int = "10"
+  │       │           │   │   │   └─ range[inclusive]/
+  │       │           │   │   │       ├─ from/int = "1"
+  │       │           │   │   │       └─ to/int = "10"
   │       │           │   │   ├─ name = "b"
   │       │           │   │   └─ name = "_c"
   │       │           │   └─ value/expression/binary/
@@ -843,7 +843,7 @@ file/
   │       │   └─ value/expression/match/
   │       │       ├─ value/expression/ref/value/expression/index/
   │       │       │   ├─ name = "arr"
-  │       │       │   └─ range = ".."
+  │       │       │   └─ range[exclusive] = ".."
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/

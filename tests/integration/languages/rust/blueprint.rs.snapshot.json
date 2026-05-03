@@ -1831,15 +1831,12 @@
                         },
                         "pattern": {
                           "range": {
-                            "right": {
-                              "expression": {
-                                "int": "9"
-                              }
+                            "to": {
+                              "int": "9"
                             },
-                            "left": {
-                              "expression": {
-                                "int": "0"
-                              }
+                            "inclusive": true,
+                            "from": {
+                              "int": "0"
                             }
                           }
                         }
@@ -1852,15 +1849,12 @@
                         },
                         "pattern": {
                           "range": {
-                            "right": {
-                              "expression": {
-                                "int": "99"
-                              }
+                            "to": {
+                              "int": "99"
                             },
-                            "left": {
-                              "expression": {
-                                "int": "10"
-                              }
+                            "inclusive": true,
+                            "from": {
+                              "int": "10"
                             }
                           }
                         }
@@ -2046,10 +2040,13 @@
                   "value": {
                     "expression": {
                       "range": {
-                        "children": [
-                          "10"
-                        ],
-                        "int": "0"
+                        "to": {
+                          "int": "10"
+                        },
+                        "exclusive": true,
+                        "from": {
+                          "int": "0"
+                        }
                       }
                     }
                   }
@@ -2063,10 +2060,13 @@
             "value": {
               "expression": {
                 "range": {
-                  "children": [
-                    "10"
-                  ],
-                  "int": "0"
+                  "to": {
+                    "int": "10"
+                  },
+                  "exclusive": true,
+                  "from": {
+                    "int": "0"
+                  }
                 }
               }
             }
@@ -2805,15 +2805,12 @@
                               "tuple": true,
                               "pattern": {
                                 "range": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "10"
-                                    }
+                                  "to": {
+                                    "int": "10"
                                   },
-                                  "left": {
-                                    "expression": {
-                                      "int": "1"
-                                    }
+                                  "inclusive": true,
+                                  "from": {
+                                    "int": "1"
                                   }
                                 },
                                 "capture": true,
@@ -2987,7 +2984,10 @@
                         "value": {
                           "expression": {
                             "index": {
-                              "range": "..",
+                              "range": {
+                                "text": "..",
+                                "exclusive": true
+                              },
                               "name": "arr"
                             }
                           }

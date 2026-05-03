@@ -12,10 +12,10 @@ use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::RustKind;
 use super::output::TractorNode::{
-    self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Expression, Extern,
-    Generic, Generics, In as InName, Inner, Leading, Let, Literal, Mut, Name, Parameter, Pattern,
-    Private, Pub, Raw, Self_, Static, String as RustString, Super, Trailing, Try, Type, Unsafe,
-    Use as UseName,
+    self, Async, Await, Borrowed, Comment as CommentName, Const, Crate, Exclusive, Expression,
+    Extern, From, Generic, Generics, In as InName, Inclusive, Inner, Leading, Let, Literal, Mut,
+    Name, Parameter, Pattern, Private, Pub, Range as RangeNode, Raw, Self_, Static,
+    String as RustString, Super, To, Trailing, Try, Type, Unsafe, Use as UseName,
 };
 
 /// `closure_expression` — `|x| x` or `|x| { ... }`. Tree-sitter wraps
@@ -143,6 +143,95 @@ pub fn expression_statement(xot: &mut Xot, node: XotNode) -> Result<TransformAct
 /// migration proceeds. Drops the wrapper, promotes children to parent.
 pub fn skip(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Skip)
+}
+
+/// `range_expression` / `range_pattern` — `0..10` (exclusive end),
+/// `0..=10` (inclusive end), `5..` (open end), `..3` (open begin),
+/// `..` (full). Tree-sitter doesn't tag the operands with
+/// `field="begin"`/`field="end"` (unlike Ruby), so we identify
+/// position by walking children in source order: operand BEFORE the
+/// `..`/`..=` text leaf is the start, AFTER is the end. Emits
+/// `<from>` / `<to>` slot wrappers and `<inclusive/>` / `<exclusive/>`
+/// end-marker. Mirrors Ruby iter 180.
+///
+/// Marker semantics (cross-language Principle #5):
+/// - `..=` (Rust inclusive end) → `<inclusive/>`
+/// - `..`  (Rust exclusive end) → `<exclusive/>`
+///
+/// Open-ended forms keep the corresponding slot absent (no `<from>`
+/// for `..3`, no `<to>` for `5..`). Full range `..` produces a bare
+/// `<range[exclusive]>` marker with neither slot.
+pub fn range(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    // Walk children in source order; the .. or ..= text leaf
+    // splits operands into before (from) and after (to).
+    let children: Vec<XotNode> = xot.children(node).collect();
+    let mut op_index: Option<usize> = None;
+    let mut is_inclusive = false;
+    for (i, &c) in children.iter().enumerate() {
+        if let Some(text) = xot.text_str(c) {
+            let t = text.trim();
+            if t == ".." || t == "..=" {
+                op_index = Some(i);
+                is_inclusive = t == "..=";
+                break;
+            }
+        }
+    }
+    let marker = if is_inclusive { Inclusive } else { Exclusive };
+    xot.with_prepended_marker(node, marker)?;
+
+    if let Some(op_idx) = op_index {
+        // Wrap the FIRST element child before op_idx in <from>,
+        // and FIRST element child after op_idx in <to>. Skip
+        // markers (the marker we just prepended is at index 0).
+        //
+        // For `range_pattern`, tree-sitter tags operands with
+        // `field="left"`/`field="right"` and the field-wrap pass
+        // wraps them in `<left>`/`<right>` slots. Don't double-
+        // wrap — RENAME the existing slot to `<from>`/`<to>`.
+        // For `range_expression`, operands are bare `<int>` etc.
+        // and DO get the wrap.
+        let from_operand = children[..op_idx]
+            .iter()
+            .copied()
+            .find(|&c| xot.element(c).is_some() && !is_marker_element(xot, c));
+        let to_operand = children[op_idx + 1..]
+            .iter()
+            .copied()
+            .find(|&c| xot.element(c).is_some() && !is_marker_element(xot, c));
+        if let Some(operand) = from_operand {
+            if get_element_name(xot, operand).as_deref() == Some("left") {
+                xot.with_renamed(operand, From);
+            } else {
+                let from_id = xot.add_name(From.as_str());
+                let from_node = xot.new_element(from_id);
+                xot.with_source_location_from(from_node, operand)
+                    .with_wrap_child(operand, from_node)?;
+            }
+        }
+        if let Some(operand) = to_operand {
+            if get_element_name(xot, operand).as_deref() == Some("right") {
+                xot.with_renamed(operand, To);
+            } else {
+                let to_id = xot.add_name(To.as_str());
+                let to_node = xot.new_element(to_id);
+                xot.with_source_location_from(to_node, operand)
+                    .with_wrap_child(operand, to_node)?;
+            }
+        }
+    }
+    xot.with_renamed(node, RangeNode);
+    Ok(TransformAction::Continue)
+}
+
+/// Helper: an element is a "marker" iff it has no element children
+/// and no text content. Used by `range` to skip the marker we just
+/// prepended when looking for operand children.
+fn is_marker_element(xot: &Xot, node: XotNode) -> bool {
+    if xot.element(node).is_none() {
+        return false;
+    }
+    !xot.children(node).any(|c| xot.element(c).is_some() || xot.text_str(c).is_some())
 }
 
 /// `try_expression` — `foo()?`. Promote to `<expression>` host with a
