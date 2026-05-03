@@ -166,7 +166,15 @@ Distinct from existing `<path>`:
 
 Keeping them separate avoids forcing one element to carry both meanings — Principle #5 (Unified Concepts within a language) and Principle #11 (Specific Names Over Type Hierarchies).
 
-## Cascades (Dart)
+## Cascades (Dart) — future extension, not implemented
+
+> **Status: design only.** Cascades are *not* part of the current
+> rollout. This section exists so the chain shape is forward-
+> compatible: when Dart joins the supported languages, the
+> extension below can land without redesigning what's already
+> shipped. The current 8 languages (TS, Python, Java, C#, Go,
+> Rust, Ruby, PHP) only have linear chains and don't need any of
+> this.
 
 Most languages have linear chains. Dart's cascade operator `..` breaks the assumption that "step N operates on step N-1's result" — every cascade step operates on the **same receiver**, the leftmost expression. The whole cascade expression evaluates to that receiver.
 
@@ -207,7 +215,7 @@ For mixed cascade and normal chain `obj..a().b..c()..d()` (cascade `a()` on obj,
 
 `<cascades>` blocks are siblings of regular chain steps. They compose with the rest of the spine.
 
-Implementation timing: the `<cascades>` extension is **deferred** until Dart actually lands as a supported language. The current 8 PLs (TS, Python, Java, C#, Go, Rust, Ruby, PHP) only have linear chains. The design is forward-compatible: when Dart arrives, the inverter gains a `ChainSegment::Cascade` variant and `emit_chain` groups consecutive cascades under a single `<cascades>` element.
+When Dart arrives, the inverter gains a `ChainSegment::Cascade` variant and `emit_chain` groups consecutive cascades under a single `<cascades>` element. No code lives for cascades in the current implementation — `chain_inversion.rs` does not have a `Cascade` variant, the helper does not recognize `..`, and no tests cover this path. The design is captured here only so the eventual implementer knows the target shape.
 
 ## Helper API
 
