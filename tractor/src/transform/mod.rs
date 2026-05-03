@@ -557,15 +557,6 @@ pub fn tag_multi_same_name_children(
     Ok(())
 }
 
-/// Backward-compat wrapper: type-only multi-tagging. Equivalent to
-/// `tag_multi_same_name_children(xot, root, &["type"])`.
-pub fn tag_multi_type_children(
-    xot: &mut Xot,
-    root: XotNode,
-) -> Result<(), xot::Error> {
-    tag_multi_same_name_children(xot, root, &["type"])
-}
-
 /// Tag specific (parent, child) pairs with `list=<child>` when the
 /// parent has 2+ children of the given child name. Used for
 /// container shapes where the multi-instance role has a different

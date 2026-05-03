@@ -86,6 +86,26 @@ before committing a non-trivial change.
   kind instead. Iter 179 was caught by test; would have been a quiet
   regression otherwise. (Sister to the "all N languages done" lesson:
   changes that look universal often aren't.)
+- **Field-wrap can be silently undone by a per-language Skip
+  dispatcher.** TSQL `tractor/src/languages/tsql/transform.rs:29`
+  routes builder-inserted `<left>`/`<right>`/`<value>` wrappers to
+  `TransformAction::Skip` — intentional design choice from earlier
+  work, but it makes the audit see "config says yes, output says
+  no." When investigating "why doesn't field X wrap in language Y,"
+  FIRST check the language's transform dispatcher for an explicit
+  Skip route on the wrapper element name BEFORE adding more config
+  or chasing parser-level bugs. Iter 197 review surfaced this; iter
+  185 chased a non-issue at the field-wrap layer for over an hour.
+- **Premature cross-language commitment in shape-divergent areas.**
+  When committing to one of multiple under-debate cross-language
+  shapes (e.g. Ruby `<call>` adopting Java's flat receiver-shape in
+  iter 195 while the 4-way design call between Java flat /
+  Python+Go nested member / TS callee+member is still pending),
+  call it out in the commit message: "matches Java pending design
+  call". Reduces archaeology cost when a future "revisit" iter
+  needs to find all the affected sites. The blueprint-reduction
+  signal can be strong enough to justify shipping early; the
+  reversibility is what matters.
 - **Marker name = wrapper name → JSON key collision.** When a
   concept has both a boolean marker (e.g. `<alias/>` empty) AND a
   structural wrapper (e.g. `<alias>X</alias>`) on the SAME parent,
@@ -466,6 +486,35 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   multiple JSON parents. Cite specific paths in next iter that
   picks this up.
 
+### Findings from iter-197 post-cycle review (iters 186-196 cluster)
+
+Audit progress: **283 → 173 (-39%)** since baseline. iters 186-196
+cluster contributed -88 sites. Per-language: csharp 18 (0), ts 27
+→ 15 (-12), rust 47 → 34 (-13), java 5 (0), go 40 → 20 (-20),
+python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
+20 (0).
+
+- [x] **Delete `tag_multi_type_children` shim** — closed iter 198.
+  Removed (8 lines) from transform/mod.rs; all callers use
+  `tag_multi_same_name_children` directly.
+
+- [ ] **TSQL operand re-wrap post-pass** *(severity MED, ~14 sites,
+  closes the mystery)*. ROOT CAUSE FOUND iter 197: TSQL's
+  `tractor/src/languages/tsql/transform.rs:29` intentionally maps
+  `"value" | "left" | "right"` wrappers to
+  `TransformAction::Skip`, which detaches the builder-inserted
+  wrappers. Was a deliberate design choice from earlier work. To
+  fix the compare/assign/between operand overflow, ADD A POST-PASS
+  `tsql_wrap_binary_operands` that finds `<compare>` / `<assign>`
+  / `<between>` parents and re-wraps their first/second non-`<op>`
+  element children as `<left>` / `<right>`.
+
+- [ ] **Document the TSQL Skip-by-design choice in design.md**
+  *(severity LOW, small)*. The trap "field-wrap config identical to
+  Java but doesn't fire" deserves a paragraph so new contributors
+  don't repeat the iter-185 investigation. Tag with the iter-197
+  finding for traceability.
+
 ### Standing items (re-flag every cycle)
 
 - [ ] Snapshot cold-read pass every ~5 cycles — fresh eyes on every
@@ -478,6 +527,15 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 198: delete `tag_multi_type_children` shim — 2-line
+  redundant wrapper post-iter-194's generalization. -8 lines.
+- [x] iter 197: post-cycle review of iters 186-196. Audit
+  283 → 173 (-39%); 88 sites closed in this 11-iter cluster.
+  TSQL field-wrap mystery SOLVED — intentional Skip dispatch in
+  `tsql/transform.rs:29` strips wrappers; needs re-wrap post-pass
+  (queued). 2 new Lessons added: (a) field-wrap Skip dispatcher
+  trap, (b) call-out cross-language premature commitments in
+  commit messages.
 - [x] iter 196: Python f-string interpolation + string concat list= —
   added new helper `tag_multi_role_children` for (parent, child)
   pairs where the multi-instance child has a different element name
