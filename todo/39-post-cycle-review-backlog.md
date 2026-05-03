@@ -478,6 +478,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 193: Python + C# + Java + Go wired to generic
+  type/multi-target helpers. Python audit 41 → 35 (-6 from
+  type-union pattern). C#/Java/Go: helpers idempotent + cardinality-
+  gated, no behavior change (no overflow patterns of those shapes
+  in their blueprints). Cumulative wiring: all 6 programming
+  languages with `<type>` containers + `<left>/<right>` slots now
+  pick up multi-instance role tagging automatically.
 - [x] iter 192: Rust wired to generic helpers — added
   `tag_multi_target_expressions` + `tag_multi_type_children` to
   `rust_post_transform`. Rust audit 42 → 37 (-5). Remaining 37

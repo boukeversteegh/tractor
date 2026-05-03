@@ -316,6 +316,8 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     attach_where_clause_constraints(xot, root)?;
     unify_file_scoped_namespace(xot, root)?;
     collapse_conditionals(xot, root)?;
+    crate::transform::tag_multi_target_expressions(xot, root)?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
         root,
@@ -1127,6 +1129,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     python_restructure_imports(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
@@ -1380,6 +1383,8 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
+    crate::transform::tag_multi_target_expressions(xot, root)?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     java_unwrap_type_in_path(xot, root)?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(
@@ -1433,6 +1438,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
+    crate::transform::tag_multi_type_children(xot, root)?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;

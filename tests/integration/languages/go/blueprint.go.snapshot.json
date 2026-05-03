@@ -395,9 +395,11 @@
                 }
               ],
               "generic": true,
-              "type": {
-                "name": "Container"
-              }
+              "type": [
+                {
+                  "name": "Container"
+                }
+              ]
             }
           }
         },
@@ -1434,9 +1436,11 @@
                     }
                   ],
                   "generic": true,
-                  "type": {
-                    "name": "Map"
-                  }
+                  "type": [
+                    {
+                      "name": "Map"
+                    }
+                  ]
                 }
               }
             },

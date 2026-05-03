@@ -233,13 +233,14 @@
     {
       "right": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
+              "name": "T"
+            },
+            {
               "name": "U"
             },
             {
-              "$type": "type",
               "type": {
                 "name": "Ts",
                 "splat": true
@@ -247,21 +248,32 @@
             }
           ],
           "generic": true,
-          "name": "tuple",
-          "type": {
-            "name": "T"
-          }
+          "name": "tuple"
         }
       },
       "left": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
               "type": {
-                "children": [
+                "type": [
                   {
-                    "$type": "type",
+                    "name": "T"
+                  },
+                  {
+                    "name": "int"
+                  }
+                ],
+                "constrained": true
+              }
+            },
+            {
+              "type": {
+                "type": [
+                  {
+                    "name": "U"
+                  },
+                  {
                     "tuple": {
                       "children": [
                         "str"
@@ -270,14 +282,10 @@
                     }
                   }
                 ],
-                "constrained": true,
-                "type": {
-                  "name": "U"
-                }
+                "constrained": true
               }
             },
             {
-              "$type": "type",
               "type": {
                 "name": "Ts",
                 "splat": true
@@ -285,21 +293,7 @@
             }
           ],
           "generic": true,
-          "name": "Pair",
-          "type": {
-            "type": {
-              "children": [
-                {
-                  "$type": "type",
-                  "name": "int"
-                }
-              ],
-              "constrained": true,
-              "type": {
-                "name": "T"
-              }
-            }
-          }
+          "name": "Pair"
         }
       }
     },
@@ -939,20 +933,19 @@
           "name": "z",
           "type": {
             "type": {
-              "children": [
+              "type": [
                 {
-                  "$type": "type",
+                  "type": {
+                    "name": "int"
+                  },
+                  "generic": true,
+                  "name": "list"
+                },
+                {
                   "none": "None"
                 }
               ],
-              "union": true,
-              "type": {
-                "type": {
-                  "name": "int"
-                },
-                "generic": true,
-                "name": "list"
-              }
+              "union": true
             }
           },
           "value": {
@@ -964,17 +957,16 @@
       ],
       "returns": {
         "type": {
-          "children": [
+          "type": [
             {
-              "$type": "type",
+              "name": "int"
+            },
+            {
               "none": "None"
             }
           ],
           "generic": true,
-          "name": "Union",
-          "type": {
-            "name": "int"
-          }
+          "name": "Union"
         }
       }
     },
