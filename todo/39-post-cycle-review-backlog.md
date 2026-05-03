@@ -478,6 +478,13 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 195: Ruby `<call>` receiver wrap — extended
+  `call_expression` Custom handler to wrap `field="receiver"` child
+  in `<object>` (matches iter-148 Java method_invocation shape).
+  Resolves the long-standing `call.name="X" + children=[method]`
+  collision (iter-170 review found `MAX_RETRIES.zero?` overflow).
+  Ruby audit 39 → 17 (-22, 56% reduction). Method-name `<name>`
+  stays at top level so `call.name: "method"` is the JSON key.
 - [x] iter 194: generalized helper + pattern-pattern coverage —
   promoted `tag_multi_type_children` to
   `tag_multi_same_name_children(names: &[&str])` covering any

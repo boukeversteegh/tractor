@@ -10,8 +10,8 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::RubyKind;
 use super::output::TractorNode::{
-    self, Call, Comment as CommentName, Else, Exclusive, From, Inclusive, Leading, Name, Optional,
-    Parameter, Range as RangeNode, Ternary, Then, To, Trailing,
+    self, Call, Comment as CommentName, Else, Exclusive, From, Inclusive, Leading, Name, Object,
+    Optional, Parameter, Range as RangeNode, Ternary, Then, To, Trailing,
 };
 
 /// `range` — `1..9` (inclusive) / `1...9` (exclusive). Adds
@@ -87,6 +87,21 @@ pub fn call_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     if is_safe_nav {
         xot.with_prepended_marker(node, Optional)?;
     }
+
+    // Wrap the `field="receiver"` child in `<object>` so JSON
+    // doesn't collide receiver-name with method-name on the same
+    // `name` key (call-shape role wrapping; matches iter-148 Java
+    // method_invocation flat shape).
+    let receiver_child = xot.children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_attr(xot, c, "field").as_deref() == Some("receiver"));
+    if let Some(recv) = receiver_child {
+        let object_id = xot.add_name(Object.as_str());
+        let object_node = xot.new_element(object_id);
+        xot.with_source_location_from(object_node, recv)
+            .with_wrap_child(recv, object_node)?;
+    }
+
     xot.with_renamed(node, Call);
     Ok(TransformAction::Continue)
 }

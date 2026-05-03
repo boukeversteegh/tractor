@@ -56,13 +56,13 @@ program/
   │       │           ├─ parameter/name = "other"
   │       │           └─ body/expression/binary/
   │       │               ├─ left/expression/call/
-  │       │               │   ├─ name = "other"
+  │       │               │   ├─ object/name = "other"
   │       │               │   ├─ name = "is_a?"
   │       │               │   └─ name = "Base"
   │       │               ├─ op[logical and and] = "&&"
   │       │               └─ right/expression/binary/
   │       │                   ├─ left/expression/call/
-  │       │                   │   ├─ name = "other"
+  │       │                   │   ├─ object/name = "other"
   │       │                   │   └─ name = "name"
   │       │                   ├─ op[equals] = "=="
   │       │                   └─ right/expression/name = "@name"
@@ -79,7 +79,7 @@ program/
   │               ├─ expression/call/
   │               │   ├─ name = "prepend"
   │               │   └─ call/
-  │               │       ├─ name = "Module"
+  │               │       ├─ object/name = "Module"
   │               │       └─ name = "new"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "SINGLE"
@@ -148,20 +148,20 @@ program/
   │               │       │       └─ else/expression/name = "msg"
   │               │       └─ ternary/
   │               │           ├─ condition/expression/call/
-  │               │           │   ├─ name = "opts"
+  │               │           │   ├─ object/name = "opts"
   │               │           │   └─ name = "empty?"
   │               │           ├─ then/expression/name = "msg"
   │               │           └─ else/expression/string/
   │               │               ├─ interpolation/name = "msg"
   │               │               └─ interpolation/call/
-  │               │                   ├─ name = "opts"
+  │               │                   ├─ object/name = "opts"
   │               │                   └─ name = "inspect"
   │               ├─ method/
   │               │   ├─ name = "shout!"
   │               │   └─ body/assign/
   │               │       ├─ left/expression/name = "@name"
   │               │       └─ right/expression/call/
-  │               │           ├─ name = "@name"
+  │               │           ├─ object/name = "@name"
   │               │           └─ name = "upcase"
   │               ├─ method/
   │               │   ├─ name = "collect"
@@ -169,8 +169,8 @@ program/
   │               │   ├─ parameter[kwsplat]/name = "meta"
   │               │   └─ body/expression/binary/
   │               │       ├─ left/expression/call/
-  │               │       │   ├─ call/
-  │               │       │   │   ├─ name = "items"
+  │               │       │   ├─ object/call/
+  │               │       │   │   ├─ object/name = "items"
   │               │       │   │   └─ name = "each_with_index"
   │               │       │   ├─ name = "map"
   │               │       │   └─ block/
@@ -181,7 +181,7 @@ program/
   │               │       │           └─ interpolation/name = "it"
   │               │       ├─ op[plus] = "+"
   │               │       └─ right/expression/call/
-  │               │           ├─ name = "meta"
+  │               │           ├─ object/name = "meta"
   │               │           └─ name = "keys"
   │               ├─ expression/name = "private"
   │               ├─ method/
@@ -272,13 +272,13 @@ program/
   │       │   ├─ left/expression/name = "total"
   │       │   └─ right/expression/int = "0"
   │       ├─ expression/call/
-  │       │   ├─ name = "items"
+  │       │   ├─ object/name = "items"
   │       │   ├─ name = "each"
   │       │   └─ block[do]/
   │       │       ├─ parameter/name = "x"
   │       │       └─ value/expression/if/
   │       │           ├─ condition/expression/call/
-  │       │           │   ├─ name = "x"
+  │       │           │   ├─ object/name = "x"
   │       │           │   └─ name = "nil?"
   │       │           ├─ then[next]
   │       │           ├─ else_if/
@@ -332,10 +332,10 @@ program/
   │       │       │   │   ├─ name = "raise"
   │       │       │   │   └─ string = "'boom'"
   │       │       │   └─ condition/expression/call/
-  │       │       │       ├─ name = "items"
+  │       │       │       ├─ object/name = "items"
   │       │       │       └─ name = "any?"
   │       │       ├─ call/
-  │       │       │   ├─ name = "items"
+  │       │       │   ├─ object/name = "items"
   │       │       │   └─ name = "first"
   │       │       ├─ rescue/
   │       │       │   ├─ exceptions/name = "StandardError"
@@ -345,12 +345,12 @@ program/
   │       │       │       │   ├─ body[retry]
   │       │       │       │   └─ condition/expression/false = "false"
   │       │       │       └─ expression/call/
-  │       │       │           ├─ name = "e"
+  │       │       │           ├─ object/name = "e"
   │       │       │           └─ name = "message"
   │       │       ├─ else/expression/string = "'ok'"
   │       │       └─ ensure/if/
   │       │           ├─ body/expression/call/
-  │       │           │   ├─ name = "items"
+  │       │           │   ├─ object/name = "items"
   │       │           │   └─ name = "clear"
   │       │           └─ condition/expression/binary/
   │       │               ├─ left/expression/unary/
@@ -407,7 +407,7 @@ program/
   │       │   ├─ left/expression/name = "ternary"
   │       │   └─ right/expression/ternary/
   │       │       ├─ condition/expression/call/
-  │       │       │   ├─ name = "total"
+  │       │       │   ├─ object/name = "total"
   │       │       │   └─ name = "zero?"
   │       │       ├─ then/expression/symbol = ":empty"
   │       │       └─ else/expression/symbol = ":filled"
@@ -458,12 +458,12 @@ program/
   │       └─ expression/array/
   │           ├─ name = "result"
   │           ├─ call/
-  │           │   ├─ name = "adder"
+  │           │   ├─ object/name = "adder"
   │           │   ├─ name = "call"
   │           │   ├─ int = "1"
   │           │   └─ int = "2"
   │           ├─ call/
-  │           │   ├─ name = "doubler"
+  │           │   ├─ object/name = "doubler"
   │           │   ├─ name = "call"
   │           │   └─ int = "3"
   │           ├─ name = "ternary"
@@ -473,7 +473,7 @@ program/
   │           └─ name = "flag"
   ├─ unless/
   │   ├─ condition/expression/call/
-  │   │   ├─ name = "MAX_RETRIES"
+  │   │   ├─ object/name = "MAX_RETRIES"
   │   │   └─ name = "zero?"
   │   └─ then/expression/call/
   │       ├─ name = "puts"
@@ -496,14 +496,14 @@ program/
   │       │       │   │   ├─ name = "head"
   │       │       │   │   └─ parameter[splat]/name = "tail"
   │       │       │   ├─ if/condition/expression/call/
-  │       │       │   │   ├─ name = "head"
+  │       │       │   │   ├─ object/name = "head"
   │       │       │   │   ├─ name = "is_a?"
   │       │       │   │   └─ name = "Integer"
   │       │       │   └─ body/then/expression/binary/
   │       │       │       ├─ left/expression/name = "head"
   │       │       │       ├─ op[plus] = "+"
   │       │       │       └─ right/expression/call/
-  │       │       │           ├─ name = "tail"
+  │       │       │           ├─ object/name = "tail"
   │       │       │           └─ name = "size"
   │       │       ├─ in/
   │       │       │   ├─ pattern[array]/
@@ -562,7 +562,7 @@ program/
   │   │   └─ name = "y"
   │   ├─ parameter[block]/name = "block"
   │   └─ body/expression/call/
-  │       ├─ name = "block"
+  │       ├─ object/name = "block"
   │       ├─ name = "call"
   │       ├─ name = "x"
   │       └─ name = "y"
@@ -578,7 +578,7 @@ program/
   ├─ assign/
   │   ├─ left/expression/name = "maybe"
   │   └─ right/expression/call[optional]/
-  │       ├─ name = "obj"
+  │       ├─ object/name = "obj"
   │       ├─ name = "method"
   │       └─ name = "arg"
   └─ block[end]/call/

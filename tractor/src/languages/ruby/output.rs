@@ -55,6 +55,9 @@ pub enum TractorNode {
     Optional,
     // Range role wrappers (`(1..9)` / `(1...9)`) and bound-style markers.
     From, To, Inclusive, Exclusive,
+    // Call role wrapper for `obj.method(...)` receiver
+    // (Principle #19: distinguish receiver from method name).
+    Object,
 }
 
 impl TractorNode {
