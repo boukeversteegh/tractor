@@ -1192,6 +1192,12 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             // reaches this tag pass.
             ("variable", "declarator"),
             ("field", "declarator"),
+            // C-style `for (...; ...; j--, i++) {}` — comma-
+            // separated post-update produces multiple `<unary>`
+            // siblings under `<for>`. Tag so JSON renders
+            // `unaries: [...]` instead of overflowing to
+            // `children`.
+            ("for", "unary"),
         ],
     )?;
     typescript_restructure_import(xot, root)?;

@@ -174,6 +174,16 @@ before committing a non-trivial change.
   otherwise CI breaks unrelated work. Iter 146's no-dash invariant
   followed this; the dashed-operator renames landed in the same
   iter.
+- **Run `tractor run` (self-lint) AFTER every test-file edit, not
+  just after source edits.** Iter 267 added a `let mut tree`
+  followed by a single use, ran `tractor run` BEFORE adding the
+  new test (got Exit: 0), then added the test and committed. CI
+  caught the lint violation; iter 268 had to re-fix it. The
+  pre-commit ordering should always be: (1) edit code + tests,
+  (2) cargo build/test, (3) cargo run update-snapshots, (4)
+  `tractor run` self-lint, (5) commit. Skipping or re-ordering
+  step 4 means the project's own lint rules don't see the test
+  files.
 
 ## Open
 

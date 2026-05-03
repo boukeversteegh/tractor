@@ -648,65 +648,6 @@
                 "body": {
                   "fors": [
                     {
-                      "children": [
-                        {
-                          "$type": "unary",
-                          "name": "j",
-                          "op": {
-                            "text": "--",
-                            "decrement": true
-                          }
-                        }
-                      ],
-                      "variable": {
-                        "declarators": [
-                          {
-                            "value": {
-                              "expression": {
-                                "number": "0"
-                              }
-                            },
-                            "name": "i"
-                          },
-                          {
-                            "value": {
-                              "expression": {
-                                "number": "100"
-                              }
-                            },
-                            "name": "j"
-                          }
-                        ],
-                        "let": true
-                      },
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "number": "5"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "i"
-                              }
-                            },
-                            "op": {
-                              "text": "<",
-                              "compare": true,
-                              "less": true
-                            }
-                          }
-                        }
-                      },
-                      "unary": {
-                        "op": {
-                          "text": "++",
-                          "increment": true
-                        },
-                        "name": "i"
-                      },
                       "body": {
                         "blocks": [
                           {
@@ -824,7 +765,65 @@
                             ]
                           }
                         ]
-                      }
+                      },
+                      "variable": {
+                        "declarators": [
+                          {
+                            "value": {
+                              "expression": {
+                                "number": "0"
+                              }
+                            },
+                            "name": "i"
+                          },
+                          {
+                            "value": {
+                              "expression": {
+                                "number": "100"
+                              }
+                            },
+                            "name": "j"
+                          }
+                        ],
+                        "let": true
+                      },
+                      "condition": {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "number": "5"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "i"
+                              }
+                            },
+                            "op": {
+                              "text": "<",
+                              "compare": true,
+                              "less": true
+                            }
+                          }
+                        }
+                      },
+                      "unaries": [
+                        {
+                          "op": {
+                            "text": "++",
+                            "increment": true
+                          },
+                          "name": "i"
+                        },
+                        {
+                          "op": {
+                            "text": "--",
+                            "decrement": true
+                          },
+                          "name": "j"
+                        }
+                      ]
                     }
                   ]
                 },

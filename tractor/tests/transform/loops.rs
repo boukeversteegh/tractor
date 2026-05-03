@@ -440,3 +440,26 @@ fn php() {
         "#),
         1);
 }
+
+/// C-style `for` loops with comma-separated post-update produce
+/// multiple `<unary>` siblings under `<for>`. Per Principle #19
+/// they're role-uniform (each is one update step); tag with
+/// `list="unaries"` so JSON renders as `unaries: [...]` instead
+/// of overflowing. Single-update keeps the singleton `<unary>`
+/// JSON key.
+#[test]
+fn typescript_for_multi_update_lists_unaries() {
+    claim("TS comma-separated post-update tags each <unary> with list='unaries'",
+        &mut parse_src("typescript", r#"
+        for (let i = 0, j = 100; i < 5; j--, i++) {}
+    "#),
+        "//for/unary[@list='unaries']",
+        2);
+
+    claim("TS single post-update keeps singleton <unary> (no list= tagging)",
+        &mut parse_src("typescript", r#"
+        for (let i = 0; i < 5; i++) {}
+    "#),
+        "//for/unary[not(@list)]",
+        1);
+}
