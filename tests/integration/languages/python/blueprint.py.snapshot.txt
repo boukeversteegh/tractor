@@ -178,9 +178,9 @@ module/
   │           │   └─ body/yield/name = "chunk"
   │           ├─ assign/
   │           │   ├─ left/expression/name = "data"
-  │           │   └─ right/expression[await]/call/member/
-  │           │       ├─ object/name = "conn"
-  │           │       └─ property/name = "read"
+  │           │   └─ right/expression[await]/chain/
+  │           │       ├─ name = "conn"
+  │           │       └─ call/name = "read"
   │           └─ return/expression/name = "data"
   ├─ function/
   │   ├─ name = "gen_demo"
@@ -279,9 +279,9 @@ module/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "str"
   │       │   └─ body/assign/
-  │       │       ├─ left/expression/member/
-  │       │       │   ├─ object/name = "self"
-  │       │       │   └─ property/name = "name"
+  │       │       ├─ left/expression/chain/
+  │       │       │   ├─ name = "self"
+  │       │       │   └─ member/name = "name"
   │       │       └─ right/expression/name = "name"
   │       └─ function[public]/
   │           ├─ name = "__eq__"
@@ -294,13 +294,13 @@ module/
   │               │   └─ name = "Derived"
   │               ├─ op[logical and and] = "and"
   │               └─ right/expression/compare/
-  │                   ├─ member/
-  │                   │   ├─ object/name = "self"
-  │                   │   └─ property/name = "name"
+  │                   ├─ chain/
+  │                   │   ├─ name = "self"
+  │                   │   └─ member/name = "name"
   │                   ├─ op[equals] = "=="
-  │                   └─ member/
-  │                       ├─ object/name = "other"
-  │                       └─ property/name = "name"
+  │                   └─ chain/
+  │                       ├─ name = "other"
+  │                       └─ member/name = "name"
   ├─ function/
   │   ├─ name = "control_flow"
   │   ├─ parameter/name = "items"
@@ -379,12 +379,12 @@ module/
   │       │   │   │   └─ string = "\"b\""
   │       │   │   └─ name = "fb"
   │       │   └─ body/
-  │       │       ├─ expression/call/member/
-  │       │       │   ├─ object/name = "fa"
-  │       │       │   └─ property/name = "read"
-  │       │       └─ expression/call/member/
-  │       │           ├─ object/name = "fb"
-  │       │           └─ property/name = "read"
+  │       │       ├─ expression/chain/
+  │       │       │   ├─ name = "fa"
+  │       │       │   └─ call/name = "read"
+  │       │       └─ expression/chain/
+  │       │           ├─ name = "fb"
+  │       │           └─ call/name = "read"
   │       └─ return/expression/name = "total"
   ├─ function/
   │   ├─ name = "match_demo"
@@ -454,9 +454,9 @@ module/
   │       │       ├─ left/
   │       │       │   ├─ expression/name = "k"
   │       │       │   └─ expression/name = "v"
-  │       │       ├─ right/expression/call/member/
-  │       │       │   ├─ object/name = "data"
-  │       │       │   └─ property/name = "items"
+  │       │       ├─ right/expression/chain/
+  │       │       │   ├─ name = "data"
+  │       │       │   └─ call/name = "items"
   │       │       └─ name = "v"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "uniq"
@@ -633,9 +633,9 @@ module/
   │       └─ type/type[splat]/name = "Ts"
   ├─ alias/
   │   ├─ left/type/name = "Containing"
-  │   └─ right/type/member/
-  │       ├─ object/name = "OrderedDict"
-  │       └─ property/name = "Foo"
+  │   └─ right/type/chain/
+  │       ├─ name = "OrderedDict"
+  │       └─ member/name = "Foo"
   └─ function/
       ├─ name = "patterns_and_misc"
       ├─ parameter/name = "values"

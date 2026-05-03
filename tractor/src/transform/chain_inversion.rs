@@ -371,6 +371,89 @@ fn collect_call_args(
 }
 
 // =============================================================================
+// TREE-WIDE: invert_chains_in_tree
+// =============================================================================
+
+/// Walk the tree under `root`, find every chain root, and invert
+/// each in place.
+///
+/// A "chain root" is the OUTERMOST `<member>` or `<call>` of a
+/// chain — the element whose parent is NOT another chain step:
+///
+/// - `<member>` is a chain root iff its parent is neither
+///   `<object>` (which would mean this member is a receiver-step
+///   inside an enclosing member/call) nor `<call>` (which would
+///   mean this member is the callee of an enclosing call).
+/// - `<call>` is a chain root iff its parent is not `<object>`
+///   (which would mean this call is the receiver of an enclosing
+///   member/call).
+///
+/// Visiting top-down is safe: `invert_chain_nesting` walks the
+/// full subtree of each root and consumes the entire chain in one
+/// extraction, so nested chains never need a second pass — they're
+/// flattened into the same segment list as the outer chain.
+///
+/// Use this from per-language post-transforms after the per-kind
+/// dispatcher has produced the right-deep canonical shape.
+pub fn invert_chains_in_tree(
+    xot: &mut Xot,
+    root: XotNode,
+) -> Result<(), xot::Error> {
+    let mut roots: Vec<XotNode> = Vec::new();
+    collect_chain_roots(xot, root, &mut roots);
+    for chain_root in roots {
+        // Skip nodes that have already been replaced (their parent
+        // is None after a prior detach in this loop). This can
+        // happen when an outer chain root absorbed an inner one
+        // during the same call, then we encounter the inner one
+        // here.
+        if xot.parent(chain_root).is_some() {
+            invert_chain_nesting(xot, chain_root)?;
+        }
+    }
+    Ok(())
+}
+
+fn collect_chain_roots(
+    xot: &Xot,
+    node: XotNode,
+    out: &mut Vec<XotNode>,
+) {
+    if xot.element(node).is_some() && is_chain_root(xot, node) {
+        out.push(node);
+    }
+    for child in xot.children(node) {
+        if xot.element(child).is_some() {
+            collect_chain_roots(xot, child, out);
+        }
+    }
+}
+
+fn is_chain_root(xot: &Xot, node: XotNode) -> bool {
+    let element_name = match get_element_name(xot, node) {
+        Some(n) => n,
+        None => return false,
+    };
+    let parent = match xot.parent(node) {
+        Some(p) => p,
+        None => return false,
+    };
+    let parent_name = get_element_name(xot, parent);
+    match element_name.as_str() {
+        "member" => {
+            // Not a chain root if it's a receiver (parent=<object>)
+            // or a callee (parent=<call>).
+            !matches!(parent_name.as_deref(), Some("object") | Some("call"))
+        }
+        "call" => {
+            // Not a chain root if it's a receiver (parent=<object>).
+            !matches!(parent_name.as_deref(), Some("object"))
+        }
+        _ => false,
+    }
+}
+
+// =============================================================================
 // ROUND-TRIP: invert_chain_nesting
 // =============================================================================
 
@@ -1214,5 +1297,137 @@ mod tests {
         let m = build_member(&mut xot, cast, "b");
         let result = invert_under_parent(&mut xot, doc_root, m);
         assert_eq!(result, "(chain (cast (name x)) (member (name b)))");
+    }
+
+    // ===================================================================
+    // TREE-WIDE — invert_chains_in_tree + chain-root identification
+    // ===================================================================
+
+    #[test]
+    fn tree_walker_inverts_single_chain() {
+        // `body { stmt(a.b) }` — one chain inside a statement.
+        let (mut xot, doc_root) = fresh_xot();
+        let body = new_named_element(&mut xot, "body");
+        let stmt = new_named_element(&mut xot, "stmt");
+        let a = new_text_element(&mut xot, "name", "a");
+        let m = build_member(&mut xot, a, "b");
+        xot.append(stmt, m).unwrap();
+        xot.append(body, stmt).unwrap();
+        xot.append(doc_root, body).unwrap();
+        invert_chains_in_tree(&mut xot, doc_root).unwrap();
+        assert_eq!(
+            render(&xot, body),
+            "(body (stmt (chain (name a) (member (name b)))))",
+        );
+    }
+
+    #[test]
+    fn tree_walker_inverts_chain_inside_argument() {
+        // f(obj.method()) — outer is a top-level call (not a chain
+        // root), the argument contains a chain that IS a root.
+        let (mut xot, doc_root) = fresh_xot();
+        let outer_callee = new_text_element(&mut xot, "name", "f");
+        let inner_recv = new_text_element(&mut xot, "name", "obj");
+        let inner_callee = build_member(&mut xot, inner_recv, "method");
+        let inner_call = build_call(&mut xot, inner_callee, vec![]);
+        // Wrap the inner call in <argument> so it's a sibling of
+        // the outer callee.
+        let arg = new_named_element(&mut xot, "argument");
+        xot.append(arg, inner_call).unwrap();
+        let outer_call = new_named_element(&mut xot, "call");
+        xot.append(outer_call, outer_callee).unwrap();
+        xot.append(outer_call, arg).unwrap();
+        xot.append(doc_root, outer_call).unwrap();
+        invert_chains_in_tree(&mut xot, doc_root).unwrap();
+        // Outer call left untouched (top-level, no chain), inner
+        // call became a <chain>.
+        assert_eq!(
+            render(&xot, outer_call),
+            "(call (name f) (argument (chain (name obj) (call (name method)))))",
+        );
+    }
+
+    #[test]
+    fn tree_walker_inverts_chains_in_multiple_locations() {
+        // `body { stmt1(a.b)  stmt2(c.d.e) }` — two independent
+        // chains. Both should invert.
+        let (mut xot, doc_root) = fresh_xot();
+        let body = new_named_element(&mut xot, "body");
+
+        let s1 = new_named_element(&mut xot, "stmt1");
+        let a = new_text_element(&mut xot, "name", "a");
+        let m1 = build_member(&mut xot, a, "b");
+        xot.append(s1, m1).unwrap();
+        xot.append(body, s1).unwrap();
+
+        let s2 = new_named_element(&mut xot, "stmt2");
+        let c = new_text_element(&mut xot, "name", "c");
+        let m2a = build_member(&mut xot, c, "d");
+        let m2b = build_member(&mut xot, m2a, "e");
+        xot.append(s2, m2b).unwrap();
+        xot.append(body, s2).unwrap();
+
+        xot.append(doc_root, body).unwrap();
+        invert_chains_in_tree(&mut xot, doc_root).unwrap();
+        assert_eq!(
+            render(&xot, body),
+            "(body (stmt1 (chain (name a) (member (name b)))) \
+             (stmt2 (chain (name c) (member (name d) (member (name e))))))",
+        );
+    }
+
+    #[test]
+    fn tree_walker_does_not_double_process_nested_chains() {
+        // `obj.method(x).other.thing()` — outermost call is the
+        // chain root; the inner call (obj.method(x)) is INSIDE the
+        // outer chain's receiver and gets consumed as part of the
+        // same extract_chain walk. The walker shouldn't try to
+        // process it again.
+        let (mut xot, doc_root) = fresh_xot();
+        let obj = new_text_element(&mut xot, "name", "obj");
+        let inner_callee = build_member(&mut xot, obj, "method");
+        let arg = new_text_element(&mut xot, "argument", "x");
+        let inner_call = build_call(&mut xot, inner_callee, vec![arg]);
+        let m_other = build_member(&mut xot, inner_call, "other");
+        let outer_callee = build_member(&mut xot, m_other, "thing");
+        let outer_call = build_call(&mut xot, outer_callee, vec![]);
+        xot.append(doc_root, outer_call).unwrap();
+        invert_chains_in_tree(&mut xot, doc_root).unwrap();
+        // Single <chain> with all 4 segments.
+        let surviving = xot.children(doc_root)
+            .find(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(&xot, c).as_deref() == Some("chain")
+            })
+            .or_else(|| xot.children(doc_root).find(|&c| xot.element(c).is_some()))
+            .expect("a child");
+        assert_eq!(
+            render(&xot, surviving),
+            "(chain (name obj) (call (name method) (argument x) (member (name other) (call (name thing)))))",
+        );
+    }
+
+    #[test]
+    fn chain_root_predicate() {
+        // Confirm the is_chain_root predicate.
+        let (mut xot, doc_root) = fresh_xot();
+        // Build: <doc><call>OUTER</call> with an inner member
+        // (callee) and a top-level <member>.
+        let inner_recv = new_text_element(&mut xot, "name", "x");
+        let inner_member = build_member(&mut xot, inner_recv, "y");
+        let outer_call = build_call(&mut xot, inner_member, vec![]);
+        xot.append(doc_root, outer_call).unwrap();
+        // outer_call: parent is <doc> → chain root.
+        assert!(is_chain_root(&xot, outer_call));
+        // inner_member: parent is <call> → NOT a chain root (it's
+        // the callee of the outer call).
+        let callee = first_element_child(&xot, outer_call).unwrap();
+        assert!(!is_chain_root(&xot, callee));
+        // The deepest <name>x</name>: not a member/call → not a
+        // chain root.
+        // (Find it via the inner member's <object> slot.)
+        let object_slot = find_named_child(&xot, callee, "object").unwrap();
+        let recv = first_element_child(&xot, object_slot).unwrap();
+        assert!(!is_chain_root(&xot, recv));
     }
 }

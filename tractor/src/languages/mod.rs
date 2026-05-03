@@ -1154,6 +1154,13 @@ fn typescript_restructure_import(xot: &mut Xot, root: XotNode) -> Result<(), xot
 /// hosts (Principle #15). Python doesn't run `collapse_conditionals`
 /// because tree-sitter-python emits an explicit `elif_clause`.
 fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Invert right-deep `<member>`/`<call>` chains into nested
+    // `<chain>` form (per `docs/design-chain-inversion.md`).
+    // Python's tree already matches the canonical input shape:
+    // `<call><member><object/><property/></member>...args</call>`
+    // and `<member><object/><property/></member>`. Run early so
+    // subsequent passes see the post-inversion shape.
+    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
         root,
@@ -1169,6 +1176,12 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // with field=left/right (unlike binary_operator), so
             // multi-name compare chains overflow without this.
             ("compare", "name"),
+            // Same situation when both operands of a comparison
+            // are member-access chains (`self.name == other.name`)
+            // — both become <chain> siblings under <compare> and
+            // collide on the singleton `chain` JSON key without
+            // this tag.
+            ("compare", "chain"),
         ],
     )?;
     python_restructure_imports(xot, root)?;

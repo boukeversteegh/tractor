@@ -297,13 +297,11 @@
     {
       "right": {
         "type": {
-          "member": {
-            "property": {
+          "chain": {
+            "member": {
               "name": "Foo"
             },
-            "object": {
-              "name": "OrderedDict"
-            }
+            "name": "OrderedDict"
           }
         }
       },
@@ -453,13 +451,11 @@
                   },
                   "left": {
                     "expression": {
-                      "member": {
-                        "property": {
+                      "chain": {
+                        "member": {
                           "name": "name"
                         },
-                        "object": {
-                          "name": "self"
-                        }
+                        "name": "self"
                       }
                     }
                   }
@@ -489,28 +485,23 @@
                       "right": {
                         "expression": {
                           "compare": {
-                            "children": [
+                            "chains": [
                               {
-                                "$type": "member",
-                                "object": {
-                                  "name": "other"
-                                },
-                                "property": {
+                                "member": {
                                   "name": "name"
-                                }
+                                },
+                                "name": "self"
+                              },
+                              {
+                                "member": {
+                                  "name": "name"
+                                },
+                                "name": "other"
                               }
                             ],
                             "op": {
                               "text": "==",
                               "equals": true
-                            },
-                            "member": {
-                              "property": {
-                                "name": "name"
-                              },
-                              "object": {
-                                "name": "self"
-                              }
                             }
                           }
                         }
@@ -990,15 +981,11 @@
                 {
                   "right": {
                     "expression": {
-                      "call": {
-                        "member": {
-                          "property": {
-                            "name": "read"
-                          },
-                          "object": {
-                            "name": "conn"
-                          }
-                        }
+                      "chain": {
+                        "call": {
+                          "name": "read"
+                        },
+                        "name": "conn"
                       },
                       "await": true
                     }
@@ -1491,27 +1478,19 @@
             "body": {
               "expressions": [
                 {
-                  "call": {
-                    "member": {
-                      "property": {
-                        "name": "read"
-                      },
-                      "object": {
-                        "name": "fa"
-                      }
-                    }
+                  "chain": {
+                    "call": {
+                      "name": "read"
+                    },
+                    "name": "fa"
                   }
                 },
                 {
-                  "call": {
-                    "member": {
-                      "property": {
-                        "name": "read"
-                      },
-                      "object": {
-                        "name": "fb"
-                      }
-                    }
+                  "chain": {
+                    "call": {
+                      "name": "read"
+                    },
+                    "name": "fb"
                   }
                 }
               ]
@@ -1833,15 +1812,11 @@
                   "rights": [
                     {
                       "expression": {
-                        "call": {
-                          "member": {
-                            "property": {
-                              "name": "items"
-                            },
-                            "object": {
-                              "name": "data"
-                            }
-                          }
+                        "chain": {
+                          "call": {
+                            "name": "items"
+                          },
+                          "name": "data"
                         }
                       }
                     }
