@@ -370,15 +370,111 @@ fn collect_call_args(
         .collect()
 }
 
-/// In-place wrapper: extract the chain at `node`, emit the
-/// inverted form, and replace `node` in the tree. Stub for iter
-/// 237.
-#[allow(dead_code)]
+// =============================================================================
+// ROUND-TRIP: invert_chain_nesting
+// =============================================================================
+
+/// In-place: replace `node` (a right-deep `<member>`/`<call>` chain
+/// root) with its inverted nested-`<chain>` equivalent.
+///
+/// Pipeline:
+/// 1. `extract_chain(xot, node)` — produce the segment list IR.
+/// 2. If fewer than 2 segments OR the only step segment is a
+///    nameless top-level Call (i.e. `f(x)` with no chain), leave
+///    `node` untouched. Wrapping a non-chain in `<chain>` adds
+///    noise without informational value.
+/// 3. Detach every node referenced in the segment list from its
+///    current parent (the original chain tree is now hollow).
+/// 4. `emit_chain(xot, segments)` — build the new `<chain>`.
+/// 5. Insert the new `<chain>` at `node`'s position; detach
+///    `node`. Source-location is already threaded onto the new
+///    chain by `emit_chain`.
+///
+/// Returns the new `<chain>` node on success, or `Ok(None)` if the
+/// input wasn't a useful chain (and was left untouched).
 pub fn invert_chain_nesting(
-    _xot: &mut Xot,
-    _node: XotNode,
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<Option<XotNode>, xot::Error> {
+    let segments = extract_chain(xot, node);
+
+    if !is_useful_chain(&segments) {
+        return Ok(None);
+    }
+
+    detach_segment_refs(xot, &segments)?;
+
+    let new_chain = emit_chain(xot, segments)?;
+
+    // Replace the original node with the new chain.
+    xot.insert_before(node, new_chain)?;
+    xot.detach(node)?;
+
+    Ok(Some(new_chain))
+}
+
+/// A "useful chain" has at least 2 segments AND the second segment
+/// (the first step) is structurally informative — a Member, a
+/// Subscript, or a Call WITH a method name. A bare `f(args)`
+/// (Receiver + nameless Call) isn't a chain in the sense the
+/// inversion targets, so leave it alone.
+fn is_useful_chain(segments: &[ChainSegment]) -> bool {
+    if segments.len() < 2 {
+        return false;
+    }
+    if segments.len() == 2 {
+        // Only one step. If it's a nameless Call (top-level
+        // invocation), leave it alone.
+        if let ChainSegment::Call { name_node: None, .. } = &segments[1] {
+            return false;
+        }
+    }
+    true
+}
+
+/// Detach every node referenced in `segments` from its current
+/// parent. After this runs, all referenced nodes are free-floating
+/// and ready for `emit_chain` to re-attach them.
+fn detach_segment_refs(
+    xot: &mut Xot,
+    segments: &[ChainSegment],
 ) -> Result<(), xot::Error> {
-    unimplemented!("iter 237 — emit + replace pipeline")
+    for seg in segments {
+        match seg {
+            ChainSegment::Receiver(n) => detach_if_attached(xot, *n)?,
+            ChainSegment::Member { name_node, markers } => {
+                detach_if_attached(xot, *name_node)?;
+                for m in markers {
+                    detach_if_attached(xot, *m)?;
+                }
+            }
+            ChainSegment::Call { name_node, args, markers } => {
+                if let Some(n) = name_node {
+                    detach_if_attached(xot, *n)?;
+                }
+                for a in args {
+                    detach_if_attached(xot, *a)?;
+                }
+                for m in markers {
+                    detach_if_attached(xot, *m)?;
+                }
+            }
+            ChainSegment::Subscript { index_node, markers } => {
+                detach_if_attached(xot, *index_node)?;
+                for m in markers {
+                    detach_if_attached(xot, *m)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn detach_if_attached(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    if xot.parent(node).is_some() {
+        xot.detach(node)?;
+    }
+    Ok(())
 }
 
 // =============================================================================
@@ -949,5 +1045,174 @@ mod tests {
             panic!("expected Member");
         };
         assert_eq!(markers.len(), 1);
+    }
+
+    // ===================================================================
+    // ROUND-TRIP — invert_chain_nesting
+    // ===================================================================
+
+    /// Append a right-deep chain root as a child of `parent`, then
+    /// run `invert_chain_nesting` and render the result.
+    fn invert_under_parent(xot: &mut Xot, parent: XotNode, root: XotNode) -> String {
+        xot.append(parent, root).unwrap();
+        let _ = invert_chain_nesting(xot, root).unwrap();
+        // Find the surviving child of parent (the new chain or the
+        // original if untouched) and render it.
+        let surviving = xot.children(parent)
+            .find(|&c| xot.element(c).is_some())
+            .expect("parent should have an element child after invert");
+        render(xot, surviving)
+    }
+
+    #[test]
+    fn invert_simple_member_access() {
+        // a.b → <chain><name>a</name><member><name>b</name></member></chain>
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m = build_member(&mut xot, a, "b");
+        let result = invert_under_parent(&mut xot, doc_root, m);
+        assert_eq!(result, "(chain (name a) (member (name b)))");
+    }
+
+    #[test]
+    fn invert_multi_link_member_chain() {
+        // a.b.c.d
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m1 = build_member(&mut xot, a, "b");
+        let m2 = build_member(&mut xot, m1, "c");
+        let m3 = build_member(&mut xot, m2, "d");
+        let result = invert_under_parent(&mut xot, doc_root, m3);
+        assert_eq!(
+            result,
+            "(chain (name a) (member (name b) (member (name c) (member (name d)))))",
+        );
+    }
+
+    #[test]
+    fn invert_terminal_method_call() {
+        // a.b()
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let callee = build_member(&mut xot, a, "b");
+        let call = build_call(&mut xot, callee, vec![]);
+        let result = invert_under_parent(&mut xot, doc_root, call);
+        assert_eq!(result, "(chain (name a) (call (name b)))");
+    }
+
+    #[test]
+    fn invert_multi_link_call_chain() {
+        // a.b.c.d()
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let m1 = build_member(&mut xot, a, "b");
+        let m2 = build_member(&mut xot, m1, "c");
+        let callee = build_member(&mut xot, m2, "d");
+        let call = build_call(&mut xot, callee, vec![]);
+        let result = invert_under_parent(&mut xot, doc_root, call);
+        assert_eq!(
+            result,
+            "(chain (name a) (member (name b) (member (name c) (call (name d)))))",
+        );
+    }
+
+    #[test]
+    fn invert_call_with_args() {
+        // a.b(x, y)
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let callee = build_member(&mut xot, a, "b");
+        let arg1 = new_text_element(&mut xot, "argument", "x");
+        let arg2 = new_text_element(&mut xot, "argument", "y");
+        let call = build_call(&mut xot, callee, vec![arg1, arg2]);
+        let result = invert_under_parent(&mut xot, doc_root, call);
+        assert_eq!(
+            result,
+            "(chain (name a) (call (name b) (argument x) (argument y)))",
+        );
+    }
+
+    #[test]
+    fn invert_mixed_calls_and_accesses() {
+        // a.b().c.d()
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let cb = build_member(&mut xot, a, "b");
+        let call_b = build_call(&mut xot, cb, vec![]);
+        let mc = build_member(&mut xot, call_b, "c");
+        let cd = build_member(&mut xot, mc, "d");
+        let call_d = build_call(&mut xot, cd, vec![]);
+        let result = invert_under_parent(&mut xot, doc_root, call_d);
+        assert_eq!(
+            result,
+            "(chain (name a) (call (name b) (member (name c) (call (name d)))))",
+        );
+    }
+
+    #[test]
+    fn invert_top_level_call_left_untouched() {
+        // f(x) — bare function call, no chain. Should NOT be wrapped
+        // in <chain>; the original <call> stays in place.
+        let (mut xot, doc_root) = fresh_xot();
+        let f = new_text_element(&mut xot, "name", "f");
+        let arg = new_text_element(&mut xot, "argument", "x");
+        let call = build_call(&mut xot, f, vec![arg]);
+        let result = invert_under_parent(&mut xot, doc_root, call);
+        // Original <call> unchanged.
+        assert_eq!(result, "(call (name f) (argument x))");
+    }
+
+    #[test]
+    fn invert_bare_identifier_left_untouched() {
+        // Just a name, no chain. Should NOT be wrapped.
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        let result = invert_under_parent(&mut xot, doc_root, a);
+        assert_eq!(result, "(name a)");
+    }
+
+    #[test]
+    fn invert_idempotent_on_already_inverted_chain() {
+        // Build an already-inverted <chain> directly (no member/call
+        // root) and confirm invert_chain_nesting leaves it alone
+        // (since the root isn't <member>/<call>, extract returns
+        // just a Receiver — single-segment, not a useful chain).
+        let (mut xot, doc_root) = fresh_xot();
+        let recv = new_text_element(&mut xot, "name", "a");
+        let bn = new_text_element(&mut xot, "name", "b");
+        let member = new_named_element(&mut xot, "member");
+        xot.append(member, bn).unwrap();
+        let chain = new_named_element(&mut xot, "chain");
+        xot.append(chain, recv).unwrap();
+        xot.append(chain, member).unwrap();
+        let result = invert_under_parent(&mut xot, doc_root, chain);
+        assert_eq!(result, "(chain (name a) (member (name b)))");
+    }
+
+    #[test]
+    fn invert_threads_source_location_to_chain() {
+        // Verify <chain> inherits the receiver's line/column.
+        let (mut xot, doc_root) = fresh_xot();
+        let a = new_text_element(&mut xot, "name", "a");
+        set_attr(&mut xot, a, "line", "12");
+        set_attr(&mut xot, a, "column", "4");
+        let m = build_member(&mut xot, a, "b");
+        xot.append(doc_root, m).unwrap();
+        let chain = invert_chain_nesting(&mut xot, m).unwrap()
+            .expect("inversion should produce a new chain");
+        assert_eq!(get_attr(&xot, chain, "line"), Some("12".to_string()));
+        assert_eq!(get_attr(&xot, chain, "column"), Some("4".to_string()));
+    }
+
+    #[test]
+    fn invert_complex_receiver_passes_through() {
+        // (cast).b → cast preserved as the receiver
+        let (mut xot, doc_root) = fresh_xot();
+        let cast = new_named_element(&mut xot, "cast");
+        let xn = new_text_element(&mut xot, "name", "x");
+        xot.append(cast, xn).unwrap();
+        let m = build_member(&mut xot, cast, "b");
+        let result = invert_under_parent(&mut xot, doc_root, m);
+        assert_eq!(result, "(chain (cast (name x)) (member (name b)))");
     }
 }
