@@ -197,30 +197,20 @@ before committing a non-trivial change.
   - Effort: 1-iter.
   - Source: iter 233 cold-read.
 
-- [ ] **`else_if` raw element name (underscore leak) in 5 languages**
-  *(Principle #2 violation, severity MED)*
-  - Files / line numbers:
-    - `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:438,447` (2 occurrences)
-    - `tests/integration/languages/python/blueprint.py.snapshot.txt:324`
-    - `tests/integration/languages/java/blueprint.java.snapshot.txt:112`
-    - `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:284`
-    - `tests/integration/languages/php/blueprint.php.snapshot.txt:114`
-  - Current: `else_if/` element. Iters 8 / 19 / 25 deliberately
-    chose `<else_if>` as the spelling for the collapsed elif chain
-    shape — flagged here because the underscore violates Principle
-    #2's "no grammar-leaked names with underscores."
-  - Whack-a-mole risk: HIGH. The flat-`<else_if>` shape was a
-    deliberate cross-language alignment (replaces nested
-    `else/if/...`). Renaming the spelling is OK; reverting the
-    shape is NOT.
-  - Desired (one of):
-    - `<elif>` (Python keyword, hyphen-free, lowercase).
-    - `<elseif>` (single word, common spelling).
-    - Recurse `<else>/<if>/...` (nested) — REJECTED by prior iters,
-      do not re-litigate without explicit reasoning.
-  - Effort: trivial (rename in each per-language config; tree
-    invariants whitelist update; snapshot regen).
-  - Source: iter 233 cold-read.
+- [x] **`else_if` element name** — REJECTED. Iter 252 attempted
+  to rename `<else_if>` → `<elseif>` across 8 languages on the
+  cold-read reviewer's "Principle #2 violation" flag, then
+  reverted (commit 85e58e29) after user flagged the design
+  carve-out. `specs/.../design.md` § 17 (Avoid Compound Node
+  Names) explicitly cites `else_if` as the canonical allowed
+  exception: "the concept is genuinely the *combination* of two
+  keywords and neither half alone names it. Rare; expect to
+  justify each one individually." The cold-read reviewer (iter
+  233) missed this carve-out when flagging.
+  Lesson: before acting on a "Principle X violation" flag from
+  the cold-read reviewer, search design.md for explicit
+  allowed-exception citations naming the flagged element.
+  **Do not re-flag this item.**
 
 - [ ] **Go `body[return]` marker semantics misleading**
   *(Principle #11 / #13, severity LOW)*
