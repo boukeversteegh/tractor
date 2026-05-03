@@ -176,7 +176,7 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::TypedParameter        => Rename(Parameter),
         PyKind::WhileStatement        => Rename(While),
         PyKind::WithStatement         => Custom(transformations::with_statement),
-        PyKind::Yield                 => Rename(Yield),
+        PyKind::Yield                 => Custom(transformations::yield_expression),
 
         // ---- Passthrough — kind name already matches the vocabulary,
         //      OR the kind is unhandled and the dispatcher leaves it as

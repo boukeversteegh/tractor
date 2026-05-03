@@ -452,6 +452,28 @@ pub fn keyword_pattern(
     Ok(TransformAction::Continue)
 }
 
+/// `yield` — distinguishes `yield X` from `yield from X`. The
+/// latter has a `<from/>` marker so it's queryable
+/// (`//yield[from]`); without the marker the two shapes are
+/// indistinguishable structurally (the keyword is just a text
+/// leak in the original tree-sitter tree).
+pub fn yield_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::{From, Yield as YieldName};
+    // Detect "yield from" by looking for a text child containing
+    // "from" (after the leading "yield"). Tree-sitter usually
+    // glues "yield from" into one text leaf or splits across two.
+    let has_from = xot.children(node).any(|c| {
+        xot.text_str(c)
+            .map(|s| s.split_whitespace().any(|w| w == "from"))
+            .unwrap_or(false)
+    });
+    xot.with_renamed(node, YieldName);
+    if has_from {
+        xot.with_prepended_marker(node, From)?;
+    }
+    Ok(TransformAction::Continue)
+}
+
 /// `case_pattern` — every Python `match` arm pattern. Wildcard
 /// `case _:` arrives from tree-sitter as a `<case_pattern>` whose
 /// only content is the bare text `_` (no element children). All

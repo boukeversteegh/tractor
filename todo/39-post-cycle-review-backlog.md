@@ -239,18 +239,13 @@ before committing a non-trivial change.
   - Effort: 1-iter (Custom handler).
   - Source: iter 233 cold-read.
 
-- [ ] **Python `yield from` keyword erasure**
-  *(Principle #11, severity LOW)*
-  - File: `tests/integration/languages/python/blueprint.py.snapshot.txt:195-201`.
-  - Source: `yield from range(n, n*2)`.
-  - Current: `yield/call/{name=range, name=n, binary/...}` — the
-    `from` keyword is fully erased; structurally identical to
-    `yield range(n, n*2)`.
-  - Desired: `yield[from]/call/...` (marker) or `yield/from/call/...`
-    (wrapper). Keyword `yield from` has distinct generator-delegate
-    semantics; consumers have no way to tell them apart today.
-  - Effort: 1-iter.
-  - Source: iter 233 cold-read.
+- [x] iter 253 — **Python `yield from` keyword erasure** —
+  Custom `yield_expression` handler detects "from" in the text
+  leak and prepends a `<from/>` marker on `<yield>`. Result:
+  `yield from range(n)` → `yield[from]/call/...` queryable as
+  `//yield[from]` distinct from `//yield[not(from)]`.
+  `From` enum variant promoted to dual-use (already a container
+  for from-imports; now also a marker for yield-from).
 
 - [x] **Python `match` wildcard `pattern = "_"` as bare text leaf** —
   closed iter 234. New `case_pattern` Custom handler (replaces

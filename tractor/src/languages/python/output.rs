@@ -119,10 +119,15 @@ impl TractorNode {
             | Self::If | Self::ElseIf | Self::Else | Self::For
             | Self::While | Self::Try | Self::Except | Self::Finally | Self::With
             | Self::Raise
-            | Self::Import | Self::From
+            | Self::Import
             | Self::Exec | Self::Print
             | Self::Generator
             | Self::True | Self::False | Self::None                              => (false, true, Keyword),
+            // `From` is dual-use: container `<from>` for from-imports
+            // (`from os import path`) AND `[from]` marker on `<yield>`
+            // for `yield from X` (delegating yield, distinct semantics
+            // from `yield X`).
+            Self::From                                                           => (true, true, Keyword),
             Self::Type                                                           => (false, true, Type),
             Self::Path                                                           => (false, true, Default),
             Self::Lambda | Self::Call                                            => (false, true, Function),

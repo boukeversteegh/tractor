@@ -192,7 +192,7 @@ module/
   │       │   │   ├─ name = "range"
   │       │   │   └─ name = "n"
   │       │   └─ body/yield/name = "i"
-  │       └─ yield/call/
+  │       └─ yield[from]/call/
   │           ├─ name = "range"
   │           ├─ name = "n"
   │           └─ binary/
