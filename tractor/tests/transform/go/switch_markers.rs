@@ -67,3 +67,23 @@ fn go_type_switch_multi_type_case_lists_types() {
         "//case/type[not(@list)]",
         1);
 }
+
+/// Go `select { case ... }` with multiple cases — `<select>` parent
+/// with multiple `<case>` siblings (role-uniform per Principle #19).
+/// Tag with `list="cases"` so JSON renders consistently.
+#[test]
+fn go_select_multi_case_lists_cases() {
+    claim("Go select with two cases tags each <case> with list='cases'",
+        &mut parse_src("go", r#"
+        package main
+        func f(in chan int, out chan int) {
+            select {
+            case v := <-in:
+                _ = v
+            case out <- 42:
+            }
+        }
+    "#),
+        "//select/case[@list='cases']",
+        2);
+}

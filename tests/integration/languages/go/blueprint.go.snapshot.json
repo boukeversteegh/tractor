@@ -100,15 +100,14 @@
     },
     {
       "value": {
-        "children": [
+        "expressions": [
           {
-            "$type": "expression",
+            "string": "\"alice\""
+          },
+          {
             "int": "30"
           }
-        ],
-        "expression": {
-          "string": "\"alice\""
-        }
+        ]
       },
       "names": [
         "name",
@@ -842,14 +841,29 @@
               "ifs": [
                 {
                   "then": {
-                    "children": [
+                    "assigns": [
                       {
-                        "$type": "assign",
-                        "left": {
+                        "right": {
                           "expression": {
-                            "name": "out"
+                            "literal": {
+                              "structs": [
+                                "struct{}"
+                              ]
+                            }
                           }
                         },
+                        "left": {
+                          "expression": {
+                            "index": {
+                              "children": [
+                                "x"
+                              ],
+                              "name": "seen"
+                            }
+                          }
+                        }
+                      },
+                      {
                         "right": {
                           "expression": {
                             "call": {
@@ -860,30 +874,14 @@
                               "name": "append"
                             }
                           }
-                        }
-                      }
-                    ],
-                    "assign": {
-                      "right": {
-                        "expression": {
-                          "literal": {
-                            "structs": [
-                              "struct{}"
-                            ]
-                          }
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "index": {
-                            "children": [
-                              "x"
-                            ],
-                            "name": "seen"
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "out"
                           }
                         }
                       }
-                    }
+                    ]
                   },
                   "variable": {
                     "right": {
@@ -1897,9 +1895,63 @@
               "body": {
                 "selects": [
                   {
-                    "children": [
+                    "cases": [
                       {
-                        "$type": "case",
+                        "send": {
+                          "value": {
+                            "expression": {
+                              "name": "v"
+                            }
+                          },
+                          "name": "out"
+                        },
+                        "receive": {
+                          "right": {
+                            "expression": {
+                              "unary": {
+                                "name": "in",
+                                "op": {
+                                  "text": "<-",
+                                  "receive": true
+                                }
+                              }
+                            }
+                          },
+                          "left": {
+                            "expressions": [
+                              {
+                                "name": "v"
+                              },
+                              {
+                                "name": "ok"
+                              }
+                            ]
+                          }
+                        },
+                        "if": {
+                          "then": {
+                            "break": {
+                              "label": "Outer"
+                            }
+                          },
+                          "condition": {
+                            "expression": {
+                              "unary": {
+                                "name": "ok",
+                                "op": {
+                                  "text": "!",
+                                  "logical": true,
+                                  "not": true
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "continue": {
+                          "label": "Outer"
+                        },
                         "send": {
                           "value": {
                             "expression": {
@@ -1907,13 +1959,12 @@
                             }
                           },
                           "name": "out"
-                        },
-                        "continue": {
-                          "label": "Outer"
                         }
                       },
                       {
-                        "$type": "case",
+                        "goto": {
+                          "label": "cleanup"
+                        },
                         "receive": {
                           "right": {
                             "expression": {
@@ -1932,64 +1983,9 @@
                               }
                             }
                           }
-                        },
-                        "goto": {
-                          "label": "cleanup"
                         }
                       }
-                    ],
-                    "case": {
-                      "send": {
-                        "value": {
-                          "expression": {
-                            "name": "v"
-                          }
-                        },
-                        "name": "out"
-                      },
-                      "receive": {
-                        "right": {
-                          "expression": {
-                            "unary": {
-                              "name": "in",
-                              "op": {
-                                "text": "<-",
-                                "receive": true
-                              }
-                            }
-                          }
-                        },
-                        "left": {
-                          "expressions": [
-                            {
-                              "name": "v"
-                            },
-                            {
-                              "name": "ok"
-                            }
-                          ]
-                        }
-                      },
-                      "if": {
-                        "then": {
-                          "break": {
-                            "label": "Outer"
-                          }
-                        },
-                        "condition": {
-                          "expression": {
-                            "unary": {
-                              "name": "ok",
-                              "op": {
-                                "text": "!",
-                                "logical": true,
-                                "not": true
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
+                    ]
                   }
                 ]
               }

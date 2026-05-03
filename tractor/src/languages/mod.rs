@@ -1938,6 +1938,21 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // renders `expressions: [...]` instead of overflowing
             // to `children`. Mirrors Python iter 265.
             ("return", "expression"),
+            // Go multi-value var declaration `name, age = "alice", 30`
+            // produces `<value>` with multiple `<expression>`
+            // siblings. Same archetype as multi-return, scoped to
+            // var declarations.
+            ("value", "expression"),
+            // Go select with multiple cases `select { case ... }`.
+            // Multiple `<case>` siblings under `<select>` —
+            // role-uniform per Principle #19.
+            ("select", "case"),
+            // Go if-then with multi-statement body `if cond {
+            // stmt1; stmt2 }` produces `<then>` with multiple
+            // `<assign>` (or other statement) siblings. Role-
+            // uniform.
+            ("then", "assign"),
+            ("else", "assign"),
         ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.
