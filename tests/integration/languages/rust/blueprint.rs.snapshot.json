@@ -1529,13 +1529,14 @@
               }
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "v"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "call": {
@@ -1547,10 +1548,7 @@
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ],
@@ -1992,13 +1990,14 @@
               ]
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "x"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "call": {
@@ -2014,10 +2013,7 @@
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ]
@@ -2733,13 +2729,14 @@
               }
             },
             "condition": {
-              "children": [
+              "expression": [
                 {
-                  "$type": "expression",
+                  "name": "Some"
+                },
+                {
                   "name": "inner"
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "name": "opt"
@@ -2747,7 +2744,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "pattern": {
                     "pattern": [
                       {
@@ -2769,7 +2765,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "value": {
                     "expression": {
                       "name": "inner"
@@ -2777,7 +2772,6 @@
                   }
                 },
                 {
-                  "$type": "expression",
                   "binary": {
                     "right": {
                       "expression": {
@@ -2796,10 +2790,7 @@
                     }
                   }
                 }
-              ],
-              "expression": {
-                "name": "Some"
-              }
+              ]
             }
           }
         ],

@@ -548,6 +548,11 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 228: Rust let-chain condition expression list= — added
+  `("condition", "expression")` to Rust's tag_multi_role_children.
+  `if let Some(x) = a && let Some(y) = b` produces `<condition>`
+  with multiple `<expression>` siblings — now uniform array. Rust
+  audit 20 → 17 (-3).
 - [x] iter 227: TS group-import same-name children — added a
   SECOND `tag_multi_same_name_children(["import"])` call AFTER
   `typescript_restructure_import` (the early call ran before

@@ -656,6 +656,12 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     rust_restructure_use(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
+    // Rust `if let ... && let ...` chains produce `<condition>` with
+    // multiple `<expression>` siblings (one per let-clause).
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("condition", "expression")],
+    )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
