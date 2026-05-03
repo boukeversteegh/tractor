@@ -287,7 +287,7 @@ file/
   │               │   │   ├─ expression/name = "_"
   │               │   │   └─ expression/name = "ok"
   │               │   └─ right/expression/index/
-  │               │       ├─ name = "seen"
+  │               │       ├─ object/name = "seen"
   │               │       └─ name = "x"
   │               ├─ condition/expression/unary/
   │               │   ├─ op[logical and not] = "!"
@@ -295,7 +295,7 @@ file/
   │               └─ then/
   │                   ├─ assign/
   │                   │   ├─ left/expression/index/
-  │                   │   │   ├─ name = "seen"
+  │                   │   │   ├─ object/name = "seen"
   │                   │   │   └─ name = "x"
   │                   │   └─ right/expression/literal/struct = "struct{}"
   │                   └─ assign/
@@ -410,7 +410,7 @@ file/
   │       │       └─ spread/index[slice]/name = "fixed"
   │       ├─ switch/
   │       │   ├─ value/expression/index/
-  │       │   │   ├─ name = "implicit"
+  │       │   │   ├─ object/name = "implicit"
   │       │   │   └─ int = "0"
   │       │   ├─ case[fallthrough]/value/expression/int = "10"
   │       │   └─ case/

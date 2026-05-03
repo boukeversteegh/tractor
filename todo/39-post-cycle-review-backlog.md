@@ -184,6 +184,16 @@ before committing a non-trivial change.
   `tractor run` self-lint, (5) commit. Skipping or re-ordering
   step 4 means the project's own lint rules don't see the test
   files.
+- **Snapshot updates produce BOTH .txt AND .json diffs — stage
+  both.** Iter 283 changed TS meta-property rendering, ran
+  update-snapshots, and committed only the .json snapshot — the
+  parallel .txt diff at the same site got left unstaged. CI's
+  `task test:snapshots --check` caught the mismatch on the next
+  run; iter 285 had to ship a fixup. The pre-commit checklist
+  must include `git diff --stat tests/integration/` to verify
+  both surfaces are clean. Don't add specific files by glob; if
+  unsure, `git status` shows untracked snapshot files that need
+  staging.
 
 ## Open
 

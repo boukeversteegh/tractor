@@ -198,7 +198,7 @@ program/
   │       │       │       └─ try/
   │       │       │           ├─ body/expression/assign/
   │       │       │           │   ├─ left/expression/index/
-  │       │       │           │   │   ├─ variable/name = "results"
+  │       │       │           │   │   ├─ object/variable/name = "results"
   │       │       │           │   │   └─ variable/name = "key"
   │       │       │           │   ├─ op = "="
   │       │       │           │   └─ right/expression/object[access]/
@@ -409,7 +409,7 @@ program/
   │       │   ├─ left/expression/variable/name = "alias"
   │       │   ├─ op = "=&"
   │       │   └─ right/expression/index/
-  │       │       ├─ variable/name = "items"
+  │       │       ├─ object/variable/name = "items"
   │       │       └─ int = "0"
   │       ├─ foreach/
   │       │   ├─ variable/name = "items"

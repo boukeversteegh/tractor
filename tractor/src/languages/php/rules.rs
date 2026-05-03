@@ -211,7 +211,10 @@ pub fn rule(k: PhpKind) -> Rule<TractorNode> {
         PhpKind::ReturnStatement           => RenameStripKeyword(Return, "return"),
         PhpKind::SimpleParameter           => Rename(Parameter),
         PhpKind::String                    => Rename(String),
-        PhpKind::SubscriptExpression       => Rename(Index),
+        // PHP `$arr[$key]` — wrap operand in `<object>` to avoid
+        // JSON variable-key collision with the index variable.
+        // Mirrors Go iter 284's index_expression handler.
+        PhpKind::SubscriptExpression       => Custom(transformations::subscript_expression),
         PhpKind::SwitchStatement           => Rename(Switch),
         PhpKind::TextInterpolation         => Rename(Interpolation),
         PhpKind::ThrowExpression           => Rename(Throw),

@@ -16,9 +16,9 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Arrow, Comment as CommentName, Constant, Function, Global, Leading, Member, Object, Prefix,
-    Primitive, Private, Property, Protected, Public, String as PhpString, Trailing, Type, Unary,
-    Variable,
+    Arrow, Comment as CommentName, Constant, Function, Global, Index, Leading, Member, Object,
+    Prefix, Primitive, Private, Property, Protected, Public, String as PhpString, Trailing, Type,
+    Unary, Variable,
 };
 
 /// `class_constant_access_expression` — `Foo::BAR`. Tree-sitter
@@ -51,6 +51,33 @@ pub fn class_constant_access(
     }
     xot.with_renamed(node, Member)
         .with_prepended_marker(node, Constant)?;
+    Ok(TransformAction::Continue)
+}
+
+/// `subscript_expression` — `$arr[$key]`. Tree-sitter emits two
+/// element children (the array operand and the index) without
+/// `field=` attributes. Both are typically `<variable>` (or
+/// other expression elements), so the JSON serializer collapses
+/// them: first becomes singleton `variable: {...}`, the second
+/// overflows to `children`.
+///
+/// Wrap the FIRST element child (the array operand) in `<object>`
+/// — matching member-access vocabulary (the array IS the object
+/// being indexed). The index stays as a bare sibling. Mirrors Go
+/// iter 284.
+pub fn subscript_expression(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let first_elem = xot.children(node)
+        .find(|&c| xot.element(c).is_some());
+    if let Some(operand) = first_elem {
+        let object_id = xot.add_name(Object.as_str());
+        let object_node = xot.new_element(object_id);
+        xot.with_source_location_from(object_node, operand)
+            .with_wrap_child(operand, object_node)?;
+    }
+    xot.with_renamed(node, Index);
     Ok(TransformAction::Continue)
 }
 

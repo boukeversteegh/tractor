@@ -287,6 +287,17 @@ fn go_index_expression_wraps_operand() {
         1);
 }
 
+/// PHP `$arr[$key]` subscript expression — wraps the operand in
+/// `<object>` so the array variable doesn't collide with the
+/// index variable on the JSON `variable` key. Mirrors Go iter 284.
+#[test]
+fn php_subscript_wraps_operand() {
+    claim("PHP `$arr[$key]` wraps the array operand in <object>",
+        &mut parse_src("php", "<?php $r = $arr[$key];"),
+        "//index[object/variable/name='arr'][variable/name='key']",
+        1);
+}
+
 #[test]
 fn php_update_prefix_vs_postfix() {
     claim("`++$x` extracts <op[increment]> AND carries <prefix>",

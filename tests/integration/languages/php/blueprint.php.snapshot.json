@@ -847,14 +847,13 @@
                                 "left": {
                                   "expression": {
                                     "index": {
-                                      "children": [
-                                        {
-                                          "$type": "variable",
-                                          "name": "key"
-                                        }
-                                      ],
                                       "variable": {
-                                        "name": "results"
+                                        "name": "key"
+                                      },
+                                      "object": {
+                                        "variable": {
+                                          "name": "results"
+                                        }
                                       }
                                     }
                                   }
@@ -1664,8 +1663,10 @@
                 "expression": {
                   "index": {
                     "int": "0",
-                    "variable": {
-                      "name": "items"
+                    "object": {
+                      "variable": {
+                        "name": "items"
+                      }
                     }
                   }
                 }
