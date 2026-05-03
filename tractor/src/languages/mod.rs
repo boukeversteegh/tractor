@@ -957,7 +957,13 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     // Targeted via tag_multi_role_children rather than bulk distribute.
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("type", "parameter"), ("type", "property")],
+        &[
+            ("type", "parameter"),
+            ("type", "property"),
+            // TS object literals: `{a: 1, b: 2}` → `<object>` parent
+            // with multiple `<pair>` siblings.
+            ("object", "pair"),
+        ],
     )?;
     typescript_restructure_import(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block", "then", "else"])?;

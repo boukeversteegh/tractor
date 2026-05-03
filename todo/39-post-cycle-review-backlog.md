@@ -548,6 +548,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 217: TS object-literal pair list= — added `("object",
+  "pair")` to TS's tag_multi_role_children. `{a: 1, b: 2}` now
+  renders `object.pair: [{name:"a", value:...}, {name:"b", value:...}]`
+  array. TS audit 8 → 6 (-2).
 - [x] iter 216: Go multi-return type list= — added
   `("returns", "type")` to Go's tag_multi_role_children.
   `func f() (int, error)` now produces `returns.type:

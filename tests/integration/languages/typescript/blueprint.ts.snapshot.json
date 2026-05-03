@@ -347,13 +347,14 @@
                 "value": {
                   "expression": {
                     "object": {
-                      "children": [
+                      "pair": [
                         {
-                          "$type": "pair",
+                          "name": "label"
+                        },
+                        {
                           "name": "head"
                         },
                         {
-                          "$type": "pair",
                           "name": "rest"
                         }
                       ],
@@ -363,9 +364,6 @@
                             "name": "scale"
                           }
                         }
-                      },
-                      "pair": {
-                        "name": "label"
                       }
                     }
                   }
@@ -2415,25 +2413,24 @@
                   "value": {
                     "expression": {
                       "object": {
-                        "children": [
+                        "pair": [
                           {
-                            "$type": "pair",
-                            "name": "b",
+                            "value": {
+                              "expression": {
+                                "number": "1"
+                              }
+                            },
+                            "name": "a"
+                          },
+                          {
                             "value": {
                               "expression": {
                                 "number": "2"
                               }
-                            }
+                            },
+                            "name": "b"
                           }
-                        ],
-                        "pair": {
-                          "value": {
-                            "expression": {
-                              "number": "1"
-                            }
-                          },
-                          "name": "a"
-                        }
+                        ]
                       }
                     }
                   },
