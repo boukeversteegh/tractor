@@ -525,6 +525,13 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 211: extend TSQL distribute config — `select`/`insert`/
+  `from`/`call`/`case`/`constraint`. TSQL has its own
+  `tsql_post_transform` distribute call (separate config), so
+  iter-209/210 cross-language additions weren't applied. Closes
+  TSQL 11→3 (-8). Total cross-language: 47 → 39 (-86% from
+  baseline). Per-language: csharp 2, ts 5, rust 7, java 1, go 7,
+  python 10, php 4, ruby 1, tsql 3.
 - [x] iter 210: extend distribute config — call/index/repetition/insert/
   constraint/case/condition/range/then. Closed 14 sites: csharp 3→2,
   rust 14→7, go 12→7, php 5→4. Total 61 → 47 (-83% from baseline).

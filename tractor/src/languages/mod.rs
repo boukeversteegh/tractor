@@ -1549,7 +1549,10 @@ fn tsql_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::distribute_member_list_attrs(
         xot,
         root,
-        &["file", "transaction", "union", "columns", "list"],
+        &[
+            "file", "transaction", "union", "columns", "list",
+            "select", "insert", "from", "call", "case", "constraint",
+        ],
     )?;
     tsql_tag_select_columns(xot, root)?;
     Ok(())

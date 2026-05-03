@@ -129,42 +129,48 @@
   "statement": [
     {
       "from": {
-        "order": {
-          "target": {
-            "column": {
-              "name": "Name",
-              "ref": {
-                "name": "u"
-              }
-            }
-          }
-        },
-        "relation": {
-          "alias": "u",
-          "ref": {
-            "name": "Users"
-          }
-        },
-        "where": {
-          "compare": {
-            "right": {
-              "literal": "18"
-            },
-            "left": {
+        "order": [
+          {
+            "target": {
               "column": {
-                "name": "Age",
+                "name": "Name",
                 "ref": {
                   "name": "u"
                 }
               }
-            },
-            "op": {
-              "text": ">",
-              "compare": true,
-              "greater": true
             }
           }
-        }
+        ],
+        "relation": [
+          {
+            "alias": "u",
+            "ref": {
+              "name": "Users"
+            }
+          }
+        ],
+        "where": [
+          {
+            "compare": {
+              "right": {
+                "literal": "18"
+              },
+              "left": {
+                "column": {
+                  "name": "Age",
+                  "ref": {
+                    "name": "u"
+                  }
+                }
+              },
+              "op": {
+                "text": ">",
+                "compare": true,
+                "greater": true
+              }
+            }
+          }
+        ]
       },
       "select": {
         "column": [
@@ -185,82 +191,93 @@
     },
     {
       "insert": {
-        "children": [
+        "list": [
           {
-            "$type": "list",
-            "literal": [
-              "'UserQuery'"
-            ],
+            "column": [
+              {
+                "name": "Action"
+              },
+              {
+                "name": "Timestamp"
+              }
+            ]
+          },
+          {
             "call": [
               {
-                "ref": {
-                  "name": "GETDATE"
-                }
+                "ref": [
+                  {
+                    "name": "GETDATE"
+                  }
+                ]
               }
+            ],
+            "literal": [
+              "'UserQuery'"
             ]
           }
         ],
-        "ref": {
-          "name": "AuditLog"
-        },
-        "list": {
-          "column": [
-            {
-              "name": "Action"
-            },
-            {
-              "name": "Timestamp"
-            }
-          ]
-        }
+        "ref": [
+          {
+            "name": "AuditLog"
+          }
+        ]
       }
     },
     {
       "from": {
-        "where": {
-          "compare": {
-            "right": {
-              "literal": "'2020-01-01'"
-            },
-            "left": {
-              "column": {
-                "name": "CreatedAt"
+        "where": [
+          {
+            "compare": {
+              "right": {
+                "literal": "'2020-01-01'"
+              },
+              "left": {
+                "column": {
+                  "name": "CreatedAt"
+                }
+              },
+              "op": {
+                "text": "<",
+                "compare": true,
+                "less": true
               }
-            },
-            "op": {
-              "text": "<",
-              "compare": true,
-              "less": true
             }
           }
-        },
-        "ref": {
-          "name": "OldRecords"
-        }
+        ],
+        "ref": [
+          {
+            "name": "OldRecords"
+          }
+        ]
       },
       "delete": true
     },
     {
       "from": {
-        "where": {
-          "between": {
-            "children": [
-              "65"
-            ],
-            "left": {
-              "column": {
-                "name": "Age"
-              }
-            },
-            "literal": "18"
+        "where": [
+          {
+            "between": {
+              "children": [
+                "65"
+              ],
+              "left": {
+                "column": {
+                  "name": "Age"
+                }
+              },
+              "literal": "18"
+            }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Users",
-            "schema": "dbo"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Users",
+              "schema": "dbo"
+            }
           }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -275,7 +292,9 @@
             "var": "StartDate"
           }
         ],
-        "alias": "UserName"
+        "alias": [
+          "UserName"
+        ]
       }
     },
     {
@@ -318,15 +337,65 @@
     },
     {
       "from": {
-        "children": [
+        "where": [
           {
-            "$type": "join",
-            "relation": {
-              "alias": "a",
-              "ref": {
-                "name": "Addresses"
+            "compare": {
+              "right": {
+                "literal": "100"
+              },
+              "left": {
+                "column": {
+                  "name": "Total",
+                  "ref": {
+                    "name": "o"
+                  }
+                }
+              },
+              "op": {
+                "text": ">",
+                "compare": true,
+                "greater": true
               }
+            }
+          }
+        ],
+        "relation": [
+          {
+            "alias": "o",
+            "ref": {
+              "name": "Orders"
+            }
+          }
+        ],
+        "join": [
+          {
+            "compare": {
+              "right": {
+                "column": {
+                  "name": "ID",
+                  "ref": {
+                    "name": "u"
+                  }
+                }
+              },
+              "left": {
+                "column": {
+                  "name": "UserID",
+                  "ref": {
+                    "name": "o"
+                  }
+                }
+              },
+              "op": "="
             },
+            "relation": {
+              "alias": "u",
+              "ref": {
+                "name": "Users"
+              }
+            }
+          },
+          {
             "compare": {
               "right": {
                 "column": {
@@ -345,62 +414,15 @@
                 }
               },
               "op": "="
+            },
+            "relation": {
+              "alias": "a",
+              "ref": {
+                "name": "Addresses"
+              }
             }
           }
-        ],
-        "relation": {
-          "alias": "o",
-          "ref": {
-            "name": "Orders"
-          }
-        },
-        "join": {
-          "compare": {
-            "right": {
-              "column": {
-                "name": "ID",
-                "ref": {
-                  "name": "u"
-                }
-              }
-            },
-            "left": {
-              "column": {
-                "name": "UserID",
-                "ref": {
-                  "name": "o"
-                }
-              }
-            },
-            "op": "="
-          },
-          "relation": {
-            "alias": "u",
-            "ref": {
-              "name": "Users"
-            }
-          }
-        },
-        "where": {
-          "compare": {
-            "right": {
-              "literal": "100"
-            },
-            "left": {
-              "column": {
-                "name": "Total",
-                "ref": {
-                  "name": "o"
-                }
-              }
-            },
-            "op": {
-              "text": ">",
-              "compare": true,
-              "greater": true
-            }
-          }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -427,55 +449,63 @@
     },
     {
       "from": {
-        "where": {
-          "compare": {
-            "right": {
-              "subquery": {
-                "from": {
-                  "where": {
-                    "compare": {
-                      "right": {
-                        "literal": "50"
-                      },
-                      "left": {
-                        "column": {
-                          "name": "Total"
+        "where": [
+          {
+            "compare": {
+              "right": {
+                "subquery": {
+                  "from": {
+                    "where": [
+                      {
+                        "compare": {
+                          "right": {
+                            "literal": "50"
+                          },
+                          "left": {
+                            "column": {
+                              "name": "Total"
+                            }
+                          },
+                          "op": {
+                            "text": ">",
+                            "compare": true,
+                            "greater": true
+                          }
                         }
-                      },
-                      "op": {
-                        "text": ">",
-                        "compare": true,
-                        "greater": true
                       }
-                    }
+                    ],
+                    "relation": [
+                      {
+                        "ref": {
+                          "name": "Orders"
+                        }
+                      }
+                    ]
                   },
-                  "relation": {
-                    "ref": {
-                      "name": "Orders"
-                    }
+                  "select": {
+                    "column": [
+                      {
+                        "name": "UserID"
+                      }
+                    ]
                   }
-                },
-                "select": {
-                  "column": [
-                    {
-                      "name": "UserID"
-                    }
-                  ]
                 }
-              }
-            },
-            "left": {
-              "column": {
-                "name": "ID"
+              },
+              "left": {
+                "column": {
+                  "name": "ID"
+                }
               }
             }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Users"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Users"
+            }
           }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -487,50 +517,60 @@
     },
     {
       "from": {
-        "where": {
-          "exists": {
-            "subquery": {
-              "from": {
-                "where": {
-                  "compare": {
-                    "right": {
-                      "column": {
-                        "name": "ID",
-                        "ref": {
-                          "name": "u"
-                        }
+        "where": [
+          {
+            "exists": {
+              "subquery": {
+                "from": {
+                  "where": [
+                    {
+                      "compare": {
+                        "right": {
+                          "column": {
+                            "name": "ID",
+                            "ref": {
+                              "name": "u"
+                            }
+                          }
+                        },
+                        "left": {
+                          "column": {
+                            "name": "UserID",
+                            "ref": {
+                              "name": "o"
+                            }
+                          }
+                        },
+                        "op": "="
                       }
-                    },
-                    "left": {
-                      "column": {
-                        "name": "UserID",
-                        "ref": {
-                          "name": "o"
-                        }
+                    }
+                  ],
+                  "relation": [
+                    {
+                      "alias": "o",
+                      "ref": {
+                        "name": "Orders"
                       }
-                    },
-                    "op": "="
-                  }
+                    }
+                  ]
                 },
-                "relation": {
-                  "alias": "o",
-                  "ref": {
-                    "name": "Orders"
-                  }
+                "select": {
+                  "literal": [
+                    "1"
+                  ]
                 }
-              },
-              "select": {
-                "literal": "1"
               }
             }
           }
-        },
-        "relation": {
-          "alias": "u",
-          "ref": {
-            "name": "Users"
+        ],
+        "relation": [
+          {
+            "alias": "u",
+            "ref": {
+              "name": "Users"
+            }
           }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -545,48 +585,50 @@
     },
     {
       "from": {
-        "having": {
-          "compare": {
-            "right": {
-              "literal": "5"
-            },
-            "left": {
-              "call": {
-                "star": "*",
-                "ref": {
-                  "name": "COUNT"
+        "having": [
+          {
+            "compare": {
+              "right": {
+                "literal": "5"
+              },
+              "left": {
+                "call": {
+                  "star": [
+                    "*"
+                  ],
+                  "ref": [
+                    {
+                      "name": "COUNT"
+                    }
+                  ]
                 }
+              },
+              "op": {
+                "text": ">",
+                "compare": true,
+                "greater": true
               }
-            },
-            "op": {
-              "text": ">",
-              "compare": true,
-              "greater": true
             }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Employees"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Employees"
+            }
           }
-        },
-        "group": {
-          "column": {
-            "name": "Department"
+        ],
+        "group": [
+          {
+            "column": {
+              "name": "Department"
+            }
           }
-        }
+        ]
       },
       "select": {
-        "children": [
-          {
-            "$type": "call",
-            "ref": {
-              "name": "AVG"
-            },
-            "column": {
-              "name": "Salary"
-            }
-          },
+        "alias": [
+          "HeadCount",
           "AvgSalary"
         ],
         "column": [
@@ -594,83 +636,114 @@
             "name": "Department"
           }
         ],
-        "call": {
-          "star": "*",
-          "ref": {
-            "name": "COUNT"
+        "call": [
+          {
+            "star": [
+              "*"
+            ],
+            "ref": [
+              {
+                "name": "COUNT"
+              }
+            ]
+          },
+          {
+            "column": [
+              {
+                "name": "Salary"
+              }
+            ],
+            "ref": [
+              {
+                "name": "AVG"
+              }
+            ]
           }
-        },
-        "alias": "HeadCount"
+        ]
       }
     },
     {
       "from": {
-        "relation": {
-          "ref": {
-            "name": "Users"
+        "relation": [
+          {
+            "ref": {
+              "name": "Users"
+            }
           }
-        }
+        ]
       },
       "select": {
-        "alias": "Category",
+        "alias": [
+          "Category"
+        ],
         "column": [
           {
             "name": "Name"
           }
         ],
-        "case": {
-          "children": [
-            "'Minor'"
-          ],
-          "compare": {
-            "right": {
-              "literal": "18"
-            },
-            "left": {
-              "column": {
-                "name": "Age"
+        "case": [
+          {
+            "literal": [
+              "'Adult'",
+              "'Minor'"
+            ],
+            "compare": [
+              {
+                "right": {
+                  "literal": "18"
+                },
+                "left": {
+                  "column": {
+                    "name": "Age"
+                  }
+                },
+                "op": {
+                  "text": ">=",
+                  "compare": true,
+                  "greater": true,
+                  "equal": true
+                }
               }
-            },
-            "op": {
-              "text": ">=",
-              "compare": true,
-              "greater": true,
-              "equal": true
-            }
-          },
-          "literal": "'Adult'"
-        }
+            ]
+          }
+        ]
       }
     },
     {
       "from": {
-        "relation": {
-          "ref": {
-            "name": "ActiveUsers"
+        "relation": [
+          {
+            "ref": {
+              "name": "ActiveUsers"
+            }
           }
-        }
+        ]
       },
       "cte": {
         "statement": {
           "from": {
-            "where": {
-              "compare": {
-                "right": {
-                  "literal": "1"
-                },
-                "left": {
-                  "column": {
-                    "name": "Active"
-                  }
-                },
-                "op": "="
+            "where": [
+              {
+                "compare": {
+                  "right": {
+                    "literal": "1"
+                  },
+                  "left": {
+                    "column": {
+                      "name": "Active"
+                    }
+                  },
+                  "op": "="
+                }
               }
-            },
-            "relation": {
-              "ref": {
-                "name": "Users"
+            ],
+            "relation": [
+              {
+                "ref": {
+                  "name": "Users"
+                }
               }
-            }
+            ]
           },
           "select": {
             "column": [
@@ -697,121 +770,143 @@
       "union": {
         "from": [
           {
-            "relation": {
-              "ref": {
-                "name": "Users"
+            "relation": [
+              {
+                "ref": {
+                  "name": "Users"
+                }
               }
-            }
+            ]
           },
           {
-            "relation": {
-              "ref": {
-                "name": "Admins"
+            "relation": [
+              {
+                "ref": {
+                  "name": "Admins"
+                }
               }
-            }
+            ]
           }
         ],
         "select": [
           {
-            "alias": "Source",
+            "alias": [
+              "Source"
+            ],
             "column": [
               {
                 "name": "Name"
               }
             ],
-            "literal": "'User'"
+            "literal": [
+              "'User'"
+            ]
           },
           {
-            "alias": "Source",
+            "alias": [
+              "Source"
+            ],
             "column": [
               {
                 "name": "Name"
               }
             ],
-            "literal": "'Admin'"
+            "literal": [
+              "'Admin'"
+            ]
           }
         ]
       }
     },
     {
       "from": {
-        "relation": {
-          "ref": {
-            "name": "Employees"
+        "relation": [
+          {
+            "ref": {
+              "name": "Employees"
+            }
           }
-        }
+        ]
       },
       "select": {
-        "alias": "Rank",
+        "alias": [
+          "Rank"
+        ],
         "column": [
           {
             "name": "Name"
           }
         ],
-        "window": {
-          "over": {
-            "order": {
-              "target": {
+        "window": [
+          {
+            "over": {
+              "order": {
+                "target": {
+                  "column": {
+                    "name": "Salary"
+                  },
+                  "direction": true
+                }
+              },
+              "partition": {
                 "column": {
-                  "name": "Salary"
-                },
-                "direction": true
+                  "name": "Department"
+                }
               }
             },
-            "partition": {
-              "column": {
-                "name": "Department"
-              }
-            }
-          },
-          "call": {
-            "ref": {
-              "name": "ROW_NUMBER"
+            "call": {
+              "ref": [
+                {
+                  "name": "ROW_NUMBER"
+                }
+              ]
             }
           }
-        }
+        ]
       }
     },
     {
       "from": {
-        "where": {
-          "compare": {
-            "right": {
-              "compare": {
-                "right": {
-                  "list": {
-                    "literal": [
-                      "'admin'",
-                      "'moderator'"
-                    ]
-                  }
-                },
-                "left": {
-                  "column": {
-                    "name": "Role"
-                  }
-                }
-              }
-            },
-            "left": {
-              "compare": {
-                "right": {
-                  "compare": {
-                    "left": {
-                      "column": {
-                        "name": "DeletedAt"
-                      }
+        "where": [
+          {
+            "compare": {
+              "right": {
+                "compare": {
+                  "right": {
+                    "list": {
+                      "literal": [
+                        "'admin'",
+                        "'moderator'"
+                      ]
+                    }
+                  },
+                  "left": {
+                    "column": {
+                      "name": "Role"
                     }
                   }
-                },
-                "left": {
-                  "compare": {
-                    "right": {
-                      "literal": "'%@gmail.com'"
-                    },
-                    "left": {
-                      "column": {
-                        "name": "Email"
+                }
+              },
+              "left": {
+                "compare": {
+                  "right": {
+                    "compare": {
+                      "left": {
+                        "column": {
+                          "name": "DeletedAt"
+                        }
+                      }
+                    }
+                  },
+                  "left": {
+                    "compare": {
+                      "right": {
+                        "literal": "'%@gmail.com'"
+                      },
+                      "left": {
+                        "column": {
+                          "name": "Email"
+                        }
                       }
                     }
                   }
@@ -819,58 +914,69 @@
               }
             }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Users"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Users"
+            }
           }
-        }
+        ]
       },
       "select": {
-        "children": [
+        "alias": [
+          "DisplayName",
           "AgeText"
         ],
-        "call": {
-          "children": [
-            {
-              "$type": "column",
-              "name": "Name"
+        "call": [
+          {
+            "column": [
+              {
+                "name": "Nickname"
+              },
+              {
+                "name": "Name"
+              }
+            ],
+            "ref": [
+              {
+                "name": "COALESCE"
+              }
+            ]
+          }
+        ],
+        "cast": [
+          {
+            "varchar": {
+              "literal": "10"
+            },
+            "name": true,
+            "column": {
+              "name": "Age"
             }
-          ],
-          "ref": {
-            "name": "COALESCE"
-          },
-          "column": {
-            "name": "Nickname"
           }
-        },
-        "cast": {
-          "varchar": {
-            "literal": "10"
-          },
-          "name": true,
-          "column": {
-            "name": "Age"
-          }
-        },
-        "alias": "DisplayName"
+        ]
       }
     },
     {
       "from": {
-        "order": {
-          "target": {
-            "column": {
-              "name": "Department"
-            },
-            "direction": true
+        "order": [
+          {
+            "target": {
+              "column": {
+                "name": "Department"
+              },
+              "direction": true
+            }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Employees"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Employees"
+            }
           }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -895,9 +1001,11 @@
             },
             {
               "call": {
-                "ref": {
-                  "name": "GETDATE"
-                }
+                "ref": [
+                  {
+                    "name": "GETDATE"
+                  }
+                ]
               },
               "name": "CreatedAt"
             }
@@ -995,24 +1103,28 @@
     },
     {
       "from": {
-        "where": {
-          "compare": {
-            "right": {
-              "literal": "1"
-            },
-            "left": {
-              "column": {
-                "name": "Active"
-              }
-            },
-            "op": "="
+        "where": [
+          {
+            "compare": {
+              "right": {
+                "literal": "1"
+              },
+              "left": {
+                "column": {
+                  "name": "Active"
+                }
+              },
+              "op": "="
+            }
           }
-        },
-        "relation": {
-          "ref": {
-            "name": "Users"
+        ],
+        "relation": [
+          {
+            "ref": {
+              "name": "Users"
+            }
           }
-        }
+        ]
       },
       "select": {
         "column": [
@@ -1038,23 +1150,28 @@
       "function": {
         "body": {
           "call": {
-            "children": [
+            "call": [
               {
-                "$type": "column",
-                "var": "BirthDate"
+                "ref": [
+                  {
+                    "name": "GETDATE"
+                  }
+                ]
               }
             ],
-            "ref": {
-              "name": "DATEDIFF"
-            },
-            "column": {
-              "name": "YEAR"
-            },
-            "call": {
-              "ref": {
-                "name": "GETDATE"
+            "ref": [
+              {
+                "name": "DATEDIFF"
               }
-            }
+            ],
+            "column": [
+              {
+                "name": "YEAR"
+              },
+              {
+                "var": "BirthDate"
+              }
+            ]
           }
         },
         "int": true,
@@ -1077,24 +1194,28 @@
     {
       "create": {
         "from": {
-          "where": {
-            "compare": {
-              "right": {
-                "literal": "1"
-              },
-              "left": {
-                "column": {
-                  "name": "Active"
-                }
-              },
-              "op": "="
+          "where": [
+            {
+              "compare": {
+                "right": {
+                  "literal": "1"
+                },
+                "left": {
+                  "column": {
+                    "name": "Active"
+                  }
+                },
+                "op": "="
+              }
             }
-          },
-          "relation": {
-            "ref": {
-              "name": "Users"
+          ],
+          "relation": [
+            {
+              "ref": {
+                "name": "Users"
+              }
             }
-          }
+          ]
         },
         "ref": {
           "name": "ActiveUsers"
@@ -1121,20 +1242,24 @@
     {
       "alter": {
         "constraint": {
-          "children": [
+          "name": [
+            "fk_customer",
             "ID"
           ],
-          "ref": {
-            "name": "Customers"
-          },
-          "columns": {
-            "column": [
-              {
-                "name": "CustomerID"
-              }
-            ]
-          },
-          "name": "fk_customer"
+          "ref": [
+            {
+              "name": "Customers"
+            }
+          ],
+          "columns": [
+            {
+              "column": [
+                {
+                  "name": "CustomerID"
+                }
+              ]
+            }
+          ]
         },
         "ref": {
           "name": "Orders"
