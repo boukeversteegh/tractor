@@ -761,16 +761,19 @@
                             },
                             "label": {
                               "pattern": {
-                                "pattern": {
-                                  "children": [
-                                    {
-                                      "$type": "type",
-                                      "name": "Integer"
-                                    }
-                                  ],
-                                  "type": true,
-                                  "name": "i"
-                                }
+                                "pattern": [
+                                  {
+                                    "name": [
+                                      "i"
+                                    ],
+                                    "type": [
+                                      true,
+                                      {
+                                        "name": "Integer"
+                                      }
+                                    ]
+                                  }
+                                ]
                               }
                             }
                           },
@@ -810,16 +813,19 @@
                                 }
                               },
                               "pattern": {
-                                "pattern": {
-                                  "children": [
-                                    {
-                                      "$type": "type",
-                                      "name": "String"
-                                    }
-                                  ],
-                                  "type": true,
-                                  "name": "s"
-                                }
+                                "pattern": [
+                                  {
+                                    "name": [
+                                      "s"
+                                    ],
+                                    "type": [
+                                      true,
+                                      {
+                                        "name": "String"
+                                      }
+                                    ]
+                                  }
+                                ]
                               }
                             }
                           },
@@ -1553,16 +1559,19 @@
                                 },
                                 "label": {
                                   "pattern": {
-                                    "pattern": {
-                                      "children": [
-                                        {
-                                          "$type": "type",
-                                          "name": "Integer"
-                                        }
-                                      ],
-                                      "type": true,
-                                      "name": "i"
-                                    }
+                                    "pattern": [
+                                      {
+                                        "name": [
+                                          "i"
+                                        ],
+                                        "type": [
+                                          true,
+                                          {
+                                            "name": "Integer"
+                                          }
+                                        ]
+                                      }
+                                    ]
                                   }
                                 }
                               },

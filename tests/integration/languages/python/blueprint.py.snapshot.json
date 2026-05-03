@@ -1595,28 +1595,35 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "children": [
-                        "\"id\"",
-                        {
-                          "$type": "value",
-                          "expression": {
-                            "pattern": {
-                              "name": "pid"
+                    "pattern": [
+                      {
+                        "value": [
+                          {
+                            "expression": {
+                              "pattern": {
+                                "string": [
+                                  "\"ping\""
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "expression": {
+                              "pattern": {
+                                "name": [
+                                  "pid"
+                                ]
+                              }
                             }
                           }
-                        }
-                      ],
-                      "dict": true,
-                      "string": "\"type\"",
-                      "value": {
-                        "expression": {
-                          "pattern": {
-                            "string": "\"ping\""
-                          }
-                        }
+                        ],
+                        "dict": true,
+                        "string": [
+                          "\"type\"",
+                          "\"id\""
+                        ]
                       }
-                    }
+                    ]
                   },
                   "compare": {
                     "int": "0",
@@ -1637,23 +1644,33 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "pattern": [
-                        {
-                          "int": "1"
-                        },
-                        {
-                          "int": "2"
-                        },
-                        {
-                          "pattern": {
-                            "name": "rest",
-                            "splat": true
+                    "pattern": [
+                      {
+                        "pattern": [
+                          {
+                            "int": [
+                              "1"
+                            ]
+                          },
+                          {
+                            "int": [
+                              "2"
+                            ]
+                          },
+                          {
+                            "pattern": [
+                              {
+                                "name": [
+                                  "rest"
+                                ],
+                                "splat": true
+                              }
+                            ]
                           }
-                        }
-                      ],
-                      "list": true
-                    }
+                        ],
+                        "list": true
+                      }
+                    ]
                   }
                 },
                 {
@@ -1665,28 +1682,40 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "pattern": [
-                        {
-                          "pattern": {
-                            "int": "0",
-                            "keyword": true,
-                            "name": "x"
+                    "pattern": [
+                      {
+                        "pattern": [
+                          {
+                            "pattern": [
+                              {
+                                "int": [
+                                  "0"
+                                ],
+                                "keyword": true,
+                                "name": [
+                                  "x"
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "pattern": [
+                              {
+                                "name": [
+                                  "y",
+                                  "y"
+                                ],
+                                "keyword": true
+                              }
+                            ]
                           }
-                        },
-                        {
-                          "pattern": {
-                            "children": [
-                              "y"
-                            ],
-                            "keyword": true,
-                            "name": "y"
-                          }
-                        }
-                      ],
-                      "class": true,
-                      "name": "Point"
-                    }
+                        ],
+                        "class": true,
+                        "name": [
+                          "Point"
+                        ]
+                      }
+                    ]
                   }
                 },
                 {
@@ -1698,14 +1727,16 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "children": [
-                        "\"y\"",
-                        "\"Y\""
-                      ],
-                      "union": true,
-                      "string": "\"yes\""
-                    }
+                    "pattern": [
+                      {
+                        "string": [
+                          "\"yes\"",
+                          "\"y\"",
+                          "\"Y\""
+                        ],
+                        "union": true
+                      }
+                    ]
                   }
                 },
                 {
@@ -2553,17 +2584,23 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "pattern": [
-                        {
-                          "name": "a"
-                        },
-                        {
-                          "name": "b"
-                        }
-                      ],
-                      "tuple": true
-                    }
+                    "pattern": [
+                      {
+                        "pattern": [
+                          {
+                            "name": [
+                              "a"
+                            ]
+                          },
+                          {
+                            "name": [
+                              "b"
+                            ]
+                          }
+                        ],
+                        "tuple": true
+                      }
+                    ]
                   }
                 },
                 {
@@ -2588,13 +2625,15 @@
                     }
                   },
                   "pattern": {
-                    "pattern": {
-                      "children": [
-                        "2j"
-                      ],
-                      "complex": true,
-                      "int": "1"
-                    }
+                    "pattern": [
+                      {
+                        "int": [
+                          "1",
+                          "2j"
+                        ],
+                        "complex": true
+                      }
+                    ]
                   }
                 },
                 {

@@ -57,10 +57,14 @@
                 },
                 "pattern": [
                   {
-                    "name": "Integer"
+                    "name": [
+                      "Integer"
+                    ]
                   },
                   {
-                    "name": "Float"
+                    "name": [
+                      "Float"
+                    ]
                   }
                 ]
               },
@@ -76,15 +80,17 @@
                 },
                 "pattern": [
                   {
-                    "range": {
-                      "to": {
-                        "int": "9"
-                      },
-                      "inclusive": true,
-                      "from": {
-                        "int": "1"
+                    "range": [
+                      {
+                        "to": {
+                          "int": "9"
+                        },
+                        "inclusive": true,
+                        "from": {
+                          "int": "1"
+                        }
                       }
-                    }
+                    ]
                   }
                 ]
               },
@@ -100,7 +106,9 @@
                 },
                 "pattern": [
                   {
-                    "name": "String"
+                    "name": [
+                      "String"
+                    ]
                   }
                 ]
               },
@@ -116,13 +124,15 @@
                 },
                 "pattern": [
                   {
-                    "array": {
-                      "int": [
-                        "1",
-                        "2",
-                        "3"
-                      ]
-                    }
+                    "array": [
+                      {
+                        "int": [
+                          "1",
+                          "2",
+                          "3"
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -138,7 +148,9 @@
                 },
                 "pattern": [
                   {
-                    "nil": "nil"
+                    "nil": [
+                      "nil"
+                    ]
                   }
                 ]
               }
@@ -1044,12 +1056,16 @@
                         ]
                       },
                       "pattern": {
-                        "parameter": {
-                          "name": "tail",
-                          "splat": true
-                        },
+                        "parameter": [
+                          {
+                            "name": "tail",
+                            "splat": true
+                          }
+                        ],
                         "array": true,
-                        "name": "head"
+                        "name": [
+                          "head"
+                        ]
                       },
                       "if": {
                         "condition": {
@@ -1078,15 +1094,17 @@
                         ]
                       },
                       "pattern": {
-                        "children": [
+                        "name": [
+                          "first",
                           "last"
                         ],
                         "array": true,
-                        "parameter": {
-                          "text": "*",
-                          "splat": true
-                        },
-                        "name": "first"
+                        "parameter": [
+                          {
+                            "text": "*",
+                            "splat": true
+                          }
+                        ]
                       },
                       "unless": {
                         "condition": {
@@ -1122,22 +1140,30 @@
                         ]
                       },
                       "pattern": {
-                        "pattern": {
-                          "value": {
-                            "expression": {
-                              "pattern": {
-                                "name": "k",
-                                "as": true,
-                                "value": {
-                                  "expression": {
-                                    "name": "Integer"
+                        "pattern": [
+                          {
+                            "value": [
+                              {
+                                "expression": {
+                                  "pattern": {
+                                    "name": [
+                                      "k"
+                                    ],
+                                    "as": true,
+                                    "value": [
+                                      {
+                                        "expression": {
+                                          "name": "Integer"
+                                        }
+                                      }
+                                    ]
                                   }
                                 }
                               }
-                            }
-                          },
-                          "keyword": true
-                        },
+                            ],
+                            "keyword": true
+                          }
+                        ],
                         "hash": true
                       }
                     },
@@ -1152,12 +1178,12 @@
                         ]
                       },
                       "pattern": {
-                        "children": [
+                        "int": [
+                          "1",
                           "2",
                           "3"
                         ],
-                        "alternative": true,
-                        "int": "1"
+                        "alternative": true
                       }
                     },
                     {
@@ -1171,13 +1197,17 @@
                         ]
                       },
                       "pattern": {
-                        "name": "n",
+                        "name": [
+                          "n"
+                        ],
                         "as": true,
-                        "value": {
-                          "expression": {
-                            "name": "Integer"
+                        "value": [
+                          {
+                            "expression": {
+                              "name": "Integer"
+                            }
                           }
-                        }
+                        ]
                       }
                     }
                   ],

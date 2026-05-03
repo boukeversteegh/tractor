@@ -1020,11 +1020,15 @@
                             "expression": {
                               "is": {
                                 "pattern": {
-                                  "name": "probe",
+                                  "name": [
+                                    "probe"
+                                  ],
                                   "declaration": true,
-                                  "type": {
-                                    "name": "Widget"
-                                  }
+                                  "type": [
+                                    {
+                                      "name": "Widget"
+                                    }
+                                  ]
                                 },
                                 "name": "token"
                               }
@@ -1108,11 +1112,15 @@
                                 "break": true,
                                 "pattern": [
                                   {
-                                    "name": "w",
+                                    "name": [
+                                      "w"
+                                    ],
                                     "declaration": true,
-                                    "type": {
-                                      "name": "Widget"
-                                    }
+                                    "type": [
+                                      {
+                                        "name": "Widget"
+                                      }
+                                    ]
                                   }
                                 ]
                               },
@@ -1128,7 +1136,9 @@
                                 ],
                                 "pattern": [
                                   {
-                                    "null": "null",
+                                    "null": [
+                                      "null"
+                                    ],
                                     "constant": true
                                   }
                                 ]
@@ -1661,23 +1671,27 @@
                                 "expression": {
                                   "is": {
                                     "pattern": {
-                                      "properties": {
-                                        "subpattern": {
-                                          "pattern": {
-                                            "int": "0",
-                                            "relational": true
-                                          },
-                                          "member": {
-                                            "property": {
-                                              "name": "Length"
+                                      "properties": [
+                                        {
+                                          "subpattern": {
+                                            "pattern": {
+                                              "int": [
+                                                "0"
+                                              ],
+                                              "relational": true
                                             },
-                                            "instance": true,
-                                            "object": {
-                                              "name": "Name"
+                                            "member": {
+                                              "property": {
+                                                "name": "Length"
+                                              },
+                                              "instance": true,
+                                              "object": {
+                                                "name": "Name"
+                                              }
                                             }
                                           }
                                         }
-                                      },
+                                      ],
                                       "recursive": true
                                     },
                                     "name": "widget"
@@ -1701,11 +1715,15 @@
                                 {
                                   "$type": "arm",
                                   "pattern": {
-                                    "name": "w",
+                                    "name": [
+                                      "w"
+                                    ],
                                     "declaration": true,
-                                    "type": {
-                                      "name": "Widget"
-                                    }
+                                    "type": [
+                                      {
+                                        "name": "Widget"
+                                      }
+                                    ]
                                   },
                                   "when": {
                                     "binary": {
@@ -1746,23 +1764,27 @@
                               "arm": {
                                 "string": "\"hot\"",
                                 "pattern": {
-                                  "properties": {
-                                    "subpattern": {
-                                      "pattern": {
-                                        "member": {
-                                          "property": {
-                                            "name": "High"
-                                          },
-                                          "instance": true,
-                                          "object": {
-                                            "name": "Priority"
-                                          }
+                                  "properties": [
+                                    {
+                                      "subpattern": {
+                                        "pattern": {
+                                          "member": [
+                                            {
+                                              "property": {
+                                                "name": "High"
+                                              },
+                                              "instance": true,
+                                              "object": {
+                                                "name": "Priority"
+                                              }
+                                            }
+                                          ],
+                                          "constant": true
                                         },
-                                        "constant": true
-                                      },
-                                      "name": "Priority"
+                                        "name": "Priority"
+                                      }
                                     }
-                                  },
+                                  ],
                                   "recursive": true
                                 }
                               }
@@ -2191,11 +2213,11 @@
                           "declarator": {
                             "name": "pair",
                             "pattern": {
-                              "children": [
+                              "name": [
+                                "cnt",
                                 "tg"
                               ],
-                              "tuple": true,
-                              "name": "cnt"
+                              "tuple": true
                             }
                           },
                           "type": {
@@ -2604,11 +2626,15 @@
                         "expression": {
                           "is": {
                             "pattern": {
-                              "name": "p",
+                              "name": [
+                                "p"
+                              ],
                               "declaration": true,
-                              "type": {
-                                "name": "Point"
-                              }
+                              "type": [
+                                {
+                                  "name": "Point"
+                                }
+                              ]
                             },
                             "name": "o"
                           }
@@ -3549,67 +3575,88 @@
                                 {
                                   "$type": "arm",
                                   "pattern": {
-                                    "right": {
-                                      "expression": {
-                                        "pattern": {
-                                          "int": "0",
-                                          "relational": true
-                                        }
-                                      }
-                                    },
-                                    "and": true,
-                                    "left": {
-                                      "expression": {
-                                        "pattern": {
-                                          "name": "i",
-                                          "declaration": true,
-                                          "type": {
-                                            "name": "int"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "pattern": {
+                                            "int": [
+                                              "0"
+                                            ],
+                                            "relational": true
                                           }
                                         }
                                       }
-                                    }
+                                    ],
+                                    "and": true,
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "pattern": {
+                                            "name": [
+                                              "i"
+                                            ],
+                                            "declaration": true,
+                                            "type": [
+                                              {
+                                                "name": "int"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
                                   },
                                   "string": "\"non-positive int\""
                                 },
                                 {
                                   "$type": "arm",
                                   "pattern": {
-                                    "right": {
-                                      "expression": {
-                                        "pattern": {
-                                          "null": "null",
-                                          "constant": true
-                                        }
-                                      }
-                                    },
-                                    "or": true,
-                                    "left": {
-                                      "expression": {
-                                        "pattern": {
-                                          "name": "s",
-                                          "declaration": true,
-                                          "type": {
-                                            "name": "string"
+                                    "right": [
+                                      {
+                                        "expression": {
+                                          "pattern": {
+                                            "null": [
+                                              "null"
+                                            ],
+                                            "constant": true
                                           }
                                         }
                                       }
-                                    }
+                                    ],
+                                    "or": true,
+                                    "left": [
+                                      {
+                                        "expression": {
+                                          "pattern": {
+                                            "name": [
+                                              "s"
+                                            ],
+                                            "declaration": true,
+                                            "type": [
+                                              {
+                                                "name": "string"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
                                   },
                                   "string": "\"string or null\""
                                 },
                                 {
                                   "$type": "arm",
                                   "pattern": {
-                                    "pattern": {
-                                      "children": [
-                                        {
-                                          "$type": "type",
-                                          "name": "string"
-                                        }
-                                      ],
-                                      "type": true
-                                    },
+                                    "pattern": [
+                                      {
+                                        "type": [
+                                          true,
+                                          {
+                                            "name": "string"
+                                          }
+                                        ]
+                                      }
+                                    ],
                                     "negated": true
                                   },
                                   "string": "\"not string\""
@@ -3617,11 +3664,15 @@
                                 {
                                   "$type": "arm",
                                   "pattern": {
-                                    "name": "x",
+                                    "name": [
+                                      "x"
+                                    ],
                                     "declaration": true,
-                                    "type": {
-                                      "name": "var"
-                                    }
+                                    "type": [
+                                      {
+                                        "name": "var"
+                                      }
+                                    ]
                                   },
                                   "call": {
                                     "member": {
@@ -3643,26 +3694,36 @@
                               "arm": {
                                 "string": "\"positive int\"",
                                 "pattern": {
-                                  "right": {
-                                    "expression": {
-                                      "pattern": {
-                                        "int": "0",
-                                        "relational": true
-                                      }
-                                    }
-                                  },
-                                  "and": true,
-                                  "left": {
-                                    "expression": {
-                                      "pattern": {
-                                        "name": "i",
-                                        "declaration": true,
-                                        "type": {
-                                          "name": "int"
+                                  "right": [
+                                    {
+                                      "expression": {
+                                        "pattern": {
+                                          "int": [
+                                            "0"
+                                          ],
+                                          "relational": true
                                         }
                                       }
                                     }
-                                  }
+                                  ],
+                                  "and": true,
+                                  "left": [
+                                    {
+                                      "expression": {
+                                        "pattern": {
+                                          "name": [
+                                            "i"
+                                          ],
+                                          "declaration": true,
+                                          "type": [
+                                            {
+                                              "name": "int"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               }
                             }

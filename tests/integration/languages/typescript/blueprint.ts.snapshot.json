@@ -337,11 +337,15 @@
                 },
                 "const": true,
                 "pattern": {
-                  "rest": {
-                    "name": "rest"
-                  },
+                  "rest": [
+                    {
+                      "name": "rest"
+                    }
+                  ],
                   "array": true,
-                  "name": "head"
+                  "name": [
+                    "head"
+                  ]
                 }
               },
               {
@@ -465,21 +469,29 @@
           "$type": "parameter",
           "required": true,
           "pattern": {
-            "name": "label",
+            "name": [
+              "label"
+            ],
             "object": true,
-            "pattern": {
-              "right": {
-                "expression": {
-                  "number": "1"
-                }
-              },
-              "default": true,
-              "left": {
-                "expression": {
-                  "name": "scale"
-                }
+            "pattern": [
+              {
+                "right": [
+                  {
+                    "expression": {
+                      "number": "1"
+                    }
+                  }
+                ],
+                "default": true,
+                "left": [
+                  {
+                    "expression": {
+                      "name": "scale"
+                    }
+                  }
+                ]
               }
-            }
+            ]
           },
           "type": {
             "children": [
@@ -1017,38 +1029,41 @@
           "$type": "parameter",
           "required": true,
           "pattern": {
-            "children": [
+            "pair": [
               {
-                "$type": "pair",
-                "name": "b",
+                "value": {
+                  "expression": {
+                    "pattern": {
+                      "right": [
+                        {
+                          "expression": {
+                            "number": "1"
+                          }
+                        }
+                      ],
+                      "default": true,
+                      "left": [
+                        {
+                          "expression": {
+                            "name": "aa"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "name": "a"
+              },
+              {
                 "value": {
                   "expression": {
                     "name": "bb"
                   }
-                }
+                },
+                "name": "b"
               }
             ],
-            "object": true,
-            "pair": {
-              "value": {
-                "expression": {
-                  "pattern": {
-                    "right": {
-                      "expression": {
-                        "number": "1"
-                      }
-                    },
-                    "default": true,
-                    "left": {
-                      "expression": {
-                        "name": "aa"
-                      }
-                    }
-                  }
-                }
-              },
-              "name": "a"
-            }
+            "object": true
           },
           "type": {
             "children": [
@@ -1073,23 +1088,31 @@
           "$type": "parameter",
           "required": true,
           "pattern": {
-            "rest": {
-              "name": "rest"
-            },
-            "array": true,
-            "pattern": {
-              "right": {
-                "expression": {
-                  "number": "0"
-                }
-              },
-              "default": true,
-              "left": {
-                "expression": {
-                  "name": "c"
-                }
+            "rest": [
+              {
+                "name": "rest"
               }
-            }
+            ],
+            "array": true,
+            "pattern": [
+              {
+                "right": [
+                  {
+                    "expression": {
+                      "number": "0"
+                    }
+                  }
+                ],
+                "default": true,
+                "left": [
+                  {
+                    "expression": {
+                      "name": "c"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "type": {
             "type": {
@@ -2521,7 +2544,9 @@
                   "left": {
                     "expression": {
                       "pattern": {
-                        "name": "v",
+                        "name": [
+                          "v"
+                        ],
                         "array": true
                       }
                     }

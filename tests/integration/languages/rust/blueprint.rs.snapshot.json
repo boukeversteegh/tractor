@@ -356,14 +356,22 @@
                   {
                     "$type": "pattern",
                     "binding": true,
-                    "name": "$value",
-                    "fragment": "expr"
+                    "name": [
+                      "$value"
+                    ],
+                    "fragment": [
+                      "expr"
+                    ]
                   }
                 ],
                 "pattern": {
-                  "fragment": "ident",
+                  "fragment": [
+                    "ident"
+                  ],
                   "binding": true,
-                  "name": "$key"
+                  "name": [
+                    "$key"
+                  ]
                 }
               }
             },
@@ -1623,12 +1631,14 @@
                           }
                         },
                         "pattern": {
-                          "path": {
-                            "name": [
-                              "Shape",
-                              "Nothing"
-                            ]
-                          }
+                          "path": [
+                            {
+                              "name": [
+                                "Shape",
+                                "Nothing"
+                              ]
+                            }
+                          ]
                         }
                       },
                       {
@@ -1638,28 +1648,33 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "children": [
-                              {
-                                "$type": "path",
-                                "name": [
-                                  "Shape",
-                                  "Dot"
-                                ]
-                              },
-                              "y",
-                              "0"
-                            ],
-                            "or": true,
-                            "path": {
+                          "pattern": [
+                            {
+                              "int": [
+                                "0",
+                                "0"
+                              ],
+                              "or": true,
+                              "path": [
+                                {
+                                  "name": [
+                                    "Shape",
+                                    "Dot"
+                                  ]
+                                },
+                                {
+                                  "name": [
+                                    "Shape",
+                                    "Dot"
+                                  ]
+                                }
+                              ],
                               "name": [
-                                "Shape",
-                                "Dot"
+                                "y",
+                                "y"
                               ]
-                            },
-                            "name": "y",
-                            "int": "0"
-                          }
+                            }
+                          ]
                         }
                       },
                       {
@@ -1684,36 +1699,40 @@
                           }
                         },
                         "pattern": {
-                          "children": [
-                            "y"
-                          ],
-                          "path": {
-                            "name": [
-                              "Shape",
-                              "Dot"
-                            ]
-                          },
-                          "name": "x",
-                          "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "y"
+                          "condition": [
+                            {
+                              "expression": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "name": "y"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "x"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": "==",
+                                    "equals": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "x"
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
                                 }
                               }
                             }
-                          }
+                          ],
+                          "path": [
+                            {
+                              "name": [
+                                "Shape",
+                                "Dot"
+                              ]
+                            }
+                          ],
+                          "name": [
+                            "x",
+                            "y"
+                          ]
                         }
                       },
                       {
@@ -1747,46 +1766,56 @@
                           }
                         },
                         "pattern": {
-                          "condition": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "0"
+                          "condition": [
+                            {
+                              "expression": {
+                                "binary": {
+                                  "right": {
+                                    "expression": {
+                                      "int": "0"
+                                    }
+                                  },
+                                  "left": {
+                                    "expression": {
+                                      "name": "w"
+                                    }
+                                  },
+                                  "op": {
+                                    "text": ">",
+                                    "compare": true,
+                                    "greater": true
                                   }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "w"
-                                  }
-                                },
-                                "op": {
-                                  "text": ">",
-                                  "compare": true,
-                                  "greater": true
                                 }
                               }
                             }
-                          },
-                          "pattern": {
-                            "pattern": [
-                              {
-                                "name": "w",
-                                "field": true
-                              },
-                              {
-                                "name": "h",
-                                "field": true
-                              }
-                            ],
-                            "struct": true,
-                            "path": {
-                              "name": [
-                                "Shape",
-                                "Rect"
+                          ],
+                          "pattern": [
+                            {
+                              "pattern": [
+                                {
+                                  "name": [
+                                    "w"
+                                  ],
+                                  "field": true
+                                },
+                                {
+                                  "name": [
+                                    "h"
+                                  ],
+                                  "field": true
+                                }
+                              ],
+                              "struct": true,
+                              "path": [
+                                {
+                                  "name": [
+                                    "Shape",
+                                    "Rect"
+                                  ]
+                                }
                               ]
                             }
-                          }
+                          ]
                         }
                       },
                       {
@@ -1814,16 +1843,22 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "name": "name",
-                            "ref": true
-                          },
-                          "path": {
-                            "name": [
-                              "Shape",
-                              "Labeled"
-                            ]
-                          }
+                          "pattern": [
+                            {
+                              "name": [
+                                "name"
+                              ],
+                              "ref": true
+                            }
+                          ],
+                          "path": [
+                            {
+                              "name": [
+                                "Shape",
+                                "Labeled"
+                              ]
+                            }
+                          ]
                         }
                       },
                       {
@@ -1865,18 +1900,20 @@
                           }
                         },
                         "pattern": {
-                          "range": {
-                            "right": {
-                              "expression": {
-                                "int": "9"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "int": "0"
+                          "range": [
+                            {
+                              "right": {
+                                "expression": {
+                                  "int": "9"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "int": "0"
+                                }
                               }
                             }
-                          }
+                          ]
                         }
                       },
                       {
@@ -1886,18 +1923,20 @@
                           }
                         },
                         "pattern": {
-                          "range": {
-                            "right": {
-                              "expression": {
-                                "int": "99"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "int": "10"
+                          "range": [
+                            {
+                              "right": {
+                                "expression": {
+                                  "int": "99"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "int": "10"
+                                }
                               }
                             }
-                          }
+                          ]
                         }
                       },
                       {
@@ -2731,11 +2770,11 @@
                   "pattern": {
                     "pattern": [
                       {
-                        "children": [
+                        "name": [
+                          "x",
                           "ix"
                         ],
-                        "field": true,
-                        "name": "x"
+                        "field": true
                       },
                       {
                         "text": "..",
@@ -2743,9 +2782,11 @@
                       }
                     ],
                     "struct": true,
-                    "type": {
-                      "name": "Point"
-                    }
+                    "type": [
+                      {
+                        "name": "Point"
+                      }
+                    ]
                   }
                 },
                 {
@@ -2793,7 +2834,9 @@
             "pattern": {
               "pattern": [
                 {
-                  "name": "x",
+                  "name": [
+                    "x"
+                  ],
                   "field": true
                 },
                 {
@@ -2802,9 +2845,11 @@
                 }
               ],
               "struct": true,
-              "type": {
-                "name": "Point"
-              }
+              "type": [
+                {
+                  "name": "Point"
+                }
+              ]
             }
           },
           {
@@ -2849,32 +2894,42 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "pattern": {
-                              "children": [
-                                "_c"
+                          "pattern": [
+                            {
+                              "pattern": [
+                                {
+                                  "name": [
+                                    "b",
+                                    "_c"
+                                  ],
+                                  "tuple": true,
+                                  "pattern": [
+                                    {
+                                      "range": [
+                                        {
+                                          "right": {
+                                            "expression": {
+                                              "int": "10"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "int": "1"
+                                            }
+                                          }
+                                        }
+                                      ],
+                                      "capture": true,
+                                      "name": [
+                                        "a"
+                                      ]
+                                    }
+                                  ]
+                                }
                               ],
-                              "tuple": true,
-                              "pattern": {
-                                "range": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "10"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "int": "1"
-                                    }
-                                  }
-                                },
-                                "capture": true,
-                                "name": "a"
-                              },
-                              "name": "b"
-                            },
-                            "ref": true
-                          }
+                              "ref": true
+                            }
+                          ]
                         }
                       },
                       {
@@ -2914,14 +2969,16 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "children": [
-                              "b",
-                              "c"
-                            ],
-                            "tuple": true,
-                            "name": "a"
-                          }
+                          "pattern": [
+                            {
+                              "name": [
+                                "a",
+                                "b",
+                                "c"
+                              ],
+                              "tuple": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -2986,17 +3043,21 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "children": [
-                              "last"
-                            ],
-                            "slice": true,
-                            "pattern": {
-                              "text": "..",
-                              "rest": true
-                            },
-                            "name": "first"
-                          }
+                          "pattern": [
+                            {
+                              "name": [
+                                "first",
+                                "last"
+                              ],
+                              "slice": true,
+                              "pattern": [
+                                {
+                                  "text": "..",
+                                  "rest": true
+                                }
+                              ]
+                            }
+                          ]
                         }
                       },
                       {
@@ -3012,10 +3073,14 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "name": "only",
-                            "slice": true
-                          }
+                          "pattern": [
+                            {
+                              "name": [
+                                "only"
+                              ],
+                              "slice": true
+                            }
+                          ]
                         }
                       },
                       {
@@ -3025,10 +3090,12 @@
                           }
                         },
                         "pattern": {
-                          "pattern": {
-                            "text": "[]",
-                            "slice": true
-                          }
+                          "pattern": [
+                            {
+                              "text": "[]",
+                              "slice": true
+                            }
+                          ]
                         }
                       }
                     ]
@@ -3138,10 +3205,12 @@
                           }
                         },
                         "pattern": {
-                          "literal": {
-                            "int": "1",
-                            "negative": true
-                          }
+                          "literal": [
+                            {
+                              "int": "1",
+                              "negative": true
+                            }
+                          ]
                         }
                       },
                       {
@@ -3151,7 +3220,9 @@
                           }
                         },
                         "pattern": {
-                          "int": "0"
+                          "int": [
+                            "0"
+                          ]
                         }
                       },
                       {

@@ -525,6 +525,10 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 206: extend distribute config to `pattern` containers
+  cross-language. Closes 18 more sites: csharp 15→13, ts 13→12,
+  rust 30→24, java 4→1, python 18→14, ruby 7→5. Total 124 → 106
+  (-62% from baseline). Java now down to 1 site!
 - [x] iter 205: extend `distribute_member_list_attrs` to literal
   collections (tuple/list/dict/array/hash) cross-language. Single
   config change in 7 post-transforms; per Principle #12 the
