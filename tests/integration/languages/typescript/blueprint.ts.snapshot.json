@@ -134,14 +134,11 @@
       "children": [
         {
           "$type": "import",
-          "name": "namedB",
           "alias": true,
-          "children": [
-            {
-              "$type": "alias",
-              "name": "aliasedB"
-            }
-          ]
+          "name": "namedB",
+          "aliased": {
+            "name": "aliasedB"
+          }
         }
       ],
       "group": true,
@@ -152,7 +149,7 @@
       }
     },
     {
-      "alias": {
+      "aliased": {
         "name": "ns"
       },
       "namespace": true,

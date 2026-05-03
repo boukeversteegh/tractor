@@ -13,7 +13,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
     // Top-level / declarations (Function, Struct, Trait, Const, Macro dual-use)
-    File, Function, Impl, Struct, Enum, Trait, Mod, Use, Const, Static, Alias, Signature, Modifiers,
+    File, Function, Impl, Struct, Enum, Trait, Mod, Use, Const, Static, Alias, Aliased, Signature, Modifiers,
     Union,
     // Members (Field dual-use)
     Parameter,
@@ -108,11 +108,13 @@ impl TractorNode {
             Self::Pub | Self::Unsafe | Self::Break | Self::Continue | Self::Return
             | Self::Yield                                                              => (true, true, Keyword),
 
-            // `Alias` dual-use: `[alias]` marker on `<use>` for
-            // `use std::X as Y` AND `<alias><name>Y</name></alias>`
-            // child for the local-binding wrapper. Also covers Rust's
-            // `type Color = int` `<alias>` container shape.
+            // `Alias` covers two roles: `[alias]` marker on `<use>`
+            // (`use std::X as Y`) AND the `<alias>` container for
+            // Rust's `type Color = int` declaration. The local-binding
+            // wrapper for `as Y` uses `<aliased>` (renamed iter 184)
+            // to avoid colliding with the marker on the same `<use>`.
             Self::Alias                                                                => (true, true, Keyword),
+            Self::Aliased                                                              => (false, true, Keyword),
 
             // ---- Containers with non-default syntax --------------------------
             Self::Impl | Self::Enum | Self::Mod | Self::Use | Self::Static

@@ -391,14 +391,14 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
   - Effort: medium (1-3 iters; one targeted handler per parent
     or a shared list-name-by-parent table).
 
-- [ ] **Rust `<use>` aliased imports collide with `<alias>` marker**
-  — `tests/integration/languages/rust/blueprint.rs.snapshot.json`
-  shows `{$type: "use", name: "HashSet", alias: true, children:
-  [{$type: "alias", name: "Set"}]}`. The boolean `alias: true`
-  marker collides with the structural `<alias>Set</alias>` wrapper
-  on the same `alias` JSON key. Fix: rename the structural wrapper
-  to `<aliased>` (or `<as>`), keep the marker as `<alias/>`.
-  Effort: small. ~5 sites in Rust.
+- [x] **Cross-language `<alias>` marker/wrapper rename** — closed
+  iter 184. Found across Rust/TS/Python/PHP (not just Rust): the
+  dual-use `<alias>` (marker) + `<alias>` (structural binding wrapper)
+  collided on the JSON `alias` key, lifting one and overflowing the
+  other. Renamed the WRAPPER to `<aliased>` (kept marker `<alias/>`
+  so existing `//import[alias]` queries still work). 7 wrapper-
+  construction sites in mod.rs renamed. Spec doc updated. Closes
+  3 Rust + 2 Python + 1 TS + 1 PHP audit sites (-7 total).
 
 - [x] **Ruby `<match>` with multiple `<in>` clauses** — closed
   iter 183. Extended `ruby_tag_case_when_lists` to also tag
@@ -444,6 +444,11 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 184: cross-language `<alias>` wrapper renamed to
+  `<aliased>` (Rust/TS/Python/PHP). Resolves the JSON-key collision
+  between the `[alias]` marker and the structural binding wrapper.
+  7 sites renamed in mod.rs; spec imports-grouping.md updated; 7
+  audit overflow sites closed.
 - [x] iter 183: Ruby `<match>`/`<in>` list distribution — extended
   iter-177's `ruby_tag_case_when_lists` to also tag `<in>` children
   of `<match>` with `list="in"`. JSON `match.in: [...]` array now

@@ -3,7 +3,7 @@ module/
   ├─ import/path/name = "os"
   ├─ import[alias]/
   │   ├─ path/name = "sys"
-  │   └─ alias/name = "system"
+  │   └─ aliased/name = "system"
   ├─ from/
   │   ├─ path/name = "collections"
   │   └─ import/name = "OrderedDict"
@@ -20,7 +20,7 @@ module/
   │   ├─ path/name = "utils"
   │   └─ import[alias]/
   │       ├─ name = "helper"
-  │       └─ alias/name = "h"
+  │       └─ aliased/name = "h"
   ├─ assign/
   │   ├─ left/expression/name = "GLOBAL_FLAG"
   │   ├─ type/name = "bool"

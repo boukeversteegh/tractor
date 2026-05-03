@@ -13,7 +13,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
     // Top-level / declarations
-    Module, Class, Function, Decorated, Decorator, Lambda, Alias,
+    Module, Class, Function, Decorated, Decorator, Lambda, Alias, Aliased,
     // Members
     Parameter, Argument,
     // Type vocabulary
@@ -83,10 +83,14 @@ impl TractorNode {
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::List | Self::Dict | Self::Set                                  => (true, true, Default),
-            // Alias dual-use: `[alias]` marker on `<import>` for
-            // `import x as y` AND `<alias><name>y</name></alias>` for
-            // the local-binding wrapper (matches Go/Rust/PHP/TS shape).
+            // `Alias` covers two roles: `[alias]` marker on `<import>`
+            // (`import x as y`) AND structural container `<alias>`
+            // for `type X = int` (Python type-alias statement). The
+            // import-binding wrapper for `as y` uses `<aliased>`
+            // (renamed iter 184) to avoid colliding with the marker
+            // on the same `<import>`.
             Self::Alias                                                          => (true, true, Default),
+            Self::Aliased                                                        => (false, true, Default),
             // Generic: container for `Foo[T, U]` (with type children) +
             // marker for empty / wildcard generics.
             // Tuple: container for `(a, b)` literal + marker for empty `()`.

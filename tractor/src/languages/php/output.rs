@@ -53,7 +53,7 @@ pub enum TractorNode {
     Nullsafe, Bottom, Intersection, Disjunctive, Global, Dynamic, Promoted,
     Heredoc, Nowdoc,
     // Import-shape (path container, alias dual-use, group marker)
-    Path, Alias, Group,
+    Path, Alias, Aliased, Group,
     // Dual-use names
     Static, Default,
 }
@@ -89,10 +89,14 @@ impl TractorNode {
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Constant | Self::Static | Self::Default               => (true, true, Keyword),
-            // `Alias` dual-use: `[alias]` marker on `<use>` for
-            // `use App\Foo as Bar` AND `<alias><name>Bar</name></alias>`
-            // child for the local-binding wrapper.
+            // `Alias` is the `[alias]` marker on `<use>` for
+            // `use App\Foo as Bar`. The local-binding wrapper uses
+            // `<aliased>` (renamed iter 184) so the marker and
+            // wrapper don't collide on the same JSON key. Kept as
+            // dual-use (true, true) for safety in case any future
+            // path uses `<alias>` as a structural container.
             Self::Alias                                                                  => (true, true, Default),
+            Self::Aliased                                                                => (false, true, Default),
 
             // Bare-keyword statements: dual-use (empty marker OR
             // container). `break;` / `continue;` are bare without

@@ -14,18 +14,15 @@
       }
     },
     {
-      "children": [
-        {
-          "$type": "alias",
-          "name": "system"
-        }
-      ],
+      "aliased": {
+        "name": "system"
+      },
+      "alias": true,
       "path": {
         "name": [
           "sys"
         ]
-      },
-      "alias": true
+      }
     },
     {
       "path": {
@@ -87,14 +84,11 @@
     },
     {
       "import": {
-        "children": [
-          {
-            "$type": "alias",
-            "name": "h"
-          }
-        ],
-        "name": "helper",
-        "alias": true
+        "aliased": {
+          "name": "h"
+        },
+        "alias": true,
+        "name": "helper"
       },
       "relative": true,
       "path": {

@@ -11,7 +11,7 @@ program/
   ├─ use[alias]/
   │   ├─ path/name = "App"
   │   ├─ name = "Logger"
-  │   └─ alias/name = "Log"
+  │   └─ aliased/name = "Log"
   ├─ use[group]/
   │   ├─ path/name = "App"
   │   ├─ use/name = "First"

@@ -37,7 +37,7 @@ structural slots:
 - `<name>`     — the leaf identifier when separable from the path
                  (`HashMap` in `use std::collections::HashMap`).
                  Omitted when the path is the leaf (Go's quoted import).
-- `<alias>`    — wraps the local binding `<name>` for aliased imports.
+- `<aliased>` — wraps the local binding `<name>` for aliased imports.
 - markers      — variant kind on the host:
                  `[alias]`, `[blank]`, `[dot]`, `[wildcard]`,
                  `[self]`, `[group]`, `[sideeffect]`, `[function]`,
@@ -50,7 +50,7 @@ structural slots:
 | Source                        | Shape |
 |-------------------------------|-------|
 | `import "fmt"`                | `<import><path>fmt</path></import>` |
-| `import myio "io"`            | `<import[alias]><path>io</path><alias><name>myio</name></alias></import>` |
+| `import myio "io"`            | `<import[alias]><path>io</path><aliased><name>myio</name></aliased></import>` |
 | `import . "strings"`          | `<import[dot]><path>strings</path></import>` |
 | `import _ "net/http/pprof"`   | `<import[blank]><path>net/http/pprof</path></import>` |
 | `import (a; b; c)` block      | flat `<import>` siblings — no group wrapper |
@@ -60,7 +60,7 @@ structural slots:
 | Source                       | Shape |
 |------------------------------|-------|
 | `use App\Base`               | `<use><path><name>App</name></path><name>Base</name></use>` |
-| `use App\Logger as Log`      | `<use[alias]><path><name>App</name></path><name>Logger</name><alias><name>Log</name></alias></use>` |
+| `use App\Logger as Log`      | `<use[alias]><path><name>App</name></path><name>Logger</name><aliased><name>Log</name></aliased></use>` |
 | `use App\{First, Second}`    | `<use[group]><path><name>App</name></path><use><name>First</name></use><use><name>Second</name></use></use>` |
 | `use function App\foo`       | `<use[function]><path><name>App</name></path><name>foo</name></use>` |
 | `use const App\BAR`          | `<use[const]><path><name>App</name></path><name>BAR</name></use>` |
@@ -71,7 +71,7 @@ structural slots:
 |-------------------------------------------|-------|
 | `use std::collections::HashMap`           | `<use><path><name>std</name><name>collections</name></path><name>HashMap</name></use>` |
 | `use std::collections::{HashMap, HashSet}`| `<use[group]><path><name>std</name><name>collections</name></path><use><name>HashMap</name></use><use><name>HashSet</name></use></use>` |
-| `use std::collections::HashSet as Set`    | `<use[alias]><path><name>std</name><name>collections</name></path><name>HashSet</name><alias><name>Set</name></alias></use>` |
+| `use std::collections::HashSet as Set`    | `<use[alias]><path><name>std</name><name>collections</name></path><name>HashSet</name><aliased><name>Set</name></aliased></use>` |
 | `use std::fmt::self`                      | `<use[self]><path><name>std</name><name>fmt</name></path></use>` |
 | `use std::fmt::*`                         | `<use[wildcard]><path><name>std</name><name>fmt</name></path></use>` |
 | `pub use foo::bar`                        | `<use[reexport][pub]>...</use>` (visibility composes) |
@@ -81,8 +81,8 @@ structural slots:
 | Source                                  | Shape |
 |-----------------------------------------|-------|
 | `import { a, b } from 'mod'`            | `<import[group]><path>mod</path><import><name>a</name></import><import><name>b</name></import></import>` |
-| `import { a as x } from 'mod'`          | inner `<import[alias]><name>a</name><alias><name>x</name></alias></import>` |
-| `import * as mod from 'mod'`            | `<import[namespace]><path>mod</path><alias><name>mod</name></alias></import>` |
+| `import { a as x } from 'mod'`          | inner `<import[alias]><name>a</name><aliased><name>x</name></aliased></import>` |
+| `import * as mod from 'mod'`            | `<import[namespace]><path>mod</path><aliased><name>mod</name></aliased></import>` |
 | `import default from 'mod'`             | `<import><path>mod</path><name>default</name></import>` |
 | `import './x'`                          | `<import[sideeffect]><path>./x</path></import>` |
 
@@ -101,8 +101,8 @@ prefix-share construct.
 
 ## Alias representation
 
-Aliases use an `<alias>` element wrapping the local-binding `<name>`.
-Both an `<alias>` child AND the `[alias]` marker appear:
+Aliases use an `<aliased>` element wrapping the local-binding `<name>`.
+Both an `<aliased>` child AND the `[alias]` marker appear:
 - `//import[alias]` → finds aliased imports.
 - `//import/alias/name` → extracts local bindings.
 - `//import/name` → extracts the source-side leaf (the original).
@@ -135,7 +135,7 @@ The dual form is intentional: each query intent has a clean path.
 - **Cost**: cross-language queries need a small disjunction
   (`//import | //use`) to cover both keyword families. Acceptable —
   the structural shape under each is identical, so
-  `(//import | //use)[alias]/alias/name` extracts local bindings
+  `(//import | //use)[alias]/aliased/name` extracts local bindings
   uniformly.
 - **Won**: within-language structural uniformity. The same paths/
   alias/marker shape applies to every language, so cross-language

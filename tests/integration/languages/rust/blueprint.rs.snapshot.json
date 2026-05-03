@@ -204,14 +204,11 @@
       "children": [
         {
           "$type": "use",
-          "name": "HashSet",
           "alias": true,
-          "children": [
-            {
-              "$type": "alias",
-              "name": "Set"
-            }
-          ]
+          "name": "HashSet",
+          "aliased": {
+            "name": "Set"
+          }
         }
       ],
       "group": true,
@@ -278,14 +275,11 @@
       "children": [
         {
           "$type": "use",
-          "name": "Write",
           "alias": true,
-          "children": [
-            {
-              "$type": "alias",
-              "name": "IoWrite"
-            }
-          ]
+          "name": "Write",
+          "aliased": {
+            "name": "IoWrite"
+          }
         }
       ],
       "group": true,
@@ -296,14 +290,11 @@
         ]
       },
       "use": {
-        "children": [
-          {
-            "$type": "alias",
-            "name": "IoRead"
-          }
-        ],
-        "name": "Read",
-        "alias": true
+        "aliased": {
+          "name": "IoRead"
+        },
+        "alias": true,
+        "name": "Read"
       }
     },
     {

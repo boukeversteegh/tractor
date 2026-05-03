@@ -14,7 +14,7 @@ use crate::output::syntax_highlight::SyntaxCategory::{self, *};
 #[strum(serialize_all = "snake_case")]
 pub enum TractorNode {
     // Top-level / declarations (Function, Constructor, Generic, Alias dual-use)
-    Program, Class, Interface, Enum, Function, Method, Property, Constructor, Indexer, Alias,
+    Program, Class, Interface, Enum, Function, Method, Property, Constructor, Indexer, Alias, Aliased,
     Variable, Arrow,
     // Members
     Field, Parameter, Extends, Implements,
@@ -103,6 +103,7 @@ impl TractorNode {
             // for shape variants while remaining a container in their own
             // declarative role.
             Self::Constructor | Self::Generic | Self::Alias                        => (true, true, Type),
+            Self::Aliased                                                          => (false, true, Type),
             Self::Rest | Self::This                                                => (true, true, Default),
             // `Namespace` dual-use: `[namespace]` marker on `<import>` for
             // `import * as ns from 'mod'` (TS namespace import), AND

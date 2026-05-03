@@ -6,10 +6,10 @@ program/
   │   ├─ import/name = "namedA"
   │   └─ import[alias]/
   │       ├─ name = "namedB"
-  │       └─ alias/name = "aliasedB"
+  │       └─ aliased/name = "aliasedB"
   ├─ import[namespace]/
   │   ├─ path = "./namespace"
-  │   └─ alias/name = "ns"
+  │   └─ aliased/name = "ns"
   ├─ import[group]/
   │   ├─ path = "./types"
   │   └─ import/name = "OnlyAtCompileTime"

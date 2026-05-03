@@ -871,7 +871,7 @@ fn rust_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> 
 
         if is_flat_alias_with_pair || is_flat_alias_path_form {
             let alias_name = leaf_names[1];
-            let alias_elt = xot.add_name("alias");
+            let alias_elt = xot.add_name("aliased");
             let alias_node = xot.new_element(alias_elt);
             xot.insert_before(alias_name, alias_node)?;
             xot.detach(alias_name)?;
@@ -901,7 +901,7 @@ fn rust_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> 
                         .find(|&&(orig, _)| orig == name)
                         .map(|&(_, alias)| alias);
                     if let Some(alias_name) = paired {
-                        let alias_elt = xot.add_name("alias");
+                        let alias_elt = xot.add_name("aliased");
                         let alias_node = xot.new_element(alias_elt);
                         xot.append(inner_use, alias_node)?;
                         xot.detach(alias_name)?;
@@ -1043,7 +1043,7 @@ fn typescript_restructure_import(xot: &mut Xot, root: XotNode) -> Result<(), xot
             let ns_name = xot.children(ns)
                 .find(|&c| get_element_name(xot, c).as_deref() == Some("name"));
             if let Some(name) = ns_name {
-                let alias_elt = xot.add_name("alias");
+                let alias_elt = xot.add_name("aliased");
                 let alias_node = xot.new_element(alias_elt);
                 xot.append(import_node, alias_node)?;
                 xot.detach(name)?;
@@ -1084,7 +1084,7 @@ fn typescript_restructure_import(xot: &mut Xot, root: XotNode) -> Result<(), xot
                     let alias_name = names[1];
                     xot.detach(original)?;
                     xot.append(inner, original)?;
-                    let alias_elt = xot.add_name("alias");
+                    let alias_elt = xot.add_name("aliased");
                     let alias_node = xot.new_element(alias_elt);
                     xot.append(inner, alias_node)?;
                     xot.detach(alias_name)?;
@@ -1185,7 +1185,7 @@ fn python_restructure_imports(xot: &mut Xot, root: XotNode) -> Result<(), xot::E
                     xot.append(path_node, seg)?;
                 }
             }
-            let alias_elt = xot.add_name(Alias.as_str());
+            let alias_elt = xot.add_name("aliased");
             let alias_node = xot.new_element(alias_elt);
             xot.insert_before(alias_name, alias_node)?;
             xot.detach(alias_name)?;
@@ -1296,7 +1296,7 @@ fn python_restructure_imports(xot: &mut Xot, root: XotNode) -> Result<(), xot::E
             xot.detach(name)?;
             xot.append(inner_imp, name)?;
             if let Some(&alias_name) = alias_orig_pair.get(&name) {
-                let alias_elt = xot.add_name(Alias.as_str());
+                let alias_elt = xot.add_name("aliased");
                 let alias_node = xot.new_element(alias_elt);
                 xot.append(inner_imp, alias_node)?;
                 xot.detach(alias_name)?;
@@ -1674,7 +1674,7 @@ fn php_restructure_use(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
                     }
                 }
                 // Wrap alias name in <alias>.
-                let alias_elt = xot.add_name(Alias.as_str());
+                let alias_elt = xot.add_name("aliased");
                 let alias_node = xot.new_element(alias_elt);
                 xot.insert_before(alias_name, alias_node)?;
                 xot.detach(alias_name)?;

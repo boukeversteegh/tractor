@@ -16,19 +16,16 @@
       }
     },
     {
-      "children": [
-        {
-          "$type": "alias",
-          "name": "Log"
-        }
-      ],
-      "name": "Logger",
+      "aliased": {
+        "name": "Log"
+      },
+      "alias": true,
       "path": {
         "name": [
           "App"
         ]
       },
-      "alias": true
+      "name": "Logger"
     },
     {
       "children": [

@@ -13,7 +13,7 @@ file/
   │   ├─ use/name = "HashMap"
   │   └─ use[alias]/
   │       ├─ name = "HashSet"
-  │       └─ alias/name = "Set"
+  │       └─ aliased/name = "Set"
   ├─ use[group]/
   │   ├─ path/
   │   │   ├─ name = "std"
@@ -42,10 +42,10 @@ file/
   │   │   └─ name = "io"
   │   ├─ use[alias]/
   │   │   ├─ name = "Read"
-  │   │   └─ alias/name = "IoRead"
+  │   │   └─ aliased/name = "IoRead"
   │   └─ use[alias]/
   │       ├─ name = "Write"
-  │       └─ alias/name = "IoWrite"
+  │       └─ aliased/name = "IoWrite"
   ├─ use[wildcard]/path/
   │   ├─ name = "std"
   │   └─ name = "vec"
