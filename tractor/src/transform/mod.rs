@@ -566,6 +566,67 @@ pub fn tag_multi_type_children(
     tag_multi_same_name_children(xot, root, &["type"])
 }
 
+/// Tag specific (parent, child) pairs with `list=<child>` when the
+/// parent has 2+ children of the given child name. Used for
+/// container shapes where the multi-instance role has a different
+/// element name from the parent (so `tag_multi_same_name_children`
+/// doesn't apply). Examples:
+/// - `<string>` containing `<interpolation>` (Python f-strings).
+/// - `<string>` containing `<string>` (Python implicit concat —
+///   actually same-name; just for illustration that the helper
+///   handles this case too).
+///
+/// Each tuple is (parent_name, child_name). Idempotent.
+pub fn tag_multi_role_children(
+    xot: &mut Xot,
+    root: XotNode,
+    pairs: &[(&str, &str)],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    if pairs.is_empty() {
+        return Ok(());
+    }
+    let root = find_content_root(xot, root);
+    // Collect parent_name → list of (parent_node, child_name) targets.
+    let mut targets: Vec<(XotNode, &str)> = Vec::new();
+    fn collect<'a>(
+        xot: &Xot,
+        node: XotNode,
+        pairs: &'a [(&'a str, &'a str)],
+        out: &mut Vec<(XotNode, &'a str)>,
+    ) {
+        if xot.element(node).is_some() {
+            if let Some(name) = get_element_name(xot, node) {
+                for (parent_name, child_name) in pairs {
+                    if name.as_str() == *parent_name {
+                        out.push((node, *child_name));
+                    }
+                }
+            }
+        }
+        for c in xot.children(node) {
+            collect(xot, c, pairs, out);
+        }
+    }
+    collect(xot, root, pairs, &mut targets);
+
+    for (parent, child_name) in targets {
+        let kids: Vec<XotNode> = xot.children(parent)
+            .filter(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some(child_name)
+            })
+            .collect();
+        if kids.len() < 2 { continue; }
+        for k in kids {
+            if get_attr(xot, k, "list").is_none() {
+                xot.with_attr(k, "list", child_name);
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Strip `{` / `}` / `;` punctuation text leaves from `<body>`-shaped
 /// elements (and any other element name in `body_names`) recursively
 /// across the tree. C-family languages emit braces as anonymous text

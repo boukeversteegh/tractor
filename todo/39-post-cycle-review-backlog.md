@@ -478,6 +478,15 @@ Surfaced once the cleaner post-iter-171 JSON snapshots became readable.
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 196: Python f-string interpolation + string concat list= —
+  added new helper `tag_multi_role_children` for (parent, child)
+  pairs where the multi-instance child has a different element name
+  from the parent. Wired Python with `("string", "interpolation")`
+  pair. Also added "string" to the `tag_multi_same_name_children`
+  names list cross-language for implicit string concatenation
+  (`"a" "b" "c"` → `<string concatenated>` with `<string>` siblings).
+  Python audit 32 → 30 (-2). Tuple/list overflow deferred (mixed-
+  type heterogeneous lists need a different shape decision).
 - [x] iter 195: Ruby `<call>` receiver wrap — extended
   `call_expression` Custom handler to wrap `field="receiver"` child
   in `<object>` (matches iter-148 Java method_invocation shape).

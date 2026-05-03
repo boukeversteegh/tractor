@@ -2153,25 +2153,23 @@
             "right": {
               "expression": {
                 "string": {
-                  "children": [
+                  "interpolation": [
                     {
-                      "$type": "interpolation",
-                      "name": "n",
-                      "format": ":>05d"
+                      "cast": "!r",
+                      "name": "name"
                     },
                     {
-                      "$type": "interpolation",
+                      "format": ":>05d",
+                      "name": "n"
+                    },
+                    {
                       "string": {
                         "interpolation": {
                           "name": "name"
                         }
                       }
                     }
-                  ],
-                  "interpolation": {
-                    "cast": "!r",
-                    "name": "name"
-                  }
+                  ]
                 }
               }
             },
@@ -2651,12 +2649,12 @@
             "right": {
               "expression": {
                 "string": {
-                  "children": [
+                  "string": [
+                    "\"first \"",
                     "\"second \"",
                     "\"third\""
                   ],
-                  "concatenated": true,
-                  "string": "\"first \""
+                  "concatenated": true
                 }
               }
             },
