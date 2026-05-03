@@ -317,7 +317,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     unify_file_scoped_namespace(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     // C# try/catch: `<try>` parent with `<body>` + multiple `<catch>`
     // siblings. Tag catches with `list="catch"`; body stays singleton.
     crate::transform::tag_multi_role_children(
@@ -655,7 +655,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     )?;
     rust_restructure_use(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
@@ -955,7 +955,7 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
         root,
         &["value", "condition", "left", "right", "return"],
     )?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     // TS function-type / object-type signatures: `<type>` parent with
     // multiple `<parameter>` (function type) or `<property>` (object
     // type) siblings — uniform-role children inside a role-MIXED
@@ -1151,7 +1151,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     crate::transform::tag_multi_role_children(
         xot, root,
         &[
@@ -1163,6 +1163,12 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         ],
     )?;
     python_restructure_imports(xot, root)?;
+    // Run AFTER restructure_imports so the `<from>` element has its
+    // final `<import>` siblings (the restructure pass rewires them).
+    crate::transform::tag_multi_role_children(
+        xot, root,
+        &[("from", "import")],
+    )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
@@ -1416,7 +1422,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     // Java method reference: `String::valueOf` produces `<reference>`
     // with two `<name>` siblings (class + method). Tag both with
     // `list="name"` so the JSON name array is uniform; cardinality
@@ -1478,7 +1484,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     // Go struct fields and shared-type parameters can declare
     // multiple names with one type:
     //   `x, y int` (struct field) → `<field>` with two `<name>` + `<type>`.
@@ -1706,7 +1712,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         &["value", "condition", "left", "right", "return"],
     )?;
     php_restructure_use(xot, root)?;
-    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string"])?;
+    crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;

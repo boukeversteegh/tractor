@@ -45,9 +45,11 @@
       }
     },
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
+          "name": "Optional"
+        },
+        {
           "name": "Union"
         }
       ],
@@ -55,15 +57,14 @@
         "name": [
           "typing"
         ]
-      },
-      "import": {
-        "name": "Optional"
       }
     },
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
+          "name": "dataclass"
+        },
+        {
           "name": "field"
         }
       ],
@@ -71,9 +72,6 @@
         "name": [
           "dataclasses"
         ]
-      },
-      "import": {
-        "name": "dataclass"
       }
     },
     {
@@ -98,20 +96,19 @@
       }
     },
     {
-      "children": [
+      "import": [
         {
-          "$type": "import",
-          "wildcard": true,
-          "text": "*"
+          "name": "path"
+        },
+        {
+          "text": "*",
+          "wildcard": true
         }
       ],
       "path": {
         "name": [
           "os"
         ]
-      },
-      "import": {
-        "name": "path"
       }
     }
   ],

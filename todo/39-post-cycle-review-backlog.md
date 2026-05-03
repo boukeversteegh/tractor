@@ -548,6 +548,12 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 224: Python from-import multi-name list= — added
+  `("from", "import")` to a SECOND tag_multi_role_children call
+  AFTER `python_restructure_imports` (the first call ran before
+  restructure rewired the `<from>` element). `from typing import
+  Optional, Union` now produces `from.import: [{...}, {...}]`
+  array. Python audit 17 → 14 (-3).
 - [x] iter 223: Go multi-name var declaration list= — added
   `("var", "name")` to Go's tag_multi_role_children.
   `var x, y = 1, 2` now produces `var.name: ["x", "y"]` array.
