@@ -1564,7 +1564,6 @@
                   "pattern": {
                     "pattern": {
                       "children": [
-                        "\"id\"",
                         {
                           "$type": "value",
                           "expression": {
@@ -1575,7 +1574,10 @@
                         }
                       ],
                       "dict": true,
-                      "string": "\"type\"",
+                      "strings": [
+                        "\"type\"",
+                        "\"id\""
+                      ],
                       "value": {
                         "expression": {
                           "pattern": {
@@ -1643,11 +1645,11 @@
                         },
                         {
                           "pattern": {
-                            "children": [
+                            "names": [
+                              "y",
                               "y"
                             ],
-                            "keyword": true,
-                            "name": "y"
+                            "keyword": true
                           }
                         }
                       ],
@@ -1666,12 +1668,12 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "strings": [
+                        "\"yes\"",
                         "\"y\"",
                         "\"Y\""
                       ],
-                      "union": true,
-                      "string": "\"yes\""
+                      "union": true
                     }
                   }
                 },
@@ -2549,11 +2551,11 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "ints": [
+                        "1",
                         "2j"
                       ],
-                      "complex": true,
-                      "int": "1"
+                      "complex": true
                     }
                   }
                 },

@@ -108,3 +108,43 @@ fn rust() {
         "#),
         1);
 }
+
+/// Multi-alternative patterns produce same-element-name siblings
+/// (multiple `<int>`, `<string>`, or `<name>` under
+/// `<pattern[union]>` / `<pattern[alternative]>`). Per Principle
+/// #19 they're role-uniform — each is one alternative option.
+/// Tag with `list="ints"` / `list="strings"` / `list="names"` so
+/// JSON renders as a homogeneous array. Single-alternative
+/// patterns and role-mixed patterns stay singleton (cardinality
+/// discriminator).
+#[test]
+fn python_union_pattern_lists_alternative_ints() {
+    claim("Python case-union of three ints tags each with list='ints'",
+        &mut parse_src("python", "match x:\n    case 1 OR 2 OR 3:\n        pass\n".replace("OR", "|").as_str()),
+        "//pattern/int[@list='ints']",
+        3);
+}
+
+#[test]
+fn python_union_pattern_lists_alternative_strings() {
+    claim("Python case-union of two strings tags each with list='strings'",
+        &mut parse_src("python", "match x:\n    case \"a\" OR \"b\":\n        pass\n".replace("OR", "|").as_str()),
+        "//pattern/string[@list='strings']",
+        2);
+}
+
+#[test]
+fn ruby_alternative_pattern_lists_alternative_ints() {
+    claim("Ruby in-alternative of three ints tags each with list='ints'",
+        &mut parse_src("ruby", "case x\nin 1 OR 2 OR 3\n  :small\nend\n".replace("OR", "|").as_str()),
+        "//pattern/int[@list='ints']",
+        3);
+}
+
+#[test]
+fn ruby_array_pattern_lists_names() {
+    claim("Ruby array pattern with two name slots tags each with list='names'",
+        &mut parse_src("ruby", "case xs\nin [first, *, last]\n  first\nend\n"),
+        "//pattern/name[@list='names']",
+        2);
+}

@@ -1080,15 +1080,15 @@
                         ]
                       },
                       "pattern": {
-                        "children": [
+                        "names": [
+                          "first",
                           "last"
                         ],
                         "array": true,
                         "parameter": {
                           "text": "*",
                           "splat": true
-                        },
-                        "name": "first"
+                        }
                       },
                       "unless": {
                         "condition": {
@@ -1154,12 +1154,12 @@
                         ]
                       },
                       "pattern": {
-                        "children": [
+                        "ints": [
+                          "1",
                           "2",
                           "3"
                         ],
-                        "alternative": true,
-                        "int": "1"
+                        "alternative": true
                       }
                     },
                     {

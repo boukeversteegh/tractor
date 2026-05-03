@@ -1461,6 +1461,14 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // colliding on the singleton `expression` key and
             // overflowing into `children`.
             ("return", "expression"),
+            // Union patterns `case 1 | 2 | 3:` produce
+            // `<pattern[union]>` with multiple `<int>` (or
+            // `<string>`/`<name>`) siblings. Per Principle #19
+            // they're role-uniform — each is one alternative
+            // option. Mirrors Ruby alternative patterns.
+            ("pattern", "int"),
+            ("pattern", "string"),
+            ("pattern", "name"),
         ],
     )?;
     python_restructure_imports(xot, root)?;
@@ -2399,7 +2407,19 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // `<parameter[destructured]>` with multiple `<name>` siblings.
     crate::transform::tag_multi_role_children(
         xot, root,
-        &[("parameter", "name")],
+        &[
+            ("parameter", "name"),
+            // Alternative patterns `1 | 2 | 3` produce
+            // `<pattern[alternative]>` with multiple `<int>` (or
+            // `<string>`/`<name>`) siblings. Per Principle #19
+            // they're role-uniform — each is one alternative
+            // option. Tag so JSON renders e.g. `ints: [...]`
+            // instead of overflowing to `children`. Cardinality
+            // discriminator (>=2) keeps singleton patterns alone.
+            ("pattern", "int"),
+            ("pattern", "string"),
+            ("pattern", "name"),
+        ],
     )?;
     crate::transform::wrap_body_value_children(
         xot,
