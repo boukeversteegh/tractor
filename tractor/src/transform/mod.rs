@@ -9,6 +9,7 @@
 //! ```
 
 pub mod builder;
+pub mod chain_inversion;
 pub mod conditionals;
 pub mod data_keys;
 pub mod generic_type;

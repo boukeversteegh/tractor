@@ -47,7 +47,163 @@ The user's observation: developers reading source `a.b.c.d()` think
 left-to-right, root-then-children. The current right-deep shape
 inverts this; the developer has to mentally unwind.
 
-## Target shape — flat chain
+## DECIDED (post-iter-232 conversation): NESTED with `<chain>` wrapper
+
+User reviewed the FLAT-vs-NESTED comparison at end of iter 232 and
+chose NESTED. The deciding factor was **declaration-call query
+symmetry**: `//class[name='Foo']/method[name='bar']` (declaration)
+and `//chain[name='console']/member[name='stdout']/call[name='write']`
+(call) read identically — same predicate, same axis steps,
+same mental model. FLAT would have required positional predicates
+(`name[1]='console'`) that don't compose with the rest of tractor's
+declaration vocabulary.
+
+Trade-off accepted: depth queries (Law-of-Demeter detection) need
+`count(.//*)` instead of `count(*)`. Acceptable cost for the
+symmetry win.
+
+### Finalized shape
+
+For receiver-only `a` (no chain — single `<name>`):
+- No `<chain>` wrapper. Bare `<name>a</name>`.
+
+For 2+ link chains, `<chain>` has exactly two children: the
+**receiver** (any expression element) followed by the **first
+step**. Subsequent steps nest as the LAST child of the previous
+step.
+
+For `console.stdout.write()`:
+```xml
+<chain>
+  <name>console</name>          <!-- receiver -->
+  <member>                       <!-- step 1: .stdout -->
+    <name>stdout</name>
+    <call>                        <!-- step 2 (terminal): .write() -->
+      <name>write</name>
+    </call>
+  </member>
+</chain>
+```
+
+### Step element types
+
+- `<member>` — `.foo` access. Children: `<name>foo</name>` plus
+  optional next-step element.
+- `<call>` — `.foo(...)` method call OR `(args)` result-invocation.
+  Children: `<name>foo</name>` (absent for result-invocation) +
+  zero or more `<argument>` siblings + optional next-step element.
+- `<subscript>` — `[expr]` index access. Children: index
+  expression + optional next-step element.
+
+### Examples
+
+`a.b.c.d`:
+```xml
+<chain>
+  <name>a</name>
+  <member>
+    <name>b</name>
+    <member>
+      <name>c</name>
+      <member>
+        <name>d</name>
+      </member>
+    </member>
+  </member>
+</chain>
+```
+
+`a.b().c.d()`:
+```xml
+<chain>
+  <name>a</name>
+  <call>
+    <name>b</name>
+    <member>
+      <name>c</name>
+      <call>
+        <name>d</name>
+      </call>
+    </member>
+  </call>
+</chain>
+```
+
+`a[0].b`:
+```xml
+<chain>
+  <name>a</name>
+  <subscript>
+    <int>0</int>
+    <member>
+      <name>b</name>
+    </member>
+  </subscript>
+</chain>
+```
+
+`(x as Foo).b`:
+```xml
+<chain>
+  <cast>
+    <name>x</name>
+    <type>Foo</type>
+  </cast>
+  <member>
+    <name>b</name>
+  </member>
+</chain>
+```
+
+`f()(args)`:
+```xml
+<chain>
+  <call>
+    <name>f</name>
+  </call>
+  <call>
+    <argument>...</argument>
+  </call>
+</chain>
+```
+
+(Note: the second `<call>` has no `<name>` because it's invocation
+on the result, not a named method. Discriminator for "result
+invocation" vs "method call" is presence/absence of a `<name>`
+child.)
+
+### Optional / non-null markers
+
+`a?.b?.c()`:
+```xml
+<chain>
+  <name>a</name>
+  <member>
+    <optional/>
+    <name>b</name>
+    <call>
+      <optional/>
+      <name>c</name>
+    </call>
+  </member>
+</chain>
+```
+
+The marker rides on the step element where the operator appears,
+not on the receiver name.
+
+### Query symmetry table
+
+| Query | Declaration | Chain |
+|---|---|---|
+| Specific path | `//class[name='Foo']/method[name='bar']` | `//chain[name='console']/member[name='stdout']/call[name='write']` |
+| Match any tail | `//method[name='bar']` | `//call[name='bar']` (under chain context if needed) |
+| Match receiver / class | `//class[name='Foo']` | `//chain[name='Foo']` |
+| Depth (Law-of-Demeter) | n/a | `//chain[count(.//member \| .//call \| .//subscript) >= 3]` |
+
+---
+
+## Original FLAT proposal (kept for context, NOT adopted)
 
 For `a.b.c.d()`:
 
