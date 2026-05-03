@@ -284,7 +284,7 @@ program/
   │       │               │   ├─ name = "x"
   │       │               │   └─ call/name = "nil?"
   │       │               ├─ then[next]
-  │       │               ├─ else_if/
+  │       │               ├─ elseif/
   │       │               │   ├─ condition/expression/binary/
   │       │               │   │   ├─ left/expression/name = "x"
   │       │               │   │   ├─ op[equals] = "=="

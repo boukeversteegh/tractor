@@ -1309,7 +1309,7 @@
                     "text": "continue",
                     "continue": true
                   },
-                  "else_if": {
+                  "elseif": {
                     "then": {
                       "text": "break",
                       "break": true

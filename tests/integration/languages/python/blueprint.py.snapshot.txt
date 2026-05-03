@@ -321,7 +321,7 @@ module/
   │       │   │   │   ├─ op[compare and less] = "<"
   │       │   │   │   └─ int = "0"
   │       │   │   ├─ then[continue] = "continue"
-  │       │   │   ├─ else_if/
+  │       │   │   ├─ elseif/
   │       │   │   │   ├─ condition/expression/compare/
   │       │   │   │   │   ├─ name = "v"
   │       │   │   │   │   ├─ op[equals] = "=="

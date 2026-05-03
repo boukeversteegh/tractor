@@ -443,7 +443,7 @@
                       }
                     ]
                   },
-                  "else_if": {
+                  "elseif": {
                     "body": {
                       "returns": [
                         {

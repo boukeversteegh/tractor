@@ -23,7 +23,10 @@ pub enum TractorNode {
     // Types / generics (Generic dual-use)
     Type, Generic, Generics, Path, Bounds, Bound, Extends, Where,
     // Statements / control flow
-    Let, Return, If, Else, ElseIf, For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
+    Let, Return, If, Else,
+    #[strum(serialize = "elseif")]
+    ElseIf,
+    For, While, Loop, Match, Arm, Pattern, Break, Continue, Range,
     Send, Label, Yield,
     // Expressions (Ref, Tuple, Array dual-use; Await/Try are markers)
     Call, Index, Binary, Unary, Assign, Closure, Await, Try, Macro, Cast, Ref, Tuple, Unsafe,

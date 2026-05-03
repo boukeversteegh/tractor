@@ -2631,7 +2631,7 @@ const RUBY_VALUE_KINDS: &[&str] = &[
 /// the flat conditional shape (see the cross-cutting convention in
 /// `specs/tractor-parse/semantic-tree/transformations.md`).
 fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::conditionals::collapse_else_if_chain;
+    use crate::transform::conditionals::collapse_elseif_chain;
     // Collect all <if> nodes first (we mutate the tree as we go).
     let mut if_nodes: Vec<XotNode> = Vec::new();
     collect_if_nodes(xot, root, &mut if_nodes);
@@ -2647,7 +2647,7 @@ fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         if xot.parent(node).is_none() && !xot.is_document(node) {
             continue;
         }
-        collapse_else_if_chain(xot, node)?;
+        collapse_elseif_chain(xot, node)?;
     }
     Ok(())
 }

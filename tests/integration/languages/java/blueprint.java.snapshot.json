@@ -439,7 +439,7 @@
                       }
                     }
                   },
-                  "else_if": {
+                  "elseif": {
                     "then": {
                       "return": {
                         "expression": {

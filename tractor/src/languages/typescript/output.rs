@@ -21,7 +21,10 @@ pub enum TractorNode {
     // Type vocabulary
     Type, Generic, Generics, Predicate, Annotation,
     // Control flow
-    Block, Return, If, Else, ElseIf, For, While, Try, Catch, Throw, Finally, Switch, Case,
+    Block, Return, If, Else,
+    #[strum(serialize = "elseif")]
+    ElseIf,
+    For, While, Try, Catch, Throw, Finally, Switch, Case,
     Break, Continue, Body, Do, With, Debugger, Label,
     // Expressions (Rest, This dual-use)
     Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Subscript, Pattern,

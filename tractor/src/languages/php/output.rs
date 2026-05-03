@@ -19,7 +19,10 @@ pub enum TractorNode {
     // Inheritance
     Extends, Implements, Types,
     // Statements / control flow
-    Return, If, Else, ElseIf, For, Foreach, While, Do, Switch, Case, Try, Catch, Finally, Throw,
+    Return, If, Else,
+    #[strum(serialize = "elseif")]
+    ElseIf,
+    For, Foreach, While, Do, Switch, Case, Try, Catch, Finally, Throw,
     Echo, Continue, Break, Match, Arm, Yield, Require, Print, Exit, Declare, Goto,
     Clone, Unset, Label,
     // Expressions

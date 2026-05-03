@@ -2164,7 +2164,7 @@
                 {
                   "children": [
                     {
-                      "$type": "else_if",
+                      "$type": "elseif",
                       "condition": {
                         "expression": {
                           "binary": {
@@ -2243,7 +2243,7 @@
                       }
                     }
                   },
-                  "else_if": {
+                  "elseif": {
                     "then": {
                       "expression": {
                         "assign": {

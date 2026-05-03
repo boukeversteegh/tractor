@@ -110,7 +110,7 @@ program/
   │       │       ├─ then/throw/new/
   │       │       │   ├─ type/name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
-  │       │       ├─ else_if/
+  │       │       ├─ elseif/
   │       │       │   ├─ condition/expression/unary/
   │       │       │   │   ├─ op[logical and not] = "!"
   │       │       │   │   └─ name = "ready"
