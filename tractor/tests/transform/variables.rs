@@ -121,7 +121,11 @@ fn typescript_multi_declarator_keeps_wrappers() {
 
 /// Goal #5: augmented_assignment unifies with plain assignment
 /// as <assign> plus an <op> child carrying the compound operator.
-/// A single //assign query matches every assignment.
+/// A single //assign query matches every assignment. Iter 340
+/// deferred adding `<op>=</op>` for Python plain assignments (Go
+/// and Ruby shipped) — see comment in `python/rules.rs` and
+/// todo/39 for the annotated-assign edge case (`x: int = 5`)
+/// blocking the simple `ExtractOpThenRename` swap.
 #[test]
 fn python() {
     claim("plain assignment has no op child",

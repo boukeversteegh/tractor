@@ -2,12 +2,15 @@ program/
   ├─ comment = "# Kitchen-sink Ruby blueprint for tractor snapshot tests.\n# Rendered by `tractor query <file> -p tree --single` with NO depth limit\n# so any design-principle transform change produces a visible snapshot diff.\n# The file is intentionally syntactically valid but not executed."
   ├─ assign/
   │   ├─ left/expression/name = "MAX_RETRIES"
+  │   ├─ op = "="
   │   └─ right/expression/int = "3"
   ├─ assign/
   │   ├─ left/expression/name = "GREETINGS"
+  │   ├─ op = "="
   │   └─ right/expression/array[string] = "%w[hi hello hey]"
   ├─ assign/
   │   ├─ left/expression/name = "SYMBOLS"
+  │   ├─ op = "="
   │   └─ right/expression/array[symbol] = "%i[one two three]"
   ├─ module/
   │   ├─ name = "Greeter"
@@ -44,9 +47,11 @@ program/
   │       │       │   └─ body/
   │       │       │       ├─ assign/
   │       │       │       │   ├─ left/expression/name = "@name"
+  │       │       │       │   ├─ op = "="
   │       │       │       │   └─ right/expression/name = "name"
   │       │       │       └─ assign/
   │       │       │           ├─ left/expression/name = "@id"
+  │       │       │           ├─ op = "="
   │       │       │           └─ right/expression/binary/
   │       │       │               ├─ left/expression/name = "id"
   │       │       │               ├─ op[logical and or] = "||"
@@ -84,27 +89,34 @@ program/
   │               │       └─ call/name = "new"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "SINGLE"
+  │               │   ├─ op = "="
   │               │   └─ right/expression/string = "'single-quoted \\n'"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "DOUBLE"
+  │               │   ├─ op = "="
   │               │   └─ right/expression/string/interpolation/name = "MAX_RETRIES"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "HEREDOC"
+  │               │   ├─ op = "="
   │               │   └─ right = "<<-TEXT"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "SQUIGGLY"
+  │               │   ├─ op = "="
   │               │   └─ right = "<<~TEXT"
   │               ├─ interpolation/name = "MAX_RETRIES"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "PATTERN"
+  │               │   ├─ op = "="
   │               │   └─ right/expression/regex = "/\\A[a-z]+\\z/i"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "RANGE_INCL"
+  │               │   ├─ op = "="
   │               │   └─ right/expression/range[inclusive]/
   │               │       ├─ from/int = "1"
   │               │       └─ to/int = "10"
   │               ├─ assign/
   │               │   ├─ left/expression/name = "RANGE_EXCL"
+  │               │   ├─ op = "="
   │               │   └─ right/expression/range[exclusive]/
   │               │       ├─ from/int = "1"
   │               │       └─ to/int = "10"
@@ -121,6 +133,7 @@ program/
   │               │       ├─ name = "registry"
   │               │       └─ body/assign/
   │               │           ├─ left/expression/name = "@registry"
+  │               │           ├─ op[assign and logical and or] = "||="
   │               │           └─ right/expression/hash = "{}"
   │               ├─ method/
   │               │   ├─ name = "greet?"
@@ -135,6 +148,7 @@ program/
   │               │   └─ body/
   │               │       ├─ assign/
   │               │       │   ├─ left/expression/name = "msg"
+  │               │       │   ├─ op = "="
   │               │       │   └─ right/expression/ternary/
   │               │       │       ├─ condition/expression/name = "formal"
   │               │       │       ├─ then/expression/string/interpolation/name = "@name"
@@ -143,6 +157,7 @@ program/
   │               │       │           └─ interpolation/name = "@name"
   │               │       ├─ assign/
   │               │       │   ├─ left/expression/name = "msg"
+  │               │       │   ├─ op = "="
   │               │       │   └─ right/expression/ternary/
   │               │       │       ├─ condition/expression/call/name = "block_given?"
   │               │       │       ├─ then/expression/yield/name = "msg"
@@ -161,6 +176,7 @@ program/
   │               │   ├─ name = "shout!"
   │               │   └─ body/assign/
   │               │       ├─ left/expression/name = "@name"
+  │               │       ├─ op = "="
   │               │       └─ right/expression/object[access]/
   │               │           ├─ name = "@name"
   │               │           └─ call/name = "upcase"
@@ -199,6 +215,7 @@ program/
   │                   └─ body/
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "data"
+  │                       │   ├─ op = "="
   │                       │   └─ right/expression/hash/
   │                       │       ├─ pair/
   │                       │       │   ├─ name = "id"
@@ -211,6 +228,7 @@ program/
   │                       │           └─ value/expression/true = "true"
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "rocket"
+  │                       │   ├─ op = "="
   │                       │   └─ right/expression/hash/
   │                       │       ├─ pair/
   │                       │       │   ├─ symbol = ":foo"
@@ -220,6 +238,7 @@ program/
   │                       │           └─ value/expression/int = "2"
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "list"
+  │                       │   ├─ op = "="
   │                       │   └─ right/expression/array/
   │                       │       ├─ int = "1"
   │                       │       ├─ int = "2"
@@ -229,6 +248,7 @@ program/
   │                       │           └─ int = "5"
   │                       ├─ assign/
   │                       │   ├─ left/expression/name = "merged"
+  │                       │   ├─ op = "="
   │                       │   └─ right/expression/hash/
   │                       │       ├─ spread[dict]/name = "data"
   │                       │       └─ pair/
@@ -272,6 +292,7 @@ program/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ object[access]/
   │       │   ├─ name = "items"
@@ -293,12 +314,14 @@ program/
   │       │               └─ else/
   │       │                   ├─ assign/
   │       │                   │   ├─ left/expression/name = "total"
+  │       │                   │   ├─ op[assign and plus] = "+="
   │       │                   │   └─ right/expression/name = "x"
   │       │                   └─ if/
   │       │                       ├─ body[redo]
   │       │                       └─ condition/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "i"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ while/
   │       │   ├─ condition/expression/binary/
@@ -307,6 +330,7 @@ program/
   │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/do/assign/
   │       │       ├─ left/expression/name = "i"
+  │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/int = "1"
   │       ├─ until/
   │       │   ├─ condition/expression/binary/
@@ -315,6 +339,7 @@ program/
   │       │   │   └─ right/expression/int = "6"
   │       │   └─ body/do/assign/
   │       │       ├─ left/expression/name = "i"
+  │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/int = "1"
   │       ├─ for/
   │       │   ├─ name = "j"
@@ -323,12 +348,14 @@ program/
   │       │   │   └─ to/int = "3"
   │       │   └─ body/do/assign/
   │       │       ├─ left/expression/name = "total"
+  │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/name = "j"
   │       ├─ expression/call/
   │       │   ├─ name = "loop"
   │       │   └─ block/value/expression[break]
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/begin/
   │       │       ├─ unless/
   │       │       │   ├─ body/expression/call/
@@ -363,6 +390,7 @@ program/
   │       │               └─ right/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "adder"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/lambda/
   │       │       ├─ parameter/name = "a"
   │       │       ├─ parameter/name = "b"
@@ -372,6 +400,7 @@ program/
   │       │           └─ right/expression/name = "b"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "doubler"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/call/
   │       │       ├─ name = "proc"
   │       │       └─ block/
@@ -382,6 +411,7 @@ program/
   │       │               └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "multi_stmt"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/call/
   │       │       ├─ name = "proc"
   │       │       └─ block/
@@ -396,6 +426,7 @@ program/
   │       │                   └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "multi_lambda"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/lambda/
   │       │       ├─ parameter/name = "n"
   │       │       └─ body/
@@ -408,6 +439,7 @@ program/
   │       │               └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "ternary"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/ternary/
   │       │       ├─ condition/expression/object[access]/
   │       │       │   ├─ name = "total"
@@ -416,9 +448,11 @@ program/
   │       │       └─ else/expression/symbol = ":filled"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
+  │       │   ├─ op[assign and logical and or] = "||="
   │       │   └─ right/expression/int = "0"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
+  │       │   ├─ op[assign and logical and and] = "&&="
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/name = "total"
   │       │       ├─ op[plus] = "+"
@@ -428,6 +462,7 @@ program/
   │       │   │   ├─ expression/name = "a"
   │       │   │   ├─ expression/name = "b"
   │       │   │   └─ expression/spread/name = "rest"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/array/
   │       │       ├─ int = "1"
   │       │       ├─ int = "2"
@@ -436,17 +471,20 @@ program/
   │       ├─ expression/binary/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ left/expression/name = "flag"
+  │       │   │   ├─ op = "="
   │       │   │   └─ right/expression/true = "true"
   │       │   ├─ op[logical and and] = "and"
   │       │   └─ right/expression/false = "false"
   │       ├─ expression/binary/
   │       │   ├─ left/expression/assign/
   │       │   │   ├─ left/expression/name = "flag"
+  │       │   │   ├─ op = "="
   │       │   │   └─ right/expression/true = "true"
   │       │   ├─ op[logical and or] = "or"
   │       │   └─ right/expression/false = "false"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "flag"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/binary/
   │       │       ├─ left/expression/binary/
   │       │       │   ├─ left/expression/unary/
@@ -491,6 +529,7 @@ program/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/match/
   │       │       ├─ value/expression/name = "values"
   │       │       ├─ in/
@@ -542,6 +581,7 @@ program/
   │       │   └─ argument[forward] = "..."
   │       ├─ assign/
   │       │   ├─ left/expression/name = "joined"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/string[concatenated]/
   │       │       ├─ string = "\"first \""
   │       │       ├─ string = "\"second \""
@@ -551,6 +591,7 @@ program/
   │       │   └─ name = "Defaults"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "arr"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/array/
   │       │       ├─ int = "10"
   │       │       ├─ int = "20"
@@ -578,12 +619,14 @@ program/
   │   │   ├─ expression[destructured]
   │   │   ├─ expression/name = "a"
   │   │   └─ expression/name = "b"
+  │   ├─ op = "="
   │   └─ right/expression/array/
   │       ├─ int = "10"
   │       └─ int = "20"
   ├─ comment[leading] = "# Safe-navigation operator `&.` — `<call[optional]>` shape parallels\n# C# `?.` so cross-language `//call[optional]` finds either form."
   ├─ assign/
   │   ├─ left/expression/name = "maybe"
+  │   ├─ op = "="
   │   └─ right/expression/object[access]/
   │       ├─ name = "obj"
   │       └─ call[optional]/

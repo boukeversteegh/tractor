@@ -149,6 +149,50 @@ fn cross_language_binary_plus_extracts_op_marker() {
 
 // ---- unary ----------------------------------------------------------------
 
+/// Cross-language: every plain-`=` assignment carries an `<op>='='</op>`
+/// child (Principle #5 cross-language uniformity, iter 52 design
+/// decision: `<op>` is the canonical home for ALL operator tokens —
+/// plain `=`, augmented `+=`/`-=`/etc., and binary operators alike).
+///
+/// Source-text preservation: the bare `=` text leaf produced by
+/// tree-sitter is WRAPPED in `<op>` (via `prepend_op_element`),
+/// not duplicated. Concatenating all leaf text in document order
+/// still reconstructs the original source.
+///
+/// Iter 340 status: TS/C#/Java/PHP/Rust/Go/Ruby pass. Python
+/// deferred — its annotated-assignment syntax (`x: int = 5`) puts
+/// both `:` and `=` as text leaves in the same Assignment node;
+/// the simple `ExtractOpThenRename` swap captures `:` instead of `=`.
+/// Tracked in todo/39 — needs a Custom handler to prefer `=` when
+/// both are present (or to skip `:` when a `<type>` sibling exists).
+#[test]
+fn cross_language_plain_assign_extracts_op_equals() {
+    let canonical = "//assign/op='='";
+
+    for (lang, src) in &[
+        ("typescript", "let x = 5; x = 10;"),
+        ("rust",       "fn f() { let mut x = 5; x = 10; }"),
+        ("java",       "class X { void f() { int x = 5; x = 10; } }"),
+        ("csharp",     "class X { void F() { int x = 5; x = 10; } }"),
+        ("php",        "<?php $x = 5;"),
+        ("go",         "package m\nfunc f() { x := 5; x = 10; _ = x }"),
+        ("ruby",       "x = 5\n"),
+    ] {
+        claim(
+            &format!("{lang}: plain `=` assignment carries <op>=</op> child (Principle #5)"),
+            &mut parse_src(lang, src),
+            canonical,
+            // TS source has 1 plain assign (`x = 10` only — `let x = 5;`
+            // is a variable declaration, not an assign). Java/C#/Go
+            // similar — TS, Java, C# have just the second statement;
+            // Rust the second; Go has 1 plain `=` and the `_ = x`; PHP
+            // has 1; Ruby has 1.
+            // To keep the test simple, just assert at-least-1.
+            1,
+        );
+    }
+}
+
 /// Cross-language: the `<unary>[op[minus]]` extraction contract is
 /// the same xpath query across every language with prefix `-x`.
 /// Pinned uniformly to catch any future regression in unary

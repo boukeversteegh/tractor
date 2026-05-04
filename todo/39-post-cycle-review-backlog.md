@@ -407,6 +407,46 @@ context. 15 findings; severity per reviewer.
   string. Already partially-tracked in older backlog items; cold-read
   re-confirms the divergence is still present.
 
+- [ ] **Python/Go/Ruby plain `=` assign lacks `<op>` wrapper**
+  *(MEDIUM, Principle #5 cross-language; surfaced iter 339 mid-loop
+  while writing cross-lang assign tests)*. TS/C#/Java/PHP/Rust emit
+  `<assign>[op="="]` with the equals sign wrapped in `<op>`. Python,
+  Go, and Ruby emit bare `"="` text alongside `<left>`/`<right>`
+  slots — no `<op>` wrapper. Iter 52 decided KEEP `<op>="="</op>`
+  for C# (consistency, XPath uniformity, source-text preservation);
+  by Principle #5 the 3 outliers should match.
+
+  **Source-preservation constraint** (user-confirmed iter 340): the
+  fix must NOT duplicate the `=` text. The existing `<op>=</op>`
+  shape is just the bare `=` text leaf WRAPPED in an `<op>` element —
+  exactly one text node containing `=`. Verified iter 340: C#
+  produces `<op>=</op>` (single text node); Python/Go/Ruby produce
+  bare `=` text leaf (single text node) inside `<assign>`. The fix
+  for Python/Go/Ruby should similarly wrap the existing bare `=`
+  text leaf in `<op>` — no duplication. Source reconstruction
+  (concatenating leaf text nodes) must continue to produce the
+  original source.
+
+  Affected: Python's `assign` Custom handler (or Rule mapping);
+  Go's `assign` rule; Ruby's `assign` rule. Each needs operator
+  extraction extended to plain `=` (currently only augmented
+  `+=`/`*=`/etc. extract).
+
+  Reproduce: `echo 'x = 5' | tractor --lang python -d 6 -x "//assign"`
+  shows `"="` text leaf instead of `<op>="="</op>` wrapper. Same
+  for Go (`x = 10`) and Ruby (`x = 5`).
+
+  Sizing: 1 iter per language (3 iters total) OR 1 iter with
+  shared operator-marker plumbing if a common helper can extend
+  the extraction. Subagent design review before implementing —
+  the assign Custom handlers may want to share with the
+  augmented-assign extraction logic; landing 3 languages at once
+  is a snapshot-diff churn concern.
+
+  Cross-lang test pinning the contract once fixed:
+  `cross_language_plain_assign_extracts_op_marker` in operators.rs
+  (similar to iter 334's `cross_language_binary_plus_extracts_op_marker`).
+
 **Sections noted clean** by the cold-read:
 - Most singleton role-slots (`condition`, `then`, `else`, `left`,
   `right`, `value`) correctly collapse to JSON objects (no spurious

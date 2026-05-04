@@ -69,7 +69,10 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
 
         // ---- Pure Rename -----------------------------------------------
         RubyKind::Array               => Rename(Array),
-        RubyKind::Assignment          => Rename(Assign),
+        // Iter 340: extract `=` operator into `<op>` to match
+        // TS/C#/Java/PHP/Rust shape (Principle #5). Bare `=` text leaf
+        // becomes `<op>=</op>` — wrapped, not duplicated.
+        RubyKind::Assignment          => ExtractOpThenRename(Assign),
         RubyKind::Begin               => Rename(Begin),
         RubyKind::Binary              => ExtractOpThenRename(Binary),
         RubyKind::Unary               => ExtractOpThenRename(Unary),
@@ -97,7 +100,9 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::LeftAssignmentList  => Rename(Left),
         RubyKind::Method              => Rename(Method),
         RubyKind::Module              => Rename(Module),
-        RubyKind::OperatorAssignment  => Rename(Assign),
+        // Iter 340: extract augmented operators (`+=`, `-=`, etc.)
+        // into `<op>` to match other languages' augmented-assign shape.
+        RubyKind::OperatorAssignment  => ExtractOpThenRename(Assign),
         RubyKind::Program             => Rename(Program),
         RubyKind::Rescue              => Rename(Rescue),
         RubyKind::RestAssignment      => Rename(Spread),

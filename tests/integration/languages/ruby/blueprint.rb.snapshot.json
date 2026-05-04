@@ -188,7 +188,8 @@
                       "expression": {
                         "name": "flag"
                       }
-                    }
+                    },
+                    "op": "="
                   }
                 }
               },
@@ -218,7 +219,8 @@
                       "expression": {
                         "name": "flag"
                       }
-                    }
+                    },
+                    "op": "="
                   }
                 }
               },
@@ -293,6 +295,11 @@
                             "expression": {
                               "name": "total"
                             }
+                          },
+                          "op": {
+                            "text": "+=",
+                            "assign": true,
+                            "plus": true
                           }
                         }
                       },
@@ -362,7 +369,8 @@
               "expression": {
                 "name": "total"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -374,7 +382,8 @@
               "expression": {
                 "name": "i"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -497,7 +506,8 @@
               "expression": {
                 "name": "result"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -538,7 +548,8 @@
               "expression": {
                 "name": "adder"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -579,7 +590,8 @@
               "expression": {
                 "name": "doubler"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -630,7 +642,8 @@
               "expression": {
                 "name": "multi_stmt"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -678,7 +691,8 @@
               "expression": {
                 "name": "multi_lambda"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -712,7 +726,8 @@
               "expression": {
                 "name": "ternary"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -724,6 +739,12 @@
               "expression": {
                 "name": "total"
               }
+            },
+            "op": {
+              "text": "||=",
+              "assign": true,
+              "logical": true,
+              "or": true
             }
           },
           {
@@ -751,6 +772,12 @@
               "expression": {
                 "name": "total"
               }
+            },
+            "op": {
+              "text": "&&=",
+              "assign": true,
+              "logical": true,
+              "and": true
             }
           },
           {
@@ -784,7 +811,8 @@
                   ]
                 }
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -842,7 +870,8 @@
               "expression": {
                 "name": "flag"
               }
-            }
+            },
+            "op": "="
           }
         ],
         "whiles": [
@@ -860,6 +889,11 @@
                       "expression": {
                         "name": "i"
                       }
+                    },
+                    "op": {
+                      "text": "+=",
+                      "assign": true,
+                      "plus": true
                     }
                   }
                 }
@@ -903,6 +937,11 @@
                       "expression": {
                         "name": "i"
                       }
+                    },
+                    "op": {
+                      "text": "+=",
+                      "assign": true,
+                      "plus": true
                     }
                   }
                 }
@@ -947,6 +986,11 @@
                       "expression": {
                         "name": "total"
                       }
+                    },
+                    "op": {
+                      "text": "+=",
+                      "assign": true,
+                      "plus": true
                     }
                   }
                 }
@@ -1193,7 +1237,8 @@
               "expression": {
                 "name": "result"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1212,7 +1257,8 @@
               "expression": {
                 "name": "joined"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1230,7 +1276,8 @@
               "expression": {
                 "name": "arr"
               }
-            }
+            },
+            "op": "="
           }
         ],
         "expressions": [
@@ -1384,7 +1431,8 @@
                           "expression": {
                             "name": "@name"
                           }
-                        }
+                        },
+                        "op": "="
                       },
                       {
                         "right": {
@@ -1412,7 +1460,8 @@
                           "expression": {
                             "name": "@id"
                           }
-                        }
+                        },
+                        "op": "="
                       }
                     ]
                   },
@@ -1622,7 +1671,8 @@
                           "expression": {
                             "name": "msg"
                           }
-                        }
+                        },
+                        "op": "="
                       },
                       {
                         "right": {
@@ -1656,7 +1706,8 @@
                           "expression": {
                             "name": "msg"
                           }
-                        }
+                        },
+                        "op": "="
                       }
                     ]
                   },
@@ -1709,7 +1760,8 @@
                           "expression": {
                             "name": "@name"
                           }
-                        }
+                        },
+                        "op": "="
                       }
                     ]
                   },
@@ -1861,7 +1913,8 @@
                           "expression": {
                             "name": "data"
                           }
-                        }
+                        },
+                        "op": "="
                       },
                       {
                         "right": {
@@ -1895,7 +1948,8 @@
                           "expression": {
                             "name": "rocket"
                           }
-                        }
+                        },
+                        "op": "="
                       },
                       {
                         "right": {
@@ -1922,7 +1976,8 @@
                           "expression": {
                             "name": "list"
                           }
-                        }
+                        },
+                        "op": "="
                       },
                       {
                         "right": {
@@ -1951,7 +2006,8 @@
                           "expression": {
                             "name": "merged"
                           }
-                        }
+                        },
+                        "op": "="
                       }
                     ]
                   },
@@ -2013,7 +2069,8 @@
                     "expression": {
                       "name": "SINGLE"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": {
@@ -2029,7 +2086,8 @@
                     "expression": {
                       "name": "DOUBLE"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": "<<-TEXT",
@@ -2037,7 +2095,8 @@
                     "expression": {
                       "name": "HEREDOC"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": "<<~TEXT",
@@ -2045,7 +2104,8 @@
                     "expression": {
                       "name": "SQUIGGLY"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": {
@@ -2057,7 +2117,8 @@
                     "expression": {
                       "name": "PATTERN"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": {
@@ -2077,7 +2138,8 @@
                     "expression": {
                       "name": "RANGE_INCL"
                     }
-                  }
+                  },
+                  "op": "="
                 },
                 {
                   "right": {
@@ -2097,7 +2159,8 @@
                     "expression": {
                       "name": "RANGE_EXCL"
                     }
-                  }
+                  },
+                  "op": "="
                 }
               ],
               "classes": [
@@ -2117,6 +2180,12 @@
                                 "expression": {
                                   "name": "@registry"
                                 }
+                              },
+                              "op": {
+                                "text": "||=",
+                                "assign": true,
+                                "logical": true,
+                                "or": true
                               }
                             }
                           ]
@@ -2170,7 +2239,8 @@
         "expression": {
           "name": "MAX_RETRIES"
         }
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -2185,7 +2255,8 @@
         "expression": {
           "name": "GREETINGS"
         }
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -2200,7 +2271,8 @@
         "expression": {
           "name": "SYMBOLS"
         }
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -2233,7 +2305,8 @@
             }
           }
         }
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -2255,7 +2328,8 @@
         "expression": {
           "name": "maybe"
         }
-      }
+      },
+      "op": "="
     }
   ],
   "blocks": [

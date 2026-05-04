@@ -94,7 +94,12 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
 
         // ---- Pure Rename ----------------------------------------------
         GoKind::Identifier               => Rename(Name),
-        GoKind::AssignmentStatement      => Rename(Assign),
+        // Iter 340: extract `=` / `+=` / `-=` operator into `<op>` to
+        // match TS/C#/Java/PHP/Rust shape (Principle #5). Source-text
+        // preservation holds via `prepend_op_element`'s detach +
+        // before/op/after splice — bare `=` text leaf becomes
+        // `<op>=</op>`, no duplication.
+        GoKind::AssignmentStatement      => ExtractOpThenRename(Assign),
         GoKind::BlankIdentifier          => Rename(Name),
         GoKind::BreakStatement           => RenameStripKeyword(Break, "break"),
         GoKind::CallExpression           => Rename(Call),
