@@ -2102,7 +2102,13 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "file", "tuple", "list", "dict", "array", "template", "repetition"],
+        // `"array"` removed iter 311 — Go's `<array>` is the array
+        // TYPE spec `[5]int` (singleton size + singleton element
+        // type). Bulk distribute was creating 1-elem JSON arrays
+        // on both. Go has no multi-cardinality `<array>` cases in
+        // the blueprint (literals go inside `<literal>/<array>+<body>`
+        // — the body holds elements). No targeted tags needed.
+        xot, root, &["body", "file", "tuple", "list", "dict", "template", "repetition"],
     )?;
     Ok(())
 }
