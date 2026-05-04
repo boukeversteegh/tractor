@@ -24,20 +24,24 @@ module/
   ├─ assign/
   │   ├─ left/expression/name = "GLOBAL_FLAG"
   │   ├─ type/name = "bool"
+  │   ├─ op = "="
   │   └─ right/expression/true = "True"
   ├─ assign/
   │   ├─ left/expression/name = "PI"
   │   ├─ type/name = "float"
+  │   ├─ op = "="
   │   └─ right/expression/float = "3.14159"
   ├─ assign/
   │   ├─ left/
   │   │   ├─ expression/name = "RAW_PATH"
   │   │   └─ expression/name = "BYTES_BLOB"
+  │   ├─ op = "="
   │   └─ right/
   │       ├─ expression/string = "r\"C:\\Users\\foo\\bar\""
   │       └─ expression/string = "b\"\\x00\\x01\\x02\""
   ├─ assign/
   │   ├─ left/expression/name = "TRIPLE"
+  │   ├─ op = "="
   │   └─ right/expression/string = "\"\"\"line one\\nline two\"\"\""
   ├─ function/
   │   ├─ name = "simple"
@@ -133,6 +137,7 @@ module/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
   │       │   ├─ type/name = "int"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/name = "x"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "result"
@@ -144,6 +149,7 @@ module/
   │       │   └─ right/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/list[literal]/
   │       │       ├─ list[literal]/
   │       │       │   ├─ int = "1"
@@ -178,6 +184,7 @@ module/
   │           │   └─ body/yield/name = "chunk"
   │           ├─ assign/
   │           │   ├─ left/expression/name = "data"
+  │           │   ├─ op = "="
   │           │   └─ right/expression[await]/object[access]/
   │           │       ├─ name = "conn"
   │           │       └─ call/name = "read"
@@ -237,16 +244,19 @@ module/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "x"
   │       │   ├─ type/name = "int"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "y"
   │       │   ├─ type/name = "int"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       └─ assign/
   │           ├─ left/expression/name = "tags"
   │           ├─ type[generic]/
   │           │   ├─ name = "list"
   │           │   └─ type/name = "str"
+  │           ├─ op = "="
   │           └─ right/expression/call/
   │               ├─ name = "field"
   │               └─ argument/
@@ -271,6 +281,7 @@ module/
   │       │   ├─ name = "Nested"
   │       │   └─ body/assign/
   │       │       ├─ left/expression/name = "CONST"
+  │       │       ├─ op = "="
   │       │       └─ right/expression/int = "42"
   │       ├─ function[public]/
   │       │   ├─ name = "__init__"
@@ -282,6 +293,7 @@ module/
   │       │       ├─ left/expression/object[access]/
   │       │       │   ├─ name = "self"
   │       │       │   └─ member/name = "name"
+  │       │       ├─ op = "="
   │       │       └─ right/expression/name = "name"
   │       └─ function[public]/
   │           ├─ name = "__eq__"
@@ -307,6 +319,7 @@ module/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "total"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ for/
   │       │   ├─ left/
@@ -337,6 +350,7 @@ module/
   │       │       └─ right/expression/int = "1"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "n"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ while/
   │       │   ├─ condition/expression/compare/
@@ -434,6 +448,7 @@ module/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "squares"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/list[comprehension]/
   │       │       ├─ body/binary/
   │       │       │   ├─ left/expression/name = "x"
@@ -447,6 +462,7 @@ module/
   │       │           └─ int = "0"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "pairs"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/dict[comprehension]/
   │       │       ├─ body/pair/
   │       │       │   ├─ name = "k"
@@ -460,12 +476,14 @@ module/
   │       │       └─ name = "v"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "uniq"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/set[comprehension]/
   │       │       ├─ body/name = "x"
   │       │       ├─ left/expression/name = "x"
   │       │       └─ right/expression/name = "data"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "gen"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/generator/
   │       │       ├─ body/name = "x"
   │       │       ├─ left/expression/name = "x"
@@ -477,6 +495,7 @@ module/
   │       │       └─ name = "x"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "matrix"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/list[comprehension]/
   │       │       ├─ body/tuple/
   │       │       │   ├─ name = "i"
@@ -505,6 +524,7 @@ module/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "first"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/ternary/
   │       │       ├─ then/subscript/
   │       │       │   ├─ value/expression/name = "items"
@@ -526,9 +546,11 @@ module/
   │       │       └─ string/interpolation/name = "n"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "name"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/string = "\"world\""
   │       ├─ assign/
   │       │   ├─ left/expression/name = "greeting"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/string/
   │       │       ├─ interpolation/
   │       │       │   ├─ name = "name"
@@ -539,6 +561,7 @@ module/
   │       │       └─ interpolation/string/interpolation/name = "name"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "doubled"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/call/
   │       │       ├─ name = "list"
   │       │       └─ call/
@@ -555,9 +578,11 @@ module/
   │       │   │   ├─ expression/name = "head"
   │       │   │   ├─ expression/parameter[args]/name = "mid"
   │       │   │   └─ expression/name = "tail"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/name = "items"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "merged"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/dict[literal]/
   │       │       ├─ spread[dict]/dict[literal]/pair/
   │       │       │   ├─ string = "\"a\""
@@ -567,12 +592,14 @@ module/
   │       │           └─ value/expression/int = "2"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "combined"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/list[literal]/
   │       │       ├─ spread[list]/name = "items"
   │       │       └─ spread[list]/name = "items"
   │       ├─ global/name = "GLOBAL_FLAG"
   │       ├─ assign/
   │       │   ├─ left/expression/name = "GLOBAL_FLAG"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/false = "False"
   │       └─ return/
   │           ├─ expression/name = "first"
@@ -588,6 +615,7 @@ module/
   │   └─ body/
   │       ├─ assign/
   │       │   ├─ left/expression/name = "counter"
+  │       │   ├─ op = "="
   │       │   └─ right/expression/int = "0"
   │       ├─ function/
   │       │   ├─ name = "inc"
@@ -644,6 +672,7 @@ module/
       └─ body/
           ├─ expression/string = "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
           ├─ assign/
+          │   ├─ op = "="
           │   ├─ left/expression/name = "matched"
           │   └─ type/name = "int"
           ├─ match/
@@ -655,6 +684,7 @@ module/
           │       │   │   └─ pattern/name = "b"
           │       │   └─ then/assign/
           │       │       ├─ left/expression/name = "matched"
+          │       │       ├─ op = "="
           │       │       └─ right/expression/binary/
           │       │           ├─ left/expression/name = "a"
           │       │           ├─ op[plus] = "+"
@@ -665,6 +695,7 @@ module/
           │       │   │   └─ int = "2j"
           │       │   └─ then/assign/
           │       │       ├─ left/expression/name = "matched"
+          │       │       ├─ op = "="
           │       │       └─ right/expression/unary/
           │       │           ├─ op[minus] = "-"
           │       │           └─ int = "1"
@@ -672,10 +703,12 @@ module/
           │           ├─ pattern[wildcard]
           │           └─ then/assign/
           │               ├─ left/expression/name = "matched"
+          │               ├─ op = "="
           │               └─ right/expression/int = "0"
           ├─ try/
           │   ├─ body/assign/
           │   │   ├─ left/expression/name = "result"
+          │   │   ├─ op = "="
           │   │   └─ right/expression/call/
           │   │       ├─ name = "list"
           │   │       └─ name = "items"
@@ -685,17 +718,21 @@ module/
           │       │   └─ name = "TypeError"
           │       └─ assign/
           │           ├─ left/expression/name = "result"
+          │           ├─ op = "="
           │           └─ right/expression/list[literal] = "[]"
           ├─ assign/
           │   ├─ left/expression/name = "flag"
+          │   ├─ op = "="
           │   └─ right/expression/unary/
           │       ├─ op[logical and not] = "not"
           │       └─ name = "matched"
           ├─ assign/
           │   ├─ left/expression/name = "bundle"
+          │   ├─ op = "="
           │   └─ right/expression/tuple/spread[list]/name = "items"
           ├─ assign/
           │   ├─ left/expression/name = "banner"
+          │   ├─ op = "="
           │   └─ right/expression/string[concatenated]/
           │       ├─ string = "\"first \""
           │       ├─ string = "\"second \""

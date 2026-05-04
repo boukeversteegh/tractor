@@ -159,12 +159,10 @@ fn cross_language_binary_plus_extracts_op_marker() {
 /// not duplicated. Concatenating all leaf text in document order
 /// still reconstructs the original source.
 ///
-/// Iter 340 status: TS/C#/Java/PHP/Rust/Go/Ruby pass. Python
-/// deferred — its annotated-assignment syntax (`x: int = 5`) puts
-/// both `:` and `=` as text leaves in the same Assignment node;
-/// the simple `ExtractOpThenRename` swap captures `:` instead of `=`.
-/// Tracked in todo/39 — needs a Custom handler to prefer `=` when
-/// both are present (or to skip `:` when a `<type>` sibling exists).
+/// Iter 341 status: all 8 chain-inverting languages pass
+/// (TS/C#/Java/PHP/Rust/Go/Ruby/Python). Python's annotated
+/// assignment (`x: int = 5`) needed a Custom handler — see
+/// `python/transformations.rs::assignment`.
 #[test]
 fn cross_language_plain_assign_extracts_op_equals() {
     let canonical = "//assign/op='='";
@@ -177,6 +175,7 @@ fn cross_language_plain_assign_extracts_op_equals() {
         ("php",        "<?php $x = 5;"),
         ("go",         "package m\nfunc f() { x := 5; x = 10; _ = x }"),
         ("ruby",       "x = 5\n"),
+        ("python",     "x = 5\n"),
     ] {
         claim(
             &format!("{lang}: plain `=` assignment carries <op>=</op> child (Principle #5)"),

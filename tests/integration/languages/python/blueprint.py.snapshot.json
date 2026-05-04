@@ -132,7 +132,8 @@
       },
       "type": {
         "name": "bool"
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -147,7 +148,8 @@
       },
       "type": {
         "name": "float"
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -169,7 +171,8 @@
             "name": "BYTES_BLOB"
           }
         ]
-      }
+      },
+      "op": "="
     },
     {
       "right": {
@@ -181,7 +184,8 @@
         "expression": {
           "name": "TRIPLE"
         }
-      }
+      },
+      "op": "="
     }
   ],
   "aliases": [
@@ -365,7 +369,8 @@
             },
             "type": {
               "name": "int"
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -380,7 +385,8 @@
             },
             "type": {
               "name": "int"
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -411,7 +417,8 @@
               },
               "generic": true,
               "name": "list"
-            }
+            },
+            "op": "="
           }
         ],
         "expressions": [
@@ -466,7 +473,8 @@
                         "name": "self"
                       }
                     }
-                  }
+                  },
+                  "op": "="
                 }
               ]
             },
@@ -568,7 +576,8 @@
                     "expression": {
                       "name": "CONST"
                     }
-                  }
+                  },
+                  "op": "="
                 }
               ]
             },
@@ -804,7 +813,8 @@
             },
             "type": {
               "name": "int"
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -868,7 +878,8 @@
               "expression": {
                 "name": "matrix"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1005,7 +1016,8 @@
                     "expression": {
                       "name": "data"
                     }
-                  }
+                  },
+                  "op": "="
                 }
               ]
             },
@@ -1349,7 +1361,8 @@
               "expression": {
                 "name": "total"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1361,7 +1374,8 @@
               "expression": {
                 "name": "n"
               }
-            }
+            },
+            "op": "="
           }
         ],
         "whiles": [
@@ -1785,7 +1799,8 @@
               "expression": {
                 "name": "squares"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1841,7 +1856,8 @@
               "expression": {
                 "name": "pairs"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1870,7 +1886,8 @@
               "expression": {
                 "name": "uniq"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1918,7 +1935,8 @@
               "expression": {
                 "name": "gen"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -1990,7 +2008,8 @@
               "expression": {
                 "name": "matrix"
               }
-            }
+            },
+            "op": "="
           }
         ]
       },
@@ -2117,7 +2136,8 @@
               "expression": {
                 "name": "first"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2129,7 +2149,8 @@
               "expression": {
                 "name": "name"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2159,7 +2180,8 @@
               "expression": {
                 "name": "greeting"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2206,7 +2228,8 @@
               "expression": {
                 "name": "doubled"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2229,7 +2252,8 @@
                   "name": "tail"
                 }
               ]
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2283,7 +2307,8 @@
               "expression": {
                 "name": "merged"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2307,7 +2332,8 @@
               "expression": {
                 "name": "combined"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2319,7 +2345,8 @@
               "expression": {
                 "name": "GLOBAL_FLAG"
               }
-            }
+            },
+            "op": "="
           }
         ]
       },
@@ -2350,7 +2377,8 @@
               "expression": {
                 "name": "counter"
               }
-            }
+            },
+            "op": "="
           }
         ],
         "functions": [
@@ -2443,7 +2471,8 @@
                   "expression": {
                     "name": "result"
                   }
-                }
+                },
+                "op": "="
               },
               "group": true,
               "tuple": {
@@ -2470,7 +2499,8 @@
                     "expression": {
                       "name": "result"
                     }
-                  }
+                  },
+                  "op": "="
                 }
               ]
             }
@@ -2507,7 +2537,8 @@
                         "expression": {
                           "name": "matched"
                         }
-                      }
+                      },
+                      "op": "="
                     }
                   },
                   "pattern": {
@@ -2542,7 +2573,8 @@
                         "expression": {
                           "name": "matched"
                         }
-                      }
+                      },
+                      "op": "="
                     }
                   },
                   "pattern": {
@@ -2567,7 +2599,8 @@
                         "expression": {
                           "name": "matched"
                         }
-                      }
+                      },
+                      "op": "="
                     }
                   },
                   "pattern": {
@@ -2584,6 +2617,7 @@
             "type": {
               "name": "int"
             },
+            "op": "=",
             "left": {
               "expression": {
                 "name": "matched"
@@ -2607,7 +2641,8 @@
               "expression": {
                 "name": "flag"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2626,7 +2661,8 @@
               "expression": {
                 "name": "bundle"
               }
-            }
+            },
+            "op": "="
           },
           {
             "right": {
@@ -2645,7 +2681,8 @@
               "expression": {
                 "name": "banner"
               }
-            }
+            },
+            "op": "="
           }
         ]
       },

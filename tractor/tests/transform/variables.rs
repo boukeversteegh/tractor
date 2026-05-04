@@ -120,17 +120,22 @@ fn typescript_multi_declarator_keeps_wrappers() {
 }
 
 /// Goal #5: augmented_assignment unifies with plain assignment
-/// as <assign> plus an <op> child carrying the compound operator.
-/// A single //assign query matches every assignment. Iter 340
-/// deferred adding `<op>=</op>` for Python plain assignments (Go
-/// and Ruby shipped) — see comment in `python/rules.rs` and
-/// todo/39 for the annotated-assign edge case (`x: int = 5`)
-/// blocking the simple `ExtractOpThenRename` swap.
+/// as <assign> plus an <op> child carrying the operator. A single
+/// //assign query matches every assignment. Iter 341 closed the
+/// last cross-language gap: Python plain `=` now extracts to
+/// `<op>=</op>` (annotated `x: int = 5` correctly skips `:` via
+/// the `transformations::assignment` Custom handler). All 8
+/// chain-inverting languages now uniform.
 #[test]
 fn python() {
-    claim("plain assignment has no op child",
+    claim("plain assignment carries <op>=</op> wrapper (iter 341: Principle #5)",
         &mut parse_src("python", "x = 0\n"),
-        "//assign[left/expression/name='x'][right/expression/int='0'][not(op)]",
+        "//assign[left/expression/name='x'][right/expression/int='0']/op='='",
+        1);
+
+    claim("annotated assignment correctly extracts `=` (skipping `:` separator)",
+        &mut parse_src("python", "y: int = 0\n"),
+        "//assign[left/expression/name='y'][type/name='int']/op='='",
         1);
 
     claim("arithmetic augmented assignment keeps assign shape with operator marker",

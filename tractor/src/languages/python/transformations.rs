@@ -65,6 +65,31 @@ pub fn attribute(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     Ok(TransformAction::Continue)
 }
 
+/// `assignment` — `x = 5` (plain) or `x: int = 5` (annotated).
+/// Tree-sitter Python's `Assignment` kind covers both forms and
+/// stores `:` and `=` as text leaves on the assign node.
+///
+/// The shared `ExtractOpThenRename(Assign)` rule (used by
+/// TS/C#/Java/PHP/Rust/Go/Ruby for plain assignment) picks the FIRST
+/// non-bracket text leaf, which for annotated assigns is `:` —
+/// producing the wrong `<op>=":"</op>` shape.
+///
+/// This handler explicitly extracts `=` (skipping `:`) by calling
+/// `prepend_op_element` directly. The function detaches the `=` text
+/// leaf and splices `[before_ws, <op>=</op>, after_ws]` into its
+/// position — source-text preservation holds (single text node
+/// containing `=`, no duplication). Then renames to `<assign>`.
+///
+/// Iter 341 (deferred from iter 340) — closes the Principle #5
+/// cross-language alignment item: every plain `=` assign now carries
+/// `<op>=</op>` uniformly (TS/C#/Java/PHP/Rust/Go/Ruby/Python).
+pub fn assignment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    use super::output::TractorNode::Assign;
+    crate::transform::operators::prepend_op_element(xot, node, "=")?;
+    xot.with_renamed(node, Assign);
+    Ok(TransformAction::Continue)
+}
+
 /// `expression_statement` — wrap value-producing statements in an
 /// `<expression>` host (Principle #15). Python's `expression_statement`
 /// is also used for plain `assignment`s in tree-sitter's grammar; let

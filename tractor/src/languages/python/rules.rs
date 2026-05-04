@@ -109,20 +109,12 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::AliasedImport         => Flatten { distribute_list: None },
         PyKind::AsPattern             => Rename(As),
         PyKind::AssertStatement       => Rename(Assert),
-        // Iter 340: deferred. Naive `ExtractOpThenRename(Assign)`
-        // captures the wrong text in annotated assigns (`x: int = 5`):
-        // tree-sitter's Assignment node contains BOTH the `:` (type
-        // annotation separator) and the `=` (assignment operator) as
-        // text leaves; `extract_operator` picks the FIRST non-bracket
-        // text — which is `:` — and produces `<op>=":"</op>` instead
-        // of the intended `<op>="="</op>`.
-        //
-        // The fix needs a Python-specific Custom handler that picks
-        // the `=` text leaf preferentially (or skips `:` when a `<type>`
-        // sibling exists). Tracked in todo/39 as the Principle #5
-        // alignment item; Go + Ruby have shipped (iter 340) since
-        // their assigns don't have annotation syntax.
-        PyKind::Assignment            => Rename(Assign),
+        // Iter 341: Custom handler that extracts `=` explicitly,
+        // skipping the `:` text leaf in annotated assigns (`x: int = 5`).
+        // The shared `ExtractOpThenRename(Assign)` would pick `:`
+        // (first non-bracket text). See `transformations::assignment`
+        // for the explicit-`=` extraction logic.
+        PyKind::Assignment            => Custom(transformations::assignment),
         // `obj.attr` — receiver and accessed-attribute play different
         // roles. Per Principle #19: each role gets a slot-named
         // container (`<object>` / `<property>`). Matches TS / Java
