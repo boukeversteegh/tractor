@@ -197,6 +197,44 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 290 wind-down — children-overflow audit natural pause
+
+**Status (post-iter-290): 9 sites remaining across all 8 languages** —
+csharp 1, java 1, python 2, typescript 1, rust 3, go 1, php 0, ruby 0.
+86% reduction from the iter-181 baseline of 64 sites. PHP and Ruby at
+zero. Six other languages at 1-3 sites each.
+
+**Iters 288-290 contribution** (4 sites closed):
+- iter 288: Go `slice_expression` bounds wrap → `<from>`/`<to>`/
+  `<capacity>` slot wrappers, mirrors Rust ranges (iter 270) /
+  Ruby ranges (iter 180). Go 2 → 1.
+- iter 289: Python `pattern[dict]` values list-tag — added
+  `("pattern", "value")` to Python's `tag_multi_role_children`.
+  Python 3 → 2.
+- iter 290: Rust assoc-type binding (`Drawable<Canvas = Vec<u8>>`)
+  reuses `<type[associated]>` shape from declaration site. Rust
+  5 → 3 (two sites).
+
+**The remaining 9 sites are all in deferred design-call classes:**
+- Chain-receiver-call collision (java 1: `getClass().getSimpleName()`,
+  ts 1: `String(input).split("")`, go 1: `Sprintf` args). Needs
+  cross-language design decision on call argument vs receiver
+  shape.
+- Attribute multi-args (rust 3: `#[allow(...)]`, `#[derive(...)]`).
+  Needs design decision on whether attribute arguments form a
+  uniform list with role-named slots or stay flat.
+- Dict-spread marker-name shadow (python 2: `{**a, **b}` where the
+  `<spread>` carries `[dict]` marker AND a `<dict>` content child).
+  Needs marker name disambiguation.
+- C# anonymous object initializer (csharp 1: `new { Name = "foo",
+  Value = 42 }`). Each member needs slot wrapping (`<pair>`,
+  `<assign>`, or `<member>`); design call.
+
+**Loop status**: paused on overflow audit. Resume on user direction
+for any of the deferred design classes. The audit metric `"children":
+[` count is steady at 9; stable enough that future iters can pivot
+to other backlog work without churning the audit.
+
 ### Iter 258 user-flagged
 
 - [x] iter 259 — **Rust `expression/expression[try]` repeated
