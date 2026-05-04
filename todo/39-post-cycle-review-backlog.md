@@ -382,11 +382,13 @@ context. 15 findings; severity per reviewer.
   Three different homes again.
   Reproduce: `tests/integration/languages/java/blueprint.java.snapshot.txt:191-199`.
 
-- [ ] **PHP `member[constant]` divergent from plain `member`**
-  *(LOW-MEDIUM)*. PHP uses `member[constant]` for `Class::CONST`
-  but `member` for `$obj->prop`. C# uses plain `member` for enum
-  constants. Either normalize PHP or extend C#.
-  Reproduce: `tests/integration/languages/php/blueprint.php.snapshot.txt:25, 264-266`.
+- [x] ~~**PHP `member[constant]` divergent from plain `member`**~~
+  *(LOW-MEDIUM; CLOSED iter 342)*. Renamed PHP's `<member[constant]>`
+  to `<member[static]>` per Principle #5 alignment with Ruby's
+  equivalent shape (and PHP's own `<call><static/>` for static
+  method calls). The marker now describes the scope-resolution
+  operator uniformly. Pinned by
+  `cross_language_static_member_access_marker` in members.rs.
 
 - [ ] **PHP `foreach pair/` shape misleading** *(MEDIUM)*. PHP's
   `key=>value` foreach binding uses `pair/`, which is the same name
