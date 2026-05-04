@@ -281,14 +281,12 @@ Attempted migration of `no_grammar_kind_suffixes` from
 transform invocation) revealed two pre-existing grammar-suffix
 issues the blueprint-scoped invariant never saw:
 
-- [ ] **Markdown `<code_block>`** — markdown's vocabulary uses
-  `<code_block>` for fenced + indented blocks. Trailing `_block`
-  matches the grammar-suffix pattern. Either rename to a
-  non-underscored alternative (e.g. `<code>` is taken by the inner
-  text element; would need a different name like `<fenced>` /
-  `<block>`?) OR justify keeping `code_block` as the canonical name
-  (markdown idiom + breaks existing CLI test
-  `markdown_round_trip_extracts_javascript_block`).
+- [x] ~~**Markdown `<code_block>`**~~ *(CLOSED iter 344)*. Renamed
+  to `<codeblock>` (single word, no underscore) following the
+  `<elseif>` precedent. CommonMark has no canonical unifying name
+  for fenced + indented forms; alternatives (`<fenced>`/`<indented>`
+  split, or `<block[code]>` conflict) were worse. The
+  `GRAMMAR_SUFFIX_EXEMPT` list in shape_contracts.rs is now empty.
 
 - [ ] **PHP empty `<static_modifier>` / `<visibility_modifier>`** —
   PHP's `modifier` Custom handler at
