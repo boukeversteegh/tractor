@@ -357,9 +357,10 @@ fn check_container_has_content(
 /// leaves. Element children inside `<name>` indicate a wrapper that
 /// didn't get inlined (e.g. `<name><type>Foo</type></name>`).
 ///
-/// Severity: `Error`. Mirrors the existing `name_element_is_text_leaf`
-/// invariant in `tree_invariants.rs`. Phase 2 retires the hand-coded
-/// version once the spec-conformance walker reaches parity.
+/// Severity: `Error`. Replaces the retired `name_element_is_text_leaf`
+/// invariant from `tree_invariants.rs` (retired iter 299). Currently
+/// hardcodes `name` as the only TextLeaf; phase 2 will generalize via
+/// a `NodeRole::TextLeaf` variant + per-language declaration.
 fn check_name_is_text_leaf(
     xot: &Xot,
     root: XotNode,

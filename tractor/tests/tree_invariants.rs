@@ -26,7 +26,6 @@ const ASSERT_INVARIANTS: bool = true;
 const ASSERT_LOWERCASE: bool = true;
 const ASSERT_NO_UNDERSCORE: bool = true;
 const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
-const ASSERT_NAME_IS_TEXT_LEAF: bool = true;
 // `op_marker_matches_text` checks that every `<op>` whose text is in
 // the canonical OPERATOR_MARKERS table carries the declared primary
 // marker. Unknown operators are accepted without requirements.
@@ -468,49 +467,17 @@ fn no_grammar_kind_suffixes() {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 4: `<name>` is a text leaf.
-//
-// The design doc pins "identifiers are a single `<name>` element"
-// as a text leaf. An element named `<name>` should only contain
-// text — no element children. Violating it usually means a wrapper
-// didn't get inlined (e.g. `<name><type>Foo</type></name>`).
+// Invariant 4 (RETIRED iter 299): name_element_is_text_leaf migrated
+// to the spec-conformance walker. The shape-contract rule
+// `name-is-text-leaf` in `tractor/src/transform/shape_contracts.rs`
+// runs both via the cargo test (against blueprint fixtures) AND via
+// the debug-build assertion in `transform/builder.rs` (every
+// transform invocation). Strictly more coverage than the previous
+// blueprint-only walk. Six clean iters (292-298) prove parity.
+// Phase 2 will add a `TextLeaf` `NodeRole` variant + per-language
+// declaration so the rule applies generically rather than hardcoding
+// "name"; for now the rule hardcodes "name" as the only TextLeaf.
 // ---------------------------------------------------------------------------
-
-#[test]
-fn name_element_is_text_leaf() {
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            if name != "name" {
-                return;
-            }
-            // Any element child is a violation.
-            let bad_child = xot.children(node).find(|&c| xot.element(c).is_some());
-            if let Some(child) = bad_child {
-                let child_name = element_name(xot, child).unwrap_or_default();
-                report.record(
-                    "name",
-                    &fixture,
-                    format!("has element child <{}>", child_name),
-                );
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print("<name> must be a text leaf (identifiers are a single <name> element)");
-        if ASSERT_INVARIANTS && ASSERT_NAME_IS_TEXT_LEAF {
-            panic!("<name> with element children");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 5 (RETIRED iter 297): markers_stay_empty migrated to the
