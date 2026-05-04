@@ -31,7 +31,7 @@ pub enum TractorNode {
     Method, Constructor, Property, Field, Comment, Event, Delegate, Destructor, Indexer, Operator,
     // Shared children
     Name, Type, Accessors, Accessor, Attributes, Attribute, Arguments, Argument,
-    Parameters, Parameter, Variable, Declarator, Extends, Properties, Element, Section, Arm, Value,
+    Parameters, Parameter, Variable, Declarator, Extends, Properties, Element, Arm, Value,
     Label, Filter, When, Where, Path,
     // Statements / control flow.
     // NOTE: `ElseIf` serializes as `else_if` — intentional

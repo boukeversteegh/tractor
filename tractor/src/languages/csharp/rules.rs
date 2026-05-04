@@ -201,8 +201,13 @@ pub fn rule(k: CsKind) -> Rule<TractorNode> {
         // flatten avoids double-nested <body><body>...</body></body>.
         CsKind::SwitchBody                     => Flatten { distribute_list: None },
         CsKind::SwitchExpression               => Rename(Switch),
+        // Both switch-expression arms (`pat => expr,`) and
+        // switch-statement sections (`case pat: ... break;`) render as
+        // `<arm>` — same user-mental-model "switch case." Mirrors Java
+        // which uses `arm/` for both forms. Closes iter 300 cold-read
+        // finding #9 (C# arm/section duality).
         CsKind::SwitchExpressionArm            => Rename(Arm),
-        CsKind::SwitchSection                  => Rename(Section),
+        CsKind::SwitchSection                  => Rename(Arm),
         CsKind::SwitchStatement                => Rename(Switch),
         CsKind::ThrowStatement                 => RenameStripKeyword(Throw, "throw"),
         CsKind::TryStatement                   => Rename(Try),

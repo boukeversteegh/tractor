@@ -180,6 +180,50 @@ fn python_match_arm_guard_wraps_in_guard_slot() {
         1);
 }
 
+/// C# switch — both `switch_expression_arm` (`pat => expr,`) and
+/// `switch_section` (`case pat: ...; break;`) render as `<arm>`. Same
+/// element name for the same user-mental-model "switch case." Mirrors
+/// Java which uses `<arm>` for both forms. Closes iter 300 cold-read
+/// finding (#9 — C# arm/section duality).
+#[test]
+fn csharp_switch_statement_section_renders_as_arm() {
+    let mut tree = parse_src("csharp", r#"
+        class T {
+            int F(object o) {
+                switch (o) {
+                    case int i: return i;
+                    default: return 0;
+                }
+            }
+        }
+    "#);
+
+    claim("C# switch-statement case renders as <arm>",
+        &mut tree,
+        "//switch/body/arm",
+        2);
+
+    claim("no <section> element survives the C# transform",
+        &mut tree,
+        "//section",
+        0);
+}
+
+#[test]
+fn csharp_switch_expression_arm_renders_as_arm() {
+    claim("C# switch-expression arm renders as <arm>",
+        &mut parse_src("csharp", r#"
+        class T {
+            string F(int n) => n switch {
+                0 => "zero",
+                _ => "other",
+            };
+        }
+    "#),
+        "//switch/arm",
+        2);
+}
+
 #[test]
 fn ruby_alternative_pattern_lists_alternative_ints() {
     claim("Ruby in-alternative of three ints tags each with list='ints'",

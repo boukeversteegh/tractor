@@ -999,57 +999,49 @@
                         {
                           "bodies": [
                             {
-                              "sections": [
+                              "arms": [
                                 {
-                                  "expressions": [
-                                    {
-                                      "object": {
-                                        "call": {
-                                          "arguments": [
-                                            {
-                                              "object": {
-                                                "call": {
-                                                  "name": "Describe"
-                                                },
-                                                "access": true,
-                                                "name": "w"
-                                              }
+                                  "expression": {
+                                    "object": {
+                                      "call": {
+                                        "arguments": [
+                                          {
+                                            "object": {
+                                              "call": {
+                                                "name": "Describe"
+                                              },
+                                              "access": true,
+                                              "name": "w"
                                             }
-                                          ],
-                                          "name": "WriteLine"
-                                        },
-                                        "access": true,
-                                        "name": "Console"
-                                      }
+                                          }
+                                        ],
+                                        "name": "WriteLine"
+                                      },
+                                      "access": true,
+                                      "name": "Console"
                                     }
-                                  ],
+                                  },
                                   "break": true,
-                                  "patterns": [
-                                    {
-                                      "name": "w",
-                                      "declaration": true,
-                                      "type": {
-                                        "name": "Widget"
-                                      }
+                                  "pattern": {
+                                    "name": "w",
+                                    "declaration": true,
+                                    "type": {
+                                      "name": "Widget"
                                     }
-                                  ]
+                                  }
                                 },
                                 {
-                                  "throws": [
-                                    {
-                                      "new": {
-                                        "type": {
-                                          "name": "InvalidOperationException"
-                                        }
+                                  "throw": {
+                                    "new": {
+                                      "type": {
+                                        "name": "InvalidOperationException"
                                       }
                                     }
-                                  ],
-                                  "patterns": [
-                                    {
-                                      "null": "null",
-                                      "constant": true
-                                    }
-                                  ]
+                                  },
+                                  "pattern": {
+                                    "null": "null",
+                                    "constant": true
+                                  }
                                 },
                                 {
                                   "text": "default: break",

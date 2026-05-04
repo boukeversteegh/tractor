@@ -412,7 +412,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     // argument_list flatten promotes into the renamed
     // constructor_initializer (`<call[this]>`/`<call[base]>`) after
     // its handler ran.
-    crate::transform::strip_body_braces(xot, root, &["body", "block", "section", "call"])?;
+    crate::transform::strip_body_braces(xot, root, &["body", "block", "call"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     // Flatten single-declarator wrappers in fields and locals so
     // `int x = 1;` becomes `field/{type, name, value}` instead of
@@ -423,7 +423,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root,
-        &["body", "block", "unit", "namespace", "section", "import", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
+        &["body", "block", "unit", "namespace", "import", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
