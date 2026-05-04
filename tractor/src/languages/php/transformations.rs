@@ -16,16 +16,23 @@ use crate::transform::operators::{extract_operator, is_prefix_form};
 use super::input::PhpKind;
 use super::output::TractorNode;
 use super::output::TractorNode::{
-    Arrow, Comment as CommentName, Constant, Foreach, Function, Global, Index, Leading, Member,
-    Object, Pair, Prefix, Primitive, Private, Property, Protected, Public, String as PhpString,
-    Trailing, Type, Unary, Value, Variable,
+    Arrow, Comment as CommentName, Foreach, Function, Global, Index, Leading, Member,
+    Object, Pair, Prefix, Primitive, Private, Property, Protected, Public, Static as StaticMarker,
+    String as PhpString, Trailing, Type, Unary, Value, Variable,
 };
 
 /// `class_constant_access_expression` — `Foo::BAR`. Tree-sitter
 /// emits two `<name>` siblings (class name + constant name) with no
 /// `field=` attributes. Wrap them by position: first → `<object>`,
 /// second → `<property>`. Mirrors C# member-access (iter 178).
-/// Renames to `<member>` and adds the `<constant/>` marker.
+/// Renames to `<member>` and adds the `<static/>` marker.
+///
+/// Iter 342: marker name `<constant/>` → `<static/>` per
+/// Principle #5 cross-language alignment with Ruby's `<member[static]>`
+/// for `::` scope-resolution access. PHP's own `<call><static/>`
+/// for static method calls already uses `<static/>`; this brings
+/// PHP `Foo::BAR` (constant access) and Ruby `Foo::Bar`
+/// (constant/module access) into uniform shape.
 pub fn class_constant_access(
     xot: &mut Xot,
     node: XotNode,
@@ -50,7 +57,7 @@ pub fn class_constant_access(
             .with_wrap_child(names[1], property_node)?;
     }
     xot.with_renamed(node, Member)
-        .with_prepended_marker(node, Constant)?;
+        .with_prepended_marker(node, StaticMarker)?;
     Ok(TransformAction::Continue)
 }
 

@@ -139,3 +139,31 @@ fn rust_field_unification() {
         "#),
         1);
 }
+
+/// Cross-language: PHP `Foo::CONST` and Ruby `Foo::Bar` (both use
+/// the `::` scope-resolution operator) render uniformly as
+/// `<member[static]>` (Principle #5 cross-language alignment).
+///
+/// Iter 342 unified the marker name: PHP previously used
+/// `<member[constant]>` (misleading — `constant` doesn't apply to
+/// static method-call sites, just the const-access shape it was
+/// scoped to) while Ruby already used `<member[static]>` for the
+/// equivalent shape. PHP's own `<call><static/>` for static method
+/// calls already uses `<static/>`; this brings PHP `Foo::CONST`
+/// into shape with both Ruby and PHP-internal conventions.
+#[test]
+fn cross_language_static_member_access_marker() {
+    let canonical = "//member[static]";
+
+    for (lang, src) in &[
+        ("php", "<?php $x = Foo::BAR;"),
+        ("ruby", "x = Foo::Bar\n"),
+    ] {
+        claim(
+            &format!("{lang}: `Foo::X` scope-resolution renders as <member[static]>"),
+            &mut parse_src(lang, src),
+            canonical,
+            1,
+        );
+    }
+}

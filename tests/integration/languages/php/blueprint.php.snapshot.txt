@@ -22,7 +22,7 @@ program/
   │   │   ├─ name = "Attribute"
   │   │   └─ argument/object[access]/
   │   │       ├─ name = "Attribute"
-  │   │       └─ member[constant]/name = "TARGET_CLASS"
+  │   │       └─ member[static]/name = "TARGET_CLASS"
   │   ├─ name = "Demo"
   │   ├─ extends/type/name = "Base"
   │   ├─ implements/type/name = "Speaker"
@@ -262,17 +262,17 @@ program/
   │                   ├─ arm/
   │                   │   ├─ object[access]/
   │                   │   │   ├─ name = "Status"
-  │                   │   │   └─ member[constant]/name = "Active"
+  │                   │   │   └─ member[static]/name = "Active"
   │                   │   └─ string = "\"✓\""
   │                   ├─ arm/
   │                   │   ├─ object[access]/
   │                   │   │   ├─ name = "Status"
-  │                   │   │   └─ member[constant]/name = "Inactive"
+  │                   │   │   └─ member[static]/name = "Inactive"
   │                   │   └─ string = "\"×\""
   │                   └─ arm/
   │                       ├─ object[access]/
   │                       │   ├─ name = "Status"
-  │                       │   └─ member[constant]/name = "Pending"
+  │                       │   └─ member[static]/name = "Pending"
   │                       └─ string = "\"…\""
   ├─ function/
   │   ├─ name = "factory"
