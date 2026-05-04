@@ -891,23 +891,27 @@
                       }
                     ]
                   },
-                  "value": {
+                  "right": {
                     "expression": {
                       "variable": {
                         "name": "items"
                       }
                     }
                   },
-                  "pair": {
-                    "value": {
-                      "expression": {
+                  "left": {
+                    "expression": {
+                      "pair": {
+                        "value": {
+                          "expression": {
+                            "variable": {
+                              "name": "item"
+                            }
+                          }
+                        },
                         "variable": {
-                          "name": "item"
+                          "name": "key"
                         }
                       }
-                    },
-                    "variable": {
-                      "name": "key"
                     }
                   }
                 }
@@ -1945,15 +1949,19 @@
                 }
               ]
             },
-            "value": {
+            "right": {
               "expression": {
                 "variable": {
                   "name": "items"
                 }
               }
             },
-            "variable": {
-              "name": "x"
+            "left": {
+              "expression": {
+                "variable": {
+                  "name": "x"
+                }
+              }
             }
           }
         ],

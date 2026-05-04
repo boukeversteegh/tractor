@@ -184,8 +184,8 @@ program/
   │       │       │   ├─ op = "="
   │       │       │   └─ right/expression/array = "[]"
   │       │       ├─ foreach/
-  │       │       │   ├─ value/expression/variable/name = "items"
-  │       │       │   ├─ pair/
+  │       │       │   ├─ right/expression/variable/name = "items"
+  │       │       │   ├─ left/expression/pair/
   │       │       │   │   ├─ variable/name = "key"
   │       │       │   │   └─ value/expression/variable/name = "item"
   │       │       │   └─ body/
@@ -412,8 +412,8 @@ program/
   │       │       ├─ variable/name = "items"
   │       │       └─ index/int = "0"
   │       ├─ foreach/
-  │       │   ├─ value/expression/variable/name = "items"
-  │       │   ├─ variable/name = "x"
+  │       │   ├─ right/expression/variable/name = "items"
+  │       │   ├─ left/expression/variable/name = "x"
   │       │   └─ body/expression/assign/
   │       │       ├─ left/expression/variable/name = "x"
   │       │       ├─ op[assign and multiply] = "*="

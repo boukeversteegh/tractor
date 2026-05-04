@@ -113,26 +113,48 @@ pub fn pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error>
 
 /// `foreach_statement` — `foreach ($arr as $x) {}` or
 /// `foreach ($arr as $key => $val) {}`. Tree-sitter emits the
-/// iterable (`$arr`) and the binding ($x or `<pair>`) as
-/// positional element children. When the binding is a bare
-/// `<variable>` (single-binding form), it collides with the
-/// iterable's `<variable>` on the JSON `variable` key.
+/// iterable (`$arr`) and the binding (`$x` or `<pair>`) as
+/// positional element children.
 ///
-/// Wrap the FIRST element child (the iterable) in `<value>` so
-/// the binding-side `<variable>` keeps the singleton key.
-/// Multi-binding form (key=>value `<pair>`) doesn't collide,
-/// but the wrap is consistent regardless.
+/// Iter 349: wrap the iterable in `<right>` and the binding in
+/// `<left>` per Principle #5 — same `<left>`/`<right>` shape that
+/// TS/C#/Python use for `for x in items`. Closes the cold-read
+/// HIGH finding "PHP foreach value/ is the iterable, not the
+/// element" — `<value>` was misleading because it implies an
+/// "actual value" elsewhere (default, init, hash); the iterable
+/// is semantically a `<right>` operand of the iteration binding.
 pub fn foreach_statement(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    let first_elem = xot.children(node)
-        .find(|&c| xot.element(c).is_some());
-    if let Some(iterable) = first_elem {
-        let value_id = xot.add_name(Value.as_str());
-        let value_node = xot.new_element(value_id);
-        xot.with_source_location_from(value_node, iterable)
-            .with_wrap_child(iterable, value_node)?;
+    use crate::transform::helpers::XotWithExt;
+    // Element children in source order: [iterable, binding, body].
+    // Body is always last (it's the foreach `{}` block).
+    let elem_children: Vec<XotNode> = xot
+        .children(node)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    // Wrap the FIRST element child (iterable) in `<right>`.
+    if let Some(&iterable) = elem_children.first() {
+        let right_id = xot.add_name("right");
+        let right_node = xot.new_element(right_id);
+        xot.with_source_location_from(right_node, iterable)
+            .with_wrap_child(iterable, right_node)?;
+    }
+    // Wrap the SECOND element child (binding) in `<left>`, unless
+    // it's the body wrapper or absent. Body of foreach renames to
+    // <body>; the binding is everything else between iterable and
+    // body. Foreach with empty body would have just iterable+body,
+    // skip the wrap in that case.
+    if elem_children.len() >= 3 {
+        let binding = elem_children[1];
+        let binding_name = get_element_name(xot, binding);
+        if binding_name.as_deref() != Some("body") {
+            let left_id = xot.add_name("left");
+            let left_node = xot.new_element(left_id);
+            xot.with_source_location_from(left_node, binding)
+                .with_wrap_child(binding, left_node)?;
+        }
     }
     xot.with_renamed(node, Foreach);
     Ok(TransformAction::Continue)

@@ -430,16 +430,19 @@ fn php() {
         "//do[body][condition]",
         1);
 
-    // Iter 286: foreach iterable wraps in <value> slot to avoid
-    // colliding on the JSON `variable` key with the binding-side
-    // `<variable>`. Iterable is `<value>/<expression>/<variable>`,
-    // binding stays as a bare `<variable>` direct child.
-    claim("PHP foreach iterable wraps in <value> slot, binding stays bare",
+    // Iter 349: foreach iterable wraps in `<right>` and binding wraps
+    // in `<left>` per Principle #5 cross-language alignment with
+    // TS/C#/Python `for x in items`. Was `<value>/<variable>` for
+    // iterable + bare `<variable>` for binding (iter 286); the
+    // `<value>` semantics conflicted with elsewhere meaning "an
+    // actual value" (default, init, hash). Cold-read HIGH finding
+    // closed.
+    claim("PHP foreach uses <right> for iterable and <left> for binding",
         &mut tree,
         &multi_xpath(r#"
             //foreach
-                [value/expression/variable/name='items']
-                [variable/name='item']
+                [right/expression/variable/name='items']
+                [left/expression/variable/name='item']
                 [body]
         "#),
         1);
