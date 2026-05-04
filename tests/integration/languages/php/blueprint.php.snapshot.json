@@ -840,14 +840,15 @@
                                 },
                                 "left": {
                                   "expression": {
-                                    "index": {
-                                      "variable": {
-                                        "name": "key"
-                                      },
-                                      "object": {
+                                    "object": {
+                                      "index": {
                                         "variable": {
-                                          "name": "results"
+                                          "name": "key"
                                         }
+                                      },
+                                      "access": true,
+                                      "variable": {
+                                        "name": "results"
                                       }
                                     }
                                   }
@@ -1658,12 +1659,13 @@
             "assign": {
               "right": {
                 "expression": {
-                  "index": {
-                    "int": "0",
-                    "object": {
-                      "variable": {
-                        "name": "items"
-                      }
+                  "object": {
+                    "index": {
+                      "int": "0"
+                    },
+                    "access": true,
+                    "variable": {
+                      "name": "items"
                     }
                   }
                 }

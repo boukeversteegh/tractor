@@ -843,9 +843,9 @@ file/
   │       ├─ let/
   │       │   ├─ name = "head_tail"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/ref/value/expression/index/
+  │       │       ├─ value/expression/ref/value/expression/object[access]/
   │       │       │   ├─ name = "arr"
-  │       │       │   └─ range[exclusive] = ".."
+  │       │       │   └─ index/range[exclusive] = ".."
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/
@@ -947,9 +947,9 @@ file/
   │           │   │   └─ call/name = "len"
   │           │   └─ type/name = "i32"
   │           ├─ op[plus] = "+"
-  │           └─ right/expression/index/
+  │           └─ right/expression/object[access]/
   │               ├─ name = "triples"
-  │               └─ int = "0"
+  │               └─ index/int = "0"
   └─ function[private]/
       ├─ name = "main"
       └─ body/

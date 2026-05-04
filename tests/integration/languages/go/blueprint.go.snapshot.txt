@@ -291,17 +291,17 @@ file/
   │               │   ├─ left/
   │               │   │   ├─ expression/name = "_"
   │               │   │   └─ expression/name = "ok"
-  │               │   └─ right/expression/index/
-  │               │       ├─ object/name = "seen"
-  │               │       └─ name = "x"
+  │               │   └─ right/expression/object[access]/
+  │               │       ├─ name = "seen"
+  │               │       └─ index/name = "x"
   │               ├─ condition/expression/unary/
   │               │   ├─ op[logical and not] = "!"
   │               │   └─ name = "ok"
   │               └─ then/
   │                   ├─ assign/
-  │                   │   ├─ left/expression/index/
-  │                   │   │   ├─ object/name = "seen"
-  │                   │   │   └─ name = "x"
+  │                   │   ├─ left/expression/object[access]/
+  │                   │   │   ├─ name = "seen"
+  │                   │   │   └─ index/name = "x"
   │                   │   ├─ op = "="
   │                   │   └─ right/expression/literal/struct = "struct{}"
   │                   └─ assign/
@@ -396,10 +396,11 @@ file/
   │       │           └─ int = "30"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "sub"
-  │       │   └─ right/expression/index[slice]/
-  │       │       ├─ object/name = "fixed"
-  │       │       ├─ from/int = "1"
-  │       │       └─ to/int = "3"
+  │       │   └─ right/expression/object[access]/
+  │       │       ├─ name = "fixed"
+  │       │       └─ index[slice]/
+  │       │           ├─ from/int = "1"
+  │       │           └─ to/int = "3"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "chRecvOnly"
   │       │   └─ right/expression/call[type]/
@@ -421,9 +422,9 @@ file/
   │       │       ├─ string = "\"nums\""
   │       │       └─ spread/index[slice]/object/name = "fixed"
   │       ├─ switch/
-  │       │   ├─ value/expression/index/
-  │       │   │   ├─ object/name = "implicit"
-  │       │   │   └─ int = "0"
+  │       │   ├─ value/expression/object[access]/
+  │       │   │   ├─ name = "implicit"
+  │       │   │   └─ index/int = "0"
   │       │   ├─ case[fallthrough]/value/expression/int = "10"
   │       │   └─ case/
   │       │       ├─ value/expression/int = "20"

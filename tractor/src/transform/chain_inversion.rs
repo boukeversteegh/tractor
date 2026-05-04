@@ -70,10 +70,13 @@ pub const EMITTED_NAMES: &[&str] = &[
     // Empty-marker child of <object> distinguishing chain shape from
     // object-literal shape (build_chain_tree).
     "access",
-    // Step elements (build_step).
+    // Step elements (build_step). Iter 345: bracket-access step
+    // emits as `<index>` matching developer mental model
+    // ("indexing" not "subscripting"); also matches what most
+    // languages already render pre-chain-inversion.
     "member",
     "call",
-    "subscript",
+    "index",
     // Inner slot of a `<member>` step holding the property name
     // (wrap_flat_call_member).
     "property",
@@ -102,8 +105,13 @@ pub enum ChainSegment {
         args: Vec<XotNode>,
         markers: Vec<XotNode>,
     },
-    /// `[index]` subscript access.
-    Subscript { index_node: XotNode, markers: Vec<XotNode> },
+    /// `[i]` index access. `index_nodes` holds all index expressions
+    /// in source order — multi-component forms like Go slices
+    /// (`s[1:3]` → `<from>1</from><to>3</to>`) and C# multi-arg
+    /// indexers (`arr[i, j]` → multiple `<argument>` siblings)
+    /// preserve every component. Variant kept named `Subscript` for
+    /// the segment IR's existing API; emitted element is `<index>`.
+    Subscript { index_nodes: Vec<XotNode>, markers: Vec<XotNode> },
 }
 
 // =============================================================================
@@ -203,14 +211,21 @@ fn build_step(
             }
             Ok(step)
         }
-        ChainSegment::Subscript { index_node, markers } => {
-            let id = xot.add_name("subscript");
+        ChainSegment::Subscript { index_nodes, markers } => {
+            let id = xot.add_name("index");
             let step = xot.new_element(id);
-            copy_source_location(xot, index_node, step);
+            // Source location: copy from the FIRST index node (the
+            // primary key/from-bound). Multi-component forms (slices,
+            // multi-arg indexers) sit in the same syntactic span.
+            if let Some(&first) = index_nodes.first() {
+                copy_source_location(xot, first, step);
+            }
             for marker in markers {
                 xot.append(step, marker)?;
             }
-            xot.append(step, index_node)?;
+            for n in index_nodes {
+                xot.append(step, n)?;
+            }
             Ok(step)
         }
     }
@@ -333,18 +348,29 @@ fn walk_subscript(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
         _ => (first, element_children[1..].to_vec()),
     };
     walk_chain(xot, receiver, out);
-    // The index expression is whatever non-receiver children remain.
-    // Most languages have one; collect all and pick the first
-    // (others are likely text leaves anyway, already filtered).
-    let index_node = match index_exprs.into_iter().next() {
-        Some(n) => n,
-        None => {
-            // Degenerate: subscript with only a receiver, no index.
-            return;
-        }
-    };
+    // Capture EVERY non-receiver element child as an index node so
+    // multi-component subscripts survive (Go slices `s[1:3]` →
+    // `<from>1</from><to>3</to>`; C# multi-arg indexers
+    // `arr[i, j]` → multiple `<argument>` siblings; etc.).
+    if index_exprs.is_empty() {
+        // Degenerate: subscript with only a receiver, no index
+        // expressions. Two cases hit this:
+        //   - Go `s[:]` full-slice shorthand — semantically valid
+        //     but the only meaningful child is the `<slice/>` marker
+        //     and there's no key/bound to host as a chain step.
+        //   - C# element-binding `[expr]` (in `new() { [k] = v }`) —
+        //     tree-sitter emits an `<index>` whose only child is an
+        //     `<argument>`; without a slot wrapper, walk_subscript
+        //     mis-identifies the argument as the receiver, leaving
+        //     no index.
+        // Bailing out here leaves both un-inverted (their original
+        // shape preserved); chain-inverting would synthesize an
+        // empty `<index/>` element which trips the
+        // `container-has-content` shape rule.
+        return;
+    }
     let markers = collect_markers(xot, node);
-    out.push(ChainSegment::Subscript { index_node, markers });
+    out.push(ChainSegment::Subscript { index_nodes: index_exprs, markers });
 }
 
 fn walk_call(xot: &Xot, node: XotNode, out: &mut Vec<ChainSegment>) {
@@ -678,6 +704,20 @@ fn is_chain_root(xot: &Xot, node: XotNode) -> bool {
             // Not a chain root if it's a receiver (parent=<object>).
             !matches!(parent_name.as_deref(), Some("object"))
         }
+        // Iter 345: subscript/index access mirrors the `member` rule.
+        // Chain root unless nested as a receiver (parent=<object>) or
+        // as a callee (first non-marker child of <call>). After this
+        // change, `arr[0]` and `obj["field"]` chain-invert uniformly
+        // with `obj.field`, producing the unified <object[access]>
+        // shape (Principle #5).
+        "subscript" | "index" => match parent_name.as_deref() {
+            Some("object") => false,
+            Some("call") => {
+                let first = first_non_marker_element_child(xot, parent);
+                first != Some(node)
+            }
+            _ => true,
+        },
         _ => false,
     }
 }
@@ -786,8 +826,10 @@ fn detach_segment_refs(
                     detach_if_attached(xot, *m)?;
                 }
             }
-            ChainSegment::Subscript { index_node, markers } => {
-                detach_if_attached(xot, *index_node)?;
+            ChainSegment::Subscript { index_nodes, markers } => {
+                for n in index_nodes {
+                    detach_if_attached(xot, *n)?;
+                }
                 for m in markers {
                     detach_if_attached(xot, *m)?;
                 }
@@ -1048,12 +1090,12 @@ mod tests {
         let b = new_text_element(&mut xot, "name", "b");
         let chain = emit_chain(&mut xot, vec![
             ChainSegment::Receiver(recv),
-            ChainSegment::Subscript { index_node: index, markers: vec![] },
+            ChainSegment::Subscript { index_nodes: vec![index], markers: vec![] },
             ChainSegment::Member { name_node: b, markers: vec![] },
         ]).unwrap();
         assert_eq!(
             render(&xot, chain),
-            "(object (access) (name a) (subscript (int 0) (member (name b))))",
+            "(object (access) (name a) (index (int 0) (member (name b))))",
         );
     }
 
@@ -1187,7 +1229,7 @@ mod tests {
             ChainSegment::Receiver(n) => Some(*n),
             ChainSegment::Member { name_node, .. } => Some(*name_node),
             ChainSegment::Call { name_node, .. } => *name_node,
-            ChainSegment::Subscript { index_node, .. } => Some(*index_node),
+            ChainSegment::Subscript { index_nodes, .. } => index_nodes.first().copied(),
         }?;
         xot.children(node).find_map(|c| xot.text_str(c).map(|s| s.to_string()))
     }

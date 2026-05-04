@@ -2115,13 +2115,12 @@
                     "none": "None"
                   },
                   "then": {
-                    "subscript": {
-                      "int": "0",
-                      "value": {
-                        "expression": {
-                          "name": "items"
-                        }
-                      }
+                    "object": {
+                      "index": {
+                        "int": "0"
+                      },
+                      "access": true,
+                      "name": "items"
                     }
                   },
                   "condition": {

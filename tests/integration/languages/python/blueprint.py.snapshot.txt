@@ -526,9 +526,9 @@ module/
   │       │   ├─ left/expression/name = "first"
   │       │   ├─ op = "="
   │       │   └─ right/expression/ternary/
-  │       │       ├─ then/subscript/
-  │       │       │   ├─ value/expression/name = "items"
-  │       │       │   └─ int = "0"
+  │       │       ├─ then/object[access]/
+  │       │       │   ├─ name = "items"
+  │       │       │   └─ index/int = "0"
   │       │       ├─ condition/expression/name = "items"
   │       │       └─ else/none = "None"
   │       ├─ if/

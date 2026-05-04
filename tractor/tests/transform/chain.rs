@@ -47,9 +47,12 @@
 //! All other 5 languages (Python, Go, TypeScript, Rust) match a
 //! single canonical shape:
 //!     `//object[access]/<step>/<step>/.../<step>`
-//! where each `<step>` is `<member>` for property access and
-//! `<call>` for invocation, with the receiver as the first
-//! direct child of `<object[access]>`.
+//! where each `<step>` is `<member>` for property access,
+//! `<call>` for invocation, and `<index>` for bracket access
+//! (`arr[0]`, `obj["key"]`), with the receiver as the first
+//! direct child of `<object[access]>`. Iter 345 unified bracket
+//! and dot access into the same chain shape — same structure,
+//! step element name differs by access kind.
 
 use crate::support::semantic::*;
 
@@ -295,32 +298,63 @@ fn cross_language_uniformity() {
 
 // ---- Subscript step ------------------------------------------------------
 
-/// Subscript chains (`arr[0].field`) emit a `<subscript>` step
+/// Subscript chains (`arr[0].field`) emit an `<index>` step
 /// alongside `<member>` and `<call>`. The walker handles two
-/// input flavours (slot-wrapped TS / Python `<index>` and bare-
-/// children Go/Java/Rust) — both produce the same canonical
-/// `<subscript>` step in the inverted output.
+/// input flavours (slot-wrapped TS / Python and bare-children
+/// Go/Java/Rust) — both produce the same canonical `<index>` step
+/// in the inverted output (iter 345).
+
+/// Cross-language: every `arr[0]` standalone bracket access
+/// produces the unified `<object[access]>/<receiver/>/<index>/<key>`
+/// shape — same as `obj.field` modulo step name (`<member>` vs
+/// `<index>`). Iter 345 contract.
+///
+/// Per-language tests below pin language-specific quirks (key
+/// element type — `<int>`/`<number>`/`<name>`/etc.); this loop
+/// pins the structural unification across 7 languages.
+#[test]
+fn cross_language_index_access_chain_inverts() {
+    let canonical = "//object[access]/index";
+
+    for (lang, src) in &[
+        ("typescript", "let _ = arr[0];"),
+        ("python",     "_ = arr[0]\n"),
+        ("rust",       "fn f() { let _ = arr[0]; }"),
+        ("go",         "package m\nfunc f(arr []int) { _ = arr[0] }"),
+        ("java",       "class X { void f(int[] arr) { int _x = arr[0]; } }"),
+        ("csharp",     "class X { void F(int[] arr) { var x = arr[0]; } }"),
+        ("php",        "<?php $r = $arr[0];"),
+    ] {
+        claim(
+            &format!("{lang}: `arr[0]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>"),
+            &mut parse_src(lang, src),
+            canonical,
+            1,
+        );
+    }
+}
+
 #[test]
 fn subscript_typescript() {
-    claim("TS subscript chain produces <subscript> step inside chain",
+    claim("TS index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("typescript", "arr[0].field;\n"),
-        "//object[access][name='arr']/subscript[number='0']/member[name='field']",
+        "//object[access][name='arr']/index[number='0']/member[name='field']",
         1);
 }
 
 #[test]
 fn subscript_python() {
-    claim("Python subscript chain produces <subscript> step inside chain",
+    claim("Python index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("python", "arr[0].field\n"),
-        "//object[access][name='arr']/subscript[int='0']/member[name='field']",
+        "//object[access][name='arr']/index[int='0']/member[name='field']",
         1);
 }
 
 #[test]
 fn subscript_rust() {
-    claim("Rust subscript chain produces <subscript> step inside chain",
+    claim("Rust index-access chain produces <index> step inside chain (iter 345)",
         &mut parse_src("rust", "fn main() { let _ = arr[0].field; }"),
-        "//object[access][name='arr']/subscript[int='0']/member[name='field']",
+        "//object[access][name='arr']/index[int='0']/member[name='field']",
         1);
 }
 

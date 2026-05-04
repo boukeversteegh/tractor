@@ -2527,8 +2527,11 @@
           {
             "right": {
               "expression": {
-                "index": {
-                  "int": "0",
+                "object": {
+                  "index": {
+                    "int": "0"
+                  },
+                  "access": true,
                   "name": "triples"
                 }
               }
@@ -2971,11 +2974,14 @@
                       "ref": {
                         "value": {
                           "expression": {
-                            "index": {
-                              "range": {
-                                "text": "..",
-                                "exclusive": true
+                            "object": {
+                              "index": {
+                                "range": {
+                                  "text": "..",
+                                  "exclusive": true
+                                }
                               },
+                              "access": true,
                               "name": "arr"
                             }
                           }

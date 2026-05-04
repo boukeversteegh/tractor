@@ -1993,23 +1993,26 @@
                           }
                         },
                         {
-                          "index": {
-                            "arguments": [
-                              {
-                                "int": "1"
-                              },
-                              {
-                                "int": "2"
-                              },
-                              {
-                                "int": "3"
-                              },
-                              {
-                                "range": {
-                                  "name": "odds"
+                          "object": {
+                            "index": {
+                              "arguments": [
+                                {
+                                  "int": "2"
+                                },
+                                {
+                                  "int": "3"
+                                },
+                                {
+                                  "range": {
+                                    "name": "odds"
+                                  }
                                 }
-                              }
-                            ]
+                              ]
+                            },
+                            "access": true,
+                            "argument": {
+                              "int": "1"
+                            }
                           },
                           "type": {
                             "arguments": [

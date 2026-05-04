@@ -220,7 +220,7 @@ program/
   │       │       │       │   ├─ this = "this"
   │       │       │       │   └─ member/
   │       │       │       │       ├─ name = "items"
-  │       │       │       │       └─ subscript/
+  │       │       │       │       └─ index/
   │       │       │       │           ├─ number = "0"
   │       │       │       │           └─ member/name = "label"
   │       │       │       ├─ op[nullish] = "??"
@@ -250,11 +250,11 @@ program/
   │       │       │   └─ op[increment] = "++"
   │       │       └─ body/expression/yield/array/
   │       │           ├─ name = "i"
-  │       │           └─ index/
-  │       │               ├─ object/member/
-  │       │               │   ├─ object/this = "this"
-  │       │               │   └─ property/name = "items"
-  │       │               └─ name = "i"
+  │       │           └─ object[access]/
+  │       │               ├─ this = "this"
+  │       │               └─ member/
+  │       │                   ├─ name = "items"
+  │       │                   └─ index/name = "i"
   │       └─ method[public and async]/
   │           ├─ name = "loadAll"
   │           ├─ parameter[required]/
@@ -343,9 +343,9 @@ program/
   │               │       │   └─ right/expression/name = "p"
   │               │       ├─ op[plus] = "+"
   │               │       └─ right/expression/binary/
-  │               │           ├─ left/expression/index/
-  │               │           │   ├─ object/name = "vals"
-  │               │           │   └─ name = "i"
+  │               │           ├─ left/expression/object[access]/
+  │               │           │   ├─ name = "vals"
+  │               │           │   └─ index/name = "i"
   │               │           ├─ op[nullish] = "??"
   │               │           └─ right/expression/string = "\"\""
   │               └─ string = "\"\""
@@ -487,9 +487,9 @@ program/
   │       │   ├─ left/expression/name = "k"
   │       │   ├─ right/expression/name = "obj"
   │       │   └─ body/block/expression/assign/
-  │       │       ├─ left/expression[non_null]/index/
-  │       │       │   ├─ object/name = "obj"
-  │       │       │   └─ name = "k"
+  │       │       ├─ left/expression[non_null]/object[access]/
+  │       │       │   ├─ name = "obj"
+  │       │       │   └─ index/name = "k"
   │       │       ├─ op[assign and plus] = "+="
   │       │       └─ right/expression/number = "1"
   │       ├─ for/
@@ -522,9 +522,9 @@ program/
   │       ├─ returns/type[union]/
   │       │   ├─ type/name = "U"
   │       │   └─ type[literal]/undefined = "undefined"
-  │       └─ value/expression/index/
-  │           ├─ object/name = "xs"
-  │           └─ number = "0"
+  │       └─ value/expression/object[access]/
+  │           ├─ name = "xs"
+  │           └─ index/number = "0"
   ├─ variable[const]/
   │   ├─ name = "doubled"
   │   ├─ type[array]/type/name = "number"

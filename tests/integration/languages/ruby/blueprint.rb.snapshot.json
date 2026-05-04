@@ -1034,6 +1034,29 @@
             }
           }
         ],
+        "expressions": [
+          {
+            "call": {
+              "arguments": [
+                {
+                  "text": "...",
+                  "forward": true
+                }
+              ],
+              "name": "forward"
+            }
+          },
+          {
+            "member": {
+              "name": "Defaults",
+              "static": true,
+              "member": {
+                "name": "Configuration",
+                "static": true
+              }
+            }
+          }
+        ],
         "assigns": [
           {
             "right": {
@@ -1280,33 +1303,13 @@
             "op": "="
           }
         ],
-        "expressions": [
-          {
-            "call": {
-              "arguments": [
-                {
-                  "text": "...",
-                  "forward": true
-                }
-              ],
-              "name": "forward"
-            }
-          },
-          {
-            "member": {
-              "name": "Defaults",
-              "static": true,
-              "member": {
-                "name": "Configuration",
-                "static": true
-              }
-            }
-          },
+        "objects": [
           {
             "index": {
-              "int": "0",
-              "name": "arr"
-            }
+              "int": "0"
+            },
+            "access": true,
+            "name": "arr"
           }
         ]
       },

@@ -383,33 +383,27 @@ fn go_inc_dec_statement_extracts_op() {
         1);
 }
 
-/// Go `arr[i]` index expression — wraps the operand (the array)
-/// in `<object>` to match member-access vocabulary and avoid
-/// JSON name-key collision when both array and index are
-/// identifiers (`seen[x]` would otherwise produce two
-/// `<name>` siblings). Unary expressions are NOT touched (they
-/// also use `field="operand"` but only have one operand, no
-/// collision).
+/// Go `arr[i]` index expression — chain-inverts to the unified
+/// `<object[access]>` shape (iter 345) matching member access. The
+/// array is the chain receiver; the index sits inside `<index>`.
 #[test]
 fn go_index_expression_wraps_operand() {
-    claim("Go index `seen[x]` wraps the array operand in <object>",
+    claim("Go `seen[x]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>",
         &mut parse_src("go", "package m\nfunc f(seen []int, x int) { _ = seen[x] }"),
-        "//index[object/name='seen'][name='x']",
+        "//object[access][name='seen']/index/name='x'",
         1);
 
-    claim("Go unary `-x` is unchanged (still bare <name> operand, no <object> wrap)",
+    claim("Go unary `-x` is unchanged (no chain inversion for unary)",
         &mut parse_src("go", "package m\nfunc f(x int) { _ = -x }"),
         "//unary[name='x'][not(object)]",
         1);
 }
 
-/// Go `s[i:j]` / `s[i:j:k]` / `s[:]` slice expression — wraps the
-/// operand in `<object>` (matching `index_expression` iter 284) and
-/// the bounds in `<from>` / `<to>` / `<capacity>` slots so two
-/// `<int>` siblings don't collide on a singleton JSON key. The
-/// `<slice/>` marker remains so `//index[slice]` still picks slice
-/// ops out. Vocabulary mirrors Rust ranges (iter 270) and Ruby
-/// ranges (iter 180) per Principle #5.
+/// Go `s[i:j]` / `s[i:j:k]` / `s[:]` slice expression — chain-inverts
+/// to the unified `<object[access]>` shape (iter 345). The slice
+/// bounds (`<from>` / `<to>` / `<capacity>`) all live inside
+/// `<index>` (multi-component subscript via `Vec<XotNode>` index_nodes).
+/// The `<slice/>` marker on `<index>` distinguishes slice ops.
 #[test]
 fn go_slice_expression_wraps_bounds() {
     let mut tree = parse_src("go", r#"
@@ -421,30 +415,36 @@ fn go_slice_expression_wraps_bounds() {
         }
     "#);
 
-    claim("Go `s[1:3]` wraps operand in <object>, bounds in <from>/<to>",
+    claim("Go `s[1:3]` chain-inverts; <index[slice]> holds <from>/<to>",
         &mut tree,
-        "//index[slice][object/name='s'][from/int='1'][to/int='3'][not(capacity)]",
+        "//object[access][name='s']/index[slice][from/int='1'][to/int='3'][not(capacity)]",
         1);
 
-    claim("Go `s[1:3:4]` adds <capacity> slot",
+    claim("Go `s[1:3:4]` adds <capacity> slot inside <index[slice]>",
         &mut tree,
-        "//index[slice][object/name='s'][from/int='1'][to/int='3'][capacity/int='4']",
+        "//object[access][name='s']/index[slice][from/int='1'][to/int='3'][capacity/int='4']",
         1);
 
-    claim("Go `s[:]` slice has neither <from> nor <to>",
+    // Go `s[:]` full-slice shorthand has no `<from>`/`<to>` index
+    // bounds. Chain inversion bails on subscripts with empty
+    // index_exprs (would synthesize an empty `<index/>` element
+    // tripping `container-has-content`); the un-inverted shape
+    // survives instead. Tests pin the un-inverted shape here.
+    claim("Go `s[:]` full-slice stays un-inverted (no chain-step content)",
         &mut tree,
         "//index[slice][object/name='s'][not(from)][not(to)]",
         1);
 }
 
-/// PHP `$arr[$key]` subscript expression — wraps the operand in
-/// `<object>` so the array variable doesn't collide with the
-/// index variable on the JSON `variable` key. Mirrors Go iter 284.
+/// PHP `$arr[$key]` subscript expression — chain-inverts to the
+/// unified `<object[access]>` shape (iter 345) matching member
+/// access. The array variable is the chain receiver; the key is
+/// inside `<index>`.
 #[test]
 fn php_subscript_wraps_operand() {
-    claim("PHP `$arr[$key]` wraps the array operand in <object>",
+    claim("PHP `$arr[$key]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>",
         &mut parse_src("php", "<?php $r = $arr[$key];"),
-        "//index[object/variable/name='arr'][variable/name='key']",
+        "//object[access][variable/name='arr']/index/variable/name='key'",
         1);
 }
 

@@ -16,7 +16,7 @@ use super::output::TractorNode::{
     ElseIf, Escape, Except, Exec, False, Finally, Float, Format, From, Future,
     Args, Generator, Global, Group, If, Import, Int, Interpolation, Keyword, Kwargs, List,
     Logical, Match, Member, Module, Name, Nonlocal, Parameter, Pass, Pattern, Positional,
-    Print, Raise, Return, Splat, Spread, String, Subscript, True, Try, Tuple, Type, Unary,
+    Index, Print, Raise, Return, Splat, Spread, String, True, Try, Tuple, Type, Unary,
     Union, While, Wildcard, Yield, None as PyNone,
 };
 use super::transformations;
@@ -175,7 +175,13 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::RaiseStatement        => Rename(Raise),
         PyKind::ReturnStatement       => Rename(Return),
         PyKind::String                => Rename(String),
-        PyKind::Subscript             => Rename(Subscript),
+        // Iter 345: `Subscript` → `Index` per Principle #5 +
+        // developer-mental-model alignment. Python is the only
+        // language that previously emitted `<subscript>`; switching
+        // here unifies with the cross-language `<index>` convention.
+        // Chain inversion (which already accepts both element names
+        // as input) normalizes the output to `<index>` regardless.
+        PyKind::Subscript             => Rename(Index),
         PyKind::True                  => Rename(True),
         PyKind::TryStatement          => Rename(Try),
         PyKind::TypeConversion        => Rename(Cast),

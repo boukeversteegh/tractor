@@ -1695,7 +1695,7 @@
                                 "expression": {
                                   "object": {
                                     "member": {
-                                      "subscript": {
+                                      "index": {
                                         "member": {
                                           "name": "label"
                                         },
@@ -1742,18 +1742,15 @@
                             {
                               "yield": {
                                 "array": {
-                                  "index": {
-                                    "name": "i",
-                                    "object": {
-                                      "member": {
-                                        "property": {
-                                          "name": "items"
-                                        },
-                                        "object": {
-                                          "this": "this"
-                                        }
-                                      }
-                                    }
+                                  "object": {
+                                    "member": {
+                                      "index": {
+                                        "name": "i"
+                                      },
+                                      "name": "items"
+                                    },
+                                    "access": true,
+                                    "this": "this"
                                   },
                                   "name": "i"
                                 }
@@ -2359,11 +2356,12 @@
                               },
                               "left": {
                                 "expression": {
-                                  "index": {
-                                    "name": "k",
-                                    "object": {
-                                      "name": "obj"
-                                    }
+                                  "object": {
+                                    "index": {
+                                      "name": "k"
+                                    },
+                                    "access": true,
+                                    "name": "obj"
                                   },
                                   "non_null": true
                                 }
@@ -2637,11 +2635,12 @@
                                     },
                                     "left": {
                                       "expression": {
-                                        "index": {
-                                          "name": "i",
-                                          "object": {
-                                            "name": "vals"
-                                          }
+                                        "object": {
+                                          "index": {
+                                            "name": "i"
+                                          },
+                                          "access": true,
+                                          "name": "vals"
                                         }
                                       }
                                     },
@@ -2722,11 +2721,12 @@
           "arrow": {
             "value": {
               "expression": {
-                "index": {
-                  "number": "0",
-                  "object": {
-                    "name": "xs"
-                  }
+                "object": {
+                  "index": {
+                    "number": "0"
+                  },
+                  "access": true,
+                  "name": "xs"
                 }
               }
             },

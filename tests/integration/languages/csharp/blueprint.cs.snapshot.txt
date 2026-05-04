@@ -721,11 +721,12 @@ unit/
   │               │   │   ├─ name = "List"
   │               │   │   └─ type/name = "int"
   │               │   ├─ name = "list"
-  │               │   └─ index/
+  │               │   └─ object[access]/
   │               │       ├─ argument/int = "1"
-  │               │       ├─ argument/int = "2"
-  │               │       ├─ argument/int = "3"
-  │               │       └─ argument/range/name = "odds"
+  │               │       └─ index/
+  │               │           ├─ argument/int = "2"
+  │               │           ├─ argument/int = "3"
+  │               │           └─ argument/range/name = "odds"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Dictionary"
