@@ -307,13 +307,14 @@ Cold-read pass spawned iter 300 (first since iters 233/186/197 cluster).
 Reviewer read every blueprint snapshot (.txt + .json) without prior
 context. 15 findings; severity per reviewer.
 
-- [ ] **TypeScript: two competing shapes for member/subscript
-  access** *(HIGH, principle #5 within-language)*. Sometimes
-  `<index><object/><name>` with `<member><object/><property>`,
-  elsewhere the standard `<object[access]><name/><member><name/></member></object[access]>`.
-  Two shapes for the same construct in the same file.
-  Reproduce: `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:251-257, 346-348, 525-527` vs the standard form at line 144.
-  Querying TS member access now needs an XPath disjunction.
+- [x] ~~**TypeScript: two competing shapes for member/subscript
+  access**~~ *(HIGH; CLOSED iter 345)*. Unified subscript and
+  member access into the same chain shape — both use
+  `<object[access]>/<receiver/>/<step>/...` where step is
+  `<member>` for dot or `<index>` for bracket. Bracket text leaks
+  removed. All TS index access sites now consistent. See
+  `chain::cross_language_index_access_chain_inverts` test for the
+  cross-language unified shape.
 
 - [ ] **Ruby: nested `left/expression/left/expression/left/...`
   destructure** *(HIGH, looks like a transformation bug)*. Three

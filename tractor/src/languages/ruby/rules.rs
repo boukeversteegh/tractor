@@ -97,7 +97,17 @@ pub fn rule(k: RubyKind) -> Rule<TractorNode> {
         RubyKind::IfModifier          => Rename(If),
         RubyKind::InstanceVariable    => Rename(Name),
         RubyKind::Integer             => Rename(Int),
-        RubyKind::LeftAssignmentList  => Rename(Left),
+        // Iter 346: was `Rename(Left)` — produced nested `<left>/<expression>/<left>/...`
+        // for multi-target `_, a, b = [...]` because the field-wrap pass
+        // also wraps the assign's `field=left` child in `<left>`. Flatten
+        // here promotes the comma-separated names directly into the
+        // field-wrapped `<left>`, eliminating the redundant inner level.
+        // `wrap_expression_positions` then wraps each name in
+        // `<expression>` (it processes every element child of slot
+        // wrappers, so the result is `<left>/<expression>name1</expression>,
+        // <expression>name2</expression>,...`). Closes the cold-read
+        // (iter 300) HIGH finding "Ruby nested left/expression destructure".
+        RubyKind::LeftAssignmentList  => Flatten { distribute_list: None },
         RubyKind::Method              => Rename(Method),
         RubyKind::Module              => Rename(Module),
         // Iter 340: extract augmented operators (`+=`, `-=`, etc.)

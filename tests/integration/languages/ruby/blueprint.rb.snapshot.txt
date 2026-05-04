@@ -458,7 +458,7 @@ program/
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/int = "1"
   │       ├─ assign/
-  │       │   ├─ left/expression/left/
+  │       │   ├─ left/
   │       │   │   ├─ expression/name = "a"
   │       │   │   ├─ expression/name = "b"
   │       │   │   └─ expression/spread/name = "rest"
@@ -615,7 +615,7 @@ program/
   │           ├─ name = "x"
   │           └─ name = "y"
   ├─ assign/
-  │   ├─ left/expression/left/expression/left/
+  │   ├─ left/expression/left/
   │   │   ├─ expression[destructured]
   │   │   ├─ expression/name = "a"
   │   │   └─ expression/name = "b"

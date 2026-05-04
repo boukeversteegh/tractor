@@ -794,23 +794,19 @@
               }
             },
             "left": {
-              "expression": {
-                "left": {
-                  "expressions": [
-                    {
-                      "name": "a"
-                    },
-                    {
-                      "name": "b"
-                    },
-                    {
-                      "spread": {
-                        "name": "rest"
-                      }
-                    }
-                  ]
+              "expressions": [
+                {
+                  "name": "a"
+                },
+                {
+                  "name": "b"
+                },
+                {
+                  "spread": {
+                    "name": "rest"
+                  }
                 }
-              }
+              ]
             },
             "op": "="
           },
@@ -2291,21 +2287,17 @@
       "left": {
         "expression": {
           "left": {
-            "expression": {
-              "left": {
-                "expressions": [
-                  {
-                    "destructured": true
-                  },
-                  {
-                    "name": "a"
-                  },
-                  {
-                    "name": "b"
-                  }
-                ]
+            "expressions": [
+              {
+                "destructured": true
+              },
+              {
+                "name": "a"
+              },
+              {
+                "name": "b"
               }
-            }
+            ]
           }
         }
       },
