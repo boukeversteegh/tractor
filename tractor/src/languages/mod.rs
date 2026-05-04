@@ -476,7 +476,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         // member-type wrappers (`<delegate>`, `<interface>`, `<struct>`)
         // in 1-elem arrays. Targeted role tags below cover the
         // role-uniform multi-cardinality member types.
-        &["body", "block", "unit", "tuple", "list", "dict", "array", "hash", "template", "repetition"],
+        &["body", "block", "unit", "tuple", "list", "dict", "array", "hash", "repetition"],
     )?;
     Ok(())
 }
@@ -924,7 +924,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     rust_normalize_lifetime_names(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         // `"array"` removed iter 327 — see targeted role tags above.
-        xot, root, &["body", "block", "file", "tuple", "list", "dict", "template", "repetition"],
+        xot, root, &["body", "block", "file", "tuple", "list", "dict", "repetition"],
     )?;
     Ok(())
 }
@@ -2006,7 +2006,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // wrapper. See cold-read backlog iter 233.
     crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "template", "repetition"],
+        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "repetition"],
     )?;
     Ok(())
 }
@@ -2129,7 +2129,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         // on both. Go has no multi-cardinality `<array>` cases in
         // the blueprint (literals go inside `<literal>/<array>+<body>`
         // — the body holds elements). No targeted tags needed.
-        xot, root, &["body", "file", "tuple", "list", "dict", "template", "repetition"],
+        xot, root, &["body", "file", "tuple", "list", "dict", "repetition"],
     )?;
     Ok(())
 }
@@ -2369,13 +2369,21 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // multi (proper array) cases.
             ("string", "interpolation"),
             ("string", "value"),
+            // PHP namespace path `App\Blueprint` produces multiple
+            // `<name>` children of `<namespace>`. Iter 328 dropped
+            // `"namespace"` from PHP's bulk distribute (the
+            // architectural ROLE_MIXED_PARENTS guard requires it);
+            // this targeted tag covers the multi-name path case.
+            // Single-name namespaces lift as `name: "App"` singleton.
+            ("namespace", "name"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "template", "repetition"],
+        // `"namespace"` removed iter 328 — see targeted role tag above.
+        xot, root, &["body", "program", "tuple", "list", "dict", "array", "repetition"],
     )?;
     Ok(())
 }
@@ -2715,7 +2723,7 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
         // children of `[*items]` arrays in 1-elem JSON arrays.
         // Targeted role tags above cover the multi-cardinality cases
         // (int/name/object).
-        xot, root, &["body", "program", "tuple", "list", "dict", "hash", "template", "repetition"],
+        xot, root, &["body", "program", "tuple", "list", "dict", "hash", "repetition"],
     )?;
     Ok(())
 }

@@ -467,12 +467,73 @@ pub fn flatten_nested_paths(xot: &mut Xot, root: XotNode) -> Result<(), xot::Err
 /// element-name key.
 ///
 /// Idempotent: skips children that already have `list=`.
+/// Element names known to be role-MIXED parents (singleton role-slots
+/// + multi-cardinality children). Bulk-distribute on these creates
+/// silent 1-element JSON arrays on the singleton slots — the iter-213
+/// archetype documented in `todo/39-...md` Lessons.
+///
+/// Each entry references the iter that closed the trap. Future
+/// `distribute_member_list_attrs` callers cannot include these
+/// names — the runtime debug-assertion below blocks reintroduction.
+/// Use targeted `tag_multi_role_children` entries for the
+/// multi-cardinality children of these parents instead.
+///
+/// To add a new entry: prove the trap exists in any blueprint via
+/// the `no-children-overflow` shape contract OR a direct probe, then
+/// fix all language configs and add the name here.
+pub const ROLE_MIXED_PARENTS: &[&str] = &[
+    // iter 303/304: subject + arms; arms inside <body> for stmt form.
+    "switch",
+    // iter 305: each <import> has 1 name OR 1 path.
+    "import",
+    // iter 306: heterogeneous content (with-expr name+string, array
+    //   ints, indexer assigns, etc.).
+    "literal",
+    // iter 307: namespace name + member-type wrappers.
+    "namespace",
+    // iter 308/309: interpolations + value (heredoc) + concatenated
+    //   strings — different cardinalities depending on string flavour.
+    "string",
+    // iter 309: TS template literal interpolations.
+    "template",
+    // iter 310: macro name + heterogeneous args.
+    "macro",
+    // iter 311/323/324/327: array TYPE spec (Go [5]int) + array
+    //   LITERAL with heterogeneous element types (Rust/Ruby/TS).
+    //   Note: PHP/Java still safely use bulk distribute on `array`
+    //   because their blueprints currently have only multi-cardinality
+    //   uniform-int cases. Adding `array` to ROLE_MIXED_PARENTS would
+    //   break those — the trade-off is per-language and accepted.
+    //   Future PHP/Java fixtures with singleton-name array elements
+    //   would surface the trap and trigger a per-language fix.
+];
+
 pub fn distribute_member_list_attrs(
     xot: &mut Xot,
     root: XotNode,
     container_names: &[&str],
 ) -> Result<(), xot::Error> {
     use helpers::*;
+    // Block reintroduction of role-mixed parents (iter-213 archetype).
+    // Caught at first transform invocation via the debug-build
+    // assertion; production builds skip the check via
+    // `cfg(debug_assertions)`.
+    #[cfg(debug_assertions)]
+    {
+        let bad: Vec<&&str> = container_names.iter()
+            .filter(|n| ROLE_MIXED_PARENTS.contains(n))
+            .collect();
+        if !bad.is_empty() {
+            panic!(
+                "distribute_member_list_attrs called on known role-mixed parent(s): {:?}\n\
+                These names are in ROLE_MIXED_PARENTS because bulk distribute on \n\
+                them creates silent 1-element JSON arrays on singleton role-slots \n\
+                (iter-213 archetype). Use targeted `tag_multi_role_children` \n\
+                entries for the multi-cardinality children instead.",
+                bad
+            );
+        }
+    }
     let root = find_content_root(xot, root);
     let mut targets: Vec<XotNode> = Vec::new();
     fn collect(
