@@ -1346,6 +1346,14 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             // distribute on `"template"` (removed iter 309) was
             // wrapping single-interp cases in 1-elem JSON arrays.
             ("template", "interpolation"),
+            // TS array literals `[1, 2, 3]` and array destructure
+            // patterns. Iter 324 dropped `"array"` from the bulk
+            // distribute config (was wrapping singleton index/name in
+            // array destructure patterns in 1-elem JSON arrays).
+            // Targeted role tags below cover the multi-cardinality
+            // element types in the blueprint (spread/number).
+            ("array", "spread"),
+            ("array", "number"),
         ],
     )?;
     typescript_restructure_import(xot, root)?;
@@ -1359,7 +1367,11 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     // declarator. Mirrors Java/C# iter 263.
     crate::transform::flatten_single_declarator_children(xot, root, &["variable", "field"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "repetition"],
+        // `"array"` removed iter 324 — was wrapping singleton
+        // `<index>`/`<name>` children of array-destructure patterns in
+        // 1-elem JSON arrays. Targeted role tags above cover the
+        // multi-cardinality cases (spread/number).
+        xot, root, &["body", "block", "program", "tuple", "list", "dict", "hash", "repetition"],
     )?;
     Ok(())
 }

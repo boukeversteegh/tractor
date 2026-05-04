@@ -1742,24 +1742,20 @@
                             {
                               "yield": {
                                 "array": {
-                                  "indexes": [
-                                    {
-                                      "name": "i",
-                                      "object": {
-                                        "member": {
-                                          "property": {
-                                            "name": "items"
-                                          },
-                                          "object": {
-                                            "this": "this"
-                                          }
+                                  "index": {
+                                    "name": "i",
+                                    "object": {
+                                      "member": {
+                                        "property": {
+                                          "name": "items"
+                                        },
+                                        "object": {
+                                          "this": "this"
                                         }
                                       }
                                     }
-                                  ],
-                                  "names": [
-                                    "i"
-                                  ]
+                                  },
+                                  "name": "i"
                                 }
                               }
                             }
