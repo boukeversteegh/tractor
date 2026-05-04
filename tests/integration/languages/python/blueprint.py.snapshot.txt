@@ -398,7 +398,7 @@ module/
   │           │   │   ├─ value/expression/pattern/string = "\"ping\""
   │           │   │   ├─ string = "\"id\""
   │           │   │   └─ value/expression/pattern/name = "pid"
-  │           │   ├─ compare/
+  │           │   ├─ guard/compare/
   │           │   │   ├─ name = "pid"
   │           │   │   ├─ op[compare and greater] = ">"
   │           │   │   └─ int = "0"

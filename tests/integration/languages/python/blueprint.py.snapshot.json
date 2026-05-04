@@ -1585,13 +1585,15 @@
                       ]
                     }
                   },
-                  "compare": {
-                    "int": "0",
-                    "name": "pid",
-                    "op": {
-                      "text": ">",
-                      "compare": true,
-                      "greater": true
+                  "guard": {
+                    "compare": {
+                      "int": "0",
+                      "name": "pid",
+                      "op": {
+                        "text": ">",
+                        "compare": true,
+                        "greater": true
+                      }
                     }
                   }
                 },

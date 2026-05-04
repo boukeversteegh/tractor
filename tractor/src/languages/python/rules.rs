@@ -72,7 +72,6 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         | PyKind::EscapeSequence
         | PyKind::ExpressionList
         | PyKind::ForInClause
-        | PyKind::IfClause
         | PyKind::ImportPrefix
         | PyKind::LambdaParameters
         | PyKind::ParenthesizedExpression
@@ -140,6 +139,9 @@ pub fn rule(k: PyKind) -> Rule<TractorNode> {
         PyKind::GeneratorExpression   => Rename(Generator),
         PyKind::GlobalStatement       => Rename(Global),
         PyKind::Identifier            => Rename(Name),
+        // `if_clause` is dual-context: match-arm guard wraps as
+        // `<guard>`; comprehension guard flattens (see handler).
+        PyKind::IfClause              => Custom(transformations::if_clause),
         PyKind::IfStatement           => Rename(If),
         PyKind::ImportFromStatement   => Rename(From),
         PyKind::ImportStatement       => Rename(Import),

@@ -23,7 +23,7 @@ pub enum TractorNode {
     // design.md § 17 (the canonical allowed-exception). Do not
     // rename to `elseif`/`elif`.
     Return, If, ElseIf, Else, For, While, Try, Except, Finally, With, Raise, Pass, Break,
-    Continue, Match, Arm, Pattern, Then, Condition,
+    Continue, Match, Arm, Pattern, Then, Condition, Guard,
     // Imports / names
     Import, From, Assert, Delete, Global, Nonlocal,
     // Python 2 leftovers (kept as own elements; rare in modern code)

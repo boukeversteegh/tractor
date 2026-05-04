@@ -16,7 +16,8 @@ use crate::transform::generic_type::rewrite_generic_type;
 use super::input::PyKind;
 use super::output::TractorNode::{
     self, Async, Await, Comment as CommentName, Comprehension, Dict, Else, Expression, Function,
-    Generic, Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary, Trailing,
+    Generic, Guard, Leading, List, Literal, Parameter, Private, Protected, Public, Set, Ternary,
+    Trailing,
 };
 
 /// `lambda` — `lambda x: x + 1`. Body is always a single expression
@@ -509,6 +510,54 @@ pub fn case_pattern(
         }
         xot.with_appended_marker(node, Wildcard)?;
     }
+    Ok(TransformAction::Continue)
+}
+
+/// `if_clause` — appears in TWO contexts:
+///
+/// 1. **Match-arm guard** (`case <pat> if <expr>:`). Tree-sitter tags
+///    the `if_clause` with `field=guard` on its `case_clause` parent.
+///    Render as `<arm>/<guard>/<expr>` so the guard has a role-named
+///    slot rather than floating as a sibling `<compare>` (the iter
+///    300 cold-read finding).
+///
+/// 2. **Comprehension guard** (`[x for x in xs if cond]`). Bare
+///    `if_clause` child of `list_comprehension` etc. Existing behavior
+///    flattens its content into the comprehension's children where
+///    list-tagging produces `compares: [...]`. Preserve this shape —
+///    the cold-read didn't flag comprehensions, and changing them
+///    would broaden scope unnecessarily.
+///
+/// The handler discriminates by parent name: when the parent is
+/// `<arm>` (already renamed from `case_clause` by walk-order), strip
+/// the literal `if` keyword text and rename to `<guard>`. Otherwise
+/// fall back to `TransformAction::Flatten` (the prior `Rule::Flatten`
+/// behavior).
+pub fn if_clause(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
+    let parent = xot.parent(node);
+    let parent_is_arm = parent
+        .and_then(|p| get_element_name(xot, p))
+        .as_deref()
+        == Some("arm");
+    if !parent_is_arm {
+        return Ok(TransformAction::Flatten);
+    }
+    // Match-arm guard: strip the literal "if" keyword text leaf,
+    // rename the if_clause to <guard>.
+    let text_children: Vec<XotNode> = xot.children(node)
+        .filter(|&c| xot.text_str(c).is_some())
+        .collect();
+    for child in text_children {
+        if let Some(text) = xot.text_str(child) {
+            if text.trim() == "if" {
+                xot.detach(child)?;
+            }
+        }
+    }
+    xot.with_renamed(node, Guard);
     Ok(TransformAction::Continue)
 }
 

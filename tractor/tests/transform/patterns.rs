@@ -157,6 +157,29 @@ fn python_dict_pattern_lists_values() {
         2);
 }
 
+/// Python match-arm guard `case <pat> if <expr>:` — the guard wraps in
+/// `<guard>` slot. Iter 300 cold-read flagged the previous shape (bare
+/// `<compare>` floating as a sibling of `<pattern>`) for ambiguous
+/// cross-language alignment. Comprehension if-clauses are NOT
+/// affected; they keep the existing flatten-into-`<compare>` shape.
+#[test]
+fn python_match_arm_guard_wraps_in_guard_slot() {
+    claim("Python match-arm guard wraps the comparison in <guard>",
+        &mut parse_src("python", "match x:\n    case [a, b] if a > 0:\n        pass\n"),
+        "//arm[guard/compare/name='a']",
+        1);
+
+    claim("Python match-arm guard does NOT leave a bare <compare> sibling",
+        &mut parse_src("python", "match x:\n    case [a, b] if a > 0:\n        pass\n"),
+        "//arm/compare",
+        0);
+
+    claim("Python comprehension if-clause flattens into <compare> (unchanged)",
+        &mut parse_src("python", "xs = [a for a in data if a > 0]"),
+        "//list[comprehension]/compare[@list='compares']",
+        1);
+}
+
 #[test]
 fn ruby_alternative_pattern_lists_alternative_ints() {
     claim("Ruby in-alternative of three ints tags each with list='ints'",
