@@ -19,6 +19,27 @@ pub mod singletons;
 
 use xot::{Xot, Node as XotNode, NameId};
 
+/// Element names that the shared post-walk transforms in this module
+/// emit programmatically. Every language whose `post_transform` calls
+/// any of these helpers MUST declare each name in its
+/// `TractorNodeSpec` table. The runtime
+/// `name-declared-in-semantic-module` shape rule (layer 2) catches
+/// undeclared emissions when a fixture exercises them; the
+/// `tractor/tests/shared_transform_emits.rs` test catches drift
+/// statically across all languages, even those whose blueprint
+/// doesn't currently exercise the shape.
+///
+/// Mirrors the [`chain_inversion::EMITTED_NAMES`] pattern (iter 335)
+/// for `crate::transform` shared helpers:
+///
+/// - `<expression>` — emitted by [`wrap_expression_positions`] and
+///   [`wrap_body_value_children`] as the Principle #15 stable
+///   expression host on slot wrappers and body-value children.
+/// - `<type>` — emitted by [`wrap_relationship_targets_in_type`] as
+///   the Principle #14 type-reference wrapper inside `<extends>` /
+///   `<implements>` / `<throws>` / `<returns>` slots.
+pub const EMITTED_NAMES: &[&str] = &["expression", "type"];
+
 // =============================================================================
 // TRANSFORM ACTION - Control flow for the walker
 // =============================================================================
