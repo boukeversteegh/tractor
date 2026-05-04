@@ -23,7 +23,6 @@ const ASSERT_INVARIANTS: bool = true;
 
 // Per-invariant gates. Flip to `true` once a given invariant is
 // at zero across all non-data fixtures.
-const ASSERT_LOWERCASE: bool = true;
 const ASSERT_NO_UNDERSCORE: bool = true;
 const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
 // `no_repeated_parent_child_name` flags `<X><X>…</X></X>` patterns where
@@ -225,40 +224,14 @@ impl Report {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 1: Every node name is lowercase.
-//
-// Principle #3 — "Always Lowercase". Also supports the
-// "identifiers are never element names" decision: user-defined
-// identifiers almost always have uppercase chars, so an element
-// name with an uppercase char is a symptom of an identifier
-// accidentally being promoted.
+// Invariant 1 (RETIRED iter 314): all_node_names_are_lowercase
+// migrated to the spec-conformance walker. The shape-contract rule
+// `node-name-lowercase` in `tractor/src/transform/shape_contracts.rs`
+// runs both via the cargo test (against blueprint fixtures) AND via
+// the debug-build assertion in `transform/builder.rs` (every transform
+// invocation). Strictly more coverage than the previous blueprint-only
+// walk.
 // ---------------------------------------------------------------------------
-
-#[test]
-fn all_node_names_are_lowercase() {
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            if name.chars().any(|c| c.is_ascii_uppercase()) {
-                report.record(&name, &fixture, String::new());
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print("Principle #3 — node names must be lowercase");
-        if ASSERT_INVARIANTS && ASSERT_LOWERCASE {
-            panic!("node names with uppercase chars");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 2: No underscores in node names (except whitelisted).
@@ -341,42 +314,13 @@ fn no_underscore_in_node_names_except_whitelist() {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant: no element name contains a dash (`-`).
-//
-// XPath 3.1 actually allows dashes in element names, but project
-// convention is single-word names where possible, falling back to
-// snake_case for multi-word concepts. Dashes invite ambiguity with
-// arithmetic-minus when authoring queries, and they don't match the
-// strum `serialize_all = "snake_case"` default that every output enum
-// declares. This test pins the convention.
-// ---------------------------------------------------------------------------
-
-#[test]
-fn no_dash_in_node_names() {
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            if !name.contains('-') {
-                return;
-            }
-            report.record(&name, &fixture, String::new());
-        });
-    }
-    if !report.is_empty() && ASSERT_INVARIANTS {
-        report.print(
-            "Project convention — element names must not contain dashes (use single words or snake_case)",
-        );
-        panic!("dashed node names");
-    }
-}
+// Invariant (RETIRED iter 314): no_dash_in_node_names migrated to the
+// spec-conformance walker. The shape-contract rule
+// `no-dash-in-node-name` in `tractor/src/transform/shape_contracts.rs`
+// runs both via the cargo test (against blueprint fixtures) AND via
+// the debug-build assertion in `transform/builder.rs` (every transform
+// invocation). Strictly more coverage than the previous blueprint-only
+// walk.
 
 /// `(lang_id, kind_strs)` for every language whose rule table is
 /// rule-driven. The kind strings are the snake_case `IntoStaticStr`

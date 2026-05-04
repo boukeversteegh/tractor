@@ -486,6 +486,66 @@ fn check_op_marker_matches_text(
     });
 }
 
+/// Rule `node-name-lowercase` — Principle #3 ("Always Lowercase").
+/// Also supports the "identifiers are never element names" decision:
+/// user-defined identifiers almost always have uppercase chars, so an
+/// element name with an uppercase char is a symptom of an identifier
+/// accidentally being promoted.
+///
+/// Severity: `Error`. Replaces the retired `all_node_names_are_lowercase`
+/// invariant from `tree_invariants.rs` (retired iter 314).
+fn check_node_name_lowercase(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if !name.chars().any(|c| c.is_ascii_uppercase()) {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "node-name-lowercase",
+            message: format!(
+                "<{name}> (line {line}) has uppercase chars — Principle #3 violation"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
+/// Rule `no-dash-in-node-name` — project convention is single-word
+/// element names, falling back to snake_case for multi-word concepts.
+/// Dashes invite ambiguity with arithmetic-minus when authoring
+/// queries, and they don't match the strum `serialize_all =
+/// "snake_case"` default that every output enum declares.
+///
+/// Severity: `Error`. Replaces the retired `no_dash_in_node_names`
+/// invariant from `tree_invariants.rs` (retired iter 314).
+fn check_no_dash_in_node_name(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if !name.contains('-') {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "no-dash-in-node-name",
+            message: format!(
+                "<{name}> (line {line}) contains a dash — use snake_case for multi-word names"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -546,6 +606,20 @@ pub static RULES: &[ShapeRule] = &[
         description: "Every <op> with canonical text from OPERATOR_MARKERS must carry its declared primary marker (catches language transforms that bypass `prepend_op_element`).",
         severity: Severity::Error,
         check: check_op_marker_matches_text,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "node-name-lowercase",
+        description: "Element names must be lowercase (Principle #3). Uppercase chars are a symptom of identifier promotion.",
+        severity: Severity::Error,
+        check: check_node_name_lowercase,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "no-dash-in-node-name",
+        description: "Element names must not contain dashes (project convention; use snake_case).",
+        severity: Severity::Error,
+        check: check_no_dash_in_node_name,
         grandfathered_max: None,
     },
 ];
