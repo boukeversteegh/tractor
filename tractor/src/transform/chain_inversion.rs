@@ -51,6 +51,34 @@ use xot::{Xot, Node as XotNode};
 
 use super::helpers::*;
 
+/// Element names that this module emits programmatically when it
+/// builds chain trees. Every language whose `post_transform` calls
+/// [`invert_chains_in_tree`] (or [`wrap_flat_call_member`]) MUST
+/// declare each of these in its `TractorNodeSpec` table — otherwise
+/// the runtime `name-declared-in-semantic-module` shape rule trips
+/// only when a fixture actually exercises that name.
+///
+/// Pinning the set here lets a test (see
+/// `tractor/tests/chain_inversion_emits.rs`) assert the contract
+/// statically across all chain-inverting languages, catching enum
+/// drift even when no blueprint exercises a particular name (e.g. a
+/// language with no `arr[i].field` chain in its blueprint still
+/// needs `<subscript>` declared because future code might add one).
+pub const EMITTED_NAMES: &[&str] = &[
+    // Chain root container (build_chain_tree, emit_chain).
+    "object",
+    // Empty-marker child of <object> distinguishing chain shape from
+    // object-literal shape (build_chain_tree).
+    "access",
+    // Step elements (build_step).
+    "member",
+    "call",
+    "subscript",
+    // Inner slot of a `<member>` step holding the property name
+    // (wrap_flat_call_member).
+    "property",
+];
+
 // =============================================================================
 // SEGMENT IR
 // =============================================================================
