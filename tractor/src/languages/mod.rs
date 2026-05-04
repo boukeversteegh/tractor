@@ -46,6 +46,46 @@ pub struct TractorNodeSpec {
     pub syntax: SyntaxCategory,
 }
 
+/// Per-name role classification — phase 2 of the transform-validation
+/// architecture (`docs/transform-validation-architecture.md` § 4).
+///
+/// Derived from `(marker, container)` for now so per-language enums
+/// don't need to declare it explicitly. As phase 2 progresses,
+/// stronger roles like `TextLeaf` (a `ContainerOnly` whose content is
+/// text-only, no element children — e.g. `<name>`) and
+/// `SlotWrapper { parents }` (a singleton role-slot under a specific
+/// parent — e.g. `<condition>` under `<if>`) will need explicit
+/// declaration; for now, `role()` returns `ContainerOnly` for those
+/// and they're handled by hand-coded invariants in
+/// `tree_invariants.rs`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NodeRole {
+    /// Empty element only (no text, no element children). E.g. `<async/>`.
+    MarkerOnly,
+    /// Container with content (text or element children). E.g. `<call>`.
+    ContainerOnly,
+    /// Both marker AND wrapper forms valid. E.g. `<new/>` AND
+    /// `<new>...</new>`. Implies the marker+wrapper collision invariant
+    /// is suppressed for this name.
+    DualUse,
+    /// Neither declared as marker nor container — the spec is
+    /// underspecified. Treat as `ContainerOnly` for now; tighten via
+    /// explicit declaration in phase 2.
+    Unspecified,
+}
+
+impl TractorNodeSpec {
+    /// Derive role from the legacy `(marker, container)` booleans.
+    pub fn role(&self) -> NodeRole {
+        match (self.marker, self.container) {
+            (true, false)  => NodeRole::MarkerOnly,
+            (false, true)  => NodeRole::ContainerOnly,
+            (true, true)   => NodeRole::DualUse,
+            (false, false) => NodeRole::Unspecified,
+        }
+    }
+}
+
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 

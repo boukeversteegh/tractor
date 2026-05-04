@@ -219,6 +219,71 @@ fn check_no_marker_wrapper_collision(
     });
 }
 
+/// Rule `marker-stays-empty` — first phase-2 migration: a name
+/// declared `NodeRole::MarkerOnly` in its language's
+/// `TractorNodeSpec` must, when emitted, be empty (no text, no
+/// element children).
+///
+/// Mirrors the existing `markers_stay_empty` invariant in
+/// `tree_invariants.rs` (asserted at zero since iter 67), but driven
+/// by the unified `NodeRole` derivation rather than the bespoke
+/// `is_marker_only_name` lookup. Phase 2 keeps both during migration;
+/// the hand-coded version retires once the role-driven walker has
+/// proven parity across cycles.
+///
+/// Severity: `Error`. Pinned at 0.
+fn check_marker_stays_empty(
+    xot: &Xot,
+    root: XotNode,
+    lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    let lookup = crate::languages::get_language(lang).and_then(|l| l.node_spec);
+    let Some(lookup) = lookup else { return };
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        let Some(spec) = lookup(&name) else { return };
+        if spec.role() != crate::languages::NodeRole::MarkerOnly {
+            return;
+        }
+        // MarkerOnly must be empty. Mirrors `is_empty_element` but
+        // with explicit reporting of which contamination was found.
+        if let Some(child) = xot.children(node).find(|&c| xot.element(c).is_some()) {
+            let child_name = get_element_name(xot, child).unwrap_or_default();
+            let line = get_attr(xot, node, "line").unwrap_or_default();
+            out.push(Violation {
+                rule_id: "marker-stays-empty",
+                message: format!(
+                    "<{name}/> (line {line}) is MarkerOnly but has element child <{child_name}>"
+                ),
+                severity: Severity::Error,
+            });
+            return;
+        }
+        if let Some(child) = xot.children(node).find(|&c| {
+            xot.text_str(c).map_or(false, |s| !s.trim().is_empty())
+        }) {
+            let text = xot
+                .text_str(child)
+                .map(|s| s.trim().to_string())
+                .unwrap_or_default();
+            let shown = if text.len() > 40 {
+                format!("{}…", &text[..40])
+            } else {
+                text
+            };
+            let line = get_attr(xot, node, "line").unwrap_or_default();
+            out.push(Violation {
+                rule_id: "marker-stays-empty",
+                message: format!(
+                    "<{name}/> (line {line}) is MarkerOnly but has text {shown:?}"
+                ),
+                severity: Severity::Error,
+            });
+        }
+    });
+}
+
 /// Rule `name-is-text-leaf` — `<name>` is reserved for identifier text
 /// leaves. Element children inside `<name>` indicate a wrapper that
 /// didn't get inlined (e.g. `<name><type>Foo</type></name>`).
@@ -268,6 +333,12 @@ pub static RULES: &[ShapeRule] = &[
         description: "Parent has both empty <X/> marker and <X>…</X> wrapper sibling — JSON key collision (iter 184 archetype).",
         severity: Severity::Error,
         check: check_no_marker_wrapper_collision,
+    },
+    ShapeRule {
+        id: "marker-stays-empty",
+        description: "A NodeRole::MarkerOnly element must have no text and no element children.",
+        severity: Severity::Error,
+        check: check_marker_stays_empty,
     },
     ShapeRule {
         id: "name-is-text-leaf",

@@ -97,8 +97,19 @@ impl TractorNode {
             | Self::Access
             | Self::Inclusive | Self::Exclusive
             | Self::Group | Self::Wildcard | Self::Reexport                            => (true, false, Default),
-            Self::Private | Self::Crate | Self::Super | Self::Mut | Self::Async
+            Self::Private | Self::Mut | Self::Async
             | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),
+            // `Crate` and `Super` are dual-use:
+            //   - empty `<crate/>` / `<super/>` marker for `pub(crate)`
+            //     / `pub(super)` visibility modifiers.
+            //   - `<crate>crate</crate>` / `<super>super</super>` text
+            //     leaf for path prefixes `crate::foo` / `super::foo`
+            //     (passthrough kind, source text preserved).
+            // Different parent contexts (`<pub>` vs `<path>`), so no
+            // marker/wrapper collision risk. Surfaced by the
+            // shape-contract `marker-stays-empty` rule (iter 294)
+            // when run on tractor's own source code via source_lint.
+            Self::Crate | Self::Super                                                  => (true, true, Keyword),
             Self::Try                                                                  => (true, false, Operator),
 
             // ---- Dual-use (marker AND container) -----------------------------
