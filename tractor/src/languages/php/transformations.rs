@@ -296,6 +296,12 @@ pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Err
 /// Deprecated PHP 4 `var $x` is equivalent to `public $x`; rewrite
 /// the marker name so cross-language `//field[public]` queries find
 /// both forms.
+///
+/// Empty modifier nodes (tree-sitter-php emits an empty
+/// `<static_modifier>` for non-static fields as a "presence absent"
+/// marker) are detached: absence of the corresponding marker
+/// (`<static/>`, etc.) means the property doesn't have it. Surfaced
+/// by iter 315's grammar-suffix migration attempt.
 pub fn modifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(text) = get_text_content(xot, node) {
         let text = text.trim().to_string();
@@ -306,7 +312,10 @@ pub fn modifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Er
             return Ok(TransformAction::Done);
         }
     }
-    Ok(TransformAction::Continue)
+    // Empty modifier node — detach (no semantic content; absence of
+    // the marker on the parent is the signal).
+    xot.detach(node)?;
+    Ok(TransformAction::Done)
 }
 
 /// `encapsed_string` — PHP interpolated string `"hello $name"` or
