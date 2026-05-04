@@ -17,7 +17,9 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use tractor::transform::shape_contracts::{validate_shape_contracts, Severity, Violation};
+use tractor::transform::shape_contracts::{
+    lookup_rule, validate_shape_contracts, Severity, Violation,
+};
 use tractor::{parse, ParseInput, ParseOptions};
 
 const DATA_LANG_EXTS: &[&str] = &["json", "yaml", "yml", "toml", "ini", "env"];
@@ -146,4 +148,25 @@ fn shape_contracts_against_blueprints() {
         error_total, 0,
         "shape-contract Error violations must be zero ({error_total} found)"
     );
+
+    // Ratchet check — for each rule with `grandfathered_max: Some(n)`,
+    // fail if the violation count exceeds `n`. Existing population
+    // stays grandfathered while new regressions are blocked. Decrement
+    // the constant in `RULES` as the population shrinks.
+    let mut ratchet_breaches: Vec<String> = Vec::new();
+    for ((rule_id, _severity), (count, _samples)) in &grouped {
+        let Some(rule) = lookup_rule(rule_id) else { continue };
+        let Some(max) = rule.grandfathered_max else { continue };
+        if *count > max {
+            ratchet_breaches.push(format!(
+                "[{rule_id}] count {count} exceeds grandfathered max {max} — a NEW regression site appeared"
+            ));
+        }
+    }
+    if !ratchet_breaches.is_empty() {
+        panic!(
+            "shape-contract grandfather ratchet breached:\n  {}",
+            ratchet_breaches.join("\n  ")
+        );
+    }
 }

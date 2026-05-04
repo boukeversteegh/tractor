@@ -65,6 +65,15 @@ pub struct ShapeRule {
     pub description: &'static str,
     pub severity: Severity,
     pub check: CheckFn,
+    /// Grandfather ratchet: when `Some(n)`, layer 1 (cargo test) fails
+    /// if the violation count exceeds `n`. The current population
+    /// stays grandfathered while the ratchet prevents *new*
+    /// regressions from sneaking in. Decrement as the population
+    /// shrinks; promote rule to `Severity::Error` once at zero.
+    /// `None` for rules that don't ratchet (Error rules are pinned
+    /// at zero by definition; Advisory rules without a ratchet just
+    /// report).
+    pub grandfathered_max: Option<usize>,
 }
 
 // ---------------------------------------------------------------------------
@@ -387,30 +396,43 @@ pub static RULES: &[ShapeRule] = &[
         description: "JSON children-overflow — same-name siblings collided on a singleton key without role-named slot wrappers or list= tagging.",
         severity: Severity::Advisory,
         check: check_no_children_overflow,
+        // 13 grandfathered sites as of iter 298: 9 in main languages
+        // (csharp 1, java 1, python 2, ts 1, rust 3, go 1) all in
+        // deferred design-call classes per iter 291's natural-pause
+        // note, plus 4 in tsql (3 in MERGE, 1 in WHEN INSERT). Any
+        // iter that introduces a new overflow site fails CI.
+        // Decrement when an overflow is closed; promote to
+        // `Severity::Error` (and drop the ratchet) when the count
+        // reaches zero.
+        grandfathered_max: Some(13),
     },
     ShapeRule {
         id: "no-marker-wrapper-collision",
         description: "Parent has both empty <X/> marker and <X>…</X> wrapper sibling — JSON key collision (iter 184 archetype).",
         severity: Severity::Error,
         check: check_no_marker_wrapper_collision,
+        grandfathered_max: None,
     },
     ShapeRule {
         id: "marker-stays-empty",
         description: "A NodeRole::MarkerOnly element must have no text and no element children.",
         severity: Severity::Error,
         check: check_marker_stays_empty,
+        grandfathered_max: None,
     },
     ShapeRule {
         id: "container-has-content",
         description: "A NodeRole::ContainerOnly element must have at least one child (text or element).",
         severity: Severity::Error,
         check: check_container_has_content,
+        grandfathered_max: None,
     },
     ShapeRule {
         id: "name-is-text-leaf",
         description: "<name> is reserved for identifier text leaves; element children indicate an un-inlined wrapper.",
         severity: Severity::Error,
         check: check_name_is_text_leaf,
+        grandfathered_max: None,
     },
 ];
 
@@ -426,6 +448,12 @@ pub fn validate_shape_contracts(xot: &Xot, root: XotNode, lang: &str) -> Vec<Vio
         (rule.check)(xot, root, lang, &mut out);
     }
     out
+}
+
+/// Look up a rule by id. Used by layer 1 (cargo integration test)
+/// to retrieve the grandfather ratchet.
+pub fn lookup_rule(id: &str) -> Option<&'static ShapeRule> {
+    RULES.iter().find(|r| r.id == id)
 }
 
 /// Debug-build entry point invoked from `transform::builder` after each
