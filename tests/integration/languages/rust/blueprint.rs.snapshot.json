@@ -362,9 +362,7 @@
         }
       ],
       "definition": true,
-      "names": [
-        "collect_pairs"
-      ]
+      "name": "collect_pairs"
     }
   ],
   "attributes": [
@@ -1246,9 +1244,7 @@
                           "s",
                           "x"
                         ],
-                        "strings": [
-                          "\"{}-{}\""
-                        ]
+                        "string": "\"{}-{}\""
                       }
                     ]
                   },
@@ -1400,9 +1396,7 @@
                   "arguments": [
                     {
                       "$type": "macro",
-                      "names": [
-                        "vec"
-                      ],
+                      "name": "vec",
                       "ints": [
                         "1",
                         "2",
@@ -1891,9 +1885,7 @@
                       "2",
                       "3"
                     ],
-                    "names": [
-                      "vec"
-                    ]
+                    "name": "vec"
                   }
                 }
               }
@@ -2238,9 +2230,7 @@
               "d",
               "name"
             ],
-            "strings": [
-              "\"name={}\""
-            ]
+            "string": "\"name={}\""
           }
         ]
       },
@@ -2307,12 +2297,8 @@
         "expressions": [
           {
             "macro": {
-              "strings": [
-                "\"never returns\""
-              ],
-              "names": [
-                "panic"
-              ]
+              "string": "\"never returns\"",
+              "name": "panic"
             }
           }
         ]
@@ -3226,9 +3212,7 @@
                     "2",
                     "3"
                   ],
-                  "names": [
-                    "vec"
-                  ]
+                  "name": "vec"
                 }
               }
             },
@@ -3339,9 +3323,7 @@
                 "println",
                 "GREETING"
               ],
-              "strings": [
-                "\"hello, {}\""
-              ]
+              "string": "\"hello, {}\""
             }
           }
         ]
