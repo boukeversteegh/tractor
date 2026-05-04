@@ -5,51 +5,41 @@
   ],
   "imports": [
     {
-      "names": [
-        "System"
-      ]
+      "name": "System"
     },
     {
-      "paths": [
-        {
-          "names": [
-            "System",
-            "Collections",
-            "Generic"
-          ]
-        }
-      ]
+      "path": {
+        "names": [
+          "System",
+          "Collections",
+          "Generic"
+        ]
+      }
     },
     {
-      "paths": [
-        {
-          "names": [
-            "System",
-            "Linq"
-          ]
-        }
-      ]
+      "path": {
+        "names": [
+          "System",
+          "Linq"
+        ]
+      }
     },
     {
-      "paths": [
-        {
-          "names": [
-            "System",
-            "Threading",
-            "Tasks"
-          ]
-        }
-      ]
+      "path": {
+        "names": [
+          "System",
+          "Threading",
+          "Tasks"
+        ]
+      }
     },
     {
-      "paths": [
-        {
-          "names": [
-            "System",
-            "Math"
-          ]
-        }
-      ]
+      "path": {
+        "names": [
+          "System",
+          "Math"
+        ]
+      }
     }
   ],
   "namespaces": [
@@ -3394,9 +3384,7 @@
       ],
       "imports": [
         {
-          "names": [
-            "System"
-          ]
+          "name": "System"
         }
       ],
       "comments": [

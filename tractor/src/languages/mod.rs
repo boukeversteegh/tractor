@@ -433,7 +433,12 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root,
-        &["body", "block", "unit", "namespace", "import", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
+        // `"import"` removed iter 305 — was creating 1-elem JSON arrays
+        // on singleton `<name>`/`<path>` children of `<import>` (each
+        // C# import has exactly 1 name OR 1 path, never multiple
+        // direct children needing list-tagging). Path's inner names
+        // are still tagged via `flatten_nested_paths`.
+        &["body", "block", "unit", "namespace", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
