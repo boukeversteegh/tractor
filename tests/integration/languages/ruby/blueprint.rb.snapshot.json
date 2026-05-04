@@ -8,11 +8,9 @@
             "arguments": [
               {
                 "$type": "string",
-                "interpolations": [
-                  {
-                    "name": "MAX_RETRIES"
-                  }
-                ]
+                "interpolation": {
+                  "name": "MAX_RETRIES"
+                }
               }
             ],
             "name": "puts"
@@ -1317,11 +1315,9 @@
               "expressions": [
                 {
                   "string": {
-                    "interpolations": [
-                      {
-                        "name": "name"
-                      }
-                    ]
+                    "interpolation": {
+                      "name": "name"
+                    }
                   }
                 }
               ]
@@ -1348,11 +1344,9 @@
                     "arguments": [
                       {
                         "$type": "string",
-                        "interpolations": [
-                          {
-                            "name": "msg"
-                          }
-                        ]
+                        "interpolation": {
+                          "name": "msg"
+                        }
                       }
                     ],
                     "name": "puts"
@@ -1615,11 +1609,9 @@
                               "then": {
                                 "expression": {
                                   "string": {
-                                    "interpolations": [
-                                      {
-                                        "name": "@name"
-                                      }
-                                    ]
+                                    "interpolation": {
+                                      "name": "@name"
+                                    }
                                   }
                                 }
                               }
@@ -2029,11 +2021,9 @@
                   "right": {
                     "expression": {
                       "string": {
-                        "interpolations": [
-                          {
-                            "name": "MAX_RETRIES"
-                          }
-                        ]
+                        "interpolation": {
+                          "name": "MAX_RETRIES"
+                        }
                       }
                     }
                   },

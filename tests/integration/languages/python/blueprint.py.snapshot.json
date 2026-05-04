@@ -2041,11 +2041,9 @@
                   "arguments": [
                     {
                       "$type": "string",
-                      "interpolations": [
-                        {
-                          "name": "n"
-                        }
-                      ]
+                      "interpolation": {
+                        "name": "n"
+                      }
                     }
                   ],
                   "name": "print"
@@ -2148,11 +2146,9 @@
                     },
                     {
                       "string": {
-                        "interpolations": [
-                          {
-                            "name": "name"
-                          }
-                        ]
+                        "interpolation": {
+                          "name": "name"
+                        }
                       }
                     }
                   ]

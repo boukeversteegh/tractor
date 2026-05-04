@@ -1671,14 +1671,12 @@
                       {
                         "expression": {
                           "template": {
-                            "interpolations": [
-                              {
-                                "expression": {
-                                  "name": "first",
-                                  "non_null": true
-                                }
+                            "interpolation": {
+                              "expression": {
+                                "name": "first",
+                                "non_null": true
                               }
-                            ]
+                            }
                           }
                         }
                       }
