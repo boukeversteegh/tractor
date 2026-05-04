@@ -135,7 +135,7 @@ program/
   │       │   └─ parameter[optional and readonly and private]/
   │       │       ├─ name = "seed"
   │       │       └─ type/name = "number"
-  │       ├─ method[abstract and public]/
+  │       ├─ method[public and abstract]/
   │       │   ├─ name = "render"
   │       │   └─ returns/type/name = "string"
   │       ├─ method[public and get]/

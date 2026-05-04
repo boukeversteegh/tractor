@@ -572,7 +572,10 @@ pub fn method_definition(xot: &mut Xot, node: XotNode) -> Result<TransformAction
 }
 
 /// `abstract_method_signature` — abstract class method. Extract
-/// markers, default public, rename METHOD with `<abstract/>` marker.
+/// markers, default public, rename METHOD. The `<abstract/>` marker
+/// is added by `extract_function_markers`'s call to
+/// `extract_field_modifiers` (the `abstract` keyword text is always
+/// present in tree-sitter's abstract_method_signature body).
 pub fn abstract_method_signature(
     xot: &mut Xot,
     node: XotNode,
@@ -581,8 +584,7 @@ pub fn abstract_method_signature(
     if !has_visibility_marker(xot, node) {
         xot.with_prepended_marker(node, Public)?;
     }
-    xot.with_renamed(node, Method)
-        .with_prepended_marker(node, Abstract)?;
+    xot.with_renamed(node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -703,6 +705,11 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
     if has_async {
         xot.with_prepended_marker(node, Async)?;
     }
+    // Also extract static/readonly/override/abstract modifiers
+    // (e.g. `static get singleton()`, `readonly foo()`). The
+    // `extract_field_modifiers` helper handles these idempotently
+    // and shares the modifier set with class fields.
+    extract_field_modifiers(xot, node)?;
     Ok(())
 }
 
