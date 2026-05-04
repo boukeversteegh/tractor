@@ -178,3 +178,55 @@ fn java_import_and_package() {
         "#),
         1);
 }
+
+/// Cross-language: every dotted/scoped import path renders as
+/// `<import>/<path>` with one `<name>` per segment in source order.
+/// The element name (`<import>`) and the path-flattening shape
+/// (`<path>` direct children = bare `<name>` segments) is the
+/// contract; languages differ only in the source-syntax sigils.
+///
+/// Pinning this in one place catches the archetype where a future
+/// per-language change re-introduces a nested `<path>/<path>` shape
+/// (Principle #2 / Principle #5) on one language while the others
+/// stay flat. Per-language imports.rs tests above pin one language at
+/// a time; this test pins them all uniformly.
+#[test]
+fn cross_language_import_path_flat_segments() {
+    let canonical = r#"
+        //import/path
+            [name='aaa']
+            [name='bbb']
+            [name='ccc']
+    "#;
+
+    for (lang, src) in &[
+        ("csharp", "using aaa.bbb.ccc;\n"),
+        ("java",   "import aaa.bbb.ccc;\n"),
+        ("python", "import aaa.bbb.ccc\n"),
+    ] {
+        claim(
+            &format!("{lang}: dotted import flattens to <import>/<path>/<name>+"),
+            &mut parse_src(lang, src),
+            &multi_xpath(canonical),
+            1,
+        );
+    }
+
+    // Rust's `use std::a::b::c;` uses `<use>` (per Rust idiom — `use`
+    // is a first-class language keyword, distinct from the import
+    // semantics) rather than `<import>`. The PATH SHAPE inside is
+    // identical though: `<path>/<name>+` flat segments, with the
+    // leaf lifted out to be `<use>`'s direct `<name>` child.
+    claim(
+        "rust: scoped use flattens its prefix to <use>/<path>/<name>+ with leaf as direct <name>",
+        &mut parse_src("rust", "use aaa::bbb::ccc;\n"),
+        &multi_xpath(r#"
+            //use
+                [path
+                    [name='aaa']
+                    [name='bbb']]
+                [name='ccc']
+        "#),
+        1,
+    );
+}
