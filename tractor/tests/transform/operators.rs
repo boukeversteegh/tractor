@@ -149,6 +149,39 @@ fn cross_language_binary_plus_extracts_op_marker() {
 
 // ---- unary ----------------------------------------------------------------
 
+/// Cross-language: the `<unary>[op[minus]]` extraction contract is
+/// the same xpath query across every language with prefix `-x`.
+/// Pinned uniformly to catch any future regression in unary
+/// operator extraction. Sister test to
+/// `cross_language_binary_plus_extracts_op_marker` (iter 334).
+///
+/// The xpath uses descendant-axis `//name='x'` for the operand
+/// because PHP wraps `$x` in a `<variable>` element while other
+/// languages have a bare `<name>` operand. Both produce a `<name>`
+/// somewhere within the `<unary>`.
+#[test]
+fn cross_language_unary_minus_extracts_op_marker() {
+    let canonical = "//unary[op[minus]]//name='x'";
+
+    for (lang, src) in &[
+        ("typescript", "let y = -x;"),
+        ("rust",       "fn f() { let _y = -x; }"),
+        ("java",       "class X { void f(int x) { int y = -x; } }"),
+        ("csharp",     "class X { void F(int x) { int y = -x; } }"),
+        ("go",         "package m\nfunc f(x int) int { return -x }"),
+        ("python",     "y = -x\n"),
+        ("php",        "<?php $y = -$x;"),
+        ("ruby",       "y = -x\n"),
+    ] {
+        claim(
+            &format!("{lang}: unary `-x` extracts <op[minus]> with <name>='x' operand somewhere inside"),
+            &mut parse_src(lang, src),
+            canonical,
+            1,
+        );
+    }
+}
+
 /// Unary expressions follow the same <op> extraction pattern as
 /// binary, with a single operand. The operator marker names which
 /// unary operator is in play (<minus/>, <not/>, …).
