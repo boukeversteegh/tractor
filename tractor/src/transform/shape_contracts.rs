@@ -617,6 +617,91 @@ fn check_no_grammar_kind_suffix(
     });
 }
 
+/// Element names where parent/child nesting of the same name is
+/// genuinely meaningful (recursive structures, not grammar-leak
+/// double-wraps). Each entry has a defensible reason; keep the list
+/// short.
+const REPEATED_NAME_WHITELIST: &[&str] = &[
+    // Nested module / namespace paths: `java.util.function` is a
+    // path-of-paths in tree-sitter's grammar.
+    "path",
+    // Pattern combinators (Ruby `case in`, Python `match`) compose:
+    // `pattern[alternative]/pattern[type]/...` is genuinely nested.
+    "pattern",
+    // Member-access chains `a.b.c`.
+    "member",
+    // Nested type expressions: `List<Map<String, T>>`.
+    "type",
+    // Composed function calls `f(g(x))`; method-chain shapes nest.
+    "call",
+    // Chained comparisons (`a < b < c`).
+    "compare",
+    // Binary expressions: `a + b * c`.
+    "binary",
+    // Ternaries can nest.
+    "ternary",
+    // Nested collection literals `[[1,2],[3,4]]`.
+    "list",
+    "dict",
+    "tuple",
+    // String concatenation / nested f-strings.
+    "string",
+    // Variable declarators with multiple bindings; some nesting cases.
+    "variable",
+    // TypeScript chained type assertions `<number>(<unknown>"42")`.
+    "as",
+    // Grouped imports/uses: `<use[group]>/<use>` / `<import[group]>/<import>`.
+    "use",
+    "import",
+    // Markdown headings nest by level: a `## Section` under `# Doc`
+    // produces `<section>/<section>`. Genuinely recursive; surfaced
+    // by iter 318's layer-2 coverage on the markdown CLI tests
+    // (the blueprint-scoped invariant didn't see markdown).
+    "section",
+    // TSX/JSX nested elements: `<div><span /></div>` produces
+    // `<element>/<element>`. Genuinely recursive.
+    "element",
+];
+
+/// Rule `no-repeated-parent-child-name` — flags `<X><X>...</X></X>`
+/// patterns where parent and immediate child share the same element
+/// name. Almost always a sign that two different rules independently
+/// produced the same wrapper name and one should Flatten or rename.
+///
+/// `REPEATED_NAME_WHITELIST` exempts genuinely-recursive structures.
+///
+/// Severity: `Error`. Replaces the retired `no_repeated_parent_child_name`
+/// invariant from `tree_invariants.rs` (retired iter 318).
+fn check_no_repeated_parent_child_name(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if REPEATED_NAME_WHITELIST.contains(&name.as_str()) {
+            return;
+        }
+        let Some(parent) = xot.parent(node) else { return };
+        let Some(parent_name) = get_element_name(xot, parent) else { return };
+        if parent_name != name {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "no-repeated-parent-child-name",
+            message: format!(
+                "<{name}> (line {line}) nested directly under <{name}> — likely a Flatten/rename gap"
+            ),
+            severity: Severity::Error,
+        });
+    });
+    // Note: walk_elements visits root as well; root has no parent
+    // element, so the early return on `xot.parent` covers it.
+    let _ = root;
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -698,6 +783,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "Element names must not end in tree-sitter grammar suffixes (e.g. _statement, _expression). Markdown <code_block> exempt.",
         severity: Severity::Error,
         check: check_no_grammar_kind_suffix,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "no-repeated-parent-child-name",
+        description: "<X><X>...</X></X> nesting is almost always a Flatten/rename gap. Recursive structures (path/pattern/member/type/call/etc.) are whitelisted.",
+        severity: Severity::Error,
+        check: check_no_repeated_parent_child_name,
         grandfathered_max: None,
     },
 ];
