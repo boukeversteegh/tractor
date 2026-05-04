@@ -430,6 +430,62 @@ fn check_kind_attribute_non_empty(
     });
 }
 
+/// Rule `op-marker-matches-text` — every `<op>` element whose trimmed
+/// text value matches an entry in the canonical cross-language
+/// `OPERATOR_MARKERS` table must carry that entry's `primary` marker
+/// (when one is declared) as a direct element child.
+///
+/// Catches:
+///   - A language that extracts operators but forgets to call the
+///     shared `prepend_op_element` helper.
+///   - A transform that attaches the wrong marker for a canonical op.
+///
+/// Graceful: unknown operator text (language-specific operators) is
+/// accepted without requirements; canonical entries with no `primary`
+/// marker (e.g. bare `=`) are exempt.
+///
+/// Severity: `Error`. Replaces the retired `op_marker_matches_text`
+/// invariant from `tree_invariants.rs` (retired iter 313).
+fn check_op_marker_matches_text(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    use crate::transform::operators::lookup_operator_spec;
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if name != "op" {
+            return;
+        }
+        let text: String = xot
+            .children(node)
+            .filter_map(|c| xot.text_str(c).map(|s| s.to_string()))
+            .collect::<Vec<_>>()
+            .join("");
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        let Some(spec) = lookup_operator_spec(trimmed) else { return };
+        let Some(primary) = spec.primary else { return };
+        let has_primary = xot
+            .children(node)
+            .any(|c| get_element_name(xot, c).as_deref() == Some(primary));
+        if has_primary {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "op-marker-matches-text",
+            message: format!(
+                "<op> (line {line}) text {trimmed:?} missing <{primary}/> primary marker"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -483,6 +539,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "Tree-sitter `kind` attributes must be non-empty when present (a transform that wiped the attribute would break per-kind dispatch).",
         severity: Severity::Error,
         check: check_kind_attribute_non_empty,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "op-marker-matches-text",
+        description: "Every <op> with canonical text from OPERATOR_MARKERS must carry its declared primary marker (catches language transforms that bypass `prepend_op_element`).",
+        severity: Severity::Error,
+        check: check_op_marker_matches_text,
         grandfathered_max: None,
     },
 ];

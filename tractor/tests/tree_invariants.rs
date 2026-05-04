@@ -26,10 +26,6 @@ const ASSERT_INVARIANTS: bool = true;
 const ASSERT_LOWERCASE: bool = true;
 const ASSERT_NO_UNDERSCORE: bool = true;
 const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
-// `op_marker_matches_text` checks that every `<op>` whose text is in
-// the canonical OPERATOR_MARKERS table carries the declared primary
-// marker. Unknown operators are accepted without requirements.
-const ASSERT_OP_MARKER: bool = true;
 // `no_repeated_parent_child_name` flags `<X><X>…</X></X>` patterns where
 // a parent and immediate child share the same element name (e.g.
 // `<body><body>` from iter 30/35, `<constraint><constraint>` from iter
@@ -491,83 +487,14 @@ fn no_grammar_kind_suffixes() {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Invariant 6: `<op>` marker matches its text.
-//
-// The canonical cross-language `OPERATOR_MARKERS` table
-// (`tractor::transform::operators::OPERATOR_MARKERS`) is the single
-// source of truth for operator → marker mapping. Every language's
-// `extract_operator` routes through `prepend_op_element`, which
-// consults this table. The invariant:
-//
-//   For every `<op>` element whose trimmed text value equals some
-//   entry in the table, that entry's `primary` marker (if any) MUST
-//   be present as a direct element child of the `<op>`.
-//
-// Unknown operator text = language-specific operator, accepted
-// without requirements (graceful degradation).
-//
-// This test catches:
-//   - A language that extracts operators but forgets to call the
-//     shared helper (so no marker gets attached).
-//   - A transform that attaches the wrong marker for a canonical op.
+// Invariant 6 (RETIRED iter 313): op_marker_matches_text migrated to
+// the spec-conformance walker. The shape-contract rule
+// `op-marker-matches-text` in `tractor/src/transform/shape_contracts.rs`
+// runs both via the cargo test (against blueprint fixtures) AND via
+// the debug-build assertion in `transform/builder.rs` (every transform
+// invocation). Strictly more coverage than the previous blueprint-only
+// walk.
 // ---------------------------------------------------------------------------
-
-#[test]
-fn op_marker_matches_text() {
-    use tractor::transform::operators::lookup_operator_spec;
-
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            if name != "op" {
-                return;
-            }
-            // Collect the text children; concat + trim so ops that sit
-            // inside whitespace (e.g. ` == `) collapse to their canonical form.
-            let text: String = xot
-                .children(node)
-                .filter_map(|c| xot.text_str(c).map(|s| s.to_string()))
-                .collect::<Vec<_>>()
-                .join("");
-            let trimmed = text.trim();
-            // Skip bare `<op>` with no text — rare edge case where the
-            // transform synthesized an op without source text.
-            if trimmed.is_empty() {
-                return;
-            }
-            let Some(spec) = lookup_operator_spec(trimmed) else {
-                return; // language-specific op, accepted as-is
-            };
-            let Some(primary) = spec.primary else {
-                return; // canonical op that intentionally has no marker (e.g. bare `=`)
-            };
-            let has_primary = xot.children(node).any(|c| {
-                element_name(xot, c).as_deref() == Some(primary)
-            });
-            if !has_primary {
-                report.record(
-                    "op",
-                    &fixture,
-                    format!("text {:?} missing <{}/> primary marker", trimmed, primary),
-                );
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print("Canonical operators must carry their declared marker");
-        if ASSERT_INVARIANTS && ASSERT_OP_MARKER {
-            panic!("<op> elements missing canonical marker");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 7: Every emitted element name is declared in the language's
