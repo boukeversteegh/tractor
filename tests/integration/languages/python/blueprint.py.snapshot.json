@@ -1562,9 +1562,15 @@
                   },
                   "pattern": {
                     "pattern": {
-                      "children": [
+                      "values": [
                         {
-                          "$type": "value",
+                          "expression": {
+                            "pattern": {
+                              "string": "\"ping\""
+                            }
+                          }
+                        },
+                        {
                           "expression": {
                             "pattern": {
                               "name": "pid"
@@ -1576,14 +1582,7 @@
                       "strings": [
                         "\"type\"",
                         "\"id\""
-                      ],
-                      "value": {
-                        "expression": {
-                          "pattern": {
-                            "string": "\"ping\""
-                          }
-                        }
-                      }
+                      ]
                     }
                   },
                   "compare": {

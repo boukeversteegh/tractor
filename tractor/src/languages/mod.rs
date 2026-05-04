@@ -1507,6 +1507,14 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             ("pattern", "int"),
             ("pattern", "string"),
             ("pattern", "name"),
+            // Dict patterns `case {"k1": v1, "k2": v2}:` produce
+            // `<pattern[dict]>` with multiple `<value>` siblings
+            // (one per key-value pair). The `<string>` keys are
+            // already list-tagged via `tag_multi_same_name_children`
+            // (`<string>` is in the global whitelist); the `<value>`
+            // children mirror that — role-uniform per Principle #19,
+            // each value paired with the same-position key.
+            ("pattern", "value"),
             // Python decorators stack on a function/class:
             // `@a\n@b\ndef f():`. Multiple `<decorator>` siblings
             // under `<function>` (or `<class>`) — role-uniform

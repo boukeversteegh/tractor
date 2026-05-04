@@ -133,6 +133,30 @@ fn python_union_pattern_lists_alternative_strings() {
         2);
 }
 
+/// Dict patterns `case {"k": v, ...}:` produce `<pattern[dict]>`
+/// with multiple `<value>` siblings. Already-listed `<string>`
+/// keys mirror via the global same-name whitelist; the `<value>`
+/// children become role-uniform `list='values'` so JSON renders
+/// as a homogeneous array instead of one value taking the
+/// singleton key and the rest overflowing into `children`.
+#[test]
+fn python_dict_pattern_lists_values() {
+    let mut tree = parse_src(
+        "python",
+        "match m:\n    case {\"a\": 1, \"b\": 2}:\n        pass\n",
+    );
+
+    claim("Python dict pattern keys tag as list='strings'",
+        &mut tree,
+        "//pattern[dict]/string[@list='strings']",
+        2);
+
+    claim("Python dict pattern values tag as list='values'",
+        &mut tree,
+        "//pattern[dict]/value[@list='values']",
+        2);
+}
+
 #[test]
 fn ruby_alternative_pattern_lists_alternative_ints() {
     claim("Ruby in-alternative of three ints tags each with list='ints'",
