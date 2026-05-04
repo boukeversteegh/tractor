@@ -546,6 +546,77 @@ fn check_no_dash_in_node_name(
     });
 }
 
+/// Element names exempt from the `no-grammar-kind-suffix` rule.
+/// Each entry should have a justification.
+const GRAMMAR_SUFFIX_EXEMPT: &[&str] = &[
+    // Markdown's `<code_block>` is the canonical name for fenced /
+    // indented code blocks. The trailing `_block` looks like a
+    // grammar suffix, but in markdown's vocabulary "code block" IS
+    // the user-facing concept. Renaming would break the existing
+    // CLI test `markdown_round_trip_extracts_javascript_block`
+    // (queries `//code_block`) and lose user-facing clarity. Iter
+    // 315 surfaced this; iter 317 ships the rule with this exemption
+    // after PHP empty-modifier nodes (the other iter-315 finding)
+    // got detached in iter 316.
+    "code_block",
+];
+
+/// Grammar-kind suffixes that indicate tree-sitter bleed-through.
+const GRAMMAR_SUFFIXES: &[&str] = &[
+    "_statement",
+    "_declaration",
+    "_expression",
+    "_clause",
+    "_specifier",
+    "_list",
+    "_literal",
+    "_modifier",
+    "_identifier",
+    "_block",
+    "_body",
+    "_parameter",
+    "_parameters",
+    "_argument",
+    "_arguments",
+    "_type",
+    "_definition",
+];
+
+/// Rule `no-grammar-kind-suffix` — no element name should end in a
+/// known tree-sitter grammar suffix (e.g. `if_statement`,
+/// `conditional_expression`). Catches kinds that didn't get a
+/// semantic rename.
+///
+/// Severity: `Error`. Replaces the retired `no_grammar_kind_suffixes`
+/// invariant from `tree_invariants.rs` (retired iter 317). Markdown's
+/// `<code_block>` is exempt per the GRAMMAR_SUFFIX_EXEMPT list.
+fn check_no_grammar_kind_suffix(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if GRAMMAR_SUFFIX_EXEMPT.contains(&name.as_str()) {
+            return;
+        }
+        for suffix in GRAMMAR_SUFFIXES {
+            if name.ends_with(suffix) {
+                let line = get_attr(xot, node, "line").unwrap_or_default();
+                out.push(Violation {
+                    rule_id: "no-grammar-kind-suffix",
+                    message: format!(
+                        "<{name}> (line {line}) ends in `{suffix}` — likely an unrenamed tree-sitter kind"
+                    ),
+                    severity: Severity::Error,
+                });
+                return;
+            }
+        }
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -620,6 +691,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "Element names must not contain dashes (project convention; use snake_case).",
         severity: Severity::Error,
         check: check_no_dash_in_node_name,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "no-grammar-kind-suffix",
+        description: "Element names must not end in tree-sitter grammar suffixes (e.g. _statement, _expression). Markdown <code_block> exempt.",
+        severity: Severity::Error,
+        check: check_no_grammar_kind_suffix,
         grandfathered_max: None,
     },
 ];

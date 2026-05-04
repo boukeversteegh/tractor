@@ -24,7 +24,6 @@ const ASSERT_INVARIANTS: bool = true;
 // Per-invariant gates. Flip to `true` once a given invariant is
 // at zero across all non-data fixtures.
 const ASSERT_NO_UNDERSCORE: bool = true;
-const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
 // `no_repeated_parent_child_name` flags `<X><X>…</X></X>` patterns where
 // a parent and immediate child share the same element name (e.g.
 // `<body><body>` from iter 30/35, `<constraint><constraint>` from iter
@@ -73,28 +72,6 @@ const ALLOWED_UNDERSCORE_NAMES: &[&str] = &[
     "non_null",
 ];
 
-/// Grammar-kind suffixes that indicate tree-sitter bleed-through.
-/// A transformed element name ending in any of these is almost
-/// always a tree-sitter node name we never gave a semantic rename.
-const GRAMMAR_SUFFIXES: &[&str] = &[
-    "_statement",
-    "_declaration",
-    "_expression",
-    "_clause",
-    "_specifier",
-    "_list",
-    "_literal",
-    "_modifier",
-    "_identifier",
-    "_block",
-    "_body",
-    "_parameter",
-    "_parameters",
-    "_argument",
-    "_arguments",
-    "_type",
-    "_definition",
-];
 
 // ---------------------------------------------------------------------------
 // Fixture discovery (shared with text_preservation; kept local for
@@ -366,50 +343,18 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 3: No grammar-kind suffixes.
+// Invariant 3 (RETIRED iter 317): no_grammar_kind_suffixes migrated to
+// the spec-conformance walker. The shape-contract rule
+// `no-grammar-kind-suffix` in `tractor/src/transform/shape_contracts.rs`
+// (with its own GRAMMAR_SUFFIXES list + GRAMMAR_SUFFIX_EXEMPT for
+// markdown's `<code_block>`) runs both via the cargo test (against
+// blueprint fixtures) AND via the debug-build assertion in
+// `transform/builder.rs` (every transform invocation). Strictly more
+// coverage than the previous blueprint-only walk.
 //
-// Complements #2 — even if someone renames `if_statement` → `if`,
-// they might miss `conditional_expression` → `ternary`. This flags
-// any element whose name ends in a known grammar suffix.
-//
-// Iter 315 attempted migration to a spec-contract rule but reverted —
-// running on every transform invocation (layer 2) revealed two
-// pre-existing issues the blueprint-scoped invariant never saw:
-// markdown's `<code_block>` (intentional name preserving the user-
-// facing concept) and PHP's `<static_modifier>` / `<visibility_modifier>`
-// (empty modifier nodes that the PHP `modifier` handler doesn't
-// rename when text is empty). Both deserve their own iters before
-// this rule can be promoted to layer 2 without exemption thrash.
+// Migration succeeded after iter 316 detached PHP empty modifier
+// nodes (the other iter-315 finding).
 // ---------------------------------------------------------------------------
-
-#[test]
-fn no_grammar_kind_suffixes() {
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            for suffix in GRAMMAR_SUFFIXES {
-                if name.ends_with(suffix) {
-                    report.record(&name, &fixture, String::new());
-                    return;
-                }
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print("No grammar-kind suffixes in element names");
-        if ASSERT_INVARIANTS && ASSERT_NO_GRAMMAR_SUFFIXES {
-            panic!("grammar-suffixed node names");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 4 (RETIRED iter 299): name_element_is_text_leaf migrated
