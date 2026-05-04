@@ -1901,17 +1901,15 @@
                         "right": {
                           "expression": {
                             "array": {
-                              "spreads": [
-                                {
-                                  "array": {
-                                    "ints": [
-                                      "4",
-                                      "5"
-                                    ]
-                                  },
-                                  "list": true
-                                }
-                              ],
+                              "spread": {
+                                "array": {
+                                  "ints": [
+                                    "4",
+                                    "5"
+                                  ]
+                                },
+                                "list": true
+                              },
                               "ints": [
                                 "1",
                                 "2",

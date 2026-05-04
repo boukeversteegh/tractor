@@ -2667,6 +2667,14 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // `tag_multi_same_name_children` call; cover this case
             // with the targeted role tag.)
             ("string", "string"),
+            // Ruby array literals `[1, 2, 3]` etc. Iter 323 dropped
+            // `"array"` from the bulk distribute config (was wrapping
+            // singleton spread `[*items]` cases in 1-elem JSON arrays).
+            // These targeted role tags cover the multi-cardinality
+            // element types that exist in the blueprint.
+            ("array", "int"),
+            ("array", "name"),
+            ("array", "object"),
         ],
     )?;
     crate::transform::wrap_body_value_children(
@@ -2682,7 +2690,11 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     ruby_tag_case_when_lists(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "program", "tuple", "list", "dict", "array", "hash", "template", "repetition"],
+        // `"array"` removed iter 323 — was wrapping singleton `<spread>`
+        // children of `[*items]` arrays in 1-elem JSON arrays.
+        // Targeted role tags above cover the multi-cardinality cases
+        // (int/name/object).
+        xot, root, &["body", "program", "tuple", "list", "dict", "hash", "template", "repetition"],
     )?;
     Ok(())
 }
