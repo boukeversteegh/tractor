@@ -213,6 +213,39 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 292 — shape contracts surfaced 4 tsql sites
+
+Phase 1 of the transform-validation architecture
+(`docs/transform-validation-architecture.md`) shipped iter 292 with
+the `no-children-overflow` rule running against ALL blueprints
+(previous audit only counted main 8 languages via JSON grep). The
+new tooling reports **13 advisory occurrences** total: 9 main-language
+sites (already known/deferred) + **4 tsql sites not previously
+tracked**:
+
+- [ ] `tsql/blueprint.sql:82` — `<statement>` (MERGE) has 2 untagged
+  `<when>` children. Role-uniform (each WHEN clause is one branch),
+  list-tag-able. Narrow fix candidate, BUT parent name `<statement>`
+  is the generic catch-all rename and may over-match other statement
+  kinds with WHEN. Verify scope before adding `("statement", "when")`
+  to a tsql `tag_multi_role_children` call. **Pre-fix question**: do
+  CASE / IF / other tsql statements also produce `<statement>` with
+  `<when>` children, or is MERGE the only one? Custom handler scoped
+  to `merge_statement` may be safer than generic role tag.
+- [ ] `tsql/blueprint.sql:82` — same `<statement>` has 2 untagged
+  `<ref>` and 2 untagged `<alias>` children (Target+t / Source+s).
+  Role-mixed (target vs source position); proper fix is slot
+  wrappers (e.g. `<into>` / `<using>` analogous to MERGE keywords).
+  Larger design call.
+- [ ] `tsql/blueprint.sql:85` — `<when>` has 2 untagged `<list>`
+  children (column-list `(ID, Name)` and values-list `(s.ID, s.Name)`
+  in `WHEN NOT MATCHED THEN INSERT ...`). Role-mixed (columns vs
+  values). Slot wrappers `<columns>` / `<values>` would disambiguate;
+  larger design call.
+
+Folds into the existing "TSQL `<from>` / `<case>` / `<call>`
+overflow" backlog item (severity LOW, ~6 sites).
+
 ### Iter 290 wind-down — children-overflow audit natural pause
 
 **Status (post-iter-290): 9 sites remaining across all 8 languages** —
@@ -821,6 +854,26 @@ python 46 → 30 (-16), php 17 → 14 (-3), ruby 41 → 17 (-24), tsql
 
 (Most-recent first. Older addressed items may be pruned periodically.)
 
+- [x] iter 292: **transform-validation phase 1 (layers 1+2).** Lands
+  shared predicate engine in `tractor/src/transform/shape_contracts.rs`
+  consumed by two invocation sites: cargo integration test
+  (`tractor/tests/shape_contracts.rs`, layer 1) iterating every
+  blueprint, plus debug-build assertion in
+  `transform/builder.rs:545` (layer 2) running every transform call.
+  Three starter rules: `no-children-overflow` (Advisory, 13 sites),
+  `no-marker-wrapper-collision` (Error, 0 sites — pinned),
+  `name-is-text-leaf` (Error, 0 sites — mirrors existing invariant
+  pending phase-2 migration). Architecture documented in
+  `docs/transform-validation-architecture.md`. Per user direction
+  during iter 291 wind-down: "this whole improvement layer deserves
+  its own design document."
+- [x] iter 291: backlog wind-down note — children-overflow audit
+  natural pause at 9 main-language sites (86% reduction from 64
+  baseline); remaining sites all in deferred design-call classes.
+- [x] iter 290: Rust assoc-type binding reuses `<type[associated]>`.
+  Rust 5 → 3 overflow.
+- [x] iter 289: Python dict-pattern values list-tag. Python 3 → 2.
+- [x] iter 288: Go slice_expression bounds wrap. Go 2 → 1.
 - [x] iter 231: pluralize all list= attribute values — added
   `pluralize_list_name(name)` helper with rules (consonant-y→ies,
   s/x/z/ch/sh→es, default+s) plus an already-plural override list.
