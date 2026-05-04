@@ -542,6 +542,17 @@ impl XeeBuilder {
                 if let Some(post_fn) = crate::languages::get_post_transform(lang) {
                     post_fn(self.documents.xot_mut(), doc_node)?;
                 }
+                // Layer 2 — debug-build shape-contract assertion. Same
+                // predicate as the cargo integration test; runs every
+                // transform invocation so regressions surface at first
+                // call rather than waiting for the next blueprint run.
+                // See `docs/transform-validation-architecture.md` § 3.
+                #[cfg(debug_assertions)]
+                crate::transform::shape_contracts::assert_shape_contracts(
+                    self.documents.xot(),
+                    doc_node,
+                    lang,
+                );
             }
             TreeMode::Data => {
                 // Single-branch data transform (caller already validated lang supports it)

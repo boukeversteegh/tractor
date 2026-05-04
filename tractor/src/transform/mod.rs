@@ -14,6 +14,7 @@ pub mod conditionals;
 pub mod data_keys;
 pub mod generic_type;
 pub mod operators;
+pub mod shape_contracts;
 pub mod singletons;
 
 use xot::{Xot, Node as XotNode, NameId};
