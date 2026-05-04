@@ -702,6 +702,91 @@ fn check_no_repeated_parent_child_name(
     let _ = root;
 }
 
+/// Element names where text content is intentionally free-form and
+/// not subject to keyword-leak detection (comment text, identifier
+/// text, string content, etc.).
+const KEYWORD_LEAK_FREE_FORM_PARENTS: &[&str] = &[
+    "comment", "name", "string", "symbol", "regex", "interpolation",
+    "template", "char", "escape",
+    // `<op>` text is a known operator; not a keyword leak.
+    "op",
+];
+
+/// Rule `no-anonymous-keyword-leak` — for every text leaf inside an
+/// output element whose trimmed content tokenizes into MARKER_ONLY
+/// keywords, every keyword token must have a sibling marker element of
+/// the same name. Catches Principle #2 / #7 regressions where a
+/// keyword token survived as text (good — preserves source) but the
+/// corresponding marker conversion was missed (bad — query-unfriendly).
+///
+/// Whitespace-tokenization with per-token check: if any token isn't a
+/// marker-only name, treat the whole text as identifier/expression
+/// (not a keyword leak) and skip.
+///
+/// Severity: `Error`. Replaces the retired `no_anonymous_keyword_leaks`
+/// invariant from `tree_invariants.rs` (retired iter 320).
+fn check_no_anonymous_keyword_leak(
+    xot: &Xot,
+    root: XotNode,
+    lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    use std::collections::HashSet;
+    if !crate::languages::has_semantic_vocabulary(lang) {
+        return;
+    }
+    walk_elements(xot, root, &mut |xot, node| {
+        let parent_name = get_element_name(xot, node);
+        if let Some(ref name) = parent_name {
+            if KEYWORD_LEAK_FREE_FORM_PARENTS.contains(&name.as_str()) {
+                return;
+            }
+        }
+        let element_children: HashSet<String> = xot
+            .children(node)
+            .filter_map(|c| get_element_name(xot, c))
+            .collect();
+        for child in xot.children(node) {
+            let Some(text) = xot.text_str(child) else { continue };
+            let trimmed = text.trim().trim_end_matches(';').trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let tokens: Vec<&str> = trimmed.split_whitespace().collect();
+            if tokens.is_empty() {
+                continue;
+            }
+            let all_keywords = tokens.iter().all(|t| {
+                crate::languages::is_marker_only_name(lang, t)
+                    || parent_name.as_deref() == Some(*t)
+            });
+            if !all_keywords {
+                continue;
+            }
+            for token in tokens {
+                if parent_name.as_deref() == Some(token) {
+                    continue;
+                }
+                if !crate::languages::is_marker_only_name(lang, token) {
+                    continue;
+                }
+                if element_children.contains(token) {
+                    continue;
+                }
+                let parent_name_str = parent_name.clone().unwrap_or_default();
+                let line = get_attr(xot, node, "line").unwrap_or_default();
+                out.push(Violation {
+                    rule_id: "no-anonymous-keyword-leak",
+                    message: format!(
+                        "keyword {token:?} in <{parent_name_str}> (line {line}) text without sibling <{token}/> marker"
+                    ),
+                    severity: Severity::Error,
+                });
+            }
+        }
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -790,6 +875,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "<X><X>...</X></X> nesting is almost always a Flatten/rename gap. Recursive structures (path/pattern/member/type/call/etc.) are whitelisted.",
         severity: Severity::Error,
         check: check_no_repeated_parent_child_name,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "no-anonymous-keyword-leak",
+        description: "Marker-only keyword in element text content must have a sibling <keyword/> marker (Principle #2/#7).",
+        severity: Severity::Error,
+        check: check_no_anonymous_keyword_leak,
         grandfathered_max: None,
     },
 ];
