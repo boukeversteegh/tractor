@@ -909,13 +909,22 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // `matches!(x, A | B)` and similar pattern-matching
             // macros expand into multiple `<arm>` children.
             ("macro", "arm"),
+            // Rust array literals `[1, 2, 3]` and
+            // `[counter, counter * 2, counter * 3]`. Iter 327 dropped
+            // `"array"` from the bulk distribute (was wrapping the
+            // singleton `<name>` in `[counter, counter*2, counter*3]`
+            // in a 1-elem JSON array). Targeted role tags here cover
+            // multi-cardinality element types in the blueprint.
+            ("array", "int"),
+            ("array", "binary"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "file", "tuple", "list", "dict", "array", "template", "repetition"],
+        // `"array"` removed iter 327 — see targeted role tags above.
+        xot, root, &["body", "block", "file", "tuple", "list", "dict", "template", "repetition"],
     )?;
     Ok(())
 }

@@ -3035,9 +3035,7 @@
                       }
                     }
                   ],
-                  "names": [
-                    "counter"
-                  ]
+                  "name": "counter"
                 }
               }
             },
