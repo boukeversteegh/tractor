@@ -213,6 +213,120 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 300 cold-read findings
+
+Cold-read pass spawned iter 300 (first since iters 233/186/197 cluster).
+Reviewer read every blueprint snapshot (.txt + .json) without prior
+context. 15 findings; severity per reviewer.
+
+- [ ] **TypeScript: two competing shapes for member/subscript
+  access** *(HIGH, principle #5 within-language)*. Sometimes
+  `<index><object/><name>` with `<member><object/><property>`,
+  elsewhere the standard `<object[access]><name/><member><name/></member></object[access]>`.
+  Two shapes for the same construct in the same file.
+  Reproduce: `tests/integration/languages/typescript/blueprint.ts.snapshot.txt:251-257, 346-348, 525-527` vs the standard form at line 144.
+  Querying TS member access now needs an XPath disjunction.
+
+- [ ] **Ruby: nested `left/expression/left/expression/left/...`
+  destructure** *(HIGH, looks like a transformation bug)*. Three
+  layers of `left/expression/left/` for `(_, a, b) = [10,20]`-style
+  multiple-assignment destructure. Likely the transform walks a
+  chained `multiple_assignment` and produces a left-spine instead of
+  flattening into a `pattern[destructured]/...` sibling list.
+  TS uses `pattern[array]/...` for the same concept.
+  Reproduce: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:577-580`.
+
+- [ ] **Rust: `if`/`while` `condition/` has role-mixed flat
+  children for `if let` and let-chains** *(HIGH, principle #19)*.
+  Each `expression/` sibling means something different (matched
+  constructor, bound name, scrutinee, guard) but they're presented as
+  a flat list of identical `expression` siblings. Querying "the
+  scrutinee of an `if let`" requires positional logic.
+  Reproduce: `tests/integration/languages/rust/blueprint.rs.snapshot.txt:536-541, 553-558, 897-912`.
+
+- [ ] **PHP `foreach`: `value/` is the iterable, not the element**
+  *(HIGH, cross-language semantic mismatch)*. `foreach/value/expression/variable/name = "items"`
+  uses `<value>` to mean "the thing iterated over." Everywhere else
+  `<value>` means an actual value (default, init, hash). For-style
+  loops in TS/Python/Ruby use `right/expression/...` for the
+  iterable.
+  Reproduce: `tests/integration/languages/php/blueprint.php.snapshot.txt:187`.
+
+- [ ] **Java: `<call[this]>/null` shape for `this(null)` lacks
+  `<argument>` wrapper** *(MEDIUM)*. The argument floats as a sibling
+  without the wrapper that other call sites use (`call[base]/argument/int=...`).
+  Reproduce: `tests/integration/languages/java/blueprint.java.snapshot.txt:67`.
+
+- [ ] **Ruby: `member[static]` chain has no object slot** *(MEDIUM,
+  principle #5 cross-language)*. `Configuration::Defaults` renders as
+  `member[static]/member[static]/name=Configuration/name=Defaults` —
+  no `<object>` or `<member>` slot. Other languages wrap in
+  `path/`, `<object[access]>`, etc.
+  Reproduce: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:549-551`.
+
+- [ ] **Rust: `pattern[or]/` flattens variants and bindings
+  together** *(MEDIUM)*. `Shape::Dot(0, y) | Shape::Dot(y, 0)` arm
+  renders as `pattern[or]/path/.../int=0/.../name=y/.../path/.../name=y/int=0` flat —
+  both alternatives merged into one sibling list. Cannot tell where
+  one pattern ends and the next begins.
+  Reproduce: `tests/integration/languages/rust/blueprint.rs.snapshot.txt:455-466, 469-475`.
+
+- [ ] **Rust: match-arm guard `condition/` sibling of pattern
+  parts** *(MEDIUM, cross-language)*. `arm/pattern/path.../name=x/name=y/condition/.../`
+  inlines guard with pattern bindings. Java uses
+  `label/.../guard/...`, C# uses sibling `when/`. Three different
+  homes for "switch arm guard."
+  Reproduce: `tests/integration/languages/rust/blueprint.rs.snapshot.txt:469-478, 491-494`.
+
+- [ ] **C#: switch `arm` vs `section[break]` duality** *(MEDIUM)*.
+  Switch-expression uses `arm/`; switch-statement uses
+  `section[break]/`. Different element names for what users treat as
+  "switch case." Java uses `arm/` for both. Also: `section[break] =
+  "default: break"` mixes "default case" marker with "fallthrough
+  with break."
+  Reproduce: `tests/integration/languages/csharp/blueprint.cs.snapshot.txt:438-460 vs 466-483`.
+
+- [ ] **Java: switch arm guard inside `label/` not named slot**
+  *(MEDIUM)*. `arm/label/pattern/.../guard/...` hides guard under
+  `label/`. C# uses sibling `when/`, Rust nests `condition/`.
+  Three different homes again.
+  Reproduce: `tests/integration/languages/java/blueprint.java.snapshot.txt:191-199`.
+
+- [ ] **PHP `member[constant]` divergent from plain `member`**
+  *(LOW-MEDIUM)*. PHP uses `member[constant]` for `Class::CONST`
+  but `member` for `$obj->prop`. C# uses plain `member` for enum
+  constants. Either normalize PHP or extend C#.
+  Reproduce: `tests/integration/languages/php/blueprint.php.snapshot.txt:25, 264-266`.
+
+- [ ] **PHP `foreach pair/` shape misleading** *(MEDIUM)*. PHP's
+  `key=>value` foreach binding uses `pair/`, which is the same name
+  used for hashmap entries everywhere. `//pair` returns both.
+  Reproduce: `tests/integration/languages/php/blueprint.php.snapshot.txt:188-190`.
+
+- [ ] **Python `match` arm guard `compare/` floats unwrapped**
+  *(MEDIUM)*. `arm/pattern/.../compare/.../then/...` — the guard sits
+  as a sibling without a role wrapper. Querying "match arm guard"
+  requires knowing it's the second-to-last child or specifically a
+  `compare`.
+  Reproduce: `tests/integration/languages/python/blueprint.py.snapshot.txt:401-405`.
+
+- [ ] **Cross-language import shape divergence** *(MEDIUM, known)*.
+  Six languages, 4+ shapes for "import this thing from this place."
+  Java/C# put the imported symbol as the last `name` in `path/`;
+  PHP/Rust put it as a sibling outside `path/`; Go renders as a
+  string. Already partially-tracked in older backlog items; cold-read
+  re-confirms the divergence is still present.
+
+**Sections noted clean** by the cold-read:
+- Most singleton role-slots (`condition`, `then`, `else`, `left`,
+  `right`, `value`) correctly collapse to JSON objects (no spurious
+  singleton arrays on intrinsic singletons).
+- Operator markers (`op[...]`) uniform across all 9 languages.
+- `<comment[leading]>` / `<comment[trailing]>` placement consistent.
+- Loop family (`for`/`while`/`do`) largely uniform.
+- Go and TS member-access alignment strong outside the TS shape
+  divergence above.
+
 ### Iter 292 — shape contracts surfaced 4 tsql sites
 
 Phase 1 of the transform-validation architecture
