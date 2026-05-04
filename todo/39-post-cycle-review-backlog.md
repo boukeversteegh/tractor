@@ -194,6 +194,22 @@ before committing a non-trivial change.
   both surfaces are clean. Don't add specific files by glob; if
   unsure, `git status` shows untracked snapshot files that need
   staging.
+- **Green tests ≠ no regression.** This is the meta-lesson that
+  unifies iters 184/213/275/283. The audit metric (`"children":
+  [` count) and `cargo test` together optimize for ONE failure
+  mode while staying silent about others: 1-element JSON arrays
+  on singleton role-slots, marker/wrapper name collisions,
+  cross-language divergence newly introduced, and unintended
+  snapshot churn in fixtures the iter didn't mean to touch. The
+  iter-205-to-213 episode is the canonical example: 121 sites
+  closed, ~2,389 new 1-element arrays created, 5 prior decisions
+  silently reversed — all while tests stayed green. The fix is
+  the strict-improvement gate codified in the loop plan
+  (`mossy-riding-parrot.md` § step 7a): before pushing, classify
+  every line of the snapshot diff as intended or
+  incidental-but-neutral; no unfixed regression on any
+  dimension. When in doubt, spawn a fresh diff-only reviewer
+  subagent. Push is the completion signal, not the commit.
 
 ## Open
 
