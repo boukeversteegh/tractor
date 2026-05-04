@@ -26,7 +26,7 @@ pub enum TractorNode {
     Echo, Continue, Break, Match, Arm, Yield, Require, Print, Exit, Declare, Goto,
     Clone, Unset, Label,
     // Expressions
-    Call, Member, Object, Property, Index, New, Cast, Assign, Binary, Unary, Ternary, Array,
+    Call, Member, Object, Property, Index, Subscript, New, Cast, Assign, Binary, Unary, Ternary, Array,
     Spread, Expression, Scope, Shell,
     // Types / atoms
     Type, String, Int, Float, Bool, Null, Variable,

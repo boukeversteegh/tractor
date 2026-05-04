@@ -40,7 +40,7 @@ pub enum TractorNode {
     Return, If, Else, ElseIf, For, Range, Switch, Case, Default, Defer, Go, Select,
     Break, Continue, Goto, Labeled, Label, Send, Receive, Assign, Fallthrough,
     // Expressions
-    Call, Member, Object, Property, Index, Binary, Unary, Assert, Closure, Literal, Expression,
+    Call, Member, Object, Property, Index, Subscript, Binary, Unary, Assert, Closure, Literal, Expression,
     // Slice-expression bounds (`s[i:j:k]`) — share `<from>`/`<to>`
     // vocabulary with Rust ranges (iter 270) and Ruby ranges (iter 180);
     // Capacity is the optional third bound.

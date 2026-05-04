@@ -28,7 +28,7 @@ pub enum TractorNode {
     // Control flow additions
     Assert, Block, Break, Continue, Do, Instanceof, Yield,
     // Expressions
-    Call, New, Member, Object, Property, Index, Assign, Binary, Unary, Lambda, Ternary,
+    Call, New, Member, Object, Property, Index, Subscript, Assign, Binary, Unary, Lambda, Ternary,
     Annotation, Expression,
     // Expression additions
     Cast, Reference,
