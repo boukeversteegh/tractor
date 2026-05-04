@@ -369,7 +369,7 @@
   ],
   "attributes": [
     {
-      "children": [
+      "$children": [
         "dead_code",
         "unused_variables",
         "unused_imports",
@@ -379,14 +379,14 @@
       "name": "allow"
     },
     {
-      "children": [
+      "$children": [
         "Debug",
         "Clone"
       ],
       "name": "derive"
     },
     {
-      "children": [
+      "$children": [
         "Debug"
       ],
       "name": "derive"

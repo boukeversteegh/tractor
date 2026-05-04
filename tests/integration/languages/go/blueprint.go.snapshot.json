@@ -399,7 +399,7 @@
             "expression": {
               "object": {
                 "call": {
-                  "children": [
+                  "$children": [
                     {
                       "$type": "object",
                       "access": true,

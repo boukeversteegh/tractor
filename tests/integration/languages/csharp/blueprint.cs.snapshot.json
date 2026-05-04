@@ -2935,7 +2935,7 @@
                         },
                         {
                           "new": {
-                            "children": [
+                            "$children": [
                               "Value"
                             ],
                             "anonymous": true,

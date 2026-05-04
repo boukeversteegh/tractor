@@ -2239,7 +2239,7 @@
                 "dict": {
                   "spreads": [
                     {
-                      "children": [
+                      "$children": [
                         {
                           "$type": "dict",
                           "literal": true,
@@ -2258,7 +2258,7 @@
                       "dict": true
                     },
                     {
-                      "children": [
+                      "$children": [
                         {
                           "$type": "dict",
                           "literal": true,

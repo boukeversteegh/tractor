@@ -108,7 +108,8 @@ fn is_empty_element(xot: &Xot, node: XotNode) -> bool {
 /// - children carrying `list="X"` are grouped into one JSON array;
 /// - children without `list=` lift one as the singleton JSON key for
 ///   that name, and remaining untagged siblings fall through to an
-///   anonymous `children:` overflow array.
+///   anonymous `$children:` overflow array (sigil-prefixed so a real
+///   `<children>` element name doesn't collide).
 ///
 /// Therefore the actual overflow condition is **2+ untagged children
 /// sharing a name** under the same parent. (Mixed "1 untagged + N
@@ -146,7 +147,7 @@ fn check_no_children_overflow(
             out.push(Violation {
                 rule_id: "no-children-overflow",
                 message: format!(
-                    "<{parent_name}> (line {line}) has {count} untagged <{name}> children — JSON children: overflow",
+                    "<{parent_name}> (line {line}) has {count} untagged <{name}> children — JSON $children: overflow",
                 ),
                 severity: Severity::Advisory,
             });

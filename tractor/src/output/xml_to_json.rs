@@ -12,9 +12,14 @@
 //! - Field-backed text-only leaves collapse to plain strings:
 //!   `<name field="name">Foo</name>` → parent gets `"name": "Foo"`
 //! - Field-backed structural nodes become objects WITHOUT `$type`:
-//!   `<body field="body">...</body>` → parent gets `"body": { "children": [...] }`
+//!   `<body field="body">...</body>` → parent gets `"body": { "$children": [...] }`
 //! - Non-field text-only leaves keep compact form: `<accessor>get;</accessor>` → `{"accessor": "get;"}`
-//! - Non-field structural nodes get `$type`: `{"$type": "method", "children": [...]}`
+//! - Non-field structural nodes get `$type`: `{"$type": "method", "$children": [...]}`
+//!
+//! Sigil-prefixed keys (`$type`, `$children`, `$truncated`) are reserved
+//! for serializer artifacts and never collide with element names — an
+//! element literally named `<children>` would render as a bare `children`
+//! key, distinct from `$children`.
 //!
 //! Attributes in the raw fragment (location metadata like `start`, `end`, etc.) are
 //! silently ignored — except `field` which drives the singleton detection.
@@ -26,7 +31,11 @@ use crate::output::query_tree_renderer::count_descendant_elements;
 
 const KEY_TYPE: &str = "$type";
 const KEY_TEXT: &str = "text";
-const KEY_CHILDREN: &str = "children";
+/// Anonymous-overflow array for same-name siblings that don't all
+/// fit a singleton key or `list=`-tagged array. Sigil-prefixed so an
+/// element literally named `<children>` renders as a bare `children`
+/// key, distinct from this serializer artifact.
+const KEY_CHILDREN: &str = "$children";
 /// When a subtree is elided at `--depth`, the parent object carries
 /// this key with the count of descendant elements that were dropped —
 /// mirroring the text renderer's `... (N children)` marker so readers

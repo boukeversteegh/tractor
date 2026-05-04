@@ -1019,7 +1019,7 @@
       }
     },
     {
-      "children": [
+      "$children": [
         {
           "$type": "ref",
           "name": "Source"
@@ -1037,7 +1037,7 @@
               }
             ]
           },
-          "children": [
+          "$children": [
             {
               "$type": "list",
               "columns": [

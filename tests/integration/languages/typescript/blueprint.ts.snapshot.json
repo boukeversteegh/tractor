@@ -307,7 +307,7 @@
                 "value": {
                   "expression": {
                     "object": {
-                      "children": [
+                      "$children": [
                         {
                           "$type": "call",
                           "name": "split",

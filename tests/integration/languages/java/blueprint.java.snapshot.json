@@ -1011,7 +1011,7 @@
                     "object": {
                       "call": {
                         "object": {
-                          "children": [
+                          "$children": [
                             {
                               "$type": "call",
                               "name": "getSimpleName"
