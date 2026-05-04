@@ -87,4 +87,17 @@ fn java_method_call() {
     "#),
         "//call[super]",
         1);
+
+    // `super.method()` exercises the wrapper-form of <super>: the
+    // member-access object is `<super>super</super>` (text leaf), NOT
+    // an empty <super/> marker. Pinning this exercises layer 2's
+    // shape-contract assertion (`marker-stays-empty` + Super declared
+    // DualUse iter 296), which catches the same archetype as iter
+    // 294 Rust Crate/Super and iter 295 C# Struct.
+    claim("Java super.method() member access wraps <super> as text leaf",
+        &mut parse_src("java", r#"
+        class X { Object f() { return super.toString(); } }
+    "#),
+        "//super[. = 'super']",
+        1);
 }

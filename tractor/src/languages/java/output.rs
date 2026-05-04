@@ -85,8 +85,7 @@ impl TractorNode {
             Self::Trailing | Self::Leading                                          => (true, false, Default),
             Self::Public | Self::Private | Self::Protected
             | Self::Static | Self::Final | Self::Abstract
-            | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp
-            | Self::Super                                                           => (true, false, Keyword),
+            | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp     => (true, false, Keyword),
             Self::Void | Self::Variadic | Self::Compact | Self::Prefix
             | Self::Receiver | Self::Resource
             | Self::Access
@@ -95,7 +94,14 @@ impl TractorNode {
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Record                                                            => (true, true, Default),
             Self::Type                                                              => (true, true, Type),
-            Self::Package | Self::This                                              => (true, true, Keyword),
+            // Super is dual-use: empty `<super/>` marker on `<call[super]>`
+            // for `super(...)` constructor calls, AND text leaf
+            // `<super>super</super>` for `super.field` / `super.method()`
+            // member access. Surfaced by the iter 294/295 archetype:
+            // declared MarkerOnly that ALSO has a passthrough text-leaf
+            // form must be DualUse. The blueprint exercises the marker
+            // form (super() constructor call) but not the wrapper form.
+            Self::Package | Self::This | Self::Super                                => (true, true, Keyword),
             // Class: container for class_declaration + marker for class_literal
             // Synchronized: marker on method + container for synchronized_statement
             Self::Class | Self::Synchronized                                        => (true, true, Keyword),
