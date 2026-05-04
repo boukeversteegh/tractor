@@ -213,6 +213,66 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 325 wind-down — phase 2 + audit cluster complete
+
+**State (post-iter-325)**: the loop has reached a natural pause after
+~26 consecutive iters of validation tooling, distribute-config audit,
+and invariant migration work. Three independent compounding
+improvements all stable:
+
+**Validation tooling** (iter 292+):
+- 9 spec-contract rules active in
+  `tractor/src/transform/shape_contracts.rs`, running both via
+  cargo integration test (layer 1) AND debug-build assertion in
+  every `post_transform` (layer 2).
+- Strict-improvement gate (loop step 7a) mechanized for the major
+  regression archetypes — Error-severity rules block at CI.
+- Grandfather ratchet (iter 298) lets advisory rules block NEW
+  regressions while existing population stays grandfathered.
+
+**Distribute-config audit** (iters 302-311 + 323-324):
+- ~342 JSON lines saved across **10 trap classes closed**:
+  `switch`, `import`, `literal`, `namespace`, `string`, `template`,
+  `macro`, Go-only `array`, Ruby-only `array`, TS-only `array`.
+- Pattern: drop bulk on role-mixed parents; add targeted
+  `(parent, child)` role tags for multi-cardinality children.
+- Ratchet caught + helped fix several mid-iter regressions
+  (iter 306 / 307 / 309).
+
+**Invariant migration** (iters 312-322):
+- **11 of 12 original hand-coded invariants** in `tree_invariants.rs`
+  now spec-driven. Tree invariants 12 → 1 hand-coded.
+- The remaining 1 (`no_underscore_in_node_names_except_whitelist`)
+  has a static rule-table side that's fundamentally a build-time
+  check; appropriate to keep hand-coded.
+- Three deferred-migration cycles demonstrated end-to-end (revert →
+  fix root cause → retry): iter 315→316→317, iter 319→320,
+  iter 321→322.
+
+**Cross-cutting transform names** (iter 321/325):
+- `Subscript` declared in all 6 main programming-language enums
+  (chain inverter emits it for `arr[0].field` chains).
+
+**Remaining known work** (all need user direction or design judgment):
+- 11 cold-read findings still open (iter 300 list above), several
+  flagged HIGH but each needs design review:
+  - PHP foreach `<value>` for iterable + `<pair>` shape collision
+  - Ruby destructure left-spine bug
+  - Java/C#/Rust switch-arm guard cross-language naming
+  - C# anonymous-object name collision (deferred design class)
+  - Chain-receiver-call collisions (deferred class — see iter 291)
+- 9 children-overflow sites grandfathered (iter 291 wind-down list)
+- TSQL MERGE shape (iter 292 finding — needs scope verification)
+
+**Next iter loop pickup**: when user explicitly directs OR a fresh
+cold-read pass surfaces new tractable items. The autonomous-pickup
+options have been exhausted; remaining work is design-y or
+cross-cutting and benefits from human input.
+
+The strict-improvement gate (iter 292) and ratchet (iter 298) remain
+the primary defenses against future regressions. Both proven to
+work mid-iter across this cluster.
+
 ### Iter 315 — grammar-suffix migration revealed pre-existing issues
 
 Attempted migration of `no_grammar_kind_suffixes` from
