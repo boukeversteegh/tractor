@@ -292,3 +292,34 @@ fn rust_impl_implements_slot() {
         "//type[dynamic]/implements",
         0);
 }
+
+/// Rust associated-type bindings `Drawable<Canvas = Vec<u8>>` reuse
+/// the `<type[associated]>` shape from the trait declaration site
+/// (`type Canvas;`) per Principle #5 — same concept, same name. The
+/// use-site adds a `<type>` child for the bound value; the
+/// declaration-site has only a `<name>`. Without this shape the
+/// trait name and the binding key would both surface as `<name>`
+/// siblings under `<type[generic]>`, colliding on the singleton
+/// JSON `name` key and overflowing the second into `children`.
+#[test]
+fn rust_associated_type_binding() {
+    claim("Rust trait declaration site `type Canvas;` is <type[associated]>",
+        &mut parse_src("rust", "trait T { type Canvas; }"),
+        "//trait/body/type[associated][name='Canvas'][not(type)]",
+        1);
+
+    claim("Rust use-site binding `Drawable<Canvas = Vec<u8>>` wraps key+value in <type[associated]>",
+        &mut parse_src("rust", "fn f(d: &dyn Drawable<Canvas = Vec<u8>>) {}"),
+        &multi_xpath(r#"
+            //type[generic][name='Drawable']
+                /type[associated]
+                    [name='Canvas']
+                    [type[generic][name='Vec']/type[name='u8']]
+        "#),
+        1);
+
+    claim("trait name no longer collides with binding key as bare <name> siblings",
+        &mut parse_src("rust", "fn f(d: &dyn Drawable<Canvas = Vec<u8>>) {}"),
+        "//type[generic][name='Drawable']/name",
+        1);
+}

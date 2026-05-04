@@ -250,10 +250,11 @@ file/
   │       └─ type[bounded]/
   │           ├─ type[dynamic]/type[generic]/
   │           │   ├─ name = "Drawable"
-  │           │   ├─ name = "Canvas"
-  │           │   └─ type[generic]/
-  │           │       ├─ name = "Vec"
-  │           │       └─ type/name = "u8"
+  │           │   └─ type[associated]/
+  │           │       ├─ name = "Canvas"
+  │           │       └─ type[generic]/
+  │           │           ├─ name = "Vec"
+  │           │           └─ type/name = "u8"
   │           └─ lifetime/name = "a"
   ├─ alias[pub]/
   │   ├─ name = "Callback"
@@ -639,10 +640,11 @@ file/
   │   │       ├─ lifetime/name = "a"
   │   │       └─ type[dynamic]/type[generic]/
   │   │           ├─ name = "Drawable"
-  │   │           ├─ name = "Canvas"
-  │   │           └─ type[generic]/
-  │   │               ├─ name = "Vec"
-  │   │               └─ type/name = "u8"
+  │   │           └─ type[associated]/
+  │   │               ├─ name = "Canvas"
+  │   │               └─ type[generic]/
+  │   │                   ├─ name = "Vec"
+  │   │                   └─ type/name = "u8"
   │   ├─ returns/type[bounded]/
   │   │   ├─ type[abstract]/type/name = "Display"
   │   │   └─ lifetime/name = "a"

@@ -875,21 +875,25 @@
             "bounded": true,
             "type": {
               "type": {
-                "children": [
-                  "Canvas"
+                "arguments": [
+                  {
+                    "$type": "type",
+                    "associated": true,
+                    "name": "Canvas",
+                    "type": {
+                      "arguments": [
+                        {
+                          "$type": "type",
+                          "name": "u8"
+                        }
+                      ],
+                      "generic": true,
+                      "name": "Vec"
+                    }
+                  }
                 ],
                 "generic": true,
-                "name": "Drawable",
-                "type": {
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "name": "u8"
-                    }
-                  ],
-                  "generic": true,
-                  "name": "Vec"
-                }
+                "name": "Drawable"
               },
               "dynamic": true
             },
@@ -2261,21 +2265,25 @@
           "type": {
             "type": {
               "type": {
-                "children": [
-                  "Canvas"
+                "arguments": [
+                  {
+                    "$type": "type",
+                    "associated": true,
+                    "name": "Canvas",
+                    "type": {
+                      "arguments": [
+                        {
+                          "$type": "type",
+                          "name": "u8"
+                        }
+                      ],
+                      "generic": true,
+                      "name": "Vec"
+                    }
+                  }
                 ],
                 "generic": true,
-                "name": "Drawable",
-                "type": {
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "name": "u8"
-                    }
-                  ],
-                  "generic": true,
-                  "name": "Vec"
-                }
+                "name": "Drawable"
               },
               "dynamic": true
             },

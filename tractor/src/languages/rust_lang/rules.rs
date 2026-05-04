@@ -35,7 +35,13 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         // ---- RenameWithMarker ------------------------------------------
         RustKind::AbstractType          => RenameWithMarker(Type, Abstract),
         RustKind::ArrayType             => RenameWithMarker(Type, Array),
+        // Both the trait declaration site (`type Canvas;` inside a
+        // trait body) AND the use-site binding (`Canvas = Vec<u8>` inside
+        // generic args, e.g. `Drawable<Canvas = Vec<u8>>`) emit
+        // `<type[associated]>` per Principle #5 — same concept, same
+        // name. The use-site adds a `<type>` child for the bound value.
         RustKind::AssociatedType        => RenameWithMarker(Type, Associated),
+        RustKind::TypeBinding           => RenameWithMarker(Type, Associated),
         RustKind::AsyncBlock            => RenameWithMarker(Block, Async),
         RustKind::BaseFieldInitializer  => RenameWithMarker(Field, Base),
         RustKind::BoundedType           => RenameWithMarker(Type, Bounded),
@@ -136,7 +142,6 @@ pub fn rule(k: RustKind) -> Rule<TractorNode> {
         | RustKind::TokenTree
         | RustKind::TokenTreePattern
         | RustKind::TupleStructPattern
-        | RustKind::TypeBinding
         | RustKind::UseAsClause
         | RustKind::UseList
         | RustKind::UseWildcard => Flatten { distribute_list: None },
