@@ -375,13 +375,18 @@ context. 15 findings; severity per reviewer.
   Iter 347 reverted with no commit; needs subagent design review
   before retry covering these three concerns.
 
-- [ ] **PHP `foreach`: `value/` is the iterable, not the element**
-  *(HIGH, cross-language semantic mismatch)*. `foreach/value/expression/variable/name = "items"`
-  uses `<value>` to mean "the thing iterated over." Everywhere else
-  `<value>` means an actual value (default, init, hash). For-style
-  loops in TS/Python/Ruby use `right/expression/...` for the
-  iterable.
-  Reproduce: `tests/integration/languages/php/blueprint.php.snapshot.txt:187`.
+- [x] ~~**PHP `foreach`: `value/` is the iterable, not the element**~~
+  *(HIGH; CLOSED iter 349)*. PHP foreach now uses `<right>` for the
+  iterable and `<left>` for the binding, matching TS/C#/Python's
+  `for x in items` shape. Cold-read finding closed.
+
+  Java and Ruby `for ... in` STILL use `<value>` for iterable —
+  same divergence pattern. Separate iters (each has its own Custom
+  handler / rule path). Follow-up:
+  - Java `enhanced_for_statement` Custom handler.
+  - Ruby `for` Custom handler — also has the `"in"` text leaf inside
+    `<value>` slot (`<value>"in"<expression>...</expression></value>`)
+    which complicates the rename.
 
 - [ ] **Java: `<call[this]>/null` shape for `this(null)` lacks
   `<argument>` wrapper** *(MEDIUM)*. The argument floats as a sibling
