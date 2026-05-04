@@ -3099,8 +3099,10 @@ pub fn get_singleton_wrappers(lang: &str) -> &'static [&'static str] {
 /// languages, unknown names, and dual-use names (which set both
 /// `marker: true` and `container: true` in the NODES table).
 ///
-/// Used by the `markers_stay_empty` invariant to assert that names
-/// declared as marker-only never carry text or element children.
+/// Used by the `marker-stays-empty` shape-contract rule (in
+/// `tractor/src/transform/shape_contracts.rs`) to assert that names
+/// declared `NodeRole::MarkerOnly` never carry text or element
+/// children.
 pub fn is_marker_only_name(lang: &str, name: &str) -> bool {
     match get_language(lang).and_then(|l| l.node_spec).and_then(|f| f(name)) {
         Some(spec) => spec.marker && !spec.container,

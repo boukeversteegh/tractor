@@ -27,11 +27,6 @@ const ASSERT_LOWERCASE: bool = true;
 const ASSERT_NO_UNDERSCORE: bool = true;
 const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
 const ASSERT_NAME_IS_TEXT_LEAF: bool = true;
-// `markers_stay_empty` now checks the per-language MARKER_ONLY
-// declaration in each language's `semantic` module — any name listed
-// there must be empty (no text, no element children) everywhere it
-// appears. Precise, no heuristic.
-const ASSERT_MARKERS_STAY_EMPTY: bool = true;
 // `op_marker_matches_text` checks that every `<op>` whose text is in
 // the canonical OPERATOR_MARKERS table carries the declared primary
 // marker. Unknown operators are accepted without requirements.
@@ -48,12 +43,6 @@ const ASSERT_KIND_NON_EMPTY: bool = true;
 // iter 45). See docs/self-improvement.md "Cross-cutting invariant
 // tests".
 const ASSERT_NO_REPEATED_NAME: bool = true;
-// `containers_have_content_or_are_absent` flags container-only
-// elements (per language `TractorNodeSpec` declarations) that
-// appear as empty leaf elements. An empty `<int/>` or `<name/>`
-// almost always means a transform detached the inner content but
-// left the wrapper. Now asserted (zero violations as of iter 49).
-const ASSERT_CONTAINER_NON_EMPTY: bool = true;
 // `no_anonymous_keyword_leaks` flags text leaves whose trimmed
 // content matches a per-language MARKER_ONLY name when no marker
 // child of that name is present as a sibling under the same
@@ -524,81 +513,19 @@ fn name_element_is_text_leaf() {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 5: Markers stay empty.
-//
-// Principle #7 + the modifiers-as-empty-elements decision: any name
-// declared in a language's `semantic::MARKER_ONLY` slice must, when
-// emitted, be empty (no text, no element children). The per-language
-// declaration is the source of truth — this test is just a mechanical
-// assertion.
-//
-// Names that double as structural containers in some contexts (e.g.
-// `struct`, `type`, `function`) are intentionally OMITTED from each
-// language's MARKER_ONLY slice, so they're never flagged here.
+// Invariant 5 (RETIRED iter 297): markers_stay_empty migrated to the
+// spec-conformance walker. The shape-contract rule
+// `marker-stays-empty` in `tractor/src/transform/shape_contracts.rs`
+// is driven by `NodeRole::MarkerOnly` and runs both via the cargo
+// test (`tractor/tests/shape_contracts.rs`, against blueprint
+// fixtures) AND via the debug-build assertion in
+// `transform/builder.rs` (every transform invocation, including
+// per-test source). Strictly more coverage than the previous
+// blueprint-only walk; iters 294/295/296 demonstrate the broader
+// coverage caught real bugs the hand-coded version missed for
+// years (Rust Crate/Super, C# Struct, Java Super dual-use
+// misclassifications).
 // ---------------------------------------------------------------------------
-
-#[test]
-fn markers_stay_empty() {
-    let mut report = Report::default();
-
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(lang) = lang_from_ext(ext) else { continue };
-        if !tractor::languages::has_semantic_vocabulary(lang) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            if !tractor::languages::is_marker_only_name(lang, &name) {
-                return;
-            }
-            // Marker element must have no element children and no
-            // non-whitespace text children.
-            let element_child = xot.children(node).find(|&c| xot.element(c).is_some());
-            let text_child = xot
-                .children(node)
-                .find(|&c| xot.text_str(c).map(|s| !s.trim().is_empty()).unwrap_or(false));
-            if let Some(child) = element_child {
-                let child_name = element_name(xot, child).unwrap_or_default();
-                report.record(
-                    &name,
-                    &fixture,
-                    format!("has element child <{}>", child_name),
-                );
-            } else if let Some(child) = text_child {
-                let text = xot
-                    .text_str(child)
-                    .map(|s| s.trim().to_string())
-                    .unwrap_or_default();
-                let shown = if text.len() > 40 {
-                    format!("{}…", &text[..40])
-                } else {
-                    text
-                };
-                report.record(
-                    &name,
-                    &fixture,
-                    format!("has text {:?}", shown),
-                );
-            }
-        });
-    }
-
-    if !report.is_empty() {
-        report.print(
-            "Principle #7 — MARKER_ONLY names must be empty (no text, no element children)",
-        );
-        if ASSERT_INVARIANTS && ASSERT_MARKERS_STAY_EMPTY {
-            panic!("marker elements with content");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 6: `<op>` marker matches its text.
@@ -946,82 +873,14 @@ fn check_repeated(
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 10: Container-only elements must have content.
-//
-// Per per-language `TractorNodeSpec`: an element declared
-// `marker: false, container: true` is a structural container (e.g.
-// `<call>`, `<name>`, `<type>`, `<body>`). It MUST contain children
-// (text or elements) when present — empty container instances
-// indicate a transform detached inner content but left the wrapper
-// behind (e.g. the empty `<name/>` and `<int/>` inside a TSQL CAST
-// when keyword children are detached).
-//
-// Marker-only and dual-use names are exempt — empty is their
-// expected shape (or one of two valid shapes for dual-use).
+// Invariant 10 (RETIRED iter 297): containers_have_content_or_are_absent
+// migrated to the spec-conformance walker. The shape-contract rule
+// `container-has-content` in `tractor/src/transform/shape_contracts.rs`
+// is driven by `NodeRole::ContainerOnly` and runs both via the cargo
+// test (against blueprint fixtures) AND via the debug-build assertion
+// in `transform/builder.rs` (every transform invocation). Strictly
+// more coverage than the previous blueprint-only walk.
 // ---------------------------------------------------------------------------
-
-#[test]
-fn containers_have_content_or_are_absent() {
-    use tractor::languages::{get_language, is_field_wrapper_name};
-    use tractor::transform::operators::is_operator_marker_name;
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let lang = match lang_from_ext(ext) {
-            Some(l) => l,
-            None => continue,
-        };
-        let lookup = match get_language(lang).and_then(|l| l.node_spec) {
-            Some(f) => f,
-            None => continue,
-        };
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            // Skip operator markers / field wrappers — handled elsewhere.
-            if is_operator_marker_name(&name) || is_field_wrapper_name(lang, &name) {
-                return;
-            }
-            // Look up per-language declaration.
-            let spec = match lookup(&name) {
-                Some(s) => s,
-                None => return, // Unknown name handled by other invariants.
-            };
-            // Only enforce on container-only declarations. Dual-use
-            // (marker AND container) is exempt — empty is valid as a
-            // marker.
-            if !(spec.container && !spec.marker) {
-                return;
-            }
-            // Element is empty if it has no element children AND
-            // no non-whitespace text children.
-            let has_element_child = xot.children(node).any(|c| xot.element(c).is_some());
-            let has_real_text = xot.children(node).any(|c| {
-                xot.text_str(c).map_or(false, |t| !t.trim().is_empty())
-            });
-            if !has_element_child && !has_real_text {
-                report.record(
-                    &name,
-                    &fixture,
-                    format!("<{name}/> is empty (container declared, content expected)"),
-                );
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print(
-            "Container-only elements must have content (no empty `<container/>`)",
-        );
-        if ASSERT_INVARIANTS && ASSERT_CONTAINER_NON_EMPTY {
-            panic!("empty containers");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 11: No anonymous keyword leaks.
