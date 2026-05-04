@@ -371,6 +371,15 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
 // Complements #2 — even if someone renames `if_statement` → `if`,
 // they might miss `conditional_expression` → `ternary`. This flags
 // any element whose name ends in a known grammar suffix.
+//
+// Iter 315 attempted migration to a spec-contract rule but reverted —
+// running on every transform invocation (layer 2) revealed two
+// pre-existing issues the blueprint-scoped invariant never saw:
+// markdown's `<code_block>` (intentional name preserving the user-
+// facing concept) and PHP's `<static_modifier>` / `<visibility_modifier>`
+// (empty modifier nodes that the PHP `modifier` handler doesn't
+// rename when text is empty). Both deserve their own iters before
+// this rule can be promoted to layer 2 without exemption thrash.
 // ---------------------------------------------------------------------------
 
 #[test]

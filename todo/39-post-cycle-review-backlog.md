@@ -213,6 +213,36 @@ before committing a non-trivial change.
 
 ## Open
 
+### Iter 315 — grammar-suffix migration revealed pre-existing issues
+
+Attempted migration of `no_grammar_kind_suffixes` from
+`tree_invariants.rs` to a spec-contract rule (continuing iters
+312/313/314 invariant migration). The layer-2 coverage (every
+transform invocation) revealed two pre-existing grammar-suffix
+issues the blueprint-scoped invariant never saw:
+
+- [ ] **Markdown `<code_block>`** — markdown's vocabulary uses
+  `<code_block>` for fenced + indented blocks. Trailing `_block`
+  matches the grammar-suffix pattern. Either rename to a
+  non-underscored alternative (e.g. `<code>` is taken by the inner
+  text element; would need a different name like `<fenced>` /
+  `<block>`?) OR justify keeping `code_block` as the canonical name
+  (markdown idiom + breaks existing CLI test
+  `markdown_round_trip_extracts_javascript_block`).
+
+- [ ] **PHP empty `<static_modifier>` / `<visibility_modifier>`** —
+  PHP's `modifier` Custom handler at
+  `tractor/src/languages/php/transformations.rs:299` only renames
+  when `text.trim()` is non-empty; empty modifier nodes survive with
+  their grammar kind name. Tree-sitter-php emits empty modifier
+  nodes for some default-public field declarations. Fix: either
+  Detach empty modifier nodes (no semantic content) or rename
+  unconditionally to a placeholder marker.
+
+Iter 315 reverted the migration. Once both issues land, the
+`no-grammar-kind-suffix` rule can be added to shape_contracts.rs and
+the hand-coded `no_grammar_kind_suffixes` retired.
+
 ### Iter 300 cold-read findings
 
 Cold-read pass spawned iter 300 (first since iters 233/186/197 cluster).
