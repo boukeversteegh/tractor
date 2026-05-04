@@ -386,9 +386,9 @@ file/
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "sub"
   │       │   └─ right/expression/index[slice]/
-  │       │       ├─ name = "fixed"
-  │       │       ├─ int = "1"
-  │       │       └─ int = "3"
+  │       │       ├─ object/name = "fixed"
+  │       │       ├─ from/int = "1"
+  │       │       └─ to/int = "3"
   │       ├─ variable[short]/
   │       │   ├─ left/expression/name = "chRecvOnly"
   │       │   └─ right/expression/call[type]/
@@ -407,7 +407,7 @@ file/
   │       │   └─ right/expression/call/
   │       │       ├─ name = "variadic"
   │       │       ├─ string = "\"nums\""
-  │       │       └─ spread/index[slice]/name = "fixed"
+  │       │       └─ spread/index[slice]/object/name = "fixed"
   │       ├─ switch/
   │       │   ├─ value/expression/index/
   │       │   │   ├─ object/name = "implicit"

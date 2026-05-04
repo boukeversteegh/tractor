@@ -287,6 +287,40 @@ fn go_index_expression_wraps_operand() {
         1);
 }
 
+/// Go `s[i:j]` / `s[i:j:k]` / `s[:]` slice expression — wraps the
+/// operand in `<object>` (matching `index_expression` iter 284) and
+/// the bounds in `<from>` / `<to>` / `<capacity>` slots so two
+/// `<int>` siblings don't collide on a singleton JSON key. The
+/// `<slice/>` marker remains so `//index[slice]` still picks slice
+/// ops out. Vocabulary mirrors Rust ranges (iter 270) and Ruby
+/// ranges (iter 180) per Principle #5.
+#[test]
+fn go_slice_expression_wraps_bounds() {
+    let mut tree = parse_src("go", r#"
+        package m
+        func f(s []int) []int {
+            _ = s[1:3]
+            _ = s[1:3:4]
+            return s[:]
+        }
+    "#);
+
+    claim("Go `s[1:3]` wraps operand in <object>, bounds in <from>/<to>",
+        &mut tree,
+        "//index[slice][object/name='s'][from/int='1'][to/int='3'][not(capacity)]",
+        1);
+
+    claim("Go `s[1:3:4]` adds <capacity> slot",
+        &mut tree,
+        "//index[slice][object/name='s'][from/int='1'][to/int='3'][capacity/int='4']",
+        1);
+
+    claim("Go `s[:]` slice has neither <from> nor <to>",
+        &mut tree,
+        "//index[slice][object/name='s'][not(from)][not(to)]",
+        1);
+}
+
 /// PHP `$arr[$key]` subscript expression — wraps the operand in
 /// `<object>` so the array variable doesn't collide with the
 /// index variable on the JSON `variable` key. Mirrors Go iter 284.

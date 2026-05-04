@@ -14,9 +14,9 @@ use crate::transform::{TransformAction, helpers::*};
 
 use super::input::GoKind;
 use super::output::TractorNode::{
-    self, Alias, Blank, Comment as CommentName, Dot, Else, Exported, Field, For, Function, If,
-    Import, Index, Interface, Leading, Method, Name, Object, Path, Raw, Short, String as GoString,
-    Struct, Trailing, Type, Unexported, Variable,
+    self, Alias, Blank, Capacity, Comment as CommentName, Dot, Else, Exported, Field, For, From,
+    Function, If, Import, Index, Interface, Leading, Method, Name, Object, Path, Raw, Short,
+    Slice, String as GoString, Struct, To, Trailing, Type, Unexported, Variable,
 };
 
 /// `qualified_type` — `pkg.Name`. Wraps the package identifier in
@@ -304,6 +304,31 @@ pub fn type_alias(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 /// scopes the wrap to `index_expression`.
 pub fn index_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     xot.with_wrapped_field_child(node, "operand", Object)?
+        .with_renamed(node, Index);
+    Ok(TransformAction::Continue)
+}
+
+/// `slice_expression` — `s[i:j]`, `s[i:j:k]`, `s[:]`. Shares the
+/// `<index[slice]>` shape with `index_expression` (`//index[slice]`
+/// picks slice ops out cross-language). Tree-sitter tags children with
+/// `field="operand"` (the array/slice being sliced), `field="start"`
+/// (low bound), `field="end"` (high bound), `field="capacity"`
+/// (three-index form).
+///
+/// Wrap operand in `<object>` (matching `index_expression`), and the
+/// bounds in `<from>` / `<to>` / `<capacity>` slot wrappers so two
+/// `<int>` siblings (e.g. `s[1:3]`) don't collide on a singleton JSON
+/// key. Vocabulary mirrors Rust ranges (iter 270) and Ruby ranges
+/// (iter 180) per Principle #5.
+///
+/// `Slice` marker is prepended manually (not via `RenameWithMarker`)
+/// because Custom handlers don't get the marker treatment.
+pub fn slice_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    xot.with_wrapped_field_child(node, "operand", Object)?
+        .with_wrapped_field_child(node, "start", From)?
+        .with_wrapped_field_child(node, "end", To)?
+        .with_wrapped_field_child(node, "capacity", Capacity)?
+        .with_prepended_marker(node, Slice)?
         .with_renamed(node, Index);
     Ok(TransformAction::Continue)
 }

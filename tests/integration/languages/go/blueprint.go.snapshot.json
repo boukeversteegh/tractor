@@ -1223,7 +1223,9 @@
                     {
                       "$type": "spread",
                       "index": {
-                        "name": "fixed",
+                        "object": {
+                          "name": "fixed"
+                        },
                         "slice": true
                       }
                     }
@@ -1354,12 +1356,16 @@
             "right": {
               "expression": {
                 "index": {
-                  "children": [
-                    "3"
-                  ],
+                  "to": {
+                    "int": "3"
+                  },
                   "slice": true,
-                  "name": "fixed",
-                  "int": "1"
+                  "object": {
+                    "name": "fixed"
+                  },
+                  "from": {
+                    "int": "1"
+                  }
                 }
               }
             },

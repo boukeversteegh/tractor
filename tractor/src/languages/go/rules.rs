@@ -205,10 +205,15 @@ pub fn rule(k: GoKind) -> Rule<TractorNode> {
         // grouped with floats.
         GoKind::ImaginaryLiteral => Rename(Float),
 
-        // `slice_expression` (`s[i:j]`) shares the index-access shape
-        // with a `<slice/>` marker — `//index[slice]` picks slice ops out.
+        // `slice_expression` (`s[i:j]`, `s[i:j:k]`, `s[:]`) shares the
+        // index-access shape with a `<slice/>` marker — `//index[slice]`
+        // picks slice ops out. The Custom handler wraps `field="operand"`
+        // in `<object>` (matching index_expression iter 284) and the
+        // bounds `field="start"`/`field="end"`/`field="capacity"` in
+        // `<from>` / `<to>` / `<capacity>` slots so two-`<int>` siblings
+        // can't collide on a singleton JSON key.
         // (Slice is dual-use: container for slice types, marker here.)
-        GoKind::SliceExpression => RenameWithMarker(Index, Slice),
+        GoKind::SliceExpression => Custom(transformations::slice_expression),
 
         // `type_conversion_expression` (`T(x)`) is semantically a call
         // whose callee position is a type. `<call[type]>` so
