@@ -30,10 +30,6 @@ const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
 // the canonical OPERATOR_MARKERS table carries the declared primary
 // marker. Unknown operators are accepted without requirements.
 const ASSERT_OP_MARKER: bool = true;
-// `kind_attribute_is_non_empty` asserts that every tree-sitter-originated
-// element (one with a `kind` attribute) has a non-empty kind value. A
-// transform that accidentally wiped the attribute would surface here.
-const ASSERT_KIND_NON_EMPTY: bool = true;
 // `no_repeated_parent_child_name` flags `<X><X>…</X></X>` patterns where
 // a parent and immediate child share the same element name (e.g.
 // `<body><body>` from iter 30/35, `<constraint><constraint>` from iter
@@ -650,56 +646,14 @@ fn all_names_declared_in_semantic_module() {
 }
 
 // ---------------------------------------------------------------------------
-// Invariant 8: Tree-sitter-originated nodes preserve their `kind`.
-//
-// Every node the builder emits from a tree-sitter parse carries a
-// `kind` attribute recording the original grammar kind. Per-language
-// transforms dispatch on that kind (via `get_kind`) in preference to
-// the element name so that walk-order doesn't matter — a parent
-// handler inspecting a child's role should see the same kind it had
-// at parse time, regardless of whether the child's element name has
-// already been renamed.
-//
-// This invariant guards the property: if a node has a `kind` attribute
-// at all, its value is non-empty. A transform that accidentally cleared
-// the attribute (e.g. by re-creating the element from scratch rather
-// than renaming it) would show up here.
-//
-// Builder-synthesised wrappers (field wrappers, comment wrappers, op
-// markers, etc.) legitimately have NO `kind` attribute — we only check
-// the attribute when it's present, so wrappers don't trigger the gate.
+// Invariant 8 (RETIRED iter 312): kind_attribute_is_non_empty migrated
+// to the spec-conformance walker. The shape-contract rule
+// `kind-attribute-non-empty` in `tractor/src/transform/shape_contracts.rs`
+// runs both via the cargo test (against blueprint fixtures) AND via
+// the debug-build assertion in `transform/builder.rs` (every transform
+// invocation). Strictly more coverage than the previous blueprint-only
+// walk.
 // ---------------------------------------------------------------------------
-
-#[test]
-fn kind_attribute_is_non_empty() {
-    use tractor::transform::helpers::get_attr;
-
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            let Some(kind) = get_attr(xot, node, "kind") else {
-                return; // Builder wrapper, no tree-sitter origin.
-            };
-            if kind.is_empty() {
-                report.record(
-                    &name,
-                    &fixture,
-                    format!("<{}> has empty kind=\"\"", name),
-                );
-            }
-        });
-    }
-    if !report.is_empty() {
-        report.print("Tree-sitter `kind` attributes must be non-empty");
-        if ASSERT_INVARIANTS && ASSERT_KIND_NON_EMPTY {
-            panic!("empty kind attributes");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 9: No repeated parent/child same-name nesting.

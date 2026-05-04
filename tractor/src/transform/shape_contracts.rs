@@ -387,6 +387,49 @@ fn check_name_is_text_leaf(
     });
 }
 
+/// Rule `kind-attribute-non-empty` — every node the builder emits
+/// from a tree-sitter parse carries a `kind` attribute recording the
+/// original grammar kind. Per-language transforms dispatch on the
+/// kind (via `get_kind`) in preference to the element name so that
+/// walk-order doesn't matter — a parent handler inspecting a child's
+/// role should see the same kind it had at parse time, regardless of
+/// whether the child's element name has already been renamed.
+///
+/// Invariant: if a node has a `kind` attribute at all, its value is
+/// non-empty. A transform that accidentally cleared the attribute
+/// (e.g. by re-creating the element from scratch rather than renaming
+/// it) would surface here.
+///
+/// Builder-synthesised wrappers (field wrappers, comment wrappers,
+/// op markers, etc.) legitimately have NO `kind` attribute — only
+/// nodes WITH the attribute are checked.
+///
+/// Severity: `Error`. Replaces the retired
+/// `kind_attribute_is_non_empty` invariant from `tree_invariants.rs`
+/// (retired iter 312).
+fn check_kind_attribute_non_empty(
+    xot: &Xot,
+    root: XotNode,
+    _lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        let Some(kind) = get_attr(xot, node, "kind") else { return };
+        if !kind.is_empty() {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "kind-attribute-non-empty",
+            message: format!(
+                "<{name}> (line {line}) has empty kind=\"\" — tree-sitter origin attribute was wiped"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -433,6 +476,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "<name> is reserved for identifier text leaves; element children indicate an un-inlined wrapper.",
         severity: Severity::Error,
         check: check_name_is_text_leaf,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "kind-attribute-non-empty",
+        description: "Tree-sitter `kind` attributes must be non-empty when present (a transform that wiped the attribute would break per-kind dispatch).",
+        severity: Severity::Error,
+        check: check_kind_attribute_non_empty,
         grandfathered_max: None,
     },
 ];
