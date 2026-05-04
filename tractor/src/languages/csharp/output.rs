@@ -138,9 +138,15 @@ impl TractorNode {
             Self::Throw | Self::Return | Self::Break | Self::Continue
             | Self::Yield                                                       => (true, true, Keyword),
 
-            // Class: dual-use — container for `class Foo {…}` declaration;
-            // marker for generic constraint `where T : class, new()`.
-            Self::Class                                                         => (true, true, Keyword),
+            // Class / Struct: dual-use — container for `class Foo {…}` /
+            // `struct Foo {…}` declaration; marker for generic
+            // constraints `where T : class` / `where T : struct`.
+            // Surfaced by the shape-contract `container-has-content`
+            // rule (iter 295) when run on `where T : struct`-style
+            // constraints; the marker form had been declared
+            // ContainerOnly. Same archetype as iter 294's Rust
+            // Crate/Super fix.
+            Self::Class | Self::Struct                                          => (true, true, Keyword),
             // `This` is dual-use: marker form `[this]` on extension-method
             // receiver parameter (`public static void M(this string s)`),
             // AND a name-like self-reference that legitimately appears as
@@ -151,7 +157,7 @@ impl TractorNode {
 
             // ---- Containers with non-default syntax --------------------------
             Self::Namespace | Self::Import
-            | Self::Struct | Self::Interface | Self::Enum | Self::Record
+            | Self::Interface | Self::Enum | Self::Record
             | Self::If | Self::Else | Self::For | Self::Foreach | Self::While
             | Self::Do | Self::Try | Self::Catch | Self::Finally
             | Self::Using

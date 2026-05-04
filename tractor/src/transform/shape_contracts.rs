@@ -284,6 +284,66 @@ fn check_marker_stays_empty(
     });
 }
 
+/// Rule `container-has-content` — phase 2 migration of the
+/// `containers_have_content_or_are_absent` invariant in
+/// `tree_invariants.rs` (asserted at zero since iter 49). Driven by
+/// `NodeRole::ContainerOnly` rather than the bespoke
+/// `(spec.container && !spec.marker)` check.
+///
+/// A name declared `ContainerOnly` must, when emitted, have at least
+/// one child (text or element). An empty `<X/>` declared as
+/// `ContainerOnly` indicates the transform detached the inner content
+/// but left the wrapper behind.
+///
+/// Operator markers (from the shared `OPERATOR_MARKERS` table) and
+/// field wrappers (per-language builder-inserted slot wrappers) are
+/// exempt — they're not in the language's `TractorNodeSpec` table and
+/// have their own invariants. `Unspecified` (neither marker nor
+/// container declared) is also exempt; tighten via explicit
+/// declaration in phase 2.
+///
+/// Severity: `Error`. Pinned at 0.
+fn check_container_has_content(
+    xot: &Xot,
+    root: XotNode,
+    lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    use crate::transform::operators::is_operator_marker_name;
+    let lookup = crate::languages::get_language(lang).and_then(|l| l.node_spec);
+    let Some(lookup) = lookup else { return };
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        // Skip operator markers and field wrappers — outside the
+        // per-language NodeSpec table; covered by other invariants.
+        if is_operator_marker_name(&name)
+            || crate::languages::is_field_wrapper_name(lang, &name)
+        {
+            return;
+        }
+        let Some(spec) = lookup(&name) else { return };
+        if spec.role() != crate::languages::NodeRole::ContainerOnly {
+            return;
+        }
+        // ContainerOnly must have content (text or element children).
+        let has_element_child = xot.children(node).any(|c| xot.element(c).is_some());
+        let has_real_text = xot
+            .children(node)
+            .any(|c| xot.text_str(c).map_or(false, |t| !t.trim().is_empty()));
+        if has_element_child || has_real_text {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "container-has-content",
+            message: format!(
+                "<{name}/> (line {line}) is ContainerOnly but empty — content expected"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
 /// Rule `name-is-text-leaf` — `<name>` is reserved for identifier text
 /// leaves. Element children inside `<name>` indicate a wrapper that
 /// didn't get inlined (e.g. `<name><type>Foo</type></name>`).
@@ -339,6 +399,12 @@ pub static RULES: &[ShapeRule] = &[
         description: "A NodeRole::MarkerOnly element must have no text and no element children.",
         severity: Severity::Error,
         check: check_marker_stays_empty,
+    },
+    ShapeRule {
+        id: "container-has-content",
+        description: "A NodeRole::ContainerOnly element must have at least one child (text or element).",
+        severity: Severity::Error,
+        check: check_container_has_content,
     },
     ShapeRule {
         id: "name-is-text-leaf",
