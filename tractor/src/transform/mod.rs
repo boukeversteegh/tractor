@@ -125,6 +125,29 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
 /// source location. The wrapper's *element name* is the JSON key
 /// (Principle #19); no `field=` is written on the wrapper or the inner
 /// element by this pass.
+///
+/// # Scope: GLOBAL per language
+///
+/// **This pass is unconditional**: every element with `field=X` gets
+/// wrapped, regardless of parent kind. If a field name appears on
+/// MULTIPLE tree-sitter kinds with different wrapping intent (e.g.
+/// `pattern` field on both `let_condition` AND `parameter`), this
+/// pass cannot distinguish them — all sites get wrapped uniformly.
+///
+/// **Use a Custom handler with [`helpers::wrap_field_child`] when:**
+/// - The wrap should apply to ONLY specific tree-sitter kinds.
+/// - Other kinds share the field name but require different shape.
+///
+/// Concrete examples in the codebase:
+/// - TS `conditional_type::alternative` → `<else>` (Custom + `wrap_field_child`),
+///   while if/while `alternative` is left unwrapped because `else_clause`
+///   already renames to `<else>` and a global wrap would double-nest.
+/// - PHP `class_constant_access` wraps `<object>`/`<property>` slots
+///   only on that specific kind, not via global field-wrap.
+///
+/// Lesson `tag/field-wrap-is-global` (todo/39 line 80-88) documents
+/// this pattern — re-read before adding new entries to any
+/// `*_FIELD_WRAPPINGS` table.
 pub fn apply_field_wrappings(
     xot: &mut Xot,
     root: XotNode,

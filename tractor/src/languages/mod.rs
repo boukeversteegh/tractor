@@ -539,11 +539,32 @@ pub fn is_programming_language(lang: &str) -> bool {
 /// Each language opts in (and can add language-specific entries) via
 /// `get_field_wrappings`.
 ///
-/// `alternative` is intentionally not in this list. For `if_statement`,
-/// tree-sitter's `else_clause` child already renames to `<else>` via each
-/// language's `map_element_name`, so a global wrap would double-nest.
-/// For ternary expressions, the `<else>` wrap is done surgically in the
-/// per-language ternary handler via `wrap_field_child`.
+/// ## ⚠ Scope: GLOBAL per-language
+///
+/// Every entry here applies to EVERY tree-sitter kind that uses the
+/// field name. There is no per-kind scoping. Before adding a new
+/// `(field, wrapper)` pair, verify the field name doesn't appear
+/// on kinds where the wrap is unwanted:
+///
+/// 1. Search the language's `input.rs` (or tree-sitter grammar) for
+///    other kinds that emit `field=X` children.
+/// 2. Check whether wrapping is appropriate for ALL of them.
+/// 3. If any kind needs a different shape, use a Custom handler
+///    with [`crate::transform::helpers::wrap_field_child`] instead
+///    of adding a global entry here.
+///
+/// Examples of what NOT to do:
+///
+/// - `("alternative", "else")` would wrap `if_statement`'s
+///   `else_clause` (which already renames to `<else>`) → double-nest.
+///   Surgical `wrap_field_child` in the ternary Custom handler
+///   instead — see iter 179 for the full bug story.
+/// - `("pattern", "pattern")` on Rust would wrap `let_condition`'s
+///   pattern AND `parameter`'s pattern → broke `<parameter>/<name>`
+///   shape across all of Rust. See iter 347 for the failed attempt.
+///
+/// Re-read lesson "Field-wrap is global per-language" in
+/// `todo/39-post-cycle-review-backlog.md` before extending these.
 const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("name", "name"),
     ("value", "value"),

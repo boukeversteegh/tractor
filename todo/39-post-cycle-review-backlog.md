@@ -83,9 +83,16 @@ before committing a non-trivial change.
   appear on if/elsif/while/until and breaking-but-mechanical chain
   passes (collapse_else_if_chain). Always: when a field-wrap entry
   would wrap a per-kind concept, use a Custom handler scoped to that
-  kind instead. Iter 179 was caught by test; would have been a quiet
-  regression otherwise. (Sister to the "all N languages done" lesson:
-  changes that look universal often aren't.)
+  kind, calling **`crate::transform::helpers::wrap_field_child(xot,
+  node, "field_name", "wrapper_name")`** — same one-liner shape, but
+  scoped to the kind whose Custom handler is invoking it. Iter 179
+  was caught by test; would have been a quiet regression otherwise.
+  Iter 347 retried this for Rust if-let `pattern` field via global
+  wrap, broke parameters, reverted (parameters also use field=pattern).
+  (Sister to the "all N languages done" lesson: changes that look
+  universal often aren't.) Iter 348 added discoverability comments
+  on `apply_field_wrappings` and the FIELD_WRAPPINGS const declaration
+  pointing at the helper.
 - **Bulk `distribute_member_list_attrs` is a coverage-vs-correctness
   trade-off and SILENTLY REVERSES singleton-role-slot designs.**
   Iters 205-212 closed 121 audit overflow sites but created ~2,389
