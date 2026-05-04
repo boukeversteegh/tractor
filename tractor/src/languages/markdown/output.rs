@@ -13,7 +13,15 @@
 pub const HEADING: &str = "heading";
 
 // Code
-pub const CODE_BLOCK: &str = "code_block";
+// Iter 344: renamed `code_block` → `codeblock` (single word, no
+// underscore) per Principle #2. The `_block` suffix matched the
+// grammar-suffix pattern flagged by `no_grammar_kind_suffixes`. No
+// CommonMark-canonical name unifies fenced + indented forms; chose
+// `codeblock` (matching the `<elseif>` precedent of removing
+// underscores) over `<fenced>` / `<indented>` (which would lose
+// the fenced/indented unification) or `<block[code]>` (which
+// would conflict with other languages' `<block>` usage).
+pub const CODE_BLOCK: &str = "codeblock";
 pub const CODE: &str = "code";
 pub const LANGUAGE: &str = "language";
 

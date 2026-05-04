@@ -36,7 +36,7 @@ pub fn setext_heading(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     Ok(TransformAction::Continue)
 }
 
-/// `fenced_code_block` → `<code_block>` with a fresh `<language>`
+/// `fenced_code_block` → `<codeblock>` with a fresh `<language>`
 /// element prepended (extracted from the `info_string` child, which
 /// is detached separately).
 pub fn fenced_code_block(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

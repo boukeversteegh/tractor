@@ -331,14 +331,15 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
 // Invariant 3 (RETIRED iter 317): no_grammar_kind_suffixes migrated to
 // the spec-conformance walker. The shape-contract rule
 // `no-grammar-kind-suffix` in `tractor/src/transform/shape_contracts.rs`
-// (with its own GRAMMAR_SUFFIXES list + GRAMMAR_SUFFIX_EXEMPT for
-// markdown's `<code_block>`) runs both via the cargo test (against
-// blueprint fixtures) AND via the debug-build assertion in
+// (with its own GRAMMAR_SUFFIXES list) runs both via the cargo test
+// (against blueprint fixtures) AND via the debug-build assertion in
 // `transform/builder.rs` (every transform invocation). Strictly more
 // coverage than the previous blueprint-only walk.
 //
 // Migration succeeded after iter 316 detached PHP empty modifier
-// nodes (the other iter-315 finding).
+// nodes and iter 344 renamed markdown's `<code_block>` to
+// `<codeblock>` (the two iter-315 findings). The
+// GRAMMAR_SUFFIX_EXEMPT list is now empty.
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------

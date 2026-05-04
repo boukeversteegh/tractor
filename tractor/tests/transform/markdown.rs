@@ -2,7 +2,7 @@
 //! code blocks, and horizontal rules.
 //!
 //! The semantic transform exposes the structural intent of the
-//! document — `<heading[h1]>`, `<list[ordered]>`, `<code_block>`
+//! document — `<heading[h1]>`, `<list[ordered]>`, `<codeblock>`
 //! with a `<language>` child — rather than the raw tree-sitter
 //! kinds. Inline emphasis (bold/italic) is intentionally not
 //! pinned by these tests; only the block-level structure is.
@@ -56,15 +56,15 @@ fn markdown_blockquote() {
 fn markdown_fenced_code_block_with_language() {
     claim("a ```python``` fence carries <language>python</language>",
         &mut parse_src("markdown", "```python\nprint('hi')\n```\n"),
-        "//code_block[language='python']",
+        "//codeblock[language='python']",
         1);
 }
 
 #[test]
 fn markdown_fenced_code_block_without_language() {
-    claim("an unlabeled fence produces a <code_block> without a <language> child",
+    claim("an unlabeled fence produces a <codeblock> without a <language> child",
         &mut parse_src("markdown", "```\nplain\n```\n"),
-        "//code_block[not(language)]",
+        "//codeblock[not(language)]",
         1);
 }
 

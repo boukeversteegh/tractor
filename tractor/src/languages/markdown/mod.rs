@@ -38,7 +38,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "heading" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => SyntaxCategory::Keyword,
 
         // Code
-        "code_block" | "code" | "language" => SyntaxCategory::String,
+        "codeblock" | "code" | "language" => SyntaxCategory::String,
 
         // Emphasis
         "emphasis" | "strong" | "strikethrough" => SyntaxCategory::Identifier,

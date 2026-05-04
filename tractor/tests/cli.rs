@@ -85,7 +85,7 @@ fn markdown_round_trip_extracts_javascript_block() {
         "query",
         "-s", md_source,
         "-l", "markdown",
-        "-x", "//code_block[language='javascript']/code",
+        "-x", "//codeblock[language='javascript']/code",
         "-v", "value",
     ])
     .capture();

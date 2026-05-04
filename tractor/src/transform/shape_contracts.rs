@@ -548,18 +548,12 @@ fn check_no_dash_in_node_name(
 
 /// Element names exempt from the `no-grammar-kind-suffix` rule.
 /// Each entry should have a justification.
-const GRAMMAR_SUFFIX_EXEMPT: &[&str] = &[
-    // Markdown's `<code_block>` is the canonical name for fenced /
-    // indented code blocks. The trailing `_block` looks like a
-    // grammar suffix, but in markdown's vocabulary "code block" IS
-    // the user-facing concept. Renaming would break the existing
-    // CLI test `markdown_round_trip_extracts_javascript_block`
-    // (queries `//code_block`) and lose user-facing clarity. Iter
-    // 315 surfaced this; iter 317 ships the rule with this exemption
-    // after PHP empty-modifier nodes (the other iter-315 finding)
-    // got detached in iter 316.
-    "code_block",
-];
+///
+/// Iter 344: emptied. Markdown's `<code_block>` (the only previous
+/// entry) was renamed to `<codeblock>` (single word, no underscore)
+/// matching the `<elseif>` precedent. The exemption is no longer
+/// needed.
+const GRAMMAR_SUFFIX_EXEMPT: &[&str] = &[];
 
 /// Grammar-kind suffixes that indicate tree-sitter bleed-through.
 const GRAMMAR_SUFFIXES: &[&str] = &[
@@ -910,7 +904,7 @@ pub static RULES: &[ShapeRule] = &[
     },
     ShapeRule {
         id: "no-grammar-kind-suffix",
-        description: "Element names must not end in tree-sitter grammar suffixes (e.g. _statement, _expression). Markdown <code_block> exempt.",
+        description: "Element names must not end in tree-sitter grammar suffixes (e.g. _statement, _expression).",
         severity: Severity::Error,
         check: check_no_grammar_kind_suffix,
         grandfathered_max: None,
