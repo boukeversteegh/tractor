@@ -218,6 +218,132 @@ fn typescript() {
         1);
 }
 
+/// Cross-language: the `else if` collapse contract is the same
+/// xpath query across every language that has an `if` /
+/// `else if` chain. This is the cross-language counterpart to
+/// the per-language tests above — proof that
+/// `collapse_conditionals` (the shared post-transform pass)
+/// produces a uniform shape.
+///
+/// The construct: a 4-arm if/else-if/else-if/else chain. After
+/// `collapse_conditionals`, every language renders this as
+/// `<if>[count(else_if)=2][count(else)=1]` — flat siblings, NOT
+/// the source's nested else→if shape. Per-language tests above
+/// pin one language each; this loop pins them uniformly so a
+/// future regression in `collapse_conditionals` for any one
+/// language trips this single test.
+///
+/// Languages with `expression-if` syntax (Rust) work too because
+/// the chain still flattens identically.
+#[test]
+fn cross_language_elseif_chain_flattens_uniformly() {
+    let canonical = r#"
+        //if
+            [count(else_if)=2]
+            [count(else)=1]
+    "#;
+
+    for (lang, src) in &[
+        ("typescript", r#"
+            function f(n: number) {
+                if (n < 0) { return -1; }
+                else if (n === 0) { return 0; }
+                else if (n < 10) { return 1; }
+                else { return 2; }
+            }
+        "#),
+        ("csharp", r#"
+            class X {
+                int F(int n) {
+                    if (n < 0) return -1;
+                    else if (n == 0) return 0;
+                    else if (n < 10) return 1;
+                    else return 2;
+                }
+            }
+        "#),
+        ("java", r#"
+            class X {
+                int f(int n) {
+                    if (n < 0) { return -1; }
+                    else if (n == 0) { return 0; }
+                    else if (n < 10) { return 1; }
+                    else { return 2; }
+                }
+            }
+        "#),
+        ("rust", r#"
+            fn f(n: i32) -> i32 {
+                if n < 0 { -1 }
+                else if n == 0 { 0 }
+                else if n < 10 { 1 }
+                else { 2 }
+            }
+        "#),
+        ("go", r#"
+            package m
+            func F(n int) int {
+                if n < 0 { return -1 } else if n == 0 { return 0 } else if n < 10 { return 1 } else { return 2 }
+            }
+        "#),
+        ("php", r#"
+            <?php
+            function f($n) {
+                if ($n < 0) { return -1; }
+                elseif ($n == 0) { return 0; }
+                elseif ($n < 10) { return 1; }
+                else { return 2; }
+            }
+        "#),
+    ] {
+        claim(
+            &format!("{lang}: 4-arm if/else-if/else-if/else collapses to <if>[count(else_if)=2][count(else)=1]"),
+            &mut parse_src(lang, src),
+            &multi_xpath(canonical),
+            1,
+        );
+    }
+
+    // Python's `elif` keyword maps to the same shape — pre-existing
+    // flat siblings, not a collapse, but the contract is identical.
+    claim(
+        "python: elif chain is already flat else_if siblings (no collapse needed)",
+        &mut parse_src("python", r#"
+def f(n):
+    if n < 0:
+        return -1
+    elif n == 0:
+        return 0
+    elif n < 10:
+        return 1
+    else:
+        return 2
+"#),
+        &multi_xpath(canonical),
+        1,
+    );
+
+    // Ruby's `elsif` keyword maps to the same shape after collapse.
+    claim(
+        "ruby: elsif chain collapses to <if>[count(else_if)=2][count(else)=1]",
+        &mut parse_src("ruby", r#"
+def f(n)
+  if n < 0
+    -1
+  elsif n == 0
+    0
+  elsif n < 10
+    1
+  else
+    2
+  end
+end
+"#),
+        &multi_xpath(canonical),
+        1,
+    );
+}
+
 /// Multi-elseif chains tag each `<else_if>` sibling with
 /// `list="else_ifs"` so JSON renders them as `else_ifs: [...]`
 /// array. Single-elseif keeps the singleton `else_if` JSON key.
