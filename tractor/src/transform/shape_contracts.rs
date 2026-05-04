@@ -787,6 +787,51 @@ fn check_no_anonymous_keyword_leak(
     });
 }
 
+/// Rule `name-declared-in-semantic-module` — every emitted element
+/// name must be either:
+/// - declared in the language's `TractorNodeSpec` table, OR
+/// - a cross-cutting operator marker (`OPERATOR_MARKERS`), OR
+/// - a field wrapper (per-language `*_FIELD_WRAPPINGS` table).
+///
+/// Catches raw tree-sitter kinds leaking through, or
+/// chain-inverter-emitted names a language forgot to declare.
+///
+/// Severity: `Error`. Replaces the retired
+/// `all_names_declared_in_semantic_module` invariant from
+/// `tree_invariants.rs` (retired iter 322).
+fn check_name_declared_in_semantic_module(
+    xot: &Xot,
+    root: XotNode,
+    lang: &str,
+    out: &mut Vec<Violation>,
+) {
+    use crate::languages::{has_semantic_vocabulary, is_declared_name, is_field_wrapper_name};
+    use crate::transform::operators::is_operator_marker_name;
+    if !has_semantic_vocabulary(lang) {
+        return;
+    }
+    walk_elements(xot, root, &mut |xot, node| {
+        let Some(name) = get_element_name(xot, node) else { return };
+        if is_declared_name(lang, &name) {
+            return;
+        }
+        if is_operator_marker_name(&name) {
+            return;
+        }
+        if is_field_wrapper_name(lang, &name) {
+            return;
+        }
+        let line = get_attr(xot, node, "line").unwrap_or_default();
+        out.push(Violation {
+            rule_id: "name-declared-in-semantic-module",
+            message: format!(
+                "<{name}> (line {line}) is not declared in {lang}'s TractorNodeSpec table (or operator/field-wrapper allowlist)"
+            ),
+            severity: Severity::Error,
+        });
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Rule table — single source of truth, consumed by both layers.
 // ---------------------------------------------------------------------------
@@ -882,6 +927,13 @@ pub static RULES: &[ShapeRule] = &[
         description: "Marker-only keyword in element text content must have a sibling <keyword/> marker (Principle #2/#7).",
         severity: Severity::Error,
         check: check_no_anonymous_keyword_leak,
+        grandfathered_max: None,
+    },
+    ShapeRule {
+        id: "name-declared-in-semantic-module",
+        description: "Every emitted element name must be in the language's TractorNodeSpec table (or operator-marker / field-wrapper allowlist).",
+        severity: Severity::Error,
+        check: check_name_declared_in_semantic_module,
         grandfathered_max: None,
     },
 ];

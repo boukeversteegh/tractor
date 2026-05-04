@@ -380,80 +380,18 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Invariant 7: Every emitted element name is declared in the language's
-// ALL_NAMES.
+// Invariant 7 (RETIRED iter 322): all_names_declared_in_semantic_module
+// migrated to the spec-conformance walker. The shape-contract rule
+// `name-declared-in-semantic-module` in
+// `tractor/src/transform/shape_contracts.rs` runs both via the cargo
+// test (against blueprint fixtures) AND via the debug-build assertion
+// in `transform/builder.rs` (every transform invocation). Strictly
+// more coverage than the previous blueprint-only walk.
 //
-// Each `tractor/src/languages/<lang>.rs` publishes a `semantic` module
-// with `ALL_NAMES: &[&str]` — every node name the transform can emit.
-// The registry in `tractor::languages::all_semantic_names(lang)` makes
-// that set available here.
-//
-// Invariant: for every fixture, every transformed element name must
-// appear in its language's ALL_NAMES set. Unknowns are either:
-//   - a raw tree-sitter kind leaking through (transform missed it)
-//   - a newly-introduced name that the module author forgot to add
-// Either way it's a drift signal worth gating on once at zero.
-//
-// Kept advisory until the ALL_NAMES sets are complete — the current
-// implementation is "advisory by design" (ASSERT_ALL_NAMES_MEMBERSHIP
-// is false by default) because several languages still emit names
-// that slipped through during the initial catalogue drafting; this
-// test surfaces exactly which names are missing from each module.
+// Migration succeeded after iter 321 declared `Subscript` in Rust's
+// TractorNode enum (the chain inverter emits it programmatically;
+// the enum hadn't catalogued it).
 // ---------------------------------------------------------------------------
-
-const ASSERT_ALL_NAMES_MEMBERSHIP: bool = true;
-
-#[test]
-fn all_names_declared_in_semantic_module() {
-    use tractor::languages::{has_semantic_vocabulary, is_declared_name, is_field_wrapper_name};
-    use tractor::transform::operators::is_operator_marker_name;
-
-    let mut report = Report::default();
-    for fixture in iter_fixtures() {
-        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if DATA_LANG_EXTS.contains(&ext) {
-            continue;
-        }
-        let Some(lang) = lang_from_ext(ext) else { continue };
-        if !has_semantic_vocabulary(lang) {
-            continue;
-        }
-        let Some(parsed) = parse_structure(&fixture) else { continue };
-        let xot = parsed.documents.xot();
-        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
-        walk_elements(xot, root, &mut |xot, node| {
-            let Some(name) = element_name(xot, node) else { return };
-            // (1) Per-language NODES — the main source of truth.
-            if is_declared_name(lang, &name) {
-                return;
-            }
-            // (2) Cross-cutting operator markers emitted by the shared
-            //     `OPERATOR_MARKERS` table — universally allowed.
-            if is_operator_marker_name(&name) {
-                return;
-            }
-            // (3) Field wrappers introduced by the builder's
-            //     `apply_field_wrappings` pass — derived per-language
-            //     from that language's `*_FIELD_WRAPPINGS` table.
-            if is_field_wrapper_name(lang, &name) {
-                return;
-            }
-            report.record(
-                &name,
-                &fixture,
-                format!("<{}> is not in {}::semantic::NODES", name, lang),
-            );
-        });
-    }
-    if !report.is_empty() {
-        report.print(
-            "Every emitted element name must be declared in the language's ALL_NAMES",
-        );
-        if ASSERT_INVARIANTS && ASSERT_ALL_NAMES_MEMBERSHIP {
-            panic!("undeclared element names");
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Invariant 8 (RETIRED iter 312): kind_attribute_is_non_empty migrated
