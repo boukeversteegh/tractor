@@ -488,6 +488,49 @@ fn typescript_for_multi_update_lists_unaries() {
         1);
 }
 
+/// Cross-language: every `for/foreach`/`while` loop carries a `<body>`
+/// child holding the loop body (Principle #15: body is a structural
+/// slot). The element name housing the loop varies (`<for>` / `<while>`
+/// / `<foreach>`) but every language uses `<body>` for the loop body
+/// uniformly. This test asserts the contract holds across 8 languages
+/// for the simplest infinite/conditional loop forms.
+#[test]
+fn cross_language_loop_body_is_structural_slot() {
+    for (lang, src, xpath) in &[
+        // TypeScript: `while(true)` infinite loop.
+        ("typescript", "while (true) { tick(); }",
+         "//while/body"),
+        // Java: same.
+        ("java", "class X { void f() { while (true) { tick(); } } }",
+         "//while/body"),
+        // C#: same.
+        ("csharp", "class X { void F() { while (true) { Tick(); } } }",
+         "//while/body"),
+        // Rust: `while` loops.
+        ("rust", "fn f() { while true { tick(); } }",
+         "//while/body"),
+        // Go: `for true {}` is equivalent to while-true.
+        ("go", "package m\nfunc f() { for true { tick() } }",
+         "//for/body"),
+        // Python: `while True`.
+        ("python", "while True:\n    tick()\n",
+         "//while/body"),
+        // PHP.
+        ("php", "<?php while (true) { tick(); }",
+         "//while/body"),
+        // Ruby — note Ruby's `while` body is always present.
+        ("ruby", "while true\n  tick\nend\n",
+         "//while/body"),
+    ] {
+        claim(
+            &format!("{lang}: while-true loop has a structural <body> slot"),
+            &mut parse_src(lang, src),
+            xpath,
+            1,
+        );
+    }
+}
+
 /// Cross-language: every `while (X)` loop wraps its condition under
 /// `<while>/<condition>/<expression>/...` (Principle #15: every
 /// expression position carries an `<expression>` host).
