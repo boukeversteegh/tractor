@@ -2308,13 +2308,22 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // unary tagging mirrors TypeScript iter 269.
             ("for", "assign"),
             ("for", "unary"),
+            // PHP `<string>` parent: interpolated strings have one or
+            // more `<interpolation>` chunks; heredoc strings have one
+            // or more `<value>` chunks. Bulk-distribute on `"string"`
+            // (removed below iter 308) was wrapping single-interp /
+            // single-value cases in 1-elem JSON arrays. Targeted role
+            // tags here cover both single (lifts as singleton) and
+            // multi (proper array) cases.
+            ("string", "interpolation"),
+            ("string", "value"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "macro", "template", "repetition"],
     )?;
     Ok(())
 }

@@ -380,13 +380,11 @@
                         {
                           "expression": {
                             "string": {
-                              "interpolations": [
-                                {
-                                  "variable": {
-                                    "name": "target"
-                                  }
+                              "interpolation": {
+                                "variable": {
+                                  "name": "target"
                                 }
-                              ]
+                              }
                             }
                           }
                         }
@@ -427,13 +425,11 @@
                       {
                         "expression": {
                           "string": {
-                            "interpolations": [
-                              {
-                                "variable": {
-                                  "name": "target"
-                                }
+                            "interpolation": {
+                              "variable": {
+                                "name": "target"
                               }
-                            ]
+                            }
                           }
                         }
                       }
@@ -445,13 +441,11 @@
                         {
                           "expression": {
                             "string": {
-                              "interpolations": [
-                                {
-                                  "variable": {
-                                    "name": "target"
-                                  }
+                              "interpolation": {
+                                "variable": {
+                                  "name": "target"
                                 }
-                              ]
+                              }
                             }
                           }
                         }
@@ -1110,13 +1104,11 @@
               "echos": [
                 {
                   "string": {
-                    "interpolations": [
-                      {
-                        "variable": {
-                          "name": "msg"
-                        }
+                    "interpolation": {
+                      "variable": {
+                        "name": "msg"
                       }
-                    ]
+                    }
                   }
                 }
               ]
@@ -1882,15 +1874,13 @@
               "right": {
                 "expression": {
                   "string": {
-                    "values": [
-                      {
-                        "expression": {
-                          "variable": {
-                            "name": "name"
-                          }
+                    "value": {
+                      "expression": {
+                        "variable": {
+                          "name": "name"
                         }
                       }
-                    ],
+                    },
                     "heredoc": true
                   }
                 }
@@ -1910,9 +1900,7 @@
               "right": {
                 "expression": {
                   "string": {
-                    "values": [
-                      "no interpolation: $not_a_var"
-                    ],
+                    "value": "no interpolation: $not_a_var",
                     "nowdoc": true
                   }
                 }
