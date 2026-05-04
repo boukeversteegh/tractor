@@ -1461,18 +1461,16 @@
                 }
               }
             ],
-            "values": [
-              {
-                "expression": {
-                  "index": {
-                    "int": "0",
-                    "object": {
-                      "name": "implicit"
-                    }
+            "value": {
+              "expression": {
+                "index": {
+                  "int": "0",
+                  "object": {
+                    "name": "implicit"
                   }
                 }
               }
-            ]
+            }
           }
         ]
       },
@@ -1483,36 +1481,30 @@
       "body": {
         "switches": [
           {
-            "defaults": [
-              {
-                "return": {
-                  "expression": {
-                    "object": {
-                      "call": {
-                        "arguments": [
-                          "\"%T\"",
-                          "v"
-                        ],
-                        "name": "Sprintf"
-                      },
-                      "access": true,
-                      "name": "fmt"
-                    }
+            "default": {
+              "return": {
+                "expression": {
+                  "object": {
+                    "call": {
+                      "arguments": [
+                        "\"%T\"",
+                        "v"
+                      ],
+                      "name": "Sprintf"
+                    },
+                    "access": true,
+                    "name": "fmt"
                   }
                 }
               }
-            ],
+            },
             "type": true,
-            "names": [
-              "v"
-            ],
-            "values": [
-              {
-                "expression": {
-                  "name": "x"
-                }
+            "name": "v",
+            "value": {
+              "expression": {
+                "name": "x"
               }
-            ],
+            },
             "cases": [
               {
                 "return": {

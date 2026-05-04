@@ -716,103 +716,99 @@
                 {
                   "expression": {
                     "switch": {
-                      "bodies": [
-                        {
-                          "arms": [
-                            {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "i"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "string": "\"int \""
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
-                                }
-                              },
-                              "label": {
-                                "pattern": {
-                                  "pattern": {
-                                    "name": "i",
-                                    "type": {
-                                      "name": "Integer"
-                                    }
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "s"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "string": "\"non-empty: \""
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
-                                }
-                              },
-                              "label": {
-                                "guard": {
-                                  "unary": {
-                                    "object": {
-                                      "call": {
-                                        "name": "isEmpty"
-                                      },
-                                      "access": true,
-                                      "name": "s"
-                                    },
-                                    "op": {
-                                      "text": "!",
-                                      "logical": true,
-                                      "not": true
-                                    }
+                      "body": {
+                        "arms": [
+                          {
+                            "expression": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "name": "i"
                                   }
                                 },
-                                "pattern": {
-                                  "pattern": {
-                                    "name": "s",
-                                    "type": {
-                                      "name": "String"
-                                    }
+                                "left": {
+                                  "expression": {
+                                    "string": "\"int \""
                                   }
+                                },
+                                "op": {
+                                  "text": "+",
+                                  "plus": true
                                 }
                               }
                             },
-                            {
-                              "expression": {
-                                "string": "\"other\""
-                              },
-                              "label": {
-                                "default": true
+                            "label": {
+                              "pattern": {
+                                "pattern": {
+                                  "name": "i",
+                                  "type": {
+                                    "name": "Integer"
+                                  }
+                                }
                               }
                             }
-                          ]
-                        }
-                      ],
-                      "conditions": [
-                        {
-                          "expression": {
-                            "name": "o"
+                          },
+                          {
+                            "expression": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "name": "s"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "string": "\"non-empty: \""
+                                  }
+                                },
+                                "op": {
+                                  "text": "+",
+                                  "plus": true
+                                }
+                              }
+                            },
+                            "label": {
+                              "guard": {
+                                "unary": {
+                                  "object": {
+                                    "call": {
+                                      "name": "isEmpty"
+                                    },
+                                    "access": true,
+                                    "name": "s"
+                                  },
+                                  "op": {
+                                    "text": "!",
+                                    "logical": true,
+                                    "not": true
+                                  }
+                                }
+                              },
+                              "pattern": {
+                                "pattern": {
+                                  "name": "s",
+                                  "type": {
+                                    "name": "String"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "expression": {
+                              "string": "\"other\""
+                            },
+                            "label": {
+                              "default": true
+                            }
                           }
+                        ]
+                      },
+                      "condition": {
+                        "expression": {
+                          "name": "o"
                         }
-                      ]
+                      }
                     }
                   }
                 }
@@ -884,43 +880,39 @@
                       {
                         "expression": {
                           "switch": {
-                            "bodies": [
-                              {
-                                "arms": [
-                                  {
-                                    "expression": {
-                                      "int": "0xFF0000"
-                                    },
-                                    "label": {
-                                      "name": "RED"
-                                    }
+                            "body": {
+                              "arms": [
+                                {
+                                  "expression": {
+                                    "int": "0xFF0000"
                                   },
-                                  {
-                                    "expression": {
-                                      "int": "0x00FF00"
-                                    },
-                                    "label": {
-                                      "name": "GREEN"
-                                    }
-                                  },
-                                  {
-                                    "expression": {
-                                      "int": "0x0000FF"
-                                    },
-                                    "label": {
-                                      "name": "BLUE"
-                                    }
+                                  "label": {
+                                    "name": "RED"
                                   }
-                                ]
-                              }
-                            ],
-                            "conditions": [
-                              {
-                                "expression": {
-                                  "this": "this"
+                                },
+                                {
+                                  "expression": {
+                                    "int": "0x00FF00"
+                                  },
+                                  "label": {
+                                    "name": "GREEN"
+                                  }
+                                },
+                                {
+                                  "expression": {
+                                    "int": "0x0000FF"
+                                  },
+                                  "label": {
+                                    "name": "BLUE"
+                                  }
                                 }
+                              ]
+                            },
+                            "condition": {
+                              "expression": {
+                                "this": "this"
                               }
-                            ]
+                            }
                           }
                         }
                       }
@@ -1506,42 +1498,38 @@
                   "value": {
                     "expression": {
                       "switch": {
-                        "bodies": [
-                          {
-                            "arms": [
-                              {
-                                "expression": {
-                                  "name": "i"
-                                },
-                                "label": {
+                        "body": {
+                          "arms": [
+                            {
+                              "expression": {
+                                "name": "i"
+                              },
+                              "label": {
+                                "pattern": {
                                   "pattern": {
-                                    "pattern": {
-                                      "name": "i",
-                                      "type": {
-                                        "name": "Integer"
-                                      }
+                                    "name": "i",
+                                    "type": {
+                                      "name": "Integer"
                                     }
                                   }
                                 }
-                              },
-                              {
-                                "yield": {
-                                  "int": "0"
-                                },
-                                "label": {
-                                  "default": true
-                                }
                               }
-                            ]
-                          }
-                        ],
-                        "conditions": [
-                          {
-                            "expression": {
-                              "name": "o"
+                            },
+                            {
+                              "yield": {
+                                "int": "0"
+                              },
+                              "label": {
+                                "default": true
+                              }
                             }
+                          ]
+                        },
+                        "condition": {
+                          "expression": {
+                            "name": "o"
                           }
-                        ]
+                        }
                       }
                     }
                   },

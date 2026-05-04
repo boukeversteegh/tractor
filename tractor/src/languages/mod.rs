@@ -860,7 +860,7 @@ fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::strip_body_braces(xot, root, &["body", "block"])?;
     rust_normalize_lifetime_names(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "file", "tuple", "list", "dict", "array", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "block", "file", "tuple", "list", "dict", "array", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -1299,7 +1299,7 @@ fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     // declarator. Mirrors Java/C# iter 263.
     crate::transform::flatten_single_declarator_children(xot, root, &["variable", "field"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -1605,7 +1605,7 @@ fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::strip_body_braces(xot, root, &["body"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "module", "tuple", "list", "dict", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "module", "tuple", "list", "dict", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -1920,7 +1920,7 @@ fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     // wrapper. See cold-read backlog iter 233.
     crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "block", "program", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -2020,6 +2020,11 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
             // Multiple `<case>` siblings under `<select>` —
             // role-uniform per Principle #19.
             ("select", "case"),
+            // Go switch with multiple cases `switch x { case ... }`.
+            // Targeted role tag replaces the bulk-distribute entry on
+            // `"switch"` (removed iter 304 — that entry was wrapping
+            // the singleton subject `<value>` in a 1-elem array).
+            ("switch", "case"),
             // Go if-then with multi-statement body `if cond {
             // stmt1; stmt2 }` produces `<then>` with multiple
             // `<assign>` (or other statement) siblings. Role-
@@ -2032,7 +2037,7 @@ fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "file", "tuple", "list", "dict", "array", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "file", "tuple", "list", "dict", "array", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -2269,7 +2274,7 @@ fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "namespace", "program", "tuple", "list", "dict", "array", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
@@ -2586,7 +2591,7 @@ fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     ruby_tag_case_when_lists(xot, root)?;
     crate::transform::distribute_member_list_attrs(
-        xot, root, &["body", "program", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
+        xot, root, &["body", "program", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }
