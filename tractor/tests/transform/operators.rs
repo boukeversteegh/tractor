@@ -107,6 +107,46 @@ fn php_binary() {
         1);
 }
 
+/// Cross-language: the `<binary>[op[plus]]` extraction contract is
+/// the same xpath query across every language with a binary `+`.
+/// Per-language tests above pin one language each (with the
+/// language-specific literal kind on left/right inner expressions);
+/// this loop pins the cross-language contract: `<binary>` exists,
+/// has an `<op>` child carrying a `[plus]` marker, and the
+/// operands sit in `<left>`/`<right>` slots wrapped in
+/// `<expression>` hosts (Principle #15).
+///
+/// The xpath uses `[expression]` (without inner literal kind) so it
+/// works uniformly across languages where the operand renders as
+/// `<int>` (Java/C#/Rust/Go), `<number>` (TS/JS), `<name>` (Python
+/// where `x + y` is the canonical form), or `<variable>` (PHP).
+#[test]
+fn cross_language_binary_plus_extracts_op_marker() {
+    let canonical = r#"
+        //binary
+            [left/expression]
+            [op[plus]]
+            [right/expression]
+    "#;
+
+    for (lang, src) in &[
+        ("typescript", "let z = 1 + 2;"),
+        ("rust",       "fn f() { let z = 1 + 2; }"),
+        ("java",       "class X { void f() { int z = 1 + 2; } }"),
+        ("csharp",     "class X { void f() { int z = 1 + 2; } }"),
+        ("go",         "package m\nvar z = 1 + 2"),
+        ("python",     "z = x + y\n"),
+        ("php",        "<?php $z = $x + $y;"),
+    ] {
+        claim(
+            &format!("{lang}: binary `+` extracts <op[plus]> with expression-wrapped operands"),
+            &mut parse_src(lang, src),
+            &multi_xpath(canonical),
+            1,
+        );
+    }
+}
+
 // ---- unary ----------------------------------------------------------------
 
 /// Unary expressions follow the same <op> extraction pattern as
