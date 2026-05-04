@@ -407,14 +407,15 @@ context. 15 findings; severity per reviewer.
   string. Already partially-tracked in older backlog items; cold-read
   re-confirms the divergence is still present.
 
-- [ ] **Python/Go/Ruby plain `=` assign lacks `<op>` wrapper**
+- [x] ~~**Python/Go/Ruby plain `=` assign lacks `<op>` wrapper**~~
   *(MEDIUM, Principle #5 cross-language; surfaced iter 339 mid-loop
-  while writing cross-lang assign tests)*. TS/C#/Java/PHP/Rust emit
-  `<assign>[op="="]` with the equals sign wrapped in `<op>`. Python,
-  Go, and Ruby emit bare `"="` text alongside `<left>`/`<right>`
-  slots — no `<op>` wrapper. Iter 52 decided KEEP `<op>="="</op>`
-  for C# (consistency, XPath uniformity, source-text preservation);
-  by Principle #5 the 3 outliers should match.
+  while writing cross-lang assign tests; CLOSED iter 340-341)*.
+  Go/Ruby shipped iter 340 (`Rename(Assign)` → `ExtractOpThenRename(Assign)`).
+  Python shipped iter 341 via Custom handler that explicitly extracts
+  `=` (skipping `:` in annotated assigns). All 8 chain-inverting
+  languages now uniform; pinned by
+  `cross_language_plain_assign_extracts_op_equals` in operators.rs.
+  Original divergence text below:
 
   **Source-preservation constraint** (user-confirmed iter 340): the
   fix must NOT duplicate the `=` text. The existing `<op>=</op>`
