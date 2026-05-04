@@ -325,12 +325,48 @@ context. 15 findings; severity per reviewer.
   is now a direct `assign.left.expressions: [...]` array.
 
 - [ ] **Rust: `if`/`while` `condition/` has role-mixed flat
-  children for `if let` and let-chains** *(HIGH, principle #19)*.
-  Each `expression/` sibling means something different (matched
-  constructor, bound name, scrutinee, guard) but they're presented as
-  a flat list of identical `expression` siblings. Querying "the
-  scrutinee of an `if let`" requires positional logic.
+  children for `if let` and let-chains** *(HIGH, principle #19;
+  iter 347 attempted, reverted)*. Each `expression/` sibling
+  means something different (matched constructor, bound name,
+  scrutinee, guard) but they're presented as a flat list of
+  identical `expression` siblings. Querying "the scrutinee of an
+  `if let`" requires positional logic.
   Reproduce: `tests/integration/languages/rust/blueprint.rs.snapshot.txt:536-541, 553-558, 897-912`.
+
+  **Iter 347 attempt notes**: tried adding `("pattern", "pattern")`
+  to `RUST_FIELD_WRAPPINGS` so the let_condition's field=pattern
+  child wraps in `<pattern>` before Pure Flatten. This produced
+  the desired `<condition>/<pattern>...</pattern>/<value>...</value>`
+  shape for `if let Pat = Scr` — but BROKE Rust parameter shape
+  because parameters also use field=pattern. `<parameter>/<name>`
+  became `<parameter>/<pattern>/<name>`, breaking `//parameter[name='X']`
+  queries.
+
+  Knock-on issues surfacing during the attempt:
+  - `wrap_expression_positions` wraps `<pattern>` and `<value>`
+    siblings of `<condition>` in `<expression>` — needs a skip
+    rule (pattern/value are slot wrappers, shouldn't get
+    expression hosts).
+  - Rust let-chains `if let A && let B && cond` produce multiple
+    `<pattern>` and `<value>` siblings — need
+    `("condition", "pattern")` and `("condition", "value")`
+    role-tag entries to avoid `no-children-overflow` ratchet.
+
+  **Cleaner fix path** for next attempt:
+  - Custom handler for `LetCondition` that explicitly wraps the
+    field=pattern child in `<pattern>` (narrow scope, doesn't
+    affect parameter declarations).
+  - Add the wrap_expression_positions skip rule for `<pattern>`
+    and `<value>` (defensive — applies broadly, prevents the
+    "slot wrapper inside slot wrapper" double-wrap).
+  - Add the let-chain list-tag entries for role-uniform multi
+    pattern/value siblings.
+  - Verify Rust parameter shape unaffected (parameters are NOT
+    let_condition kind; the Custom handler scopes to LetCondition
+    only).
+
+  Iter 347 reverted with no commit; needs subagent design review
+  before retry covering these three concerns.
 
 - [ ] **PHP `foreach`: `value/` is the iterable, not the element**
   *(HIGH, cross-language semantic mismatch)*. `foreach/value/expression/variable/name = "items"`
