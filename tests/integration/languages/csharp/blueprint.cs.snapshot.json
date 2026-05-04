@@ -2895,12 +2895,8 @@
                         {
                           "with": {
                             "literal": {
-                              "strings": [
-                                "\"EUR\""
-                              ],
-                              "names": [
-                                "Currency"
-                              ]
+                              "string": "\"EUR\"",
+                              "name": "Currency"
                             },
                             "name": "m"
                           },

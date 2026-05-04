@@ -563,24 +563,20 @@
             "body": {
               "literals": [
                 {
-                  "bodies": [
-                    {
-                      "fields": [
-                        {
-                          "name": "x"
-                        },
-                        {
-                          "name": "y"
-                        },
-                        {
-                          "name": "label"
-                        }
-                      ]
-                    }
-                  ],
-                  "names": [
-                    "Self"
-                  ]
+                  "body": {
+                    "fields": [
+                      {
+                        "name": "x"
+                      },
+                      {
+                        "name": "y"
+                      },
+                      {
+                        "name": "label"
+                      }
+                    ]
+                  },
+                  "name": "Self"
                 }
               ]
             },
@@ -1541,41 +1537,37 @@
             "value": {
               "expression": {
                 "literal": {
-                  "bodies": [
-                    {
-                      "fields": [
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "10"
-                            }
-                          },
-                          "name": "x"
+                  "body": {
+                    "fields": [
+                      {
+                        "value": {
+                          "expression": {
+                            "int": "10"
+                          }
                         },
-                        {
-                          "value": {
-                            "expression": {
-                              "int": "20"
-                            }
-                          },
-                          "name": "y"
+                        "name": "x"
+                      },
+                      {
+                        "value": {
+                          "expression": {
+                            "int": "20"
+                          }
                         },
-                        {
-                          "object": {
-                            "call": {
-                              "name": "clone"
-                            },
-                            "access": true,
-                            "name": "p"
+                        "name": "y"
+                      },
+                      {
+                        "object": {
+                          "call": {
+                            "name": "clone"
                           },
-                          "base": true
-                        }
-                      ]
-                    }
-                  ],
-                  "names": [
-                    "Point"
-                  ]
+                          "access": true,
+                          "name": "p"
+                        },
+                        "base": true
+                      }
+                    ]
+                  },
+                  "name": "Point"
                 }
               }
             },
@@ -3097,9 +3089,7 @@
                         },
                         "pattern": {
                           "literal": {
-                            "ints": [
-                              "1"
-                            ],
+                            "int": "1",
                             "negative": true
                           }
                         }
