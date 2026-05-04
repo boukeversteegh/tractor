@@ -395,6 +395,16 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // parent with multiple `<element>` siblings (each is one
             // tuple position). Role-uniform per Principle #19.
             ("type", "element"),
+            // Switch-expression `pat switch { a => b, c => d }` —
+            // `<switch>` parent with multiple `<arm>` siblings AND a
+            // singleton subject (`<name>` or `<value>`). Role-mixed:
+            // tag arms only via this targeted entry rather than via
+            // bulk distribute on `"switch"` (which would also wrap
+            // the singleton subject in a 1-elem JSON array — iter-213
+            // archetype, surfaced iter 303). Switch-statement arms
+            // are inside `<body>` and still get list-tagged via the
+            // bulk distribute on `"body"`.
+            ("switch", "arm"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
@@ -423,7 +433,7 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
     crate::transform::flatten_single_declarator_children(xot, root, &["field", "variable"])?;
     crate::transform::distribute_member_list_attrs(
         xot, root,
-        &["body", "block", "unit", "namespace", "import", "tuple", "list", "dict", "array", "hash", "switch", "literal", "macro", "template", "string", "repetition"],
+        &["body", "block", "unit", "namespace", "import", "tuple", "list", "dict", "array", "hash", "literal", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }

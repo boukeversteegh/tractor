@@ -997,66 +997,62 @@
                       ],
                       "switches": [
                         {
-                          "bodies": [
-                            {
-                              "arms": [
-                                {
-                                  "expression": {
-                                    "object": {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "object": {
-                                              "call": {
-                                                "name": "Describe"
-                                              },
-                                              "access": true,
-                                              "name": "w"
-                                            }
+                          "body": {
+                            "arms": [
+                              {
+                                "expression": {
+                                  "object": {
+                                    "call": {
+                                      "arguments": [
+                                        {
+                                          "object": {
+                                            "call": {
+                                              "name": "Describe"
+                                            },
+                                            "access": true,
+                                            "name": "w"
                                           }
-                                        ],
-                                        "name": "WriteLine"
-                                      },
-                                      "access": true,
-                                      "name": "Console"
-                                    }
-                                  },
-                                  "break": true,
-                                  "pattern": {
-                                    "name": "w",
-                                    "declaration": true,
-                                    "type": {
-                                      "name": "Widget"
-                                    }
+                                        }
+                                      ],
+                                      "name": "WriteLine"
+                                    },
+                                    "access": true,
+                                    "name": "Console"
                                   }
                                 },
-                                {
-                                  "throw": {
-                                    "new": {
-                                      "type": {
-                                        "name": "InvalidOperationException"
-                                      }
-                                    }
-                                  },
-                                  "pattern": {
-                                    "null": "null",
-                                    "constant": true
+                                "break": true,
+                                "pattern": {
+                                  "name": "w",
+                                  "declaration": true,
+                                  "type": {
+                                    "name": "Widget"
                                   }
-                                },
-                                {
-                                  "text": "default: break",
-                                  "break": true
                                 }
-                              ]
-                            }
-                          ],
-                          "values": [
-                            {
-                              "expression": {
-                                "name": "token"
+                              },
+                              {
+                                "throw": {
+                                  "new": {
+                                    "type": {
+                                      "name": "InvalidOperationException"
+                                    }
+                                  }
+                                },
+                                "pattern": {
+                                  "null": "null",
+                                  "constant": true
+                                }
+                              },
+                              {
+                                "text": "default: break",
+                                "break": true
                               }
+                            ]
+                          },
+                          "value": {
+                            "expression": {
+                              "name": "token"
                             }
-                          ]
+                          }
                         }
                       ],
                       "expressions": [
@@ -1618,9 +1614,7 @@
                                 "discard": "_"
                               }
                             ],
-                            "names": [
-                              "widget"
-                            ]
+                            "name": "widget"
                           },
                           "type": {
                             "name": "string"
@@ -3362,9 +3356,7 @@
                                   }
                                 }
                               ],
-                              "names": [
-                                "o"
-                              ]
+                              "name": "o"
                             }
                           }
                         }
