@@ -414,6 +414,27 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // string+name fields in 1-elem JSON arrays).
             ("literal", "assign"),
             ("literal", "int"),
+            // C# `<namespace>` parent role-uniform multi member-type
+            // cases: classes/records/enums/etc. can appear multiple
+            // times under one namespace (multi enums/records/classes
+            // are common in the blueprint; rest are rarer but
+            // possible). Targeted role tags replace the
+            // bulk-distribute entry on `"namespace"` (removed iter
+            // 307 — that entry was wrapping the singleton namespace
+            // name and any singleton member-type wrappers in 1-elem
+            // JSON arrays). The ratchet (iter 298) catches future
+            // C# member-types missed here.
+            ("namespace", "class"),
+            ("namespace", "struct"),
+            ("namespace", "interface"),
+            ("namespace", "enum"),
+            ("namespace", "delegate"),
+            ("namespace", "record"),
+            ("namespace", "import"),
+            ("namespace", "namespace"),
+            // Comments between namespace members (e.g.
+            // `// section header` between two classes).
+            ("namespace", "comment"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
@@ -447,7 +468,12 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
         // C# import has exactly 1 name OR 1 path, never multiple
         // direct children needing list-tagging). Path's inner names
         // are still tagged via `flatten_nested_paths`.
-        &["body", "block", "unit", "namespace", "tuple", "list", "dict", "array", "hash", "macro", "template", "string", "repetition"],
+        // `"namespace"` removed iter 307 — same archetype: was
+        // wrapping singleton `<name>` (namespace name) and singleton
+        // member-type wrappers (`<delegate>`, `<interface>`, `<struct>`)
+        // in 1-elem arrays. Targeted role tags below cover the
+        // role-uniform multi-cardinality member types.
+        &["body", "block", "unit", "tuple", "list", "dict", "array", "hash", "macro", "template", "string", "repetition"],
     )?;
     Ok(())
 }

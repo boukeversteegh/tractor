@@ -2167,34 +2167,30 @@
           "name": "Demo"
         }
       ],
-      "names": [
-        "Tractor.Fixtures.Traditional"
-      ],
-      "delegates": [
-        {
-          "parameters": [
-            {
-              "name": "value",
-              "type": {
-                "name": "T"
-              }
-            }
-          ],
-          "public": true,
-          "type": {
-            "name": "TResult"
-          },
-          "name": "Transformer",
-          "generics": [
-            {
+      "name": "Tractor.Fixtures.Traditional",
+      "delegate": {
+        "parameters": [
+          {
+            "name": "value",
+            "type": {
               "name": "T"
-            },
-            {
-              "name": "TResult"
             }
-          ]
-        }
-      ],
+          }
+        ],
+        "public": true,
+        "type": {
+          "name": "TResult"
+        },
+        "name": "Transformer",
+        "generics": [
+          {
+            "name": "T"
+          },
+          {
+            "name": "TResult"
+          }
+        ]
+      },
       "enums": [
         {
           "body": {
@@ -2263,463 +2259,459 @@
           }
         }
       ],
-      "interfaces": [
-        {
-          "body": {
-            "events": [
-              {
-                "variable": {
-                  "name": "Added",
+      "interface": {
+        "body": {
+          "events": [
+            {
+              "variable": {
+                "name": "Added",
+                "type": {
                   "type": {
-                    "type": {
+                    "arguments": [
+                      {
+                        "$type": "type",
+                        "name": "T"
+                      }
+                    ],
+                    "generic": true,
+                    "name": "EventHandler"
+                  }
+                }
+              }
+            }
+          ],
+          "methods": [
+            {
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              ],
+              "public": true,
+              "returns": {
+                "type": {
+                  "text": "T",
+                  "nullable": true
+                }
+              },
+              "name": "Find"
+            },
+            {
+              "name": "AllAsync",
+              "public": true,
+              "returns": {
+                "type": {
+                  "arguments": [
+                    {
+                      "$type": "type",
+                      "generic": true,
+                      "name": "IReadOnlyList",
                       "arguments": [
                         {
                           "$type": "type",
                           "name": "T"
                         }
-                      ],
-                      "generic": true,
-                      "name": "EventHandler"
-                    }
-                  }
-                }
-              }
-            ],
-            "methods": [
-              {
-                "parameters": [
-                  {
-                    "name": "id",
-                    "type": {
-                      "name": "int"
-                    }
-                  }
-                ],
-                "public": true,
-                "returns": {
-                  "type": {
-                    "text": "T",
-                    "nullable": true
-                  }
-                },
-                "name": "Find"
-              },
-              {
-                "name": "AllAsync",
-                "public": true,
-                "returns": {
-                  "type": {
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "generic": true,
-                        "name": "IReadOnlyList",
-                        "arguments": [
-                          {
-                            "$type": "type",
-                            "name": "T"
-                          }
-                        ]
-                      }
-                    ],
-                    "generic": true,
-                    "name": "Task"
-                  }
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "IRepository",
-          "generics": [
-            {
-              "name": "T",
-              "class": true,
-              "new": true
-            }
-          ]
-        }
-      ],
-      "structs": [
-        {
-          "body": {
-            "methods": [
-              {
-                "body": {
-                  "binaries": [
-                    {
-                      "right": {
-                        "expression": {
-                          "binary": {
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "p"
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "is": {
-                            "pattern": {
-                              "name": "p",
-                              "declaration": true,
-                              "type": {
-                                "name": "Point"
-                              }
-                            },
-                            "name": "o"
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": "&&",
-                        "logical": true,
-                        "and": true
-                      }
-                    }
-                  ]
-                },
-                "public": true,
-                "override": true,
-                "returns": {
-                  "type": {
-                    "name": "bool"
-                  }
-                },
-                "name": "Equals",
-                "parameters": [
-                  {
-                    "name": "o",
-                    "type": {
-                      "text": "object",
-                      "nullable": true
-                    }
-                  }
-                ]
-              },
-              {
-                "body": {
-                  "objects": [
-                    {
-                      "call": {
-                        "arguments": [
-                          {
-                            "name": "X"
-                          },
-                          {
-                            "name": "Y"
-                          }
-                        ],
-                        "name": "Combine"
-                      },
-                      "access": true,
-                      "name": "HashCode"
-                    }
-                  ]
-                },
-                "public": true,
-                "override": true,
-                "returns": {
-                  "type": {
-                    "name": "int"
-                  }
-                },
-                "name": "GetHashCode"
-              }
-            ],
-            "properties": [
-              {
-                "value": {
-                  "expression": {
-                    "name": "x"
-                  }
-                },
-                "public": true,
-                "type": {
-                  "name": "double"
-                },
-                "name": "X",
-                "accessors": [
-                  "get;"
-                ]
-              },
-              {
-                "value": {
-                  "expression": {
-                    "name": "y"
-                  }
-                },
-                "public": true,
-                "type": {
-                  "name": "double"
-                },
-                "name": "Y",
-                "accessors": [
-                  "get;"
-                ]
-              }
-            ],
-            "operators": [
-              {
-                "body": {
-                  "news": [
-                    {
-                      "arguments": [
-                        {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "X"
-                                  },
-                                  "access": true,
-                                  "name": "b"
-                                }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "X"
-                                  },
-                                  "access": true,
-                                  "name": "a"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            }
-                          }
-                        },
-                        {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "Y"
-                                  },
-                                  "access": true,
-                                  "name": "b"
-                                }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "Y"
-                                  },
-                                  "access": true,
-                                  "name": "a"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            }
-                          }
-                        }
                       ]
                     }
-                  ]
-                },
-                "public": true,
-                "static": true,
-                "type": {
-                  "name": "Point"
-                },
-                "parameters": [
+                  ],
+                  "generic": true,
+                  "name": "Task"
+                }
+              }
+            }
+          ]
+        },
+        "public": true,
+        "name": "IRepository",
+        "generics": [
+          {
+            "name": "T",
+            "class": true,
+            "new": true
+          }
+        ]
+      },
+      "struct": {
+        "body": {
+          "methods": [
+            {
+              "body": {
+                "binaries": [
                   {
-                    "name": "a",
-                    "type": {
-                      "name": "Point"
-                    }
-                  },
-                  {
-                    "name": "b",
-                    "type": {
-                      "name": "Point"
+                    "right": {
+                      "expression": {
+                        "binary": {
+                          "op": {
+                            "text": "==",
+                            "equals": true
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "p"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "is": {
+                          "pattern": {
+                            "name": "p",
+                            "declaration": true,
+                            "type": {
+                              "name": "Point"
+                            }
+                          },
+                          "name": "o"
+                        }
+                      }
+                    },
+                    "op": {
+                      "text": "&&",
+                      "logical": true,
+                      "and": true
                     }
                   }
                 ]
               },
-              {
-                "body": {
-                  "binaries": [
-                    {
+              "public": true,
+              "override": true,
+              "returns": {
+                "type": {
+                  "name": "bool"
+                }
+              },
+              "name": "Equals",
+              "parameters": [
+                {
+                  "name": "o",
+                  "type": {
+                    "text": "object",
+                    "nullable": true
+                  }
+                }
+              ]
+            },
+            {
+              "body": {
+                "objects": [
+                  {
+                    "call": {
+                      "arguments": [
+                        {
+                          "name": "X"
+                        },
+                        {
+                          "name": "Y"
+                        }
+                      ],
+                      "name": "Combine"
+                    },
+                    "access": true,
+                    "name": "HashCode"
+                  }
+                ]
+              },
+              "public": true,
+              "override": true,
+              "returns": {
+                "type": {
+                  "name": "int"
+                }
+              },
+              "name": "GetHashCode"
+            }
+          ],
+          "properties": [
+            {
+              "value": {
+                "expression": {
+                  "name": "x"
+                }
+              },
+              "public": true,
+              "type": {
+                "name": "double"
+              },
+              "name": "X",
+              "accessors": [
+                "get;"
+              ]
+            },
+            {
+              "value": {
+                "expression": {
+                  "name": "y"
+                }
+              },
+              "public": true,
+              "type": {
+                "name": "double"
+              },
+              "name": "Y",
+              "accessors": [
+                "get;"
+              ]
+            }
+          ],
+          "operators": [
+            {
+              "body": {
+                "news": [
+                  {
+                    "arguments": [
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "X"
+                                },
+                                "access": true,
+                                "name": "b"
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "X"
+                                },
+                                "access": true,
+                                "name": "a"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
+                      },
+                      {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "Y"
+                                },
+                                "access": true,
+                                "name": "b"
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "Y"
+                                },
+                                "access": true,
+                                "name": "a"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "public": true,
+              "static": true,
+              "type": {
+                "name": "Point"
+              },
+              "parameters": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
+                  }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ]
+            },
+            {
+              "body": {
+                "binaries": [
+                  {
+                    "right": {
+                      "expression": {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "Y"
+                                },
+                                "access": true,
+                                "name": "b"
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "Y"
+                                },
+                                "access": true,
+                                "name": "a"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "==",
+                            "equals": true
+                          }
+                        }
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "X"
+                                },
+                                "access": true,
+                                "name": "b"
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "X"
+                                },
+                                "access": true,
+                                "name": "a"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "==",
+                            "equals": true
+                          }
+                        }
+                      }
+                    },
+                    "op": {
+                      "text": "&&",
+                      "logical": true,
+                      "and": true
+                    }
+                  }
+                ]
+              },
+              "public": true,
+              "static": true,
+              "type": {
+                "name": "bool"
+              },
+              "parameters": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
+                  }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ]
+            },
+            {
+              "body": {
+                "unaries": [
+                  {
+                    "binary": {
                       "right": {
                         "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "Y"
-                                  },
-                                  "access": true,
-                                  "name": "b"
-                                }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "Y"
-                                  },
-                                  "access": true,
-                                  "name": "a"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            }
-                          }
+                          "name": "b"
                         }
                       },
                       "left": {
                         "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "X"
-                                  },
-                                  "access": true,
-                                  "name": "b"
-                                }
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "object": {
-                                  "member": {
-                                    "name": "X"
-                                  },
-                                  "access": true,
-                                  "name": "a"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "==",
-                              "equals": true
-                            }
-                          }
+                          "name": "a"
                         }
                       },
                       "op": {
-                        "text": "&&",
-                        "logical": true,
-                        "and": true
+                        "text": "==",
+                        "equals": true
                       }
-                    }
-                  ]
-                },
-                "public": true,
-                "static": true,
-                "type": {
-                  "name": "bool"
-                },
-                "parameters": [
-                  {
-                    "name": "a",
-                    "type": {
-                      "name": "Point"
-                    }
-                  },
-                  {
-                    "name": "b",
-                    "type": {
-                      "name": "Point"
+                    },
+                    "op": {
+                      "text": "!",
+                      "logical": true,
+                      "not": true
                     }
                   }
                 ]
               },
-              {
-                "body": {
-                  "unaries": [
-                    {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
-                          }
-                        },
-                        "op": {
-                          "text": "==",
-                          "equals": true
-                        }
-                      },
-                      "op": {
-                        "text": "!",
-                        "logical": true,
-                        "not": true
-                      }
-                    }
-                  ]
-                },
-                "public": true,
-                "static": true,
-                "type": {
-                  "name": "bool"
-                },
-                "parameters": [
-                  {
-                    "name": "a",
-                    "type": {
-                      "name": "Point"
-                    }
-                  },
-                  {
-                    "name": "b",
-                    "type": {
-                      "name": "Point"
-                    }
+              "public": true,
+              "static": true,
+              "type": {
+                "name": "bool"
+              },
+              "parameters": [
+                {
+                  "name": "a",
+                  "type": {
+                    "name": "Point"
                   }
-                ]
-              }
-            ]
-          },
-          "public": true,
-          "readonly": true,
-          "name": "Point",
-          "parameters": [
-            {
-              "name": "x",
-              "type": {
-                "name": "double"
-              }
-            },
-            {
-              "name": "y",
-              "type": {
-                "name": "double"
-              }
+                },
+                {
+                  "name": "b",
+                  "type": {
+                    "name": "Point"
+                  }
+                }
+              ]
             }
           ]
-        }
-      ],
+        },
+        "public": true,
+        "readonly": true,
+        "name": "Point",
+        "parameters": [
+          {
+            "name": "x",
+            "type": {
+              "name": "double"
+            }
+          },
+          {
+            "name": "y",
+            "type": {
+              "name": "double"
+            }
+          }
+        ]
+      },
       "records": [
         {
           "parameters": [
@@ -3375,14 +3367,10 @@
         }
       ],
       "file": true,
-      "names": [
-        "Tractor.Fixtures.FileScoped"
-      ],
-      "imports": [
-        {
-          "name": "System"
-        }
-      ],
+      "name": "Tractor.Fixtures.FileScoped",
+      "import": {
+        "name": "System"
+      },
       "comments": [
         "// Iter 20: new shapes — statements, expressions, patterns, literals.",
         {
