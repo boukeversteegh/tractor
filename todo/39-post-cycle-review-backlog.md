@@ -348,11 +348,40 @@ context. 15 findings; severity per reviewer.
   Reproduce: `tests/integration/languages/java/blueprint.java.snapshot.txt:67`.
 
 - [ ] **Ruby: `member[static]` chain has no object slot** *(MEDIUM,
-  principle #5 cross-language)*. `Configuration::Defaults` renders as
+  principle #5 cross-language; iter 343 attempted, reverted —
+  needs deeper design)*. `Configuration::Defaults` renders as
   `member[static]/member[static]/name=Configuration/name=Defaults` —
   no `<object>` or `<member>` slot. Other languages wrap in
   `path/`, `<object[access]>`, etc.
   Reproduce: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:549-551`.
+
+  **Iter 343 attempt notes**: tried mirroring PHP's
+  `class_constant_access` Custom handler (wrap LHS in `<object>`,
+  RHS in `<property>`, then chain inversion runs). Worked for
+  the 2-element-child case (`A::B::C` chain-inverts cleanly to
+  `<object[access]>/<name>A</name>/<member[static]>/<name>B</name>
+  </member>/<member[static]>/<name>C</name></member></object>`).
+
+  BUT broke for the 1-element-child top-level case `::Configuration`
+  (Ruby blueprint line 172 has `::Configuration::Defaults`):
+  - Tree-sitter emits `ScopeResolution(ScopeResolution(Configuration), Defaults)`.
+  - Inner ScopeResolution has only 1 element child (no LHS).
+  - Whatever the handler emits for the 1-child case (bare
+    `<member[static]><name>Foo</name></member>` OR
+    `<member[static]><property><name>Foo</name></property></member>`),
+    chain inversion mishandles it: when the OUTER member wraps the
+    inner as its `<object>`, chain inversion treats the inner as a
+    chain step (because it has `<member>` element name) AND the
+    outer as a step → produces TWO `<member[static]>` siblings under
+    `<object[access]>` instead of nested chain steps. Triggers
+    `no-children-overflow` ratchet (count 13 → 14).
+
+  **Design challenge**: top-level `::Foo` form has no receiver.
+  Should it render as bare `<name>Foo</name>` (lose the static
+  marker), as `<member[static]>` with no slots (current), or as
+  `<object[access]>` with just one child (synthesizes the chain
+  shape but with degenerate receiver)? Each has tradeoffs. Iter
+  343 reverted; needs subagent design review before retry.
 
 - [ ] **Rust: `pattern[or]/` flattens variants and bindings
   together** *(MEDIUM)*. `Shape::Dot(0, y) | Shape::Dot(y, 0)` arm

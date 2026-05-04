@@ -15,6 +15,64 @@
 
 use crate::support::semantic::*;
 
+/// Cross-language: every C-family language with `try/catch/finally`
+/// renders this as `<try>` with `<body>`/`<catch>`/`<finally>` slot
+/// children (Principle #5 cross-language unified shape).
+///
+/// Per-language tests below pin the language-specific catch
+/// parameter / call body shapes. This loop pins the structural
+/// slot contract uniformly across 4 languages so a regression in
+/// any one trips this single test rather than the maintainer
+/// noticing per-language drift.
+///
+/// Python (`except`/`raise`), Ruby (`begin`/`rescue`/`ensure`), and
+/// Rust (`?` suffix) are deliberately excluded — they use distinct
+/// element names, asserted separately per the cold-read finding
+/// "names differ slightly is fine".
+#[test]
+fn cross_language_try_catch_finally_slot_contract() {
+    let canonical = "//try[body][catch][finally]";
+
+    for (lang, src) in &[
+        ("java", r#"
+            class S {
+                void run() {
+                    try { flaky(); }
+                    catch (Exception e) { handle(); }
+                    finally { cleanup(); }
+                }
+            }
+        "#),
+        ("csharp", r#"
+            class S {
+                void Run() {
+                    try { Flaky(); }
+                    catch (System.Exception e) { Handle(); }
+                    finally { Cleanup(); }
+                }
+            }
+        "#),
+        ("typescript", r#"
+            try { flaky(); }
+            catch (e) { handle(); }
+            finally { cleanup(); }
+        "#),
+        ("php", r#"
+            <?php
+            try { flaky(); }
+            catch (Exception $e) { handle(); }
+            finally { cleanup(); }
+        "#),
+    ] {
+        claim(
+            &format!("{lang}: try/catch/finally renders as <try> with body/catch/finally slot children"),
+            &mut parse_src(lang, src),
+            canonical,
+            1,
+        );
+    }
+}
+
 #[test]
 fn java() {
     let mut tree = parse_src("java", r#"
