@@ -316,14 +316,13 @@ context. 15 findings; severity per reviewer.
   `chain::cross_language_index_access_chain_inverts` test for the
   cross-language unified shape.
 
-- [ ] **Ruby: nested `left/expression/left/expression/left/...`
-  destructure** *(HIGH, looks like a transformation bug)*. Three
-  layers of `left/expression/left/` for `(_, a, b) = [10,20]`-style
-  multiple-assignment destructure. Likely the transform walks a
-  chained `multiple_assignment` and produces a left-spine instead of
-  flattening into a `pattern[destructured]/...` sibling list.
-  TS uses `pattern[array]/...` for the same concept.
-  Reproduce: `tests/integration/languages/ruby/blueprint.rb.snapshot.txt:577-580`.
+- [x] ~~**Ruby: nested `left/expression/left/expression/left/...`
+  destructure**~~ *(HIGH; CLOSED iter 346)*. Changed
+  `RubyKind::LeftAssignmentList` from `Rename(Left)` to `Flatten`,
+  promoting the comma-separated names directly into the outer
+  field-wrapped `<left>`. Eliminates one redundant `<left>` level
+  in both `_, a, b = [...]` and `(a, b) = [...]` forms. JSON shape
+  is now a direct `assign.left.expressions: [...]` array.
 
 - [ ] **Rust: `if`/`while` `condition/` has role-mixed flat
   children for `if let` and let-chains** *(HIGH, principle #19)*.
