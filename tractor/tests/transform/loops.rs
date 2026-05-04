@@ -487,3 +487,43 @@ fn typescript_for_multi_update_lists_unaries() {
         "//for/unary[not(@list)]",
         1);
 }
+
+/// Cross-language: every `while (X)` loop wraps its condition under
+/// `<while>/<condition>/<expression>/...` (Principle #15: every
+/// expression position carries an `<expression>` host).
+///
+/// Per-language tests above pin this with the inner-expression kind
+/// (`<binary>` / `<compare>` / `<name>`); this loop pins the
+/// surrounding host contract uniformly across 7 chain-inverting
+/// languages — a regression in `wrap_expression_positions`'
+/// `condition` handling for any one language would trip this single
+/// test rather than the maintainer noticing per-language drift.
+#[test]
+fn cross_language_while_condition_has_expression_host() {
+    let canonical = "//while/condition/expression";
+
+    for (lang, src) in &[
+        ("typescript", "while (running) { tick(); }"),
+        ("java",       "class X { void f(boolean running) { while (running) { tick(); } } }"),
+        ("csharp",     "class X { void F(bool running) { while (running) { Tick(); } } }"),
+        ("rust",       "fn f(running: bool) { while running { tick(); } }"),
+        ("go",         "package m\nfunc f(running bool) { for running { tick() } }"),
+        ("python",     "while running:\n    tick()\n"),
+        ("php",        "<?php while ($running) { tick(); }"),
+        ("ruby",       "while running\n  tick\nend\n"),
+    ] {
+        // Note: Go uses `for` with a single condition for while-loops;
+        // the canonical xpath becomes `//for/condition/expression`.
+        let xpath = if *lang == "go" {
+            "//for/condition/expression"
+        } else {
+            canonical
+        };
+        claim(
+            &format!("{lang}: while loop condition wraps in <expression> host (Principle #15)"),
+            &mut parse_src(lang, src),
+            xpath,
+            1,
+        );
+    }
+}
