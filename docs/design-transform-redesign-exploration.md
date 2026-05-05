@@ -1166,6 +1166,122 @@ Three paths from here:
    the rest is volume work. Time to plan the migration to
    production rather than to extend the experiment.
 
+## 16. Design — `GapSource` abstraction (deferred)
+
+A future-looking architectural decision that emerged during iter 4
+discussion. Documented here so it's not forgotten; *not yet
+implemented* (~80-300 LOC change, deferred until needed).
+
+### The insight
+The IR doesn't just enable parsing. It enables **rendering from
+scratch** — i.e. a code generator builds an IR by hand (or converts
+JSON / XML to IR), then the SAME render logic that we use for
+parsed IR emits source code. The two cases differ only in *where
+gap text comes from*:
+
+- **Parsed mode**: gap text is `&source[start..end]` (the user's
+  original code).
+- **Bare mode**: gap text comes from per-variant defaults
+  (`(`, `, `, `)`, ` {\n`, etc. — language style choices).
+
+If both cases share the rendering core, we get bidirectionality
+(parse ↔ render) for free.
+
+### The design
+Replace the renderer's `&str source` parameter with a trait:
+
+```rust
+pub trait GapSource {
+    /// Return the text for byte range [start..end). Used for both
+    /// inter-child gaps and leaf text. Cow because some
+    /// implementations slice from a borrowed string while others
+    /// build owned defaults.
+    fn slice(&self, start: u32, end: u32) -> Cow<'_, str>;
+
+    /// Override leaf-value lookup. For variants that carry an
+    /// explicit `value: Option<String>` (added when needed), the
+    /// renderer asks the gap source whether to use the override.
+    /// Default implementation returns None (use byte-range slice).
+    fn leaf_override(&self, _ir: &Ir) -> Option<&str> { None }
+}
+
+pub struct SourceGaps<'a>(pub &'a str);              // parsed mode
+pub struct DefaultGaps<'a>(pub &'a DefaultsTable);   // bare mode
+
+impl GapSource for SourceGaps<'_> {
+    fn slice(&self, start: u32, end: u32) -> Cow<'_, str> {
+        Cow::Borrowed(&self.0[start as usize..end as usize])
+    }
+}
+
+impl GapSource for DefaultGaps<'_> {
+    fn slice(&self, _start: u32, _end: u32) -> Cow<'_, str> {
+        // Bare mode: byte ranges are zero-width; defaults are looked
+        // up by IR variant + position. Implementation detail.
+        unimplemented!("bare-mode lookup")
+    }
+}
+```
+
+### Leaf values: `Option<String>` override
+Bare mode leaves can't slice source (there is none). Add an optional
+override on leaf variants:
+
+```rust
+Ir::Int   { range: ByteRange, value: Option<String>, span: Span }
+Ir::Name  { range: ByteRange, value: Option<String>, span: Span }
+// ...
+```
+
+- Parsed: `value: None`, renderer uses `source[range]`.
+- Bare: `value: Some("42")`, renderer uses it directly.
+- **Edited**: `value: Some("99")` overrides the original — natural
+  for codemod-style edits.
+
+### Why this beats inline gap storage
+An alternative is to store gap text *inline* on each variant
+(`Ir::Class { opening_brace: String, ... }`) — what libcst and
+Roslyn do. That works but has costs:
+
+- **Schema explosion.** `Ir::Function` has 10+ gap positions
+  (modifiers, return type, name, generics, params, body, braces).
+  Multiply by ~50+ variants.
+- **Cross-language tension.** `IRClass.opening_brace` is C#-flavored;
+  Python uses `:` and indentation. The same `Ir::Class` can't carry
+  both natively.
+- **Couples IR to format.** The IR is currently *structural*; format
+  is separable. Inline storage merges them.
+
+`GapSource` keeps the IR purely structural. Format choices live in:
+- `&str` (parsed mode), or
+- `DefaultsTable` (bare mode), per-language and per-construct.
+
+The same IR works for both, no schema duplication, no cross-language
+divergence.
+
+### When to implement
+The refactor is small (~80 LOC for the trait + renderer plumbing,
+~20 LOC for `Option<String>` overrides). But it's **not blocking
+anything currently**. Defer until either:
+
+1. The render-from-scratch feature ships (need bare mode).
+2. Codemod-style edits are needed (need value overrides).
+3. We touch the renderer for another reason (cheap to bundle).
+
+### Done note
+Once implemented, the IR architecture supports four use cases with
+one rendering core:
+
+| Mode | gap source | leaf source | use case |
+|---|---|---|---|
+| Parsed | `SourceGaps(&source)` | `source[range]` | current — `string(.) == source` |
+| Bare | `DefaultGaps(&defaults)` | `value.as_deref().unwrap()` | codegen, JSON → source |
+| Edited | hybrid impl | `value.or(source[range])` | codemod, refactor tools |
+| Rewrite-test | bare with custom defaults | inject specific values | round-trip-checking tests |
+
+This is the architectural payoff that makes the IR investment pay
+back many times.
+
 ## Appendix A — current pipeline as a phase diagram
 
     ┌──────────────────┐  tree-sitter, per-language grammar
