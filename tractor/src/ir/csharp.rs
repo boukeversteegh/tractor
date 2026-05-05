@@ -791,6 +791,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "discard"                   => simple_statement(node, "discard", source),
         "tuple_element"             => simple_statement(node, "element", source),
         "when_clause"               => simple_statement(node, "when", source),
+        // type_parameter — `<generic>` with optional variance + name.
+        "type_parameter" => simple_statement(node, "generic", source),
+
         // Flatten-only kinds — render as Inline so children promote
         // to the parent's element.
         "switch_body"
@@ -809,7 +812,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "string_literal_encoding"
         | "escape_sequence"
         | "character_literal_content"
-        | "join_into_clause" => {
+        | "join_into_clause"
+        | "type_parameter_list"
+        | "parameter_list"
+        | "type_argument_list"
+        | "argument_list" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
