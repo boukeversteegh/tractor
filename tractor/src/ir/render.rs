@@ -1092,8 +1092,8 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Binary { op_text, op_marker, op_range, left, right, range, span } => {
-            let node = element(xot, "binary", *span);
+        Ir::Binary { element_name, op_text, op_marker, op_range, left, right, range, span } => {
+            let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
 
             // <left><expression>...</expression></left>

@@ -206,6 +206,11 @@ pub enum Ir {
     /// The two `{gap}`s are whitespace between `left`/`op`/`right` in
     /// the source, derived from `op_range` and the operands' ranges.
     Binary {
+        /// Element name. "binary" for arithmetic / bitwise / shift /
+        /// comparison; "logical" for short-circuit boolean (`and`,
+        /// `or`). Lets the renderer emit the right outer element
+        /// without changing shape.
+        element_name: &'static str,
         op_text: String,
         op_marker: &'static str,
         op_range: ByteRange,

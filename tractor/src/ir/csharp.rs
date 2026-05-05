@@ -1144,8 +1144,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            // C# `&&`/`||` are also handled by binary_expression
+            // (no separate boolean_operator kind). Use logical
+            // element name when the operator is short-circuit.
+            let element_name = match op_text.as_str() {
+                "&&" | "||" => "logical",
+                _ => "binary",
+            };
             match (left, right, op_marker(&op_text)) {
                 (Some(l), Some(r), Some(marker)) => Ir::Binary {
+                    element_name,
                     op_text,
                     op_marker: marker,
                     op_range,

@@ -239,6 +239,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
                 (Some(l), Some(r), Some(marker)) => Ir::Binary {
+                    element_name: "binary",
                     op_text,
                     op_marker: marker,
                     op_range,
@@ -254,6 +255,41 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 },
             }
         }
+
+        // `a and b`, `a or b` — short-circuit logical. tree-sitter
+        // exposes `left`, `operator`, `right` like binary_operator.
+        // Renders as `<logical>` (distinct from `<binary>`).
+        "boolean_operator" => {
+            let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
+            let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            let marker = match op_text.as_str() {
+                "and" => "and",
+                "or"  => "or",
+                _     => "and",  // fallback
+            };
+            match (left, right) {
+                (Some(l), Some(r)) => Ir::Binary {
+                    element_name: "logical",
+                    op_text,
+                    op_marker: marker,
+                    op_range,
+                    left: Box::new(l),
+                    right: Box::new(r),
+                    range,
+                    span,
+                },
+                _ => Ir::Unknown {
+                    kind: "boolean_operator(missing)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
+        // `not x` — handled by unary_operator below; the operator text
+        // "not" already maps via op_marker.
 
         // Unary `op x`. tree-sitter Python: `unary_operator` with
         // fields `operator` and `argument`.
