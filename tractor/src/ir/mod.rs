@@ -42,8 +42,11 @@
 pub mod types;
 pub mod render;
 pub mod python;
+pub mod csharp;
 
 pub use types::{AccessSegment, ByteRange, Ir, ParamKind, Span, to_source};
 pub use render::render_to_xot;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
+#[cfg(feature = "native")]
+pub use csharp::lower_csharp_root;

@@ -1047,6 +1047,125 @@ Three honest paths from here:
    real-world cross-language tensions earlier than full Python
    parity would.
 
+## 15. Iteration 4 — cross-language validation (C# slice)
+
+### Why C#
+Picked per the user's direction: *"the language that gave us the
+most whack-a-moles to evaluate against."* By git-log commit count:
+
+| Language    | Commits | Custom handlers | post_transform LOC |
+| ----------- | ------- | --------------- | ------------------ |
+| **C#**      | **86**  | 23              | 440                |
+| Rust        | 67      | 33              | 469                |
+| TypeScript  | 66      | 37              | 311                |
+| Java        | 65      | 30              | 98                 |
+| Go          | 65      | 26              | 172                |
+| Ruby        | 52      | 7               | 416                |
+| PHP         | 47      | 21              | 335                |
+
+C# also carries the unsolved `?.` conditional-access design problem,
+the chain-inversion adapter, and various operator-extraction quirks
+— a strong stress test for the typed-IR architecture.
+
+### What was added for C#
+
+Code: `tractor/src/ir/csharp.rs` (~280 LOC).
+
+**Reused from Python** (no changes needed): all access-chain
+machinery (`Ir::Access`, `AccessSegment::Member`, `AccessSegment::Index`),
+calls (`Ir::Call`), binary/unary operators (`Ir::Binary`,
+`Ir::Unary`), all atoms (`Ir::Name`, `Ir::Int`, `Ir::Float`,
+`Ir::String`, `Ir::True`, `Ir::False`), expression hosts
+(`Ir::Expression`), passthrough (`Ir::Inline`), and escape hatch
+(`Ir::Unknown`).
+
+**Added exactly two things** for C#:
+
+1. `Ir::Null` — the `null` keyword literal. Distinct from
+   `Ir::None` (Python's keyword text differs).
+2. `element_name: &'static str` field on `Ir::Module`. Python emits
+   `<module>`, C# emits `<unit>`. (Cross-language unification of this
+   name is a Principle #5 audit candidate but requires the existing
+   pipeline's per-language choice to be revisited; we keep parity.)
+
+The operator-marker map for C# reuses the same names (Python: `plus`,
+`minus`, `multiply`, …) — Principle #5 working in our favour.
+
+### Result
+
+**13/13 C# tests pass** including against the full
+`tests/integration/languages/csharp/blueprint.cs` (239 lines, ~7 KiB):
+
+- Round-trip identity holds.
+- XPath `string(.)` recovery holds.
+- Five expression-subtree cases (`a.b.c`, `a[0]`, `f(x)`, `42`,
+  `a.b`) round-trip and recover cleanly.
+
+**Python tests still all green** (14/14 slice + 60% blueprint
+parity, unchanged); **lib tests still green** (341/341).
+
+### Architectural finding
+
+The IR's **expression-core vocabulary is cross-language reusable as-is**.
+This was the decisive question: does typed IR scale to multiple
+languages without each one demanding its own variants? For the
+expression core: **yes, almost entirely.**
+
+The only divergences this slice surfaced:
+- One language-keyword variant (`Ir::Null`).
+- One language-specific element name on `Ir::Module`.
+
+Both are *honest* divergences — they reflect real differences in
+the source languages, not architectural problems. They show up at
+type definition time, not as debugging-time surprises.
+
+Compare this against the equivalent pain in the imperative pipeline:
+- C# has its own 280-LOC `chain_inversion` adapter (one of 17 across
+  languages).
+- C#'s `pre_transform_hook` does `csharp_normalize_conditional_access`
+  to undo a tree-sitter quirk before chain inversion can run.
+- C#'s `transformations.rs` (827 LOC) duplicates many shapes that
+  Python, Java, TypeScript also handle independently.
+
+In the typed-IR pipeline, *one* `lower_csharp_root` (~280 LOC,
+total) handles the same expression core that Python's
+`lower_python_root` (~700 LOC, but covering more constructs) handles.
+The shared `render` is unchanged.
+
+### Honest limits of this slice
+
+C# tree-sitter requires syntactic context (a class with a method)
+before it accepts an expression statement. So the slice tests wrap
+each expression in `class C { void M() { var x = <expr>; } }`. The
+*surrounding* class/method/variable structure isn't yet in the IR —
+expressions show up wrapped in `Ir::Unknown` for the
+`class_declaration` outer scope. The architectural invariants still
+hold (the Unknown's range covers the unhandled bytes), but
+structural parity for the wrapper isn't tested yet.
+
+To extend further: add `Ir::Class`, `Ir::Method`, `Ir::Variable`,
+`Ir::Block` for C#. These are mostly cross-language reusable too —
+adding modifiers (`internal`, `public`, etc.) is one new field on
+`Ir::Class`, and Python's existing `Ir::Class` has all the rest.
+
+### Decision point (user-directed)
+The cross-language architectural validation is complete. The
+architecture handles a *very different* language (different
+tree-sitter grammar, different syntactic constraints, different
+keyword set) with **two type-level changes** and **zero changes to
+shared infrastructure.**
+
+Three paths from here:
+
+1. **Continue extending C# coverage** to match Python's level.
+2. **Pivot to Ruby** — second-highest pain language in the existing
+   pipeline. Ruby's grammar is fundamentally weirder (no
+   `expression_statement`, scope-resolution quirks); a successful
+   Ruby slice would close the architectural validation case.
+3. **Stop and assess.** The architecture is proven cross-language;
+   the rest is volume work. Time to plan the migration to
+   production rather than to extend the experiment.
+
 ## Appendix A — current pipeline as a phase diagram
 
     ┌──────────────────┐  tree-sitter, per-language grammar

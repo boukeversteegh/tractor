@@ -29,6 +29,7 @@ pub fn lower_python_root(root: TsNode<'_>, source: &str) -> Ir {
     let range = range_of(root);
     match root.kind() {
         "module" => Ir::Module {
+            element_name: "module",
             children: lower_children(root, source),
             range,
             span,

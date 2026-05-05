@@ -139,10 +139,18 @@ impl ByteRange {
 pub enum Ir {
     // ----- Containers -----------------------------------------------------
 
-    /// `<module>` — top-level program. The CST root for languages that
-    /// have one (Python `module`, Java `program`, …). Children are
-    /// statement-or-declaration IR.
+    /// `<module>` / `<unit>` / `<program>` — top-level program. The
+    /// CST root for languages that have one. Children are
+    /// statement-or-declaration IR. `element_name` lets each language
+    /// pick its own name to match the existing pipeline:
+    /// - Python: `"module"`
+    /// - C# / TypeScript: `"unit"` or `"program"` (TBD per language)
+    /// - Java: `"program"`
+    /// Cross-language unification of this name is a Principle #5
+    /// audit candidate but requires the existing pipeline's choice
+    /// per language to be revisited; we keep parity for now.
     Module {
+        element_name: &'static str,
         children: Vec<Ir>,
         range: ByteRange,
         span: Span,
@@ -535,6 +543,11 @@ pub enum Ir {
     True   { range: ByteRange, span: Span },
     False  { range: ByteRange, span: Span },
     None   { range: ByteRange, span: Span },
+    /// `null` literal (C# / Java / TS / PHP). Distinct from `None`
+    /// (Python) because the keyword text differs and Principle #5
+    /// applies *within* a language. We may unify the *element name*
+    /// at render time later if a cross-language audit decides so.
+    Null   { range: ByteRange, span: Span },
 
     // ----- Escape hatches -------------------------------------------------
 
@@ -672,6 +685,7 @@ impl Ir {
             | Ir::True { span, .. }
             | Ir::False { span, .. }
             | Ir::None { span, .. }
+            | Ir::Null { span, .. }
             | Ir::Inline { span, .. }
             | Ir::Unknown { span, .. } => *span,
         }
@@ -727,6 +741,7 @@ impl Ir {
             | Ir::True { range, .. }
             | Ir::False { range, .. }
             | Ir::None { range, .. }
+            | Ir::Null { range, .. }
             | Ir::Inline { range, .. }
             | Ir::Unknown { range, .. } => *range,
         }

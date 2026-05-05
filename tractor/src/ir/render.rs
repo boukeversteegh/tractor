@@ -47,8 +47,8 @@ pub fn render_to_xot(
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     match ir {
-        Ir::Module { children, range, span } => {
-            let node = element(xot, "module", *span);
+        Ir::Module { element_name, children, range, span } => {
+            let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
             render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
                 render_to_xot(xot, parent, child, source).map(|_| ())
@@ -774,6 +774,7 @@ pub fn render_to_xot(
         Ir::True { range, span } => leaf(xot, parent, "true", source, *range, *span),
         Ir::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
         Ir::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
+        Ir::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
 
         Ir::Inline { children, range, span: _ } => {
             // Inline contributes no element of its own. Children render
