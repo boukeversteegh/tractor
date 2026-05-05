@@ -99,3 +99,101 @@ fn python_missing_kinds() {
         }
     }
 }
+
+#[test]
+#[ignore]
+fn dump_chain_render() {
+    let s = "obj.foo().bar.baz()\n";
+    let parsed = tractor::parser::parse_string_to_xot(
+        s, "python", "<x>".to_string(), None,
+    ).expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else { parsed.root };
+    println!("{}", parsed.xot.to_string(root).unwrap());
+}
+
+#[test]
+#[ignore]
+fn dump_except_render() {
+    let s = "try:\n    f()\nexcept ValueError as err:\n    g()\n";
+    let parsed = tractor::parser::parse_string_to_xot(
+        s, "python", "<x>".to_string(), None,
+    ).expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else { parsed.root };
+    println!("{}", parsed.xot.to_string(root).unwrap());
+}
+
+#[test]
+#[ignore]
+fn dump_list_pattern_render() {
+    let s = "match x:\n    case [1, 2, *rest]:\n        pass\n";
+    let parsed = tractor::parser::parse_string_to_xot(
+        s, "python", "<x>".to_string(), None,
+    ).expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else { parsed.root };
+    println!("{}", parsed.xot.to_string(root).unwrap());
+}
+
+#[test]
+#[ignore]
+fn dump_fstring_format_cst() {
+    let s = "x = f\"hello {name!r}, value={n:>05d} nested={f'{name}'}\"\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
+        let indent = "  ".repeat(depth);
+        let txt = n.utf8_text(src).unwrap_or("?");
+        let short: String = txt.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", n.kind(), short);
+        let mut c = n.walk();
+        for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
+    }
+    walk(tree.root_node(), s.as_bytes(), 0);
+}
+
+#[test]
+#[ignore]
+fn dump_dict_pattern_cst() {
+    let s = "match x:\n    case {\"a\": 1, \"b\": 2}:\n        pass\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
+        let indent = "  ".repeat(depth);
+        let txt = n.utf8_text(src).unwrap_or("?");
+        let short: String = txt.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = n.parent() {
+            let mut c = parent.walk();
+            for (i, ch) in parent.children(&mut c).enumerate() {
+                if ch.id() == n.id() {
+                    field = parent.field_name_for_child(i as u32);
+                    break;
+                }
+            }
+        }
+        eprintln!("{indent}{}{} text={:?}", n.kind(), field.map(|f| format!(" [{f}]")).unwrap_or_default(), short);
+        let mut c = n.walk();
+        for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
+    }
+    walk(tree.root_node(), s.as_bytes(), 0);
+}
+
+#[test]
+#[ignore]
+fn dump_dict_pattern_render() {
+    let s = "match x:\n    case {\"a\": 1, \"b\": 2}:\n        pass\n";
+    let parsed = tractor::parser::parse_string_to_xot(
+        s, "python", "<x>".to_string(), None,
+    ).expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else { parsed.root };
+    println!("{}", parsed.xot.to_string(root).unwrap());
+}

@@ -110,9 +110,37 @@ pub fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             // Python `with X as a, Y as b: ...` — `<with>` parent
             // with multiple `<value>` (as-clause) siblings.
             ("with", "value"),
+            ("with", "as"),
             // Python `try: ... except A: ... except B: ...` — `<try>`
             // parent with multiple `<except>` siblings.
             ("try", "except"),
+            // IR-pipeline coverage: the imperative pipeline tagged
+            // these via per-list `Flatten { distribute_list }` rules
+            // that ran before this post-pass; the IR pipeline carries
+            // parameters / arguments / extends / for-binders directly
+            // on typed variants so they don't go through that step.
+            ("function", "parameter"),
+            ("class", "extends"),
+            ("class", "name"),
+            // call's positional-name args, integer args, and spread.
+            ("call", "name"),
+            ("call", "int"),
+            ("call", "string"),
+            ("call", "spread"),
+            ("call", "object"),
+            // `for x, y in ...` and `for x in xs for y in ys` (the
+            // generator/list-comprehension multi-for chain).
+            ("for", "name"),
+            ("generator", "name"),
+            ("generator", "for"),
+            // `pair` (dict literal entry) with multi-name keys/values.
+            ("pair", "name"),
+            // `from . import x` has multiple `<relative>` markers when
+            // the path is `..` / `...` — they should list-tag.
+            ("from", "relative"),
+            // (`pattern`, `value`) for dict patterns is added by
+            // `tag_multi_same_name_children` via the global whitelist.
+            ("pattern", "value"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;

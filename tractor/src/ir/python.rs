@@ -219,6 +219,54 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 None => Vec::new(),
             };
+            // Chain folding: when the callee is itself an
+            // Ir::Access chain (e.g. `obj.foo()`, `a.b.c()`), absorb
+            // the call as the next segment instead of producing a
+            // separate Ir::Call wrapping the chain. The last
+            // AccessSegment::Member's name becomes the call's
+            // `<name>` so the rendered shape is
+            // `<object><name>obj</name><call><name>foo</name>...</call>`
+            // rather than `<call><object>obj.foo</object>...</call>`.
+            // Mirrors C#'s chain-inversion behaviour and matches the
+            // imperative pipeline's chain shape.
+            let callee_range = callee.range();
+            if let Ir::Access { receiver, mut segments, .. } = callee {
+                // Absorb the trailing Member's name into a new Call
+                // segment, OR append a bare Call if no preceding member.
+                let last_member = if let Some(AccessSegment::Member { property_range, property_span, .. }) = segments.last() {
+                    Some((*property_range, *property_span))
+                } else {
+                    None
+                };
+                let call_segment = if let Some((property_range, property_span)) = last_member {
+                    segments.pop();
+                    let segment_range = ByteRange::new(
+                        property_range.start,
+                        range.end,
+                    );
+                    AccessSegment::Call {
+                        name: Some(property_range),
+                        name_span: Some(property_span),
+                        arguments,
+                        range: segment_range,
+                        span,
+                    }
+                } else {
+                    let segment_range = ByteRange::new(
+                        callee_range.end,
+                        range.end,
+                    );
+                    AccessSegment::Call {
+                        name: None,
+                        name_span: None,
+                        arguments,
+                        range: segment_range,
+                        span,
+                    }
+                };
+                segments.push(call_segment);
+                return Ir::Access { receiver, segments, range, span };
+            }
             Ir::Call {
                 callee: Box::new(callee),
                 arguments,
@@ -270,6 +318,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "member_type"            => simple_statement(node, "type",         source),
         "chevron"                => simple_statement(node, "chevron",      source),
         "type_conversion"        => simple_statement(node, "cast",         source),
+        "format_specifier"       => simple_statement(node, "format",       source),
 
         // Comprehensions and related — `[x for x in y]` etc. Old
         // pipeline names them after their literal kind.
@@ -355,15 +404,66 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 span,
             }
         }
-        "case_pattern"              => simple_statement(node, "pattern",   source),
+        // `case_pattern` is a pure wrapper around the actual pattern
+        // shape (dict_pattern, list_pattern, etc.). Flatten so we
+        // don't double-wrap as `<pattern><pattern[dict]>`.
+        "case_pattern" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            // If there's a single named child that's itself a typed
+            // pattern, just unwrap. Otherwise emit a bare <pattern>.
+            if children.len() == 1 {
+                children.into_iter().next().unwrap()
+            } else {
+                Ir::Inline { children, list_name: None, range, span }
+            }
+        }
         "class_pattern"             => simple_statement(node, "pattern",   source),
         "complex_pattern"           => simple_statement(node, "pattern",   source),
-        "dict_pattern"              => simple_statement(node, "pattern",   source),
+        // Discriminator markers on shape-bearing patterns mirror the
+        // imperative pipeline's `RenameWithMarker(Pattern, Dict)`
+        // etc.: each `<pattern[X]>` says "this is the X-shape".
+        // `dict_pattern` is `{ "k1": V1, "k2": V2 }` in match arms.
+        // tree-sitter exposes `string` (key) and `case_pattern`
+        // (value) children. Wrap each value in `<value>` so the
+        // post-pass can list-tag them with `list="values"`.
+        "dict_pattern" => {
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            // Walk children and detect the field name from the parent.
+            for (i, c) in node.children(&mut cursor).enumerate() {
+                if !c.is_named() { continue; }
+                let field_name = node.field_name_for_child(i as u32);
+                if field_name == Some("value") {
+                    let inner = lower_node(c, source);
+                    children.push(Ir::SimpleStatement {
+                        element_name: "value",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                } else {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "pattern",
+                modifiers: Modifiers::default(),
+                extra_markers: &["dict"],
+                children,
+                range,
+                span,
+            }
+        }
+        "list_pattern"              => simple_statement_marked(node, "pattern", &["list"],  source),
+        "tuple_pattern"             => simple_statement_marked(node, "pattern", &["tuple"], source),
+        "union_pattern"             => simple_statement_marked(node, "pattern", &["union"], source),
+        "splat_pattern"             => simple_statement_marked(node, "pattern", &["splat"], source),
         "keyword_pattern"           => simple_statement(node, "pattern",   source),
-        "splat_pattern"             => simple_statement(node, "pattern",   source),
-        "list_pattern"              => simple_statement(node, "pattern",   source),
-        "tuple_pattern"             => simple_statement(node, "pattern",   source),
-        "union_pattern"             => simple_statement(node, "pattern",   source),
         "union_type"                => simple_statement(node, "type",      source),
         "named_expression"          => simple_statement(node, "assign",    source),
         "future_import_statement"   => simple_statement(node, "import",    source),

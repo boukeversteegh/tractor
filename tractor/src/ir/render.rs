@@ -610,8 +610,13 @@ pub fn render_to_xot(
         Ir::ExceptHandler { kind, type_target, binding, filter, body, range, span } => {
             let node = element(xot, kind, *span);
             xot.append(parent, node)?;
-            // Header parts in source order, then body. Wrap type_target
-            // in <type>, binding in <name>, filter in <when><expression>.
+            // Python's `except [Type [as Name]]:` renders the
+            // type+binding pair as `<value><expression>[<as>]...`,
+            // with `<as>` wrapping ONLY when a binding is present.
+            // Detect the python shape by element name "except" and
+            // wrap accordingly. Other languages (C# catch) keep the
+            // older slot layout: `<type>` + bare binding name.
+            let python_shape = *kind == "except";
             #[derive(Clone, Copy)]
             enum Slot<'a> { Type(&'a Ir), Bind(&'a Ir), Filter(&'a Ir), Body(&'a Ir) }
             let mut order: Vec<Slot> = Vec::new();
@@ -622,6 +627,47 @@ pub fn render_to_xot(
             order.sort_by_key(|s| match s {
                 Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i.range().start,
             });
+            // Python: if both type and binding present, wrap them
+            // together in <value><expression><as>...</as></expression></value>.
+            // If only type (no binding), wrap in <value><expression>.
+            // Otherwise fall back to the slot-style layout.
+            if python_shape {
+                if let Some(t) = type_target {
+                    let cr = t.range();
+                    emit_gap(xot, node, source, range.start, cr.start)?;
+                    let outer_end = binding.as_ref().map(|b| b.range().end).unwrap_or(cr.end);
+                    let value = element(xot, "value", t.span());
+                    xot.append(node, value)?;
+                    let expr = element(xot, "expression", t.span());
+                    xot.append(value, expr)?;
+                    if let Some(b) = binding {
+                        let as_el = element(xot, "as", t.span());
+                        xot.append(expr, as_el)?;
+                        render_to_xot(xot, as_el, t, source)?;
+                        emit_gap(xot, as_el, source, cr.end, b.range().start)?;
+                        render_to_xot(xot, as_el, b, source)?;
+                    } else {
+                        render_to_xot(xot, expr, t, source)?;
+                    }
+                    let mut cursor = outer_end;
+                    if let Some(f) = filter {
+                        let fr = f.range();
+                        emit_gap(xot, node, source, cursor, fr.start)?;
+                        let fil = element(xot, "filter", f.span());
+                        xot.append(node, fil)?;
+                        let fexpr = element(xot, "expression", f.span());
+                        xot.append(fil, fexpr)?;
+                        render_to_xot(xot, fexpr, f, source)?;
+                        cursor = fr.end;
+                    }
+                    let br = body.range();
+                    emit_gap(xot, node, source, cursor, br.start)?;
+                    render_to_xot(xot, node, body, source)?;
+                    emit_gap(xot, node, source, br.end, range.end)?;
+                    return Ok(node);
+                }
+                // No type — fall through to slot-style (bare except).
+            }
             let mut cursor = range.start;
             for slot in &order {
                 let inner: &Ir = match slot {
