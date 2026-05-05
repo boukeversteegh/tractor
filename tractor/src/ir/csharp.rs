@@ -737,6 +737,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "preproc_undef"                 => simple_statement(node, "preproc",    source),
         "preproc_warning"               => simple_statement(node, "preproc",    source),
         "shebang_directive"             => simple_statement(node, "shebang",    source),
+        "member_binding_expression"     => simple_statement(node, "member",     source),
+        "element_binding_expression"    => simple_statement(node, "index",      source),
         // Type kinds — render under <type> when used as standalone.
         "implicit_type"                 => simple_statement(node, "type",       source),
         "array_type"                    => simple_statement(node, "type",       source),
