@@ -207,6 +207,119 @@ pub enum Ir {
         span: Span,
     },
 
+    // ----- Function & class declarations ----------------------------------
+
+    /// `<function>` — `def f(...)` / `async def f(...)`. Decorators
+    /// are children at the top (renders before `<name>`); generics
+    /// after name; parameters after generics; `<returns>` for return
+    /// type; `<body>` last.
+    /// `<function[async]>` adds an `<async/>` empty marker child.
+    Function {
+        is_async: bool,
+        decorators: Vec<Ir>,
+        name: Box<Ir>,                  // Ir::Name
+        generics: Option<Box<Ir>>,      // Ir::Generic
+        parameters: Vec<Ir>,            // each Ir::Parameter / Ir::PositionalSeparator / Ir::KeywordSeparator
+        returns: Option<Box<Ir>>,       // Ir::Returns
+        body: Box<Ir>,                  // Ir::Body
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<class>` — `class C(bases): ...`. Same shape pattern as
+    /// `Function`.
+    Class {
+        decorators: Vec<Ir>,
+        name: Box<Ir>,
+        generics: Option<Box<Ir>>,
+        bases: Vec<Ir>,                 // each is a base expression
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<body>` — a block of statements. `pass_only` adds a `<pass/>`
+    /// empty marker child; visible in tree-text as `<body[pass]>`.
+    Body {
+        children: Vec<Ir>,
+        pass_only: bool,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<parameter>` — one parameter in a function signature.
+    /// `kind` controls the marker: `Regular` has none,
+    /// `Args` adds `<args/>`, `Kwargs` adds `<kwargs/>`.
+    Parameter {
+        kind: ParamKind,
+        name: Box<Ir>,                  // Ir::Name
+        type_ann: Option<Box<Ir>>,      // <type>...</type>
+        default: Option<Box<Ir>>,       // <value><expression>...</expression></value>
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<positional>/</positional>` — `/` separator marking the end
+    /// of positional-only parameters.
+    PositionalSeparator { range: ByteRange, span: Span },
+
+    /// `<keyword>*</keyword>` — `*` separator marking the start of
+    /// keyword-only parameters.
+    KeywordSeparator { range: ByteRange, span: Span },
+
+    /// `<decorator>` — `@expr` decorator above a function/class.
+    /// Wraps any expression directly (no `<expression>` host).
+    Decorator {
+        inner: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<returns>` — return-type annotation slot. Wraps a `<type>`.
+    Returns {
+        type_ann: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<generic>` — generic-parameter list (PEP 695 `def f[T]`).
+    /// Each item is an [`Ir::TypeParameter`] (renders as `<type>`
+    /// containing a `<name>`).
+    Generic {
+        items: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<type>` — type-parameter slot inside `<generic>`. Has a name
+    /// and optional constraint.
+    TypeParameter {
+        name: Box<Ir>,
+        constraint: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<return>` — `return <value>?` statement. `value` is `None`
+    /// for bare `return`. Renders as
+    /// `<return><expression>...</expression></return>` when value is
+    /// present.
+    Return {
+        value: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<comment>text</comment>` — standalone source comment.
+    /// `leading` adds a `<leading/>` marker (`comment[leading]`); the
+    /// existing pipeline classifies comments by adjacency to the next
+    /// declaration.
+    Comment {
+        leading: bool,
+        range: ByteRange,
+        span: Span,
+    },
+
     // ----- Assignments ----------------------------------------------------
 
     /// `<assign>` — `target = value` / `target: type = value` /
@@ -352,6 +465,18 @@ pub enum Ir {
     },
 }
 
+/// `Ir::Parameter` kind discriminator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParamKind {
+    /// Regular positional / keyword parameter `x` / `x=default` /
+    /// `x: T = default`.
+    Regular,
+    /// `*args` — adds `<args/>` marker.
+    Args,
+    /// `**kwargs` — adds `<kwargs/>` marker.
+    Kwargs,
+}
+
 /// One step in an [`Ir::Access`] chain.
 ///
 /// The renderer emits these *right-nested*: the first segment is a
@@ -411,6 +536,18 @@ impl Ir {
             | Ir::Call { span, .. }
             | Ir::Binary { span, .. }
             | Ir::Unary { span, .. }
+            | Ir::Function { span, .. }
+            | Ir::Class { span, .. }
+            | Ir::Body { span, .. }
+            | Ir::Parameter { span, .. }
+            | Ir::PositionalSeparator { span, .. }
+            | Ir::KeywordSeparator { span, .. }
+            | Ir::Decorator { span, .. }
+            | Ir::Returns { span, .. }
+            | Ir::Generic { span, .. }
+            | Ir::TypeParameter { span, .. }
+            | Ir::Return { span, .. }
+            | Ir::Comment { span, .. }
             | Ir::Assign { span, .. }
             | Ir::Import { span, .. }
             | Ir::From { span, .. }
@@ -440,6 +577,18 @@ impl Ir {
             | Ir::Call { range, .. }
             | Ir::Binary { range, .. }
             | Ir::Unary { range, .. }
+            | Ir::Function { range, .. }
+            | Ir::Class { range, .. }
+            | Ir::Body { range, .. }
+            | Ir::Parameter { range, .. }
+            | Ir::PositionalSeparator { range, .. }
+            | Ir::KeywordSeparator { range, .. }
+            | Ir::Decorator { range, .. }
+            | Ir::Returns { range, .. }
+            | Ir::Generic { range, .. }
+            | Ir::TypeParameter { range, .. }
+            | Ir::Return { range, .. }
+            | Ir::Comment { range, .. }
             | Ir::Assign { range, .. }
             | Ir::Import { range, .. }
             | Ir::From { range, .. }

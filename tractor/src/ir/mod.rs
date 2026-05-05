@@ -43,7 +43,7 @@ pub mod types;
 pub mod render;
 pub mod python;
 
-pub use types::{AccessSegment, ByteRange, Ir, Span, to_source};
+pub use types::{AccessSegment, ByteRange, Ir, ParamKind, Span, to_source};
 pub use render::render_to_xot;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;

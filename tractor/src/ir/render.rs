@@ -34,7 +34,7 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::types::{AccessSegment, ByteRange, Ir, Span};
+use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
 
 /// Render an [`Ir`] tree as a child of `parent` in the given Xot
 /// document. Returns the root node of the rendered subtree.
@@ -88,6 +88,187 @@ pub fn render_to_xot(
             // Trailing gap inside <object>.
             emit_gap(xot, object, source, cursor, range.end)?;
             Ok(object)
+        }
+        Ir::Function { is_async, decorators, name, generics, parameters, returns, body, range, span } => {
+            let node = element(xot, "function", *span);
+            xot.append(parent, node)?;
+            if *is_async {
+                let m = element(xot, "async", Span::point(span.line, span.column));
+                xot.append(node, m)?;
+            }
+            // Source-order children: decorators, name, generics,
+            // parameters (flat), returns, body. Build a list of
+            // (range, render) pairs, sort by range.start.
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            order.push(name.as_ref());
+            if let Some(g) = generics { order.push(g.as_ref()); }
+            for p in parameters { order.push(p); }
+            if let Some(r) = returns { order.push(r.as_ref()); }
+            order.push(body.as_ref());
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Class { decorators, name, generics, bases, body, range, span } => {
+            let node = element(xot, "class", *span);
+            xot.append(parent, node)?;
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            order.push(name.as_ref());
+            if let Some(g) = generics { order.push(g.as_ref()); }
+            for b in bases { order.push(b); }
+            order.push(body.as_ref());
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Body { children, pass_only, range, span } => {
+            let node = element(xot, "body", *span);
+            xot.append(parent, node)?;
+            if *pass_only {
+                let m = element(xot, "pass", *span);
+                xot.append(node, m)?;
+                // Body still contains the source `pass` text — emit
+                // gap text covering the whole body range so XPath
+                // text recovery includes it.
+                emit_gap(xot, node, source, range.start, range.end)?;
+            } else {
+                render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
+                    render_to_xot(xot, parent, child, source).map(|_| ())
+                })?;
+            }
+            Ok(node)
+        }
+        Ir::Parameter { kind, name, type_ann, default, range, span } => {
+            let node = element(xot, "parameter", *span);
+            xot.append(parent, node)?;
+            // Marker for *args / **kwargs — first child, empty.
+            match kind {
+                ParamKind::Args => {
+                    let m = element(xot, "args", *span);
+                    xot.append(node, m)?;
+                }
+                ParamKind::Kwargs => {
+                    let m = element(xot, "kwargs", *span);
+                    xot.append(node, m)?;
+                }
+                ParamKind::Regular => {}
+            }
+            // Source-order: name, then optional type, then optional default.
+            let mut order: Vec<&Ir> = vec![name.as_ref()];
+            if let Some(t) = type_ann { order.push(t.as_ref()); }
+            // default is wrapped in a synthetic <value><expression>...</expression></value>
+            // — but we'll handle it specially below by emitting gaps + wrapping.
+            // Simpler: include default in source order, render with wrap inside.
+            let default_marker;
+            if let Some(d) = default {
+                default_marker = Some(d.as_ref());
+                // Use a closure that special-cases the default to wrap.
+            } else {
+                default_marker = None;
+            }
+            // Render name and type with normal gap handling first.
+            let mut cursor = range.start;
+            for c in &order {
+                let cr = c.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                render_to_xot(xot, node, *c, source)?;
+                cursor = cr.end;
+            }
+            // Default: wrap in <value><expression>...</expression></value>.
+            if let Some(d) = default_marker {
+                let dr = d.range();
+                emit_gap(xot, node, source, cursor, dr.start)?;
+                let val = element(xot, "value", d.span());
+                xot.append(node, val)?;
+                let expr = element(xot, "expression", d.span());
+                xot.append(val, expr)?;
+                render_to_xot(xot, expr, d, source)?;
+                cursor = dr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
+        Ir::PositionalSeparator { range, span } => {
+            leaf(xot, parent, "positional", source, *range, *span)
+        }
+        Ir::KeywordSeparator { range, span } => {
+            leaf(xot, parent, "keyword", source, *range, *span)
+        }
+        Ir::Decorator { inner, range, span } => {
+            let node = element(xot, "decorator", *span);
+            xot.append(parent, node)?;
+            render_with_gaps(xot, node, source, *range, std::slice::from_ref(inner.as_ref()),
+                |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ())
+            )?;
+            Ok(node)
+        }
+        Ir::Returns { type_ann, range, span } => {
+            let node = element(xot, "returns", *span);
+            xot.append(parent, node)?;
+            // <returns> wraps the type annotation in <type>.
+            let tr = type_ann.range();
+            emit_gap(xot, node, source, range.start, tr.start)?;
+            let type_el = element(xot, "type", type_ann.span());
+            xot.append(node, type_el)?;
+            render_to_xot(xot, type_el, type_ann, source)?;
+            emit_gap(xot, node, source, tr.end, range.end)?;
+            Ok(node)
+        }
+        Ir::Generic { items, range, span } => {
+            let node = element(xot, "generic", *span);
+            xot.append(parent, node)?;
+            render_with_gaps(xot, node, source, *range, items, |xot, parent, child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::TypeParameter { name, constraint, range, span } => {
+            // Renders as <type><name>...</name></type>.
+            let node = element(xot, "type", *span);
+            xot.append(parent, node)?;
+            let mut order: Vec<&Ir> = vec![name.as_ref()];
+            if let Some(c) = constraint { order.push(c.as_ref()); }
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Return { value, range, span } => {
+            let node = element(xot, "return", *span);
+            xot.append(parent, node)?;
+            // `return value` wraps value in <expression> host;
+            // `return` (no value) is bare.
+            if let Some(v) = value {
+                let vr = v.range();
+                emit_gap(xot, node, source, range.start, vr.start)?;
+                let expr = element(xot, "expression", v.span());
+                xot.append(node, expr)?;
+                render_to_xot(xot, expr, v, source)?;
+                emit_gap(xot, node, source, vr.end, range.end)?;
+            } else {
+                emit_gap(xot, node, source, range.start, range.end)?;
+            }
+            Ok(node)
+        }
+        Ir::Comment { leading, range, span } => {
+            let node = element(xot, "comment", *span);
+            xot.append(parent, node)?;
+            if *leading {
+                let m = element(xot, "leading", *span);
+                xot.append(node, m)?;
+            }
+            let text = range.slice(source);
+            if !text.is_empty() {
+                let t = xot.new_text(text);
+                xot.append(node, t)?;
+            }
+            Ok(node)
         }
         Ir::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } => {
             let node = element(xot, "assign", *span);

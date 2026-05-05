@@ -17,7 +17,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir, Span};
+use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
 
 /// Lower a Python tree-sitter root node to [`Ir`].
 ///
@@ -276,6 +276,82 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- Function / class declarations ----------------------------
+
+        // `def f(...)` / `async def f(...)` / `def f[T](...)`.
+        // tree-sitter Python: function_definition has fields `name`,
+        // `parameters`, `return_type` (optional), `body`,
+        // `type_parameters` (optional, PEP 695). The `async` keyword
+        // appears as an unnamed token; presence is detected by
+        // scanning the leading text.
+        "function_definition" => {
+            let is_async = source[range.start as usize..(range.start as usize + 5).min(source.len())]
+                .starts_with("async");
+            lower_function(node, source, is_async, Vec::new())
+        }
+
+        // `class C(bases): ...`. Fields: `name`, `superclasses`
+        // (optional argument_list), `body`, `type_parameters`
+        // (optional).
+        "class_definition" => lower_class(node, source, Vec::new()),
+
+        // Wraps decorators around an inner function/class. Hoist the
+        // decorators into the inner def per the existing pipeline.
+        "decorated_definition" => {
+            let mut cursor = node.walk();
+            let mut decorators: Vec<Ir> = Vec::new();
+            let mut inner: Option<TsNode> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "decorator" => decorators.push(lower_decorator(c, source)),
+                    _ => inner = Some(c),
+                }
+            }
+            match inner {
+                Some(n) if n.kind() == "function_definition" => {
+                    let is_async = source[n.byte_range().start..(n.byte_range().start + 5).min(source.len())]
+                        .starts_with("async");
+                    lower_function(n, source, is_async, decorators)
+                }
+                Some(n) if n.kind() == "class_definition" => lower_class(n, source, decorators),
+                Some(n) => lower_node(n, source),
+                None => Ir::Unknown { kind: "decorated_definition(empty)".to_string(), range, span },
+            }
+        }
+
+        // `return [value]`
+        "return_statement" => {
+            let mut cursor = node.walk();
+            let value = node.named_children(&mut cursor).next();
+            Ir::Return {
+                value: value.map(|v| Box::new(lower_node(v, source))),
+                range,
+                span,
+            }
+        }
+
+        // `pass` — represented by an empty `<body[pass]>` when used
+        // as a function/class body (handled there). At statement
+        // level it appears inline; we'll handle that case as part of
+        // `block` lowering. Direct `pass_statement` here renders as a
+        // bare `<pass/>` marker — but actually the existing pipeline
+        // uses `<body[pass]>` for "body is just pass". For mid-block
+        // pass we'd need its own handling — TODO when test surfaces it.
+        // For now, treat as Unknown (won't fire because pass-only
+        // bodies are caught in lower_block).
+        "pass_statement" => Ir::Unknown {
+            kind: "pass_statement".to_string(),
+            range,
+            span,
+        },
+
+        // `# comment text`
+        "comment" => Ir::Comment {
+            leading: false,
+            range,
+            span,
+        },
+
         // ----- Assignments ----------------------------------------------
 
         // `target = value` / `target: type = value` / `target: type`
@@ -453,6 +529,298 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
     }
+}
+
+/// Lower a `function_definition` CST node into `Ir::Function`.
+///
+/// When called from a `decorated_definition` wrapper, the caller
+/// passes `outer_range` covering the whole decorated declaration so
+/// the decorators (whose source positions precede `def`) fall inside
+/// the function's range and gap rendering works.
+fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Vec<Ir>) -> Ir {
+    let span = span_of(node);
+    let inner_range = range_of(node);
+    // If decorators precede the inner def, the effective range starts
+    // at the first decorator's position.
+    let range = if let Some(first_dec) = decorators.first() {
+        ByteRange::new(first_dec.range().start, inner_range.end)
+    } else {
+        inner_range
+    };
+    let name_node = node.child_by_field_name("name");
+    let params_node = node.child_by_field_name("parameters");
+    let return_type_node = node.child_by_field_name("return_type");
+    let body_node = node.child_by_field_name("body");
+    let type_params_node = node.child_by_field_name("type_parameters");
+
+    let name = match name_node {
+        Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
+        None => Box::new(Ir::Unknown {
+            kind: "function(missing name)".to_string(),
+            range,
+            span,
+        }),
+    };
+
+    let generics = type_params_node.map(|tp| Box::new(lower_type_parameters(tp, source)));
+
+    let parameters = params_node.map(|p| lower_parameters(p, source)).unwrap_or_default();
+
+    let returns = return_type_node.map(|rt| Box::new(Ir::Returns {
+        type_ann: Box::new(lower_type_slot(rt, source)),
+        range: range_of(rt),
+        span: span_of(rt),
+    }));
+
+    let body = match body_node {
+        Some(b) => Box::new(lower_block(b, source)),
+        None => Box::new(Ir::Body {
+            children: Vec::new(),
+            pass_only: false,
+            range: ByteRange::empty_at(range.end),
+            span,
+        }),
+    };
+
+    Ir::Function {
+        is_async,
+        decorators,
+        name,
+        generics,
+        parameters,
+        returns,
+        body,
+        range,
+        span,
+    }
+}
+
+/// Lower a `class_definition` CST node into `Ir::Class`. As with
+/// `lower_function`, decorators expand the effective range backward.
+fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
+    let span = span_of(node);
+    let inner_range = range_of(node);
+    let range = if let Some(first_dec) = decorators.first() {
+        ByteRange::new(first_dec.range().start, inner_range.end)
+    } else {
+        inner_range
+    };
+    let name_node = node.child_by_field_name("name");
+    let superclasses_node = node.child_by_field_name("superclasses");
+    let body_node = node.child_by_field_name("body");
+    let type_params_node = node.child_by_field_name("type_parameters");
+
+    let name = match name_node {
+        Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
+        None => Box::new(Ir::Unknown {
+            kind: "class(missing name)".to_string(),
+            range,
+            span,
+        }),
+    };
+
+    let generics = type_params_node.map(|tp| Box::new(lower_type_parameters(tp, source)));
+
+    let bases = superclasses_node.map(|s| {
+        let mut c = s.walk();
+        s.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+    }).unwrap_or_default();
+
+    let body = match body_node {
+        Some(b) => Box::new(lower_block(b, source)),
+        None => Box::new(Ir::Body {
+            children: Vec::new(),
+            pass_only: false,
+            range: ByteRange::empty_at(range.end),
+            span,
+        }),
+    };
+
+    Ir::Class { decorators, name, generics, bases, body, range, span }
+}
+
+/// Lower a `parameters` CST node — a parenthesized list of parameter
+/// kinds. Returns a flat Vec of `Ir::Parameter` /
+/// `Ir::PositionalSeparator` / `Ir::KeywordSeparator` in source
+/// order.
+fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+    let mut cursor = node.walk();
+    let mut out: Vec<Ir> = Vec::new();
+    for c in node.named_children(&mut cursor) {
+        let span = span_of(c);
+        let range = range_of(c);
+        match c.kind() {
+            "identifier" => {
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Regular,
+                    name: Box::new(Ir::Name { range, span }),
+                    type_ann: None,
+                    default: None,
+                    range,
+                    span,
+                });
+            }
+            "default_parameter" => {
+                let n = c.child_by_field_name("name");
+                let v = c.child_by_field_name("value");
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Regular,
+                    name: Box::new(match n {
+                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                        None => Ir::Unknown { kind: "default_parameter(no name)".to_string(), range, span },
+                    }),
+                    type_ann: None,
+                    default: v.map(|n| Box::new(lower_node(n, source))),
+                    range,
+                    span,
+                });
+            }
+            "typed_parameter" => {
+                let mut cur = c.walk();
+                let mut name_n: Option<TsNode> = None;
+                for ch in c.named_children(&mut cur) {
+                    if ch.kind() == "identifier" { name_n = Some(ch); break; }
+                }
+                let type_n = c.child_by_field_name("type");
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Regular,
+                    name: Box::new(match name_n {
+                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                        None => Ir::Unknown { kind: "typed_parameter(no name)".to_string(), range, span },
+                    }),
+                    type_ann: type_n.map(|t| Box::new(lower_type_slot(t, source))),
+                    default: None,
+                    range,
+                    span,
+                });
+            }
+            "typed_default_parameter" => {
+                let n = c.child_by_field_name("name");
+                let t = c.child_by_field_name("type");
+                let v = c.child_by_field_name("value");
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Regular,
+                    name: Box::new(match n {
+                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                        None => Ir::Unknown { kind: "typed_default_parameter(no name)".to_string(), range, span },
+                    }),
+                    type_ann: t.map(|t| Box::new(lower_type_slot(t, source))),
+                    default: v.map(|n| Box::new(lower_node(n, source))),
+                    range,
+                    span,
+                });
+            }
+            "list_splat_pattern" => {
+                // *args — has one named child (identifier).
+                let mut cur = c.walk();
+                let inner = c.named_children(&mut cur).next();
+                let name = match inner {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "list_splat(no name)".to_string(), range, span },
+                };
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Args,
+                    name: Box::new(name),
+                    type_ann: None,
+                    default: None,
+                    range,
+                    span,
+                });
+            }
+            "dictionary_splat_pattern" => {
+                // **kwargs
+                let mut cur = c.walk();
+                let inner = c.named_children(&mut cur).next();
+                let name = match inner {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "dict_splat(no name)".to_string(), range, span },
+                };
+                out.push(Ir::Parameter {
+                    kind: ParamKind::Kwargs,
+                    name: Box::new(name),
+                    type_ann: None,
+                    default: None,
+                    range,
+                    span,
+                });
+            }
+            "positional_separator" => {
+                out.push(Ir::PositionalSeparator { range, span });
+            }
+            "keyword_separator" => {
+                out.push(Ir::KeywordSeparator { range, span });
+            }
+            other => {
+                out.push(Ir::Unknown {
+                    kind: format!("parameter({other})"),
+                    range,
+                    span,
+                });
+            }
+        }
+    }
+    out
+}
+
+/// Lower a `type_parameters` CST node into `Ir::Generic`. Each child
+/// is a `type_parameter` (PEP 695) with an inner identifier.
+fn lower_type_parameters(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let items: Vec<Ir> = node.named_children(&mut cursor).map(|c| {
+        let cspan = span_of(c);
+        let crange = range_of(c);
+        match c.kind() {
+            "type_parameter" => {
+                let mut cur = c.walk();
+                let inner = c.named_children(&mut cur).next();
+                let name = match inner {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "type_parameter(empty)".to_string(), range: crange, span: cspan },
+                };
+                Ir::TypeParameter {
+                    name: Box::new(name),
+                    constraint: None,
+                    range: crange,
+                    span: cspan,
+                }
+            }
+            _ => Ir::Unknown { kind: format!("type_parameter({})", c.kind()), range: crange, span: cspan },
+        }
+    }).collect();
+    Ir::Generic { items, range, span }
+}
+
+/// Lower a `block` CST node (function/class body) into `Ir::Body`.
+/// Recognises pass-only bodies (a single `pass_statement` child) and
+/// renders them as `<body[pass]>` empty.
+fn lower_block(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let named: Vec<TsNode> = node.named_children(&mut cursor).collect();
+    let pass_only = named.len() == 1 && named[0].kind() == "pass_statement";
+    let children: Vec<Ir> = if pass_only {
+        Vec::new()
+    } else {
+        named.iter().filter(|n| n.kind() != "pass_statement").map(|n| lower_node(*n, source)).collect()
+    };
+    Ir::Body { children, pass_only, range, span }
+}
+
+/// Lower a `decorator` CST node. The decorator's inner is the
+/// expression being applied (a name, attribute, or call).
+fn lower_decorator(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner = node.named_children(&mut cursor).next();
+    let inner_ir = match inner {
+        Some(n) => lower_node(n, source),
+        None => Ir::Unknown { kind: "decorator(empty)".to_string(), range, span },
+    };
+    Ir::Decorator { inner: Box::new(inner_ir), range, span }
 }
 
 /// Lower an assignment side (LHS targets or RHS values). If the node
