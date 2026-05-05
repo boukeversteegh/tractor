@@ -387,9 +387,16 @@ public static class RecordUse
 // Global / assembly-level attribute (file scope).
 [assembly: System.Reflection.AssemblyDescription("blueprint")]
 
-// Preprocessor regions and conditionals.
+// Preprocessor regions, conditionals, define/elif, nullable, pragma.
+#define LEGACY
+#nullable enable
+#pragma warning disable 0168
 #region helpers
 #if DEBUG
 internal static class Debugging { }
+#elif LEGACY
+internal static class Legacy { }
+#else
+internal static class Modern { }
 #endif
 #endregion
