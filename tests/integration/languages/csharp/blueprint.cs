@@ -236,4 +236,21 @@ public static class Extras
             var x                => x!.ToString(),
         };
     }
+
+    // Attributes, generic constraints, indexer, destructor.
+    [Obsolete("legacy", false)]
+    public class Container<T> where T : class, new()
+    {
+        public T Value { get; set; } = new T();
+        public T this[int i] => Value;
+        ~Container() { /* finalizer */ }
+        public Container() : base() { }
+    }
+
+    // Delegate + event.
+    public delegate void OnChanged(int newValue);
+    public event OnChanged Changed;
+
+    // Alias-qualified name + extern alias forms.
+    private global::System.Int32 aliased = 0;
 }
