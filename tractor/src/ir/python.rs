@@ -256,6 +256,70 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Python `lambda`: `lambda x, y: expr`. tree-sitter exposes
+        // `parameters` field (a `lambda_parameters` node) and `body`
+        // field (the inner expression).
+        "lambda" => {
+            let params_node = node.child_by_field_name("parameters");
+            let body_node = node.child_by_field_name("body");
+            // lambda_parameters wraps parameter children; lower each.
+            let parameters: Vec<Ir> = match params_node {
+                Some(p) => lower_parameters(p, source),
+                None => Vec::new(),
+            };
+            let body = match body_node {
+                Some(b) => Box::new(lower_node(b, source)),
+                None => Box::new(Ir::Unknown {
+                    kind: "lambda(missing body)".to_string(),
+                    range, span,
+                }),
+            };
+            Ir::Lambda {
+                modifiers: Modifiers::default(),
+                parameters,
+                body,
+                range, span,
+            }
+        }
+
+        // `not x` — Python's logical NOT. tree-sitter:
+        // `not_operator` with `argument` field.
+        "not_operator" => {
+            let arg = node.child_by_field_name("argument");
+            // The `not` keyword is unnamed; locate its range.
+            let kw_range = locate_token(source, range.start as usize, range.end as usize, "not");
+            match arg {
+                Some(a) => Ir::Unary {
+                    op_text: "not".to_string(),
+                    op_marker: "not",
+                    op_range: kw_range,
+                    operand: Box::new(lower_node(a, source)),
+                    range, span,
+                },
+                None => Ir::Unknown {
+                    kind: "not_operator(missing arg)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
+        // `(expr)` — parenthesized expression. Inline the inner;
+        // parens become gap text on the surrounding parent.
+        "parenthesized_expression" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::Inline {
+                    children: vec![lower_node(i, source)],
+                    range, span,
+                },
+                None => Ir::Unknown {
+                    kind: "parenthesized_expression(empty)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
         // `a and b`, `a or b` — short-circuit logical. tree-sitter
         // exposes `left`, `operator`, `right` like binary_operator.
         // Renders as `<logical>` (distinct from `<binary>`).
