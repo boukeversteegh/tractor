@@ -44,6 +44,7 @@ pub mod render;
 pub mod json;
 pub mod python;
 pub mod csharp;
+pub mod java;
 #[cfg(feature = "native")]
 pub mod coverage;
 
@@ -54,5 +55,7 @@ pub use json::ir_to_json;
 pub use python::lower_python_root;
 #[cfg(feature = "native")]
 pub use csharp::{lower_csharp_root, lower_csharp_node};
+#[cfg(feature = "native")]
+pub use java::{lower_java_root, lower_java_node};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};
