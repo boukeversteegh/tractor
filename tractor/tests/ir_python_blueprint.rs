@@ -12,9 +12,18 @@
 
 #![cfg(feature = "native")]
 
+use strum::IntoEnumIterator;
 use tractor::ir::{audit_coverage, lower_python_root, render_to_xot, to_source};
+use tractor::languages::python::input::PyKind;
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
+
+/// All named kinds tree-sitter-python emits, derived from the
+/// generated `PyKind` enum. The strum `IntoStaticStr` derive on the
+/// enum gives us the snake_case names.
+fn python_known_kinds() -> Vec<&'static str> {
+    PyKind::iter().map(|k| k.into()).collect()
+}
 
 fn structural_view(xot: &Xot, root: XotNode) -> String {
     let mut out = String::new();
@@ -229,8 +238,12 @@ fn blueprint_coverage_audit() {
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken");
 
-    // Coverage audit.
-    let report = audit_coverage(tree.root_node(), &ir, &source);
+    // Coverage audit. Pass the full PyKind list so blueprint-absent
+    // grammar kinds surface as zero-stat entries (rather than being
+    // silently "supported by absence").
+    let known_kinds = python_known_kinds();
+    let known_refs: Vec<&str> = known_kinds.iter().map(|s| s.as_ref()).collect();
+    let report = audit_coverage(tree.root_node(), &ir, &source, &known_refs);
     eprintln!("\n{}", report.summary());
 
     // Hard invariant: no dropped CST nodes (renderer bug detector).

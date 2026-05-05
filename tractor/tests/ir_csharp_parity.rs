@@ -26,9 +26,17 @@
 
 #![cfg(feature = "native")]
 
+use strum::IntoEnumIterator;
 use tractor::ir::{audit_coverage, lower_csharp_root, render_to_xot, to_source};
+use tractor::languages::csharp::input::CsKind;
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
+
+/// All named kinds tree-sitter-c-sharp emits, derived from the
+/// generated `CsKind` enum.
+fn csharp_known_kinds() -> Vec<&'static str> {
+    CsKind::iter().map(|k| k.into()).collect()
+}
 
 fn structural_view(xot: &Xot, root: XotNode) -> String {
     let mut out = String::new();
@@ -189,7 +197,8 @@ fn blueprint_coverage_audit() {
         );
     }
 
-    let report = audit_coverage(tree.root_node(), &ir, &source);
+    let known = csharp_known_kinds();
+    let report = audit_coverage(tree.root_node(), &ir, &source, &known);
     eprintln!("\n{}", report.summary());
     assert_eq!(report.dropped, 0,
         "{} CST nodes dropped (renderer bug)",
