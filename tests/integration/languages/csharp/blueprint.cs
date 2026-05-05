@@ -253,4 +253,42 @@ public static class Extras
 
     // Alias-qualified name + extern alias forms.
     private global::System.Int32 aliased = 0;
+
+    // Operator overloads + conversion operator.
+    public static Container<T> operator +(Container<T> a, Container<T> b) => a;
+    public static implicit operator int(Container<T> c) => 0;
+
+    // Event with explicit add/remove accessors.
+    private event OnChanged _changed;
+    public event OnChanged Explicit
+    {
+        add { _changed += value; }
+        remove { _changed -= value; }
+    }
+
+    // Tuple deconstruction with parenthesized variable designation.
+    public static void Deconstruct(out int x, out int y) { x = 1; y = 2; }
+    public static (int, int) Pair() => (1, 2);
+
+    // Positional pattern in switch arm.
+    public static string Origin(object o) => o switch
+    {
+        (0, 0) => "origin",
+        (var x, 0) => "x-axis",
+        _ => "other",
+    };
+
+    // Attribute target specifier + global attribute target.
+    [return: System.Diagnostics.CodeAnalysis.NotNull]
+    public string Trim(string s) => s.Trim();
 }
+
+// Global / assembly-level attribute (file scope).
+[assembly: System.Reflection.AssemblyDescription("blueprint")]
+
+// Preprocessor regions and conditionals.
+#region helpers
+#if DEBUG
+internal static class Debugging { }
+#endif
+#endregion
