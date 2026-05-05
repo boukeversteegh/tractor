@@ -216,7 +216,7 @@ fn collect_ir_ranges(ir: &Ir, out: &mut Vec<(ByteRange, bool /* is_unknown */)>)
             if let Some(r) = returns { collect_ir_ranges(r, out); }
             collect_ir_ranges(body, out);
         }
-        Ir::Class { decorators, name, generics, bases, body, .. } => {
+        Ir::Class { decorators, name, generics, bases, body, access: _, .. } => {
             for d in decorators { collect_ir_ranges(d, out); }
             collect_ir_ranges(name, out);
             if let Some(g) = generics { collect_ir_ranges(g, out); }

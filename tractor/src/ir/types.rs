@@ -345,7 +345,15 @@ pub enum Ir {
 
     /// `<class>` — `class C(bases): ...`. Same shape pattern as
     /// `Function`.
+    ///
+    /// `access` is the language-specific access level when applicable:
+    /// `Some(Access::*)` for languages with explicit access modifiers
+    /// (C# / Java / Kotlin), `None` for languages without (Python).
+    /// The renderer emits the corresponding empty marker as a child;
+    /// flipping `access` swaps the marker by construction (no
+    /// imperative re-write needed).
     Class {
+        access: Option<Access>,
         decorators: Vec<Ir>,
         name: Box<Ir>,
         generics: Option<Box<Ir>>,
@@ -628,6 +636,71 @@ pub enum Ir {
         range: ByteRange,
         span: Span,
     },
+}
+
+/// Access modifier for class / method / field declarations. The
+/// **exhaustive variation** principle: every C# / Java / Kotlin class
+/// has *exactly one* access level (no overlap, no absence — defaulted
+/// when the source omits it). Encoding this as an enum gives us:
+///
+/// 1. **Compile-time exhaustiveness.** Adding a new variant forces
+///    the renderer + lowering to acknowledge it.
+/// 2. **Stable mutation surface.** `access = Access::Private` is a
+///    typed operation; re-rendering picks the right marker.
+/// 3. **Marker swap is automatic.** `<public/>` becomes `<private/>`
+///    by changing one enum value, not by hand-editing XML.
+///
+/// `Option<Access>` on `Ir::Class` lets cross-language reuse stay
+/// clean: Python sets it to `None` (no access modifier concept);
+/// C# / Java / etc. always set `Some(...)` (the default is
+/// language-specific — `internal` for top-level C# class, `private`
+/// for nested).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Access {
+    Public,
+    Private,
+    Protected,
+    Internal,            // C# / Kotlin default for top-level
+    ProtectedInternal,   // C# `protected internal`
+    PrivateProtected,    // C# `private protected`
+    File,                // C# 11 file-scoped accessibility
+}
+
+impl Access {
+    /// Marker element name(s). Returns one name for simple access
+    /// levels, two for the C# compound forms (`protected internal`,
+    /// `private protected`) — split into separate markers per the
+    /// existing pipeline convention (e.g. `op[bitwise and or]` =
+    /// `<bitwise/><and/><or/>`). The "no underscore in names" rule
+    /// applies; we split rather than concatenate.
+    pub const fn marker_names(self) -> &'static [&'static str] {
+        match self {
+            Access::Public            => &["public"],
+            Access::Private           => &["private"],
+            Access::Protected         => &["protected"],
+            Access::Internal          => &["internal"],
+            Access::ProtectedInternal => &["protected", "internal"],
+            Access::PrivateProtected  => &["private", "protected"],
+            Access::File              => &["file"],
+        }
+    }
+
+    /// Parse from the source-text of a C# `modifier` node. Returns
+    /// `None` for non-access modifiers (`static`, `sealed`, `abstract`,
+    /// `partial`, `async`, etc.) — those belong on a separate field.
+    pub fn from_csharp_modifier_text(text: &str) -> Option<Access> {
+        Some(match text {
+            "public"    => Access::Public,
+            "private"   => Access::Private,
+            "protected" => Access::Protected,
+            "internal"  => Access::Internal,
+            "file"      => Access::File,
+            // Compound forms come as two adjacent modifier tokens in
+            // the CST (`protected internal`) — handled in lowering by
+            // looking at the pair, not here.
+            _ => return None,
+        })
+    }
 }
 
 /// `Ir::Parameter` kind discriminator.

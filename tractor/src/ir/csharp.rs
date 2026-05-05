@@ -19,7 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
+use super::types::{Access, AccessSegment, ByteRange, Ir, ParamKind, Span};
 
 /// Lower a C# tree-sitter root node to [`Ir`].
 ///
@@ -140,16 +140,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Namespace { name: Box::new(name_ir), children, range, span }
         }
 
-        // `class C { ... }` — minimal lowering: name + body.
-        // Modifiers / generics / bases / decorators are left to a
-        // future enhancement (will appear as "under_typed" in the
-        // audit until then).
+        // `class C { ... }` — minimal lowering: name + body + access.
+        // Other modifiers (static, sealed, abstract, partial) are
+        // deferred. The `access` field is exhaustive: every C# class
+        // has *some* access level (default `Internal` for top-level
+        // when no explicit modifier is given). Renderer emits the
+        // corresponding `<public/>` / `<private/>` / etc. marker.
         "class_declaration" => {
             let name_node = node.child_by_field_name("name");
             let mut cursor = node.walk();
             let body_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "declaration_list");
+            let access = lower_csharp_access(node, source);
             Ir::Class {
+                access: Some(access),
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
@@ -649,6 +653,42 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
     }
+}
+
+/// Extract C#'s access level from a declaration's `modifier` children.
+/// tree-sitter-c-sharp surfaces each access keyword (`public`,
+/// `private`, …) as its own `modifier` node child of the declaration.
+/// Compound forms like `protected internal` come as two adjacent
+/// modifier nodes — we detect the pair by source-text co-presence.
+///
+/// Default when no explicit access modifier is present is
+/// `Access::Internal` — the C# spec's default for top-level types.
+/// (Nested members default to `Private`; that distinction is for
+/// member-level callers — for class-level we always use `Internal`
+/// here. Refine when nested-class lowering grows.)
+fn lower_csharp_access(node: TsNode<'_>, source: &str) -> Access {
+    let mut cursor = node.walk();
+    let modifiers: Vec<&str> = node.named_children(&mut cursor)
+        .filter(|c| c.kind() == "modifier")
+        .filter_map(|c| c.utf8_text(source.as_bytes()).ok())
+        .collect();
+
+    // Compound: protected + internal => ProtectedInternal.
+    let has_prot = modifiers.contains(&"protected");
+    let has_int = modifiers.contains(&"internal");
+    let has_priv = modifiers.contains(&"private");
+    if has_prot && has_int { return Access::ProtectedInternal; }
+    if has_priv && has_prot { return Access::PrivateProtected; }
+
+    // Single token (or none).
+    for m in &modifiers {
+        if let Some(a) = Access::from_csharp_modifier_text(m) {
+            return a;
+        }
+    }
+    // No explicit access modifier — default to Internal for
+    // top-level types.
+    Access::Internal
 }
 
 /// Lower a `block` or `declaration_list` into `Ir::Body`.

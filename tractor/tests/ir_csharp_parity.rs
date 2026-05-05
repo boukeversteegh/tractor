@@ -448,6 +448,83 @@ fn is_type_test() {
 }
 
 // ---------------------------------------------------------------------------
+// Mutation by enum: change `access` field, marker swaps automatically.
+//
+// This is the architectural payoff for the "variations marked
+// exhaustively → enum field" principle. Instead of XML-level marker
+// rewrites (`drop <public/>, inject <private/>`), the user changes
+// one IR field; the renderer's marker is derived from the enum.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn access_marker_swap_via_enum_mutation() {
+    let s = "public class Foo { }\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    let mut ir = lower_csharp_root(tree.root_node(), s);
+
+    // Locate the class IR.
+    fn find_class(ir: &mut tractor::ir::Ir) -> Option<&mut tractor::ir::Ir> {
+        use tractor::ir::Ir;
+        if matches!(ir, Ir::Class { .. }) { return Some(ir); }
+        match ir {
+            Ir::Module { children, .. } | Ir::Inline { children, .. }
+            | Ir::Body { children, .. } => {
+                for c in children {
+                    if let Some(f) = find_class(c) { return Some(f); }
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+    let class = find_class(&mut ir).expect("Ir::Class in tree");
+
+    // Verify it parsed as Public.
+    if let tractor::ir::Ir::Class { access, .. } = class {
+        assert_eq!(*access, Some(tractor::ir::Access::Public),
+            "expected `public class Foo` to lower to Access::Public");
+    }
+
+    // Render before mutation.
+    fn render_view(ir: &tractor::ir::Ir, src: &str) -> String {
+        let mut xot = Xot::new();
+        let dr_name = xot.add_name("_root");
+        let dr = xot.new_element(dr_name);
+        render_to_xot(&mut xot, dr, ir, src).expect("render");
+        let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+        structural_view(&xot, root)
+    }
+    let before = render_view(&ir, s);
+    eprintln!("--- before (access=Public) ---\n{before}");
+    assert!(before.contains("public"), "before-view must contain <public/> marker");
+
+    // Mutation: flip access to Private. ONE FIELD CHANGE.
+    let class = find_class(&mut ir).unwrap();
+    if let tractor::ir::Ir::Class { access, .. } = class {
+        *access = Some(tractor::ir::Access::Private);
+    }
+
+    // Re-render. Marker swapped by construction — no XML-level
+    // rewrite, no imperative pass.
+    let after = render_view(&ir, s);
+    eprintln!("--- after (access=Private) ---\n{after}");
+    assert!(after.contains("private"), "after-view must contain <private/> marker");
+    assert!(!after.contains("public"), "after-view must NOT contain <public/> marker");
+
+    // The structural shape OUTSIDE the marker is unchanged.
+    let normalize = |v: &str| -> String {
+        v.lines().filter(|l| {
+            let t = l.trim();
+            t != "public" && t != "private"
+        }).collect::<Vec<_>>().join("\n")
+    };
+    assert_eq!(normalize(&before), normalize(&after),
+        "non-marker structure should be unchanged by access mutation");
+}
+
+// ---------------------------------------------------------------------------
 // Whack-a-mole: `(Type)expr` cast.
 // ---------------------------------------------------------------------------
 

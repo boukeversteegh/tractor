@@ -1341,6 +1341,80 @@ The IR walk is exhaustive over current variants — adding a new IR
 variant requires extending `collect_ir_ranges` (caught by Rust's
 exhaustiveness check).
 
+## 18. The IR is the contract
+
+A clarifying architectural framing that emerged from the mutation
+discussion:
+
+> **The IR is the primary contract. XML and JSON are derived
+> representations.**
+
+This isn't a small framing change. It has concrete consequences:
+
+### What "primary contract" means
+- The Rust `Ir` enum and its variant fields are the public API.
+- Adding/removing/renaming a variant or field is a breaking API
+  change — same as any typed compiler frontend (rustc HIR, Roslyn
+  syntax tree, Babel AST).
+- Stability is provided by versioning the IR schema, not by stabilising
+  XML element names.
+
+### What XML / JSON become
+- **Derived views** of the IR for querying. Same data, different shape
+  for different query languages.
+- XML view: optimised for XPath (existing).
+- JSON view: optimised for JQ-style queries (could be added cheaply
+  given the same IR underneath).
+- Future views: SQL-like, Datalog, GraphQL — each maps from the
+  same IR.
+
+### Mutation operates on IR, not XML
+- `tractor modify -x "method[name='M']" --set access=private` is
+  *implemented as* "find IR by query → mutate enum field → re-render."
+- The XPath is for *finding*, the IR mutation is for *changing*.
+- Marker swaps happen automatically when the enum changes
+  (demonstrated: `Access::Public → Access::Private` produces
+  `<public/> → <private/>` with no XML editing).
+
+### The "exhaustive variations" principle
+The user-stated principle "variations must be marked exhaustively"
+maps to: **encode every variation as a typed enum field on the IR.**
+
+- Compile-time exhaustiveness — Rust's `match` forces the renderer
+  and lowering to handle every variant.
+- Stable mutation surface — `--set field=value` validates against the
+  enum's domain.
+- Marker-rendering is *derived*, not source-of-truth — the source of
+  truth is the enum value.
+
+Concrete example shipped in iter:
+```rust
+pub enum Access { Public, Private, Protected, Internal,
+                  ProtectedInternal, PrivateProtected, File }
+
+pub struct Class {
+    access: Option<Access>,   // None for languages without (Python).
+    /* ... */
+}
+```
+
+Compound access modifiers (C# `protected internal`) emit *two*
+markers (`<protected/><internal/>`) rather than one underscored name
+(`<protected_internal/>`), per the "no underscore in node names"
+rule. The enum tracks the semantic value; the renderer fans it out.
+
+### Why this matters for the project
+- **Easier to add query languages.** JQ over JSON projection is just
+  another renderer; same IR, no separate transform pipeline.
+- **Mutation is principled.** `--set access=private` validates against
+  the enum's domain *at the IR level* before producing any output.
+- **Tooling depth.** IDE-level refactor tools (rename, change-access,
+  …) can be built on the IR directly without going through XML
+  round-trips.
+- **No "the XML schema is the API" lock-in.** The XML schema can
+  evolve (add list-tags, change marker positions) without breaking
+  IR consumers.
+
 ## Appendix A — current pipeline as a phase diagram
 
     ┌──────────────────┐  tree-sitter, per-language grammar

@@ -384,9 +384,22 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Class { decorators, name, generics, bases, body, range, span } => {
+        Ir::Class { access, decorators, name, generics, bases, body, range, span } => {
             let node = element(xot, "class", *span);
             xot.append(parent, node)?;
+            // Access marker(s) first (zero-width, synthetic position).
+            // The marker is *derived* from the enum: flipping
+            // `Ir::Class.access` swaps the marker by construction.
+            // Compound access levels (C# `protected internal`,
+            // `private protected`) emit *multiple* markers per the
+            // "no underscore in names" rule — visible in tree-text
+            // view as `class[protected and internal]`.
+            if let Some(a) = access {
+                for marker in a.marker_names() {
+                    let m = element(xot, marker, *span);
+                    xot.append(node, m)?;
+                }
+            }
             let mut order: Vec<&Ir> = Vec::new();
             for d in decorators { order.push(d); }
             order.push(name.as_ref());

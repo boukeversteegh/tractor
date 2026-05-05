@@ -899,7 +899,10 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
         }),
     };
 
-    Ir::Class { decorators, name, generics, bases, body, range, span }
+    Ir::Class {
+        access: None,  // Python has no access-modifier concept.
+        decorators, name, generics, bases, body, range, span,
+    }
 }
 
 /// Lower a `parameters` CST node — a parenthesized list of parameter
