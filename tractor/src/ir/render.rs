@@ -792,6 +792,107 @@ pub fn render_to_xot(
         Ir::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
         Ir::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
         Ir::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
+        Ir::Enum { modifiers, decorators, name, underlying_type, members, range, span } => {
+            let node = element(xot, "enum", *span);
+            xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            order.push(name.as_ref());
+            if let Some(t) = underlying_type { order.push(t.as_ref()); }
+            for me in members { order.push(me); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::EnumMember { decorators, name, value, range, span } => {
+            let node = element(xot, "constant", *span);
+            xot.append(parent, node)?;
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            order.push(name.as_ref());
+            if let Some(v) = value { order.push(v.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Property { modifiers, decorators, type_ann, name, accessors, value, range, span } => {
+            let node = element(xot, "property", *span);
+            xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            if let Some(t) = type_ann { order.push(t.as_ref()); }
+            order.push(name.as_ref());
+            for a in accessors { order.push(a); }
+            if let Some(v) = value { order.push(v.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Accessor { modifiers, kind, body, range, span } => {
+            let node = element(xot, kind, *span);  // <get/>, <set/>, <init/>
+            xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            if let Some(b) = body {
+                let br = b.range();
+                emit_gap(xot, node, source, range.start, br.start)?;
+                render_to_xot(xot, node, b, source)?;
+                emit_gap(xot, node, source, br.end, range.end)?;
+            } else {
+                emit_gap(xot, node, source, range.start, range.end)?;
+            }
+            Ok(node)
+        }
+        Ir::Constructor { modifiers, decorators, name, parameters, body, range, span } => {
+            let node = element(xot, "constructor", *span);
+            xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
+            order.push(name.as_ref());
+            for p in parameters { order.push(p); }
+            order.push(body.as_ref());
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Using { is_static, alias, path, range, span } => {
+            let node = element(xot, "using", *span);
+            xot.append(parent, node)?;
+            if *is_static {
+                let m = element(xot, "static", *span);
+                xot.append(node, m)?;
+            }
+            let mut order: Vec<&Ir> = Vec::new();
+            order.push(path.as_ref());
+            if let Some(a) = alias { order.push(a.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
         Ir::Namespace { name, children, range, span } => {
             let node = element(xot, "namespace", *span);
             xot.append(parent, node)?;

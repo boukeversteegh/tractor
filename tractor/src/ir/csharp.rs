@@ -113,6 +113,202 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- Statements with simple structure -------------------------
+
+        "comment" => Ir::Comment { leading: true, range, span },
+
+        // `using System;` / `using static System.Math;` / `using A = B;`
+        "using_directive" => {
+            let mut cursor = node.walk();
+            let mut is_static = false;
+            let mut alias: Option<Box<Ir>> = None;
+            let mut path_node: Option<TsNode> = None;
+            for c in node.children(&mut cursor) {
+                if !c.is_named() {
+                    if let Ok(t) = c.utf8_text(source.as_bytes()) {
+                        if t == "static" { is_static = true; }
+                    }
+                    continue;
+                }
+                match c.kind() {
+                    "name_equals" => {
+                        // `A =` part of `using A = B;`
+                        let mut cc = c.walk();
+                        let n = c.named_children(&mut cc).next();
+                        if let Some(n) = n {
+                            alias = Some(Box::new(Ir::Name { range: range_of(n), span: span_of(n) }));
+                        }
+                    }
+                    _ => path_node = Some(c),
+                }
+            }
+            let path_ir = match path_node {
+                Some(n) => lower_node(n, source),
+                None => Ir::Unknown {
+                    kind: "using_directive(missing path)".to_string(),
+                    range, span,
+                },
+            };
+            Ir::Using {
+                is_static,
+                alias,
+                path: Box::new(path_ir),
+                range, span,
+            }
+        }
+
+        // `qualified_name` (`System.Linq`) — same shape as Python's path.
+        "qualified_name" => {
+            let mut cursor = node.walk();
+            let segments: Vec<Ir> = node.named_children(&mut cursor).map(|c| {
+                if c.kind() == "identifier" {
+                    Ir::Name { range: range_of(c), span: span_of(c) }
+                } else {
+                    lower_node(c, source)
+                }
+            }).collect();
+            Ir::Path { segments, range, span }
+        }
+
+        // ----- Enums ----------------------------------------------------
+
+        "enum_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let body_node = node.child_by_field_name("body");
+            let modifiers = lower_csharp_modifiers(node, source, Some(Access::Internal));
+            // Underlying type lives between the name and the body —
+            // tree-sitter exposes it as a `base_list`'s child, or
+            // sometimes a separate `_type` field. For minimal scope,
+            // skip and let it appear in gap text.
+            let members: Vec<Ir> = match body_node {
+                Some(b) => {
+                    let mut c = b.walk();
+                    b.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+                }
+                None => Vec::new(),
+            };
+            Ir::Enum {
+                modifiers,
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "enum(missing name)".to_string(), range, span },
+                }),
+                underlying_type: None,
+                members,
+                range, span,
+            }
+        }
+
+        "enum_member_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let value_node = node.child_by_field_name("value");
+            Ir::EnumMember {
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "enum_member(missing name)".to_string(), range, span },
+                }),
+                value: value_node.map(|n| Box::new(lower_node(n, source))),
+                range, span,
+            }
+        }
+
+        // ----- Properties ----------------------------------------------
+
+        "property_declaration" => {
+            let type_node = node.child_by_field_name("type");
+            let name_node = node.child_by_field_name("name");
+            let modifiers = lower_csharp_modifiers(node, source, Some(Access::Private));
+            let mut cursor = node.walk();
+            let mut accessors: Vec<Ir> = Vec::new();
+            let mut value: Option<Box<Ir>> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "accessor_list" => {
+                        let mut ac = c.walk();
+                        for a in c.named_children(&mut ac) {
+                            if a.kind() == "accessor_declaration" {
+                                accessors.push(lower_accessor_declaration(a, source));
+                            }
+                        }
+                    }
+                    "arrow_expression_clause" => {
+                        // Expression-bodied: `=> expr;`
+                        let mut ac = c.walk();
+                        let inner = c.named_children(&mut ac).next();
+                        if let Some(i) = inner {
+                            // Treat as a get-only accessor with body.
+                            accessors.push(Ir::Accessor {
+                                modifiers: Modifiers::default(),
+                                kind: "get",
+                                body: Some(Box::new(lower_node(i, source))),
+                                range: range_of(c),
+                                span: span_of(c),
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            // Initializer expression (`int X { get; } = 42;`) — only
+            // when distinct from any accessor we already added.
+            // tree-sitter sometimes routes arrow_expression_clause's
+            // inner via the `value` field too; guard against that
+            // double-add by checking node identity.
+            if let Some(v) = node.child_by_field_name("value") {
+                let v_range = v.byte_range();
+                let already_added = accessors.iter().any(|a| {
+                    let r = a.range();
+                    r.start as usize <= v_range.start && r.end as usize >= v_range.end
+                });
+                if !already_added {
+                    value = Some(Box::new(lower_node(v, source)));
+                }
+            }
+            Ir::Property {
+                modifiers,
+                decorators: Vec::new(),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "property(missing name)".to_string(), range, span },
+                }),
+                accessors,
+                value,
+                range, span,
+            }
+        }
+
+        // ----- Constructors --------------------------------------------
+
+        "constructor_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let body_node = node.child_by_field_name("body");
+            let modifiers = lower_csharp_modifiers(node, source, Some(Access::Private));
+            // Parameters lowering deferred for the slice — they
+            // appear under_typed in the audit until then.
+            Ir::Constructor {
+                modifiers,
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown { kind: "constructor(missing name)".to_string(), range, span },
+                }),
+                parameters: Vec::new(),
+                body: Box::new(match body_node {
+                    Some(b) => lower_block_like(b, source),
+                    None => Ir::Body {
+                        children: Vec::new(),
+                        pass_only: false,
+                        range: ByteRange::empty_at(range.end),
+                        span,
+                    },
+                }),
+                range, span,
+            }
+        }
+
         // ----- Structural scaffolding (so recursion reaches expressions)
 
         // `namespace X { ... }` — block-scoped namespace. tree-sitter:
@@ -721,6 +917,39 @@ fn lower_csharp_modifiers(
         }
     }
     m
+}
+
+/// Lower an `accessor_declaration` (`get`, `set`, `init` inside a
+/// property's `{ ... }`).
+fn lower_accessor_declaration(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    // The kind keyword (`get`/`set`/`init`) is an unnamed token
+    // child. Find it by scanning unnamed children.
+    let mut cursor = node.walk();
+    let mut kind: &'static str = "get";  // default fallback
+    for c in node.children(&mut cursor) {
+        if !c.is_named() {
+            if let Ok(t) = c.utf8_text(source.as_bytes()) {
+                match t {
+                    "get" => { kind = "get"; break; }
+                    "set" => { kind = "set"; break; }
+                    "init" => { kind = "init"; break; }
+                    _ => {}
+                }
+            }
+        }
+    }
+    let modifiers = lower_csharp_modifiers(node, source, None);
+    let body_node = node.child_by_field_name("body")
+        .or_else(|| {
+            // Expression-bodied accessor (`get => expr;`)
+            let mut c = node.walk();
+            let r = node.named_children(&mut c).find(|n| n.kind() == "arrow_expression_clause");
+            r
+        });
+    let body = body_node.map(|b| Box::new(lower_node(b, source)));
+    Ir::Accessor { modifiers, kind, body, range, span }
 }
 
 /// Lower a `block` or `declaration_list` into `Ir::Body`.

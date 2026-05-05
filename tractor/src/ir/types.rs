@@ -565,6 +565,79 @@ pub enum Ir {
     True   { range: ByteRange, span: Span },
     False  { range: ByteRange, span: Span },
     None   { range: ByteRange, span: Span },
+    /// `<enum>` — `enum Name { Member1, Member2 = 5, ... }`. Members
+    /// are `Ir::EnumMember`. C# enums also accept an optional
+    /// underlying type (`enum Trait : uint`).
+    Enum {
+        modifiers: Modifiers,
+        decorators: Vec<Ir>,
+        name: Box<Ir>,
+        underlying_type: Option<Box<Ir>>,  // C# `: uint`
+        members: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<constant>` — one member of an enum (`Low`, `Medium = 5`).
+    EnumMember {
+        decorators: Vec<Ir>,
+        name: Box<Ir>,
+        value: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<property>` — C# `public int X { get; set; } = init;` and
+    /// the various property forms. Accessors: getter / setter /
+    /// init. Renders
+    /// `<property>{markers}<type>...<name>...{accessors}{value}</property>`.
+    Property {
+        modifiers: Modifiers,
+        decorators: Vec<Ir>,
+        type_ann: Option<Box<Ir>>,
+        name: Box<Ir>,
+        accessors: Vec<Ir>,                // each Ir::Accessor
+        value: Option<Box<Ir>>,            // initializer expression
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<accessor>` — one of `get`, `set`, `init` inside a property's
+    /// `{ ... }`. Body is optional (auto-implemented properties have
+    /// no body).
+    Accessor {
+        modifiers: Modifiers,              // Some accessors have their own access modifier
+        kind: &'static str,                // "get" | "set" | "init"
+        body: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<constructor>` — C# constructor (`public Foo(...) : base(x) { }`).
+    /// Renders similar to method but with `<constructor>` element.
+    /// Initializer `: base(...)` deferred.
+    Constructor {
+        modifiers: Modifiers,
+        decorators: Vec<Ir>,
+        name: Box<Ir>,                     // class name being constructed
+        parameters: Vec<Ir>,
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<using>` — C#'s `using System;` / `using static System.Math;`
+    /// / `using A = B;`. The IR mirrors Python's import shape but
+    /// with `<using>` element name. `static_` flag for `using static`,
+    /// `alias` for `using X = Y;`.
+    Using {
+        is_static: bool,
+        alias: Option<Box<Ir>>,
+        path: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<namespace>` — C#'s `namespace X { ... }` (block-scoped) or
     /// `namespace X;` (file-scoped). For now block-scoped only;
     /// renders `<namespace><name>...</name>{children...}</namespace>`.
@@ -953,6 +1026,12 @@ impl Ir {
             | Ir::True { span, .. }
             | Ir::False { span, .. }
             | Ir::None { span, .. }
+            | Ir::Enum { span, .. }
+            | Ir::EnumMember { span, .. }
+            | Ir::Property { span, .. }
+            | Ir::Accessor { span, .. }
+            | Ir::Constructor { span, .. }
+            | Ir::Using { span, .. }
             | Ir::Namespace { span, .. }
             | Ir::Variable { span, .. }
             | Ir::Is { span, .. }
@@ -1013,6 +1092,12 @@ impl Ir {
             | Ir::True { range, .. }
             | Ir::False { range, .. }
             | Ir::None { range, .. }
+            | Ir::Enum { range, .. }
+            | Ir::EnumMember { range, .. }
+            | Ir::Property { range, .. }
+            | Ir::Accessor { range, .. }
+            | Ir::Constructor { range, .. }
+            | Ir::Using { range, .. }
             | Ir::Namespace { range, .. }
             | Ir::Variable { range, .. }
             | Ir::Is { range, .. }
@@ -1021,6 +1106,194 @@ impl Ir {
             | Ir::Inline { range, .. }
             | Ir::Unknown { range, .. } => *range,
         }
+    }
+}
+
+impl Ir {
+    /// Direct IR children, in source order. Excludes synthetic
+    /// render-time wrappers (`<value>`, `<type>`, `<left>`/`<right>`,
+    /// `<expression>` host) and modifier markers — those are
+    /// rendering metadata, not IR.
+    ///
+    /// **Internal walker helper, not a public API contract.**
+    /// `pub(crate)` until a downstream consumer demands stability.
+    /// rustc's HIR uses per-kind `Visitor` methods for this reason —
+    /// keeping this internal lets us refactor freely.
+    ///
+    /// ## What's included
+    /// - `Box<Ir>`, `Vec<Ir>`, `Option<Box<Ir>>` fields.
+    /// - `AccessSegment` children of `Ir::Access` (member's name is
+    ///   not an Ir; index/call have inner Ir children).
+    ///
+    /// ## What's excluded
+    /// - Markers / modifiers (flags, not children).
+    /// - Operator text + marker (`op_text`, `op_marker`, `op_range`).
+    /// - Static field discriminators (`kind: &'static str` on
+    ///   `Accessor`, etc.).
+    /// - Comment leading flag, Body pass_only flag.
+    pub(crate) fn children(&self) -> Vec<&Ir> {
+        let mut v: Vec<&Ir> = Vec::new();
+        match self {
+            Ir::Module { children, .. } => v.extend(children.iter()),
+            Ir::Expression { inner, .. } => v.push(inner),
+            Ir::Access { receiver, segments, .. } => {
+                v.push(receiver);
+                for s in segments {
+                    match s {
+                        AccessSegment::Member { .. } => {} // property is not an Ir
+                        AccessSegment::Index { indices, .. } => v.extend(indices.iter()),
+                        AccessSegment::Call { arguments, .. } => v.extend(arguments.iter()),
+                    }
+                }
+            }
+            Ir::Call { callee, arguments, .. } => {
+                v.push(callee);
+                v.extend(arguments.iter());
+            }
+            Ir::Binary { left, right, .. }
+            | Ir::Comparison { left, right, .. } => {
+                v.push(left);
+                v.push(right);
+            }
+            Ir::Unary { operand, .. } => v.push(operand),
+            Ir::If { condition, body, else_branch, .. }
+            | Ir::ElseIf { condition, body, else_branch, .. } => {
+                v.push(condition);
+                v.push(body);
+                if let Some(e) = else_branch { v.push(e); }
+            }
+            Ir::Else { body, .. } => v.push(body),
+            Ir::For { targets, iterables, body, else_body, .. } => {
+                v.extend(targets.iter());
+                v.extend(iterables.iter());
+                v.push(body);
+                if let Some(e) = else_body { v.push(e); }
+            }
+            Ir::While { condition, body, else_body, .. } => {
+                v.push(condition);
+                v.push(body);
+                if let Some(e) = else_body { v.push(e); }
+            }
+            Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
+                v.extend(decorators.iter());
+                v.push(name);
+                if let Some(g) = generics { v.push(g); }
+                v.extend(parameters.iter());
+                if let Some(r) = returns { v.push(r); }
+                v.push(body);
+            }
+            Ir::Class { decorators, name, generics, bases, body, .. } => {
+                v.extend(decorators.iter());
+                v.push(name);
+                if let Some(g) = generics { v.push(g); }
+                v.extend(bases.iter());
+                v.push(body);
+            }
+            Ir::Body { children, .. } => v.extend(children.iter()),
+            Ir::Parameter { name, type_ann, default, .. } => {
+                v.push(name);
+                if let Some(t) = type_ann { v.push(t); }
+                if let Some(d) = default { v.push(d); }
+            }
+            Ir::Decorator { inner, .. } => v.push(inner),
+            Ir::Returns { type_ann, .. } => v.push(type_ann),
+            Ir::Generic { items, .. } => v.extend(items.iter()),
+            Ir::TypeParameter { name, constraint, .. } => {
+                v.push(name);
+                if let Some(c) = constraint { v.push(c); }
+            }
+            Ir::Return { value, .. } => {
+                if let Some(val) = value { v.push(val); }
+            }
+            Ir::Assign { targets, type_annotation, values, .. } => {
+                v.extend(targets.iter());
+                if let Some(t) = type_annotation { v.push(t); }
+                v.extend(values.iter());
+            }
+            Ir::Import { children, .. } => v.extend(children.iter()),
+            Ir::From { path, imports, .. } => {
+                if let Some(p) = path { v.push(p); }
+                v.extend(imports.iter());
+            }
+            Ir::FromImport { name, alias, .. } => {
+                v.push(name);
+                if let Some(a) = alias { v.push(a); }
+            }
+            Ir::Path { segments, .. } => v.extend(segments.iter()),
+            Ir::Aliased { inner, .. } => v.push(inner),
+            Ir::Tuple { children, .. }
+            | Ir::List { children, .. }
+            | Ir::Set { children, .. } => v.extend(children.iter()),
+            Ir::Dictionary { pairs, .. } => v.extend(pairs.iter()),
+            Ir::Pair { key, value, .. } => {
+                v.push(key);
+                v.push(value);
+            }
+            Ir::GenericType { name, params, .. } => {
+                v.push(name);
+                v.extend(params.iter());
+            }
+            Ir::Is { value, type_target, .. } => {
+                v.push(value);
+                v.push(type_target);
+            }
+            Ir::Cast { type_ann, value, .. } => {
+                v.push(type_ann);
+                v.push(value);
+            }
+            Ir::Enum { decorators, name, underlying_type, members, .. } => {
+                v.extend(decorators.iter());
+                v.push(name);
+                if let Some(t) = underlying_type { v.push(t); }
+                v.extend(members.iter());
+            }
+            Ir::EnumMember { decorators, name, value, .. } => {
+                v.extend(decorators.iter());
+                v.push(name);
+                if let Some(val) = value { v.push(val); }
+            }
+            Ir::Property { decorators, type_ann, name, accessors, value, .. } => {
+                v.extend(decorators.iter());
+                if let Some(t) = type_ann { v.push(t); }
+                v.push(name);
+                v.extend(accessors.iter());
+                if let Some(val) = value { v.push(val); }
+            }
+            Ir::Accessor { body, .. } => {
+                if let Some(b) = body { v.push(b); }
+            }
+            Ir::Constructor { decorators, name, parameters, body, .. } => {
+                v.extend(decorators.iter());
+                v.push(name);
+                v.extend(parameters.iter());
+                v.push(body);
+            }
+            Ir::Using { alias, path, .. } => {
+                v.push(path);
+                if let Some(a) = alias { v.push(a); }
+            }
+            Ir::Namespace { name, children, .. } => {
+                v.push(name);
+                v.extend(children.iter());
+            }
+            Ir::Variable { type_ann, name, value, .. } => {
+                if let Some(t) = type_ann { v.push(t); }
+                v.push(name);
+                if let Some(val) = value { v.push(val); }
+            }
+            Ir::Inline { children, .. } => v.extend(children.iter()),
+            // Leaves and markers — no Ir children.
+            Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
+            | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }
+            | Ir::Comment { .. } | Ir::PositionalSeparator { .. }
+            | Ir::KeywordSeparator { .. } | Ir::Break { .. } | Ir::Continue { .. }
+            | Ir::Unknown { .. } => {}
+        }
+        // Sort by source order so consumers (renderer, audit walker)
+        // don't have to repeat. Variants whose fields are already in
+        // source order pay a near-zero sort cost.
+        v.sort_by_key(|c| c.range().start);
+        v
     }
 }
 

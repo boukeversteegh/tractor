@@ -169,7 +169,25 @@ fn blueprint_coverage_audit() {
     let dr = xot.new_element(dr_name);
     render_to_xot(&mut xot, dr, &ir, &source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
-    assert_eq!(text_concat(&xot, root), source, "XPath text-content recovery broken");
+    let xpath = text_concat(&xot, root);
+    if xpath != source {
+        // Find the first differing byte and show context.
+        let mut idx: usize = 0;
+        for (a, b) in xpath.bytes().zip(source.bytes()) {
+            if a != b { break; }
+            idx += 1;
+        }
+        let start = idx.saturating_sub(60);
+        let end_a = (idx + 60).min(xpath.len());
+        let end_b = (idx + 60).min(source.len());
+        panic!(
+            "XPath text-content recovery broken at byte {idx}\n\
+             ----- IR (got)    -----\n{:?}\n\
+             ----- source (want) -----\n{:?}",
+            &xpath[start..end_a],
+            &source[start..end_b],
+        );
+    }
 
     let report = audit_coverage(tree.root_node(), &ir, &source);
     eprintln!("\n{}", report.summary());

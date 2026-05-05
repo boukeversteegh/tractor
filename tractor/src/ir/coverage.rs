@@ -41,7 +41,7 @@
 use std::collections::BTreeMap;
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir};
+use super::types::{ByteRange, Ir};
 
 /// Per-CST-node classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -154,148 +154,13 @@ impl CoverageReport {
 }
 
 /// Walk the IR and collect every node's byte range with a flag for
-/// whether it's Unknown.
+/// whether it's `Ir::Unknown`. Powered by `Ir::children()` — adding a
+/// new variant requires no change here as long as the variant declares
+/// its children correctly.
 fn collect_ir_ranges(ir: &Ir, out: &mut Vec<(ByteRange, bool /* is_unknown */)>) {
-    let r = ir.range();
-    let is_unknown = matches!(ir, Ir::Unknown { .. });
-    out.push((r, is_unknown));
-    match ir {
-        Ir::Module { children, .. } | Ir::Inline { children, .. } => {
-            for c in children { collect_ir_ranges(c, out); }
-        }
-        Ir::Body { children, .. } => {
-            for c in children { collect_ir_ranges(c, out); }
-        }
-        Ir::Expression { inner, .. } => collect_ir_ranges(inner, out),
-        Ir::Access { receiver, segments, .. } => {
-            collect_ir_ranges(receiver, out);
-            for s in segments {
-                match s {
-                    AccessSegment::Member { .. } => {}, // no IR children
-                    AccessSegment::Index { indices, .. } => {
-                        for i in indices { collect_ir_ranges(i, out); }
-                    }
-                    AccessSegment::Call { arguments, .. } => {
-                        for a in arguments { collect_ir_ranges(a, out); }
-                    }
-                }
-            }
-        }
-        Ir::Call { callee, arguments, .. } => {
-            collect_ir_ranges(callee, out);
-            for a in arguments { collect_ir_ranges(a, out); }
-        }
-        Ir::Binary { left, right, .. } | Ir::Comparison { left, right, .. } => {
-            collect_ir_ranges(left, out);
-            collect_ir_ranges(right, out);
-        }
-        Ir::Unary { operand, .. } => collect_ir_ranges(operand, out),
-        Ir::If { condition, body, else_branch, .. }
-        | Ir::ElseIf { condition, body, else_branch, .. } => {
-            collect_ir_ranges(condition, out);
-            collect_ir_ranges(body, out);
-            if let Some(e) = else_branch { collect_ir_ranges(e, out); }
-        }
-        Ir::Else { body, .. } => collect_ir_ranges(body, out),
-        Ir::For { targets, iterables, body, else_body, .. } => {
-            for t in targets { collect_ir_ranges(t, out); }
-            for i in iterables { collect_ir_ranges(i, out); }
-            collect_ir_ranges(body, out);
-            if let Some(e) = else_body { collect_ir_ranges(e, out); }
-        }
-        Ir::While { condition, body, else_body, .. } => {
-            collect_ir_ranges(condition, out);
-            collect_ir_ranges(body, out);
-            if let Some(e) = else_body { collect_ir_ranges(e, out); }
-        }
-        Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
-            for d in decorators { collect_ir_ranges(d, out); }
-            collect_ir_ranges(name, out);
-            if let Some(g) = generics { collect_ir_ranges(g, out); }
-            for p in parameters { collect_ir_ranges(p, out); }
-            if let Some(r) = returns { collect_ir_ranges(r, out); }
-            collect_ir_ranges(body, out);
-        }
-        Ir::Class { decorators, name, generics, bases, body, modifiers: _, .. } => {
-            for d in decorators { collect_ir_ranges(d, out); }
-            collect_ir_ranges(name, out);
-            if let Some(g) = generics { collect_ir_ranges(g, out); }
-            for b in bases { collect_ir_ranges(b, out); }
-            collect_ir_ranges(body, out);
-        }
-        Ir::Parameter { name, type_ann, default, .. } => {
-            collect_ir_ranges(name, out);
-            if let Some(t) = type_ann { collect_ir_ranges(t, out); }
-            if let Some(d) = default { collect_ir_ranges(d, out); }
-        }
-        Ir::Decorator { inner, .. } => collect_ir_ranges(inner, out),
-        Ir::Returns { type_ann, .. } => collect_ir_ranges(type_ann, out),
-        Ir::Generic { items, .. } => {
-            for i in items { collect_ir_ranges(i, out); }
-        }
-        Ir::TypeParameter { name, constraint, .. } => {
-            collect_ir_ranges(name, out);
-            if let Some(c) = constraint { collect_ir_ranges(c, out); }
-        }
-        Ir::Return { value, .. } => {
-            if let Some(v) = value { collect_ir_ranges(v, out); }
-        }
-        Ir::Assign { targets, type_annotation, values, .. } => {
-            for t in targets { collect_ir_ranges(t, out); }
-            if let Some(ty) = type_annotation { collect_ir_ranges(ty, out); }
-            for v in values { collect_ir_ranges(v, out); }
-        }
-        Ir::Import { children, .. } => {
-            for c in children { collect_ir_ranges(c, out); }
-        }
-        Ir::From { path, imports, .. } => {
-            if let Some(p) = path { collect_ir_ranges(p, out); }
-            for i in imports { collect_ir_ranges(i, out); }
-        }
-        Ir::FromImport { name, alias, .. } => {
-            collect_ir_ranges(name, out);
-            if let Some(a) = alias { collect_ir_ranges(a, out); }
-        }
-        Ir::Path { segments, .. } => {
-            for s in segments { collect_ir_ranges(s, out); }
-        }
-        Ir::Aliased { inner, .. } => collect_ir_ranges(inner, out),
-        Ir::Tuple { children, .. } | Ir::List { children, .. } | Ir::Set { children, .. } => {
-            for c in children { collect_ir_ranges(c, out); }
-        }
-        Ir::Dictionary { pairs, .. } => {
-            for p in pairs { collect_ir_ranges(p, out); }
-        }
-        Ir::Pair { key, value, .. } => {
-            collect_ir_ranges(key, out);
-            collect_ir_ranges(value, out);
-        }
-        Ir::GenericType { name, params, .. } => {
-            collect_ir_ranges(name, out);
-            for p in params { collect_ir_ranges(p, out); }
-        }
-        Ir::Is { value, type_target, .. } => {
-            collect_ir_ranges(value, out);
-            collect_ir_ranges(type_target, out);
-        }
-        Ir::Cast { type_ann, value, .. } => {
-            collect_ir_ranges(type_ann, out);
-            collect_ir_ranges(value, out);
-        }
-        Ir::Namespace { name, children, .. } => {
-            collect_ir_ranges(name, out);
-            for c in children { collect_ir_ranges(c, out); }
-        }
-        Ir::Variable { type_ann, name, value, .. } => {
-            if let Some(t) = type_ann { collect_ir_ranges(t, out); }
-            collect_ir_ranges(name, out);
-            if let Some(v) = value { collect_ir_ranges(v, out); }
-        }
-        // Leaves and markers — no further recursion.
-        Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
-        | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }
-        | Ir::Comment { .. } | Ir::PositionalSeparator { .. } | Ir::KeywordSeparator { .. }
-        | Ir::Break { .. } | Ir::Continue { .. } | Ir::Unknown { .. } => {}
+    out.push((ir.range(), matches!(ir, Ir::Unknown { .. })));
+    for c in ir.children() {
+        collect_ir_ranges(c, out);
     }
 }
 
