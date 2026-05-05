@@ -455,35 +455,38 @@ pub fn render_to_xot(
         Ir::CFor { initializer, condition, updates, body, range, span } => {
             let node = element(xot, "for", *span);
             xot.append(parent, node)?;
-            // The imperative pipeline doesn't wrap initializer / update
-            // expressions; only `condition` and `body` get field wrappers.
-            // Render each child appropriately.
-            let mut order: Vec<&Ir> = Vec::new();
-            if let Some(i) = initializer { order.push(i.as_ref()); }
-            if let Some(c) = condition { order.push(c.as_ref()); }
-            for u in updates { order.push(u); }
-            order.push(body.as_ref());
-            order.sort_by_key(|c| c.range().start);
-
+            // Render header parts (init / cond / updates) in source
+            // order, then the body. The imperative pipeline wraps
+            // condition in `<condition><expression>`; init/updates
+            // ride in bare.
+            let mut header: Vec<(usize, &Ir, u8)> = Vec::new();
+            if let Some(i) = initializer { header.push((i.range().start as usize, i.as_ref(), 0)); }
+            if let Some(c) = condition { header.push((c.range().start as usize, c.as_ref(), 1)); }
+            for u in updates { header.push((u.range().start as usize, u, 2)); }
+            header.sort_by_key(|(p, _, _)| *p);
             let mut cursor = range.start;
-            for child in &order {
+            for (_, child, kind) in &header {
                 let cr = child.range();
                 emit_gap(xot, node, source, cursor, cr.start)?;
-                if std::ptr::eq(*child, body.as_ref()) {
-                    render_to_xot(xot, node, child, source)?;
-                } else if condition.as_ref().map_or(false, |c| std::ptr::eq(*child, c.as_ref())) {
-                    let slot = element(xot, "condition", child.span());
-                    xot.append(node, slot)?;
-                    let expr = element(xot, "expression", child.span());
-                    xot.append(slot, expr)?;
-                    render_to_xot(xot, expr, child, source)?;
-                } else {
-                    // initializer or update — render bare.
-                    render_to_xot(xot, node, child, source)?;
+                match *kind {
+                    1 => {
+                        let slot = element(xot, "condition", child.span());
+                        xot.append(node, slot)?;
+                        let expr = element(xot, "expression", child.span());
+                        xot.append(slot, expr)?;
+                        render_to_xot(xot, expr, child, source)?;
+                    }
+                    _ => {
+                        render_to_xot(xot, node, child, source)?;
+                    }
                 }
                 cursor = cr.end;
             }
-            emit_gap(xot, node, source, cursor, range.end)?;
+            // Body — always rendered after header.
+            let br = body.range();
+            emit_gap(xot, node, source, cursor, br.start)?;
+            render_to_xot(xot, node, body, source)?;
+            emit_gap(xot, node, source, br.end, range.end)?;
             Ok(node)
         }
         Ir::DoWhile { body, condition, range, span } => {
@@ -878,7 +881,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Class { kind, modifiers, decorators, name, generics, bases, body, range, span } => {
+        Ir::Class { kind, modifiers, decorators, name, generics, bases, where_clauses, body, range, span } => {
             let node = element(xot, kind, *span);
             xot.append(parent, node)?;
             for marker in modifiers.marker_names() {
@@ -887,13 +890,15 @@ pub fn render_to_xot(
             }
             // Source-order children: decorators, name, generic items
             // (flat siblings, not wrapped in outer `<generic>`),
-            // bases (wrapped in `<extends><type>...`), body.
+            // bases (wrapped in `<extends><type>...`), where clauses,
+            // body.
             #[derive(Clone, Copy)]
             enum CSlot<'a> {
                 Decor(&'a Ir),
                 Name(&'a Ir),
                 Generics(&'a Ir),
                 Base(&'a Ir),
+                Where(&'a Ir),
                 Body(&'a Ir),
             }
             let mut order: Vec<CSlot> = Vec::new();
@@ -907,16 +912,17 @@ pub fn render_to_xot(
                 }
             }
             for b in bases { order.push(CSlot::Base(b)); }
+            for w in where_clauses { order.push(CSlot::Where(w)); }
             order.push(CSlot::Body(body));
             order.sort_by_key(|s| match s {
                 CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
-                | CSlot::Base(i) | CSlot::Body(i) => i.range().start,
+                | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i.range().start,
             });
             let mut cursor = range.start;
             for slot in &order {
                 let inner: &Ir = match slot {
                     CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
-                    | CSlot::Base(i) | CSlot::Body(i) => i,
+                    | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i,
                 };
                 let cr = inner.range();
                 emit_gap(xot, node, source, cursor, cr.start)?;
@@ -946,18 +952,24 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)
         }
-        Ir::Body { children, pass_only, range, span } => {
+        Ir::Body { children, pass_only, block_wrap, range, span } => {
             let node = element(xot, "body", *span);
             xot.append(parent, node)?;
+            // Optional inner `<block>` element so the rendered shape
+            // is `<body><block>{stmts}</block></body>` (C#).
+            let target = if *block_wrap {
+                let block = element(xot, "block", *span);
+                xot.append(node, block)?;
+                block
+            } else {
+                node
+            };
             if *pass_only {
                 let m = element(xot, "pass", *span);
-                xot.append(node, m)?;
-                // Body still contains the source `pass` text — emit
-                // gap text covering the whole body range so XPath
-                // text recovery includes it.
-                emit_gap(xot, node, source, range.start, range.end)?;
+                xot.append(target, m)?;
+                emit_gap(xot, target, source, range.start, range.end)?;
             } else {
-                render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
+                render_with_gaps(xot, target, source, *range, children, |xot, parent, child| {
                     render_to_xot(xot, parent, child, source).map(|_| ())
                 })?;
             }
@@ -1086,11 +1098,15 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Comment { leading, range, span } => {
+        Ir::Comment { leading, trailing, range, span } => {
             let node = element(xot, "comment", *span);
             xot.append(parent, node)?;
             if *leading {
                 let m = element(xot, "leading", *span);
+                xot.append(node, m)?;
+            }
+            if *trailing {
+                let m = element(xot, "trailing", *span);
                 xot.append(node, m)?;
             }
             let text = range.slice(source);
@@ -1315,27 +1331,44 @@ pub fn render_to_xot(
                 xot.append(node, m)?;
             }
 
-            // Pre-op gap.
-            emit_gap(xot, node, source, range.start, op_range.start)?;
-
-            let op_node = element(xot, "op", Span::point(span.line, span.column));
-            xot.append(node, op_node)?;
-            if !op_text.is_empty() {
-                let t = xot.new_text(op_text);
-                xot.append(op_node, t)?;
-            }
-            let _ = op_marker;
-            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-
-            // Gap between op and operand.
             let operand_range = operand.range();
-            emit_gap(xot, node, source, op_range.end, operand_range.start)?;
+            let is_postfix = op_range.start >= operand_range.end;
 
-            // Operand untagged (no <expression> host — Python convention).
-            render_to_xot(xot, node, operand, source)?;
+            if is_postfix {
+                // Operand first, then `<op>`. e.g. `i++`.
+                emit_gap(xot, node, source, range.start, operand_range.start)?;
+                render_to_xot(xot, node, operand, source)?;
+                emit_gap(xot, node, source, operand_range.end, op_range.start)?;
+                let op_node = element(xot, "op", Span::point(span.line, span.column));
+                xot.append(node, op_node)?;
+                if !op_text.is_empty() {
+                    let t = xot.new_text(op_text);
+                    xot.append(op_node, t)?;
+                }
+                let _ = op_marker;
+                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+                emit_gap(xot, node, source, op_range.end, range.end)?;
+            } else {
+                // Prefix: pre-op gap, op, gap, operand, trailing gap.
+                emit_gap(xot, node, source, range.start, op_range.start)?;
 
-            emit_gap(xot, node, source, operand_range.end, range.end)?;
+                let op_node = element(xot, "op", Span::point(span.line, span.column));
+                xot.append(node, op_node)?;
+                if !op_text.is_empty() {
+                    let t = xot.new_text(op_text);
+                    xot.append(op_node, t)?;
+                }
+                let _ = op_marker;
+                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+
+                emit_gap(xot, node, source, op_range.end, operand_range.start)?;
+
+                render_to_xot(xot, node, operand, source)?;
+
+                emit_gap(xot, node, source, operand_range.end, range.end)?;
+            }
 
             Ok(node)
         }
@@ -1470,15 +1503,16 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Variable { element_name, modifiers, type_ann, name, value, range, span } => {
+        Ir::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } => {
             let node = element(xot, element_name, *span);
             for marker in modifiers.marker_names() {
                 let m = element(xot, marker, *span);
                 xot.append(node, m)?;
             }
             xot.append(parent, node)?;
-            // Source order: type (optional), name, value (optional).
+            // Source order: decorators, type (optional), name, value (optional).
             let mut order: Vec<&Ir> = Vec::new();
+            for d in decorators { order.push(d); }
             if let Some(t) = type_ann { order.push(t.as_ref()); }
             order.push(name.as_ref());
             if let Some(v) = value { order.push(v.as_ref()); }
@@ -1676,16 +1710,20 @@ fn render_segments_chain(
             // For multi-arg indexers (`arr[1, 2, 3]`), wrap each
             // index in `<argument>` so the post_transform's
             // `("index", "argument")` tag pair tags them with
-            // `list="arguments"` (matches imperative shape contract).
-            // Single-index cases also wrap, then post_transform skips
-            // tagging when there's only one — same as imperative.
+            // `list="arguments"`. Single-index keeps the bare child
+            // (matches Python's `<index><int>0</int></index>` shape).
+            let wrap = indices.len() > 1;
             let mut cursor_pos = seg_range.start;
             for idx in indices {
                 let r = idx.range();
                 emit_gap(xot, node, source, cursor_pos, r.start)?;
-                let arg = element(xot, "argument", idx.span());
-                xot.append(node, arg)?;
-                render_to_xot(xot, arg, idx, source)?;
+                if wrap {
+                    let arg = element(xot, "argument", idx.span());
+                    xot.append(node, arg)?;
+                    render_to_xot(xot, arg, idx, source)?;
+                } else {
+                    render_to_xot(xot, node, idx, source)?;
+                }
                 cursor_pos = r.end;
             }
             emit_gap(xot, node, source, cursor_pos, seg_range.end)?;

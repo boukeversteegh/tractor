@@ -68,7 +68,7 @@ pub enum TractorNode {
     Trailing, Leading,
     // Marker-only: member-access / pattern / type shape
     Instance, Optional, Array, Pointer, Function, Ref, Recursive, Relational, Logical,
-    Prefix, Lookup,
+    Prefix, Postfix, Lookup,
     // File-scoped namespace marker (`namespace Foo;` form)
     File,
     // Pattern-combinator markers
@@ -120,7 +120,7 @@ impl TractorNode {
             Self::Nullable | Self::Array                                        => (true, false, Type),
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Optional | Self::Pointer | Self::Function
-            | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Lookup
+            | Self::Ref | Self::Recursive | Self::Relational | Self::Prefix | Self::Postfix | Self::Lookup
             | Self::Notnull | Self::Unmanaged
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
             | Self::Anonymous | Self::Stackalloc | Self::File

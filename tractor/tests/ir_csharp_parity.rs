@@ -203,6 +203,245 @@ fn dump_global_attribute_cst() {
 
 #[test]
 #[ignore]
+fn dump_for_cst() {
+    let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = node.parent() {
+            let mut c = parent.walk();
+            for (idx, child) in parent.children(&mut c).enumerate() {
+                if child.id() == node.id() {
+                    field = parent.field_name_for_named_child(idx as u32).map(|s| s.to_string());
+                    break;
+                }
+            }
+        }
+        eprintln!("{indent}{} field={:?} text={:?}", node.kind(), field, text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
+fn dump_for_raw_xml() {
+    // Bypass post_transform to see if list-tagging pass is mangling.
+    let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), s);
+    let mut xot = Xot::new();
+    let n = xot.add_name("_root");
+    let dr = xot.new_element(n);
+    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    let xml = xot.to_string(dr).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_for_render_xml() {
+    let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_foreach_cst() {
+    let s = "class C { void M() { foreach (var item in items) { Handle(item); } } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
+        let indent = "  ".repeat(depth);
+        let txt = n.utf8_text(src).unwrap_or("?");
+        let short: String = txt.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = n.parent() {
+            let mut c = parent.walk();
+            for (i, ch) in parent.children(&mut c).enumerate() {
+                if ch.id() == n.id() { field = parent.field_name_for_child(i as u32); break; }
+            }
+        }
+        eprintln!("{indent}{}{} text={:?}", n.kind(), field.map(|f| format!(" [{f}]")).unwrap_or_default(), short);
+        let mut c = n.walk();
+        for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
+    }
+    walk(tree.root_node(), s.as_bytes(), 0);
+}
+
+#[test]
+#[ignore]
+fn dump_unsafe_block_render() {
+    let s = "class C { void M(int x) { unsafe { int* p = &x; } } }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_blueprint_line96_render_xml() {
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+    // Just take the relevant Demo class slice
+    let r = parse_string_to_xot(&source, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    // Print only the part around line 96 — find <block line=
+    // Dump full content
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_var_widget_render_xml() {
+    let s = "class C { void M(int maybe) { var widget = maybe; } }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_attr_render_xml() {
+    let s = "class X { [Obsolete] [MaxLength(50)] public string Name; }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_attr_cst() {
+    let s = "class X { [Obsolete] [MaxLength(50)] public string Name; }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
+        let indent = "  ".repeat(depth);
+        let txt = n.utf8_text(src).unwrap_or("?");
+        let short: String = txt.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = n.parent() {
+            let mut c = parent.walk();
+            for (i, ch) in parent.children(&mut c).enumerate() {
+                if ch.id() == n.id() { field = parent.field_name_for_child(i as u32); break; }
+            }
+        }
+        eprintln!("{indent}{}{} text={:?}", n.kind(), field.map(|f| format!(" [{f}]")).unwrap_or_default(), short);
+        let mut c = n.walk();
+        for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
+    }
+    walk(tree.root_node(), s.as_bytes(), 0);
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_where_cst() {
+    let s = "class Repo<T> where T : class, IComparable<T>, new() { }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
+        let indent = "  ".repeat(depth);
+        let txt = n.utf8_text(src).unwrap_or("?");
+        let short: String = txt.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = n.parent() {
+            let mut c = parent.walk();
+            for (i, ch) in parent.children(&mut c).enumerate() {
+                if ch.id() == n.id() { field = parent.field_name_for_child(i as u32); break; }
+            }
+        }
+        eprintln!("{indent}{}{} text={:?}", n.kind(), field.map(|f| format!(" [{f}]")).unwrap_or_default(), short);
+        let mut c = n.walk();
+        for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
+    }
+    walk(tree.root_node(), s.as_bytes(), 0);
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_where_render_xml() {
+    let s = "class Repo<T, U, V> where T : class, IComparable<T>, new() where U : struct where V : notnull { }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_vocab_render_xml() {
+    let s = "class Dog<T> : Animal, IBarker where T : Animal { public T Owner; public List<string> Tags; public void Bark() {} }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_foreach_render_xml() {
+    let s = "class C { void M() { foreach (var item in items) { Handle(item); } } }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml = r.xot.to_string(root).unwrap();
+    eprintln!("{xml}");
+}
+
+#[test]
+#[ignore]
+fn dump_for_render() {
+    use tractor::output::{render_query_tree_node, RenderOptions};
+    use tractor::xpath::xot_node_to_xml_node;
+    let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
+    let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if r.xot.is_document(r.root) {
+        r.xot.document_element(r.root).expect("doc")
+    } else { r.root };
+    let xml_node = xot_node_to_xml_node(&r.xot, root);
+    let mut opts = RenderOptions::new();
+    opts.include_meta = false;
+    eprintln!("{}", render_query_tree_node(&xml_node, &opts));
+}
+
+#[test]
+#[ignore]
 fn dump_from_clause_cst() {
     let s = "class C { void M() { var x = from n in numbers select n; } }";
     let mut p = tree_sitter::Parser::new();

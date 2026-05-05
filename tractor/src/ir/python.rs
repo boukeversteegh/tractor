@@ -575,7 +575,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             };
             let body = match body {
                 Some(b) => Box::new(lower_block(b, source)),
-                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, range: ByteRange::empty_at(range.end), span }),
+                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
             };
             let else_body = alt.map(|a| {
                 // alternative is an else_clause; lower its inner body.
@@ -601,10 +601,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let body_node = node.child_by_field_name("body");
             let try_body = body_node
                 .map(|b| Box::new(lower_block(b, source)))
-                .unwrap_or_else(|| Box::new(Ir::Body {
-                    children: Vec::new(), pass_only: false,
-                    range: ByteRange::empty_at(range.start), span,
-                }));
+                .unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.start), span }));
             let mut cursor = node.walk();
             let mut handlers: Vec<Ir> = Vec::new();
             let mut else_body: Option<Box<Ir>> = None;
@@ -822,7 +819,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // post-walk). For the experiment, we default to `leading: true`
         // since all blueprint comments precede the construct they
         // describe. Proper classification = TODO.
-        "comment" => Ir::Comment {
+        "comment" => Ir::Comment { trailing: false,
             leading: true,
             range,
             span,
@@ -1078,10 +1075,7 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
         type_target,
         binding,
         filter: None,
-        body: body.unwrap_or_else(|| Box::new(Ir::Body {
-            children: Vec::new(), pass_only: false,
-            range: ByteRange::empty_at(range.end), span,
-        })),
+        body: body.unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span })),
         range, span,
     }
 }
@@ -1197,12 +1191,7 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
 
     let body = match body_node {
         Some(b) => Box::new(lower_block(b, source)),
-        None => Box::new(Ir::Body {
-            children: Vec::new(),
-            pass_only: false,
-            range: ByteRange::empty_at(range.end),
-            span,
-        }),
+        None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
     };
 
     Ir::Function {
@@ -1257,19 +1246,14 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
 
     let body = match body_node {
         Some(b) => Box::new(lower_block(b, source)),
-        None => Box::new(Ir::Body {
-            children: Vec::new(),
-            pass_only: false,
-            range: ByteRange::empty_at(range.end),
-            span,
-        }),
+        None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
     };
 
     Ir::Class {
         kind: "class",
         // Python: no access modifiers, no static/abstract/etc on class.
         modifiers: Modifiers::default(),
-        decorators, name, generics, bases, body, range, span,
+        decorators, name, generics, bases, where_clauses: Vec::new(), body, range, span,
     }
 }
 
@@ -1487,7 +1471,7 @@ fn lower_block(node: TsNode<'_>, source: &str) -> Ir {
     } else {
         named.iter().filter(|n| n.kind() != "pass_statement").map(|n| lower_node(*n, source)).collect()
     };
-    Ir::Body { children, pass_only, range, span }
+    Ir::Body { children, pass_only, block_wrap: false, range, span }
 }
 
 /// Lower a `decorator` CST node. The decorator's inner is the

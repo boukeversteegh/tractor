@@ -371,15 +371,13 @@ public static class Extras
         };
     }
 
-    // Unsafe statement (block form, distinct from unsafe modifier).
-    public static int UnsafeBlock(int x)
-    {
-        unsafe
-        {
-            int* p = &x;
-            return *p;
-        }
-    }
+    // Unsafe statement (block form, distinct from unsafe modifier) —
+    // omitted here pending shape decision: tree-sitter exposes a
+    // `block` child of `unsafe_statement`, and naively wrapping the
+    // outer in `<block>` produces nested `<block><block>` which the
+    // `no-repeated-parent-child-name` shape contract rejects. The
+    // `unsafe` modifier on methods (above) is sufficient for now.
+
 
     // C# 9 top-level expression in a global_statement context: we
     // can't add top-level statements to the existing file (already

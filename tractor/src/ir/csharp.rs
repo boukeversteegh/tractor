@@ -225,7 +225,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Statements with simple structure -------------------------
 
-        "comment" => Ir::Comment { leading: false, range, span },
+        "comment" => Ir::Comment { leading: false, trailing: false, range, span },
 
         // `using System;` / `using static System.Math;` / `using A = B;`
         "using_directive" => {
@@ -377,9 +377,21 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     value = Some(Box::new(lower_node(v, source)));
                 }
             }
+            // Attributes on the property (each `attribute_list` child).
+            let mut ac = node.walk();
+            let decorators: Vec<Ir> = node.named_children(&mut ac)
+                .filter(|c| c.kind() == "attribute_list")
+                .flat_map(|al| {
+                    let mut alc = al.walk();
+                    al.named_children(&mut alc)
+                        .filter(|c| c.kind() == "attribute")
+                        .map(|c| lower_node(c, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
             Ir::Property {
                 modifiers,
-                decorators: Vec::new(),
+                decorators,
                 type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
@@ -408,12 +420,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 parameters: lower_csharp_parameter_list(params_node, source),
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
-                    None => Ir::Body {
-                        children: Vec::new(),
-                        pass_only: false,
-                        range: ByteRange::empty_at(range.end),
-                        span,
-                    },
+                    None => Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
                 }),
                 range, span,
             }
@@ -513,6 +520,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 None => Vec::new(),
             };
+            // Where clauses (`where T : ...`). Each
+            // `type_parameter_constraints_clause` child of the class
+            // node lowers to an Ir node that renders as `<where>` —
+            // the `attach_csharp_where_clauses` post-pass merges
+            // these onto the matching `<generic>` later.
+            let mut wc_walk = node.walk();
+            let where_clauses: Vec<Ir> = node.named_children(&mut wc_walk)
+                .filter(|c| c.kind() == "type_parameter_constraints_clause")
+                .map(|c| lower_node(c, source))
+                .collect();
             Ir::Class {
                 kind,
                 modifiers,
@@ -526,14 +543,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }),
                 generics,
                 bases,
+                where_clauses,
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
-                    None => Ir::Body {
-                        children: Vec::new(),
-                        pass_only: false,
-                        range: ByteRange::empty_at(range.end),
-                        span,
-                    },
+                    None => Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
                 }),
                 range, span,
             }
@@ -561,13 +574,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     Box::new(Ir::Body {
                         children: vec![lower_node(b, source)],
                         pass_only: false,
+                        block_wrap: false,
                         range: r, span: s,
                     })
                 }
-                None => Box::new(Ir::Body {
-                    children: Vec::new(), pass_only: false,
-                    range: ByteRange::empty_at(range.end), span,
-                }),
+                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
             };
             Ir::Function {
                 element_name: "method",
@@ -647,12 +658,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 returns: None,
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
-                    None => Ir::Body {
-                        children: Vec::new(),
-                        pass_only: false,
-                        range: ByteRange::empty_at(range.end),
-                        span,
-                    },
+                    None => Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
                 }),
                 range, span,
             }
@@ -731,25 +737,59 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // (vec of expressions via repeated `update` field),
         // `body`. The semicolons live in gap text.
         "for_statement" => {
-            let init_node = node.child_by_field_name("initializer");
-            let cond_node = node.child_by_field_name("condition");
-            let body_node = node.child_by_field_name("body");
-            // tree-sitter exposes multiple `update` fields as
-            // separate child_by_field_name lookups; use children_by_field_name.
-            let mut update_cursor = node.walk();
-            let updates: Vec<Ir> = node
-                .children_by_field_name("update", &mut update_cursor)
-                .map(|n| lower_node(n, source))
-                .collect();
-            match body_node {
-                Some(b) => Ir::CFor {
-                    initializer: init_node.map(|n| Box::new(lower_node(n, source))),
-                    condition: cond_node.map(|n| Box::new(lower_node(n, source))),
+            // tree-sitter-c-sharp's field labels for for_statement are
+            // unreliable in the pinned grammar version. Identify
+            // children by position: named children in order are
+            // [initializer?, condition?, updates*..., body]. The body
+            // is always the last named child.
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.is_empty() {
+                Ir::Unknown { kind: "for_statement(empty)".to_string(), range, span }
+            } else {
+                let body_node = *kids.last().unwrap();
+                let header = &kids[..kids.len() - 1];
+                // Slice the source between `for (` and `)` to find `;`
+                // separators that mark init/condition/update boundaries.
+                let header_text_start = range.start as usize;
+                let header_text_end = body_node.byte_range().start;
+                let header_text = &source[header_text_start..header_text_end];
+                // Count `;` to bucket children.
+                let semi_positions: Vec<usize> = header_text.match_indices(';')
+                    .map(|(i, _)| header_text_start + i)
+                    .collect();
+                let init_end = semi_positions.first().copied();
+                let cond_end = semi_positions.get(1).copied();
+                let mut initializer: Option<Box<Ir>> = None;
+                let mut condition: Option<Box<Ir>> = None;
+                let mut updates: Vec<Ir> = Vec::new();
+                for k in header {
+                    let pos = k.byte_range().start;
+                    if let Some(ie) = init_end {
+                        if pos < ie {
+                            if initializer.is_none() {
+                                initializer = Some(Box::new(lower_node(*k, source)));
+                            }
+                            continue;
+                        }
+                    }
+                    if let Some(ce) = cond_end {
+                        if pos < ce {
+                            if condition.is_none() {
+                                condition = Some(Box::new(lower_node(*k, source)));
+                            }
+                            continue;
+                        }
+                    }
+                    updates.push(lower_node(*k, source));
+                }
+                Ir::CFor {
+                    initializer,
+                    condition,
                     updates,
-                    body: Box::new(lower_csharp_consequence(b, source)),
+                    body: Box::new(lower_csharp_consequence(body_node, source)),
                     range, span,
-                },
-                None => Ir::Unknown { kind: "for_statement(missing body)".to_string(), range, span },
+                }
             }
         }
 
@@ -827,7 +867,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "operator_declaration"          => simple_statement(node, "operator",   source),
         "fixed_statement"               => simple_statement(node, "fixed",      source),
-        "unsafe_statement"              => simple_statement_marked(node, "block", &["unsafe"], source),
+        // `unsafe { ... }` — render as `<block[unsafe]>` containing
+        // the inner block's statements directly. Do NOT recurse into
+        // the child `block` node via simple_statement (that would
+        // produce `<block[unsafe]><body><block>...</block></body></block>`,
+        // which trips the `block-nested-directly-under-block` contract).
+        "unsafe_statement" => {
+            let mut cursor = node.walk();
+            let inner_block = node.named_children(&mut cursor)
+                .find(|c| c.kind() == "block");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(b) = inner_block {
+                let mut bc = b.walk();
+                children.extend(b.named_children(&mut bc).map(|c| lower_node(c, source)));
+            }
+            Ir::SimpleStatement {
+                element_name: "block",
+                modifiers: Modifiers::default(),
+                extra_markers: &["unsafe"],
+                children,
+                range, span,
+            }
+        }
         "using_statement"               => simple_statement(node, "using",      source),
         "throw_statement"               => simple_statement(node, "throw",      source),
         "throw_expression"              => simple_statement(node, "throw",      source),
@@ -878,7 +939,34 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "query_expression"              => simple_statement(node, "query",      source),
         "query_continuation"            => simple_statement(node, "query",      source),
         // Attributes
-        "attribute"                     => simple_statement(node, "attribute",  source),
+        // `attribute` — flatten the `attribute_argument_list` so each
+        // argument becomes a direct `<argument>` child of `<attribute>`
+        // (matches the imperative pipeline's
+        // `Flatten { distribute_list: Some("arguments") }` shape on
+        // attribute_argument_list).
+        "attribute" => {
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "attribute_argument_list" => {
+                        let mut alc = c.walk();
+                        for a in c.named_children(&mut alc) {
+                            children.push(lower_node(a, source));
+                        }
+                    }
+                    _ => children.push(lower_node(c, source)),
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "attribute",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
         "attribute_argument"            => simple_statement(node, "argument",   source),
         "attribute_argument_list"       => simple_statement(node, "arguments",  source),
         "attribute_target_specifier"    => simple_statement(node, "target",     source),
@@ -898,7 +986,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "alias_qualified_name"          => Ir::Name { range, span },
         "declaration_expression"        => simple_statement(node, "declaration",source),
         "extern_alias_directive"        => simple_statement(node, "import",     source),
-        "primary_constructor_base_type" => simple_statement(node, "base",       source),
+        // `: Money(Amount, Currency)` after a record's primary
+        // constructor — flatten so the inner type/identifier and
+        // arguments render at the surrounding base-list level. The
+        // imperative pipeline does the same via `Flatten`.
+        "primary_constructor_base_type" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
         "constructor_initializer"       => simple_statement(node, "initializer",source),
         "calling_convention"            => simple_statement(node, "calling",    source),
         "explicit_interface_specifier"  => simple_statement(node, "interface",  source),
@@ -907,25 +1005,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "member_binding_expression"     => simple_statement(node, "member",     source),
         "element_binding_expression"    => simple_statement(node, "index",      source),
         // Type kinds — render under <type> when used as standalone.
-        // `var` (implicit_type) gets a `<var/>` marker in addition
-        // to the keyword text — matches the imperative pipeline's
-        // handling of anonymous keywords in named elements.
-        "implicit_type" => {
-            // Produce `<type><var/>var</type>`.
-            let mut s = simple_statement(node, "type", source);
-            if let Ir::SimpleStatement { ref mut children, .. } = s {
-                let marker = Ir::SimpleStatement {
-                    element_name: "var",
-                    modifiers: Modifiers::default(),
-                    extra_markers: &[],
-                    children: Vec::new(),
-                    range: ByteRange::empty_at(range.start),
-                    span,
-                };
-                children.insert(0, marker);
-            }
-            s
-        }
+        // `var` (implicit_type) — render as a bare `Ir::Name` so the
+        // surrounding type slot (variable's type, foreach's Slot::Type)
+        // wraps it in `<type>` naturally, yielding
+        // `<type><name>var</name></type>` for query consistency with
+        // `predefined_type`.
+        "implicit_type" => Ir::Name { range, span },
         "tuple_type"                    => simple_statement_marked(node, "type", &["tuple"], source),
         "array_type"                    => simple_statement_marked(node, "type", &["array"], source),
         "nullable_type"                 => simple_statement_marked(node, "type", &["nullable"], source),
@@ -1102,10 +1187,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     _ => {}
                 }
             }
-            let try_body = try_body.unwrap_or_else(|| Box::new(Ir::Body {
-                children: Vec::new(), pass_only: false,
-                range: ByteRange::empty_at(range.start), span,
-            }));
+            let try_body = try_body.unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.start), span }));
             Ir::Try {
                 try_body,
                 handlers,
@@ -1332,12 +1414,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .collect();
             if declarators.len() == 1 {
                 let d = declarators[0];
-                lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers)
+                lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers, Vec::new())
             } else if !declarators.is_empty() {
                 let children: Vec<Ir> = declarators.into_iter().map(|d| {
                     lower_variable_declarator(
                         d, type_node, source,
-                        range_of(d), span_of(d), element_name, modifiers,
+                        range_of(d), span_of(d), element_name, modifiers, Vec::new(),
                     )
                 }).collect();
                 Ir::Inline { children, list_name: None, range, span }
@@ -1363,6 +1445,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             } else {
                 lower_csharp_modifiers(node, source, None)
             };
+            // Attributes on field declarations: each `attribute_list`
+            // child of the field is a top-level `[A]` or `[A][B]`
+            // group; flatten the attributes into one Vec.
+            let mut ac = node.walk();
+            let decorators: Vec<Ir> = node.named_children(&mut ac)
+                .filter(|c| c.kind() == "attribute_list")
+                .flat_map(|al| {
+                    let mut alc = al.walk();
+                    al.named_children(&mut alc)
+                        .filter(|c| c.kind() == "attribute")
+                        .map(|c| lower_node(c, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
             let mut cursor = node.walk();
             let var_decl = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "variable_declaration");
@@ -1375,15 +1471,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         .collect();
                     if declarators.len() == 1 {
                         let d = declarators[0];
-                        lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers)
+                        lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers, decorators)
                     } else {
-                        let children: Vec<Ir> = declarators.into_iter().map(|d| {
+                        // Multi-declarator: attributes attach to the
+                        // outer Inline; per-declarator decorators stay
+                        // empty (they share the same group).
+                        let mut children: Vec<Ir> = decorators;
+                        children.extend(declarators.into_iter().map(|d| {
                             lower_variable_declarator(
                                 d, type_node, source,
                                 range_of(d), span_of(d),
-                                element_name, modifiers,
+                                element_name, modifiers, Vec::new(),
                             )
-                        }).collect();
+                        }));
                         Ir::Inline { children, list_name: None, range, span }
                     }
                 }
@@ -1479,12 +1579,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "raw_string_literal"
         | "character_literal" => Ir::String { range, span },
         "boolean_literal" => {
-            // Distinguish true/false by source text.
-            let t = range.slice(source);
-            if t == "true" {
-                Ir::True { range, span }
-            } else {
-                Ir::False { range, span }
+            // C# boolean literals render as `<bool>true</bool>` /
+            // `<bool>false</bool>` (matches the imperative pipeline's
+            // `bool` element). Python uses `<true>`/`<false>`.
+            Ir::SimpleStatement {
+                element_name: "bool",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: Vec::new(),
+                range,
+                span,
             }
         }
         "null_literal" => Ir::Null { range, span },
@@ -1715,21 +1819,31 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "postfix_unary_expression" => {
             // `obj!` (non-null assertion — Principle #15 marker on
             // `<expression>` host) vs `i++` / `i--` (postfix
-            // increment/decrement — `<unary>` with `<postfix/>`
-            // marker via simple_statement, source bytes preserved
-            // through gap text).
+            // increment/decrement — `<unary>` with `<op><increment/>`
+            // and a `<postfix/>` marker).
             let mut cursor = node.walk();
             let kids: Vec<TsNode> = node.children(&mut cursor).collect();
-            let op_text = kids.iter().copied()
-                .find(|c| !c.is_named())
-                .map(|n| text_of(n, source))
-                .unwrap_or_default();
-            let operand = kids.iter().copied().find(|c| c.is_named());
-            match (operand, op_text.as_str()) {
+            let op_node = kids.iter().copied().find(|c| !c.is_named());
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.end));
+            let operand_node = kids.iter().copied().find(|c| c.is_named());
+            match (operand_node, op_text.as_str()) {
                 (Some(o), "!") => Ir::Expression {
                     inner: Box::new(lower_node(o, source)),
                     marker: Some("non_null"),
                     range, span,
+                },
+                (Some(o), _) => match op_marker(&op_text) {
+                    Some(marker) => Ir::Unary {
+                        op_text,
+                        op_marker: marker,
+                        op_range,
+                        operand: Box::new(lower_node(o, source)),
+                        extra_markers: &["postfix"],
+                        range,
+                        span,
+                    },
+                    None => simple_statement(node, "unary", source),
                 },
                 _ => simple_statement(node, "unary", source),
             }
@@ -2008,6 +2122,7 @@ fn lower_csharp_consequence(node: TsNode<'_>, source: &str) -> Ir {
         Ir::Body {
             children: vec![lower_node(node, source)],
             pass_only: false,
+            block_wrap: false,
             range: r,
             span: s,
         }
@@ -2207,24 +2322,26 @@ fn lower_csharp_catch_clause(node: TsNode<'_>, source: &str) -> Ir {
         type_target,
         binding,
         filter,
-        body: body.unwrap_or_else(|| Box::new(Ir::Body {
-            children: Vec::new(), pass_only: false,
-            range: ByteRange::empty_at(range.end), span,
-        })),
+        body: body.unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span })),
         range, span,
     }
 }
 
-/// Lower a `block` or `declaration_list` into `Ir::Body`.
+/// Lower a `block` or `declaration_list` into `Ir::Body`. C# wraps
+/// block contents in an inner `<block>` element matching the
+/// imperative pipeline's apply_field_wrappings output: a `block`
+/// CST node with `field=body` becomes `<body><block>{stmts}</block></body>`.
 fn lower_block_like(node: TsNode<'_>, source: &str) -> Ir {
     let mut cursor = node.walk();
     let children: Vec<Ir> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
     let children = merge_adjacent_line_comments(children, source);
+    let block_wrap = node.kind() == "block";
     Ir::Body {
         children,
         pass_only: false,
+        block_wrap,
         range: range_of(node),
         span: span_of(node),
     }
@@ -2247,14 +2364,32 @@ fn collect_qualified_name_segments(node: TsNode<'_>, source: &str, out: &mut Vec
 
 /// Group consecutive `Ir::Comment` children that are line comments on
 /// adjacent lines into a single comment whose range spans them all,
-/// then mark `leading = true` on any comment that is immediately
-/// followed by a non-comment IR sibling on the very next line.
-/// Mirrors the imperative pipeline's `classify_and_group` behaviour.
+/// then classify each comment as `trailing` (same line as preceding
+/// code), `leading` (immediately precedes a non-comment sibling on
+/// the next line), or floating (neither). Mirrors the imperative
+/// pipeline's `classify_and_group` behaviour.
 fn merge_adjacent_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
-    // Phase 1: merge runs of adjacent line comments.
+    // Phase 1: merge runs of adjacent line comments. Don't merge
+    // across a "trailing" boundary — a `// trailing` line comment
+    // attached to preceding code shouldn't absorb the next leading
+    // group.
     let mut out: Vec<Ir> = Vec::with_capacity(children.len());
     for child in children {
-        if let Ir::Comment { leading, range, span } = child {
+        if let Ir::Comment { leading, trailing, range, span } = child {
+            // Determine if this new comment would be a trailing one
+            // given the *previous non-comment* sibling — needed to
+            // avoid merging a trailing single-line comment with the
+            // following leading group.
+            let prev_non_comment = out.iter().rev()
+                .find(|c| !matches!(c, Ir::Comment { .. }));
+            let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
+                let prev_end = prev.range().end as usize;
+                let between = &source[prev_end..range.start as usize];
+                // Trailing iff no newline between the previous code
+                // and this comment.
+                !between.contains('\n')
+            });
+
             if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
                 let gap = &source[prev_range.end as usize..range.start as usize];
                 let only_one_newline = gap.chars().filter(|&c| c == '\n').count() <= 1
@@ -2263,14 +2398,20 @@ fn merge_adjacent_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
                     .trim_start().starts_with("//");
                 let curr_is_line_comment = source[range.start as usize..range.end as usize]
                     .trim_start().starts_with("//");
-                if only_one_newline && prev_is_line_comment && curr_is_line_comment {
-                    if let Some(Ir::Comment { range: r, .. }) = out.last_mut() {
+                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                if only_one_newline && prev_is_line_comment && curr_is_line_comment
+                    && !prev_was_trailing && !curr_is_trailing
+                {
+                    if let Some(Ir::Comment { range: r, span: s, .. }) = out.last_mut() {
                         r.end = range.end;
+                        s.end_line = span.end_line;
+                        s.end_column = span.end_column;
                     }
                     continue;
                 }
             }
-            out.push(Ir::Comment { leading, range, span });
+            let trailing = trailing || curr_is_trailing;
+            out.push(Ir::Comment { leading, trailing, range, span });
         } else {
             out.push(child);
         }
@@ -2278,10 +2419,11 @@ fn merge_adjacent_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
 
     // Phase 2: mark a comment as `leading = true` iff the next
     // non-comment sibling starts on the very next line (no blank
-    // line in between).
+    // line in between) AND it isn't already classified as trailing.
     let n = out.len();
     for i in 0..n {
-        if let Ir::Comment { range, .. } = &out[i] {
+        if let Ir::Comment { trailing, range, .. } = &out[i] {
+            if *trailing { continue; }
             let comment_end = range.end as usize;
             // Find next non-comment sibling.
             let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
@@ -2320,6 +2462,7 @@ fn lower_variable_declarator(
     span: Span,
     element_name: &'static str,
     modifiers: Modifiers,
+    decorators: Vec<Ir>,
 ) -> Ir {
     let name_node = declarator.child_by_field_name("name");
     // tree-sitter-c-sharp doesn't expose a `value` field on
@@ -2353,23 +2496,26 @@ fn lower_variable_declarator(
 
     // For tuple deconstruction (`var (a, b) = pair;`) and other
     // forms without a `name` field, lower as Inline whose children
-    // are the named CST children (the tuple_pattern and the value).
-    // This preserves source bytes AND lets the inner `<pattern[tuple]>`
-    // surface for queryability — without manufacturing an Ir::Variable
-    // that lacks a single name leaf.
+    // are the type (if present) followed by the declarator's named
+    // CST children (the tuple_pattern and the value). Including the
+    // type ensures the `var` token renders as `<name>var</name>`
+    // rather than leaking into gap text — the imperative pipeline's
+    // `wrap_text_in_name` on `implicit_type` produces the same
+    // shape.
     let Some(n) = name_node else {
+        let mut children: Vec<Ir> = Vec::new();
+        if let Some(t) = type_node {
+            children.push(lower_node(t, source));
+        }
         let mut cursor = declarator.walk();
-        let children: Vec<Ir> = declarator.named_children(&mut cursor)
-            .map(|c| lower_node(c, source))
-            .collect();
+        children.extend(declarator.named_children(&mut cursor).map(|c| lower_node(c, source)));
         return Ir::Inline { children, list_name: None, range, span };
     };
     if let Some(t) = type_node {
         if n.byte_range().start < t.byte_range().end {
+            let mut children: Vec<Ir> = vec![lower_node(t, source)];
             let mut cursor = declarator.walk();
-            let children: Vec<Ir> = declarator.named_children(&mut cursor)
-                .map(|c| lower_node(c, source))
-                .collect();
+            children.extend(declarator.named_children(&mut cursor).map(|c| lower_node(c, source)));
             return Ir::Inline { children, list_name: None, range, span };
         }
     }
@@ -2380,6 +2526,7 @@ fn lower_variable_declarator(
     Ir::Variable {
         element_name,
         modifiers,
+        decorators,
         type_ann: type_ir,
         name: Box::new(name_ir),
         value: value_ir,

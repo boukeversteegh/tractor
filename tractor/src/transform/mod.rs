@@ -842,7 +842,20 @@ pub fn strip_body_braces(
         let element_child_names: std::collections::HashSet<String> = xot.children(body)
             .filter_map(|c| get_element_name(xot, c))
             .collect();
+        // For empty `<block>` elements (explicit `{ }` with no
+        // statements), preserve the brace text so the block remains
+        // a non-empty leaf — empty containers violate
+        // `container-has-content`. The braces themselves carry the
+        // structural meaning in this case.
+        let body_name = get_element_name(xot, body);
+        let is_block = body_name.as_deref() == Some("block");
+        let preserve_braces = is_block && element_child_names.is_empty();
         let children: Vec<XotNode> = xot.children(body).collect();
+        if preserve_braces {
+            // Skip text-stripping for this block; leave whatever the
+            // renderer emitted (typically `{ }` from gap text).
+            continue;
+        }
         for c in children {
             let Some(text) = xot.text_str(c).map(|s| s.to_string()) else { continue };
             let trimmed = text.trim();

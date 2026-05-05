@@ -19,6 +19,7 @@ use crate::languages::collapse_conditionals;
 /// the shared conditional collapse runs.
 pub fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_where_clause_constraints(xot, root)?;
+    attach_ir_where_clauses(xot, root)?;
     unify_file_scoped_namespace(xot, root)?;
     // Conditional access (`obj?.Method`) emits as
     // `<member[optional]><condition><expression>RECV</expression></condition><name>X</name></member>`.
@@ -188,6 +189,29 @@ pub fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
             ("statement", "ref"),
             ("statement", "alias"),
             ("set", "int"),
+            // IR pipeline: multi-attribute on declarations.
+            ("class", "attribute"),
+            ("struct", "attribute"),
+            ("interface", "attribute"),
+            ("record", "attribute"),
+            ("method", "attribute"),
+            ("property", "attribute"),
+            ("field", "attribute"),
+            ("parameter", "attribute"),
+            // Multi-argument attribute call (e.g. `[Obsolete("x", false)]`).
+            ("attribute", "argument"),
+            // Multi-base inheritance: `class Dog : Animal, IBarker`.
+            ("class", "extends"),
+            ("struct", "extends"),
+            ("interface", "extends"),
+            ("record", "extends"),
+            // Method-level multi-generic (e.g. `void M<T,U>()`).
+            ("method", "generic"),
+            // Recursive patterns with multiple subpatterns.
+            ("pattern", "subpattern"),
+            // LINQ `group by … into name` produces `<group>` with two
+            // `<name>` children (the value to group, the binding).
+            ("group", "name"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
@@ -519,6 +543,124 @@ fn append_constraint_to_generic(
             let marker_name = xot.add_name(trimmed);
             let marker = xot.new_element(marker_name);
             xot.append(generic, marker)?;
+        }
+    }
+    Ok(())
+}
+
+/// IR-aware where-clause attachment. The IR pipeline emits each
+/// `type_parameter_constraints_clause` as a `<where>` element with a
+/// `<name>` (target generic) and `<constraint>` children. Merge each
+/// constraint onto the matching `<generic>` sibling (same vocabulary
+/// as the imperative `attach_where_clause_constraints`):
+/// `class`/`struct`/`notnull`/`unmanaged` → empty marker;
+/// `new()` → `<new/>`; type bounds → `<extends><type>...</type></extends>`.
+fn attach_ir_where_clauses(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::*;
+
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        use crate::transform::helpers::*;
+        if xot.element(node).is_some()
+            && get_element_name(xot, node).as_deref() == Some("where")
+        {
+            out.push(node);
+        }
+        for c in xot.children(node) {
+            collect(xot, c, out);
+        }
+    }
+
+    let mut clauses: Vec<XotNode> = Vec::new();
+    collect(xot, root, &mut clauses);
+
+    for clause in clauses {
+        if xot.parent(clause).is_none() && !xot.is_document(clause) {
+            continue;
+        }
+        // The clause must sit under a class-like declaration whose
+        // generic siblings we can patch. If the parent is a query
+        // expression's `<where>` filter (different shape — only an
+        // `<expression>` child), skip.
+        let target_name: Option<String> = xot.children(clause)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+            .and_then(|n| get_text_content(xot, n));
+        let target_name = match target_name {
+            Some(n) => n,
+            None => continue,
+        };
+
+        let parent = match xot.parent(clause) {
+            Some(p) => p,
+            None => continue,
+        };
+        let target_generic: Option<XotNode> = xot.children(parent)
+            .filter(|&c| xot.element(c).is_some())
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("generic"))
+            .find(|&c| {
+                xot.children(c)
+                    .filter(|&gc| xot.element(gc).is_some())
+                    .find(|&gc| get_element_name(xot, gc).as_deref() == Some("name"))
+                    .and_then(|n| get_text_content(xot, n))
+                    .as_deref() == Some(target_name.as_str())
+            });
+        let generic = match target_generic {
+            Some(g) => g,
+            None => continue,
+        };
+
+        let constraints: Vec<XotNode> = xot.children(clause)
+            .filter(|&c| xot.element(c).is_some())
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("constraint"))
+            .collect();
+
+        for constraint in constraints {
+            attach_ir_constraint_to_generic(xot, constraint, generic)?;
+        }
+
+        xot.detach(clause)?;
+    }
+    Ok(())
+}
+
+fn attach_ir_constraint_to_generic(
+    xot: &mut Xot,
+    constraint: XotNode,
+    generic: XotNode,
+) -> Result<(), xot::Error> {
+    use crate::transform::helpers::*;
+
+    // `new()` constructor constraint: contains a `<new>` child element.
+    let has_new = xot.children(constraint)
+        .any(|c| get_element_name(xot, c).as_deref() == Some("new"));
+    if has_new {
+        let n = xot.add_name("new");
+        let m = xot.new_element(n);
+        xot.append(generic, m)?;
+        return Ok(());
+    }
+
+    // Type bound: a `<type>` child → wrap in `<extends>`.
+    let type_child = xot.children(constraint)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("type"));
+    if let Some(t) = type_child {
+        let ex_name = xot.add_name("extends");
+        let ex = xot.new_element(ex_name);
+        xot.detach(t)?;
+        xot.append(ex, t)?;
+        xot.append(generic, ex)?;
+        return Ok(());
+    }
+
+    // Bare keyword: `class` / `struct` / `notnull` / `unmanaged` —
+    // text content of the constraint.
+    if let Some(text) = get_text_content(xot, constraint) {
+        let trimmed = text.trim();
+        if matches!(trimmed, "class" | "struct" | "notnull" | "unmanaged") {
+            let n = xot.add_name(trimmed);
+            let m = xot.new_element(n);
+            xot.append(generic, m)?;
         }
     }
     Ok(())

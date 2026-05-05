@@ -562,6 +562,7 @@ pub enum Ir {
         name: Box<Ir>,
         generics: Option<Box<Ir>>,
         bases: Vec<Ir>,                 // each is a base expression
+        where_clauses: Vec<Ir>,         // C# `where T : ...` constraints (other languages: empty)
         body: Box<Ir>,
         range: ByteRange,
         span: Span,
@@ -569,9 +570,15 @@ pub enum Ir {
 
     /// `<body>` — a block of statements. `pass_only` adds a `<pass/>`
     /// empty marker child; visible in tree-text as `<body[pass]>`.
+    /// `block_wrap` adds an inner `<block>` element so the rendered
+    /// shape is `<body><block>{stmts}</block></body>` — matches C#'s
+    /// imperative pipeline (where method `field="body"` field-wraps a
+    /// `block` kind to produce body/block nesting). Python sets it
+    /// false (its function bodies are flat under `<body>`).
     Body {
         children: Vec<Ir>,
         pass_only: bool,
+        block_wrap: bool,
         range: ByteRange,
         span: Span,
     },
@@ -645,9 +652,13 @@ pub enum Ir {
     /// `<comment>text</comment>` — standalone source comment.
     /// `leading` adds a `<leading/>` marker (`comment[leading]`); the
     /// existing pipeline classifies comments by adjacency to the next
-    /// declaration.
+    /// declaration. `trailing` adds a `<trailing/>` marker for comments
+    /// on the same line as a preceding code construct
+    /// (`int x; // here`). At most one of leading/trailing is true; a
+    /// comment with neither is "floating".
     Comment {
         leading: bool,
+        trailing: bool,
         range: ByteRange,
         span: Span,
     },
@@ -868,6 +879,9 @@ pub enum Ir {
         /// Access + flag modifiers. Empty for locals (their modifiers
         /// like `const` are very limited); fields use them fully.
         modifiers: Modifiers,
+        /// Attributes/decorators on the declaration (C# `[Attr]` for
+        /// fields, future Java annotations). Empty for locals.
+        decorators: Vec<Ir>,
         type_ann: Option<Box<Ir>>,
         name: Box<Ir>,
         value: Option<Box<Ir>>,
@@ -1491,11 +1505,12 @@ impl Ir {
                 if let Some(r) = returns { v.push(r); }
                 v.push(body);
             }
-            Ir::Class { decorators, name, generics, bases, body, .. } => {
+            Ir::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(g) = generics { v.push(g); }
                 v.extend(bases.iter());
+                v.extend(where_clauses.iter());
                 v.push(body);
             }
             Ir::Body { children, .. } => v.extend(children.iter()),
@@ -1585,7 +1600,8 @@ impl Ir {
                 v.push(name);
                 v.extend(children.iter());
             }
-            Ir::Variable { type_ann, name, value, .. } => {
+            Ir::Variable { decorators, type_ann, name, value, .. } => {
+                v.extend(decorators.iter());
                 if let Some(t) = type_ann { v.push(t); }
                 v.push(name);
                 if let Some(val) = value { v.push(val); }
