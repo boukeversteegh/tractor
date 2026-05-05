@@ -16,6 +16,12 @@ pub mod parser;
 pub mod transform;
 pub mod languages;
 
+// Experimental: typed-IR transform pipeline.
+// Parallel to `transform`; not yet wired into production paths.
+// See `docs/design-transform-redesign-exploration.md` § 11.
+#[cfg(feature = "native")]
+pub mod ir;
+
 // Querying
 pub mod xpath;
 
