@@ -942,6 +942,111 @@ The added complexity for ranges + gap-rendering was modest (~200
 LOC). The XPath-by-source-text capability is a real gain over the
 existing pipeline for the same expression slice.
 
+## 14. Iteration 3 — extending toward Python blueprint parity
+
+### Status checkpoint
+After the byte-range work, I extended the IR pipeline toward full
+parity against the Python `blueprint.py` fixture (227 lines, ~5 KiB
+of source, exercising most of Python's surface area).
+
+**What is supported and shape-parity-verified against the existing
+pipeline:**
+
+- Module + expression-statement
+- Identifiers + all primitive literals (int / float / string / true /
+  false / none)
+- Member access (single + chained)
+- Subscript (single + chained)
+- Bare calls
+- Binary `+ - * /`
+- Unary `+ -`
+- Comparison `== != < <= > >= is in`
+- Imports (plain, aliased, multi, from-import, relative-from,
+  aliased-from-import)
+- Assignments (plain, type-annotated, augmented `+= //= @= …`,
+  multi-target tuple unpacking)
+- Function definitions (with async, decorators, generic type
+  parameters PEP 695, parameter shapes regular/default/typed/typed
+  default/`*args`/`**kwargs`/positional-only-`/`/keyword-only-`*`,
+  return-type annotation)
+- Class definitions (with bases, generics, decorators)
+- Body blocks (with pass-only optimisation)
+- Decorators (hoisted from `decorated_definition` into the inner def
+  with range expanded backward)
+- Comments (default leading classification)
+- Tuples, lists, sets, dictionaries, pairs
+- Generic-type expressions `Foo[T, U]`
+- if / elif / else
+- for / while / break / continue
+- Returns
+
+**Coverage status against `blueprint.py`:**
+
+- Round-trip identity: holds (every byte recoverable from IR).
+- XPath text-content recovery: holds (`string(IR_root) == source`).
+- Slice tests: 14/14 pass (all three invariants per case).
+- Lib tests: 341/341 still green.
+- Structural parity: ~60 % of blueprint output (18 851 / 31 837
+  bytes). Diverges deeper into the file at type-alias-statement,
+  lambda, comprehensions, with, try/except, yield, await, match.
+
+### What remains (~30 constructs, bounded effort each)
+
+| Group                | Constructs                                           |
+| -------------------- | ---------------------------------------------------- |
+| Type aliases (PEP 695)| `type_alias_statement`, `constrained_type`, `splat_type`, `union_type`, `parenthesized_expression` |
+| Lambdas              | `lambda_expression`, `lambda_parameters`             |
+| Comprehensions       | list / set / dict / generator + `for_in_clause` + `if_clause` |
+| Conditional expr     | `conditional_expression` (ternary)                   |
+| Walrus               | `named_expression`                                   |
+| Strings              | `concatenated_string`, f-string `interpolation`, `format_specifier`, `type_conversion` |
+| Splats               | `list_splat`, `dictionary_splat`, `list_splat_pattern`, `dictionary_splat_pattern` |
+| with / try           | `with_statement`, `with_item`, `as_pattern`, `try_statement`, `except_clause`, `except_group_clause`, `finally_clause` |
+| yield / await / raise | `yield`, `await`, `raise_statement`                 |
+| assert / pass / del / global | `assert_statement`, `global_statement`, `nonlocal_statement` |
+| Match-case           | `match_statement`, `case_clause`, `case_pattern`, `class_pattern`, `keyword_pattern`, `complex_pattern`, `tuple_pattern`, `list_pattern`, `dict_pattern`, `union_pattern`, `splat_pattern`, `wildcard_pattern` |
+| Imports (residual)    | `wildcard_import`, `future_import_statement`        |
+| Argument shapes       | `keyword_argument`                                  |
+| Type expressions      | `union_type`, `constrained_type`, `splat_type` in non-generic contexts |
+
+Each entry is roughly 30-100 LOC of lowering + rendering, following
+the now-established pattern: define `Ir::*` variant → write lowering
+arm → write rendering arm with byte-range gap weaving.
+
+### Architectural position
+The pattern is established. The remaining work is mechanical: every
+new construct fits the existing lowering/rendering pattern. No new
+architectural decisions have been needed since iter 2's gap-aware
+renderer.
+
+Snapshot of the pipeline today:
+- `tractor/src/ir/types.rs`: ~700 LOC (variant declarations + docs)
+- `tractor/src/ir/python.rs`: ~900 LOC (lowering)
+- `tractor/src/ir/render.rs`: ~700 LOC (rendering)
+- `tractor/tests/ir_python_parity.rs`: 188 LOC (slice parity)
+- `tractor/tests/ir_python_blueprint.rs`: 165 LOC (blueprint parity)
+
+Total experiment: ~2 800 LOC.
+
+### Decision point
+Three honest paths from here:
+
+1. **Continue mechanically.** Add the ~30 remaining constructs,
+   commit per logical group, until blueprint structural parity hits.
+   No architectural insight expected; mostly typing.
+
+2. **Stop and validate.** The architecture is proven. Spend
+   remaining attention on (a) running snapshot tests across all
+   languages with the existing pipeline to confirm no regressions,
+   (b) writing an honest write-up for the user, (c) deciding whether
+   the typed-IR direction is worth the multi-language migration cost.
+
+3. **Pivot to a second language.** Implement a small slice of
+   another language (Java? Rust?) under the same IR to validate
+   that the IR vocabulary works cross-language. Discovers
+   real-world cross-language tensions earlier than full Python
+   parity would.
+
 ## Appendix A — current pipeline as a phase diagram
 
     ┌──────────────────┐  tree-sitter, per-language grammar
