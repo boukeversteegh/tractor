@@ -782,6 +782,47 @@ pub fn render_to_xot(
         Ir::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
         Ir::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
         Ir::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
+        Ir::Namespace { name, children, range, span } => {
+            let node = element(xot, "namespace", *span);
+            xot.append(parent, node)?;
+            // Source-order: name first, then children (declarations).
+            let mut order: Vec<&Ir> = vec![name.as_ref()];
+            for c in children { order.push(c); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Variable { type_ann, name, value, range, span } => {
+            let node = element(xot, "variable", *span);
+            xot.append(parent, node)?;
+            // Source order: type (optional), name, value (optional).
+            let mut order: Vec<&Ir> = Vec::new();
+            if let Some(t) = type_ann { order.push(t.as_ref()); }
+            order.push(name.as_ref());
+            if let Some(v) = value { order.push(v.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            // Wrap type_ann in <type> when present.
+            let mut cursor = range.start;
+            for c in &order {
+                let cr = c.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if let Some(t) = type_ann {
+                    if std::ptr::eq(*c, t.as_ref()) {
+                        let type_el = element(xot, "type", c.span());
+                        xot.append(node, type_el)?;
+                        render_to_xot(xot, type_el, c, source)?;
+                        cursor = cr.end;
+                        continue;
+                    }
+                }
+                render_to_xot(xot, node, *c, source)?;
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
         Ir::Is { value, type_target, range, span } => {
             let node = element(xot, "is", *span);
             xot.append(parent, node)?;

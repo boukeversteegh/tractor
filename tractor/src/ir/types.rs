@@ -555,6 +555,28 @@ pub enum Ir {
     True   { range: ByteRange, span: Span },
     False  { range: ByteRange, span: Span },
     None   { range: ByteRange, span: Span },
+    /// `<namespace>` — C#'s `namespace X { ... }` (block-scoped) or
+    /// `namespace X;` (file-scoped). For now block-scoped only;
+    /// renders `<namespace><name>...</name>{children...}</namespace>`.
+    Namespace {
+        name: Box<Ir>,
+        children: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<variable>` — `var x = value;` / `int x = value;` /
+    /// `int x;`. Used for local variable declarations and class
+    /// fields. Renders
+    /// `<variable>[<type>...</type>]<name>...</name>[value-expr]</variable>`.
+    Variable {
+        type_ann: Option<Box<Ir>>,
+        name: Box<Ir>,
+        value: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<is>` — `expr is Type` type-test expression. Renders as
     /// `<is><left><expression>{value}</expression></left>
     /// <right><expression><type>{type_target}</type></expression></right></is>`.
@@ -741,6 +763,8 @@ impl Ir {
             | Ir::True { span, .. }
             | Ir::False { span, .. }
             | Ir::None { span, .. }
+            | Ir::Namespace { span, .. }
+            | Ir::Variable { span, .. }
             | Ir::Is { span, .. }
             | Ir::Cast { span, .. }
             | Ir::Null { span, .. }
@@ -799,6 +823,8 @@ impl Ir {
             | Ir::True { range, .. }
             | Ir::False { range, .. }
             | Ir::None { range, .. }
+            | Ir::Namespace { range, .. }
+            | Ir::Variable { range, .. }
             | Ir::Is { range, .. }
             | Ir::Cast { range, .. }
             | Ir::Null { range, .. }

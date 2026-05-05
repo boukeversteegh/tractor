@@ -282,6 +282,15 @@ fn collect_ir_ranges(ir: &Ir, out: &mut Vec<(ByteRange, bool /* is_unknown */)>)
             collect_ir_ranges(type_ann, out);
             collect_ir_ranges(value, out);
         }
+        Ir::Namespace { name, children, .. } => {
+            collect_ir_ranges(name, out);
+            for c in children { collect_ir_ranges(c, out); }
+        }
+        Ir::Variable { type_ann, name, value, .. } => {
+            if let Some(t) = type_ann { collect_ir_ranges(t, out); }
+            collect_ir_ranges(name, out);
+            if let Some(v) = value { collect_ir_ranges(v, out); }
+        }
         // Leaves and markers — no further recursion.
         Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
         | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }

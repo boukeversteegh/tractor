@@ -19,7 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir, Span};
+use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
 
 /// Lower a C# tree-sitter root node to [`Ir`].
 ///
@@ -109,6 +109,140 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     segments: new_segments,
                     range,
                     span,
+                },
+            }
+        }
+
+        // ----- Structural scaffolding (so recursion reaches expressions)
+
+        // `namespace X { ... }` — block-scoped namespace. tree-sitter:
+        // `namespace_declaration` with `name` field and a body
+        // (declaration_list).
+        "namespace_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let mut cursor = node.walk();
+            let body_node = node.named_children(&mut cursor)
+                .find(|c| c.kind() == "declaration_list");
+            let name_ir = match name_node {
+                Some(n) => lower_node(n, source),
+                None => Ir::Unknown {
+                    kind: "namespace(missing name)".to_string(),
+                    range, span,
+                },
+            };
+            let children: Vec<Ir> = match body_node {
+                Some(b) => {
+                    let mut c = b.walk();
+                    b.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+                }
+                None => Vec::new(),
+            };
+            Ir::Namespace { name: Box::new(name_ir), children, range, span }
+        }
+
+        // `class C { ... }` — minimal lowering: name + body.
+        // Modifiers / generics / bases / decorators are left to a
+        // future enhancement (will appear as "under_typed" in the
+        // audit until then).
+        "class_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let mut cursor = node.walk();
+            let body_node = node.named_children(&mut cursor)
+                .find(|c| c.kind() == "declaration_list");
+            Ir::Class {
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown {
+                        kind: "class(missing name)".to_string(),
+                        range, span,
+                    },
+                }),
+                generics: None,
+                bases: Vec::new(),
+                body: Box::new(match body_node {
+                    Some(b) => lower_block_like(b, source),
+                    None => Ir::Body {
+                        children: Vec::new(),
+                        pass_only: false,
+                        range: ByteRange::empty_at(range.end),
+                        span,
+                    },
+                }),
+                range, span,
+            }
+        }
+
+        // `[modifiers] returntype Name(params) { body }` — minimal:
+        // name + body. Return type, modifiers, parameters deferred.
+        "method_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let body_node = node.child_by_field_name("body");
+            Ir::Function {
+                is_async: false,
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown {
+                        kind: "method(missing name)".to_string(),
+                        range, span,
+                    },
+                }),
+                generics: None,
+                parameters: Vec::new(),
+                returns: None,
+                body: Box::new(match body_node {
+                    Some(b) => lower_block_like(b, source),
+                    None => Ir::Body {
+                        children: Vec::new(),
+                        pass_only: false,
+                        range: ByteRange::empty_at(range.end),
+                        span,
+                    },
+                }),
+                range, span,
+            }
+        }
+
+        // `block` (method body, free-standing block in C#).
+        "block" => lower_block_like(node, source),
+
+        // `var x = expr;` / `int x = expr;` / `int x;` —
+        // local_declaration_statement contains a variable_declaration
+        // which contains type + variable_declarator. Each
+        // variable_declarator is one Ir::Variable. For multi-variable
+        // declarations (`int a, b = 1;`), produce multiple variables.
+        "local_declaration_statement" | "field_declaration" => {
+            let mut cursor = node.walk();
+            let var_decl = node.named_children(&mut cursor)
+                .find(|c| c.kind() == "variable_declaration");
+            match var_decl {
+                Some(vd) => {
+                    // variable_declaration has a `type` field and one or
+                    // more `variable_declarator` children.
+                    let type_node = vd.child_by_field_name("type");
+                    let mut vc = vd.walk();
+                    let declarators: Vec<TsNode> = vd.named_children(&mut vc)
+                        .filter(|n| n.kind() == "variable_declarator")
+                        .collect();
+                    if declarators.len() == 1 {
+                        let d = declarators[0];
+                        lower_variable_declarator(d, type_node, source, range, span)
+                    } else {
+                        // Multi-variable: emit each as its own
+                        // Ir::Variable, returned via Inline.
+                        let children: Vec<Ir> = declarators.into_iter().map(|d| {
+                            lower_variable_declarator(
+                                d, type_node, source,
+                                range_of(d), span_of(d),
+                            )
+                        }).collect();
+                        Ir::Inline { children, range, span }
+                    }
+                }
+                None => Ir::Unknown {
+                    kind: "local_declaration_statement(no var_decl)".to_string(),
+                    range, span,
                 },
             }
         }
@@ -514,6 +648,72 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             range,
             span,
         },
+    }
+}
+
+/// Lower a `block` or `declaration_list` into `Ir::Body`.
+fn lower_block_like(node: TsNode<'_>, source: &str) -> Ir {
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::Body {
+        children,
+        pass_only: false,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+/// Lower a `variable_declarator` into `Ir::Variable`. The type
+/// annotation comes from the parent's `type` field (variable_declaration
+/// holds the type for the whole declarator group).
+///
+/// Falls back to `Ir::Unknown` for tuple-deconstruction forms like
+/// `var (a, b) = …` because tree-sitter-c-sharp gives those a `name`
+/// field whose byte range *overlaps* with the implicit_type's range
+/// (it spans `var (a, b)` rather than just `(a, b)`). Source-text
+/// recovery would emit "var" twice. The Unknown fallback preserves
+/// the round-trip invariant; structural support for tuple
+/// deconstruction is a future enhancement.
+fn lower_variable_declarator(
+    declarator: TsNode<'_>,
+    type_node: Option<TsNode<'_>>,
+    source: &str,
+    range: ByteRange,
+    span: Span,
+) -> Ir {
+    let name_node = declarator.child_by_field_name("name");
+    let value_node = declarator.child_by_field_name("value");
+
+    // Bail out for the cases that would break round-trip identity:
+    // 1. Missing `name` field (tuple deconstruction, exotic patterns).
+    // 2. Name range overlaps with type range (some tree-sitter
+    //    variants put the type *inside* the name's reported range).
+    let Some(n) = name_node else {
+        return Ir::Unknown {
+            kind: "variable_declarator(no_name)".to_string(),
+            range, span,
+        };
+    };
+    if let Some(t) = type_node {
+        if n.byte_range().start < t.byte_range().end {
+            return Ir::Unknown {
+                kind: "variable_declarator(overlapping_type_and_name)".to_string(),
+                range, span,
+            };
+        }
+    }
+
+    let name_ir = Ir::Name { range: range_of(n), span: span_of(n) };
+    let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
+    let value_ir = value_node.map(|v| Box::new(lower_node(v, source)));
+    Ir::Variable {
+        type_ann: type_ir,
+        name: Box::new(name_ir),
+        value: value_ir,
+        range,
+        span,
     }
 }
 
