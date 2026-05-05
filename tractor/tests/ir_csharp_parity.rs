@@ -148,6 +148,26 @@ fn invariants_null_literal() {
 
 #[test]
 #[ignore]
+fn dump_paren_pattern() {
+    let s = "class C { void M() { object o = 1; var x = o switch { (1) => 1, var v => 2 }; } }\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
 fn dump_prefix_unary() {
     let s = "class C { void M() { var a = ++i; var b = --i; var c = -i; var d = !i; var e = ~i; var f = +i; var g = &i; var h = *i; } }\n";
     let mut p = tree_sitter::Parser::new();
@@ -215,6 +235,74 @@ fn invariants_blueprint() {
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
         .expect("blueprint.cs");
     assert_ir_invariants(&source, "C# blueprint.cs");
+}
+
+/// Compare the IR pipeline's structural view of the C# blueprint
+/// against the existing imperative pipeline. Marked `#[ignore]` while
+/// shape parity is incomplete; counts Unknown nodes and prints the
+/// first divergence so we can iterate toward parity.
+#[test]
+#[ignore]
+fn blueprint_parity() {
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+
+    // Current pipeline view.
+    let cur_result = parse_string_to_xot(&source, "csharp", "<bp>".to_string(), None)
+        .expect("current pipeline parse");
+    let cur_root = if cur_result.xot.is_document(cur_result.root) {
+        cur_result.xot.document_element(cur_result.root).expect("doc")
+    } else { cur_result.root };
+    let cur_view = structural_view(&cur_result.xot, cur_root);
+
+    // IR pipeline view.
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(&source, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), &source);
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let ir_view = structural_view(&xot, ir_root);
+
+    // Count Unknowns.
+    fn count_unknowns(xot: &Xot, node: XotNode, out: &mut usize) {
+        if let Some(elem) = xot.element(node) {
+            if xot.local_name_str(elem.name()) == "unknown" { *out += 1; }
+        }
+        for c in xot.children(node) { count_unknowns(xot, c, out); }
+    }
+    let mut unknowns = 0usize;
+    count_unknowns(&xot, ir_root, &mut unknowns);
+
+    eprintln!("=== C# blueprint structural-parity check ===");
+    eprintln!("source bytes:        {}", source.len());
+    eprintln!("current view bytes:  {}", cur_view.len());
+    eprintln!("IR view bytes:       {}", ir_view.len());
+    eprintln!("Unknown in IR:       {}", unknowns);
+
+    if cur_view != ir_view {
+        for (i, (la, lb)) in cur_view.lines().zip(ir_view.lines()).enumerate() {
+            if la != lb {
+                let start = i.saturating_sub(3);
+                let end = (i + 4).min(cur_view.lines().count().min(ir_view.lines().count()));
+                let ctx_a: Vec<&str> = cur_view.lines().skip(start).take(end - start).collect();
+                let ctx_b: Vec<&str> = ir_view.lines().skip(start).take(end - start).collect();
+                panic!(
+                    "first diff at line {} (1-based: {})\n\
+                     ----- current pipeline -----\n{}\n\
+                     ----- IR pipeline -----\n{}",
+                    i, i + 1,
+                    ctx_a.join("\n"),
+                    ctx_b.join("\n"),
+                );
+            }
+        }
+        panic!("length differs: current={}, IR={}", cur_view.lines().count(), ir_view.lines().count());
+    }
 }
 
 /// Coverage audit against the C# blueprint. Reports kind / node
