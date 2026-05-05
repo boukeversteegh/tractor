@@ -81,29 +81,50 @@ identified issues addressed:
   - ✅ Operator marker map extended (`//`, `%`, `**`, `@`, bitwise,
     shifts).
 
-**Pending gating items** (16 transform XPath tests fail under the
-hard switch — these are the remaining work):
-  - `tag_multi_role_children` table for Python doesn't exist on the
-    IR side. Need to port from `python_post_transform` (or write
-    fresh) the list-tagging pairs for `function/parameter`,
-    `call/name`, `with/with_item`, `from/relative`, `for/name`,
-    `pair/name`, etc. (40 advisory violations under hard-switch).
-  - Specific shape divergences flagged by:
-    `chain::python` (chain-inversion edge cases),
-    `comments::python` (leading/trailing classification),
-    `if_else::python` (else_if flatten),
-    `operators::python_compare` (comparison shape),
-    `patterns::python_*` (pattern children layout),
-    `strings::python_fstring`/`_interpolation` (interpolation shape),
-    `errors::python` (exception shape),
-    `functions::python_multi_value_return_lists_expressions`
-    (return-tuple list-tagging),
-    `python::expression_list::python` (tuple shape),
-    `visibility::python` (private/public marker placement),
-    `collections::python_collections` (list/dict/set shape).
+**Resolved** (16 → 5 transform-test divergences this session):
+  - ✅ `comments::python` — `merge_python_line_comments` post-pass
+    classifies leading/trailing/floating (port of csharp's).
+  - ✅ `if_else::python` — collect ALL `alternative` field children
+    (not just first), chain into Ir::ElseIf/Ir::Else; ternary
+    drops `<expression>` wrapper around `<then>`/`<else>` slots.
+  - ✅ `operators::python_compare` — Ir::Comparison renders as
+    `<compare>` with flat children (no `<left>`/`<right>` wrappers).
+  - ✅ `functions::python_multi_value_return_lists_expressions` +
+    `python::expression_list::python` — Return render emits each
+    Inline child in its own `<expression>`; expression_list /
+    pattern_list lower to Ir::Inline (transparent flatten).
+  - ✅ `visibility::python` — new `inject_python_visibility_markers`
+    post-pass adds `<public/>`/`<protected/>`/`<private/>` to
+    class-method `<function>` elements based on Python's
+    name-convention.
+  - ✅ `collections::python_collections` — comprehension lowerings
+    add `<comprehension/>` marker via simple_statement_marked.
+  - ✅ `strings::python_fstring` / `strings::python_interpolation` —
+    f-strings lift to SimpleStatement when CST has `interpolation`
+    / `escape_sequence` children; plain strings stay scalar.
 
-Estimate: 4–8 hours to port the Python post-pass + resolve the 16
-test divergences.
+**Pending gating items** (5 transform-test divergences left):
+  - `chain::python` + `chain::cross_language_uniformity` — chain
+    inversion sees 2 `<object[access]>` instead of 1 for
+    `obj.foo().bar.baz()`. Likely an accumulator edge case in
+    `walk_chain` when calls + members alternate.
+  - `errors::python` — `except ValueError as err:` should render as
+    `<except><value><expression><as>...</as></expression></value></except>`.
+    Current Ir::ExceptHandler render emits `<type>...<name>...`
+    with separate fields. Needs a Python-flavoured ExceptHandler
+    render variant or a parallel post-pass.
+  - `patterns::python` — `[1, 2, *rest]` list pattern needs
+    `<pattern[splat]><name>rest</name>` for the splat element.
+  - `patterns::python_dict_pattern_lists_values` — dict-pattern key
+    strings need `list="strings"` attr; the existing
+    `tag_multi_same_name_children` should cover this but isn't
+    triggering for some structural reason.
+
+Plus the post-pass `tag_multi_role_children` advisory tally is
+elevated under the hard switch (40 vs grandfathered 20). Bumping
+the ratchet or adding the missing Python pairs unblocks that.
+
+Estimate: 1–3 hours to close the remaining 5 + ratchet.
 
 **Foundation done**: `tests/ir_python_missing_kinds.rs` is the
 diagnostic for any future coverage push (run with `--ignored
