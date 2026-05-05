@@ -355,13 +355,39 @@ public static class Extras
     // Scoped type (C# 11) and ref type in parameters.
     public static void Scoped(scoped System.Span<int> data, ref int target) { target = data[0]; }
 
-    // Var pattern + parenthesized pattern.
-    public static string VarPat(object o) => o switch
+    // Var pattern + parenthesized pattern + parenthesized variable
+    // designation (`(int x, int y) = pair`).
+    public static string VarPat(object o)
     {
-        var x when x is string => "string",
-        (1) => "one",
-        _ => "?",
-    };
+        (int x, int y) = (1, 2);
+        return o switch
+        {
+            var v when v is string => "string",
+            (1) => "one",
+            _ => $"{x}-{y}",
+        };
+    }
+
+    // Unsafe statement (block form, distinct from unsafe modifier).
+    public static int UnsafeBlock(int x)
+    {
+        unsafe
+        {
+            int* p = &x;
+            return *p;
+        }
+    }
+
+    // C# 9 top-level expression in a global_statement context: we
+    // can't add top-level statements to the existing file (already
+    // has namespace/classes), but we exercise extra LINQ join_into.
+    public static int JoinInto(int[] a, int[] b)
+    {
+        var q = from x in a
+                join y in b on x equals y into matched
+                select matched.Count();
+        return q.Count();
+    }
 
     // Explicit interface implementation.
     public string IFormat() => "default";
