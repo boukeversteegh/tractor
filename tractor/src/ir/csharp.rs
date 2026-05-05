@@ -1683,22 +1683,55 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
 /// Lower a keyword-prefixed simple statement / expression
 /// (`yield`, `lock`, `goto`, `typeof`, etc.) to
 /// `Ir::SimpleStatement`. Children are the CST's named children
-/// lowered recursively. Modifiers are extracted from any `modifier`
-/// child nodes — declaration-shaped kinds (delegate/event/indexer/
-/// destructor) need them; statement kinds simply have none.
+/// lowered recursively, with field-aware wrapping that mirrors
+/// the imperative pipeline's `apply_field_wrappings` pass.
+/// Modifiers are extracted from any `modifier` child nodes —
+/// declaration-shaped kinds (delegate/event/indexer/destructor)
+/// need them; statement kinds simply have none.
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     let modifiers = lower_csharp_modifiers(node, source, None);
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor)
-        // Skip `modifier` children — they're already captured in the
-        // Modifiers struct; rendering them as separate IR would
-        // duplicate the keyword text into both gap and IR-children.
-        .filter(|c| c.kind() != "modifier")
-        .map(|c| lower_node(c, source))
-        .collect();
+    // Walk via cursor to access field_name() per child (same path the
+    // imperative builder uses).
+    let mut children: Vec<Ir> = Vec::new();
+    if cursor.goto_first_child() {
+        loop {
+            let c = cursor.node();
+            if c.is_named() && c.kind() != "modifier" {
+                let field_name = cursor.field_name();
+                let inner = lower_node(c, source);
+                children.push(maybe_wrap_field(field_name, inner));
+            }
+            if !cursor.goto_next_sibling() { break; }
+        }
+    }
     Ir::SimpleStatement { element_name, modifiers, children, range, span }
+}
+
+/// Wrap an IR node in `Ir::FieldWrap` if its tree-sitter field name
+/// has an entry in the C# field-wrapping table. Mirrors the
+/// imperative pipeline's `apply_field_wrappings` pass, but applied
+/// at lowering time so the IR is already correctly nested.
+fn maybe_wrap_field(field_name: Option<&str>, inner: Ir) -> Ir {
+    let Some(field) = field_name else { return inner };
+    // Same table as `CSHARP_FIELD_WRAPPINGS` in src/languages/mod.rs.
+    let wrapper: &'static str = match field {
+        "name"        => "name",
+        "value"       => "value",
+        "left"        => "left",
+        "right"       => "right",
+        "body"        => "body",
+        "condition"   => "condition",
+        "consequence" => "then",
+        "returns"     => "returns",
+        "type"        => "type",
+        _             => return inner,
+    };
+    let r = inner.range();
+    let s = inner.span();
+    Ir::FieldWrap { wrapper, inner: Box::new(inner), range: r, span: s }
 }
 
 /// Lower a C# `catch_clause` to `Ir::ExceptHandler` with kind="catch".

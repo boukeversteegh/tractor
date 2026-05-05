@@ -461,6 +461,31 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::FieldWrap { wrapper, inner, range, span } => {
+            // When the wrapper is `name` and the inner is itself a
+            // bare identifier (Ir::Name), collapse to a single
+            // `<name>X</name>` rather than `<name><name>X</name></name>`.
+            // Mirrors the imperative pipeline's `name_wrapper` pass.
+            if *wrapper == "name" && matches!(inner.as_ref(), Ir::Name { .. }) {
+                let node = element(xot, "name", *span);
+                xot.append(parent, node)?;
+                let text = inner.range().slice(source);
+                if !text.is_empty() {
+                    let t = xot.new_text(text);
+                    xot.append(node, t)?;
+                }
+                return Ok(node);
+            }
+            let node = element(xot, wrapper, *span);
+            xot.append(parent, node)?;
+            // The wrapper has the same range as the inner — emit
+            // any leading gap inside the wrapper, then render inner.
+            let ir = inner.range();
+            emit_gap(xot, node, source, range.start, ir.start)?;
+            render_to_xot(xot, node, inner, source)?;
+            emit_gap(xot, node, source, ir.end, range.end)?;
+            Ok(node)
+        }
         Ir::SimpleStatement { element_name, modifiers, children, range, span } => {
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;

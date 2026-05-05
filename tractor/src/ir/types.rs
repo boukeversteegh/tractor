@@ -367,6 +367,19 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// Wrap an inner IR node in a single element. Used as the
+    /// parity-track field-wrapping mechanism: when a CST child has
+    /// a labelled `field=type` (or `name`, `value`, etc.) and that
+    /// field has a wrapping in the language's table, lower it as
+    /// `Ir::FieldWrap { wrapper: "type", inner: ... }` so the
+    /// rendered XML is `<type>{inner rendering}</type>`.
+    FieldWrap {
+        wrapper: &'static str,
+        inner: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// Generic single-keyword statement carrier. Renders as
     /// `<{element_name}>{markers from modifiers}{children with gaps}</{element_name}>`.
     /// Used as the parity-track variant for kinds whose old-pipeline
@@ -1180,6 +1193,7 @@ impl Ir {
             | Ir::Lambda { span, .. }
             | Ir::ObjectCreation { span, .. }
             | Ir::Ternary { span, .. }
+            | Ir::FieldWrap { span, .. }
             | Ir::SimpleStatement { span, .. }
             | Ir::Try { span, .. }
             | Ir::ExceptHandler { span, .. }
@@ -1259,6 +1273,7 @@ impl Ir {
             | Ir::Lambda { range, .. }
             | Ir::ObjectCreation { range, .. }
             | Ir::Ternary { range, .. }
+            | Ir::FieldWrap { range, .. }
             | Ir::SimpleStatement { range, .. }
             | Ir::Try { range, .. }
             | Ir::ExceptHandler { range, .. }
@@ -1403,6 +1418,7 @@ impl Ir {
                 v.push(if_true);
                 v.push(if_false);
             }
+            Ir::FieldWrap { inner, .. } => v.push(inner),
             Ir::SimpleStatement { children, .. } => v.extend(children.iter()),
             Ir::Try { try_body, handlers, else_body, finally_body, .. } => {
                 v.push(try_body);
