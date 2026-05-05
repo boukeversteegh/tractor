@@ -1452,10 +1452,25 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // C# `prefix_unary_expression` has fields `operator` and
         // `operand`.
         "prefix_unary_expression" => {
-            let operand = node.child_by_field_name("operand").map(|n| lower_node(n, source));
-            let op_node = node.child_by_field_name("operator");
+            // tree-sitter-c-sharp doesn't always expose the operator
+            // as a labelled `operator` field — for compound operators
+            // like `++` it's just an unnamed leading token. Find it
+            // by scanning all children: the operand is the only named
+            // child, the operator is whatever unnamed token comes
+            // before it.
+            let operand_node = node.child_by_field_name("operand").or_else(|| {
+                let mut c = node.walk();
+                let r = node.named_children(&mut c).next();
+                r
+            });
+            let op_node = node.child_by_field_name("operator").or_else(|| {
+                let mut c = node.walk();
+                let r = node.children(&mut c).find(|c| !c.is_named());
+                r
+            });
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            let operand = operand_node.map(|n| lower_node(n, source));
             match (operand, op_marker(&op_text)) {
                 (Some(o), Some(marker)) => Ir::Unary {
                     op_text,
@@ -1466,7 +1481,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     span,
                 },
                 _ => Ir::Unknown {
-                    kind: "prefix_unary_expression(missing/unknown op)".to_string(),
+                    kind: format!("prefix_unary_expression(op={:?})", op_text),
                     range,
                     span,
                 },
