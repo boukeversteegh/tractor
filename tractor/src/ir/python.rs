@@ -279,19 +279,42 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "generator_expression"      => simple_statement(node, "generator", source),
         "for_in_clause"             => simple_statement(node, "for",       source),
         "if_clause"                 => simple_statement(node, "if",        source),
-        "with_statement"            => simple_statement(node, "with",      source),
-        "with_clause"               => simple_statement(node, "with",      source),
-        "with_item"                 => simple_statement(node, "with_item", source),
+        // `with` / `async with`. tree-sitter exposes the `async`
+        // keyword as an unnamed child of with_statement; detect by
+        // scanning the source slice prefix and add an `<async/>`
+        // marker on the IR.
+        "with_statement" => {
+            let leading = range.slice(source).trim_start();
+            if leading.starts_with("async") {
+                simple_statement_marked(node, "with", &["async"], source)
+            } else {
+                simple_statement(node, "with", source)
+            }
+        }
+        // tree-sitter wraps `with` items in a `with_clause` and each
+        // `with EXPR [as NAME]` as `with_item`. The imperative
+        // pipeline flattens both wrappers (Rule::Flatten on
+        // WithClause / WithItem) so the items become direct children
+        // of `<with>`. Mirror via Ir::Inline.
+        "with_clause" | "with_item" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
         "match_statement"           => simple_statement(node, "match",     source),
-        "case_clause"               => simple_statement(node, "case",      source),
+        "case_clause"               => simple_statement(node, "arm",       source),
         "case_pattern"              => simple_statement(node, "pattern",   source),
         "class_pattern"             => simple_statement(node, "pattern",   source),
         "complex_pattern"           => simple_statement(node, "pattern",   source),
         "dict_pattern"              => simple_statement(node, "pattern",   source),
         "keyword_pattern"           => simple_statement(node, "pattern",   source),
         "splat_pattern"             => simple_statement(node, "pattern",   source),
-        "splat_type"                => simple_statement(node, "type",      source),
-        "constrained_type"          => simple_statement(node, "type",      source),
+        "list_pattern"              => simple_statement(node, "pattern",   source),
+        "tuple_pattern"             => simple_statement(node, "pattern",   source),
+        "union_pattern"             => simple_statement(node, "pattern",   source),
         "union_type"                => simple_statement(node, "type",      source),
         "named_expression"          => simple_statement(node, "assign",    source),
         "future_import_statement"   => simple_statement(node, "import",    source),
@@ -989,6 +1012,146 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // Atoms — leaf-level value carriers. Text is `source[range]`.
         "identifier" => Ir::Name { range, span },
+
+        // tree-sitter-python wraps type-position expressions in a
+        // `type` node (parameter annotations, return types, generic
+        // arguments). The IR's typed shape has no `<type>` wrapping
+        // here — the renderer adds it when emitting via a
+        // `type_ann`/`Returns` slot. Unwrap to the inner expression
+        // and lower it directly.
+        "type" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => lower_node(i, source),
+                None => Ir::Unknown { kind: "type(empty)".to_string(), range, span },
+            }
+        }
+
+        // `expression_list` is tree-sitter-python's tuple-without-
+        // parens (e.g. `a, b = 1, 2`). Lower as Ir::Tuple — the
+        // renderer emits flat children which matches imperative shape.
+        "expression_list" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Tuple { children, range, span }
+        }
+
+        // `pattern_list` (tree-sitter): `for a, b in ...`. Same
+        // treatment as `expression_list` — lower to Ir::Tuple.
+        "pattern_list" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Tuple { children, range, span }
+        }
+
+        // `constrained_type` (`T: Bound`) — Ir::TypeParameter shape.
+        "constrained_type" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.len() >= 2 {
+                Ir::TypeParameter {
+                    name: Box::new(lower_node(kids[0], source)),
+                    constraint: Some(Box::new(lower_node(kids[1], source))),
+                    range, span,
+                }
+            } else if kids.len() == 1 {
+                Ir::TypeParameter {
+                    name: Box::new(lower_node(kids[0], source)),
+                    constraint: None,
+                    range, span,
+                }
+            } else {
+                Ir::Unknown { kind: "constrained_type(empty)".to_string(), range, span }
+            }
+        }
+
+        // `splat_type` (`*Ts`) — variadic generic. Lower as a marked
+        // type whose source bytes carry the `*`.
+        "splat_type" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::ListSplat {
+                    inner: Box::new(lower_node(i, source)),
+                    range, span,
+                },
+                None => Ir::Unknown { kind: "splat_type(empty)".to_string(), range, span },
+            }
+        }
+
+        // `list_splat_pattern` (`*rest`) — splat in a parameter list
+        // or assignment LHS.
+        "list_splat_pattern" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::ListSplat {
+                    inner: Box::new(lower_node(i, source)),
+                    range, span,
+                },
+                None => Ir::Unknown { kind: "list_splat_pattern(empty)".to_string(), range, span },
+            }
+        }
+
+        // `EXPR as NAME` — tree-sitter `as_pattern` kind. Lowers to
+        // `<as>` element (matches imperative `Rename(As)`). Walks
+        // named children so the inner expression and `as_pattern_target`
+        // both surface.
+        "as_pattern" => simple_statement(node, "as", source),
+        // `as_pattern_target` is the binding-side name in `as NAME` —
+        // imperative pipeline wraps it. For the IR we just unwrap and
+        // recurse.
+        "as_pattern_target" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => lower_node(i, source),
+                None => Ir::Unknown { kind: "as_pattern_target(empty)".to_string(), range, span },
+            }
+        }
+
+        // `await x` in Python — tree-sitter exposes as `await` kind
+        // with the expression as a named child. Lower as Ir::Expression
+        // with an `await` marker (matches the imperative pipeline's
+        // `<expression[await]>` shape via Principle #15).
+        "await" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::Expression {
+                    inner: Box::new(lower_node(i, source)),
+                    marker: Some("await"),
+                    range,
+                    span,
+                },
+                None => Ir::Unknown { kind: "await(empty)".to_string(), range, span },
+            }
+        }
+
+        // tree-sitter sometimes exposes a bare `block` outside the
+        // function/class body's normal slot (e.g. inside `try` /
+        // `with`). Lower as Ir::Body without block_wrap.
+        "block" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Body {
+                children,
+                pass_only: false,
+                block_wrap: false,
+                range,
+                span,
+            }
+        }
         "integer"    => Ir::Int  { range, span },
         "float"      => Ir::Float { range, span },
         "string"     => Ir::String { range, span },
@@ -1023,6 +1186,23 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         .map(|c| lower_node(c, source))
         .collect();
     Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
+}
+
+/// Same as `simple_statement` but adds explicit `<marker/>` siblings
+/// (e.g. `<async/>` on `async with`).
+fn simple_statement_marked(
+    node: TsNode<'_>,
+    element_name: &'static str,
+    extra_markers: &'static [&'static str],
+    source: &str,
+) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers, children, range, span }
 }
 
 /// Lower a Python `except_clause` to `Ir::ExceptHandler` with
@@ -1702,6 +1882,15 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "-" => "minus",
         "*" => "multiply",
         "/" => "divide",
+        "//" => "floor_divide",
+        "%" => "modulo",
+        "**" => "power",
+        "@" => "matrix_multiply",
+        "&" => "bitwise_and",
+        "|" => "bitwise_or",
+        "^" => "bitwise_xor",
+        "<<" => "shift_left",
+        ">>" => "shift_right",
         _ => return None,
     })
 }
