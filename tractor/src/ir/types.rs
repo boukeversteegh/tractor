@@ -207,6 +207,103 @@ pub enum Ir {
         span: Span,
     },
 
+    // ----- Collections & literal containers -------------------------------
+
+    /// `<tuple>` — `(a, b, c)` parenthesized tuple. Children are
+    /// expressions in source order (no `<expression>` host —
+    /// matches existing pipeline shape `<tuple><name>a</name>...</tuple>`).
+    Tuple { children: Vec<Ir>, range: ByteRange, span: Span },
+
+    /// `<list>` with `<literal/>` marker — `[a, b, c]` list literal.
+    List { children: Vec<Ir>, range: ByteRange, span: Span },
+
+    /// `<set>` with `<literal/>` marker — `{a, b}`.
+    Set { children: Vec<Ir>, range: ByteRange, span: Span },
+
+    /// `<dictionary>` with `<literal/>` marker — `{k: v, ...}`.
+    Dictionary { pairs: Vec<Ir>, range: ByteRange, span: Span },
+
+    /// `<pair>` — `key: value` inside a dictionary.
+    Pair { key: Box<Ir>, value: Box<Ir>, range: ByteRange, span: Span },
+
+    // ----- Generic types --------------------------------------------------
+
+    /// `<type[generic]>` — `Name[T, U, ...]` generic type expression.
+    /// `name` is the base type name; `params` are the type arguments.
+    GenericType {
+        name: Box<Ir>,
+        params: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    // ----- Comparisons ----------------------------------------------------
+
+    /// `<binary>` for chained comparisons like `a < b < c`. tree-sitter
+    /// has a dedicated `comparison_operator` kind; we model it as a
+    /// binary chain. For simplicity in the experiment, we emit a
+    /// binary IR with the *first* operator and concatenate the
+    /// remaining as Unknown-wrapped — this works for the common
+    /// two-operand case (`a < b`).
+    Comparison {
+        left: Box<Ir>,
+        op_text: String,
+        op_marker: &'static str,
+        op_range: ByteRange,
+        right: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    // ----- Control flow ---------------------------------------------------
+
+    /// `<if>` — `if cond: ... [elif ...] [else ...]`.
+    If {
+        condition: Box<Ir>,
+        body: Box<Ir>,             // Ir::Body
+        else_branch: Option<Box<Ir>>, // Ir::ElseIf or Ir::Else
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<else_if>` — `elif cond: body`. Used inside If's else_branch
+    /// to keep elif chains flat.
+    ElseIf {
+        condition: Box<Ir>,
+        body: Box<Ir>,
+        else_branch: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<else>` — `else: body`.
+    Else { body: Box<Ir>, range: ByteRange, span: Span },
+
+    /// `<for>` — `for target in iter: body [else: body]`.
+    /// `<for[async]>` adds an `<async/>` marker.
+    For {
+        is_async: bool,
+        targets: Vec<Ir>,
+        iterables: Vec<Ir>,
+        body: Box<Ir>,
+        else_body: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<while>` — `while cond: body [else: body]`.
+    While {
+        condition: Box<Ir>,
+        body: Box<Ir>,
+        else_body: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<break>` / `<continue>` markers.
+    Break { range: ByteRange, span: Span },
+    Continue { range: ByteRange, span: Span },
+
     // ----- Function & class declarations ----------------------------------
 
     /// `<function>` — `def f(...)` / `async def f(...)`. Decorators
@@ -536,6 +633,20 @@ impl Ir {
             | Ir::Call { span, .. }
             | Ir::Binary { span, .. }
             | Ir::Unary { span, .. }
+            | Ir::Tuple { span, .. }
+            | Ir::List { span, .. }
+            | Ir::Set { span, .. }
+            | Ir::Dictionary { span, .. }
+            | Ir::Pair { span, .. }
+            | Ir::GenericType { span, .. }
+            | Ir::Comparison { span, .. }
+            | Ir::If { span, .. }
+            | Ir::ElseIf { span, .. }
+            | Ir::Else { span, .. }
+            | Ir::For { span, .. }
+            | Ir::While { span, .. }
+            | Ir::Break { span, .. }
+            | Ir::Continue { span, .. }
             | Ir::Function { span, .. }
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
@@ -577,6 +688,20 @@ impl Ir {
             | Ir::Call { range, .. }
             | Ir::Binary { range, .. }
             | Ir::Unary { range, .. }
+            | Ir::Tuple { range, .. }
+            | Ir::List { range, .. }
+            | Ir::Set { range, .. }
+            | Ir::Dictionary { range, .. }
+            | Ir::Pair { range, .. }
+            | Ir::GenericType { range, .. }
+            | Ir::Comparison { range, .. }
+            | Ir::If { range, .. }
+            | Ir::ElseIf { range, .. }
+            | Ir::Else { range, .. }
+            | Ir::For { range, .. }
+            | Ir::While { range, .. }
+            | Ir::Break { range, .. }
+            | Ir::Continue { range, .. }
             | Ir::Function { range, .. }
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }

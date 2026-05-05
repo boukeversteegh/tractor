@@ -276,6 +276,182 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- Collections ----------------------------------------------
+
+        "tuple" => {
+            let mut c = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            Ir::Tuple { children, range, span }
+        }
+        "list" => {
+            let mut c = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            Ir::List { children, range, span }
+        }
+        "set" => {
+            let mut c = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            Ir::Set { children, range, span }
+        }
+        "dictionary" => {
+            let mut c = node.walk();
+            let pairs: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            Ir::Dictionary { pairs, range, span }
+        }
+        "pair" => {
+            let key = node.child_by_field_name("key").map(|n| lower_node(n, source));
+            let value = node.child_by_field_name("value").map(|n| lower_node(n, source));
+            match (key, value) {
+                (Some(k), Some(v)) => Ir::Pair {
+                    key: Box::new(k),
+                    value: Box::new(v),
+                    range,
+                    span,
+                },
+                _ => Ir::Unknown { kind: "pair(missing)".to_string(), range, span },
+            }
+        }
+
+        // ----- Generic type expressions ---------------------------------
+
+        "generic_type" => {
+            // tree-sitter Python: generic_type has named children:
+            // first the base name (identifier or attribute), then a
+            // type_parameter list. The type_parameter list children
+            // are the type arguments.
+            let mut cur = node.walk();
+            let mut children = node.named_children(&mut cur);
+            let name = match children.next() {
+                Some(n) => Box::new(lower_node(n, source)),
+                None => return Ir::Unknown { kind: "generic_type(no name)".to_string(), range, span },
+            };
+            // Remaining named children form the type-args list — but
+            // they're often wrapped in a `type_parameter` container.
+            let mut params: Vec<Ir> = Vec::new();
+            for c in children {
+                if c.kind() == "type_parameter" {
+                    let mut cc = c.walk();
+                    for arg in c.named_children(&mut cc) {
+                        params.push(lower_type_arg(arg, source));
+                    }
+                } else {
+                    params.push(lower_type_arg(c, source));
+                }
+            }
+            Ir::GenericType { name, params, range, span }
+        }
+
+        // ----- Comparisons -----------------------------------------------
+
+        "comparison_operator" => {
+            // tree-sitter Python: comparison_operator's children are
+            // alternating operands and operator tokens. For two-operand
+            // case (most common): [left_expr, op_token, right_expr].
+            let mut cur = node.walk();
+            let all: Vec<TsNode> = node.children(&mut cur).collect();
+            // Pick the first named child as left, the last named as right,
+            // and find the comparator token between them.
+            let named: Vec<TsNode> = all.iter().filter(|n| n.is_named()).copied().collect();
+            if named.len() == 2 {
+                let left = lower_node(named[0], source);
+                let right = lower_node(named[1], source);
+                // Operator: the unnamed/named token between them.
+                // Scan all children in source order; find the first token
+                // between left.end and right.start.
+                let between_start = named[0].byte_range().end;
+                let between_end = named[1].byte_range().start;
+                let op_text = source[between_start..between_end].trim().to_string();
+                let op_range = locate_token(source, between_start, between_end, &op_text);
+                let op_marker = comparison_op_marker(&op_text).unwrap_or("equal");
+                Ir::Comparison {
+                    left: Box::new(left),
+                    op_text,
+                    op_marker,
+                    op_range,
+                    right: Box::new(right),
+                    range,
+                    span,
+                }
+            } else {
+                Ir::Unknown { kind: format!("comparison_operator({} operands)", named.len()), range, span }
+            }
+        }
+
+        // ----- Control flow ---------------------------------------------
+
+        "if_statement" => {
+            // Fields: `condition`, `consequence` (the body block);
+            // `alternative` is an elif_clause or else_clause (optional).
+            let cond = node.child_by_field_name("condition")
+                .map(|n| Box::new(lower_node(n, source)));
+            let body = node.child_by_field_name("consequence")
+                .map(|n| Box::new(lower_block(n, source)));
+            let alt = node.child_by_field_name("alternative");
+            let else_branch = alt.map(|a| Box::new(lower_else_chain(a, source)));
+            match (cond, body) {
+                (Some(c), Some(b)) => Ir::If {
+                    condition: c,
+                    body: b,
+                    else_branch,
+                    range,
+                    span,
+                },
+                _ => Ir::Unknown { kind: "if_statement(missing field)".to_string(), range, span },
+            }
+        }
+
+        "for_statement" => {
+            let is_async = source[range.start as usize..(range.start as usize + 5).min(source.len())]
+                .starts_with("async");
+            let left = node.child_by_field_name("left");
+            let right = node.child_by_field_name("right");
+            let body = node.child_by_field_name("body");
+            let alt = node.child_by_field_name("alternative");
+            let targets = match left {
+                Some(l) => lower_assign_side(l, source),
+                None => Vec::new(),
+            };
+            let iterables = match right {
+                Some(r) => lower_assign_side(r, source),
+                None => Vec::new(),
+            };
+            let body = match body {
+                Some(b) => Box::new(lower_block(b, source)),
+                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, range: ByteRange::empty_at(range.end), span }),
+            };
+            let else_body = alt.map(|a| {
+                // alternative is an else_clause; lower its inner body.
+                let inner = a.child_by_field_name("body").unwrap_or(a);
+                Box::new(lower_block(inner, source))
+            });
+            Ir::For {
+                is_async,
+                targets,
+                iterables,
+                body,
+                else_body,
+                range,
+                span,
+            }
+        }
+
+        "while_statement" => {
+            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source)));
+            let body = node.child_by_field_name("body").map(|n| Box::new(lower_block(n, source)));
+            let alt = node.child_by_field_name("alternative");
+            let else_body = alt.map(|a| {
+                let inner = a.child_by_field_name("body").unwrap_or(a);
+                Box::new(lower_block(inner, source))
+            });
+            match (cond, body) {
+                (Some(c), Some(b)) => Ir::While { condition: c, body: b, else_body, range, span },
+                _ => Ir::Unknown { kind: "while_statement(missing field)".to_string(), range, span },
+            }
+        }
+
+        "break_statement" => Ir::Break { range, span },
+        "continue_statement" => Ir::Continue { range, span },
+
         // ----- Function / class declarations ----------------------------
 
         // `def f(...)` / `async def f(...)` / `def f[T](...)`.
@@ -345,9 +521,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
 
-        // `# comment text`
+        // `# comment text`. Leading-vs-trailing classification is
+        // adjacency-based in the existing pipeline (a separate
+        // post-walk). For the experiment, we default to `leading: true`
+        // since all blueprint comments precede the construct they
+        // describe. Proper classification = TODO.
         "comment" => Ir::Comment {
-            leading: false,
+            leading: true,
             range,
             span,
         },
@@ -531,6 +711,76 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
+/// Lower a type-argument expression in a generic type. Wraps in a
+/// `<type>` element by emitting the inner expression — the renderer
+/// for `Ir::GenericType` handles the actual `<type>` wrapping.
+fn lower_type_arg(node: TsNode<'_>, source: &str) -> Ir {
+    lower_node(node, source)
+}
+
+/// Lower an `else_clause` or `elif_clause` chain into nested
+/// `Ir::ElseIf` / `Ir::Else`.
+fn lower_else_chain(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    match node.kind() {
+        "elif_clause" => {
+            let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source)));
+            let body = node.child_by_field_name("consequence").map(|n| Box::new(lower_block(n, source)));
+            let alt = node.child_by_field_name("alternative");
+            let else_branch = alt.map(|a| Box::new(lower_else_chain(a, source)));
+            match (cond, body) {
+                (Some(c), Some(b)) => Ir::ElseIf {
+                    condition: c,
+                    body: b,
+                    else_branch,
+                    range,
+                    span,
+                },
+                _ => Ir::Unknown { kind: "elif_clause(missing)".to_string(), range, span },
+            }
+        }
+        "else_clause" => {
+            let body = node.child_by_field_name("body").map(|n| Box::new(lower_block(n, source)));
+            match body {
+                Some(b) => Ir::Else { body: b, range, span },
+                None => Ir::Unknown { kind: "else_clause(missing body)".to_string(), range, span },
+            }
+        }
+        _ => Ir::Unknown { kind: format!("else_chain({})", node.kind()), range, span },
+    }
+}
+
+/// Locate `token` literally in `source[start..end]`. Returns its
+/// byte range. Falls back to the start position if not found.
+fn locate_token(source: &str, start: usize, end: usize, token: &str) -> ByteRange {
+    if let Some(rel) = source[start..end].find(token) {
+        let abs = start + rel;
+        ByteRange::new(abs as u32, (abs + token.len()) as u32)
+    } else {
+        ByteRange::empty_at(start as u32)
+    }
+}
+
+/// Map a comparison operator (`==`, `!=`, `<`, `<=`, `>`, `>=`,
+/// `is`, `is not`, `in`, `not in`) to its marker name. Returns
+/// `None` for unrecognized.
+fn comparison_op_marker(op: &str) -> Option<&'static str> {
+    Some(match op {
+        "==" => "equal",
+        "!=" => "not_equal",
+        "<" => "less",
+        "<=" => "less_or_equal",
+        ">" => "greater",
+        ">=" => "greater_or_equal",
+        "is" => "is",
+        "is not" => "is_not",
+        "in" => "in",
+        "not in" => "not_in",
+        _ => return None,
+    })
+}
+
 /// Lower a `function_definition` CST node into `Ir::Function`.
 ///
 /// When called from a `decorated_definition` wrapper, the caller
@@ -551,7 +801,12 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
     let params_node = node.child_by_field_name("parameters");
     let return_type_node = node.child_by_field_name("return_type");
     let body_node = node.child_by_field_name("body");
-    let type_params_node = node.child_by_field_name("type_parameters");
+    let type_params_node = node.child_by_field_name("type_parameters")
+        .or_else(|| {
+            let mut cur = node.walk();
+            let r = node.named_children(&mut cur).find(|n| n.kind() == "type_parameter");
+            r
+        });
 
     let name = match name_node {
         Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
@@ -608,7 +863,12 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
     let name_node = node.child_by_field_name("name");
     let superclasses_node = node.child_by_field_name("superclasses");
     let body_node = node.child_by_field_name("body");
-    let type_params_node = node.child_by_field_name("type_parameters");
+    let type_params_node = node.child_by_field_name("type_parameters")
+        .or_else(|| {
+            let mut cur = node.walk();
+            let r = node.named_children(&mut cur).find(|n| n.kind() == "type_parameter");
+            r
+        });
 
     let name = match name_node {
         Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
@@ -762,34 +1022,81 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     out
 }
 
-/// Lower a `type_parameters` CST node into `Ir::Generic`. Each child
-/// is a `type_parameter` (PEP 695) with an inner identifier.
+/// Lower the type-parameter list `[T, U: bound, *Ts]` into `Ir::Generic`.
+///
+/// The CST passed in is whatever the function/class field
+/// `type_parameters` returns. tree-sitter Python often wraps the list
+/// in a single `type_parameter` node containing inner `type_parameter`
+/// items (PEP 695 grammar quirk). We handle both single-level and
+/// nested cases by walking ALL named descendants until we find
+/// identifiers, splats, or constrained types — each becomes one
+/// IR::TypeParameter.
 fn lower_type_parameters(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
+    let mut items: Vec<Ir> = Vec::new();
+    collect_type_param_items(node, source, &mut items);
+    Ir::Generic { items, range, span }
+}
+
+fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
     let mut cursor = node.walk();
-    let items: Vec<Ir> = node.named_children(&mut cursor).map(|c| {
+    for c in node.named_children(&mut cursor) {
         let cspan = span_of(c);
         let crange = range_of(c);
         match c.kind() {
-            "type_parameter" => {
-                let mut cur = c.walk();
-                let inner = c.named_children(&mut cur).next();
+            // Per-item wrapper kind: `type` containing the
+            // identifier (and optional constraint).
+            "type" => {
+                let mut cc = c.walk();
+                let inner = c.named_children(&mut cc).next();
                 let name = match inner {
-                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                    None => Ir::Unknown { kind: "type_parameter(empty)".to_string(), range: crange, span: cspan },
+                    Some(n) if n.kind() == "identifier" =>
+                        Ir::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => lower_node(n, source),
+                    None => Ir::Unknown {
+                        kind: "type_param(empty type)".to_string(),
+                        range: crange,
+                        span: cspan,
+                    },
                 };
-                Ir::TypeParameter {
+                out.push(Ir::TypeParameter {
                     name: Box::new(name),
                     constraint: None,
                     range: crange,
                     span: cspan,
-                }
+                });
             }
-            _ => Ir::Unknown { kind: format!("type_parameter({})", c.kind()), range: crange, span: cspan },
+            "identifier" => {
+                out.push(Ir::TypeParameter {
+                    name: Box::new(Ir::Name { range: crange, span: cspan }),
+                    constraint: None,
+                    range: crange,
+                    span: cspan,
+                });
+            }
+            "constrained_type" | "splat_type" => {
+                out.push(Ir::TypeParameter {
+                    name: Box::new(lower_node(c, source)),
+                    constraint: None,
+                    range: crange,
+                    span: cspan,
+                });
+            }
+            "type_parameter" => {
+                // Nested wrapper (PEP 695 grammar quirk). Recurse to
+                // collect items inside.
+                collect_type_param_items(c, source, out);
+            }
+            other => {
+                out.push(Ir::Unknown {
+                    kind: format!("type_param_item({other})"),
+                    range: crange,
+                    span: cspan,
+                });
+            }
         }
-    }).collect();
-    Ir::Generic { items, range, span }
+    }
 }
 
 /// Lower a `block` CST node (function/class body) into `Ir::Body`.
