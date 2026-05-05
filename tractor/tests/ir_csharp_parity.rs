@@ -26,7 +26,7 @@
 
 #![cfg(feature = "native")]
 
-use tractor::ir::{lower_csharp_root, render_to_xot, to_source};
+use tractor::ir::{audit_coverage, lower_csharp_root, render_to_xot, to_source};
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
@@ -147,6 +147,35 @@ fn invariants_blueprint() {
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
         .expect("blueprint.cs");
     assert_ir_invariants(&source, "C# blueprint.cs");
+}
+
+/// Coverage audit against the C# blueprint. Reports kind / node
+/// coverage; asserts no silent CST drops.
+#[test]
+fn blueprint_coverage_audit() {
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(&source, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), &source);
+
+    assert_eq!(to_source(&ir, &source), source, "round-trip identity broken");
+
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    assert_eq!(text_concat(&xot, root), source, "XPath text-content recovery broken");
+
+    let report = audit_coverage(tree.root_node(), &ir, &source);
+    eprintln!("\n{}", report.summary());
+    assert_eq!(report.dropped, 0,
+        "{} CST nodes dropped (renderer bug)",
+        report.dropped);
 }
 
 // ---------------------------------------------------------------------------

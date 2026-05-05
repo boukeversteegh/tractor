@@ -1282,6 +1282,65 @@ one rendering core:
 This is the architectural payoff that makes the IR investment pay
 back many times.
 
+## 17. Coverage audit — public-facing language support metric
+
+Round-trip identity (`to_source(ir, source) == source`) catches lost
+*bytes*; it does not catch lost *structure*. A typed parent that
+forgets to lower a child's CST kind silently buries those bytes in
+gap text — round-trip passes, but XPath structural queries can't
+find the kind.
+
+`tractor/src/ir/coverage.rs` walks the CST and IR in lockstep and
+classifies every named CST node into one of:
+
+| Bucket | Meaning |
+|---|---|
+| **Typed** | An IR node exactly matches this byte range; `Ir::Unknown` excluded. The kind is structurally represented. |
+| **Unknown** | `Ir::Unknown` exactly matches this byte range. Kind is explicitly punted. |
+| **Under-typed** | Typed IR ancestor's range contains the node, no exact match. Common for chain-folded structure (`a.b` inside `a.b.c` is folded into `Ir::Access` segments — its inner `member_access_expression` CST has no own IR but the chain does represent it). |
+| **Under-unknown** | Under an `Ir::Unknown` ancestor's range. Whole subtree is unhandled at a higher level. |
+| **Dropped** | No IR range covers this node at all. *Should never happen if round-trip identity holds*; existence indicates a renderer bug. |
+
+### Public metrics
+
+- **Kind coverage** = (kinds with ≥ 1 typed instance) / (distinct kinds in corpus).
+  Public-facing language support level.
+- **Node coverage** = (typed + under_typed) / total named CST nodes.
+  Real-world fraction of code we can structurally query.
+- **Drop count** = always asserted == 0.
+
+### Status (against blueprints)
+
+| Language | Kind coverage | Node coverage | Dropped |
+|---|---|---|---|
+| Python | 44.2% (50/113 kinds) | 63.3% (698/1103 nodes) | 0 |
+| C# (expression-only) | 0.7% (1/150 kinds) | 0.1% (1/1479 nodes) | 0 |
+
+C#'s low number is *honest* — we typed the expression core but not
+the structural surface (class/method/variable declarations). The
+metric correctly reflects this.
+
+### Why this matters
+
+- **Honest reporting.** "Python: 44% kinds typed" beats "Python:
+  works for our test cases" because the metric is computed against
+  a kitchen-sink corpus.
+- **Gradual rollout is fine.** New languages start at low %, climb
+  with each iteration. Nothing forces 100% before shipping.
+- **Drop count is a safety net.** Any silent-loss bug is caught
+  immediately; rounded to a hard assertion in the audit test.
+- **Per-kind detail drives prioritisation.** The summary's per-kind
+  rows tell the next implementer exactly which kinds are most
+  common in the corpus and unhandled.
+
+### Implementation
+~280 LOC in `coverage.rs` (no other files touched besides
+test wiring). Walks IR collecting (range, is_unknown) pairs; walks
+CST classifying each named node; aggregates into per-kind histograms.
+The IR walk is exhaustive over current variants — adding a new IR
+variant requires extending `collect_ir_ranges` (caught by Rust's
+exhaustiveness check).
+
 ## Appendix A — current pipeline as a phase diagram
 
     ┌──────────────────┐  tree-sitter, per-language grammar
