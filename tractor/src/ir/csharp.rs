@@ -608,6 +608,58 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
 
+        // `new Foo(args) { Init }` — explicit type. tree-sitter
+        // children: type identifier, argument_list, optional
+        // initializer_expression. Field labels are not consistently
+        // exposed; iterate named children.
+        "object_creation_expression" | "implicit_object_creation_expression" => {
+            let is_implicit = node.kind() == "implicit_object_creation_expression";
+            let mut cursor = node.walk();
+            let mut type_target: Option<Box<Ir>> = None;
+            let mut arguments: Vec<Ir> = Vec::new();
+            let mut initializer: Option<Box<Ir>> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "argument_list" => {
+                        let mut ac = c.walk();
+                        arguments = c.named_children(&mut ac).map(|a| {
+                            if a.kind() == "argument" {
+                                let mut cc = a.walk();
+                                let inner = a.named_children(&mut cc).next();
+                                inner.map(|i| lower_node(i, source))
+                                    .unwrap_or_else(|| Ir::Unknown {
+                                        kind: "argument(empty)".to_string(),
+                                        range: range_of(a), span: span_of(a),
+                                    })
+                            } else {
+                                lower_node(a, source)
+                            }
+                        }).collect();
+                    }
+                    "initializer_expression" => {
+                        // Wrap inner expressions in Ir::Inline so they
+                        // render at the `<new>` parent's level; brace
+                        // text lives in gap.
+                        let mut ic = c.walk();
+                        let inner: Vec<Ir> = c.named_children(&mut ic)
+                            .map(|n| lower_node(n, source))
+                            .collect();
+                        initializer = Some(Box::new(Ir::Inline {
+                            children: inner,
+                            range: range_of(c),
+                            span: span_of(c),
+                        }));
+                    }
+                    _ if !is_implicit && type_target.is_none() => {
+                        // First non-arg, non-init child is the type.
+                        type_target = Some(Box::new(lower_node(c, source)));
+                    }
+                    _ => {}
+                }
+            }
+            Ir::ObjectCreation { type_target, arguments, initializer, range, span }
+        }
+
         // C# lambda — `x => expr`, `(x, y) => expr`, `x => { ... }`,
         // `async x => ...`. tree-sitter exposes `parameters` (either a
         // single bare identifier or a `parameter_list`) and `body`

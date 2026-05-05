@@ -362,6 +362,19 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// `<new>` — `new Foo(args) { Init }` (C# / Java
+     /// `new`-expression). `type_target` is `None` for C#'s
+    /// target-typed `new()` form. `initializer` carries an
+    /// `Ir::Inline` of the brace-form initializer's children
+    /// (`{ A = 1, B = 2 }`) when present.
+    ObjectCreation {
+        type_target: Option<Box<Ir>>,
+        arguments: Vec<Ir>,
+        initializer: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<lambda>` — `x => x*x`, `(x, y) => x+y`, `async x => ...`,
     /// `(x) => { return x; }`. Cross-language: C# lambda, Java
     /// lambda (`x -> x`), Python `lambda` (which has bare-param
@@ -1057,6 +1070,7 @@ impl Ir {
             | Ir::Break { span, .. }
             | Ir::Continue { span, .. }
             | Ir::Lambda { span, .. }
+            | Ir::ObjectCreation { span, .. }
             | Ir::Function { span, .. }
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
@@ -1127,6 +1141,7 @@ impl Ir {
             | Ir::Break { range, .. }
             | Ir::Continue { range, .. }
             | Ir::Lambda { range, .. }
+            | Ir::ObjectCreation { range, .. }
             | Ir::Function { range, .. }
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }
@@ -1253,6 +1268,11 @@ impl Ir {
             Ir::Lambda { parameters, body, .. } => {
                 v.extend(parameters.iter());
                 v.push(body);
+            }
+            Ir::ObjectCreation { type_target, arguments, initializer, .. } => {
+                if let Some(t) = type_target { v.push(t); }
+                v.extend(arguments.iter());
+                if let Some(i) = initializer { v.push(i); }
             }
             Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());

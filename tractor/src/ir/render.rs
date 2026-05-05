@@ -461,6 +461,21 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::ObjectCreation { type_target, arguments, initializer, range, span } => {
+            let node = element(xot, "new", *span);
+            xot.append(parent, node)?;
+            // Source-order children: type? args... initializer?
+            // The `new` keyword + parens + braces live in gap text.
+            let mut order: Vec<&Ir> = Vec::new();
+            if let Some(t) = type_target { order.push(t.as_ref()); }
+            for a in arguments { order.push(a); }
+            if let Some(i) = initializer { order.push(i.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
         Ir::Lambda { modifiers, parameters, body, range, span } => {
             let node = element(xot, "lambda", *span);
             xot.append(parent, node)?;
