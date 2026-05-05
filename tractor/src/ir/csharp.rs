@@ -416,19 +416,26 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // `class C { ... }` — name + body + full Modifiers.
         // Default access for top-level types: Internal.
-        "class_declaration" => {
+        "class_declaration" | "struct_declaration" | "interface_declaration" | "record_declaration" => {
+            let kind: &'static str = match node.kind() {
+                "struct_declaration"    => "struct",
+                "interface_declaration" => "interface",
+                "record_declaration"    => "record",
+                _                       => "class",
+            };
             let name_node = node.child_by_field_name("name");
             let mut cursor = node.walk();
             let body_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "declaration_list");
             let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Internal));
             Ir::Class {
+                kind,
                 modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
-                        kind: "class(missing name)".to_string(),
+                        kind: format!("{}(missing name)", kind),
                         range, span,
                     },
                 }),

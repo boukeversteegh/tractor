@@ -553,8 +553,8 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Class { modifiers, decorators, name, generics, bases, body, range, span } => {
-            let node = element(xot, "class", *span);
+        Ir::Class { kind, modifiers, decorators, name, generics, bases, body, range, span } => {
+            let node = element(xot, kind, *span);
             xot.append(parent, node)?;
             // Modifier markers first (zero-width, synthetic position).
             // Each marker is *derived* from a typed field on the

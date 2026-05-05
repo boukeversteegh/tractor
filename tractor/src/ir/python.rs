@@ -900,6 +900,7 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
     };
 
     Ir::Class {
+        kind: "class",
         // Python: no access modifiers, no static/abstract/etc on class.
         modifiers: Modifiers::default(),
         decorators, name, generics, bases, body, range, span,

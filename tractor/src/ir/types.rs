@@ -411,8 +411,11 @@ pub enum Ir {
         span: Span,
     },
 
-    /// `<class>` — `class C(bases): ...`. Same shape pattern as
-    /// `Function`.
+    /// `<class>` / `<struct>` / `<interface>` / `<record>` — type
+    /// declaration. `kind` selects the element name; structurally all
+    /// four shapes are the same (modifiers, decorators, name,
+    /// generics, bases, body), so they share one IR variant. Python
+    /// always sets `kind = "class"`; C# picks per CST kind.
     ///
     /// `modifiers` carries access + flags. Empty for languages
     /// without modifier concepts (Python class definitions). The
@@ -420,6 +423,7 @@ pub enum Ir {
     /// Flipping any flag swaps the corresponding marker by
     /// construction.
     Class {
+        kind: &'static str,            // "class" | "struct" | "interface" | "record"
         modifiers: Modifiers,
         decorators: Vec<Ir>,
         name: Box<Ir>,
