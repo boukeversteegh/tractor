@@ -725,6 +725,38 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "switch_section"                     => simple_statement(node, "case",  source),
         "with_initializer"                   => simple_statement(node, "with",  source),
         "interpolation"                      => simple_statement(node, "interpolation", source),
+        // Pattern kinds — old pipeline uses RenameWithMarker(Pattern, X);
+        // for parity-first we use plain "pattern" without a marker.
+        "constant_pattern"          => simple_statement(node, "pattern", source),
+        "declaration_pattern"       => simple_statement(node, "pattern", source),
+        "recursive_pattern"         => simple_statement(node, "pattern", source),
+        "relational_pattern"        => simple_statement(node, "pattern", source),
+        "tuple_pattern"             => simple_statement(node, "pattern", source),
+        "and_pattern"               => simple_statement(node, "pattern", source),
+        "or_pattern"                => simple_statement(node, "pattern", source),
+        "negated_pattern"           => simple_statement(node, "pattern", source),
+        "list_pattern"              => simple_statement(node, "pattern", source),
+        "var_pattern"               => simple_statement(node, "pattern", source),
+        "type_pattern"              => simple_statement(node, "pattern", source),
+        "property_pattern_clause"   => simple_statement(node, "properties", source),
+        "subpattern"                => simple_statement(node, "subpattern", source),
+        "discard"                   => simple_statement(node, "discard", source),
+        "tuple_element"             => simple_statement(node, "element", source),
+        "when_clause"               => simple_statement(node, "when", source),
+        // Flatten-only kinds — render as Inline so children promote
+        // to the parent's element.
+        "switch_body"
+        | "bracketed_parameter_list"
+        | "array_rank_specifier"
+        | "interpolation_alignment_clause"
+        | "interpolation_format_clause"
+        | "parenthesized_pattern" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, range, span }
+        }
         // Parenthesized expression: parens become gap text on parent.
         "parenthesized_expression" => {
             let mut cursor = node.walk();
