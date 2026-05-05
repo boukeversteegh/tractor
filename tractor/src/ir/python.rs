@@ -256,6 +256,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Production-readiness handlers for kinds the old pipeline
+        // handles but the blueprint doesn't exercise.
+        "set"                    => simple_statement(node, "set",          source),
+        "slice"                  => simple_statement(node, "slice",        source),
+        "ellipsis"               => simple_statement(node, "ellipsis",     source),
+        "exec_statement"         => simple_statement(node, "exec",         source),
+        "print_statement"        => simple_statement(node, "print",        source),
+        "format_expression"      => simple_statement(node, "interpolation",source),
+        "escape_interpolation"   => simple_statement(node, "interpolation",source),
+        "parenthesized_list_splat" => simple_statement(node, "spread",     source),
+        "member_type"            => simple_statement(node, "type",         source),
+        "chevron"                => simple_statement(node, "chevron",      source),
+
         // Type-related kinds — old pipeline uses Custom transforms
         // for these; for kind-coverage parity we emit them as
         // <type> via SimpleStatement.
