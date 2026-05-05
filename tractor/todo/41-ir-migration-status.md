@@ -57,26 +57,57 @@
    from the IR→JSON output. Inspect for unintended divergence.
 
 ### Python migration to IR-only
-Hard-switching `use_ir_pipeline` to include `python` surfaces:
-- **45 shape-contract errors**, 38 advisory:
-  - 7 `<splat/>` MarkerOnly violations: `Ir::ListSplat` / `DictSplat`
-    render with element children but `Splat` is declared MarkerOnly
-    in the Python `TractorNodeSpec` table. Either:
-    (a) change rendering to emit `<splat/>` as a sibling marker on
-    a wrapper (matches imperative shape); OR
-    (b) declare `Splat` as dual-use (marker + container).
-  - ~25 `<unknown>` nodes: missing `lower_node` arms for several
-    Python CST kinds (`with_item`, `dictionary_pattern`, …).
-    `Ir::Unknown` fallback isn't declared in the vocabulary table
-    so each instance trips `name-declared-in-semantic-module`.
-  - `<with_item>`, `<dictionary>` not in Python's `TractorNodeSpec`
-    table — either declare them or rename their IR emission.
-  - `<async/>` keyword leak in `<with>` text content — needs an
-    explicit `<async/>` marker in the IR's `with_statement` lowering.
-  - `<with><with>` nesting — flatten/rename gap when the body is
-    itself a single `with` (mirrors C#'s `<block><block>` we
-    handled by scoping marker emission to the outer node).
-- Estimate: 4–6 hours of focused Python coverage work.
+Updated 2026-05-06:
+
+**Coverage**: 0 shape-contract errors against the Python blueprint
+when Python is hard-switched to the IR pipeline. All previously-
+identified issues addressed:
+  - ✅ Splat shape — Ir::ListSplat / Ir::DictSplat render as
+    `<spread>` with `<list/>`/`<dict/>` discriminator markers
+    (matches imperative `RenameWithMarker(Spread, List)`).
+  - ✅ Missing CST kinds (~13 added): `type`, `expression_list`,
+    `pattern_list`, `constrained_type`, `splat_type`,
+    `list_splat_pattern`, `block`, `await`, `as_pattern`,
+    `as_pattern_target`, `list_pattern`, `tuple_pattern`,
+    `union_pattern`, `with_clause`, `with_item`,
+    `dictionary_comprehension`.
+  - ✅ `<async/>` marker on async-with — `simple_statement_marked`
+    detects the `async` keyword in source.
+  - ✅ `<with><with>` and `<expression><expression>` nesting fixed
+    (finally-clause inner block + assign-right expression-host
+    bypass for already-wrapped values).
+  - ✅ `<dictionary>` → `<dict>` (Python's vocabulary uses short
+    form).
+  - ✅ Operator marker map extended (`//`, `%`, `**`, `@`, bitwise,
+    shifts).
+
+**Pending gating items** (16 transform XPath tests fail under the
+hard switch — these are the remaining work):
+  - `tag_multi_role_children` table for Python doesn't exist on the
+    IR side. Need to port from `python_post_transform` (or write
+    fresh) the list-tagging pairs for `function/parameter`,
+    `call/name`, `with/with_item`, `from/relative`, `for/name`,
+    `pair/name`, etc. (40 advisory violations under hard-switch).
+  - Specific shape divergences flagged by:
+    `chain::python` (chain-inversion edge cases),
+    `comments::python` (leading/trailing classification),
+    `if_else::python` (else_if flatten),
+    `operators::python_compare` (comparison shape),
+    `patterns::python_*` (pattern children layout),
+    `strings::python_fstring`/`_interpolation` (interpolation shape),
+    `errors::python` (exception shape),
+    `functions::python_multi_value_return_lists_expressions`
+    (return-tuple list-tagging),
+    `python::expression_list::python` (tuple shape),
+    `visibility::python` (private/public marker placement),
+    `collections::python_collections` (list/dict/set shape).
+
+Estimate: 4–8 hours to port the Python post-pass + resolve the 16
+test divergences.
+
+**Foundation done**: `tests/ir_python_missing_kinds.rs` is the
+diagnostic for any future coverage push (run with `--ignored
+--nocapture`).
 
 ### Other languages
 None of Java/TypeScript/Rust/Go/Ruby/PHP/data-languages have any
