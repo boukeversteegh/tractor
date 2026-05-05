@@ -256,6 +256,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Simple keyword-prefixed statements that the old pipeline
+        // just renames. Each is lowered to Ir::SimpleStatement with
+        // the right element name and the named CST children.
+        "assert_statement"  => simple_statement(node, "assert",   source),
+        "raise_statement"   => simple_statement(node, "raise",    source),
+        "delete_statement"  => simple_statement(node, "delete",   source),
+        "global_statement"  => simple_statement(node, "global",   source),
+        "nonlocal_statement"=> simple_statement(node, "nonlocal", source),
+        "yield"             => simple_statement(node, "yield",    source),
+        "concatenated_string" => simple_statement(node, "string", source),
+
         // Python `lambda`: `lambda x, y: expr`. tree-sitter exposes
         // `parameters` field (a `lambda_parameters` node) and `body`
         // field (the inner expression).
@@ -951,6 +962,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 /// for `Ir::GenericType` handles the actual `<type>` wrapping.
 fn lower_type_arg(node: TsNode<'_>, source: &str) -> Ir {
     lower_node(node, source)
+}
+
+/// Lower a keyword-prefixed simple statement (`assert`, `raise`,
+/// `delete`, `global`, `nonlocal`, `yield`) to `Ir::SimpleStatement`.
+/// Children are the CST's named children, lowered recursively.
+fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement { element_name, children, range, span }
 }
 
 /// Lower a Python `except_clause` to `Ir::ExceptHandler` with

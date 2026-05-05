@@ -461,6 +461,14 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::SimpleStatement { element_name, children, range, span } => {
+            let node = element(xot, element_name, *span);
+            xot.append(parent, node)?;
+            render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
         Ir::Try { try_body, handlers, else_body, finally_body, range, span } => {
             let node = element(xot, "try", *span);
             xot.append(parent, node)?;

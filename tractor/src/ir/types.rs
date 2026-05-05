@@ -367,6 +367,25 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// Generic single-keyword statement carrier. Renders as
+    /// `<{element_name}>{children with gaps}</{element_name}>`.
+    /// Used as the parity-track variant for kinds whose old-pipeline
+    /// rule is a simple Rename: `assert`, `raise`, `delete`, `global`,
+    /// `nonlocal`, `yield`, etc. Children are the named CST children
+    /// in source order; the leading keyword and any punctuation lives
+    /// in gap text.
+    ///
+    /// Eventually most users of this should be promoted to typed
+    /// variants with proper field labels — but for parity-first
+    /// rollout, this gets the element name right without designing
+    /// each one upfront.
+    SimpleStatement {
+        element_name: &'static str,
+        children: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<try>` — `try { body } catch (...) { ... } finally { ... }`
     /// (C# / Java) or `try: ... except E: ... else: ... finally: ...`
     /// (Python). Shared cross-language. `try_body` is the protected
@@ -1158,6 +1177,7 @@ impl Ir {
             | Ir::Lambda { span, .. }
             | Ir::ObjectCreation { span, .. }
             | Ir::Ternary { span, .. }
+            | Ir::SimpleStatement { span, .. }
             | Ir::Try { span, .. }
             | Ir::ExceptHandler { span, .. }
             | Ir::TypeAlias { span, .. }
@@ -1236,6 +1256,7 @@ impl Ir {
             | Ir::Lambda { range, .. }
             | Ir::ObjectCreation { range, .. }
             | Ir::Ternary { range, .. }
+            | Ir::SimpleStatement { range, .. }
             | Ir::Try { range, .. }
             | Ir::ExceptHandler { range, .. }
             | Ir::TypeAlias { range, .. }
@@ -1379,6 +1400,7 @@ impl Ir {
                 v.push(if_true);
                 v.push(if_false);
             }
+            Ir::SimpleStatement { children, .. } => v.extend(children.iter()),
             Ir::Try { try_body, handlers, else_body, finally_body, .. } => {
                 v.push(try_body);
                 v.extend(handlers.iter());
