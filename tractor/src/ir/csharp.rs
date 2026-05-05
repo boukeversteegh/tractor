@@ -454,6 +454,54 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // `int LocalFn(int x) => x * 2;` — local function inside a
+        // method. Same shape as method_declaration except no access
+        // modifiers (always private to the enclosing scope).
+        "local_function_statement" => {
+            let name_node = node.child_by_field_name("name");
+            let params_node = node.child_by_field_name("parameters");
+            let body_node = node.child_by_field_name("body");
+            let modifiers = lower_csharp_modifiers(node, source, None);
+            // Body may be a block or `arrow_expression_clause` (for
+            // `=>` form) — both lower correctly via lower_node /
+            // lower_block_like.
+            let body = match body_node {
+                Some(b) if b.kind() == "block" => Box::new(lower_block_like(b, source)),
+                Some(b) => {
+                    // Arrow-bodied: wrap the inner expression in a
+                    // synthetic Ir::Body covering the arrow clause's
+                    // range so the renderer treats it consistently.
+                    let r = range_of(b);
+                    let s = span_of(b);
+                    Box::new(Ir::Body {
+                        children: vec![lower_node(b, source)],
+                        pass_only: false,
+                        range: r, span: s,
+                    })
+                }
+                None => Box::new(Ir::Body {
+                    children: Vec::new(), pass_only: false,
+                    range: ByteRange::empty_at(range.end), span,
+                }),
+            };
+            Ir::Function {
+                modifiers,
+                decorators: Vec::new(),
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown {
+                        kind: "local_function(missing name)".to_string(),
+                        range, span,
+                    },
+                }),
+                generics: None,
+                parameters: lower_csharp_parameter_list(params_node, source),
+                returns: None,
+                body,
+                range, span,
+            }
+        }
+
         // `[modifiers] returntype Name(params) { body }` — name +
         // body + parameters + full Modifiers. Default access for
         // class members: Private. Return type still deferred (would
@@ -614,6 +662,26 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+
+        // `cond ? a : b` — ternary. tree-sitter fields: condition,
+        // consequence, alternative.
+        "conditional_expression" => {
+            let cond = node.child_by_field_name("condition");
+            let cons = node.child_by_field_name("consequence");
+            let alt = node.child_by_field_name("alternative");
+            match (cond, cons, alt) {
+                (Some(c), Some(t), Some(f)) => Ir::Ternary {
+                    condition: Box::new(lower_node(c, source)),
+                    if_true: Box::new(lower_node(t, source)),
+                    if_false: Box::new(lower_node(f, source)),
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "conditional_expression(missing field)".to_string(),
+                    range, span,
+                },
+            }
+        }
 
         // `new Foo(args) { Init }` — explicit type. tree-sitter
         // children: type identifier, argument_list, optional

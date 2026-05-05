@@ -461,6 +461,57 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::Ternary { condition, if_true, if_false, range, span } => {
+            let node = element(xot, "ternary", *span);
+            xot.append(parent, node)?;
+            // Slot layout: <condition><expression>{cond}</expression></condition>
+            // {if_true wrapped in <expression>}
+            // <else><expression>{if_false}</expression></else>
+            // The slot wrapper element is determined by *which* child
+            // we're emitting, regardless of source order.
+            #[derive(Clone, Copy)]
+            enum Slot<'a> { Cond(&'a Ir), True(&'a Ir), False(&'a Ir) }
+            let mut order: Vec<Slot> = vec![
+                Slot::Cond(condition),
+                Slot::True(if_true),
+                Slot::False(if_false),
+            ];
+            order.sort_by_key(|s| match s {
+                Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i.range().start,
+            });
+            let mut cursor = range.start;
+            for slot in &order {
+                let inner: &Ir = match slot {
+                    Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i,
+                };
+                let cr = inner.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                match slot {
+                    Slot::Cond(_) => {
+                        let cs = element(xot, "condition", inner.span());
+                        xot.append(node, cs)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(cs, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                    Slot::True(_) => {
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(node, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                    Slot::False(_) => {
+                        let el = element(xot, "else", inner.span());
+                        xot.append(node, el)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(el, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
         Ir::ObjectCreation { type_target, arguments, initializer, range, span } => {
             let node = element(xot, "new", *span);
             xot.append(parent, node)?;

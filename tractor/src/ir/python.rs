@@ -438,6 +438,27 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Python ternary: `a if cond else b`. tree-sitter exposes
+        // children positionally (no field labels): if_true, condition,
+        // if_false in source order.
+        "conditional_expression" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.len() == 3 {
+                Ir::Ternary {
+                    if_true: Box::new(lower_node(kids[0], source)),
+                    condition: Box::new(lower_node(kids[1], source)),
+                    if_false: Box::new(lower_node(kids[2], source)),
+                    range, span,
+                }
+            } else {
+                Ir::Unknown {
+                    kind: format!("conditional_expression(arity={})", kids.len()),
+                    range, span,
+                }
+            }
+        }
+
         "while_statement" => {
             let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source)));
             let body = node.child_by_field_name("body").map(|n| Box::new(lower_block(n, source)));

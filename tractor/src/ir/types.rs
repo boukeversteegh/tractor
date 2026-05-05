@@ -362,6 +362,18 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// `<ternary>` — `cond ? a : b` (C# / Java / JS) or
+    /// `a if cond else b` (Python). Renders with logical slots
+    /// regardless of source order; the renderer sorts children by
+    /// `range().start` to weave gap text correctly.
+    Ternary {
+        condition: Box<Ir>,
+        if_true: Box<Ir>,
+        if_false: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<new>` — `new Foo(args) { Init }` (C# / Java
      /// `new`-expression). `type_target` is `None` for C#'s
     /// target-typed `new()` form. `initializer` carries an
@@ -1075,6 +1087,7 @@ impl Ir {
             | Ir::Continue { span, .. }
             | Ir::Lambda { span, .. }
             | Ir::ObjectCreation { span, .. }
+            | Ir::Ternary { span, .. }
             | Ir::Function { span, .. }
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
@@ -1146,6 +1159,7 @@ impl Ir {
             | Ir::Continue { range, .. }
             | Ir::Lambda { range, .. }
             | Ir::ObjectCreation { range, .. }
+            | Ir::Ternary { range, .. }
             | Ir::Function { range, .. }
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }
@@ -1277,6 +1291,11 @@ impl Ir {
                 if let Some(t) = type_target { v.push(t); }
                 v.extend(arguments.iter());
                 if let Some(i) = initializer { v.push(i); }
+            }
+            Ir::Ternary { condition, if_true, if_false, .. } => {
+                v.push(condition);
+                v.push(if_true);
+                v.push(if_false);
             }
             Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());
