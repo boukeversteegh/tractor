@@ -597,6 +597,86 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "break_statement" => Ir::Break { range, span },
         "continue_statement" => Ir::Continue { range, span },
 
+        // `return [value];`
+        "return_statement" => {
+            let mut cursor = node.walk();
+            let value = node.named_children(&mut cursor).next();
+            Ir::Return {
+                value: value.map(|v| Box::new(lower_node(v, source))),
+                range, span,
+            }
+        }
+
+
+        // C# lambda — `x => expr`, `(x, y) => expr`, `x => { ... }`,
+        // `async x => ...`. tree-sitter exposes `parameters` (either a
+        // single bare identifier or a `parameter_list`) and `body`
+        // (either a `block` for block-bodied or any expression for
+        // expression-bodied). The `=>` token is anonymous.
+        "lambda_expression" => {
+            let params_node = node.child_by_field_name("parameters");
+            let body_node = node.child_by_field_name("body");
+            // `async` modifier appears as an unnamed token.
+            let mut modifiers = Modifiers::default();
+            let mut cur = node.walk();
+            for c in node.children(&mut cur) {
+                if !c.is_named() {
+                    if let Ok(t) = c.utf8_text(source.as_bytes()) {
+                        if t == "async" { modifiers.async_ = true; }
+                    }
+                }
+            }
+            // tree-sitter-c-sharp doesn't expose `parameters` as a
+            // labelled field on `lambda_expression` — instead the
+            // single-param form has a child `implicit_parameter`,
+            // and the parens form has a child `parameter_list`.
+            // Scan named children for either.
+            let mut pcur = node.walk();
+            let parameters: Vec<Ir> = node.named_children(&mut pcur)
+                .find(|c| matches!(c.kind(), "parameter_list" | "implicit_parameter"))
+                .map(|p| match p.kind() {
+                    "parameter_list" => lower_csharp_parameter_list(Some(p), source),
+                    _ => {
+                        // implicit_parameter — single identifier-shaped param.
+                        let pr = range_of(p);
+                        let ps = span_of(p);
+                        vec![Ir::Parameter {
+                            kind: ParamKind::Regular,
+                            name: Box::new(Ir::Name { range: pr, span: ps }),
+                            type_ann: None,
+                            default: None,
+                            range: pr,
+                            span: ps,
+                        }]
+                    }
+                })
+                .unwrap_or_default();
+            let _ = params_node; // unused when fields aren't exposed; kept for compat
+            // Body: similarly may not be a labelled field. Scan
+            // named children, skipping the parameter slot — last
+            // remaining named child is the body.
+            let body_node = body_node.or_else(|| {
+                let mut bcur = node.walk();
+                node.named_children(&mut bcur)
+                    .filter(|c| !matches!(c.kind(), "parameter_list" | "implicit_parameter" | "attribute_list"))
+                    .last()
+            });
+            let body = match body_node {
+                Some(b) if b.kind() == "block" => Box::new(lower_block_like(b, source)),
+                Some(b) => Box::new(lower_node(b, source)),
+                None => Box::new(Ir::Unknown {
+                    kind: "lambda(missing body)".to_string(),
+                    range, span,
+                }),
+            };
+            Ir::Lambda {
+                modifiers,
+                parameters,
+                body,
+                range, span,
+            }
+        }
+
         // `var x = expr;` / `int x = expr;` / `int x;` —
         // local_declaration_statement contains a variable_declaration
         // which contains type + variable_declarator. Each
@@ -1260,7 +1340,34 @@ fn lower_variable_declarator(
     span: Span,
 ) -> Ir {
     let name_node = declarator.child_by_field_name("name");
-    let value_node = declarator.child_by_field_name("value");
+    // tree-sitter-c-sharp doesn't expose a `value` field on
+    // variable_declarator — the initializer expression is just an
+    // unlabelled child after the `=`. Find it by scanning named
+    // children: skip the name and any `bracketed_argument_list`
+    // (subscript form), take the last remaining child.
+    let value_node = declarator.child_by_field_name("value").or_else(|| {
+        let name_id = name_node.map(|n| n.id());
+        // First, look for the modern grammar's flat form: a non-name
+        // named child after the identifier.
+        let mut cursor = declarator.walk();
+        let direct = declarator.named_children(&mut cursor)
+            .filter(|c| {
+                Some(c.id()) != name_id
+                    && c.kind() != "bracketed_argument_list"
+                    && c.kind() != "equals_value_clause"
+            })
+            .last();
+        if direct.is_some() { return direct; }
+        // Fallback: older grammars wrap the value in equals_value_clause.
+        let mut cc = declarator.walk();
+        let eqv = declarator.named_children(&mut cc)
+            .find(|c| c.kind() == "equals_value_clause");
+        eqv.and_then(|e| {
+            let mut ec = e.walk();
+            let r = e.named_children(&mut ec).next();
+            r
+        })
+    });
 
     // Bail out for the cases that would break round-trip identity:
     // 1. Missing `name` field (tuple deconstruction, exotic patterns).

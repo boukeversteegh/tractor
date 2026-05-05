@@ -461,6 +461,46 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::Lambda { modifiers, parameters, body, range, span } => {
+            let node = element(xot, "lambda", *span);
+            xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            // Source-order children: parameters then body. The `=>`
+            // token + parens (when present) live in gap text.
+            let mut order: Vec<&Ir> = Vec::new();
+            for p in parameters { order.push(p); }
+            order.push(body.as_ref());
+            order.sort_by_key(|c| c.range().start);
+
+            let is_block_body = matches!(body.as_ref(), Ir::Body { .. });
+            let mut cursor = range.start;
+            for child in &order {
+                let cr = child.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if std::ptr::eq(*child, body.as_ref()) {
+                    if is_block_body {
+                        // Block-bodied — render as <body> directly.
+                        render_to_xot(xot, node, child, source)?;
+                    } else {
+                        // Expression-bodied — wrap in <value><expression>.
+                        let val = element(xot, "value", child.span());
+                        xot.append(node, val)?;
+                        let expr = element(xot, "expression", child.span());
+                        xot.append(val, expr)?;
+                        render_to_xot(xot, expr, child, source)?;
+                    }
+                } else {
+                    // Parameter — render as-is (Ir::Parameter handles its own wrapping).
+                    render_to_xot(xot, node, child, source)?;
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
         Ir::Break { range, span } => {
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;

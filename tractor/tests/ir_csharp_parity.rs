@@ -147,6 +147,26 @@ fn invariants_null_literal() {
 }
 
 #[test]
+#[ignore]
+fn dump_lambda_cst() {
+    let s = "class C { void M() { System.Func<int,int> f = x => x * 2; } }\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
 fn invariants_blueprint() {
     // The full C# blueprint — proves text-recovery and round-trip
     // hold even on the full kitchen-sink fixture, far before

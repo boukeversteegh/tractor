@@ -362,6 +362,20 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// `<lambda>` — `x => x*x`, `(x, y) => x+y`, `async x => ...`,
+    /// `(x) => { return x; }`. Cross-language: C# lambda, Java
+    /// lambda (`x -> x`), Python `lambda` (which has bare-param
+    /// syntax). `body` is `Ir::Body` for block-bodied lambdas
+    /// (renders `<body>`) or any expression IR for expression-bodied
+    /// (renders `<value><expression>...</expression></value>`).
+    Lambda {
+        modifiers: Modifiers,
+        parameters: Vec<Ir>,
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     // ----- Function & class declarations ----------------------------------
 
     /// `<function>` — `def f(...)` / `async def f(...)`. Decorators
@@ -1042,6 +1056,7 @@ impl Ir {
             | Ir::While { span, .. }
             | Ir::Break { span, .. }
             | Ir::Continue { span, .. }
+            | Ir::Lambda { span, .. }
             | Ir::Function { span, .. }
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
@@ -1111,6 +1126,7 @@ impl Ir {
             | Ir::While { range, .. }
             | Ir::Break { range, .. }
             | Ir::Continue { range, .. }
+            | Ir::Lambda { range, .. }
             | Ir::Function { range, .. }
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }
@@ -1233,6 +1249,10 @@ impl Ir {
             Ir::DoWhile { body, condition, .. } => {
                 v.push(body);
                 v.push(condition);
+            }
+            Ir::Lambda { parameters, body, .. } => {
+                v.extend(parameters.iter());
+                v.push(body);
             }
             Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());
