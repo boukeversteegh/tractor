@@ -49,4 +49,4 @@ pub use render::render_to_xot;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
 #[cfg(feature = "native")]
-pub use csharp::lower_csharp_root;
+pub use csharp::{lower_csharp_root, lower_csharp_node};

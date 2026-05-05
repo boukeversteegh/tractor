@@ -43,10 +43,75 @@ pub fn lower_csharp_root(root: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
+/// Public entry point for lowering an arbitrary C# CST node — useful
+/// for tests that want to lower a single expression without the
+/// surrounding declaration scaffolding (which we haven't yet covered).
+pub fn lower_csharp_node(node: TsNode<'_>, source: &str) -> Ir {
+    lower_node(node, source)
+}
+
 fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
+        // ----- Conditional (`?.`) access -------------------------------
+        //
+        // tree-sitter-c-sharp models `a?.b` as
+        //   conditional_access_expression
+        //     <object-expression>
+        //     member_binding_expression(.b)
+        //       identifier(b)
+        //
+        // Architectural payoff: lower this to the SAME `Ir::Access`
+        // shape as regular `.b`, with `optional: true` on the
+        // segment. No special chain-inversion adapter, no
+        // pre-pass to undo tree-sitter's structure, no
+        // `<member[conditional]>` parent + `<condition>` wrapper —
+        // just one extra marker on a uniform shape.
+        //
+        // This is the concrete answer to backlog 5d (todo/39…md):
+        // the deferred C# design problem (`Root.MaybeProperty?.Property`
+        // not isomorphic to `Root.MaybeProperty.Property`) ceases to
+        // exist in the typed-IR world.
+        "conditional_access_expression" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.len() != 2 {
+                return Ir::Unknown {
+                    kind: "conditional_access_expression(unexpected arity)".to_string(),
+                    range, span,
+                };
+            }
+            let object_node = kids[0];
+            let binding_node = kids[1];
+            let object_ir = lower_node(object_node, source);
+            // Decode the binding into one or more access segments.
+            // For `member_binding_expression(.b)` we get a single
+            // Member segment with optional=true.
+            let mut new_segments = lower_binding_to_segments(binding_node, source, true);
+            // The first new segment's range should cover from end-of-object
+            // through end-of-binding (so gap rendering picks up `?.`).
+            if let Some(first) = new_segments.first_mut() {
+                let new_start = object_ir.range().end;
+                match first {
+                    AccessSegment::Member { range, .. } => *range = ByteRange::new(new_start, range.end),
+                    AccessSegment::Index { range, .. }  => *range = ByteRange::new(new_start, range.end),
+                }
+            }
+            match object_ir {
+                Ir::Access { receiver, mut segments, range: _, span: _ } => {
+                    segments.extend(new_segments);
+                    Ir::Access { receiver, segments, range, span }
+                }
+                other => Ir::Access {
+                    receiver: Box::new(other),
+                    segments: new_segments,
+                    range,
+                    span,
+                },
+            }
+        }
+
         // C#-specific wrappers ------------------------------------------
 
         // `global_statement` wraps top-level statements in C# 9+. Just
@@ -137,6 +202,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     let segment = AccessSegment::Member {
                         property_range,
                         property_span,
+                        optional: false,
                         range: segment_range,
                         span,
                     };
@@ -324,6 +390,145 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             range,
             span,
         },
+    }
+}
+
+/// Decode the right side of a `conditional_access_expression` (the
+/// `member_binding_expression` / `element_binding_expression`) into
+/// access segments. `optional_first` controls whether the first
+/// segment carries `<optional/>` — for `a?.b.c.d`, the binding
+/// expression is `b.c.d` and only the first (`b`) is conditional.
+///
+/// member_binding_expression / element_binding_expression are
+/// tree-sitter's representation of the part *after* `?.` — they
+/// chain together using regular member_access_expression /
+/// element_access_expression for the non-conditional steps.
+fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: bool) -> Vec<AccessSegment> {
+    let span = span_of(node);
+    let range = range_of(node);
+    match node.kind() {
+        "member_binding_expression" => {
+            // Single member segment from this binding.
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(name) => vec![AccessSegment::Member {
+                    property_range: range_of(name),
+                    property_span: span_of(name),
+                    optional: optional_first,
+                    range,
+                    span,
+                }],
+                None => Vec::new(),
+            }
+        }
+        "element_binding_expression" => {
+            // `?[idx]` form. Lower the inner argument list.
+            let arg_list = node.child_by_field_name("subscript_arguments");
+            let indices = match arg_list {
+                Some(a) => {
+                    let mut c = a.walk();
+                    a.named_children(&mut c).map(|n| {
+                        if n.kind() == "argument" {
+                            let mut cc = n.walk();
+                            let inner = n.named_children(&mut cc).next();
+                            inner.map(|i| lower_node(i, source))
+                                .unwrap_or_else(|| Ir::Unknown {
+                                    kind: "argument(empty)".to_string(),
+                                    range: range_of(n),
+                                    span: span_of(n),
+                                })
+                        } else { lower_node(n, source) }
+                    }).collect()
+                }
+                None => Vec::new(),
+            };
+            // Index segment doesn't currently support optional — but
+            // we tag the eventual IR variant with optionality on the
+            // PARENT chain. For this slice we wire it through a
+            // future `optional` field on Index when we add it. For
+            // now, mark Member-style optional only.
+            // TODO: extend AccessSegment::Index with an optional flag.
+            vec![AccessSegment::Index { indices, range, span }]
+        }
+        // Tree-sitter sometimes nests further accesses inside the
+        // binding (e.g. `?.b.c` becomes member_access(member_binding(b), c))
+        // — handled by member_access_expression's own arm. For
+        // unexpected kinds, fall back to a single Unknown-wrapped
+        // segment.
+        "member_access_expression" => {
+            // Recurse: the inner is the member_binding (optional first
+            // segment), and this access adds a non-optional segment.
+            let object_node = node.child_by_field_name("expression");
+            let name_node = node.child_by_field_name("name");
+            let mut segments = match object_node {
+                Some(o) => lower_binding_to_segments(o, source, optional_first),
+                None => Vec::new(),
+            };
+            if let Some(name) = name_node {
+                let property_range = range_of(name);
+                let property_span = span_of(name);
+                let last_end = segments.last().map(|s| match s {
+                    AccessSegment::Member { range, .. } => range.end,
+                    AccessSegment::Index { range, .. }  => range.end,
+                }).unwrap_or(range.start);
+                segments.push(AccessSegment::Member {
+                    property_range,
+                    property_span,
+                    optional: false,  // chained `.x` after `?.` is regular
+                    range: ByteRange::new(last_end, property_range.end),
+                    span: span_of(node),
+                });
+            }
+            segments
+        }
+        "element_access_expression" => {
+            let object_node = node.child_by_field_name("expression");
+            let subscript_node = node.child_by_field_name("subscript_arguments");
+            let mut segments = match object_node {
+                Some(o) => lower_binding_to_segments(o, source, optional_first),
+                None => Vec::new(),
+            };
+            let indices = match subscript_node {
+                Some(s) => {
+                    let mut c = s.walk();
+                    s.named_children(&mut c).map(|n| {
+                        if n.kind() == "argument" {
+                            let mut cc = n.walk();
+                            let inner = n.named_children(&mut cc).next();
+                            inner.map(|i| lower_node(i, source))
+                                .unwrap_or_else(|| Ir::Unknown {
+                                    kind: "argument(empty)".to_string(),
+                                    range: range_of(n),
+                                    span: span_of(n),
+                                })
+                        } else { lower_node(n, source) }
+                    }).collect()
+                }
+                None => Vec::new(),
+            };
+            let last_end = segments.last().map(|s| match s {
+                AccessSegment::Member { range, .. } => range.end,
+                AccessSegment::Index { range, .. }  => range.end,
+            }).unwrap_or(range.start);
+            segments.push(AccessSegment::Index {
+                indices,
+                range: ByteRange::new(last_end, range.end),
+                span: span_of(node),
+            });
+            segments
+        }
+        _ => {
+            // Unhandled binding kind — preserve as a Member with the
+            // whole node as the property (lossy but at least visible).
+            vec![AccessSegment::Member {
+                property_range: range,
+                property_span: span,
+                optional: optional_first,
+                range,
+                span,
+            }]
+        }
     }
 }
 

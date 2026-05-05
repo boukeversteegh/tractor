@@ -831,10 +831,18 @@ fn render_segments_chain(
     emit_gap(xot, host, source, *cursor, seg_range.start)?;
 
     let segment_node = match first {
-        AccessSegment::Member { property_range, property_span, range: _, span } => {
+        AccessSegment::Member { property_range, property_span, optional, range: _, span } => {
             let node = element(xot, "member", *span);
             xot.append(host, node)?;
-            // Internal gap from segment-start to property-name (the `.`).
+            // <optional/> empty marker — first child if conditional
+            // (`?.`). No text contribution; XPath text-recovery
+            // unaffected.
+            if *optional {
+                let m = element(xot, "optional", *span);
+                xot.append(node, m)?;
+            }
+            // Internal gap from segment-start to property-name (the `.`
+            // or `?.`).
             emit_gap(xot, node, source, seg_range.start, property_range.start)?;
             // Property name leaf.
             leaf(xot, node, "name", source, *property_range, *property_span)?;

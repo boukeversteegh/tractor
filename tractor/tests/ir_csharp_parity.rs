@@ -236,6 +236,113 @@ fn expression_index()     { assert_expression_parity("a[0]", "index"); }
 #[test]
 fn expression_call()      { assert_expression_parity("f(x)", "call"); }
 
+// ---------------------------------------------------------------------------
+// Whack-a-mole construct: `?.` conditional access.
+//
+// This is backlog item 5d in `todo/39-post-cycle-review-backlog.md`:
+// the existing C# pipeline emits a NON-ISOMORPHIC shape for `a.b` vs
+// `a?.b` (`<member[conditional]>` parent + `<condition>` wrapper),
+// and the design problem was deferred.
+//
+// In the typed-IR world, conditional access is just a
+// `optional: true` flag on an `AccessSegment::Member` — same shape
+// as regular access, plus an `<optional/>` marker. Principle #15
+// is satisfied by construction.
+// ---------------------------------------------------------------------------
+
+/// Verify that `a.b` and `a?.b` produce structurally identical IR
+/// trees except for the presence/absence of `<optional/>`.
+#[test]
+fn conditional_access_isomorphism() {
+    let s_regular     = "class C { void M() { var x = a.b; } }\n";
+    let s_conditional = "class C { void M() { var x = a?.b; } }\n";
+
+    // Both must satisfy the architectural invariants.
+    assert_ir_invariants(s_regular,     "regular member");
+    assert_ir_invariants(s_conditional, "conditional member");
+
+    // Lower JUST the access expression. Find the
+    // member_access/conditional_access CST node and call
+    // lower_csharp_node on it — bypassing the class/method scaffold.
+    fn ir_access_view(source: &str) -> String {
+        let mut p = tree_sitter::Parser::new();
+        p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+        let tree = p.parse(source, None).unwrap();
+        fn find<'t>(node: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+            if matches!(node.kind(), "member_access_expression" | "conditional_access_expression") {
+                return Some(node);
+            }
+            let mut c = node.walk();
+            for child in node.named_children(&mut c) {
+                if let Some(f) = find(child) { return Some(f); }
+            }
+            None
+        }
+        let target = find(tree.root_node()).expect("access expression");
+        let access = tractor::ir::lower_csharp_node(target, source);
+        let mut xot = Xot::new();
+        let dr_name = xot.add_name("_root");
+        let dr = xot.new_element(dr_name);
+        render_to_xot(&mut xot, dr, &access, source).expect("render");
+        let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+        structural_view(&xot, root)
+    }
+
+    let v_regular     = ir_access_view(s_regular);
+    let v_conditional = ir_access_view(s_conditional);
+
+    eprintln!("--- regular `a.b` ---\n{v_regular}");
+    eprintln!("--- conditional `a?.b` ---\n{v_conditional}");
+
+    // Same shape modulo the <optional/> marker. This is the
+    // Principle #15 contract: `a.b` and `a?.b` differ only by a
+    // marker on a stable host.
+    assert!(v_regular.contains("object"),  "regular should produce <object>");
+    assert!(v_conditional.contains("object"), "conditional should produce <object>");
+    assert!(v_regular.contains("member"),  "regular should produce <member>");
+    assert!(v_conditional.contains("member"), "conditional should produce <member>");
+    assert!(!v_regular.contains("optional"), "regular must NOT have <optional> marker");
+    assert!(v_conditional.contains("optional"), "conditional MUST have <optional> marker");
+    // The only structural difference should be the optional marker.
+    let v_regular_normalized     = v_regular.lines().filter(|l| !l.trim().starts_with("optional")).collect::<Vec<_>>().join("\n");
+    let v_conditional_normalized = v_conditional.lines().filter(|l| !l.trim().starts_with("optional")).collect::<Vec<_>>().join("\n");
+    assert_eq!(v_regular_normalized, v_conditional_normalized,
+        "conditional and regular access should differ ONLY by the <optional/> marker");
+}
+
+/// Mixed chain: only the `?.b` segment is conditional in `a?.b.c`.
+/// Mid-chain conditional in `a.b?.c`. Both-conditional `a?.b?.c`.
+#[test]
+fn conditional_access_chains() {
+    for (src, desc) in &[
+        ("class C { void M() { var x = a?.b.c; } }\n", "a?.b.c — first segment conditional"),
+        ("class C { void M() { var x = a.b?.c; } }\n", "a.b?.c — last segment conditional"),
+        ("class C { void M() { var x = a?.b?.c; } }\n", "a?.b?.c — both conditional"),
+    ] {
+        assert_ir_invariants(src, desc);
+    }
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_conditional() {
+    let source = "class C { void M() { var x = a?.b.c; var y = a.b?.c; var z = a?.b?.c; } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(source, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let display = if text.len() > 60 { format!("{}...", &text[..60]) } else { text.to_string() };
+        eprintln!("{indent}{} text={display:?}", node.kind());
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, source.as_bytes());
+}
+
 /// Dump the C# CST shape of a small snippet.
 #[test]
 #[ignore]

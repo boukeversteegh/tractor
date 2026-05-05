@@ -119,6 +119,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     let segment = AccessSegment::Member {
                         property_range,
                         property_span,
+                        optional: false,  // Python has no `?.`
                         range: segment_range,
                         span,
                     };

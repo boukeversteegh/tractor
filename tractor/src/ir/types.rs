@@ -602,9 +602,19 @@ pub enum ParamKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccessSegment {
     /// `.property` — emits `<member>{gap}<name>property</name>...</member>`.
+    /// `optional: true` adds an `<optional/>` empty marker first child
+    /// (visible in tree-text as `<member[optional]>`), modelling
+    /// null-conditional access (`?.`) in C# / TS / Ruby etc.
+    /// **Architectural note:** with this flag, conditional and regular
+    /// member access produce the *same shape* differing only by the
+    /// marker — exactly Principle #15. The existing C# pipeline has a
+    /// deferred design problem here (`<member[conditional]>` parent +
+    /// `<condition>` wrapper, see `todo/39-…md` lesson 5d); the
+    /// typed-IR architecture sidesteps it by construction.
     Member {
         property_range: ByteRange,
         property_span: Span,
+        optional: bool,
         range: ByteRange,
         span: Span,
     },
