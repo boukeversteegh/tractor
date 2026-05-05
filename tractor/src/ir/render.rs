@@ -541,7 +541,19 @@ pub fn render_to_xot(
             xot.append(parent, node)?;
             let ir = inner.range();
             emit_gap(xot, node, source, range.start, ir.start)?;
-            render_to_xot(xot, node, inner, source)?;
+            // Slot wrappers for value-producing positions (Principle #15).
+            // `<value>` always contains an `<expression>` host so XPath
+            // queries like `//value/expression/...` work uniformly.
+            let target = if matches!(*wrapper, "value" | "condition")
+                && !matches!(inner.as_ref(), Ir::Expression { .. })
+            {
+                let expr = element(xot, "expression", *span);
+                xot.append(node, expr)?;
+                expr
+            } else {
+                node
+            };
+            render_to_xot(xot, target, inner, source)?;
             emit_gap(xot, node, source, ir.end, range.end)?;
             Ok(node)
         }

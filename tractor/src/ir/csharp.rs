@@ -834,7 +834,41 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "with_expression"               => simple_statement(node, "with",       source),
         "range_expression"              => simple_statement(node, "range",      source),
         "tuple_expression"              => simple_statement(node, "tuple",      source),
-        "from_clause"                   => simple_statement_marked(node, "from", &["in"], source),
+        // `from n in numbers` — first identifier is the loop variable
+        // (rendered as <name>); the source expression is wrapped in
+        // <value><expression>...</expression></value>. Plus a
+        // synthetic `<in/>` marker for the `in` keyword.
+        "from_clause" => {
+            let mut c = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut c).collect();
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(name) = kids.first() {
+                let nr = range_of(*name);
+                let ns = span_of(*name);
+                children.push(Ir::FieldWrap {
+                    wrapper: "name",
+                    inner: Box::new(Ir::Name { range: nr, span: ns }),
+                    range: nr, span: ns,
+                });
+            }
+            if kids.len() > 1 {
+                let value = kids[kids.len() - 1];
+                let vr = range_of(value);
+                let vs = span_of(value);
+                children.push(Ir::FieldWrap {
+                    wrapper: "value",
+                    inner: Box::new(lower_node(value, source)),
+                    range: vr, span: vs,
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "from",
+                modifiers: Modifiers::default(),
+                extra_markers: &["in"],
+                children,
+                range, span,
+            }
+        }
         "where_clause"                  => simple_statement(node, "where",      source),
         "select_clause"                 => simple_statement(node, "select",     source),
         "order_by_clause"               => simple_statement(node, "order",      source),
@@ -892,8 +926,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
             s
         }
-        "array_type"                    => simple_statement(node, "type",       source),
-        "tuple_type"                    => simple_statement(node, "type",       source),
+        "tuple_type"                    => simple_statement_marked(node, "type", &["tuple"], source),
+        "array_type"                    => simple_statement_marked(node, "type", &["array"], source),
         "nullable_type"                 => simple_statement_marked(node, "type", &["nullable"], source),
         "ref_type"                      => simple_statement_marked(node, "type", &["ref"], source),
         "scoped_type"                   => simple_statement_marked(node, "type", &["scoped"], source),
