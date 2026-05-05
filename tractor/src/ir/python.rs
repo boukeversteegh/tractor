@@ -275,7 +275,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // pipeline names them after their literal kind.
         "list_comprehension"        => simple_statement(node, "list",      source),
         "set_comprehension"         => simple_statement(node, "set",       source),
-        "dictionary_comprehension"  => simple_statement(node, "dictionary",source),
+        "dictionary_comprehension"  => simple_statement(node, "dict",      source),
         "generator_expression"      => simple_statement(node, "generator", source),
         "for_in_clause"             => simple_statement(node, "for",       source),
         "if_clause"                 => simple_statement(node, "if",        source),

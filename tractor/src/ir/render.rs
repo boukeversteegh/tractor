@@ -135,7 +135,11 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::Dictionary { pairs, range, span } => {
-            let node = element(xot, "dictionary", *span);
+            // Python's vocabulary uses short `dict` (TractorNode::Dict).
+            // The IR variant is `Ir::Dictionary` for clarity in code,
+            // but the wire name matches the imperative pipeline's
+            // `Rename(Dict)` on `dictionary` CST kind.
+            let node = element(xot, "dict", *span);
             xot.append(parent, node)?;
             let m = element(xot, "literal", *span);
             xot.append(node, m)?;
@@ -711,7 +715,13 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::ListSplat { inner, range, span } => {
-            let node = element(xot, "splat", *span);
+            // `<spread>` container with a `<list/>` discriminator
+            // marker — matches the imperative pipeline's
+            // `RenameWithMarker(Spread, List)` shape on `list_splat`.
+            // (`<splat/>` is reserved as a MarkerOnly name in some
+            // language vocabularies, so an element-named `<splat>`
+            // would trip `marker-only-no-element-children`.)
+            let node = element(xot, "spread", *span);
             xot.append(parent, node)?;
             let m = element(xot, "list", *span);
             xot.append(node, m)?;
@@ -722,7 +732,7 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::DictSplat { inner, range, span } => {
-            let node = element(xot, "splat", *span);
+            let node = element(xot, "spread", *span);
             xot.append(parent, node)?;
             let m = element(xot, "dict", *span);
             xot.append(node, m)?;
