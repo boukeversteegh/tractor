@@ -324,13 +324,57 @@ public static class Extras
     // Function pointer type + parameter.
     public static unsafe void FnPtr(delegate*<int, void> fn, int x) { fn(x); }
 
-    // Stackalloc.
+    // Stackalloc + implicit stackalloc.
     public static unsafe void Alloc()
     {
         int* buf = stackalloc int[3];
         Span<int> span = stackalloc int[3] { 1, 2, 3 };
+        Span<int> auto = stackalloc[] { 1, 2, 3 };
     }
+
+    // Anonymous method expression (older closure form).
+    public static Func<int, int> AnonMethod() => delegate(int x) { return x + 1; };
+
+    // Simple is-expression (type test, no pattern binding).
+    public static bool IsInt(object o) => o is int;
+
+    // Element access (indexer/array).
+    public static int ElementAt(int[] xs, int i) => xs[i];
+
+    // String escape sequences.
+    public static string Esc() => "newline\\nquote\\\"backslash\\\\";
+
+    // Unsafe block + ref expression.
+    public static unsafe void RefExample()
+    {
+        int x = 0;
+        ref int r = ref x;
+        r = 5;
+    }
+
+    // Scoped type (C# 11) and ref type in parameters.
+    public static void Scoped(scoped System.Span<int> data, ref int target) { target = data[0]; }
+
+    // Var pattern + parenthesized pattern.
+    public static string VarPat(object o) => o switch
+    {
+        var x when x is string => "string",
+        (1) => "one",
+        _ => "?",
+    };
+
+    // Explicit interface implementation.
+    public string IFormat() => "default";
 }
+
+interface IFormatProvider2 { string IFormat(); }
+public class Wrap : IFormatProvider2
+{
+    string IFormatProvider2.IFormat() => "explicit";
+}
+
+// Extern alias directive (declaration only — must be first in real code).
+extern alias FooAlias;
 
 // Record declaration with positional parameters + with-expression.
 public record Point(int X, int Y);
