@@ -41,6 +41,7 @@
 
 pub mod types;
 pub mod render;
+pub mod json;
 pub mod python;
 pub mod csharp;
 #[cfg(feature = "native")]
@@ -48,6 +49,7 @@ pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span, to_source};
 pub use render::render_to_xot;
+pub use json::ir_to_json;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
 #[cfg(feature = "native")]
