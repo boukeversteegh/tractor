@@ -486,6 +486,52 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `block` (method body, free-standing block in C#).
         "block" => lower_block_like(node, source),
 
+        // ----- Control flow ---------------------------------------------
+        //
+        // C# allows non-block bodies (`if (c) stmt;`, `while (c) stmt;`).
+        // Wrap single statements in a synthetic `Ir::Body` so the
+        // shared rendering arms (which expect Body) work uniformly.
+        "if_statement" => {
+            let cond = node.child_by_field_name("condition")
+                .map(|n| Box::new(lower_node(n, source)));
+            let body = node.child_by_field_name("consequence")
+                .map(|n| Box::new(lower_csharp_consequence(n, source)));
+            // The `else` part is exposed either as a child kind
+            // `else_clause` (older grammars) or via a labelled field
+            // in newer ones. Try both.
+            let else_node = node.child_by_field_name("alternative").or_else(|| {
+                let mut c = node.walk();
+                let r = node.named_children(&mut c).find(|c| c.kind() == "else_clause");
+                r
+            });
+            let else_branch = else_node.map(|a| Box::new(lower_csharp_else_chain(a, source)));
+            match (cond, body) {
+                (Some(c), Some(b)) => Ir::If {
+                    condition: c,
+                    body: b,
+                    else_branch,
+                    range, span,
+                },
+                _ => Ir::Unknown { kind: "if_statement(missing field)".to_string(), range, span },
+            }
+        }
+
+        "while_statement" => {
+            let cond = node.child_by_field_name("condition")
+                .map(|n| Box::new(lower_node(n, source)));
+            let body = node.child_by_field_name("body")
+                .map(|n| Box::new(lower_csharp_consequence(n, source)));
+            match (cond, body) {
+                (Some(c), Some(b)) => Ir::While {
+                    condition: c, body: b, else_body: None, range, span,
+                },
+                _ => Ir::Unknown { kind: "while_statement(missing field)".to_string(), range, span },
+            }
+        }
+
+        "break_statement" => Ir::Break { range, span },
+        "continue_statement" => Ir::Continue { range, span },
+
         // `var x = expr;` / `int x = expr;` / `int x;` —
         // local_declaration_statement contains a variable_declaration
         // which contains type + variable_declarator. Each
@@ -1052,6 +1098,68 @@ fn lower_accessor_declaration(node: TsNode<'_>, source: &str) -> Ir {
         });
     let body = body_node.map(|b| Box::new(lower_node(b, source)));
     Ir::Accessor { modifiers, kind, body, range, span }
+}
+
+/// Lower a control-flow consequence (the body of `if`/`while`/`for`/
+/// `foreach`/`do`). C# allows either a `block` or a single statement.
+/// For the single-statement form we wrap it in a synthetic `Ir::Body`
+/// covering exactly the statement's range, so all renderer arms can
+/// expect `Body`.
+fn lower_csharp_consequence(node: TsNode<'_>, source: &str) -> Ir {
+    if node.kind() == "block" {
+        lower_block_like(node, source)
+    } else {
+        let r = range_of(node);
+        let s = span_of(node);
+        Ir::Body {
+            children: vec![lower_node(node, source)],
+            pass_only: false,
+            range: r,
+            span: s,
+        }
+    }
+}
+
+/// Lower a C# `else_clause` to `Ir::ElseIf` (when its inner is an
+/// `if_statement`) or `Ir::Else` otherwise. tree-sitter exposes
+/// `else_clause` as a child of `if_statement` whose first named child
+/// is the inner statement (block / if_statement / single statement).
+fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    if node.kind() != "else_clause" {
+        // Defensive: caller passed something unexpected.
+        return Ir::Unknown { kind: format!("else_chain({})", node.kind()), range, span };
+    }
+    let mut cursor = node.walk();
+    let inner = node.named_children(&mut cursor).next();
+    let Some(inner) = inner else {
+        return Ir::Unknown { kind: "else_clause(empty)".to_string(), range, span };
+    };
+    if inner.kind() == "if_statement" {
+        // `else if` — emit Ir::ElseIf using the inner if's parts.
+        let cond = inner.child_by_field_name("condition")
+            .map(|n| Box::new(lower_node(n, source)));
+        let body = inner.child_by_field_name("consequence")
+            .map(|n| Box::new(lower_csharp_consequence(n, source)));
+        let else_node = inner.child_by_field_name("alternative").or_else(|| {
+            let mut c = inner.walk();
+            let r = inner.named_children(&mut c).find(|c| c.kind() == "else_clause");
+            r
+        });
+        let else_branch = else_node.map(|a| Box::new(lower_csharp_else_chain(a, source)));
+        match (cond, body) {
+            (Some(c), Some(b)) => Ir::ElseIf {
+                condition: c, body: b, else_branch, range, span,
+            },
+            _ => Ir::Unknown { kind: "else_if(missing)".to_string(), range, span },
+        }
+    } else {
+        Ir::Else {
+            body: Box::new(lower_csharp_consequence(inner, source)),
+            range, span,
+        }
+    }
 }
 
 /// Lower a `block` or `declaration_list` into `Ir::Body`.
