@@ -363,6 +363,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             match inner {
                 Some(i) => Ir::Inline {
                     children: vec![lower_node(i, source)],
+                    list_name: None,
                     range, span,
                 },
                 None => Ir::Unknown {

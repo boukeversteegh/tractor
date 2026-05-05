@@ -904,8 +904,15 @@ pub enum Ir {
     /// **Not** a stash variant. Lowering must *deliberately* choose
     /// `Inline` — the children list is the lowering's decision about
     /// what to keep.
+    ///
+    /// `list_name` mirrors the imperative pipeline's
+    /// `Flatten { distribute_list: Some("X") }` rule — when present,
+    /// each rendered child element gets a `list="X"` attribute, so
+    /// JSON projection collects them under a plural key (e.g.
+    /// `attributes: [...]`) instead of colliding on a singleton.
     Inline {
         children: Vec<Ir>,
+        list_name: Option<&'static str>,
         range: ByteRange,
         span: Span,
     },

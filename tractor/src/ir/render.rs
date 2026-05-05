@@ -1449,13 +1449,28 @@ pub fn render_to_xot(
             Ok(node)
         }
 
-        Ir::Inline { children, range, span: _ } => {
+        Ir::Inline { children, list_name, range, span: _ } => {
             // Inline contributes no element of its own. Children render
             // at the parent level; gap text from the inline's range
-            // wraps them.
+            // wraps them. When `list_name` is set, every direct
+            // element child gets a `list="X"` attribute — matches the
+            // imperative pipeline's `distribute_list` post-pass and
+            // enables plural-key JSON projection.
+            let before: Vec<XotNode> = xot.children(parent).collect();
             render_with_gaps(xot, parent, source, *range, children, |xot, parent, child| {
                 render_to_xot(xot, parent, child, source).map(|_| ())
             })?;
+            if let Some(list) = list_name {
+                let list_attr = xot.add_name("list");
+                let new_children: Vec<XotNode> = xot.children(parent)
+                    .filter(|c| !before.contains(c))
+                    .collect();
+                for c in new_children {
+                    if xot.element(c).is_some() {
+                        xot.attributes_mut(c).insert(list_attr, list.to_string());
+                    }
+                }
+            }
             Ok(parent)
         }
         Ir::Unknown { kind, range, span } => {

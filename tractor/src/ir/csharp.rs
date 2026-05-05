@@ -882,7 +882,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // Flatten-only kinds — render as Inline so children promote
-        // to the parent's element.
+        // to the parent's element. `list_name` mirrors the imperative
+        // pipeline's `Flatten { distribute_list: Some("X") }` rule
+        // — same-named children get a `list="X"` attribute so JSON
+        // projection collects them under a plural key.
         "switch_body"
         | "bracketed_parameter_list"
         | "array_rank_specifier"
@@ -922,11 +925,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "preproc_arg"
         | "attribute_list"
         | "global_attribute" => {
+            let list_name: Option<&'static str> = match node.kind() {
+                "accessor_list"                                  => Some("accessors"),
+                "argument_list" | "attribute_argument_list"
+                | "type_argument_list"                           => Some("arguments"),
+                "attribute_list"                                 => Some("attributes"),
+                "bracketed_parameter_list" | "parameter_list"    => Some("parameters"),
+                "type_parameter_list"                            => Some("generics"),
+                _                                                => None,
+            };
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Inline { children, range, span }
+            Ir::Inline { children, list_name, range, span }
         }
         // Parenthesized expression: parens become gap text on parent.
         "parenthesized_expression" => {
@@ -935,6 +947,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             match inner {
                 Some(i) => Ir::Inline {
                     children: vec![lower_node(i, source)],
+                    list_name: None,
                     range, span,
                 },
                 None => Ir::Unknown {
@@ -1023,10 +1036,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = a.walk();
                                 let inner = a.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Inline {
-                                        children: Vec::new(),
-                                        range: range_of(a), span: span_of(a),
-                                    })
+                                    .unwrap_or_else(|| Ir::Inline { children: Vec::new(), list_name: None, range: range_of(a), span: span_of(a) })
                             } else {
                                 lower_node(a, source)
                             }
@@ -1042,6 +1052,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                             .collect();
                         initializer = Some(Box::new(Ir::Inline {
                             children: inner,
+                            list_name: None,
                             range: range_of(c),
                             span: span_of(c),
                         }));
@@ -1132,7 +1143,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let inner = node.named_children(&mut c).next();
             match inner {
                 Some(i) => lower_node(i, source),
-                None => Ir::Inline { children: Vec::new(), range, span },
+                None => Ir::Inline { children: Vec::new(), list_name: None, range, span },
             }
         }
         "arrow_expression_clause" => {
@@ -1174,15 +1185,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let children: Vec<Ir> = node.named_children(&mut c)
                 .map(|n| lower_node(n, source))
                 .collect();
-            Ir::Inline { children, range, span }
+            Ir::Inline { children, list_name: None, range, span }
         }
         "accessor_list" => {
-            // `{ get; set; }` — flatten accessors.
+            // `{ get; set; }` — flatten accessors with list tagging.
             let mut c = node.walk();
             let children: Vec<Ir> = node.named_children(&mut c)
                 .map(|n| lower_node(n, source))
                 .collect();
-            Ir::Inline { children, range, span }
+            Ir::Inline { children, list_name: Some("accessors"), range, span }
         }
         "accessor_declaration" => lower_accessor_declaration(node, source),
         "this" | "this_expression" | "base" | "base_expression" => {
@@ -1211,7 +1222,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         range_of(d), span_of(d), element_name, modifiers,
                     )
                 }).collect();
-                Ir::Inline { children, range, span }
+                Ir::Inline { children, list_name: None, range, span }
             } else {
                 Ir::Unknown { kind: "variable_declaration(no declarators)".to_string(), range, span }
             }
@@ -1255,7 +1266,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 element_name, modifiers,
                             )
                         }).collect();
-                        Ir::Inline { children, range, span }
+                        Ir::Inline { children, list_name: None, range, span }
                     }
                 }
                 None => Ir::Unknown {
@@ -1332,7 +1343,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             if children.len() == 1 {
                 children.into_iter().next().unwrap()
             } else {
-                Ir::Inline { children, range, span }
+                Ir::Inline { children, list_name: None, range, span }
             }
         }
 
@@ -1419,11 +1430,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = n.walk();
                                 let inner = n.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Inline {
-                                        children: Vec::new(),
-                                        range: range_of(n),
-                                        span: span_of(n),
-                                    })
+                                    .unwrap_or_else(|| Ir::Inline { children: Vec::new(), list_name: None, range: range_of(n), span: span_of(n) })
                             } else {
                                 lower_node(n, source)
                             }
@@ -1493,11 +1500,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = c.walk();
                                 let inner = c.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Inline {
-                                        children: Vec::new(),
-                                        range: range_of(c),
-                                        span: span_of(c),
-                                    })
+                                    .unwrap_or_else(|| Ir::Inline { children: Vec::new(), list_name: None, range: range_of(c), span: span_of(c) })
                             } else {
                                 lower_node(c, source)
                             }
@@ -2191,11 +2194,11 @@ fn lower_variable_declarator(
     // a synthetic `<unknown>` element. The deconstructed variables
     // surface as bare names through gap text + child traversal.
     let Some(n) = name_node else {
-        return Ir::Inline { children: Vec::new(), range, span };
+        return Ir::Inline { children: Vec::new(), list_name: None, range, span };
     };
     if let Some(t) = type_node {
         if n.byte_range().start < t.byte_range().end {
-            return Ir::Inline { children: Vec::new(), range, span };
+            return Ir::Inline { children: Vec::new(), list_name: None, range, span };
         }
     }
 
@@ -2253,11 +2256,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                             let mut cc = n.walk();
                             let inner = n.named_children(&mut cc).next();
                             inner.map(|i| lower_node(i, source))
-                                .unwrap_or_else(|| Ir::Inline {
-                                    children: Vec::new(),
-                                    range: range_of(n),
-                                    span: span_of(n),
-                                })
+                                .unwrap_or_else(|| Ir::Inline { children: Vec::new(), list_name: None, range: range_of(n), span: span_of(n) })
                         } else { lower_node(n, source) }
                     }).collect()
                 }
@@ -2318,11 +2317,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                             let mut cc = n.walk();
                             let inner = n.named_children(&mut cc).next();
                             inner.map(|i| lower_node(i, source))
-                                .unwrap_or_else(|| Ir::Inline {
-                                    children: Vec::new(),
-                                    range: range_of(n),
-                                    span: span_of(n),
-                                })
+                                .unwrap_or_else(|| Ir::Inline { children: Vec::new(), list_name: None, range: range_of(n), span: span_of(n) })
                         } else { lower_node(n, source) }
                     }).collect()
                 }
