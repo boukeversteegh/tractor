@@ -1283,7 +1283,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
         match c.kind() {
             "identifier" => {
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Regular,
+                    kind: ParamKind::Regular, extra_markers: &[],
                     name: Box::new(Ir::Name { range, span }),
                     type_ann: None,
                     default: None,
@@ -1295,7 +1295,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 let n = c.child_by_field_name("name");
                 let v = c.child_by_field_name("value");
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Regular,
+                    kind: ParamKind::Regular, extra_markers: &[],
                     name: Box::new(match n {
                         Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                         None => Ir::Unknown { kind: "default_parameter(no name)".to_string(), range, span },
@@ -1314,7 +1314,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 }
                 let type_n = c.child_by_field_name("type");
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Regular,
+                    kind: ParamKind::Regular, extra_markers: &[],
                     name: Box::new(match name_n {
                         Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                         None => Ir::Unknown { kind: "typed_parameter(no name)".to_string(), range, span },
@@ -1330,7 +1330,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 let t = c.child_by_field_name("type");
                 let v = c.child_by_field_name("value");
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Regular,
+                    kind: ParamKind::Regular, extra_markers: &[],
                     name: Box::new(match n {
                         Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                         None => Ir::Unknown { kind: "typed_default_parameter(no name)".to_string(), range, span },
@@ -1350,7 +1350,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                     None => Ir::Unknown { kind: "list_splat(no name)".to_string(), range, span },
                 };
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Args,
+                    kind: ParamKind::Args, extra_markers: &[],
                     name: Box::new(name),
                     type_ann: None,
                     default: None,
@@ -1367,7 +1367,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                     None => Ir::Unknown { kind: "dict_splat(no name)".to_string(), range, span },
                 };
                 out.push(Ir::Parameter {
-                    kind: ParamKind::Kwargs,
+                    kind: ParamKind::Kwargs, extra_markers: &[],
                     name: Box::new(name),
                     type_ann: None,
                     default: None,

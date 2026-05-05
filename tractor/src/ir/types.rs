@@ -575,8 +575,11 @@ pub enum Ir {
     /// `<parameter>` — one parameter in a function signature.
     /// `kind` controls the marker: `Regular` has none,
     /// `Args` adds `<args/>`, `Kwargs` adds `<kwargs/>`.
+    /// `extra_markers` carries C#-style parameter modifiers
+    /// (`<ref/>`, `<out/>`, `<in/>`, `<params/>`, `<this/>`).
     Parameter {
         kind: ParamKind,
+        extra_markers: &'static [&'static str],
         name: Box<Ir>,                  // Ir::Name
         type_ann: Option<Box<Ir>>,      // <type>...</type>
         default: Option<Box<Ir>>,       // <value><expression>...</expression></value>

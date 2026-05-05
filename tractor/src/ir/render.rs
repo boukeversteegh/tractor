@@ -357,6 +357,9 @@ pub fn render_to_xot(
         Ir::Foreach { type_ann, target, iterable, body, range, span } => {
             let node = element(xot, "foreach", *span);
             xot.append(parent, node)?;
+            // `<in/>` marker for the `in` keyword in `foreach (T x in coll)`.
+            let in_marker = element(xot, "in", *span);
+            xot.append(node, in_marker)?;
             // Source-order children: type? target iterable body. The
             // header `(... in ...)` punctuation lives in gap text.
             // type → <type>, target → <left><expression>,
@@ -458,11 +461,13 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::FieldWrap { wrapper, inner, range, span } => {
-            // When the wrapper is `name` and the inner is itself a
-            // bare identifier (Ir::Name), collapse to a single
-            // `<name>X</name>` rather than `<name><name>X</name></name>`.
-            // Mirrors the imperative pipeline's `name_wrapper` pass.
-            if *wrapper == "name" && matches!(inner.as_ref(), Ir::Name { .. }) {
+            // When the wrapper is `name`, collapse the inner to a flat
+            // text leaf — `<name>` is text-only by contract. Works for
+            // bare identifiers (Ir::Name), dotted paths (Ir::Path),
+            // generic types (Ir::GenericType), and any other inner: we
+            // emit the full source slice as the text content.
+            // Mirrors the imperative pipeline's `name_wrapper`.
+            if *wrapper == "name" {
                 let node = element(xot, "name", *span);
                 xot.append(parent, node)?;
                 let text = inner.range().slice(source);
@@ -853,7 +858,7 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Parameter { kind, name, type_ann, default, range, span } => {
+        Ir::Parameter { kind, extra_markers, name, type_ann, default, range, span } => {
             let node = element(xot, "parameter", *span);
             xot.append(parent, node)?;
             // Marker for *args / **kwargs — first child, empty.
@@ -867,6 +872,10 @@ pub fn render_to_xot(
                     xot.append(node, m)?;
                 }
                 ParamKind::Regular => {}
+            }
+            for marker in *extra_markers {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
             }
             // Source-ordered children: type / name / default. Python
             // and C# put these in different orders (`x: int = 5` vs

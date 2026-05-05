@@ -79,6 +79,8 @@ pub enum TractorNode {
     Public, Private, Protected, Internal,
     // Other modifiers (markers only); CONST is dual-use container/marker.
     Static, Abstract, Virtual, Override, Sealed, Readonly, Const, Partial, Async, Extern, Unsafe, This,
+    // Parameter passing modifiers (markers only) — `void f(out int x)` etc.
+    Out, In, Params, Scoped,
     // Accessor declarations
     Get, Set, Init, Add, Remove,
     // Generic-constraint markers
@@ -123,6 +125,7 @@ impl TractorNode {
             | Self::And | Self::Or | Self::Negated | Self::List | Self::Var
             | Self::Anonymous | Self::Stackalloc | Self::File
             | Self::Base | Self::Underlying
+            | Self::Out | Self::In | Self::Params | Self::Scoped
             | Self::Access                                                      => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------

@@ -126,8 +126,39 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let default_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "equals_value_clause");
+            // Pick up parameter modifiers (`ref`/`out`/`in`/`params`/`this`)
+            // from any `modifier` child. Each becomes an empty marker
+            // sibling on the rendered `<parameter>`.
+            let mut mc = node.walk();
+            let extra_markers: &'static [&'static str] = {
+                let mut found: Vec<&'static str> = Vec::new();
+                for c in node.named_children(&mut mc) {
+                    if c.kind() == "modifier" {
+                        if let Ok(t) = c.utf8_text(source.as_bytes()) {
+                            match t {
+                                "ref"    => found.push("ref"),
+                                "out"    => found.push("out"),
+                                "in"     => found.push("in"),
+                                "params" => found.push("params"),
+                                "this"   => found.push("this"),
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                match found.as_slice() {
+                    []          => &[],
+                    ["ref"]     => &["ref"],
+                    ["out"]     => &["out"],
+                    ["in"]      => &["in"],
+                    ["params"]  => &["params"],
+                    ["this"]    => &["this"],
+                    _           => &[],
+                }
+            };
             Ir::Parameter {
                 kind: ParamKind::Regular,
+                extra_markers,
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
@@ -689,7 +720,29 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "event_field_declaration"       => simple_statement(node, "event",      source),
         "event_declaration"             => simple_statement(node, "event",      source),
         "conversion_operator_declaration" => simple_statement(node, "operator", source),
-        "file_scoped_namespace_declaration" => simple_statement(node, "namespace", source),
+        // `namespace Foo.Bar;` (file-scoped) — same as block-scoped:
+        // collapse the qualified name to a flat `<name>` leaf.
+        "file_scoped_namespace_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let mut cursor = node.walk();
+            // The "body" of file-scoped namespace is the rest of the
+            // file's declarations after the `;` — children of the
+            // file_scoped_namespace_declaration node itself.
+            let children: Vec<Ir> = node.named_children(&mut cursor)
+                .filter(|c| !matches!(c.kind(), "qualified_name" | "identifier" | "modifier"))
+                .filter(|c| Some(c.id()) != name_node.map(|n| n.id()))
+                .map(|c| lower_node(c, source))
+                .collect();
+            let name_ir = match name_node {
+                Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                None => Ir::Unknown { kind: "file_scoped_namespace(missing name)".to_string(), range, span },
+            };
+            Ir::Namespace {
+                name: Box::new(name_ir),
+                children: merge_adjacent_line_comments(children, source),
+                range, span,
+            }
+        }
         "operator_declaration"          => simple_statement(node, "operator",   source),
         "fixed_statement"               => simple_statement(node, "fixed",      source),
         "unsafe_statement"              => simple_statement_marked(node, "block", &["unsafe"], source),
@@ -699,22 +752,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "with_expression"               => simple_statement(node, "with",       source),
         "range_expression"              => simple_statement(node, "range",      source),
         "tuple_expression"              => simple_statement(node, "tuple",      source),
-        "from_clause"                   => simple_statement(node, "from",       source),
+        "from_clause"                   => simple_statement_marked(node, "from", &["in"], source),
         "where_clause"                  => simple_statement(node, "where",      source),
         "select_clause"                 => simple_statement(node, "select",     source),
         "order_by_clause"               => simple_statement(node, "order",      source),
-        "join_clause"                   => simple_statement(node, "join",       source),
+        "join_clause"                   => simple_statement_marked(node, "join", &["in"], source),
         "group_clause"                  => simple_statement(node, "group",      source),
         "let_clause"                    => simple_statement(node, "let",        source),
         "query_expression"              => simple_statement(node, "query",      source),
         "query_continuation"            => simple_statement(node, "query",      source),
         // Attributes
         "attribute"                     => simple_statement(node, "attribute",  source),
-        "attribute_list"                => simple_statement(node, "attribute",  source),
         "attribute_argument"            => simple_statement(node, "argument",   source),
         "attribute_argument_list"       => simple_statement(node, "arguments",  source),
         "attribute_target_specifier"    => simple_statement(node, "target",     source),
-        "global_attribute"              => simple_statement(node, "attribute",  source),
         // Generics & constraints
         "type_parameter_constraint"     => simple_statement(node, "constraint", source),
         "type_parameter_constraints_clause" => simple_statement(node, "where",  source),
@@ -725,7 +776,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "pointer_type"                  => simple_statement(node, "type",       source),
         "function_pointer_parameter"    => simple_statement(node, "parameter",  source),
         // Misc
-        "alias_qualified_name"          => simple_statement(node, "name",       source),
+        // `global::System.X` / `extern alias X` — flat name, full
+        // dotted text concatenated (matches imperative pipeline's
+        // descendant_text path for qualified-style names).
+        "alias_qualified_name"          => Ir::Name { range, span },
         "declaration_expression"        => simple_statement(node, "declaration",source),
         "extern_alias_directive"        => simple_statement(node, "import",     source),
         "primary_constructor_base_type" => simple_statement(node, "base",       source),
@@ -760,6 +814,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "tuple_type"                    => simple_statement(node, "type",       source),
         "nullable_type"                 => simple_statement_marked(node, "type", &["nullable"], source),
         "ref_type"                      => simple_statement_marked(node, "type", &["ref"], source),
+        "scoped_type"                   => simple_statement_marked(node, "type", &["scoped"], source),
         "function_pointer_type"         => simple_statement(node, "type",       source),
         // Array / collection creation — render as <new>. stackalloc
         // forms additionally carry a `<stackalloc/>` marker; anonymous
@@ -777,7 +832,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "switch_expression"                  => simple_statement(node, "switch",source),
         "switch_expression_arm"              => simple_statement(node, "arm",   source),
         "switch_section"                     => simple_statement(node, "arm",   source),
-        "with_initializer"                   => simple_statement(node, "with",  source),
+        // `o with { X = 1 }`'s brace block — imperative renames to
+        // <literal> (matching object/array initializer shape).
+        "with_initializer"                   => simple_statement(node, "literal", source),
         "interpolation"                      => simple_statement(node, "interpolation", source),
         // Pattern kinds — old pipeline uses RenameWithMarker(Pattern, X);
         // for parity-first we use plain "pattern" without a marker.
@@ -797,8 +854,32 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "discard"                   => simple_statement(node, "discard", source),
         "tuple_element"             => simple_statement(node, "element", source),
         "when_clause"               => simple_statement(node, "when", source),
-        // type_parameter — `<generic>` with optional variance + name.
-        "type_parameter" => simple_statement(node, "generic", source),
+        // type_parameter — `<generic>` with optional variance marker.
+        // Variance keywords `in`/`out` appear as unnamed children in the
+        // type_parameter; surface them as `<in/>` / `<out/>` markers.
+        "type_parameter" => {
+            let mut tc = node.walk();
+            let variance: &'static [&'static str] = {
+                let mut found: Option<&'static str> = None;
+                for c in node.children(&mut tc) {
+                    if !c.is_named() {
+                        if let Ok(t) = c.utf8_text(source.as_bytes()) {
+                            match t {
+                                "in"  => found = Some("in"),
+                                "out" => found = Some("out"),
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                match found {
+                    Some("in")  => &["in"],
+                    Some("out") => &["out"],
+                    _ => &[],
+                }
+            };
+            simple_statement_marked(node, "generic", variance, source)
+        }
 
         // Flatten-only kinds — render as Inline so children promote
         // to the parent's element.
@@ -839,7 +920,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "preproc_warning"
         | "preproc_if_in_attribute_list"
         | "preproc_arg"
-        | "scoped_type" => {
+        | "attribute_list"
+        | "global_attribute" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
@@ -941,8 +1023,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = a.walk();
                                 let inner = a.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Unknown {
-                                        kind: "argument(empty)".to_string(),
+                                    .unwrap_or_else(|| Ir::Inline {
+                                        children: Vec::new(),
                                         range: range_of(a), span: span_of(a),
                                     })
                             } else {
@@ -1008,6 +1090,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         let ps = span_of(p);
                         vec![Ir::Parameter {
                             kind: ParamKind::Regular,
+                            extra_markers: &[],
                             name: Box::new(Ir::Name { range: pr, span: ps }),
                             type_ann: None,
                             default: None,
@@ -1204,10 +1287,24 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let inner = node.named_children(&mut cursor).next();
             match inner {
                 Some(n) => {
+                    // Bypass list: kinds that already produce their own
+                    // statement-shaped IR or expression wrapper.
+                    // postfix_unary_expression, await_expression and
+                    // is_pattern_expression all produce Ir::Expression
+                    // hosts themselves — wrapping again would yield
+                    // <expression><expression>...</expression></expression>.
+                    // Don't double-wrap when the inner already produces
+                    // an Ir::Expression host. postfix_unary_expression
+                    // produces <expression> only for `obj!` (non-null);
+                    // `i++` becomes <unary>, which DOES need wrapping.
                     let bypass = matches!(
                         n.kind(),
-                        "assignment_expression" | "throw_expression"
-                    );
+                        "assignment_expression"
+                            | "throw_expression"
+                            | "await_expression"
+                            | "is_pattern_expression"
+                    ) || (n.kind() == "postfix_unary_expression"
+                          && n.utf8_text(source.as_bytes()).map_or(false, |s| s.trim_end().ends_with('!')));
                     if bypass {
                         lower_node(n, source)
                     } else {
@@ -1322,8 +1419,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = n.walk();
                                 let inner = n.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Unknown {
-                                        kind: "argument(empty)".to_string(),
+                                    .unwrap_or_else(|| Ir::Inline {
+                                        children: Vec::new(),
                                         range: range_of(n),
                                         span: span_of(n),
                                     })
@@ -1396,8 +1493,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                                 let mut cc = c.walk();
                                 let inner = c.named_children(&mut cc).next();
                                 inner.map(|i| lower_node(i, source))
-                                    .unwrap_or_else(|| Ir::Unknown {
-                                        kind: "argument(empty)".to_string(),
+                                    .unwrap_or_else(|| Ir::Inline {
+                                        children: Vec::new(),
                                         range: range_of(c),
                                         span: span_of(c),
                                     })
@@ -1477,23 +1574,25 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // expression, plus a marker. `obj` and `obj!` differ only in
         // the marker.
         "postfix_unary_expression" => {
+            // `obj!` (non-null assertion — Principle #15 marker on
+            // `<expression>` host) vs `i++` / `i--` (postfix
+            // increment/decrement — `<unary>` with `<postfix/>`
+            // marker via simple_statement, source bytes preserved
+            // through gap text).
             let mut cursor = node.walk();
-            let operand = node.named_children(&mut cursor).next();
-            // The operator is an unnamed `!` token; we don't need it
-            // separately — the `non_null` marker comes from the
-            // construct kind itself.
-            match operand {
-                Some(o) => Ir::Expression {
+            let kids: Vec<TsNode> = node.children(&mut cursor).collect();
+            let op_text = kids.iter().copied()
+                .find(|c| !c.is_named())
+                .map(|n| text_of(n, source))
+                .unwrap_or_default();
+            let operand = kids.iter().copied().find(|c| c.is_named());
+            match (operand, op_text.as_str()) {
+                (Some(o), "!") => Ir::Expression {
                     inner: Box::new(lower_node(o, source)),
                     marker: Some("non_null"),
-                    range,
-                    span,
+                    range, span,
                 },
-                None => Ir::Unknown {
-                    kind: "postfix_unary_expression(missing operand)".to_string(),
-                    range,
-                    span,
-                },
+                _ => simple_statement(node, "unary", source),
             }
         }
 
@@ -2154,8 +2253,8 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                             let mut cc = n.walk();
                             let inner = n.named_children(&mut cc).next();
                             inner.map(|i| lower_node(i, source))
-                                .unwrap_or_else(|| Ir::Unknown {
-                                    kind: "argument(empty)".to_string(),
+                                .unwrap_or_else(|| Ir::Inline {
+                                    children: Vec::new(),
                                     range: range_of(n),
                                     span: span_of(n),
                                 })
@@ -2219,8 +2318,8 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                             let mut cc = n.walk();
                             let inner = n.named_children(&mut cc).next();
                             inner.map(|i| lower_node(i, source))
-                                .unwrap_or_else(|| Ir::Unknown {
-                                    kind: "argument(empty)".to_string(),
+                                .unwrap_or_else(|| Ir::Inline {
+                                    children: Vec::new(),
                                     range: range_of(n),
                                     span: span_of(n),
                                 })
