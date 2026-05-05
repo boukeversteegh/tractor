@@ -461,6 +461,86 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::Try { try_body, handlers, else_body, finally_body, range, span } => {
+            let node = element(xot, "try", *span);
+            xot.append(parent, node)?;
+            // Source-order: try_body, handlers in source order,
+            // else_body (Python only, optional), finally_body (optional).
+            let mut order: Vec<&Ir> = vec![try_body.as_ref()];
+            for h in handlers { order.push(h); }
+            if let Some(e) = else_body { order.push(e.as_ref()); }
+            if let Some(f) = finally_body { order.push(f.as_ref()); }
+            order.sort_by_key(|c| c.range().start);
+            let mut cursor = range.start;
+            for child in &order {
+                let cr = child.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if std::ptr::eq(*child, try_body.as_ref()) {
+                    render_to_xot(xot, node, child, source)?;
+                } else if else_body.as_ref().map_or(false, |e| std::ptr::eq(*child, e.as_ref())) {
+                    let el = element(xot, "else", child.span());
+                    xot.append(node, el)?;
+                    render_to_xot(xot, el, child, source)?;
+                } else if finally_body.as_ref().map_or(false, |f| std::ptr::eq(*child, f.as_ref())) {
+                    let fin = element(xot, "finally", child.span());
+                    xot.append(node, fin)?;
+                    render_to_xot(xot, fin, child, source)?;
+                } else {
+                    // Handler — already self-rendered as <except>/<catch>.
+                    render_to_xot(xot, node, child, source)?;
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
+        Ir::ExceptHandler { kind, type_target, binding, filter, body, range, span } => {
+            let node = element(xot, kind, *span);
+            xot.append(parent, node)?;
+            // Header parts in source order, then body. Wrap type_target
+            // in <type>, binding in <name>, filter in <when><expression>.
+            #[derive(Clone, Copy)]
+            enum Slot<'a> { Type(&'a Ir), Bind(&'a Ir), Filter(&'a Ir), Body(&'a Ir) }
+            let mut order: Vec<Slot> = Vec::new();
+            if let Some(t) = type_target { order.push(Slot::Type(t)); }
+            if let Some(b) = binding { order.push(Slot::Bind(b)); }
+            if let Some(f) = filter { order.push(Slot::Filter(f)); }
+            order.push(Slot::Body(body));
+            order.sort_by_key(|s| match s {
+                Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i.range().start,
+            });
+            let mut cursor = range.start;
+            for slot in &order {
+                let inner: &Ir = match slot {
+                    Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i,
+                };
+                let cr = inner.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                match slot {
+                    Slot::Type(_) => {
+                        let t = element(xot, "type", inner.span());
+                        xot.append(node, t)?;
+                        render_to_xot(xot, t, inner, source)?;
+                    }
+                    Slot::Bind(_) => {
+                        render_to_xot(xot, node, inner, source)?;
+                    }
+                    Slot::Filter(_) => {
+                        let f = element(xot, "filter", inner.span());
+                        xot.append(node, f)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(f, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                    Slot::Body(_) => {
+                        render_to_xot(xot, node, inner, source)?;
+                    }
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
         Ir::TypeAlias { name, type_params, value, range, span } => {
             let node = element(xot, "alias", *span);
             xot.append(parent, node)?;

@@ -438,6 +438,42 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // `try: ... except E: ... else: ... finally: ...`. tree-sitter
+        // exposes `body` field (a `block`) and a sequence of clauses:
+        // `except_clause`(s), `except_group_clause`(s), an optional
+        // `else_clause`, an optional `finally_clause`.
+        "try_statement" => {
+            let body_node = node.child_by_field_name("body");
+            let try_body = body_node
+                .map(|b| Box::new(lower_block(b, source)))
+                .unwrap_or_else(|| Box::new(Ir::Body {
+                    children: Vec::new(), pass_only: false,
+                    range: ByteRange::empty_at(range.start), span,
+                }));
+            let mut cursor = node.walk();
+            let mut handlers: Vec<Ir> = Vec::new();
+            let mut else_body: Option<Box<Ir>> = None;
+            let mut finally_body: Option<Box<Ir>> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "except_clause" | "except_group_clause" => {
+                        handlers.push(lower_python_except_clause(c, source));
+                    }
+                    "else_clause" => {
+                        // else_clause has a body field.
+                        let inner = c.child_by_field_name("body").unwrap_or(c);
+                        else_body = Some(Box::new(lower_block(inner, source)));
+                    }
+                    "finally_clause" => {
+                        let inner = c.child_by_field_name("body").unwrap_or(c);
+                        finally_body = Some(Box::new(lower_block(inner, source)));
+                    }
+                    _ => {}
+                }
+            }
+            Ir::Try { try_body, handlers, else_body, finally_body, range, span }
+        }
+
         // PEP 695 type alias: `type Foo[T] = list[T]`. tree-sitter
         // structure: type_alias_statement(type(left)?, type(right)).
         // The left can be a plain identifier or wrapped in a generic.
@@ -815,6 +851,64 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 /// for `Ir::GenericType` handles the actual `<type>` wrapping.
 fn lower_type_arg(node: TsNode<'_>, source: &str) -> Ir {
     lower_node(node, source)
+}
+
+/// Lower a Python `except_clause` to `Ir::ExceptHandler` with
+/// kind="except". Structure: `except [Type [as Name]]: body`.
+/// tree-sitter exposes positional children (no fields):
+///   - optional type expression
+///   - optional `as_pattern` for `as Name`
+///   - the body block
+fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let mut type_target: Option<Box<Ir>> = None;
+    let mut binding: Option<Box<Ir>> = None;
+    let mut body: Option<Box<Ir>> = None;
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "block" if body.is_none() => {
+                body = Some(Box::new(lower_block(c, source)));
+            }
+            "as_pattern" => {
+                // `Type as Name` — first child is the type, then
+                // `as_pattern_target` containing the name.
+                let mut ac = c.walk();
+                let kids: Vec<TsNode> = c.named_children(&mut ac).collect();
+                if let Some(t) = kids.first() {
+                    if type_target.is_none() {
+                        type_target = Some(Box::new(lower_node(*t, source)));
+                    }
+                }
+                if kids.len() >= 2 {
+                    let last = kids[kids.len() - 1];
+                    let inner = if last.kind() == "as_pattern_target" {
+                        let mut tc = last.walk();
+                        let n = last.named_children(&mut tc).next();
+                        n.unwrap_or(last)
+                    } else { last };
+                    binding = Some(Box::new(Ir::Name { range: range_of(inner), span: span_of(inner) }));
+                }
+            }
+            _ if type_target.is_none() && body.is_none() => {
+                // First non-block, non-as_pattern child: the type.
+                type_target = Some(Box::new(lower_node(c, source)));
+            }
+            _ => {}
+        }
+    }
+    Ir::ExceptHandler {
+        kind: "except",
+        type_target,
+        binding,
+        filter: None,
+        body: body.unwrap_or_else(|| Box::new(Ir::Body {
+            children: Vec::new(), pass_only: false,
+            range: ByteRange::empty_at(range.end), span,
+        })),
+        range, span,
+    }
 }
 
 /// Lower an `else_clause` or `elif_clause` chain into nested

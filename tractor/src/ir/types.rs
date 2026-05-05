@@ -362,6 +362,34 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// `<try>` — `try { body } catch (...) { ... } finally { ... }`
+    /// (C# / Java) or `try: ... except E: ... else: ... finally: ...`
+    /// (Python). Shared cross-language. `try_body` is the protected
+    /// block; `handlers` are catch/except clauses; `else_body` runs
+    /// when no exception (Python only); `finally_body` always runs.
+    Try {
+        try_body: Box<Ir>,
+        handlers: Vec<Ir>,
+        else_body: Option<Box<Ir>>,
+        finally_body: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<except>` (Python) / `<catch>` (C#) — single exception handler.
+    /// `type_target` is the exception type; `binding` is the variable
+    /// (`as e` / `Exception ex`); `filter` is C#'s `when (cond)`;
+    /// `body` is the handler block.
+    ExceptHandler {
+        kind: &'static str,            // "except" | "catch"
+        type_target: Option<Box<Ir>>,
+        binding: Option<Box<Ir>>,
+        filter: Option<Box<Ir>>,
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<alias>` — Python 3.12 `type Foo = Bar` /
     /// `type Foo[T] = Bar`. `name` is the alias being declared,
     /// `type_params` is the optional generic list, `value` is the
@@ -1125,6 +1153,8 @@ impl Ir {
             | Ir::Lambda { span, .. }
             | Ir::ObjectCreation { span, .. }
             | Ir::Ternary { span, .. }
+            | Ir::Try { span, .. }
+            | Ir::ExceptHandler { span, .. }
             | Ir::TypeAlias { span, .. }
             | Ir::KeywordArgument { span, .. }
             | Ir::ListSplat { span, .. }
@@ -1201,6 +1231,8 @@ impl Ir {
             | Ir::Lambda { range, .. }
             | Ir::ObjectCreation { range, .. }
             | Ir::Ternary { range, .. }
+            | Ir::Try { range, .. }
+            | Ir::ExceptHandler { range, .. }
             | Ir::TypeAlias { range, .. }
             | Ir::KeywordArgument { range, .. }
             | Ir::ListSplat { range, .. }
@@ -1341,6 +1373,18 @@ impl Ir {
                 v.push(condition);
                 v.push(if_true);
                 v.push(if_false);
+            }
+            Ir::Try { try_body, handlers, else_body, finally_body, .. } => {
+                v.push(try_body);
+                v.extend(handlers.iter());
+                if let Some(e) = else_body { v.push(e); }
+                if let Some(f) = finally_body { v.push(f); }
+            }
+            Ir::ExceptHandler { type_target, binding, filter, body, .. } => {
+                if let Some(t) = type_target { v.push(t); }
+                if let Some(b) = binding { v.push(b); }
+                if let Some(f) = filter { v.push(f); }
+                v.push(body);
             }
             Ir::TypeAlias { name, type_params, value, .. } => {
                 v.push(name);

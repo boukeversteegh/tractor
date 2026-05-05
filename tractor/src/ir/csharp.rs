@@ -663,6 +663,46 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
 
+        // `try { body } catch (...) { ... } finally { ... }`.
+        // tree-sitter children: a `block` (try body), then any number
+        // of `catch_clause`s, optionally a `finally_clause`.
+        "try_statement" => {
+            let mut cursor = node.walk();
+            let mut try_body: Option<Box<Ir>> = None;
+            let mut handlers: Vec<Ir> = Vec::new();
+            let mut finally_body: Option<Box<Ir>> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "block" if try_body.is_none() => {
+                        try_body = Some(Box::new(lower_block_like(c, source)));
+                    }
+                    "catch_clause" => {
+                        handlers.push(lower_csharp_catch_clause(c, source));
+                    }
+                    "finally_clause" => {
+                        // finally_clause has a single block child.
+                        let mut fc = c.walk();
+                        let inner = c.named_children(&mut fc).find(|n| n.kind() == "block");
+                        if let Some(b) = inner {
+                            finally_body = Some(Box::new(lower_block_like(b, source)));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let try_body = try_body.unwrap_or_else(|| Box::new(Ir::Body {
+                children: Vec::new(), pass_only: false,
+                range: ByteRange::empty_at(range.start), span,
+            }));
+            Ir::Try {
+                try_body,
+                handlers,
+                else_body: None,
+                finally_body,
+                range, span,
+            }
+        }
+
         // `cond ? a : b` — ternary. tree-sitter fields: condition,
         // consequence, alternative.
         "conditional_expression" => {
@@ -1431,6 +1471,60 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
             body: Box::new(lower_csharp_consequence(inner, source)),
             range, span,
         }
+    }
+}
+
+/// Lower a C# `catch_clause` to `Ir::ExceptHandler` with kind="catch".
+/// Children:
+///   - optional `catch_declaration` containing type and optional binding
+///   - optional `catch_filter_clause` (the `when (...)` form)
+///   - `block` (the handler body)
+fn lower_csharp_catch_clause(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let mut type_target: Option<Box<Ir>> = None;
+    let mut binding: Option<Box<Ir>> = None;
+    let mut filter: Option<Box<Ir>> = None;
+    let mut body: Option<Box<Ir>> = None;
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "catch_declaration" => {
+                // catch_declaration has a `type` field and optional
+                // `name` field (the binding).
+                let t = c.child_by_field_name("type");
+                let n = c.child_by_field_name("name");
+                if let Some(t) = t {
+                    type_target = Some(Box::new(lower_node(t, source)));
+                }
+                if let Some(n) = n {
+                    binding = Some(Box::new(Ir::Name { range: range_of(n), span: span_of(n) }));
+                }
+            }
+            "catch_filter_clause" => {
+                // First named child is the filter expression.
+                let mut fc = c.walk();
+                let inner = c.named_children(&mut fc).next();
+                if let Some(i) = inner {
+                    filter = Some(Box::new(lower_node(i, source)));
+                }
+            }
+            "block" if body.is_none() => {
+                body = Some(Box::new(lower_block_like(c, source)));
+            }
+            _ => {}
+        }
+    }
+    Ir::ExceptHandler {
+        kind: "catch",
+        type_target,
+        binding,
+        filter,
+        body: body.unwrap_or_else(|| Box::new(Ir::Body {
+            children: Vec::new(), pass_only: false,
+            range: ByteRange::empty_at(range.end), span,
+        })),
+        range, span,
     }
 }
 
