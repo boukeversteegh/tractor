@@ -750,7 +750,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "array_rank_specifier"
         | "interpolation_alignment_clause"
         | "interpolation_format_clause"
-        | "parenthesized_pattern" => {
+        | "parenthesized_pattern"
+        | "interpolation_brace"
+        | "interpolation_start"
+        | "string_content"
+        | "raw_string_content"
+        | "raw_string_start"
+        | "raw_string_end"
+        | "interpolation_quote"
+        | "string_literal_encoding"
+        | "escape_sequence"
+        | "character_literal_content"
+        | "join_into_clause" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
