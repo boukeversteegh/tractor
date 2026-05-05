@@ -338,6 +338,13 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
     parse_string_to_xot_with_options(source, lang, file_path, tree_mode, false)
 }
 
+/// True when the typed-IR pipeline should handle this language.
+/// Currently opt-in via `TRACTOR_IR_PIPELINE` env var so the
+/// imperative pipeline stays the default until parity is reached.
+fn use_ir_pipeline(lang: &str) -> bool {
+    std::env::var("TRACTOR_IR_PIPELINE").is_ok() && matches!(lang, "csharp")
+}
+
 /// Parse a source string and return an xot document with options (new pipeline)
 ///
 /// Note: the Xot pipeline only supports Raw and Structure modes (no dual-branch).
@@ -349,6 +356,10 @@ pub fn parse_string_to_xot_with_options(
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
+    if use_ir_pipeline(lang) {
+        return parse_with_ir_pipeline(source, lang, file_path);
+    }
+
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
 
@@ -394,6 +405,61 @@ pub fn parse_string_to_xot_with_options(
         file_path,
         language: lang.to_string(),
     })
+}
+
+/// Parse via the typed-IR pipeline. Lowers tree-sitter CST through
+/// `tractor::ir::lower_<lang>_root`, then renders to xot using
+/// `render_to_xot`. The result is wrapped in a document so xot
+/// queries treat it like the imperative pipeline's output.
+#[cfg(feature = "native")]
+fn parse_with_ir_pipeline(
+    source: &str,
+    lang: &str,
+    file_path: String,
+) -> Result<XotParseResult, ParseError> {
+    use crate::ir;
+
+    let language = get_tree_sitter_language(lang)?;
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&language)
+        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+    let tree = parser.parse(source, None)
+        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+
+    let ir_tree = match lang {
+        "csharp" => ir::lower_csharp_root(tree.root_node(), source),
+        "python" => ir::lower_python_root(tree.root_node(), source),
+        _ => return Err(ParseError::Parse(format!(
+            "IR pipeline not yet wired for language {lang}"
+        ))),
+    };
+
+    let mut xot = xot::Xot::new();
+    // Wrap the rendered element in a synthetic document so callers
+    // can use `xot.is_document(root) ? document_element : root` the
+    // same way they handle the imperative pipeline's output.
+    let doc = xot.new_document();
+    ir::render_to_xot(&mut xot, doc, &ir_tree, source)
+        .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+
+    Ok(XotParseResult {
+        xot,
+        root: doc,
+        source_lines: source.lines().map(|s| s.to_string()).collect(),
+        file_path,
+        language: lang.to_string(),
+    })
+}
+
+#[cfg(not(feature = "native"))]
+fn parse_with_ir_pipeline(
+    _source: &str,
+    _lang: &str,
+    _file_path: String,
+) -> Result<XotParseResult, ParseError> {
+    Err(ParseError::Parse(
+        "IR pipeline requires the `native` feature".to_string(),
+    ))
 }
 
 /// Parse result for the fast query path (builds directly into Documents)

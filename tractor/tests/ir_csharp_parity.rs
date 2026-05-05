@@ -148,6 +148,27 @@ fn invariants_null_literal() {
 
 #[test]
 #[ignore]
+fn find_blueprint_error_nodes() {
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(&source, None).unwrap();
+    fn walk(node: tree_sitter::Node, src: &[u8]) {
+        if node.kind() == "ERROR" {
+            let line = node.start_position().row + 1;
+            let text = node.utf8_text(src).unwrap_or("?");
+            eprintln!("ERROR at line {}: {:?}", line, text.chars().take(80).collect::<String>());
+        }
+        let mut c = node.walk();
+        for child in node.children(&mut c) { walk(child, src); }
+    }
+    walk(tree.root_node(), source.as_bytes());
+}
+
+#[test]
+#[ignore]
 fn dump_delegate_cst() {
     let s = "public delegate TResult Transformer<T, TResult>(T input);";
     let mut p = tree_sitter::Parser::new();

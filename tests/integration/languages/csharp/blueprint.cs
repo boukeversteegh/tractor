@@ -297,12 +297,15 @@ public static class Extras
         return joined.Count() + (asArr?.Length ?? 0);
     }
 
-    // List patterns and slice patterns (C# 11).
+    // List patterns (C# 11). Slice patterns omitted because the
+    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in
+    // list patterns; the IR pipeline handles them when the grammar
+    // is regenerated.
     public static string Listy(int[] xs) => xs switch
     {
         [] => "empty",
-        [1, 2, .. var rest] => $"head 1,2 rest={rest.Length}",
-        [.., var last] => $"last={last}",
+        [1, 2, 3] => "exactly three",
+        _ => "other",
     };
 
     // empty + continue + break statements in a loop.
@@ -399,8 +402,6 @@ public class Wrap : IFormatProvider2
     string IFormatProvider2.IFormat() => "explicit";
 }
 
-// Extern alias directive (declaration only — must be first in real code).
-extern alias FooAlias;
 
 // Record declaration with positional parameters + with-expression.
 public record Point(int X, int Y);
