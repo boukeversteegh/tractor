@@ -16,6 +16,13 @@ use crate::languages::collect_named_elements;
 /// hosts (Principle #15). Python doesn't run `collapse_conditionals`
 /// because tree-sitter-python emits an explicit `elif_clause`.
 pub fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    // Inject `<public/>`/`<protected/>`/`<private/>` markers on
+    // class-method `<function>` elements based on Python's name
+    // convention (Principle #9). The imperative pipeline did this
+    // during `function_definition` transform; for IR output we do
+    // it as an XML post-pass since the IR doesn't know about
+    // parent context during lowering.
+    inject_python_visibility_markers(xot, root)?;
     // Invert right-deep `<member>`/`<call>` chains into nested
     // `<chain>` form (per `docs/design-chain-inversion.md`).
     // Python's tree already matches the canonical input shape:
@@ -346,6 +353,81 @@ fn python_alias_pairs(xot: &Xot, node: XotNode) -> Vec<(XotNode, XotNode)> {
         }
     }
     out
+}
+
+/// Inject `<public/>`/`<protected/>`/`<private/>` markers onto
+/// `<function>` elements that sit directly inside a `<class>` body
+/// (Principle #9 — Python's name-convention visibility). Mirrors the
+/// imperative pipeline's `function_definition` transform.
+///
+/// Rules:
+///   - `__name__` (dunder, len > 4) → public
+///   - `__name`                     → private
+///   - `_name`                      → protected
+///   - `name`                       → public
+fn inject_python_visibility_markers(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::transform::helpers::{copy_source_location, get_element_name};
+
+    // Walk; track nearest enclosing-class flag.
+    fn walk(xot: &mut Xot, node: XotNode, in_class: bool) -> Result<(), xot::Error> {
+        let name = get_element_name(xot, node);
+        let is_class = name.as_deref() == Some("class");
+        let is_function = name.as_deref() == Some("function");
+        if is_function && in_class {
+            // Find first child <name> with text content.
+            let name_node = xot.children(node).find(|&c| {
+                xot.element(c).is_some()
+                    && get_element_name(xot, c).as_deref() == Some("name")
+            });
+            if let Some(name_node) = name_node {
+                let text: String = xot.children(name_node)
+                    .filter_map(|c| xot.text_str(c).map(|s| s.to_string()))
+                    .collect();
+                let trimmed = text.trim();
+                let marker_name: Option<&'static str> = if trimmed.is_empty() {
+                    None
+                } else if trimmed.starts_with("__") && trimmed.ends_with("__") && trimmed.len() > 4 {
+                    Some("public")
+                } else if trimmed.starts_with("__") {
+                    Some("private")
+                } else if trimmed.starts_with('_') {
+                    Some("protected")
+                } else {
+                    Some("public")
+                };
+                if let Some(m) = marker_name {
+                    let already_has = xot.children(node).any(|c| {
+                        get_element_name(xot, c).as_deref() == Some(m)
+                    });
+                    if !already_has {
+                        let n = xot.add_name(m);
+                        let elem = xot.new_element(n);
+                        // Copy span attrs from the function node so
+                        // the marker's location matches.
+                        copy_source_location(xot, node, elem);
+                        xot.prepend(node, elem)?;
+                    }
+                }
+            }
+        }
+        // Recurse: a nested function is its own scope (in_class=false),
+        // entering a class flips in_class=true regardless of nesting.
+        let next_in_class = if is_function {
+            false
+        } else if is_class {
+            true
+        } else {
+            in_class
+        };
+        let children: Vec<XotNode> = xot.children(node).collect();
+        for c in children {
+            if xot.element(c).is_some() {
+                walk(xot, c, next_in_class)?;
+            }
+        }
+        Ok(())
+    }
+    walk(xot, root, false)
 }
 
 /// Tree-sitter Python's `dotted_name` (e.g. `a.b.c`) gets wrapped in
