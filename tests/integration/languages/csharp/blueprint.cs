@@ -311,6 +311,33 @@ public static class Extras
         for (int i = 0; i < 3; i++) { ; if (i == 1) continue; if (i == 2) break; }
         return 0;
     }
+
+    // Interpolation with alignment + format specifier.
+    public static string Aligned(int n) => $"{n,5:X4}";
+
+    // Checked expression / unchecked / fixed (unsafe) — exercise more
+    // statement kinds.
+    public static int Checks(int a, int b) => checked(a + b);
+    public static unsafe int Pointer(int* p) { fixed (int* q = &a) { return *q; } }
+    private static int a = 1;
+
+    // Function pointer type + parameter.
+    public static unsafe void FnPtr(delegate*<int, void> fn, int x) { fn(x); }
+
+    // Stackalloc.
+    public static unsafe void Alloc()
+    {
+        int* buf = stackalloc int[3];
+        Span<int> span = stackalloc int[3] { 1, 2, 3 };
+    }
+}
+
+// Record declaration with positional parameters + with-expression.
+public record Point(int X, int Y);
+
+public static class RecordUse
+{
+    public static Point Move(Point p, int dx) => p with { X = p.X + dx };
 }
 
 // Global / assembly-level attribute (file scope).
