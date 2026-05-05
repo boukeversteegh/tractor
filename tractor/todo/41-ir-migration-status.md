@@ -143,9 +143,18 @@ Estimate: 1–3 hours to close the remaining 5 + ratchet.
 diagnostic for any future coverage push (run with `--ignored
 --nocapture`).
 
-### Other languages
-None of Java/TypeScript/Rust/Go/Ruby/PHP/data-languages have any
-`lower_<lang>_root` yet. Each requires:
+### Java IR scaffold ⚠️ (switch off)
+`src/ir/java.rs` (~1100 LOC) lowers compilation_unit/program +
+class/interface/record/enum, method/constructor/field, control flow,
+chains, generics, comments. Wired through `parse_with_ir_pipeline`
+but NOT enabled — a trial flip shows 52 shape-contract errors +
+18 transform-test divergences. Resolving those is the next-session
+work; structurally analogous to the Python migration but with Java's
+specific shape choices (annotations as decorators, modifier
+placement, scoped identifiers in paths).
+
+### Other languages (TypeScript/Rust/Go/Ruby/PHP/data) — pending
+None have a `lower_<lang>_root` yet. Each requires:
 1. Build per-language IR lowering (one match arm per CST kind).
 2. Hard-switch in `parse_with_ir_pipeline`.
 3. Resolve shape-contract violations on each blueprint.
