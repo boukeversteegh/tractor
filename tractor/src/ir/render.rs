@@ -924,15 +924,22 @@ fn render_segments_chain(
         AccessSegment::Index { indices, range: _, span } => {
             let node = element(xot, "index", *span);
             xot.append(host, node)?;
-            // Indices live inside [...]; emit source-order with gaps.
             let inner_refs: Vec<&Ir> = indices.iter().collect();
             render_with_gaps(xot, node, source, seg_range, &inner_refs,
                 |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
             )?;
-            // Index segments do not currently chain deeper segments
-            // INSIDE themselves; deeper chain steps would be siblings
-            // (further AccessSegment entries). For the slice we cover,
-            // index is always the last segment.
+            let mut inner_cursor = seg_range.end;
+            render_segments_chain(xot, node, rest, &mut inner_cursor, source)?;
+            *cursor = inner_cursor;
+            node
+        }
+        AccessSegment::Call { arguments, range: _, span } => {
+            let node = element(xot, "call", *span);
+            xot.append(host, node)?;
+            let inner_refs: Vec<&Ir> = arguments.iter().collect();
+            render_with_gaps(xot, node, source, seg_range, &inner_refs,
+                |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
+            )?;
             let mut inner_cursor = seg_range.end;
             render_segments_chain(xot, node, rest, &mut inner_cursor, source)?;
             *cursor = inner_cursor;

@@ -96,6 +96,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 match first {
                     AccessSegment::Member { range, .. } => *range = ByteRange::new(new_start, range.end),
                     AccessSegment::Index { range, .. }  => *range = ByteRange::new(new_start, range.end),
+                    AccessSegment::Call { range, .. }   => *range = ByteRange::new(new_start, range.end),
                 }
             }
             match object_ir {
@@ -292,7 +293,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- Calls ----------------------------------------------------
 
         // C#: `invocation_expression` with fields `function` and
-        // `arguments` (`argument_list`).
+        // `arguments` (`argument_list`). When the function is itself
+        // an access chain (member/index/conditional), fold the call
+        // into the chain as a `Call` segment — matches the existing
+        // pipeline's `<object[access]>...<call>...</call></object>`
+        // shape for `a.b()`. Otherwise emit a standalone `Ir::Call`.
         "invocation_expression" => {
             let function_node = node.child_by_field_name("function");
             let arguments_node = node.child_by_field_name("arguments");
@@ -326,11 +331,27 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 None => Vec::new(),
             };
-            Ir::Call {
-                callee: Box::new(callee),
-                arguments,
-                range,
-                span,
+            // Chain-fold: if the callee is an access chain, append a
+            // Call segment. Otherwise standalone Call.
+            match callee {
+                Ir::Access { receiver, mut segments, range: _, span: _ } => {
+                    let segment_range = ByteRange::new(
+                        segments.last().map(|s| s.range().end).unwrap_or(receiver.range().end),
+                        range.end,
+                    );
+                    segments.push(AccessSegment::Call {
+                        arguments,
+                        range: segment_range,
+                        span,
+                    });
+                    Ir::Access { receiver, segments, range, span }
+                }
+                callee => Ir::Call {
+                    callee: Box::new(callee),
+                    arguments,
+                    range,
+                    span,
+                },
             }
         }
 
@@ -574,6 +595,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                 let last_end = segments.last().map(|s| match s {
                     AccessSegment::Member { range, .. } => range.end,
                     AccessSegment::Index { range, .. }  => range.end,
+                    AccessSegment::Call { range, .. }   => range.end,
                 }).unwrap_or(range.start);
                 segments.push(AccessSegment::Member {
                     property_range,
@@ -613,6 +635,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
             let last_end = segments.last().map(|s| match s {
                 AccessSegment::Member { range, .. } => range.end,
                 AccessSegment::Index { range, .. }  => range.end,
+                AccessSegment::Call { range, .. }   => range.end,
             }).unwrap_or(range.start);
             segments.push(AccessSegment::Index {
                 indices,

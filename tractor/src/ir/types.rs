@@ -661,6 +661,17 @@ pub enum AccessSegment {
         range: ByteRange,
         span: Span,
     },
+
+    /// `(args)` — call segment in a chain `a.b()`. Renders as
+    /// `<call>{args...}</call>`. The bare-call form (`f()` with no
+    /// preceding chain) stays as `Ir::Call`; lowering decides which
+    /// based on whether the function position is itself an access
+    /// chain.
+    Call {
+        arguments: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
 }
 
 impl AccessSegment {
@@ -668,6 +679,7 @@ impl AccessSegment {
         match self {
             AccessSegment::Member { span, .. } => *span,
             AccessSegment::Index { span, .. } => *span,
+            AccessSegment::Call { span, .. } => *span,
         }
     }
 
@@ -675,6 +687,7 @@ impl AccessSegment {
         match self {
             AccessSegment::Member { range, .. } => *range,
             AccessSegment::Index { range, .. } => *range,
+            AccessSegment::Call { range, .. } => *range,
         }
     }
 }
