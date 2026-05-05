@@ -701,6 +701,45 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "let_clause"                    => simple_statement(node, "let",        source),
         "query_expression"              => simple_statement(node, "query",      source),
         "query_continuation"            => simple_statement(node, "query",      source),
+        // Type kinds — render under <type> when used as standalone.
+        "implicit_type"                 => simple_statement(node, "type",       source),
+        "array_type"                    => simple_statement(node, "type",       source),
+        "tuple_type"                    => simple_statement(node, "type",       source),
+        "nullable_type"                 => simple_statement(node, "type",       source),
+        "ref_type"                      => simple_statement(node, "type",       source),
+        "scoped_type"                   => simple_statement(node, "type",       source),
+        "function_pointer_type"         => simple_statement(node, "type",       source),
+        // Array / collection creation — render as <new>.
+        "array_creation_expression"          => simple_statement(node, "new",   source),
+        "implicit_array_creation_expression" => simple_statement(node, "new",   source),
+        "anonymous_object_creation_expression" => simple_statement(node, "new", source),
+        "stackalloc_expression"              => simple_statement(node, "new",   source),
+        "implicit_stackalloc_expression"     => simple_statement(node, "new",   source),
+        // String interpolation — render as <string>.
+        "interpolated_string_expression"     => simple_statement(node, "string",source),
+        // Pattern-matching expressions / statements.
+        "is_pattern_expression"              => simple_statement(node, "is",    source),
+        "switch_statement"                   => simple_statement(node, "switch",source),
+        "switch_expression"                  => simple_statement(node, "switch",source),
+        "switch_expression_arm"              => simple_statement(node, "case",  source),
+        "switch_section"                     => simple_statement(node, "case",  source),
+        "with_initializer"                   => simple_statement(node, "with",  source),
+        "interpolation"                      => simple_statement(node, "interpolation", source),
+        // Parenthesized expression: parens become gap text on parent.
+        "parenthesized_expression" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::Inline {
+                    children: vec![lower_node(i, source)],
+                    range, span,
+                },
+                None => Ir::Unknown {
+                    kind: "parenthesized_expression(empty)".to_string(),
+                    range, span,
+                },
+            }
+        }
 
         // `try { body } catch (...) { ... } finally { ... }`.
         // tree-sitter children: a `block` (try body), then any number
