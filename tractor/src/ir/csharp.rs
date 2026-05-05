@@ -529,6 +529,71 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // `foreach (T x in collection) body` (and `await foreach`).
+        // tree-sitter fields: `type`, `left` (the loop variable —
+        // identifier or tuple_pattern), `right` (the collection),
+        // `body`.
+        "foreach_statement" => {
+            let type_node = node.child_by_field_name("type");
+            let left_node = node.child_by_field_name("left");
+            let right_node = node.child_by_field_name("right");
+            let body_node = node.child_by_field_name("body");
+            match (left_node, right_node, body_node) {
+                (Some(l), Some(r), Some(b)) => Ir::Foreach {
+                    type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
+                    target: Box::new(lower_node(l, source)),
+                    iterable: Box::new(lower_node(r, source)),
+                    body: Box::new(lower_csharp_consequence(b, source)),
+                    range, span,
+                },
+                _ => Ir::Unknown { kind: "foreach_statement(missing field)".to_string(), range, span },
+            }
+        }
+
+        // `for (init; cond; update) body` — C-style. tree-sitter
+        // fields: `initializer` (declaration or expression list, may
+        // be missing), `condition` (expression, optional), `update`
+        // (vec of expressions via repeated `update` field),
+        // `body`. The semicolons live in gap text.
+        "for_statement" => {
+            let init_node = node.child_by_field_name("initializer");
+            let cond_node = node.child_by_field_name("condition");
+            let body_node = node.child_by_field_name("body");
+            // tree-sitter exposes multiple `update` fields as
+            // separate child_by_field_name lookups; use children_by_field_name.
+            let mut update_cursor = node.walk();
+            let updates: Vec<Ir> = node
+                .children_by_field_name("update", &mut update_cursor)
+                .map(|n| lower_node(n, source))
+                .collect();
+            match body_node {
+                Some(b) => Ir::CFor {
+                    initializer: init_node.map(|n| Box::new(lower_node(n, source))),
+                    condition: cond_node.map(|n| Box::new(lower_node(n, source))),
+                    updates,
+                    body: Box::new(lower_csharp_consequence(b, source)),
+                    range, span,
+                },
+                None => Ir::Unknown { kind: "for_statement(missing body)".to_string(), range, span },
+            }
+        }
+
+        // `do body while(cond);`. tree-sitter fields: `body` and
+        // `condition`. The `do`/`while` keywords + `;` live in gap
+        // text.
+        "do_statement" => {
+            let body_node = node.child_by_field_name("body");
+            let cond_node = node.child_by_field_name("condition");
+            match (body_node, cond_node) {
+                (Some(b), Some(c)) => Ir::DoWhile {
+                    body: Box::new(lower_csharp_consequence(b, source)),
+                    condition: Box::new(lower_node(c, source)),
+                    range, span,
+                },
+                _ => Ir::Unknown { kind: "do_statement(missing field)".to_string(), range, span },
+            }
+        }
+
         "break_statement" => Ir::Break { range, span },
         "continue_statement" => Ir::Continue { range, span },
 

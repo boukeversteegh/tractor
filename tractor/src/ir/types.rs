@@ -320,6 +320,44 @@ pub enum Ir {
         span: Span,
     },
 
+    /// `<foreach>` — C# `foreach (T x in coll) body` / Java
+    /// enhanced-for. Single target, single iterable, optional type
+    /// annotation. Distinct from [`Ir::For`] because Python's
+    /// `for x in iter` (a foreach by semantics) renders as `<for>`
+    /// for parity with the existing pipeline; cross-language element
+    /// naming asymmetry is allowed (Principle #5 scope is intra-
+    /// language).
+    Foreach {
+        type_ann: Option<Box<Ir>>,
+        target: Box<Ir>,
+        iterable: Box<Ir>,
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<for>` — C-style `for (init; cond; update) body` (C#, Java,
+    /// JS, …). All three header parts are optional. `updates` is a
+    /// vec because C-style `for` allows comma-separated updates
+    /// (`for(int i=0,j=10; i<j; i++,j--)`).
+    CFor {
+        initializer: Option<Box<Ir>>,
+        condition: Option<Box<Ir>>,
+        updates: Vec<Ir>,
+        body: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<do>` — `do body while(cond);`. Renders the keyword as gap
+    /// text; body and condition are the only IR children.
+    DoWhile {
+        body: Box<Ir>,
+        condition: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<break>` / `<continue>` markers.
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
@@ -998,6 +1036,9 @@ impl Ir {
             | Ir::ElseIf { span, .. }
             | Ir::Else { span, .. }
             | Ir::For { span, .. }
+            | Ir::Foreach { span, .. }
+            | Ir::CFor { span, .. }
+            | Ir::DoWhile { span, .. }
             | Ir::While { span, .. }
             | Ir::Break { span, .. }
             | Ir::Continue { span, .. }
@@ -1064,6 +1105,9 @@ impl Ir {
             | Ir::ElseIf { range, .. }
             | Ir::Else { range, .. }
             | Ir::For { range, .. }
+            | Ir::Foreach { range, .. }
+            | Ir::CFor { range, .. }
+            | Ir::DoWhile { range, .. }
             | Ir::While { range, .. }
             | Ir::Break { range, .. }
             | Ir::Continue { range, .. }
@@ -1173,6 +1217,22 @@ impl Ir {
                 v.push(condition);
                 v.push(body);
                 if let Some(e) = else_body { v.push(e); }
+            }
+            Ir::Foreach { type_ann, target, iterable, body, .. } => {
+                if let Some(t) = type_ann { v.push(t); }
+                v.push(target);
+                v.push(iterable);
+                v.push(body);
+            }
+            Ir::CFor { initializer, condition, updates, body, .. } => {
+                if let Some(i) = initializer { v.push(i); }
+                if let Some(c) = condition { v.push(c); }
+                v.extend(updates.iter());
+                v.push(body);
+            }
+            Ir::DoWhile { body, condition, .. } => {
+                v.push(body);
+                v.push(condition);
             }
             Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());

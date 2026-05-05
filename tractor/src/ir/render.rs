@@ -349,6 +349,118 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
+        Ir::Foreach { type_ann, target, iterable, body, range, span } => {
+            let node = element(xot, "foreach", *span);
+            xot.append(parent, node)?;
+            // Source-order children: type? target iterable body. The
+            // header `(... in ...)` punctuation lives in gap text.
+            // type → <type>, target → <left><expression>,
+            // iterable → <right><expression>, body → as-is.
+            #[derive(Clone, Copy)]
+            enum Slot<'a> { Type(&'a Ir), Target(&'a Ir), Iter(&'a Ir), Body(&'a Ir) }
+            let mut order: Vec<Slot> = Vec::new();
+            if let Some(t) = type_ann { order.push(Slot::Type(t)); }
+            order.push(Slot::Target(target));
+            order.push(Slot::Iter(iterable));
+            order.push(Slot::Body(body));
+            order.sort_by_key(|s| match s {
+                Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i.range().start,
+            });
+            let mut cursor = range.start;
+            for slot in &order {
+                let inner: &Ir = match slot {
+                    Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i,
+                };
+                let cr = inner.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                match slot {
+                    Slot::Type(_) => {
+                        let t = element(xot, "type", inner.span());
+                        xot.append(node, t)?;
+                        render_to_xot(xot, t, inner, source)?;
+                    }
+                    Slot::Target(_) => {
+                        let slot_el = element(xot, "left", inner.span());
+                        xot.append(node, slot_el)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(slot_el, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                    Slot::Iter(_) => {
+                        let slot_el = element(xot, "right", inner.span());
+                        xot.append(node, slot_el)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(slot_el, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                    Slot::Body(_) => {
+                        render_to_xot(xot, node, inner, source)?;
+                    }
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
+        Ir::CFor { initializer, condition, updates, body, range, span } => {
+            let node = element(xot, "for", *span);
+            xot.append(parent, node)?;
+            // Header parts in source order: initializer (in <init>),
+            // condition (in <condition><expression>), updates (each
+            // wrapped in <update><expression>). Body last.
+            // Walk children in source order, dispatching on identity.
+            let mut order: Vec<&Ir> = Vec::new();
+            if let Some(i) = initializer { order.push(i.as_ref()); }
+            if let Some(c) = condition { order.push(c.as_ref()); }
+            for u in updates { order.push(u); }
+            order.push(body.as_ref());
+            order.sort_by_key(|c| c.range().start);
+
+            let mut cursor = range.start;
+            for child in &order {
+                let cr = child.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if std::ptr::eq(*child, body.as_ref()) {
+                    render_to_xot(xot, node, child, source)?;
+                } else if initializer.as_ref().map_or(false, |i| std::ptr::eq(*child, i.as_ref())) {
+                    let slot = element(xot, "init", child.span());
+                    xot.append(node, slot)?;
+                    render_to_xot(xot, slot, child, source)?;
+                } else if condition.as_ref().map_or(false, |c| std::ptr::eq(*child, c.as_ref())) {
+                    let slot = element(xot, "condition", child.span());
+                    xot.append(node, slot)?;
+                    let expr = element(xot, "expression", child.span());
+                    xot.append(slot, expr)?;
+                    render_to_xot(xot, expr, child, source)?;
+                } else {
+                    // Update expression.
+                    let slot = element(xot, "update", child.span());
+                    xot.append(node, slot)?;
+                    let expr = element(xot, "expression", child.span());
+                    xot.append(slot, expr)?;
+                    render_to_xot(xot, expr, child, source)?;
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
+        Ir::DoWhile { body, condition, range, span } => {
+            let node = element(xot, "do", *span);
+            xot.append(parent, node)?;
+            let br = body.range();
+            emit_gap(xot, node, source, range.start, br.start)?;
+            render_to_xot(xot, node, body, source)?;
+            let cr = condition.range();
+            emit_gap(xot, node, source, br.end, cr.start)?;
+            let cond_slot = element(xot, "condition", condition.span());
+            xot.append(node, cond_slot)?;
+            let cond_expr = element(xot, "expression", condition.span());
+            xot.append(cond_slot, cond_expr)?;
+            render_to_xot(xot, cond_expr, condition, source)?;
+            emit_gap(xot, node, source, cr.end, range.end)?;
+            Ok(node)
+        }
         Ir::Break { range, span } => {
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;
