@@ -461,9 +461,13 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
-        Ir::SimpleStatement { element_name, children, range, span } => {
+        Ir::SimpleStatement { element_name, modifiers, children, range, span } => {
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
             render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
                 render_to_xot(xot, parent, child, source).map(|_| ())
             })?;
@@ -1275,12 +1279,11 @@ pub fn render_to_xot(
             // C# `using_directive` renders as <import> (matching the
             // imperative pipeline). Block-scoped `using_statement` is
             // a separate kind handled via SimpleStatement "using".
+            // The `static` keyword is captured in gap text for parity;
+            // the `is_static` field stays on the IR for mutation.
+            let _ = is_static;
             let node = element(xot, "import", *span);
             xot.append(parent, node)?;
-            if *is_static {
-                let m = element(xot, "static", *span);
-                xot.append(node, m)?;
-            }
             let mut order: Vec<&Ir> = Vec::new();
             order.push(path.as_ref());
             if let Some(a) = alias { order.push(a.as_ref()); }

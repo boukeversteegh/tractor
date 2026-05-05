@@ -368,12 +368,14 @@ pub enum Ir {
     Continue { range: ByteRange, span: Span },
 
     /// Generic single-keyword statement carrier. Renders as
-    /// `<{element_name}>{children with gaps}</{element_name}>`.
+    /// `<{element_name}>{markers from modifiers}{children with gaps}</{element_name}>`.
     /// Used as the parity-track variant for kinds whose old-pipeline
     /// rule is a simple Rename: `assert`, `raise`, `delete`, `global`,
     /// `nonlocal`, `yield`, etc. Children are the named CST children
     /// in source order; the leading keyword and any punctuation lives
-    /// in gap text.
+    /// in gap text. `modifiers` lets parity-track declarations
+    /// (delegate, event, indexer, etc.) carry their access + flag
+    /// markers without designing a dedicated typed variant first.
     ///
     /// Eventually most users of this should be promoted to typed
     /// variants with proper field labels — but for parity-first
@@ -381,6 +383,7 @@ pub enum Ir {
     /// each one upfront.
     SimpleStatement {
         element_name: &'static str,
+        modifiers: Modifiers,
         children: Vec<Ir>,
         range: ByteRange,
         span: Span,

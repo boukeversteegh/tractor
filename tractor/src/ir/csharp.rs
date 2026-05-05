@@ -31,7 +31,7 @@ pub fn lower_csharp_root(root: TsNode<'_>, source: &str) -> Ir {
     match root.kind() {
         "compilation_unit" => Ir::Module {
             element_name: "unit",
-            children: lower_children(root, source),
+            children: merge_adjacent_line_comments(lower_children(root, source), source),
             range,
             span,
         },
@@ -194,7 +194,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Statements with simple structure -------------------------
 
-        "comment" => Ir::Comment { leading: true, range, span },
+        "comment" => Ir::Comment { leading: false, range, span },
 
         // `using System;` / `using static System.Math;` / `using A = B;`
         "using_directive" => {
@@ -238,14 +238,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // `qualified_name` (`System.Linq`) — same shape as Python's path.
         "qualified_name" => {
-            let mut cursor = node.walk();
-            let segments: Vec<Ir> = node.named_children(&mut cursor).map(|c| {
-                if c.kind() == "identifier" {
-                    Ir::Name { range: range_of(c), span: span_of(c) }
-                } else {
-                    lower_node(c, source)
-                }
-            }).collect();
+            // Flatten nested qualified_name (System.Collections.Generic
+            // is parsed as nested pairs) into a single flat Ir::Path
+            // with all name segments — matches imperative pipeline.
+            let mut segments: Vec<Ir> = Vec::new();
+            collect_qualified_name_segments(node, source, &mut segments);
             Ir::Path { segments, range, span }
         }
 
@@ -397,7 +394,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let body_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "declaration_list");
+            // For namespace, the imperative pipeline collapses a
+            // qualified_name (`Tractor.Fixtures.Traditional`) into a
+            // single `<name>` leaf with the full dotted text. Keep
+            // parity by emitting Ir::Name with the qualified node's
+            // whole range.
             let name_ir = match name_node {
+                Some(n) if n.kind() == "qualified_name" || n.kind() == "identifier" => {
+                    Ir::Name { range: range_of(n), span: span_of(n) }
+                }
                 Some(n) => lower_node(n, source),
                 None => Ir::Unknown {
                     kind: "namespace(missing name)".to_string(),
@@ -407,7 +412,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let children: Vec<Ir> = match body_node {
                 Some(b) => {
                     let mut c = b.walk();
-                    b.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+                    let raw: Vec<Ir> = b.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+                    merge_adjacent_line_comments(raw, source)
                 }
                 None => Vec::new(),
             };
@@ -1677,15 +1683,22 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
 /// Lower a keyword-prefixed simple statement / expression
 /// (`yield`, `lock`, `goto`, `typeof`, etc.) to
 /// `Ir::SimpleStatement`. Children are the CST's named children
-/// lowered recursively.
+/// lowered recursively. Modifiers are extracted from any `modifier`
+/// child nodes — declaration-shaped kinds (delegate/event/indexer/
+/// destructor) need them; statement kinds simply have none.
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
+    let modifiers = lower_csharp_modifiers(node, source, None);
     let mut cursor = node.walk();
     let children: Vec<Ir> = node.named_children(&mut cursor)
+        // Skip `modifier` children — they're already captured in the
+        // Modifiers struct; rendering them as separate IR would
+        // duplicate the keyword text into both gap and IR-children.
+        .filter(|c| c.kind() != "modifier")
         .map(|c| lower_node(c, source))
         .collect();
-    Ir::SimpleStatement { element_name, children, range, span }
+    Ir::SimpleStatement { element_name, modifiers, children, range, span }
 }
 
 /// Lower a C# `catch_clause` to `Ir::ExceptHandler` with kind="catch".
@@ -1748,12 +1761,84 @@ fn lower_block_like(node: TsNode<'_>, source: &str) -> Ir {
     let children: Vec<Ir> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
+    let children = merge_adjacent_line_comments(children, source);
     Ir::Body {
         children,
         pass_only: false,
         range: range_of(node),
         span: span_of(node),
     }
+}
+
+/// Recursively collect identifier segments from a `qualified_name`
+/// CST node, producing a flat list of `Ir::Name`. The grammar nests
+/// `qualified_name(qualified_name(a, b), c)` for `a.b.c`; we want
+/// flat `[a, b, c]`.
+fn collect_qualified_name_segments(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "qualified_name" => collect_qualified_name_segments(c, source, out),
+            "identifier" => out.push(Ir::Name { range: range_of(c), span: span_of(c) }),
+            _ => out.push(lower_node(c, source)),
+        }
+    }
+}
+
+/// Group consecutive `Ir::Comment` children that are line comments on
+/// adjacent lines into a single comment whose range spans them all,
+/// then mark `leading = true` on any comment that is immediately
+/// followed by a non-comment IR sibling on the very next line.
+/// Mirrors the imperative pipeline's `classify_and_group` behaviour.
+fn merge_adjacent_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
+    // Phase 1: merge runs of adjacent line comments.
+    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+    for child in children {
+        if let Ir::Comment { leading, range, span } = child {
+            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+                let gap = &source[prev_range.end as usize..range.start as usize];
+                let only_one_newline = gap.chars().filter(|&c| c == '\n').count() <= 1
+                    && gap.chars().all(|c| c.is_whitespace());
+                let prev_is_line_comment = source[prev_range.start as usize..prev_range.end as usize]
+                    .trim_start().starts_with("//");
+                let curr_is_line_comment = source[range.start as usize..range.end as usize]
+                    .trim_start().starts_with("//");
+                if only_one_newline && prev_is_line_comment && curr_is_line_comment {
+                    if let Some(Ir::Comment { range: r, .. }) = out.last_mut() {
+                        r.end = range.end;
+                    }
+                    continue;
+                }
+            }
+            out.push(Ir::Comment { leading, range, span });
+        } else {
+            out.push(child);
+        }
+    }
+
+    // Phase 2: mark a comment as `leading = true` iff the next
+    // non-comment sibling starts on the very next line (no blank
+    // line in between).
+    let n = out.len();
+    for i in 0..n {
+        if let Ir::Comment { range, .. } = &out[i] {
+            let comment_end = range.end as usize;
+            // Find next non-comment sibling.
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            if let Some(next_ir) = next {
+                let next_start = next_ir.range().start as usize;
+                let between = &source[comment_end..next_start];
+                let newlines = between.chars().filter(|&c| c == '\n').count();
+                if newlines == 1 && between.chars().all(|c| c.is_whitespace()) {
+                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                        *leading = true;
+                    }
+                }
+            }
+        }
+    }
+
+    out
 }
 
 /// Lower a `variable_declarator` into `Ir::Variable`. The type

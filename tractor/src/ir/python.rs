@@ -1014,6 +1014,7 @@ fn lower_type_arg(node: TsNode<'_>, source: &str) -> Ir {
 /// Lower a keyword-prefixed simple statement (`assert`, `raise`,
 /// `delete`, `global`, `nonlocal`, `yield`) to `Ir::SimpleStatement`.
 /// Children are the CST's named children, lowered recursively.
+/// Python statements don't carry modifiers; the field is empty.
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
@@ -1021,7 +1022,7 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
     let children: Vec<Ir> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
-    Ir::SimpleStatement { element_name, children, range, span }
+    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), children, range, span }
 }
 
 /// Lower a Python `except_clause` to `Ir::ExceptHandler` with
