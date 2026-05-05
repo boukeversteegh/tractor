@@ -170,7 +170,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["python", "py"],
-        transform: python::transform,
+        // Python flows entirely through `crate::ir::python` (parser
+        // dispatches to `parse_with_ir_pipeline`). The imperative
+        // walker is no longer reachable for Python; passthrough
+        // satisfies the registry contract.
+        transform: passthrough_transform,
         post_transform: Some(python::python_post_transform),
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,

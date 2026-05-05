@@ -306,7 +306,9 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
         // exists. The IR pipeline owns its own dispatch table; there's
         // no equivalent passthrough catalogue (and the
         // `Ir::Unknown` fall-through covers the same diagnostic).
-        ("python",     passthrough_kinds(python::rules::rule)),
+        // Python moved off the imperative pipeline: rule table no
+        // longer exists. The IR pipeline owns its dispatch; the
+        // `Ir::Unknown` fall-through covers the same diagnostic.
         ("go",         passthrough_kinds(go::rules::rule)),
         ("rust",       passthrough_kinds(rust_lang::rules::rule)),
         ("java",       passthrough_kinds(java::rules::rule)),

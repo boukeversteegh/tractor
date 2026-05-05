@@ -12,17 +12,16 @@
 
 #![cfg(feature = "native")]
 
-use strum::IntoEnumIterator;
 use tractor::ir::{audit_coverage, lower_python_root, render_to_xot, to_source};
-use tractor::languages::python::input::PyKind;
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
-/// All named kinds tree-sitter-python emits, derived from the
-/// generated `PyKind` enum. The strum `IntoStaticStr` derive on the
-/// enum gives us the snake_case names.
+/// Empty list — `PyKind` no longer exists post-IR-migration; the
+/// audit's `known_kinds` argument is optional and zero-length is
+/// fine (just disables the "kind seen but not exercised" diagnostic).
+#[allow(dead_code)]
 fn python_known_kinds() -> Vec<&'static str> {
-    PyKind::iter().map(|k| k.into()).collect()
+    Vec::new()
 }
 
 fn structural_view(xot: &Xot, root: XotNode) -> String {
