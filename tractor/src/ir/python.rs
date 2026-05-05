@@ -257,8 +257,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // Production-readiness handlers for kinds the old pipeline
-        // handles but the blueprint doesn't exercise.
-        "set"                    => simple_statement(node, "set",          source),
+        // handles but the blueprint doesn't exercise. (set,
+        // generic_type, type, type_parameter all have proper
+        // typed handlers further down — don't shadow them here.)
         "slice"                  => simple_statement(node, "slice",        source),
         "ellipsis"               => simple_statement(node, "ellipsis",     source),
         "exec_statement"         => simple_statement(node, "exec",         source),
@@ -268,14 +269,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "parenthesized_list_splat" => simple_statement(node, "spread",     source),
         "member_type"            => simple_statement(node, "type",         source),
         "chevron"                => simple_statement(node, "chevron",      source),
-
-        // Type-related kinds — old pipeline uses Custom transforms
-        // for these; for kind-coverage parity we emit them as
-        // <type> via SimpleStatement.
-        "type"           => simple_statement(node, "type",      source),
-        "generic_type"   => simple_statement(node, "type",      source),
-        "type_parameter" => simple_statement(node, "type",      source),
-        "type_conversion"=> simple_statement(node, "cast",      source),
+        "type_conversion"        => simple_statement(node, "cast",         source),
 
         // Comprehensions and related — `[x for x in y]` etc. Old
         // pipeline names them after their literal kind.

@@ -224,4 +224,10 @@ def patterns_and_misc(values, items, x):
     flag = not matched
     bundle = (*items,)
     banner = "first " "second " "third"
-    return matched, result, flag, bundle, banner
+    # Set literal, slice, ellipsis: kinds the IR pipeline supports.
+    s = {1, 2, 3}
+    sliced = items[1:3]
+    pad = items[::2]
+    placeholder: Sequence[int, ...] = items
+    def stub() -> int: ...
+    return matched, result, flag, bundle, banner, s, sliced, pad, stub()
