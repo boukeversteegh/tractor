@@ -252,10 +252,48 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let name_node = node.child_by_field_name("name");
             let body_node = node.child_by_field_name("body");
             let modifiers = lower_csharp_modifiers(node, source, Some(Access::Internal));
-            // Underlying type lives between the name and the body —
-            // tree-sitter exposes it as a `base_list`'s child, or
-            // sometimes a separate `_type` field. For minimal scope,
-            // skip and let it appear in gap text.
+            // Flatten attribute_list children (each is an individual
+            // `attribute` node), matching the imperative's `Flatten` rule
+            // for `AttributeList`.
+            let mut cursor = node.walk();
+            let decorators: Vec<Ir> = node.named_children(&mut cursor)
+                .filter(|c| c.kind() == "attribute_list")
+                .flat_map(|al| {
+                    let mut c = al.walk();
+                    al.named_children(&mut c)
+                        .map(|attr| lower_node(attr, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            // Underlying integral type (`enum Trait : uint`). tree-sitter
+            // puts it in a `base_list` node. Render as `<type[underlying]>`
+            // to match the imperative's `base_list` custom transform.
+            let mut cursor2 = node.walk();
+            let underlying_type: Option<Box<Ir>> = node.named_children(&mut cursor2)
+                .find(|c| c.kind() == "base_list")
+                .and_then(|bl| {
+                    let mut bc = bl.walk();
+                    let type_child = bl.named_children(&mut bc).next()?;
+                    let type_ir = lower_node(type_child, source);
+                    // Prepend a synthetic `<underlying/>` marker child so the
+                    // element renders as `type[underlying]/name = "..."`.
+                    let type_child_range = range_of(type_child);
+                    let type_child_span  = span_of(type_child);
+                    let underlying_marker = Ir::SimpleStatement {
+                        element_name: "underlying",
+                        modifiers: Modifiers::default(),
+                        children: vec![],
+                        range: ByteRange::empty_at(type_child_range.start),
+                        span: type_child_span,
+                    };
+                    Some(Box::new(Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        children: vec![underlying_marker, type_ir],
+                        range: type_child_range,
+                        span: type_child_span,
+                    }))
+                });
             let members: Vec<Ir> = match body_node {
                 Some(b) => {
                     let b_range = range_of(b);
@@ -275,12 +313,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             };
             Ir::Enum {
                 modifiers,
-                decorators: Vec::new(),
+                decorators,
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown { kind: "enum(missing name)".to_string(), range, span },
                 }),
-                underlying_type: None,
+                underlying_type,
                 members,
                 range, span,
             }
@@ -295,7 +333,27 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown { kind: "enum_member(missing name)".to_string(), range, span },
                 }),
-                value: value_node.map(|n| Box::new(lower_node(n, source))),
+                // The imperative wraps the value expression in `value/expression/<literal>`.
+                // Reproduce that nesting here so structural parity holds.
+                value: value_node.map(|vn| {
+                    let vn_range = range_of(vn);
+                    let vn_span  = span_of(vn);
+                    let expr_ir  = lower_node(vn, source);
+                    let expr_wrap = Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        children: vec![expr_ir],
+                        range: vn_range,
+                        span: vn_span,
+                    };
+                    Box::new(Ir::SimpleStatement {
+                        element_name: "value",
+                        modifiers: Modifiers::default(),
+                        children: vec![expr_wrap],
+                        range: vn_range,
+                        span: vn_span,
+                    })
+                }),
                 range, span,
             }
         }
