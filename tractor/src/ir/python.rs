@@ -273,12 +273,26 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // Comprehensions and related — `[x for x in y]` etc. Old
         // pipeline names them after their literal kind.
-        "list_comprehension"        => simple_statement(node, "list",      source),
-        "set_comprehension"         => simple_statement(node, "set",       source),
-        "dictionary_comprehension"  => simple_statement(node, "dict",      source),
+        "list_comprehension"        => simple_statement_marked(node, "list", &["comprehension"], source),
+        "set_comprehension"         => simple_statement_marked(node, "set",  &["comprehension"], source),
+        "dictionary_comprehension"  => simple_statement_marked(node, "dict", &["comprehension"], source),
         "generator_expression"      => simple_statement(node, "generator", source),
         "for_in_clause"             => simple_statement(node, "for",       source),
-        "if_clause"                 => simple_statement(node, "if",        source),
+        // `if_clause` outside of `case_clause` (which handles its
+        // guard explicitly) appears in comprehensions
+        // (`[x for x in xs if cond]`) and there should flatten so
+        // the `cond` expression becomes a direct child of the
+        // surrounding `<list[comprehension]>` / `<dict[comprehension]>`.
+        // Mirror imperative `if_clause` Custom transform's flatten
+        // branch.
+        "if_clause" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
         // `with` / `async with`. tree-sitter exposes the `async`
         // keyword as an unnamed child of with_statement; detect by
         // scanning the source slice prefix and add an `<async/>`
@@ -305,7 +319,42 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Inline { children, list_name: None, range, span }
         }
         "match_statement"           => simple_statement(node, "match",     source),
-        "case_clause"               => simple_statement(node, "arm",       source),
+        // case_clause: `case PATTERN [if GUARD]: BODY`. Walk
+        // children explicitly so we can rename the `if_clause` guard
+        // field to `<guard>` (matches imperative shape) and recurse
+        // on the rest. tree-sitter exposes the guard via field name,
+        // and the bare `if_clause` would otherwise lower to `<if>`.
+        "case_clause" => {
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "if_clause" {
+                    // Lower the inner expression(s) into a `<guard>`.
+                    let mut inner_cursor = c.walk();
+                    let inner: Vec<Ir> = c.named_children(&mut inner_cursor)
+                        .map(|n| lower_node(n, source))
+                        .collect();
+                    children.push(Ir::SimpleStatement {
+                        element_name: "guard",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: inner,
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                } else {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "arm",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
         "case_pattern"              => simple_statement(node, "pattern",   source),
         "class_pattern"             => simple_statement(node, "pattern",   source),
         "complex_pattern"           => simple_statement(node, "pattern",   source),
@@ -1171,7 +1220,36 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "integer"    => Ir::Int  { range, span },
         "float"      => Ir::Float { range, span },
-        "string"     => Ir::String { range, span },
+        // tree-sitter-python: `string` always has named children
+        // (`string_start`, `string_content`, `string_end`, plus
+        // optional `interpolation`/`escape_sequence`). Plain strings
+        // (just delimiters + literal text) stay scalar leaves. Only
+        // when there's an `interpolation` or `escape_sequence` child
+        // do we lift to a SimpleStatement so the structured chunk
+        // survives.
+        "string"     => {
+            let mut cursor = node.walk();
+            let has_structured = node.named_children(&mut cursor).any(|c| {
+                matches!(c.kind(), "interpolation" | "escape_sequence")
+            });
+            if has_structured {
+                let mut c2 = node.walk();
+                let children: Vec<Ir> = node.named_children(&mut c2)
+                    .filter(|c| matches!(c.kind(), "interpolation" | "escape_sequence"))
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Ir::SimpleStatement {
+                    element_name: "string",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children,
+                    range,
+                    span,
+                }
+            } else {
+                Ir::String { range, span }
+            }
+        }
         "true"       => Ir::True { range, span },
         "false"      => Ir::False { range, span },
         "none"       => Ir::None { range, span },
