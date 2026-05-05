@@ -135,6 +135,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             match inner {
                 Some(n) => Ir::Expression {
                     inner: Box::new(lower_node(n, source)),
+                    marker: None,
                     range,
                     span,
                 },
@@ -354,6 +355,108 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 },
                 _ => Ir::Unknown {
                     kind: "binary_expression(missing/unknown op)".to_string(),
+                    range,
+                    span,
+                },
+            }
+        }
+
+        // ----- Postfix unary `!` (non-null assertion) ------------------
+        //
+        // C#'s `obj!` declares the value non-null at the type level.
+        // The existing pipeline marks this as `<expression[non_null]>`
+        // — a marker on the expression host (Principle #15).
+        // Architectural payoff: same shape as any value-position
+        // expression, plus a marker. `obj` and `obj!` differ only in
+        // the marker.
+        "postfix_unary_expression" => {
+            let mut cursor = node.walk();
+            let operand = node.named_children(&mut cursor).next();
+            // The operator is an unnamed `!` token; we don't need it
+            // separately — the `non_null` marker comes from the
+            // construct kind itself.
+            match operand {
+                Some(o) => Ir::Expression {
+                    inner: Box::new(lower_node(o, source)),
+                    marker: Some("non_null"),
+                    range,
+                    span,
+                },
+                None => Ir::Unknown {
+                    kind: "postfix_unary_expression(missing operand)".to_string(),
+                    range,
+                    span,
+                },
+            }
+        }
+
+        // ----- is-expression `x is Type` --------------------------------
+        //
+        // tree-sitter: `is_expression` with two named children
+        // (value, type-or-pattern). The `is` keyword is anonymous.
+        // For now only the simple type form (`is int`, `is Widget`)
+        // is covered; pattern forms (`is Widget w`, `is null`, etc.)
+        // would extend the right side.
+        "is_expression" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.len() == 2 {
+                Ir::Is {
+                    value: Box::new(lower_node(kids[0], source)),
+                    type_target: Box::new(lower_node(kids[1], source)),
+                    range,
+                    span,
+                }
+            } else {
+                Ir::Unknown {
+                    kind: format!("is_expression(arity={})", kids.len()),
+                    range,
+                    span,
+                }
+            }
+        }
+
+        // ----- cast `(Type)expr` ----------------------------------------
+        //
+        // C#'s `(int)x` produces `<cast><type>...</type><value><expression>...</expression></value></cast>`.
+        // tree-sitter: `cast_expression` with two named children:
+        // the type and the value. (No fields, just positional.)
+        "cast_expression" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            if kids.len() == 2 {
+                Ir::Cast {
+                    type_ann: Box::new(lower_node(kids[0], source)),
+                    value: Box::new(lower_node(kids[1], source)),
+                    range,
+                    span,
+                }
+            } else {
+                Ir::Unknown {
+                    kind: format!("cast_expression(arity={})", kids.len()),
+                    range,
+                    span,
+                }
+            }
+        }
+
+        // ----- await -----------------------------------------------------
+        //
+        // `await x` similarly decorates the expression host with
+        // `<await/>`. tree-sitter-c-sharp uses
+        // `await_expression(operand)`.
+        "await_expression" => {
+            let mut cursor = node.walk();
+            let operand = node.named_children(&mut cursor).next();
+            match operand {
+                Some(o) => Ir::Expression {
+                    inner: Box::new(lower_node(o, source)),
+                    marker: Some("await"),
+                    range,
+                    span,
+                },
+                None => Ir::Unknown {
+                    kind: "await_expression(missing operand)".to_string(),
                     range,
                     span,
                 },

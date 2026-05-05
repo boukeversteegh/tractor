@@ -55,13 +55,20 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Expression { inner, range, span } => {
+        Ir::Expression { inner, marker, range, span } => {
             let node = element(xot, "expression", *span);
             xot.append(parent, node)?;
+            // Optional marker child first (e.g. `<non_null/>` for
+            // `obj!`, `<await/>` for `await x`). Empty element, no
+            // text contribution — XPath text-recovery unaffected.
+            if let Some(m) = marker {
+                let marker_node = element(xot, m, *span);
+                xot.append(node, marker_node)?;
+            }
             // <expression> is a Principle #15 host wrapper. Its byte
             // range typically equals (or contains) the inner's range.
-            // Emit pre-gap, inner, trailing-gap so trailing newlines /
-            // semicolons attached to the statement are preserved.
+            // Emit pre-gap, inner, trailing-gap so trailing tokens
+            // (e.g. the `!` for non-null) are preserved.
             render_with_gaps(xot, node, source, *range, std::slice::from_ref(inner.as_ref()),
                 |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ()),
             )?;
@@ -775,6 +782,53 @@ pub fn render_to_xot(
         Ir::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
         Ir::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
         Ir::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
+        Ir::Is { value, type_target, range, span } => {
+            let node = element(xot, "is", *span);
+            xot.append(parent, node)?;
+            // <left><expression>{value}</expression></left>
+            let vr = value.range();
+            emit_gap(xot, node, source, range.start, vr.start)?;
+            let left_slot = element(xot, "left", value.span());
+            xot.append(node, left_slot)?;
+            let left_expr = element(xot, "expression", value.span());
+            xot.append(left_slot, left_expr)?;
+            render_to_xot(xot, left_expr, value, source)?;
+            // Gap between value and type (`is` keyword + spaces).
+            let tr = type_target.range();
+            emit_gap(xot, node, source, vr.end, tr.start)?;
+            // <right><expression><type>{type_target}</type></expression></right>
+            let right_slot = element(xot, "right", type_target.span());
+            xot.append(node, right_slot)?;
+            let right_expr = element(xot, "expression", type_target.span());
+            xot.append(right_slot, right_expr)?;
+            let type_el = element(xot, "type", type_target.span());
+            xot.append(right_expr, type_el)?;
+            render_to_xot(xot, type_el, type_target, source)?;
+            // Trailing.
+            emit_gap(xot, node, source, tr.end, range.end)?;
+            Ok(node)
+        }
+        Ir::Cast { type_ann, value, range, span } => {
+            let node = element(xot, "cast", *span);
+            xot.append(parent, node)?;
+            // <type>...</type>
+            let tr = type_ann.range();
+            emit_gap(xot, node, source, range.start, tr.start)?;
+            let type_el = element(xot, "type", type_ann.span());
+            xot.append(node, type_el)?;
+            render_to_xot(xot, type_el, type_ann, source)?;
+            // <value><expression>...</expression></value>
+            let vr = value.range();
+            emit_gap(xot, node, source, tr.end, vr.start)?;
+            let value_el = element(xot, "value", value.span());
+            xot.append(node, value_el)?;
+            let expr_el = element(xot, "expression", value.span());
+            xot.append(value_el, expr_el)?;
+            render_to_xot(xot, expr_el, value, source)?;
+            // Trailing gap after value.
+            emit_gap(xot, node, source, vr.end, range.end)?;
+            Ok(node)
+        }
 
         Ir::Inline { children, range, span: _ } => {
             // Inline contributes no element of its own. Children render

@@ -323,6 +323,172 @@ fn conditional_access_chains() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Whack-a-mole: `obj!` non-null assertion (postfix unary).
+//
+// The existing pipeline emits `<expression[non_null]>` — marker on
+// the expression host. The IR achieves the same by extending
+// `Ir::Expression` with an optional `marker` field.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn non_null_assertion() {
+    let s = "class C { void M() { var x = obj!; } }\n";
+    assert_ir_invariants(s, "obj! non-null");
+
+    // Lower the postfix expression directly.
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+        if n.kind() == "postfix_unary_expression" { return Some(n); }
+        let mut c = n.walk();
+        for child in n.named_children(&mut c) {
+            if let Some(f) = find(child) { return Some(f); }
+        }
+        None
+    }
+    let target = find(tree.root_node()).expect("postfix_unary");
+    let ir = tractor::ir::lower_csharp_node(target, s);
+
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let view = structural_view(&xot, root);
+    eprintln!("--- obj! ---\n{view}");
+
+    // Should produce <expression><non_null/><name>obj</name></expression>
+    assert!(view.contains("expression"), "must wrap in <expression>");
+    assert!(view.contains("non_null"), "must carry <non_null/> marker");
+    assert!(view.contains("name"), "must contain inner <name>");
+
+    // Round-trip text recovery.
+    let recovered = to_source(&ir, s);
+    assert!(recovered.contains("obj!"), "round-trip must preserve `obj!`");
+}
+
+// ---------------------------------------------------------------------------
+// Whack-a-mole: `x is Type` type-test expression.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn is_type_test() {
+    let s = "class C { void M() { var c = x is int; } }\n";
+    assert_ir_invariants(s, "x is int");
+
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+        if n.kind() == "is_expression" { return Some(n); }
+        let mut c = n.walk();
+        for child in n.named_children(&mut c) {
+            if let Some(f) = find(child) { return Some(f); }
+        }
+        None
+    }
+    let target = find(tree.root_node()).expect("is_expression");
+    let ir = tractor::ir::lower_csharp_node(target, s);
+
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let view = structural_view(&xot, root);
+    eprintln!("--- x is int ---\n{view}");
+
+    // Expected:
+    // is
+    //   left
+    //     expression
+    //       name text="x"
+    //   right
+    //     expression
+    //       type
+    //         name text="int"
+    assert!(view.starts_with("is"), "must produce <is> as root");
+    assert!(view.contains("left"), "must contain <left>");
+    assert!(view.contains("right"), "must contain <right>");
+    assert!(view.contains("type"), "must wrap target in <type>");
+
+    let recovered = to_source(&ir, s);
+    assert!(recovered.contains("x is int"), "round-trip must preserve `x is int`");
+}
+
+// ---------------------------------------------------------------------------
+// Whack-a-mole: `(Type)expr` cast.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn cast_expression() {
+    let s = "class C { void M() { var x = (int)y; } }\n";
+    assert_ir_invariants(s, "(int)y cast");
+
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+        if n.kind() == "cast_expression" { return Some(n); }
+        let mut c = n.walk();
+        for child in n.named_children(&mut c) {
+            if let Some(f) = find(child) { return Some(f); }
+        }
+        None
+    }
+    let target = find(tree.root_node()).expect("cast");
+    let ir = tractor::ir::lower_csharp_node(target, s);
+
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let view = structural_view(&xot, root);
+    eprintln!("--- (int)y ---\n{view}");
+
+    // Should produce <cast><type><name>int</name></type><value><expression><name>y</name></expression></value></cast>
+    assert!(view.contains("cast"), "must wrap in <cast>");
+    assert!(view.contains("type"), "must contain <type> slot");
+    assert!(view.contains("value"), "must contain <value> slot");
+
+    let recovered = to_source(&ir, s);
+    assert!(recovered.contains("(int)y"), "round-trip must preserve `(int)y`");
+}
+
+/// Show the existing pipeline's shape for `x is int`.
+#[test]
+#[ignore]
+fn dump_existing_is_shape() {
+    let s = "class C { void M() { var c = x is int; } }\n";
+    let r = parse_string_to_xot(s, "csharp", "<test>".to_string(), None).unwrap();
+    let root = r.xot.document_element(r.root).unwrap();
+    let view = structural_view(&r.xot, root);
+    eprintln!("{view}");
+}
+
+#[test]
+#[ignore]
+fn dump_csharp_misc() {
+    let source = "class C { void M() { var a = obj!; var b = (int)x; var c = x is int; } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(source, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let display = if text.len() > 60 { format!("{}...", &text[..60]) } else { text.to_string() };
+        eprintln!("{indent}{} text={display:?}", node.kind());
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, source.as_bytes());
+}
+
 #[test]
 #[ignore]
 fn dump_csharp_conditional() {

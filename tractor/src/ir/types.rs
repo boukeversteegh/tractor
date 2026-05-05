@@ -161,8 +161,20 @@ pub enum Ir {
     /// `<expression>...</expression>` — Principle #15 stable expression
     /// host. Wraps a value-producing position so XPath queries can
     /// match on a uniform parent regardless of inner shape.
+    ///
+    /// `marker` adds an empty marker child first (rendered as
+    /// `<expression[marker]>` in tree-text view). Used for:
+    /// - `non_null` — C#'s `obj!` postfix non-null assertion
+    /// - `await` — `await x` (when not in a statement context)
+    /// - More may be added as needed.
+    ///
+    /// **Why on the host, not the operand:** Principle #15 — markers
+    /// live in stable predictable locations. The expression host is
+    /// ALWAYS present in value positions; the marker decorates it
+    /// rather than appearing on the bare inner name/expression.
     Expression {
         inner: Box<Ir>,
+        marker: Option<&'static str>,
         range: ByteRange,
         span: Span,
     },
@@ -543,6 +555,27 @@ pub enum Ir {
     True   { range: ByteRange, span: Span },
     False  { range: ByteRange, span: Span },
     None   { range: ByteRange, span: Span },
+    /// `<is>` — `expr is Type` type-test expression. Renders as
+    /// `<is><left><expression>{value}</expression></left>
+    /// <right><expression><type>{type_target}</type></expression></right></is>`.
+    /// (Pattern-form `is Widget w` not yet covered — would extend
+    /// `right` with a pattern variant.)
+    Is {
+        value: Box<Ir>,
+        type_target: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<cast>` — `(Type)expr` type-cast expression (C#, Java, …).
+    /// Renders as `<cast><type>...</type><value><expression>...</expression></value></cast>`.
+    Cast {
+        type_ann: Box<Ir>,
+        value: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `null` literal (C# / Java / TS / PHP). Distinct from `None`
     /// (Python) because the keyword text differs and Principle #5
     /// applies *within* a language. We may unify the *element name*
@@ -695,6 +728,8 @@ impl Ir {
             | Ir::True { span, .. }
             | Ir::False { span, .. }
             | Ir::None { span, .. }
+            | Ir::Is { span, .. }
+            | Ir::Cast { span, .. }
             | Ir::Null { span, .. }
             | Ir::Inline { span, .. }
             | Ir::Unknown { span, .. } => *span,
@@ -751,6 +786,8 @@ impl Ir {
             | Ir::True { range, .. }
             | Ir::False { range, .. }
             | Ir::None { range, .. }
+            | Ir::Is { range, .. }
+            | Ir::Cast { range, .. }
             | Ir::Null { range, .. }
             | Ir::Inline { range, .. }
             | Ir::Unknown { range, .. } => *range,

@@ -75,6 +75,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     } else {
                         Ir::Expression {
                             inner: Box::new(lower_node(*single, source)),
+                            marker: None,
                             range,
                             span,
                         }
