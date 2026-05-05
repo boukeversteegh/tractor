@@ -1661,10 +1661,22 @@ fn render_segments_chain(
         AccessSegment::Index { indices, range: _, span } => {
             let node = element(xot, "index", *span);
             xot.append(host, node)?;
-            let inner_refs: Vec<&Ir> = indices.iter().collect();
-            render_with_gaps(xot, node, source, seg_range, &inner_refs,
-                |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
-            )?;
+            // For multi-arg indexers (`arr[1, 2, 3]`), wrap each
+            // index in `<argument>` so the post_transform's
+            // `("index", "argument")` tag pair tags them with
+            // `list="arguments"` (matches imperative shape contract).
+            // Single-index cases also wrap, then post_transform skips
+            // tagging when there's only one — same as imperative.
+            let mut cursor_pos = seg_range.start;
+            for idx in indices {
+                let r = idx.range();
+                emit_gap(xot, node, source, cursor_pos, r.start)?;
+                let arg = element(xot, "argument", idx.span());
+                xot.append(node, arg)?;
+                render_to_xot(xot, arg, idx, source)?;
+                cursor_pos = r.end;
+            }
+            emit_gap(xot, node, source, cursor_pos, seg_range.end)?;
             let mut inner_cursor = seg_range.end;
             render_segments_chain(xot, node, rest, &mut inner_cursor, source)?;
             *cursor = inner_cursor;

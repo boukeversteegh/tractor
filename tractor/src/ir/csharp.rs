@@ -1503,7 +1503,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `expression` and `subscript_arguments` (a `bracketed_argument_list`).
         "element_access_expression" => {
             let object_node = node.child_by_field_name("expression");
-            let subscript_node = node.child_by_field_name("subscript_arguments");
+            let subscript_node = node.child_by_field_name("subscript");
             let indices: Vec<Ir> = match subscript_node {
                 Some(s) => {
                     let mut c = s.walk();
@@ -2317,20 +2317,26 @@ fn lower_variable_declarator(
         })
     });
 
-    // Bail out for the cases that would break round-trip identity:
-    // 1. Missing `name` field (tuple deconstruction, exotic patterns).
-    // 2. Name range overlaps with type range (some tree-sitter
-    //    variants put the type *inside* the name's reported range).
-    // Tuple deconstruction (`var (a, b) = ...`): no `name` field.
-    // Fall back to Inline so the source bytes are preserved without
-    // a synthetic `<unknown>` element. The deconstructed variables
-    // surface as bare names through gap text + child traversal.
+    // For tuple deconstruction (`var (a, b) = pair;`) and other
+    // forms without a `name` field, lower as Inline whose children
+    // are the named CST children (the tuple_pattern and the value).
+    // This preserves source bytes AND lets the inner `<pattern[tuple]>`
+    // surface for queryability — without manufacturing an Ir::Variable
+    // that lacks a single name leaf.
     let Some(n) = name_node else {
-        return Ir::Inline { children: Vec::new(), list_name: None, range, span };
+        let mut cursor = declarator.walk();
+        let children: Vec<Ir> = declarator.named_children(&mut cursor)
+            .map(|c| lower_node(c, source))
+            .collect();
+        return Ir::Inline { children, list_name: None, range, span };
     };
     if let Some(t) = type_node {
         if n.byte_range().start < t.byte_range().end {
-            return Ir::Inline { children: Vec::new(), list_name: None, range, span };
+            let mut cursor = declarator.walk();
+            let children: Vec<Ir> = declarator.named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            return Ir::Inline { children, list_name: None, range, span };
         }
     }
 
@@ -2379,7 +2385,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
         }
         "element_binding_expression" => {
             // `?[idx]` form. Lower the inner argument list.
-            let arg_list = node.child_by_field_name("subscript_arguments");
+            let arg_list = node.child_by_field_name("subscript");
             let indices = match arg_list {
                 Some(a) => {
                     let mut c = a.walk();
@@ -2436,7 +2442,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
         }
         "element_access_expression" => {
             let object_node = node.child_by_field_name("expression");
-            let subscript_node = node.child_by_field_name("subscript_arguments");
+            let subscript_node = node.child_by_field_name("subscript");
             let mut segments = match object_node {
                 Some(o) => lower_binding_to_segments(o, source, optional_first),
                 None => Vec::new(),
