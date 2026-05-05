@@ -694,7 +694,6 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "fixed_statement"               => simple_statement(node, "fixed",      source),
         "unsafe_statement"              => simple_statement(node, "unsafe",     source),
         "using_statement"               => simple_statement(node, "using",      source),
-        "empty_statement"               => simple_statement(node, "empty",      source),
         "throw_statement"               => simple_statement(node, "throw",      source),
         "throw_expression"              => simple_statement(node, "throw",      source),
         "with_expression"               => simple_statement(node, "with",       source),
@@ -720,8 +719,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "type_parameter_constraint"     => simple_statement(node, "constraint", source),
         "type_parameter_constraints_clause" => simple_statement(node, "where",  source),
         "constructor_constraint"        => simple_statement(node, "new",        source),
-        // Patterns
-        "positional_pattern_clause"     => simple_statement(node, "positional", source),
+        // Patterns — flatten (the imperative pipeline does the same).
         "parenthesized_variable_designation" => simple_statement(node, "designation", source),
         // Pointer & function pointer types
         "pointer_type"                  => simple_statement(node, "type",       source),
@@ -734,45 +732,52 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "constructor_initializer"       => simple_statement(node, "initializer",source),
         "calling_convention"            => simple_statement(node, "calling",    source),
         "explicit_interface_specifier"  => simple_statement(node, "interface",  source),
-        "preproc_if"                    => simple_statement(node, "preproc",    source),
-        "preproc_else"                  => simple_statement(node, "preproc",    source),
-        "preproc_elif"                  => simple_statement(node, "preproc",    source),
-        "preproc_define"                => simple_statement(node, "preproc",    source),
-        "preproc_endregion"             => simple_statement(node, "preproc",    source),
-        "preproc_error"                 => simple_statement(node, "preproc",    source),
-        "preproc_line"                  => simple_statement(node, "preproc",    source),
-        "preproc_nullable"              => simple_statement(node, "preproc",    source),
-        "preproc_pragma"                => simple_statement(node, "preproc",    source),
-        "preproc_region"                => simple_statement(node, "preproc",    source),
-        "preproc_undef"                 => simple_statement(node, "preproc",    source),
-        "preproc_warning"               => simple_statement(node, "preproc",    source),
-        "preproc_if_in_attribute_list"  => simple_statement(node, "preproc",    source),
-        "ref_expression"                => simple_statement(node, "ref",        source),
+        "ref_expression"                => simple_statement_marked(node, "ref", &[], source),
         "shebang_directive"             => simple_statement(node, "shebang",    source),
         "member_binding_expression"     => simple_statement(node, "member",     source),
         "element_binding_expression"    => simple_statement(node, "index",      source),
         // Type kinds — render under <type> when used as standalone.
-        "implicit_type"                 => simple_statement(node, "type",       source),
+        // `var` (implicit_type) gets a `<var/>` marker in addition
+        // to the keyword text — matches the imperative pipeline's
+        // handling of anonymous keywords in named elements.
+        "implicit_type" => {
+            // Produce `<type><var/>var</type>`.
+            let mut s = simple_statement(node, "type", source);
+            if let Ir::SimpleStatement { ref mut children, .. } = s {
+                let marker = Ir::SimpleStatement {
+                    element_name: "var",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: Vec::new(),
+                    range: ByteRange::empty_at(range.start),
+                    span,
+                };
+                children.insert(0, marker);
+            }
+            s
+        }
         "array_type"                    => simple_statement(node, "type",       source),
         "tuple_type"                    => simple_statement(node, "type",       source),
         "nullable_type"                 => simple_statement(node, "type",       source),
         "ref_type"                      => simple_statement(node, "type",       source),
         "scoped_type"                   => simple_statement(node, "type",       source),
         "function_pointer_type"         => simple_statement(node, "type",       source),
-        // Array / collection creation — render as <new>.
+        // Array / collection creation — render as <new>. stackalloc
+        // forms additionally carry a `<stackalloc/>` marker; anonymous
+        // object creation carries `<anonymous/>`.
         "array_creation_expression"          => simple_statement(node, "new",   source),
         "implicit_array_creation_expression" => simple_statement(node, "new",   source),
-        "anonymous_object_creation_expression" => simple_statement(node, "new", source),
-        "stackalloc_expression"              => simple_statement(node, "new",   source),
-        "implicit_stackalloc_expression"     => simple_statement(node, "new",   source),
+        "anonymous_object_creation_expression" => simple_statement_marked(node, "new", &["anonymous"], source),
+        "stackalloc_expression"              => simple_statement_marked(node, "new", &["stackalloc"], source),
+        "implicit_stackalloc_expression"     => simple_statement_marked(node, "new", &["stackalloc"], source),
         // String interpolation — render as <string>.
         "interpolated_string_expression"     => simple_statement(node, "string",source),
         // Pattern-matching expressions / statements.
         "is_pattern_expression"              => simple_statement(node, "is",    source),
         "switch_statement"                   => simple_statement(node, "switch",source),
         "switch_expression"                  => simple_statement(node, "switch",source),
-        "switch_expression_arm"              => simple_statement(node, "case",  source),
-        "switch_section"                     => simple_statement(node, "case",  source),
+        "switch_expression_arm"              => simple_statement(node, "arm",   source),
+        "switch_section"                     => simple_statement(node, "arm",   source),
         "with_initializer"                   => simple_statement(node, "with",  source),
         "interpolation"                      => simple_statement(node, "interpolation", source),
         // Pattern kinds — old pipeline uses RenameWithMarker(Pattern, X);
@@ -782,9 +787,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "recursive_pattern"         => simple_statement(node, "pattern", source),
         "relational_pattern"        => simple_statement(node, "pattern", source),
         "tuple_pattern"             => simple_statement(node, "pattern", source),
-        "and_pattern"               => simple_statement(node, "pattern", source),
-        "or_pattern"                => simple_statement(node, "pattern", source),
-        "negated_pattern"           => simple_statement(node, "pattern", source),
+        "and_pattern"               => simple_statement_marked(node, "pattern", &["and"], source),
+        "or_pattern"                => simple_statement_marked(node, "pattern", &["or"],  source),
+        "negated_pattern"           => simple_statement_marked(node, "pattern", &["negated"], source),
         "list_pattern"              => simple_statement(node, "pattern", source),
         "var_pattern"               => simple_statement(node, "pattern", source),
         "type_pattern"              => simple_statement(node, "pattern", source),
@@ -804,6 +809,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "interpolation_alignment_clause"
         | "interpolation_format_clause"
         | "parenthesized_pattern"
+        | "positional_pattern_clause"
+        | "empty_statement"
         | "interpolation_brace"
         | "interpolation_start"
         | "string_content"
@@ -818,7 +825,21 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "type_parameter_list"
         | "parameter_list"
         | "type_argument_list"
-        | "argument_list" => {
+        | "argument_list"
+        | "preproc_if"
+        | "preproc_else"
+        | "preproc_elif"
+        | "preproc_define"
+        | "preproc_endregion"
+        | "preproc_error"
+        | "preproc_line"
+        | "preproc_nullable"
+        | "preproc_pragma"
+        | "preproc_region"
+        | "preproc_undef"
+        | "preproc_warning"
+        | "preproc_if_in_attribute_list"
+        | "preproc_arg" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
@@ -1022,6 +1043,96 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // CST wrappers that should pass through to their inner.
+        "argument" => {
+            let mut c = node.walk();
+            let inner = node.named_children(&mut c).next();
+            match inner {
+                Some(i) => lower_node(i, source),
+                None => Ir::Unknown { kind: "argument(empty)".to_string(), range, span },
+            }
+        }
+        "arrow_expression_clause" => {
+            // `=> expr` — unwrap to the inner expression.
+            let mut c = node.walk();
+            let inner = node.named_children(&mut c).next();
+            match inner {
+                Some(i) => lower_node(i, source),
+                None => Ir::Unknown { kind: "arrow_expression_clause(empty)".to_string(), range, span },
+            }
+        }
+        "generic_name" => {
+            // `Foo<T, U>` — name + type-argument list. Render as
+            // <type[generic]><name>Foo</name>...</type> via Ir::GenericType.
+            let mut c = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut c).collect();
+            if let Some(name_node) = kids.first() {
+                let name = Box::new(Ir::Name {
+                    range: range_of(*name_node),
+                    span: span_of(*name_node),
+                });
+                let mut params: Vec<Ir> = Vec::new();
+                for k in kids.iter().skip(1) {
+                    if k.kind() == "type_argument_list" {
+                        let mut cc = k.walk();
+                        for arg in k.named_children(&mut cc) {
+                            params.push(lower_node(arg, source));
+                        }
+                    }
+                }
+                Ir::GenericType { name, params, range, span }
+            } else {
+                Ir::Unknown { kind: "generic_name(empty)".to_string(), range, span }
+            }
+        }
+        "initializer_expression" => {
+            // Brace-form initializer — children flatten into parent.
+            let mut c = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut c)
+                .map(|n| lower_node(n, source))
+                .collect();
+            Ir::Inline { children, range, span }
+        }
+        "accessor_list" => {
+            // `{ get; set; }` — flatten accessors.
+            let mut c = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut c)
+                .map(|n| lower_node(n, source))
+                .collect();
+            Ir::Inline { children, range, span }
+        }
+        "this" | "this_expression" | "base" | "base_expression" => {
+            // `this` / `base` keyword — atomic name leaf.
+            Ir::Name { range, span }
+        }
+
+        // Bare `variable_declaration` (e.g. inside event_field_declaration).
+        // Lower as if it were a local_declaration_statement; the parent
+        // element provides the keyword context.
+        "variable_declaration" => {
+            let element_name: &'static str = "variable";
+            let modifiers = Modifiers::default();
+            let type_node = node.child_by_field_name("type");
+            let mut vc = node.walk();
+            let declarators: Vec<TsNode> = node.named_children(&mut vc)
+                .filter(|n| n.kind() == "variable_declarator")
+                .collect();
+            if declarators.len() == 1 {
+                let d = declarators[0];
+                lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers)
+            } else if !declarators.is_empty() {
+                let children: Vec<Ir> = declarators.into_iter().map(|d| {
+                    lower_variable_declarator(
+                        d, type_node, source,
+                        range_of(d), span_of(d), element_name, modifiers,
+                    )
+                }).collect();
+                Ir::Inline { children, range, span }
+            } else {
+                Ir::Unknown { kind: "variable_declaration(no declarators)".to_string(), range, span }
+            }
+        }
+
         // `var x = expr;` / `int x = expr;` / `int x;` —
         // local_declaration_statement contains a variable_declaration
         // which contains type + variable_declarator. Each
@@ -1030,9 +1141,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "local_declaration_statement" | "field_declaration" => {
             // `<variable>` for locals; `<field>` for class fields —
             // matches the imperative pipeline's distribute-and-rename.
-            let element_name: &'static str = if node.kind() == "field_declaration" {
-                "field"
-            } else { "variable" };
+            let is_field = node.kind() == "field_declaration";
+            let element_name: &'static str = if is_field { "field" } else { "variable" };
+            // Fields take their access from `private` (default for
+            // class members); locals don't carry access modifiers.
+            let modifiers = if is_field {
+                lower_csharp_modifiers(node, source, Some(Access::Private))
+            } else {
+                lower_csharp_modifiers(node, source, None)
+            };
             let mut cursor = node.walk();
             let var_decl = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "variable_declaration");
@@ -1045,13 +1162,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         .collect();
                     if declarators.len() == 1 {
                         let d = declarators[0];
-                        lower_variable_declarator(d, type_node, source, range, span, element_name)
+                        lower_variable_declarator(d, type_node, source, range, span, element_name, modifiers)
                     } else {
                         let children: Vec<Ir> = declarators.into_iter().map(|d| {
                             lower_variable_declarator(
                                 d, type_node, source,
                                 range_of(d), span_of(d),
-                                element_name,
+                                element_name, modifiers,
                             )
                         }).collect();
                         Ir::Inline { children, range, span }
@@ -1382,7 +1499,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- as-expression `x as T` -----------------------------------
         // tree-sitter: `as_expression` with two named children
         // (value, type). Render as `<as>` element. Cast-like.
-        "as_expression" => simple_statement(node, "as", source),
+        // `x as T` — same element as `is_expression` to match the
+        // imperative pipeline's "is/as" grouping.
+        "as_expression" => simple_statement(node, "is", source),
 
         // ----- anonymous_method_expression -----------------------------
         // `delegate(int x) { return x; }` — older form of lambda. Same
@@ -1391,7 +1510,6 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "anonymous_method_expression" => simple_statement(node, "lambda", source),
 
         // ----- preprocessor argument ----------------------------------
-        "preproc_arg" => simple_statement(node, "preproc", source),
 
         // ----- is-expression `x is Type` --------------------------------
         //
@@ -1718,7 +1836,36 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
             if !cursor.goto_next_sibling() { break; }
         }
     }
-    Ir::SimpleStatement { element_name, modifiers, children, range, span }
+    Ir::SimpleStatement { element_name, modifiers, extra_markers: &[], children, range, span }
+}
+
+/// Like `simple_statement` but adds explicit `<marker/>` siblings.
+/// Used for pattern combinators (`and`/`or`) and keyword-bearing
+/// elements (`stackalloc`, `ref`) where the imperative pipeline
+/// emits a marker matching the anonymous keyword in the text.
+fn simple_statement_marked(
+    node: TsNode<'_>,
+    element_name: &'static str,
+    extra_markers: &'static [&'static str],
+    source: &str,
+) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let modifiers = lower_csharp_modifiers(node, source, None);
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    if cursor.goto_first_child() {
+        loop {
+            let c = cursor.node();
+            if c.is_named() && c.kind() != "modifier" {
+                let field_name = cursor.field_name();
+                let inner = lower_node(c, source);
+                children.push(maybe_wrap_field(field_name, inner));
+            }
+            if !cursor.goto_next_sibling() { break; }
+        }
+    }
+    Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span }
 }
 
 /// Wrap an IR node in `Ir::FieldWrap` if its tree-sitter field name
@@ -1903,6 +2050,7 @@ fn lower_variable_declarator(
     range: ByteRange,
     span: Span,
     element_name: &'static str,
+    modifiers: Modifiers,
 ) -> Ir {
     let name_node = declarator.child_by_field_name("name");
     // tree-sitter-c-sharp doesn't expose a `value` field on
@@ -1958,6 +2106,7 @@ fn lower_variable_declarator(
     let value_ir = value_node.map(|v| Box::new(lower_node(v, source)));
     Ir::Variable {
         element_name,
+        modifiers,
         type_ann: type_ir,
         name: Box::new(name_ir),
         value: value_ir,

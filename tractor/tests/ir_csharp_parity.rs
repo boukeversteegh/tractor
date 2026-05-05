@@ -148,6 +148,41 @@ fn invariants_null_literal() {
 
 #[test]
 #[ignore]
+fn find_unknown_kinds_in_blueprint_ir() {
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(&source, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), &source);
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    fn walk(xot: &Xot, node: XotNode, counts: &mut std::collections::BTreeMap<String, usize>) {
+        if let Some(elem) = xot.element(node) {
+            let name = xot.local_name_str(elem.name());
+            if name == "unknown" {
+                let kind = xot.attributes(node).iter()
+                    .find(|(n, _)| xot.local_name_str(*n) == "kind")
+                    .map(|(_, v)| v.to_string())
+                    .unwrap_or_default();
+                *counts.entry(kind).or_insert(0) += 1;
+            }
+        }
+        for c in xot.children(node) { walk(xot, c, counts); }
+    }
+    let mut counts = std::collections::BTreeMap::new();
+    walk(&xot, root, &mut counts);
+    for (k, n) in &counts {
+        eprintln!("{:4}  {}", n, k);
+    }
+}
+
+#[test]
+#[ignore]
 fn find_blueprint_error_nodes() {
     let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))

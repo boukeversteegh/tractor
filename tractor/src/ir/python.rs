@@ -1022,7 +1022,7 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
     let children: Vec<Ir> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
-    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), children, range, span }
+    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
 }
 
 /// Lower a Python `except_clause` to `Ir::ExceptHandler` with

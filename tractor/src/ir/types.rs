@@ -397,6 +397,13 @@ pub enum Ir {
     SimpleStatement {
         element_name: &'static str,
         modifiers: Modifiers,
+        /// Extra static markers to emit before children, in order. Used
+        /// for pattern combinators (`<and/>`, `<or/>`), keyword markers
+        /// (`<stackalloc/>`, `<ref/>`, `<var/>`) etc. — markers that the
+        /// imperative pipeline attaches as siblings of anonymous-keyword
+        /// text (Principle: every keyword in an element's text must
+        /// have a corresponding marker sibling).
+        extra_markers: &'static [&'static str],
         children: Vec<Ir>,
         range: ByteRange,
         span: Span,
@@ -848,6 +855,9 @@ pub enum Ir {
         /// for class-level field declarations. C# uses both; Python
         /// uses neither (assignments take a different IR path).
         element_name: &'static str,
+        /// Access + flag modifiers. Empty for locals (their modifiers
+        /// like `const` are very limited); fields use them fully.
+        modifiers: Modifiers,
         type_ann: Option<Box<Ir>>,
         name: Box<Ir>,
         value: Option<Box<Ir>>,

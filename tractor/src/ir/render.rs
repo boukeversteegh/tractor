@@ -410,10 +410,9 @@ pub fn render_to_xot(
         Ir::CFor { initializer, condition, updates, body, range, span } => {
             let node = element(xot, "for", *span);
             xot.append(parent, node)?;
-            // Header parts in source order: initializer (in <init>),
-            // condition (in <condition><expression>), updates (each
-            // wrapped in <update><expression>). Body last.
-            // Walk children in source order, dispatching on identity.
+            // The imperative pipeline doesn't wrap initializer / update
+            // expressions; only `condition` and `body` get field wrappers.
+            // Render each child appropriately.
             let mut order: Vec<&Ir> = Vec::new();
             if let Some(i) = initializer { order.push(i.as_ref()); }
             if let Some(c) = condition { order.push(c.as_ref()); }
@@ -427,10 +426,6 @@ pub fn render_to_xot(
                 emit_gap(xot, node, source, cursor, cr.start)?;
                 if std::ptr::eq(*child, body.as_ref()) {
                     render_to_xot(xot, node, child, source)?;
-                } else if initializer.as_ref().map_or(false, |i| std::ptr::eq(*child, i.as_ref())) {
-                    let slot = element(xot, "init", child.span());
-                    xot.append(node, slot)?;
-                    render_to_xot(xot, slot, child, source)?;
                 } else if condition.as_ref().map_or(false, |c| std::ptr::eq(*child, c.as_ref())) {
                     let slot = element(xot, "condition", child.span());
                     xot.append(node, slot)?;
@@ -438,12 +433,8 @@ pub fn render_to_xot(
                     xot.append(slot, expr)?;
                     render_to_xot(xot, expr, child, source)?;
                 } else {
-                    // Update expression.
-                    let slot = element(xot, "update", child.span());
-                    xot.append(node, slot)?;
-                    let expr = element(xot, "expression", child.span());
-                    xot.append(slot, expr)?;
-                    render_to_xot(xot, expr, child, source)?;
+                    // initializer or update — render bare.
+                    render_to_xot(xot, node, child, source)?;
                 }
                 cursor = cr.end;
             }
@@ -491,10 +482,14 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, ir.end, range.end)?;
             Ok(node)
         }
-        Ir::SimpleStatement { element_name, modifiers, children, range, span } => {
+        Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span } => {
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
             for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
+            for marker in *extra_markers {
                 let m = element(xot, marker, *span);
                 xot.append(node, m)?;
             }
@@ -1335,8 +1330,12 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Variable { element_name, type_ann, name, value, range, span } => {
+        Ir::Variable { element_name, modifiers, type_ann, name, value, range, span } => {
             let node = element(xot, element_name, *span);
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
+            }
             xot.append(parent, node)?;
             // Source order: type (optional), name, value (optional).
             let mut order: Vec<&Ir> = Vec::new();
@@ -1344,16 +1343,29 @@ pub fn render_to_xot(
             order.push(name.as_ref());
             if let Some(v) = value { order.push(v.as_ref()); }
             order.sort_by_key(|c| c.range().start);
-            // Wrap type_ann in <type> when present.
+            // Wrap type_ann in <type> when present, but only if the
+            // inner doesn't already produce its own <type> outer
+            // (e.g. Ir::GenericType, or a SimpleStatement with
+            // element_name == "type"). Otherwise we'd render
+            // <type><type>...</type></type> which breaks XPath text
+            // queries like `//type[.='List<string>']`.
             let mut cursor = range.start;
             for c in &order {
                 let cr = c.range();
                 emit_gap(xot, node, source, cursor, cr.start)?;
                 if let Some(t) = type_ann {
                     if std::ptr::eq(*c, t.as_ref()) {
-                        let type_el = element(xot, "type", c.span());
-                        xot.append(node, type_el)?;
-                        render_to_xot(xot, type_el, c, source)?;
+                        let already_typed = matches!(*c,
+                            Ir::GenericType { .. }
+                                | Ir::SimpleStatement { element_name: "type", .. }
+                        );
+                        if already_typed {
+                            render_to_xot(xot, node, *c, source)?;
+                        } else {
+                            let type_el = element(xot, "type", c.span());
+                            xot.append(node, type_el)?;
+                            render_to_xot(xot, type_el, c, source)?;
+                        }
                         cursor = cr.end;
                         continue;
                     }
