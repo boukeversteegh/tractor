@@ -30,7 +30,7 @@ pub fn lower_python_root(root: TsNode<'_>, source: &str) -> Ir {
     match root.kind() {
         "module" => Ir::Module {
             element_name: "module",
-            children: lower_children(root, source),
+            children: merge_python_line_comments(lower_children(root, source), source),
             range,
             span,
         },
@@ -562,13 +562,31 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         "if_statement" => {
             // Fields: `condition`, `consequence` (the body block);
-            // `alternative` is an elif_clause or else_clause (optional).
+            // multiple `alternative` fields each holding either an
+            // elif_clause or else_clause. tree-sitter-python emits
+            // them as flat siblings; we chain them into nested
+            // Ir::ElseIf / Ir::Else so the renderer can flatten back
+            // into `<else_if>`/`<else>` sibling output.
             let cond = node.child_by_field_name("condition")
                 .map(|n| Box::new(lower_node(n, source)));
             let body = node.child_by_field_name("consequence")
                 .map(|n| Box::new(lower_block(n, source)));
-            let alt = node.child_by_field_name("alternative");
-            let else_branch = alt.map(|a| Box::new(lower_else_chain(a, source)));
+            // Collect all alternative children in source order.
+            let mut alts: Vec<TsNode> = Vec::new();
+            let mut cursor = node.walk();
+            for (i, c) in node.children(&mut cursor).enumerate() {
+                if let Some(name) = node.field_name_for_child(i as u32) {
+                    if name == "alternative" {
+                        alts.push(c);
+                    }
+                }
+            }
+            // Build a nested chain right-to-left.
+            let mut else_branch: Option<Box<Ir>> = None;
+            for alt in alts.into_iter().rev() {
+                let lowered = lower_else_chain_with_tail(alt, else_branch.take(), source);
+                else_branch = Some(Box::new(lowered));
+            }
             match (cond, body) {
                 (Some(c), Some(b)) => Ir::If {
                     condition: c,
@@ -849,16 +867,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
 
-        // `# comment text`. Leading-vs-trailing classification is
-        // adjacency-based in the existing pipeline (a separate
-        // post-walk). For the experiment, we default to `leading: true`
-        // since all blueprint comments precede the construct they
-        // describe. Proper classification = TODO.
-        "comment" => Ir::Comment { trailing: false,
-            leading: true,
-            range,
-            span,
-        },
+        // `# comment text`. Default to neither leading nor trailing
+        // — the `merge_python_line_comments` post-pass on each block
+        // classifies based on adjacency to the next/prev non-comment
+        // sibling.
+        "comment" => Ir::Comment { trailing: false, leading: false, range, span },
 
         // ----- Assignments ----------------------------------------------
 
@@ -1040,27 +1053,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
-        // `expression_list` is tree-sitter-python's tuple-without-
-        // parens (e.g. `a, b = 1, 2`). Lower as Ir::Tuple — the
-        // renderer emits flat children which matches imperative shape.
-        "expression_list" => {
+        // `expression_list` / `pattern_list` are pure grouping nodes
+        // in tree-sitter-python (tuple-without-parens, used in
+        // `return a, b`, `for a, b in xs`, `a, b = pair`). The
+        // imperative pipeline flattens both via Rule::Flatten so the
+        // items become direct children of the enclosing
+        // `<return>`/`<for>`/`<assign>`. Mirror via Ir::Inline.
+        "expression_list" | "pattern_list" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Tuple { children, range, span }
-        }
-
-        // `pattern_list` (tree-sitter): `for a, b in ...`. Same
-        // treatment as `expression_list` — lower to Ir::Tuple.
-        "pattern_list" => {
-            let mut cursor = node.walk();
-            let children: Vec<Ir> = node
-                .named_children(&mut cursor)
-                .map(|c| lower_node(c, source))
-                .collect();
-            Ir::Tuple { children, range, span }
+            Ir::Inline { children, list_name: None, range, span }
         }
 
         // `constrained_type` (`T: Bound`) — Ir::TypeParameter shape.
@@ -1272,22 +1277,25 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-/// Lower an `else_clause` or `elif_clause` chain into nested
-/// `Ir::ElseIf` / `Ir::Else`.
-fn lower_else_chain(node: TsNode<'_>, source: &str) -> Ir {
+/// Lower a single `else_clause` or `elif_clause` and chain the
+/// already-built `tail` (the next sibling in the if-chain) into its
+/// `else_branch` slot.
+fn lower_else_chain_with_tail(
+    node: TsNode<'_>,
+    tail: Option<Box<Ir>>,
+    source: &str,
+) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
         "elif_clause" => {
             let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source)));
             let body = node.child_by_field_name("consequence").map(|n| Box::new(lower_block(n, source)));
-            let alt = node.child_by_field_name("alternative");
-            let else_branch = alt.map(|a| Box::new(lower_else_chain(a, source)));
             match (cond, body) {
                 (Some(c), Some(b)) => Ir::ElseIf {
                     condition: c,
                     body: b,
-                    else_branch,
+                    else_branch: tail,
                     range,
                     span,
                 },
@@ -1663,7 +1671,75 @@ fn lower_block(node: TsNode<'_>, source: &str) -> Ir {
     } else {
         named.iter().filter(|n| n.kind() != "pass_statement").map(|n| lower_node(*n, source)).collect()
     };
+    let children = merge_python_line_comments(children, source);
     Ir::Body { children, pass_only, block_wrap: false, range, span }
+}
+
+/// Group consecutive `#` line-comment children that sit on adjacent
+/// lines into a single comment, then classify each as `trailing`
+/// (same line as preceding code), `leading` (immediately precedes
+/// the next non-comment sibling on the next line), or floating
+/// (neither). Mirrors the imperative pipeline's `classify_and_group`.
+fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
+    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+    for child in children {
+        if let Ir::Comment { leading, trailing, range, span } = child {
+            let prev_non_comment = out.iter().rev()
+                .find(|c| !matches!(c, Ir::Comment { .. }));
+            let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
+                let prev_end = prev.range().end as usize;
+                let between = &source[prev_end..range.start as usize];
+                !between.contains('\n')
+            });
+
+            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+                let gap = &source[prev_range.end as usize..range.start as usize];
+                let only_one_newline = gap.chars().filter(|&c| c == '\n').count() <= 1
+                    && gap.chars().all(|c| c.is_whitespace());
+                let prev_is_line_comment = source[prev_range.start as usize..prev_range.end as usize]
+                    .trim_start().starts_with('#');
+                let curr_is_line_comment = source[range.start as usize..range.end as usize]
+                    .trim_start().starts_with('#');
+                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                if only_one_newline && prev_is_line_comment && curr_is_line_comment
+                    && !prev_was_trailing && !curr_is_trailing
+                {
+                    if let Some(Ir::Comment { range: r, span: s, .. }) = out.last_mut() {
+                        r.end = range.end;
+                        s.end_line = span.end_line;
+                        s.end_column = span.end_column;
+                    }
+                    continue;
+                }
+            }
+            let trailing = trailing || curr_is_trailing;
+            out.push(Ir::Comment { leading, trailing, range, span });
+        } else {
+            out.push(child);
+        }
+    }
+
+    // Phase 2: mark `leading = true` iff next non-comment starts on
+    // the very next line.
+    let n = out.len();
+    for i in 0..n {
+        if let Ir::Comment { trailing, range, .. } = &out[i] {
+            if *trailing { continue; }
+            let comment_end = range.end as usize;
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            if let Some(next_ir) = next {
+                let next_start = next_ir.range().start as usize;
+                let between = &source[comment_end..next_start];
+                let newlines = between.chars().filter(|&c| c == '\n').count();
+                if newlines == 1 && between.chars().all(|c| c.is_whitespace()) {
+                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                        *leading = true;
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 /// Lower a `decorator` CST node. The decorator's inner is the

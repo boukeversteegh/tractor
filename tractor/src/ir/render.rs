@@ -184,16 +184,18 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::Comparison { left, op_text, op_marker, op_range, right, range, span } => {
-            // Same shape as Binary but uses comparison op marker.
-            let node = element(xot, "binary", *span);
+            // Python `comparison_operator` — renders as `<compare>`
+            // with flat `<name>`/`<int>` siblings + an `<op>`
+            // wrapper carrying the operator markers. The imperative
+            // pipeline produces this shape; differs from
+            // `<binary><left>/<right>` Java/C#-style by deliberate
+            // design choice (Python's comparison chains and operators
+            // historically render flat).
+            let node = element(xot, "compare", *span);
             xot.append(parent, node)?;
             let lr = left.range();
             emit_gap(xot, node, source, range.start, lr.start)?;
-            let left_slot = element(xot, "left", left.span());
-            xot.append(node, left_slot)?;
-            let left_expr = element(xot, "expression", left.span());
-            xot.append(left_slot, left_expr)?;
-            render_to_xot(xot, left_expr, left, source)?;
+            render_to_xot(xot, node, left, source)?;
 
             emit_gap(xot, node, source, lr.end, op_range.start)?;
             let op_node = element(xot, "op", *span);
@@ -202,21 +204,13 @@ pub fn render_to_xot(
                 let t = xot.new_text(op_text);
                 xot.append(op_node, t)?;
             }
-            // Use the canonical OPERATOR_MARKERS table (shared with
-            // the imperative pipeline) so markers match across the
-            // two paths. `op_marker` field on Ir::Comparison is now
-            // unused — kept for API compatibility but ignored.
             let _ = op_marker;
             crate::transform::operators::add_operator_markers(xot, op_node, op_text)
                 .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
 
             let rr = right.range();
             emit_gap(xot, node, source, op_range.end, rr.start)?;
-            let right_slot = element(xot, "right", right.span());
-            xot.append(node, right_slot)?;
-            let right_expr = element(xot, "expression", right.span());
-            xot.append(right_slot, right_expr)?;
-            render_to_xot(xot, right_expr, right, source)?;
+            render_to_xot(xot, node, right, source)?;
             emit_gap(xot, node, source, rr.end, range.end)?;
             Ok(node)
         }
@@ -778,16 +772,17 @@ pub fn render_to_xot(
                     Slot::True(_) => {
                         let then = element(xot, "then", inner.span());
                         xot.append(node, then)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(then, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
+                        // No `<expression>` wrapper — Python's
+                        // imperative pipeline emits the inner directly
+                        // as a `<then>` child. C# tests use the same
+                        // flat shape (`<then>` directly contains the
+                        // value or expression-shaped element).
+                        render_to_xot(xot, then, inner, source)?;
                     }
                     Slot::False(_) => {
                         let el = element(xot, "else", inner.span());
                         xot.append(node, el)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(el, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
+                        render_to_xot(xot, el, inner, source)?;
                     }
                 }
                 cursor = cr.end;
@@ -1095,13 +1090,28 @@ pub fn render_to_xot(
             let node = element(xot, "return", *span);
             xot.append(parent, node)?;
             // `return value` wraps value in <expression> host;
-            // `return` (no value) is bare.
+            // `return a, b, c` (Ir::Inline value) wraps each item in
+            // its own <expression> so the post-pass can tag them with
+            // `list="expressions"` for JSON projection.
             if let Some(v) = value {
                 let vr = v.range();
                 emit_gap(xot, node, source, range.start, vr.start)?;
-                let expr = element(xot, "expression", v.span());
-                xot.append(node, expr)?;
-                render_to_xot(xot, expr, v, source)?;
+                if let Ir::Inline { children, .. } = v.as_ref() {
+                    let mut cursor = vr.start;
+                    for c in children {
+                        let cr = c.range();
+                        emit_gap(xot, node, source, cursor, cr.start)?;
+                        let expr = element(xot, "expression", c.span());
+                        xot.append(node, expr)?;
+                        render_to_xot(xot, expr, c, source)?;
+                        cursor = cr.end;
+                    }
+                    emit_gap(xot, node, source, cursor, vr.end)?;
+                } else {
+                    let expr = element(xot, "expression", v.span());
+                    xot.append(node, expr)?;
+                    render_to_xot(xot, expr, v, source)?;
+                }
                 emit_gap(xot, node, source, vr.end, range.end)?;
             } else {
                 emit_gap(xot, node, source, range.start, range.end)?;
