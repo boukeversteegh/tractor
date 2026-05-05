@@ -148,6 +148,39 @@ fn invariants_null_literal() {
 
 #[test]
 #[ignore]
+fn dump_delegate_cst() {
+    let s = "public delegate TResult Transformer<T, TResult>(T input);";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        let parent_kind = node.parent().map(|p| p.kind().to_string()).unwrap_or_default();
+        // Find this node's field name in its parent.
+        let mut field = None;
+        if let Some(parent) = node.parent() {
+            let mut c = parent.walk();
+            for (idx, child) in parent.children(&mut c).enumerate() {
+                if child.id() == node.id() {
+                    field = parent.field_name_for_named_child(idx as u32).map(|s| s.to_string());
+                    break;
+                }
+            }
+        }
+        eprintln!("{indent}{} field={:?} parent={} text={:?}",
+            node.kind(), field, parent_kind, text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
 fn dump_paren_pattern() {
     let s = "class C { void M() { object o = 1; var x = o switch { (1) => 1, var v => 2 }; } }\n";
     let mut p = tree_sitter::Parser::new();
