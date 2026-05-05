@@ -1358,6 +1358,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- as-expression `x as T` -----------------------------------
+        // tree-sitter: `as_expression` with two named children
+        // (value, type). Render as `<as>` element. Cast-like.
+        "as_expression" => simple_statement(node, "as", source),
+
+        // ----- anonymous_method_expression -----------------------------
+        // `delegate(int x) { return x; }` — older form of lambda. Same
+        // shape as Ir::Lambda would be ideal, but for parity-track
+        // we just render as <lambda> via SimpleStatement.
+        "anonymous_method_expression" => simple_statement(node, "lambda", source),
+
+        // ----- preprocessor argument ----------------------------------
+        "preproc_arg" => simple_statement(node, "preproc", source),
+
         // ----- is-expression `x is Type` --------------------------------
         //
         // tree-sitter: `is_expression` with two named children
@@ -1992,6 +2006,16 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "&&" => "and",
         "||" => "or",
         "!" => "not",
+        "&" => "bitwise_and",
+        "|" => "bitwise_or",
+        "^" => "bitwise_xor",
+        "~" => "bitwise_not",
+        "<<" => "shift_left",
+        ">>" => "shift_right",
+        ">>>" => "shift_right_unsigned",
+        "++" => "increment",
+        "--" => "decrement",
+        "??" => "null_coalesce",
         _ => return None,
     })
 }
