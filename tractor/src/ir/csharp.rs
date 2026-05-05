@@ -258,8 +258,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // skip and let it appear in gap text.
             let members: Vec<Ir> = match body_node {
                 Some(b) => {
+                    let b_range = range_of(b);
+                    let b_span  = span_of(b);
                     let mut c = b.walk();
-                    b.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+                    let children: Vec<Ir> = b.named_children(&mut c)
+                        .map(|n| lower_node(n, source))
+                        .collect();
+                    vec![Ir::Body {
+                        children,
+                        pass_only: false,
+                        range: b_range,
+                        span: b_span,
+                    }]
                 }
                 None => Vec::new(),
             };
