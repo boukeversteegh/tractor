@@ -281,6 +281,36 @@ public static class Extras
     // Attribute target specifier + global attribute target.
     [return: System.Diagnostics.CodeAnalysis.NotNull]
     public string Trim(string s) => s.Trim();
+
+    // LINQ join / let / group, as / is simple expressions.
+    public static int LinqExtras(int[] xs, int[] ys)
+    {
+        var joined =
+            from x in xs
+            let xx = x * x
+            join y in ys on x equals y
+            group y by x into grp
+            select grp.Count();
+        if (xs is int[] arr) { return arr.Length; }
+        object o = xs;
+        var asArr = o as int[];
+        return joined.Count() + (asArr?.Length ?? 0);
+    }
+
+    // List patterns and slice patterns (C# 11).
+    public static string Listy(int[] xs) => xs switch
+    {
+        [] => "empty",
+        [1, 2, .. var rest] => $"head 1,2 rest={rest.Length}",
+        [.., var last] => $"last={last}",
+    };
+
+    // empty + continue + break statements in a loop.
+    public static int Trivial()
+    {
+        for (int i = 0; i < 3; i++) { ; if (i == 1) continue; if (i == 2) break; }
+        return 0;
+    }
 }
 
 // Global / assembly-level attribute (file scope).
