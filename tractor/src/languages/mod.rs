@@ -153,7 +153,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["csharp", "cs"],
-        transform: csharp::transform,
+        // C# now flows entirely through `crate::ir::csharp` (parser
+        // dispatches to `parse_with_ir_pipeline`). The imperative
+        // walker is no longer reachable for C#; `passthrough_transform`
+        // satisfies the field's contract for any code path that still
+        // looks up `transform` by language id.
+        transform: passthrough_transform,
         post_transform: Some(csharp::csharp_post_transform),
         syntax_category: csharp::syntax_category,
         field_wrappings: CSHARP_FIELD_WRAPPINGS,

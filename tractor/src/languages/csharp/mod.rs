@@ -1,22 +1,19 @@
-//! C# language transform pipeline.
+//! C# language module.
 //!
-//!   - [`input`]    — generated `CsKind` enum (the input vocabulary).
-//!   - [`output`]   — semantic-name constants and `NODES` (the output
-//!                    vocabulary).
-//!   - [`rules`]    — `rule(CsKind) -> Rule`, the input→output table.
-//!   - [`transformations`] — named functions referenced by
-//!                    `Rule::Custom` arms in `rules`.
-//!   - [`transform`]      — orchestrator: dispatch each AST node
-//!                    through `rules::rule` (or by element name for
-//!                    builder-inserted wrappers) to the shared
-//!                    [`crate::languages::rule::dispatch`] helper.
+//! As of the IR migration, the imperative pipeline (`rules.rs` /
+//! `transformations.rs` / `transform.rs` / `input.rs` (`CsKind`)) has
+//! been retired — all C# transforms now flow through `crate::ir::csharp`
+//! and are rendered via `crate::ir::render_to_xot`. What remains here:
+//!
+//!   - [`output`] — semantic-name vocabulary (`TractorNode` enum +
+//!                  `NODES_TABLE`), shared by shape contracts, the
+//!                  reverse renderer, and the IR's element naming.
+//!   - [`post_transform`] — IR-pipeline post-passes that run after
+//!                  XML rendering (chain inversion, `where`-clause
+//!                  attachment, list distribution, …).
 
-pub mod input;
 pub mod output;
 pub mod post_transform;
-pub mod rules;
-pub mod transform;
-pub mod transformations;
 
 pub use post_transform::csharp_post_transform;
-pub use transform::{transform, syntax_category, ACCESS_MODIFIERS, OTHER_MODIFIERS};
+pub use output::{ACCESS_MODIFIERS, OTHER_MODIFIERS, syntax_category};

@@ -29,17 +29,52 @@ pub fn lower_csharp_root(root: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
-        "compilation_unit" => Ir::Module {
-            element_name: "unit",
-            children: merge_adjacent_line_comments(lower_children(root, source), source),
-            range,
-            span,
-        },
+        "compilation_unit" => {
+            let mut children = lower_children(root, source);
+            // File-scoped namespace `namespace Foo;` lives at the
+            // compilation_unit level with sibling declarations after
+            // it. Tree-sitter exposes them as flat siblings rather
+            // than as namespace children. Fold any siblings AFTER a
+            // file-scoped Ir::Namespace into that namespace's
+            // children — matches the `<namespace>` shape used by
+            // queries (`//namespace[name='Foo']/class[...]`).
+            fold_file_scoped_namespace_siblings(&mut children, source);
+            Ir::Module {
+                element_name: "unit",
+                children: merge_adjacent_line_comments(children, source),
+                range,
+                span,
+            }
+        }
         other => Ir::Unknown {
             kind: other.to_string(),
             range,
             span,
         },
+    }
+}
+
+/// Find a file-scoped `Ir::Namespace` child and absorb every sibling
+/// after it into its `children` list. The result mirrors what the
+/// imperative pipeline's `unify_file_scoped_namespace` post-pass
+/// produced.
+fn fold_file_scoped_namespace_siblings(children: &mut Vec<Ir>, _source: &str) {
+    // Locate the index of the first file-scoped Ir::Namespace.
+    let pos = children.iter().position(|c| {
+        matches!(c, Ir::Namespace { file_scoped: true, .. })
+    });
+    let Some(idx) = pos else { return };
+    if idx + 1 >= children.len() { return; }
+    // Drain trailing siblings; append into the namespace's children.
+    let trailing: Vec<Ir> = children.drain(idx + 1..).collect();
+    if let Ir::Namespace { children: ns_children, range, .. } = &mut children[idx] {
+        // Extend the namespace's source-range to cover the trailing
+        // siblings (so XPath text-recovery on the namespace returns
+        // the full document body, matching the imperative shape).
+        if let Some(last) = trailing.last() {
+            range.end = last.range().end;
+        }
+        ns_children.extend(trailing);
     }
 }
 

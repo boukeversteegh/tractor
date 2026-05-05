@@ -225,6 +225,40 @@ pub fn is_declared(name: &str) -> bool {
     spec(name).is_some()
 }
 
+/// Map a transformed element name to a syntax-highlight category.
+/// Used by the language registration table.
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    spec(element).map(|s| s.syntax).unwrap_or(SyntaxCategory::Default)
+}
+
+/// C# access modifiers in canonical declaration order. The C# code
+/// renderer (`render::csharp`) reads markers in this order so output
+/// matches `dotnet format` style.
+pub const ACCESS_MODIFIERS: &[TractorNode] = &[
+    TractorNode::Public,
+    TractorNode::Private,
+    TractorNode::Protected,
+    TractorNode::Internal,
+];
+
+/// C# non-access modifiers in canonical declaration order.
+/// `File` is the C# 11 `file` modifier (file-local class/type).
+pub const OTHER_MODIFIERS: &[TractorNode] = &[
+    TractorNode::Static,
+    TractorNode::Abstract,
+    TractorNode::Virtual,
+    TractorNode::Override,
+    TractorNode::Sealed,
+    TractorNode::Readonly,
+    TractorNode::Const,
+    TractorNode::Partial,
+    TractorNode::Async,
+    TractorNode::Extern,
+    TractorNode::Unsafe,
+    TractorNode::New,
+    TractorNode::File,
+];
+
 // Silence unused-import warnings when the only use of `SyntaxCategory`
 // is via the `*` glob import above.
 #[allow(dead_code)]

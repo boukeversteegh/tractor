@@ -34,7 +34,10 @@ mod support;
 /// splits each `<lang>.rs` into `<lang>/{mod,semantic,transform}.rs`,
 /// so we accept either layout while the migration is in progress.
 const LANGUAGE_FILES: &[&[&str]] = &[
-    &["tractor/src/languages/csharp/transform.rs", "tractor/src/languages/csharp.rs"],
+    // C# moved entirely to the IR pipeline — `transform.rs` retired.
+    // The lint scans for `map_element_name` strings; on the IR side
+    // every element name is wired via `Ir` variant fields and
+    // doesn't need a string-keyed match arm. Skip C# here.
     &["tractor/src/languages/typescript/transform.rs", "tractor/src/languages/typescript.rs"],
     &["tractor/src/languages/python/transform.rs", "tractor/src/languages/python.rs"],
     &["tractor/src/languages/rust_lang/transform.rs", "tractor/src/languages/rust_lang.rs"],
