@@ -663,6 +663,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
 
+        // Simple keyword-prefixed statements / expressions whose old
+        // pipeline rule is a plain Rename. Lowered to
+        // Ir::SimpleStatement with the right element name.
+        "yield_statement"     => simple_statement(node, "yield",   source),
+        "lock_statement"      => simple_statement(node, "lock",    source),
+        "goto_statement"      => simple_statement(node, "goto",    source),
+        "labeled_statement"   => simple_statement(node, "label",   source),
+        "checked_statement"   => simple_statement(node, "checked", source),
+        "typeof_expression"   => simple_statement(node, "typeof",  source),
+        "default_expression"  => simple_statement(node, "default", source),
+        "sizeof_expression"   => simple_statement(node, "sizeof",  source),
+
         // `try { body } catch (...) { ... } finally { ... }`.
         // tree-sitter children: a `block` (try body), then any number
         // of `catch_clause`s, optionally a `finally_clause`.
@@ -1480,6 +1492,20 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
             range, span,
         }
     }
+}
+
+/// Lower a keyword-prefixed simple statement / expression
+/// (`yield`, `lock`, `goto`, `typeof`, etc.) to
+/// `Ir::SimpleStatement`. Children are the CST's named children
+/// lowered recursively.
+fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement { element_name, children, range, span }
 }
 
 /// Lower a C# `catch_clause` to `Ir::ExceptHandler` with kind="catch".
