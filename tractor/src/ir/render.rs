@@ -1272,7 +1272,10 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::Using { is_static, alias, path, range, span } => {
-            let node = element(xot, "using", *span);
+            // C# `using_directive` renders as <import> (matching the
+            // imperative pipeline). Block-scoped `using_statement` is
+            // a separate kind handled via SimpleStatement "using".
+            let node = element(xot, "import", *span);
             xot.append(parent, node)?;
             if *is_static {
                 let m = element(xot, "static", *span);

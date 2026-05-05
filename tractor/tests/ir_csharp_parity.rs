@@ -237,6 +237,98 @@ fn invariants_blueprint() {
     assert_ir_invariants(&source, "C# blueprint.cs");
 }
 
+/// Render the IR pipeline output via tractor's actual tree
+/// renderer. Sanity check that comment text + element structure
+/// pass through to the renderer correctly. Marked `#[ignore]`;
+/// invoke with `cargo test ir_tree_render -- --ignored --nocapture`.
+#[test]
+#[ignore]
+fn ir_tree_render() {
+    use tractor::output::{render_query_tree_node, RenderOptions};
+    use tractor::xpath::xot_node_to_xml_node;
+
+    let source = "// leading comment\nclass Foo { void M() { var x = 1 + 2; /* trailing */ } }\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(source, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), source);
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, source).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+
+    let xml_node = xot_node_to_xml_node(&xot, root);
+    let opts = RenderOptions::new();
+    let rendered = render_query_tree_node(&xml_node, &opts);
+    eprintln!("=== IR pipeline tree render ===");
+    eprintln!("{}", rendered);
+}
+
+/// Tree-render parity: compare the actual tractor tree-renderer
+/// output between imperative and IR pipelines. This is the
+/// integration the user runs (`tractor file.cs` defaults to tree
+/// rendering). Marked `#[ignore]`; prints the first diff so we can
+/// iterate.
+#[test]
+#[ignore]
+fn blueprint_tree_parity() {
+    use tractor::output::{render_query_tree_node, RenderOptions};
+    use tractor::xpath::xot_node_to_xml_node;
+
+    let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
+        .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))
+        .expect("blueprint.cs");
+
+    let mut opts = RenderOptions::new();
+    opts.include_meta = false;
+
+    // Imperative pipeline tree.
+    let cur = parse_string_to_xot(&source, "csharp", "<bp>".to_string(), None)
+        .expect("imperative parse");
+    let cur_root = if cur.xot.is_document(cur.root) {
+        cur.xot.document_element(cur.root).expect("doc")
+    } else { cur.root };
+    let cur_xml = xot_node_to_xml_node(&cur.xot, cur_root);
+    let cur_render = render_query_tree_node(&cur_xml, &opts);
+
+    // IR pipeline tree.
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(&source, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), &source);
+    let mut xot = Xot::new();
+    let dr_name = xot.add_name("_root");
+    let dr = xot.new_element(dr_name);
+    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let ir_xml = xot_node_to_xml_node(&xot, ir_root);
+    let ir_render = render_query_tree_node(&ir_xml, &opts);
+
+    eprintln!("imperative bytes: {}", cur_render.len());
+    eprintln!("IR bytes:         {}", ir_render.len());
+
+    if cur_render != ir_render {
+        for (i, (la, lb)) in cur_render.lines().zip(ir_render.lines()).enumerate() {
+            if la != lb {
+                let start = i.saturating_sub(3);
+                let end = (i + 4).min(cur_render.lines().count().min(ir_render.lines().count()));
+                let ctx_a: Vec<&str> = cur_render.lines().skip(start).take(end - start).collect();
+                let ctx_b: Vec<&str> = ir_render.lines().skip(start).take(end - start).collect();
+                panic!(
+                    "first diff at line {}\n\
+                     ----- imperative -----\n{}\n\
+                     ----- IR -----\n{}",
+                    i + 1,
+                    ctx_a.join("\n"),
+                    ctx_b.join("\n"),
+                );
+            }
+        }
+        panic!("length differs: imperative={}, IR={}", cur_render.lines().count(), ir_render.lines().count());
+    }
+}
+
 /// Compare the IR pipeline's structural view of the C# blueprint
 /// against the existing imperative pipeline. Marked `#[ignore]` while
 /// shape parity is incomplete; counts Unknown nodes and prints the
