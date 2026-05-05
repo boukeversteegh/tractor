@@ -326,7 +326,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "property_declaration" => {
             let type_node = node.child_by_field_name("type");
             let name_node = node.child_by_field_name("name");
-            let modifiers = lower_csharp_modifiers(node, source, Some(Access::Private));
+            let default_access = match enclosing_type_kind(node) {
+                Some("interface_declaration") => Some(Access::Public),
+                _ => Some(Access::Private),
+            };
+            let modifiers = lower_csharp_modifiers(node, source, default_access);
             let mut cursor = node.walk();
             let mut accessors: Vec<Ir> = Vec::new();
             let mut value: Option<Box<Ir>> = None;
@@ -461,14 +465,58 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 _                       => "class",
             };
             let name_node = node.child_by_field_name("name");
+            // Extract generics + bases + decorators from named children.
+            // tree-sitter-c-sharp exposes `type_parameter_list`,
+            // `base_list`, and `attribute_list` as direct children
+            // of the type declaration.
             let mut cursor = node.walk();
             let body_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "declaration_list");
+            let mut tpc = node.walk();
+            let type_param_list = node.named_children(&mut tpc)
+                .find(|c| c.kind() == "type_parameter_list");
+            let mut bc = node.walk();
+            let base_list = node.named_children(&mut bc)
+                .find(|c| c.kind() == "base_list");
+            let mut ac = node.walk();
+            let decorators: Vec<Ir> = node.named_children(&mut ac)
+                .filter(|c| c.kind() == "attribute_list")
+                .flat_map(|al| {
+                    let mut alc = al.walk();
+                    al.named_children(&mut alc)
+                        .filter(|c| c.kind() == "attribute")
+                        .map(|c| lower_node(c, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
             let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Internal));
+            // Generics: lower the whole type_parameter_list as Ir::Generic
+            // (its items are Ir::TypeParameter via the type_parameter arm).
+            let generics: Option<Box<Ir>> = type_param_list.map(|tpl| {
+                let mut tplc = tpl.walk();
+                let items: Vec<Ir> = tpl.named_children(&mut tplc)
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Box::new(Ir::Generic {
+                    items,
+                    range: range_of(tpl),
+                    span: span_of(tpl),
+                })
+            });
+            // Bases: each named child of base_list becomes one base.
+            let bases: Vec<Ir> = match base_list {
+                Some(bl) => {
+                    let mut blc = bl.walk();
+                    bl.named_children(&mut blc)
+                        .map(|c| lower_node(c, source))
+                        .collect()
+                }
+                None => Vec::new(),
+            };
             Ir::Class {
                 kind,
                 modifiers,
-                decorators: Vec::new(),
+                decorators,
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
@@ -476,8 +524,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         range, span,
                     },
                 }),
-                generics: None,
-                bases: Vec::new(),
+                generics,
+                bases,
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
                     None => Ir::Body {
@@ -549,7 +597,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let name_node = node.child_by_field_name("name");
             let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
-            let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Private));
+            // Default access: Private for class members, Public for
+            // interface members. Walk up to the enclosing type-decl
+            // to choose.
+            let default_access = match enclosing_type_kind(node) {
+                Some("interface_declaration") => Some(Access::Public),
+                _ => Some(Access::Private),
+            };
+            let modifiers = lower_csharp_modifiers(node, source, default_access);
             Ir::Function {
                 element_name: "method",
                 modifiers,
@@ -836,18 +891,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // <literal> (matching object/array initializer shape).
         "with_initializer"                   => simple_statement(node, "literal", source),
         "interpolation"                      => simple_statement(node, "interpolation", source),
-        // Pattern kinds — old pipeline uses RenameWithMarker(Pattern, X);
-        // for parity-first we use plain "pattern" without a marker.
-        "constant_pattern"          => simple_statement(node, "pattern", source),
-        "declaration_pattern"       => simple_statement(node, "pattern", source),
-        "recursive_pattern"         => simple_statement(node, "pattern", source),
-        "relational_pattern"        => simple_statement(node, "pattern", source),
-        "tuple_pattern"             => simple_statement(node, "pattern", source),
+        // Pattern kinds — old pipeline uses RenameWithMarker(Pattern, X).
+        // Each pattern shape carries a kind marker so XPath queries
+        // can distinguish `<pattern[constant]>` from `<pattern[declaration]>`
+        // etc. (Principle #15: stable shape markers.)
+        "constant_pattern"          => simple_statement_marked(node, "pattern", &["constant"], source),
+        "declaration_pattern"       => simple_statement_marked(node, "pattern", &["declaration"], source),
+        "recursive_pattern"         => simple_statement_marked(node, "pattern", &["recursive"], source),
+        "relational_pattern"        => simple_statement_marked(node, "pattern", &["relational"], source),
+        "tuple_pattern"             => simple_statement_marked(node, "pattern", &["tuple"], source),
         "and_pattern"               => simple_statement_marked(node, "pattern", &["and"], source),
         "or_pattern"                => simple_statement_marked(node, "pattern", &["or"],  source),
         "negated_pattern"           => simple_statement_marked(node, "pattern", &["negated"], source),
-        "list_pattern"              => simple_statement(node, "pattern", source),
-        "var_pattern"               => simple_statement(node, "pattern", source),
+        "list_pattern"              => simple_statement_marked(node, "pattern", &["list"], source),
+        "var_pattern"               => simple_statement_marked(node, "pattern", &["var"], source),
         "type_pattern"              => simple_statement(node, "pattern", source),
         "property_pattern_clause"   => simple_statement(node, "properties", source),
         "subpattern"                => simple_statement(node, "subpattern", source),
@@ -1727,12 +1784,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             let operand = operand_node.map(|n| lower_node(n, source));
+            // `<prefix/>` marker only for `++`/`--` (which have a
+            // postfix counterpart). Bare `-x`/`!x`/`~x` are
+            // unambiguously prefix; the marker would just be noise.
+            let extra_markers: &'static [&'static str] = match op_text.as_str() {
+                "++" | "--" => &["prefix"],
+                _ => &[],
+            };
             match (operand, op_marker(&op_text)) {
                 (Some(o), Some(marker)) => Ir::Unary {
                     op_text,
                     op_marker: marker,
                     op_range,
                     operand: Box::new(o),
+                    extra_markers,
                     range,
                     span,
                 },
@@ -1928,6 +1993,23 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
             range, span,
         }
     }
+}
+
+/// Walk up the CST to find the enclosing type declaration kind
+/// (class/struct/interface/record). Used to pick the correct default
+/// access modifier for members (interface members default to Public,
+/// class/struct/record members to Private).
+fn enclosing_type_kind<'a>(node: TsNode<'a>) -> Option<&'a str> {
+    let mut cur = node.parent();
+    while let Some(p) = cur {
+        if matches!(p.kind(),
+            "class_declaration" | "struct_declaration"
+            | "interface_declaration" | "record_declaration") {
+            return Some(p.kind());
+        }
+        cur = p.parent();
+    }
+    None
 }
 
 /// Lower a keyword-prefixed simple statement / expression

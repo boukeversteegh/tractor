@@ -228,6 +228,10 @@ pub enum Ir {
         op_marker: &'static str,
         op_range: ByteRange,
         operand: Box<Ir>,
+        /// Extra markers placed on the `<unary>` element itself
+        /// (NOT on `<op>`). Used for `<prefix/>` on `++x`/`--x` to
+        /// distinguish from postfix forms.
+        extra_markers: &'static [&'static str],
         range: ByteRange,
         span: Span,
     },

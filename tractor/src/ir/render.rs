@@ -77,14 +77,23 @@ pub fn render_to_xot(
         Ir::Access { receiver, segments, range, span } => {
             let object = element(xot, "object", *span);
             xot.append(parent, object)?;
-            // Synthetic `<access/>` marker — first child, zero text
-            // contribution. It is *not* part of the source-order
-            // walk, so we emit it before any source-derived children.
             let access = element(xot, "access", Span::point(span.line, span.column));
             xot.append(object, access)?;
-            // Receiver — first source-derived child. Pre-receiver gap
-            // is `source[range.start .. receiver.range.start]`.
+            // Synthetic `<base/>` / `<this/>` markers when the receiver
+            // is the corresponding C# keyword — `base.Method()` /
+            // `this.X` queryable as `//object[base]` / `//object[this]`.
+            // The receiver's source text identifies the keyword.
             let receiver_range = receiver.range();
+            let recv_text = receiver_range.slice(source);
+            if matches!(receiver.as_ref(), Ir::Name { .. }) {
+                if recv_text == "base" {
+                    let m = element(xot, "base", Span::point(span.line, span.column));
+                    xot.append(object, m)?;
+                } else if recv_text == "this" {
+                    let m = element(xot, "this", Span::point(span.line, span.column));
+                    xot.append(object, m)?;
+                }
+            }
             emit_gap(xot, object, source, range.start, receiver_range.start)?;
             render_to_xot(xot, object, receiver, source)?;
             // Segments — right-nested. The first segment is a child of
@@ -821,24 +830,64 @@ pub fn render_to_xot(
         Ir::Class { kind, modifiers, decorators, name, generics, bases, body, range, span } => {
             let node = element(xot, kind, *span);
             xot.append(parent, node)?;
-            // Modifier markers first (zero-width, synthetic position).
-            // Each marker is *derived* from a typed field on the
-            // Modifiers struct — flipping `modifiers.access` or any
-            // bool flag swaps the marker by construction.
             for marker in modifiers.marker_names() {
                 let m = element(xot, marker, *span);
                 xot.append(node, m)?;
             }
-            let mut order: Vec<&Ir> = Vec::new();
-            for d in decorators { order.push(d); }
-            order.push(name.as_ref());
-            if let Some(g) = generics { order.push(g.as_ref()); }
-            for b in bases { order.push(b); }
-            order.push(body.as_ref());
-            order.sort_by_key(|c| c.range().start);
-            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
-                render_to_xot(xot, parent, child, source).map(|_| ())
-            })?;
+            // Source-order children: decorators, name, generics, bases,
+            // body. Bases wrap in `<extends>` per the cross-language
+            // inheritance contract (tested by `generics::csharp_vocabulary`
+            // and `types::csharp_markers`).
+            #[derive(Clone, Copy)]
+            enum CSlot<'a> {
+                Decor(&'a Ir),
+                Name(&'a Ir),
+                Generics(&'a Ir),
+                Base(&'a Ir),
+                Body(&'a Ir),
+            }
+            let mut order: Vec<CSlot> = Vec::new();
+            for d in decorators { order.push(CSlot::Decor(d)); }
+            order.push(CSlot::Name(name));
+            if let Some(g) = generics { order.push(CSlot::Generics(g)); }
+            for b in bases { order.push(CSlot::Base(b)); }
+            order.push(CSlot::Body(body));
+            order.sort_by_key(|s| match s {
+                CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
+                | CSlot::Base(i) | CSlot::Body(i) => i.range().start,
+            });
+            let mut cursor = range.start;
+            for slot in &order {
+                let inner: &Ir = match slot {
+                    CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
+                    | CSlot::Base(i) | CSlot::Body(i) => i,
+                };
+                let cr = inner.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if matches!(slot, CSlot::Base(_)) {
+                    // Bases wrap in `<extends><type>...</type></extends>`
+                    // — when the inner is already a type-shaped IR
+                    // (GenericType produces its own `<type>`), don't
+                    // double-wrap.
+                    let ext = element(xot, "extends", inner.span());
+                    xot.append(node, ext)?;
+                    let already_typed = matches!(inner,
+                        Ir::GenericType { .. }
+                            | Ir::SimpleStatement { element_name: "type", .. }
+                    );
+                    if already_typed {
+                        render_to_xot(xot, ext, inner, source)?;
+                    } else {
+                        let t = element(xot, "type", inner.span());
+                        xot.append(ext, t)?;
+                        render_to_xot(xot, t, inner, source)?;
+                    }
+                } else {
+                    render_to_xot(xot, node, inner, source)?;
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)
         }
         Ir::Body { children, pass_only, range, span } => {
@@ -1202,9 +1251,13 @@ pub fn render_to_xot(
 
             Ok(node)
         }
-        Ir::Unary { op_text, op_marker, op_range, operand, range, span } => {
+        Ir::Unary { op_text, op_marker, op_range, operand, extra_markers, range, span } => {
             let node = element(xot, "unary", *span);
             xot.append(parent, node)?;
+            for marker in *extra_markers {
+                let m = element(xot, marker, Span::point(span.line, span.column));
+                xot.append(node, m)?;
+            }
 
             // Pre-op gap.
             emit_gap(xot, node, source, range.start, op_range.start)?;

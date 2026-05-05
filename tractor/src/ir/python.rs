@@ -346,6 +346,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     op_marker: "not",
                     op_range: kw_range,
                     operand: Box::new(lower_node(a, source)),
+                    extra_markers: &[],
                     range, span,
                 },
                 None => Ir::Unknown {
@@ -421,6 +422,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     op_marker: marker,
                     op_range,
                     operand: Box::new(o),
+                    extra_markers: &[],
                     range,
                     span,
                 },
