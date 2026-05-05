@@ -1,6 +1,19 @@
-# IR migration status (snapshot 2026-05-06)
+# IR migration status (snapshot 2026-05-06, updated)
 
 ## Done
+
+### Python IR-only end-to-end ✅
+All 274 transform tests + lib + integration suites pass with Python on
+the IR pipeline. Imperative artefacts retired:
+  - `src/languages/python/input.rs` (PyKind enum) — DELETED
+  - `src/languages/python/rules.rs` (kind→Rule table) — DELETED
+  - `src/languages/python/transformations.rs` (~1400 lines) — DELETED
+  - `src/languages/python/transform.rs` (dispatcher) — DELETED
+  - `LanguageOps.transform` for Python now uses `passthrough_transform`.
+The IR-aware `python_post_transform` keeps chain inversion +
+expression-host wrapping + the new `inject_python_visibility_markers`
++ extended `tag_multi_role_children` table. `merge_python_line_comments`
+runs in `lower_block` for leading/trailing comment classification.
 
 ### C# IR-only end-to-end
 - `src/ir/csharp.rs` — typed lowering (lower_csharp_root) is the
