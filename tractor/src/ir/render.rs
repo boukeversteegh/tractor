@@ -189,8 +189,13 @@ pub fn render_to_xot(
                 let t = xot.new_text(op_text);
                 xot.append(op_node, t)?;
             }
-            let m = element(xot, op_marker, *span);
-            xot.append(op_node, m)?;
+            // Use the canonical OPERATOR_MARKERS table (shared with
+            // the imperative pipeline) so markers match across the
+            // two paths. `op_marker` field on Ir::Comparison is now
+            // unused — kept for API compatibility but ignored.
+            let _ = op_marker;
+            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
 
             let rr = right.range();
             emit_gap(xot, node, source, op_range.end, rr.start)?;
@@ -772,8 +777,8 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Function { modifiers, decorators, name, generics, parameters, returns, body, range, span } => {
-            let node = element(xot, "function", *span);
+        Ir::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } => {
+            let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
             // Modifier markers first (access + flags). Same
             // marker-by-derivation pattern as Class.
@@ -1017,16 +1022,18 @@ pub fn render_to_xot(
             };
             let _ = post_type_end;
 
-            // <op>{op_text}{markers}</op>
+            // <op>{op_text}{markers}</op> — markers come from the
+            // canonical OPERATOR_MARKERS table (shared with the
+            // imperative pipeline) keyed by op_text. The `op_markers`
+            // field on Ir::Assign is now unused.
+            let _ = op_markers;
             if !op_text.is_empty() {
                 let op_node = element(xot, "op", *span);
                 xot.append(node, op_node)?;
                 let t = xot.new_text(op_text);
                 xot.append(op_node, t)?;
-                for marker in op_markers {
-                    let m = element(xot, marker, *span);
-                    xot.append(op_node, m)?;
-                }
+                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
             }
 
             // Gap from op to right.
@@ -1149,17 +1156,15 @@ pub fn render_to_xot(
             // Gap between left and op (e.g. " " in "a + b").
             emit_gap(xot, node, source, left_range.end, op_range.start)?;
 
-            // <op>{op_text}<{op_marker}/></op>
-            // op_range covers the operator symbol; emit op_text as a
-            // literal text leaf inside <op>, then the marker element.
             let op_node = element(xot, "op", Span::point(span.line, span.column));
             xot.append(node, op_node)?;
             if !op_text.is_empty() {
                 let t = xot.new_text(op_text);
                 xot.append(op_node, t)?;
             }
-            let marker_node = element(xot, op_marker, Span::point(span.line, span.column));
-            xot.append(op_node, marker_node)?;
+            let _ = op_marker;
+            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
 
             // Gap between op and right.
             let right_range = right.range();
@@ -1184,15 +1189,15 @@ pub fn render_to_xot(
             // Pre-op gap.
             emit_gap(xot, node, source, range.start, op_range.start)?;
 
-            // <op>{op_text}<{op_marker}/></op>
             let op_node = element(xot, "op", Span::point(span.line, span.column));
             xot.append(node, op_node)?;
             if !op_text.is_empty() {
                 let t = xot.new_text(op_text);
                 xot.append(op_node, t)?;
             }
-            let marker_node = element(xot, op_marker, Span::point(span.line, span.column));
-            xot.append(op_node, marker_node)?;
+            let _ = op_marker;
+            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
 
             // Gap between op and operand.
             let operand_range = operand.range();
@@ -1330,8 +1335,8 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Variable { type_ann, name, value, range, span } => {
-            let node = element(xot, "variable", *span);
+        Ir::Variable { element_name, type_ann, name, value, range, span } => {
+            let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
             // Source order: type (optional), name, value (optional).
             let mut order: Vec<&Ir> = Vec::new();

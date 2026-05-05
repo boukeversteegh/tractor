@@ -491,6 +491,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }),
             };
             Ir::Function {
+                element_name: "method",
                 modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
@@ -519,6 +520,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let body_node = node.child_by_field_name("body");
             let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Private));
             Ir::Function {
+                element_name: "method",
                 modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
@@ -1026,13 +1028,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // variable_declarator is one Ir::Variable. For multi-variable
         // declarations (`int a, b = 1;`), produce multiple variables.
         "local_declaration_statement" | "field_declaration" => {
+            // `<variable>` for locals; `<field>` for class fields —
+            // matches the imperative pipeline's distribute-and-rename.
+            let element_name: &'static str = if node.kind() == "field_declaration" {
+                "field"
+            } else { "variable" };
             let mut cursor = node.walk();
             let var_decl = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "variable_declaration");
             match var_decl {
                 Some(vd) => {
-                    // variable_declaration has a `type` field and one or
-                    // more `variable_declarator` children.
                     let type_node = vd.child_by_field_name("type");
                     let mut vc = vd.walk();
                     let declarators: Vec<TsNode> = vd.named_children(&mut vc)
@@ -1040,14 +1045,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         .collect();
                     if declarators.len() == 1 {
                         let d = declarators[0];
-                        lower_variable_declarator(d, type_node, source, range, span)
+                        lower_variable_declarator(d, type_node, source, range, span, element_name)
                     } else {
-                        // Multi-variable: emit each as its own
-                        // Ir::Variable, returned via Inline.
                         let children: Vec<Ir> = declarators.into_iter().map(|d| {
                             lower_variable_declarator(
                                 d, type_node, source,
                                 range_of(d), span_of(d),
+                                element_name,
                             )
                         }).collect();
                         Ir::Inline { children, range, span }
@@ -1898,6 +1902,7 @@ fn lower_variable_declarator(
     source: &str,
     range: ByteRange,
     span: Span,
+    element_name: &'static str,
 ) -> Ir {
     let name_node = declarator.child_by_field_name("name");
     // tree-sitter-c-sharp doesn't expose a `value` field on
@@ -1952,6 +1957,7 @@ fn lower_variable_declarator(
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
     let value_ir = value_node.map(|v| Box::new(lower_node(v, source)));
     Ir::Variable {
+        element_name,
         type_ann: type_ir,
         name: Box::new(name_ir),
         value: value_ir,

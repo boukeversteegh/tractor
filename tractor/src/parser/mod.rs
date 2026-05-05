@@ -339,10 +339,11 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
 }
 
 /// True when the typed-IR pipeline should handle this language.
-/// Currently opt-in via `TRACTOR_IR_PIPELINE` env var so the
-/// imperative pipeline stays the default until parity is reached.
+/// Languages are migrated one at a time; each entry here means the
+/// imperative `transform/` path is no longer exercised for that
+/// language. Adding a language here is the production-rollout flip.
 fn use_ir_pipeline(lang: &str) -> bool {
-    std::env::var("TRACTOR_IR_PIPELINE").is_ok() && matches!(lang, "csharp")
+    matches!(lang, "csharp")
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)
@@ -462,6 +463,70 @@ fn parse_with_ir_pipeline(
     ))
 }
 
+/// Parse via the typed-IR pipeline and return an `XeeParseResult`
+/// (the fast-query path used by `parse(...)`). Lowers CST → IR →
+/// xot, then serializes the xot document and re-parses it into an
+/// xee `Documents`. The serialize/reparse step is a v1 stepping
+/// stone; a future optimization can build directly into Documents.
+#[cfg(feature = "native")]
+fn parse_with_ir_pipeline_to_xee(
+    source: &str,
+    lang: &str,
+    file_path: String,
+) -> Result<XeeParseResult, ParseError> {
+    use crate::ir;
+
+    let language = get_tree_sitter_language(lang)?;
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&language)
+        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+    let tree = parser.parse(source, None)
+        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+
+    let ir_tree = match lang {
+        "csharp" => ir::lower_csharp_root(tree.root_node(), source),
+        "python" => ir::lower_python_root(tree.root_node(), source),
+        _ => return Err(ParseError::Parse(format!(
+            "IR pipeline not yet wired for language {lang}"
+        ))),
+    };
+
+    // Render IR to xot in a holding document, then serialize.
+    let mut xot = xot::Xot::new();
+    let holding = xot.new_document();
+    ir::render_to_xot(&mut xot, holding, &ir_tree, source)
+        .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+    let xml = xot.to_string(holding)
+        .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
+
+    let mut documents = Documents::new();
+    let doc_handle = documents.add_string(
+        "file:///source".try_into().unwrap(),
+        &xml,
+    ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
+
+    let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
+
+    Ok(XeeParseResult {
+        documents,
+        doc_handle,
+        source_lines,
+        file_path,
+        language: lang.to_string(),
+    })
+}
+
+#[cfg(not(feature = "native"))]
+fn parse_with_ir_pipeline_to_xee(
+    _source: &str,
+    _lang: &str,
+    _file_path: String,
+) -> Result<XeeParseResult, ParseError> {
+    Err(ParseError::Parse(
+        "IR pipeline requires the `native` feature".to_string(),
+    ))
+}
+
 /// Parse result for the fast query path (builds directly into Documents)
 pub struct XeeParseResult {
     /// The Documents instance containing the AST
@@ -555,6 +620,10 @@ pub fn parse_string_to_xee_with_options(
     max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
     use std::time::Instant;
+
+    if use_ir_pipeline(lang) {
+        return parse_with_ir_pipeline_to_xee(source, lang, file_path);
+    }
 
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;

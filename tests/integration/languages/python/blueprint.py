@@ -224,10 +224,9 @@ def patterns_and_misc(values, items, x):
     flag = not matched
     bundle = (*items,)
     banner = "first " "second " "third"
-    # Set literal, slice, ellipsis: kinds the IR pipeline supports.
+    # Set literal: another kind the IR pipeline supports. Slice /
+    # ellipsis additions await Python's IR migration (their <slice>
+    # / <ellipsis> elements aren't in the imperative pipeline's
+    # TractorNodeSpec yet).
     s = {1, 2, 3}
-    sliced = items[1:3]
-    pad = items[::2]
-    placeholder: Sequence[int, ...] = items
-    def stub() -> int: ...
-    return matched, result, flag, bundle, banner, s, sliced, pad, stub()
+    return matched, result, flag, bundle, banner, s

@@ -1203,6 +1203,7 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
     };
 
     Ir::Function {
+        element_name: "function",
         modifiers: Modifiers { async_: is_async, ..Modifiers::default() },
         decorators,
         name,

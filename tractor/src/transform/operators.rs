@@ -276,7 +276,7 @@ pub fn is_operator_marker_name(name: &str) -> bool {
 /// "primary, children, nested-name, nested-children" but since
 /// markers are presence-flags the order is semantically irrelevant
 /// — XPath predicates use `[primary and child]` regardless.
-fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
+pub fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
     use crate::transform::helpers::append_empty_element;
     let spec = match lookup_operator_spec(text) {
         Some(s) => s,

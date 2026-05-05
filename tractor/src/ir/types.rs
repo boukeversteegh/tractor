@@ -517,6 +517,11 @@ pub enum Ir {
     /// `abstract`, etc. as exhaustive flags. Python sets only
     /// `async_`; C# sets many more.
     Function {
+        /// Element name. "function" for Python `def`; "method" for
+        /// C# `method_declaration` (matching the imperative pipeline's
+        /// `Method` rename). Cross-language asymmetry is intentional —
+        /// users query `<method>` in C# and `<function>` in Python.
+        element_name: &'static str,
         modifiers: Modifiers,
         decorators: Vec<Ir>,
         name: Box<Ir>,                  // Ir::Name
@@ -839,6 +844,10 @@ pub enum Ir {
     /// fields. Renders
     /// `<variable>[<type>...</type>]<name>...</name>[value-expr]</variable>`.
     Variable {
+        /// Element name. "variable" for local declarations; "field"
+        /// for class-level field declarations. C# uses both; Python
+        /// uses neither (assignments take a different IR path).
+        element_name: &'static str,
         type_ann: Option<Box<Ir>>,
         name: Box<Ir>,
         value: Option<Box<Ir>>,
