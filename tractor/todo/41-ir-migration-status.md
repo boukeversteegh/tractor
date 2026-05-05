@@ -144,14 +144,39 @@ diagnostic for any future coverage push (run with `--ignored
 --nocapture`).
 
 ### Java IR scaffold ⚠️ (switch off)
-`src/ir/java.rs` (~1100 LOC) lowers compilation_unit/program +
+`src/ir/java.rs` (~1400 LOC) lowers compilation_unit/program +
 class/interface/record/enum, method/constructor/field, control flow,
-chains, generics, comments. Wired through `parse_with_ir_pipeline`
-but NOT enabled — a trial flip shows 52 shape-contract errors +
-18 transform-test divergences. Resolving those is the next-session
-work; structurally analogous to the Python migration but with Java's
-specific shape choices (annotations as decorators, modifier
-placement, scoped identifiers in paths).
+chains, generics, comments, scoped_identifier paths, enum_constant,
+explicit_constructor_invocation, instanceof, annotations, etc.
+Wired through `parse_with_ir_pipeline` but NOT enabled.
+
+Trial flip status: **13 transform-test divergences** (down from 18):
+  - calls::java_method_call (chain folding edge case)
+  - chain::java + cross_language chain tests (chain inversion edge)
+  - decorators::java_annotation_is_direct_child (annotation
+    placement)
+  - flat_lists::java
+  - functions::java_constructor_rename
+  - generics::java_vocabulary
+  - loops::java
+  - modifiers::java — needs `<final/>`, `<package/>`,
+    `<synchronized/>` markers (Java-specific, not in `Modifiers`
+    struct). Either extend `Ir::Variable`/`Function`/`Class` with
+    `extra_markers: &'static [&'static str]` field, or render Java
+    elements via `Ir::SimpleStatement` to allow custom marker lists.
+  - patterns::java_type_pattern_no_marker_collision
+  - types::java_markers
+  - visibility::java_interface
+
+Foundation done in this session:
+  - Single-declarator field flattens via existing post-pass
+  - Multi-declarator wraps each in `<declarator>` with `<value>` slot
+  - Java method bodies render bare `<body>` (no inner `<block>`)
+  - Java field/local values get `<value>` slot for post-pass
+    `wrap_expression_positions` to add `<expression>` host
+
+Estimate: 4–8 hours to close the remaining 13 + add language-
+specific modifier markers + delete imperative Java.
 
 ### Other languages (TypeScript/Rust/Go/Ruby/PHP/data) — pending
 None have a `lower_<lang>_root` yet. Each requires:
