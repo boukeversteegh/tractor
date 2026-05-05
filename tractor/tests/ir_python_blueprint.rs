@@ -140,6 +140,26 @@ fn first_diff(a: &str, b: &str) -> String {
 /// Dump the CST shape of a small snippet for debugging.
 #[test]
 #[ignore]
+fn dump_type_alias_cst() {
+    let source = "type Vec[T] = list[T]\ntype Vec2 = list[int]\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
+    let tree = p.parse(source, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, source.as_bytes());
+}
+
+#[test]
+#[ignore]
 fn dump_type_params() {
     let source = "def identity[T](v: T) -> T:\n    return v\n";
     let mut p = tree_sitter::Parser::new();

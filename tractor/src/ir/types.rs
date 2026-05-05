@@ -362,6 +362,43 @@ pub enum Ir {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
+    /// `<alias>` — Python 3.12 `type Foo = Bar` /
+    /// `type Foo[T] = Bar`. `name` is the alias being declared,
+    /// `type_params` is the optional generic list, `value` is the
+    /// aliased type.
+    TypeAlias {
+        name: Box<Ir>,
+        type_params: Option<Box<Ir>>,
+        value: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<keyword>` — `name=value` keyword argument in a call (Python /
+    /// C# named arg). `value` is the inner expression.
+    KeywordArgument {
+        name: Box<Ir>,
+        value: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<splat>` with `<list/>` marker — `*x` (positional splat) in a
+    /// call or list literal. Inner is the splatted expression.
+    ListSplat {
+        inner: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<splat>` with `<dict/>` marker — `**x` (keyword splat) in a
+    /// call or dict literal.
+    DictSplat {
+        inner: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<ternary>` — `cond ? a : b` (C# / Java / JS) or
     /// `a if cond else b` (Python). Renders with logical slots
     /// regardless of source order; the renderer sorts children by
@@ -1088,6 +1125,10 @@ impl Ir {
             | Ir::Lambda { span, .. }
             | Ir::ObjectCreation { span, .. }
             | Ir::Ternary { span, .. }
+            | Ir::TypeAlias { span, .. }
+            | Ir::KeywordArgument { span, .. }
+            | Ir::ListSplat { span, .. }
+            | Ir::DictSplat { span, .. }
             | Ir::Function { span, .. }
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
@@ -1160,6 +1201,10 @@ impl Ir {
             | Ir::Lambda { range, .. }
             | Ir::ObjectCreation { range, .. }
             | Ir::Ternary { range, .. }
+            | Ir::TypeAlias { range, .. }
+            | Ir::KeywordArgument { range, .. }
+            | Ir::ListSplat { range, .. }
+            | Ir::DictSplat { range, .. }
             | Ir::Function { range, .. }
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }
@@ -1297,6 +1342,17 @@ impl Ir {
                 v.push(if_true);
                 v.push(if_false);
             }
+            Ir::TypeAlias { name, type_params, value, .. } => {
+                v.push(name);
+                if let Some(p) = type_params { v.push(p); }
+                v.push(value);
+            }
+            Ir::KeywordArgument { name, value, .. } => {
+                v.push(name);
+                v.push(value);
+            }
+            Ir::ListSplat { inner, .. } => v.push(inner),
+            Ir::DictSplat { inner, .. } => v.push(inner),
             Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);

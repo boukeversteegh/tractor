@@ -438,6 +438,81 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // PEP 695 type alias: `type Foo[T] = list[T]`. tree-sitter
+        // structure: type_alias_statement(type(left)?, type(right)).
+        // The left can be a plain identifier or wrapped in a generic.
+        "type_alias_statement" => {
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
+            // First named child is the LHS type-name (often wrapped
+            // in `type`); second is the RHS aliased type.
+            if kids.len() >= 2 {
+                let left = lower_node(kids[0], source);
+                let right = lower_node(kids[kids.len() - 1], source);
+                Ir::TypeAlias {
+                    name: Box::new(left),
+                    type_params: None,
+                    value: Box::new(right),
+                    range, span,
+                }
+            } else {
+                Ir::Unknown {
+                    kind: format!("type_alias_statement(arity={})", kids.len()),
+                    range, span,
+                }
+            }
+        }
+
+        // `*x` in calls / list literals — splat. tree-sitter:
+        // list_splat with single named child = the splatted expr.
+        "list_splat" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::ListSplat {
+                    inner: Box::new(lower_node(i, source)),
+                    range, span,
+                },
+                None => Ir::Unknown {
+                    kind: "list_splat(empty)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
+        // `**x` in calls / dict literals.
+        "dictionary_splat" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => Ir::DictSplat {
+                    inner: Box::new(lower_node(i, source)),
+                    range, span,
+                },
+                None => Ir::Unknown {
+                    kind: "dictionary_splat(empty)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
+        // `name=value` keyword argument. Fields: name, value.
+        "keyword_argument" => {
+            let n = node.child_by_field_name("name");
+            let v = node.child_by_field_name("value");
+            match (n, v) {
+                (Some(nn), Some(vv)) => Ir::KeywordArgument {
+                    name: Box::new(Ir::Name { range: range_of(nn), span: span_of(nn) }),
+                    value: Box::new(lower_node(vv, source)),
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "keyword_argument(missing field)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
         // Python ternary: `a if cond else b`. tree-sitter exposes
         // children positionally (no field labels): if_true, condition,
         // if_false in source order.

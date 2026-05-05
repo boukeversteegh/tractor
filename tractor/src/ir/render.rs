@@ -461,6 +461,82 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
+        Ir::TypeAlias { name, type_params, value, range, span } => {
+            let node = element(xot, "alias", *span);
+            xot.append(parent, node)?;
+            // Source-order: name, type_params (if any), value.
+            // The `type` keyword + `=` live in gap text.
+            let mut order: Vec<&Ir> = vec![name.as_ref()];
+            if let Some(p) = type_params { order.push(p.as_ref()); }
+            order.push(value.as_ref());
+            order.sort_by_key(|c| c.range().start);
+            // Wrap name in <left>, value in <right> with <type> wrappers.
+            let mut cursor = range.start;
+            for child in &order {
+                let cr = child.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                if std::ptr::eq(*child, name.as_ref()) {
+                    let left = element(xot, "left", child.span());
+                    xot.append(node, left)?;
+                    let type_el = element(xot, "type", child.span());
+                    xot.append(left, type_el)?;
+                    render_to_xot(xot, type_el, child, source)?;
+                } else if type_params.as_ref().map_or(false, |p| std::ptr::eq(*child, p.as_ref())) {
+                    render_to_xot(xot, node, child, source)?;
+                } else {
+                    let right = element(xot, "right", child.span());
+                    xot.append(node, right)?;
+                    let type_el = element(xot, "type", child.span());
+                    xot.append(right, type_el)?;
+                    render_to_xot(xot, type_el, child, source)?;
+                }
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, range.end)?;
+            Ok(node)
+        }
+        Ir::KeywordArgument { name, value, range, span } => {
+            let node = element(xot, "keyword", *span);
+            xot.append(parent, node)?;
+            let nr = name.range();
+            let vr = value.range();
+            emit_gap(xot, node, source, range.start, nr.start)?;
+            // Name goes in <name> ... not bare. Actually existing
+            // pipeline shape: <keyword><name>x</name>=<value><expression>...</expression></value></keyword>.
+            // For now, render name as Ir::Name (it'll wrap as <name>),
+            // and value as <value><expression>...</expression></value>.
+            render_to_xot(xot, node, name, source)?;
+            emit_gap(xot, node, source, nr.end, vr.start)?;
+            let val = element(xot, "value", value.span());
+            xot.append(node, val)?;
+            let expr = element(xot, "expression", value.span());
+            xot.append(val, expr)?;
+            render_to_xot(xot, expr, value, source)?;
+            emit_gap(xot, node, source, vr.end, range.end)?;
+            Ok(node)
+        }
+        Ir::ListSplat { inner, range, span } => {
+            let node = element(xot, "splat", *span);
+            xot.append(parent, node)?;
+            let m = element(xot, "list", *span);
+            xot.append(node, m)?;
+            let ir_range = inner.range();
+            emit_gap(xot, node, source, range.start, ir_range.start)?;
+            render_to_xot(xot, node, inner, source)?;
+            emit_gap(xot, node, source, ir_range.end, range.end)?;
+            Ok(node)
+        }
+        Ir::DictSplat { inner, range, span } => {
+            let node = element(xot, "splat", *span);
+            xot.append(parent, node)?;
+            let m = element(xot, "dict", *span);
+            xot.append(node, m)?;
+            let ir_range = inner.range();
+            emit_gap(xot, node, source, range.start, ir_range.start)?;
+            render_to_xot(xot, node, inner, source)?;
+            emit_gap(xot, node, source, ir_range.end, range.end)?;
+            Ok(node)
+        }
         Ir::Ternary { condition, if_true, if_false, range, span } => {
             let node = element(xot, "ternary", *span);
             xot.append(parent, node)?;
