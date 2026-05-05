@@ -57,11 +57,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 named.push(child);
             }
             match named.as_slice() {
-                [single] => Ir::Expression {
-                    inner: Box::new(lower_node(*single, source)),
-                    range,
-                    span,
-                },
+                [single] => {
+                    // Skip the `<expression>` wrap for kinds that the
+                    // existing pipeline treats as direct statements:
+                    // assignments, yield, raise. Their CST is an
+                    // `expression_statement` only because tree-sitter
+                    // groups them syntactically; semantically they're
+                    // statement-level and should not be wrapped.
+                    let inner_kind = single.kind();
+                    let bypass = matches!(
+                        inner_kind,
+                        "assignment" | "augmented_assignment" | "yield" | "raise_statement",
+                    );
+                    if bypass {
+                        lower_node(*single, source)
+                    } else {
+                        Ir::Expression {
+                            inner: Box::new(lower_node(*single, source)),
+                            range,
+                            span,
+                        }
+                    }
+                }
                 _ => Ir::Unknown {
                     kind: "expression_statement(multi)".to_string(),
                     range,
@@ -259,6 +276,168 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- Assignments ----------------------------------------------
+
+        // `target = value` / `target: type = value` / `target: type`
+        "assignment" => {
+            let left = node.child_by_field_name("left");
+            let right = node.child_by_field_name("right");
+            let type_ann = node.child_by_field_name("type");
+            // The `=` token is anonymous in the CST; locate it by
+            // scanning the source between the children. Convention:
+            // op_text = "=", op_range = position of `=` if present.
+            let (op_text, op_range) = locate_assign_eq(node, source, left, type_ann, right);
+            Ir::Assign {
+                targets: match left {
+                    Some(n) => lower_assign_side(n, source),
+                    None => vec![],
+                },
+                type_annotation: type_ann.map(|t| Box::new(lower_type_slot(t, source))),
+                op_text,
+                op_range,
+                op_markers: Vec::new(),
+                values: match right {
+                    Some(n) => lower_assign_side(n, source),
+                    None => vec![],
+                },
+                range,
+                span,
+            }
+        }
+
+        // `target OP= value` for OP in `+ - * / // % @ ** & | ^ >> <<`
+        "augmented_assignment" => {
+            let left = node.child_by_field_name("left");
+            let right = node.child_by_field_name("right");
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            let op_markers = augmented_op_markers(&op_text);
+            Ir::Assign {
+                targets: match left {
+                    Some(n) => lower_assign_side(n, source),
+                    None => vec![],
+                },
+                type_annotation: None,
+                op_text,
+                op_range,
+                op_markers,
+                values: match right {
+                    Some(n) => lower_assign_side(n, source),
+                    None => vec![],
+                },
+                range,
+                span,
+            }
+        }
+
+        // ----- Imports --------------------------------------------------
+
+        // `import os` / `import sys as system` / `import a, b`
+        "import_statement" => {
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            let mut has_alias = false;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "dotted_name" => children.push(lower_dotted_as_path(c, source)),
+                    "aliased_import" => {
+                        has_alias = true;
+                        let (path, aliased) = lower_aliased_top(c, source);
+                        children.push(path);
+                        children.push(aliased);
+                    }
+                    _ => children.push(lower_node(c, source)),
+                }
+            }
+            Ir::Import { has_alias, children, range, span }
+        }
+
+        // `from x import y` / `from . import x` / `from .x import y as z`
+        "import_from_statement" => {
+            // tree-sitter Python: import_from_statement has fields
+            // `module_name` (relative_import OR dotted_name) and
+            // unnamed children for the imported names (after the
+            // `import` keyword).
+            let module_name = node.child_by_field_name("module_name");
+            let (relative, path) = match module_name {
+                Some(m) if m.kind() == "relative_import" => {
+                    // Relative: may have inner dotted_name (path) or be just dots.
+                    let mut c = m.walk();
+                    let inner_path = m.named_children(&mut c)
+                        .find(|n| n.kind() == "dotted_name");
+                    (true, inner_path.map(|n| Box::new(lower_dotted_as_path(n, source))))
+                }
+                Some(m) if m.kind() == "dotted_name" => {
+                    (false, Some(Box::new(lower_dotted_as_path(m, source))))
+                }
+                _ => (false, None),
+            };
+
+            // Imported names: collect `name`-field children plus
+            // wildcard markers. tree-sitter exposes them as the
+            // `name` field (one or more) plus possibly a
+            // `wildcard_import` child.
+            let mut imports: Vec<Ir> = Vec::new();
+            let mut cursor2 = node.walk();
+            for c in node.named_children(&mut cursor2) {
+                let same_as_module = module_name.map(|m| m.id()) == Some(c.id());
+                if same_as_module { continue; }
+                match c.kind() {
+                    "dotted_name" => {
+                        // For `from x import y`, the imported name is a
+                        // single-segment dotted_name. We unwrap to a
+                        // bare `Ir::Name`.
+                        let name_node = lower_dotted_first_name(c, source);
+                        imports.push(Ir::FromImport {
+                            has_alias: false,
+                            name: Box::new(name_node),
+                            alias: None,
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                    }
+                    "aliased_import" => {
+                        let (n, a) = lower_aliased_from(c, source);
+                        imports.push(Ir::FromImport {
+                            has_alias: true,
+                            name: Box::new(n),
+                            alias: Some(Box::new(a)),
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                    }
+                    "wildcard_import" => {
+                        // `from x import *` — emit as a special
+                        // marker-bearing import. For now, treat as
+                        // `Ir::FromImport` with a synthetic Name
+                        // covering `*`.
+                        imports.push(Ir::FromImport {
+                            has_alias: false,
+                            name: Box::new(Ir::Name { range: range_of(c), span: span_of(c) }),
+                            alias: None,
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                    }
+                    _ => {
+                        imports.push(Ir::Unknown {
+                            kind: c.kind().to_string(),
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                    }
+                }
+            }
+
+            Ir::From { relative, path, imports, range, span }
+        }
+
+        // `dotted_name` outside of import context. Default lowering as
+        // a Path. Specific call sites (import, from) use
+        // `lower_dotted_as_path` directly.
+        "dotted_name" => lower_dotted_as_path(node, source),
+
         // Atoms — leaf-level value carriers. Text is `source[range]`.
         "identifier" => Ir::Name { range, span },
         "integer"    => Ir::Int  { range, span },
@@ -274,6 +453,186 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
     }
+}
+
+/// Lower an assignment side (LHS targets or RHS values). If the node
+/// is a multi-element pattern (pattern_list / tuple_pattern /
+/// expression_list), each child becomes a separate Vec entry —
+/// matching the existing pipeline's flat `<left><expression/>...</left>`
+/// / `<right><expression/>...</right>` layout for multi-target /
+/// multi-value assignments. Single-target / single-value cases return
+/// a one-element vec.
+fn lower_assign_side(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+    match node.kind() {
+        "pattern_list" | "tuple_pattern" | "expression_list" => {
+            let mut c = node.walk();
+            node.named_children(&mut c).map(|n| lower_node(n, source)).collect()
+        }
+        _ => vec![lower_node(node, source)],
+    }
+}
+
+/// Type-annotation slot lowering. tree-sitter Python wraps the type
+/// expression in a `type` node; we unwrap and lower the inner.
+fn lower_type_slot(node: TsNode<'_>, source: &str) -> Ir {
+    // The `type` field can be a `type` CST kind (with one named child)
+    // or a bare expression. Unwrap if it's the wrapping `type` kind.
+    if node.kind() == "type" {
+        let mut c = node.walk();
+        let inner = node.named_children(&mut c).next();
+        if let Some(inner) = inner {
+            return lower_node(inner, source);
+        }
+    }
+    lower_node(node, source)
+}
+
+/// Locate the `=` token inside a plain `assignment` CST node. tree-sitter
+/// Python doesn't surface this as a named child, so we scan the source
+/// between the left/type/right named children for the literal `=`. This
+/// is enough for the source-text invariant — gap text covers all
+/// non-token bytes between named children.
+fn locate_assign_eq(
+    node: TsNode<'_>,
+    source: &str,
+    left: Option<TsNode<'_>>,
+    type_ann: Option<TsNode<'_>>,
+    right: Option<TsNode<'_>>,
+) -> (String, ByteRange) {
+    // Pure-type-only declaration `x: int` has no `=`.
+    let after_type_or_left = type_ann.map(|t| t.end_byte())
+        .or_else(|| left.map(|l| l.end_byte()))
+        .unwrap_or(node.start_byte());
+    let until = right.map(|r| r.start_byte()).unwrap_or(node.end_byte());
+    if let Some(rel) = source[after_type_or_left..until].find('=') {
+        let abs = after_type_or_left + rel;
+        ("=".to_string(), ByteRange::new(abs as u32, (abs + 1) as u32))
+    } else {
+        // No `=`. Empty range at the end of left/type.
+        ("".to_string(), ByteRange::empty_at(after_type_or_left as u32))
+    }
+}
+
+/// Map an augmented-assignment operator (`+=`, `//=`, `@=`, …) to its
+/// marker list.
+fn augmented_op_markers(op: &str) -> Vec<&'static str> {
+    let base: Option<&'static str> = match op {
+        "+=" => Some("plus"),
+        "-=" => Some("minus"),
+        "*=" => Some("multiply"),
+        "/=" => Some("divide"),
+        "//=" => Some("floor"),
+        "%=" => Some("modulo"),
+        "@=" => Some("matmul"),
+        "**=" => Some("power"),
+        "&=" => Some("bitwise_and"),
+        "|=" => Some("bitwise_or"),
+        "^=" => Some("bitwise_xor"),
+        ">>=" => Some("shift_right"),
+        "<<=" => Some("shift_left"),
+        _ => None,
+    };
+    match base {
+        Some(b) => vec!["assign", b],
+        None => vec!["assign"],
+    }
+}
+
+/// Lower a `dotted_name` CST node to `Ir::Path` with one
+/// `Ir::Name` per segment. Single-segment dotted_names (`os`) become a
+/// `Path` with one segment, matching the existing pipeline shape
+/// (always wrap module paths in `<path>`).
+fn lower_dotted_as_path(node: TsNode<'_>, source: &str) -> Ir {
+    let mut cursor = node.walk();
+    let segments: Vec<Ir> = node
+        .named_children(&mut cursor)
+        .map(|c| Ir::Name { range: range_of(c), span: span_of(c) })
+        .collect();
+    Ir::Path {
+        segments,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+/// Lower a `dotted_name` to its first name segment as a bare `Ir::Name`
+/// (used in `from x import y` where each imported name is a
+/// dotted_name in the CST but renders as a bare `<name>` in the
+/// existing pipeline). Falls back to `Unknown` if the dotted_name has
+/// multiple segments (shouldn't happen for `from` imports).
+fn lower_dotted_first_name(node: TsNode<'_>, source: &str) -> Ir {
+    let mut cursor = node.walk();
+    let mut iter = node.named_children(&mut cursor);
+    if let Some(first) = iter.next() {
+        Ir::Name { range: range_of(first), span: span_of(first) }
+    } else {
+        Ir::Unknown {
+            kind: "dotted_name(empty)".to_string(),
+            range: range_of(node),
+            span: span_of(node),
+        }
+    }
+}
+
+/// Lower an `aliased_import` in *top-level* import context. Emits a
+/// pair: (`Ir::Path`, `Ir::Aliased`) — both become flat children of
+/// the enclosing `<import>`.
+fn lower_aliased_top(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
+    // tree-sitter Python: aliased_import has `name` field (dotted_name)
+    // and `alias` field (identifier).
+    let name_node = node.child_by_field_name("name");
+    let alias_node = node.child_by_field_name("alias");
+    let path = match name_node {
+        Some(n) => lower_dotted_as_path(n, source),
+        None => Ir::Unknown {
+            kind: "aliased_import(missing name)".to_string(),
+            range: range_of(node),
+            span: span_of(node),
+        },
+    };
+    let aliased = match alias_node {
+        Some(a) => Ir::Aliased {
+            inner: Box::new(Ir::Name { range: range_of(a), span: span_of(a) }),
+            range: range_of(a),
+            span: span_of(a),
+        },
+        None => Ir::Unknown {
+            kind: "aliased_import(missing alias)".to_string(),
+            range: range_of(node),
+            span: span_of(node),
+        },
+    };
+    (path, aliased)
+}
+
+/// Lower an `aliased_import` inside a `from X import` context. Emits a
+/// pair: (bare `Ir::Name`, `Ir::Aliased`) — without `<path>` wrapping
+/// on the imported name (that's how `from m import x as y` renders).
+fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
+    let name_node = node.child_by_field_name("name");
+    let alias_node = node.child_by_field_name("alias");
+    let name = match name_node {
+        Some(n) if n.kind() == "dotted_name" => lower_dotted_first_name(n, source),
+        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+        None => Ir::Unknown {
+            kind: "aliased_import(missing name)".to_string(),
+            range: range_of(node),
+            span: span_of(node),
+        },
+    };
+    let aliased = match alias_node {
+        Some(a) => Ir::Aliased {
+            inner: Box::new(Ir::Name { range: range_of(a), span: span_of(a) }),
+            range: range_of(a),
+            span: span_of(a),
+        },
+        None => Ir::Unknown {
+            kind: "aliased_import(missing alias)".to_string(),
+            range: range_of(node),
+            span: span_of(node),
+        },
+    };
+    (name, aliased)
 }
 
 fn lower_children(parent: TsNode<'_>, source: &str) -> Vec<Ir> {

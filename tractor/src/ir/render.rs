@@ -89,6 +89,154 @@ pub fn render_to_xot(
             emit_gap(xot, object, source, cursor, range.end)?;
             Ok(object)
         }
+        Ir::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } => {
+            let node = element(xot, "assign", *span);
+            xot.append(parent, node)?;
+
+            // <left><expression>...</expression>... </left> — each
+            // target wrapped in an <expression> host, in source order.
+            let left_node = element(xot, "left", *span);
+            xot.append(node, left_node)?;
+            // Compute left's source range from first to last target.
+            let left_range = if let (Some(first), Some(last)) = (targets.first(), targets.last()) {
+                ByteRange::new(first.range().start, last.range().end)
+            } else {
+                ByteRange::empty_at(range.start)
+            };
+            // Pre-target gap inside <left> (typically empty).
+            let mut cursor = left_range.start;
+            for t in targets {
+                let tr = t.range();
+                emit_gap(xot, left_node, source, cursor, tr.start)?;
+                let expr = element(xot, "expression", t.span());
+                xot.append(left_node, expr)?;
+                render_to_xot(xot, expr, t, source)?;
+                cursor = tr.end;
+            }
+            emit_gap(xot, left_node, source, cursor, left_range.end)?;
+
+            // Gap from end-of-left to start-of-type (if any) or op.
+            let post_left_end = left_range.end;
+            let next_start = type_annotation.as_ref().map(|t| t.range().start)
+                .unwrap_or(op_range.start);
+            emit_gap(xot, node, source, post_left_end, next_start)?;
+
+            // <type>...</type> — type annotation if present.
+            let post_type_end = if let Some(t) = type_annotation {
+                let tr = t.range();
+                let type_node = element(xot, "type", t.span());
+                xot.append(node, type_node)?;
+                render_with_gaps(xot, type_node, source, tr,
+                    std::slice::from_ref(t.as_ref()),
+                    |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ()))?;
+                emit_gap(xot, node, source, tr.end, op_range.start)?;
+                tr.end
+            } else {
+                post_left_end
+            };
+            let _ = post_type_end;
+
+            // <op>{op_text}{markers}</op>
+            if !op_text.is_empty() {
+                let op_node = element(xot, "op", *span);
+                xot.append(node, op_node)?;
+                let t = xot.new_text(op_text);
+                xot.append(op_node, t)?;
+                for marker in op_markers {
+                    let m = element(xot, marker, *span);
+                    xot.append(op_node, m)?;
+                }
+            }
+
+            // Gap from op to right.
+            let right_range = if let (Some(first), Some(last)) = (values.first(), values.last()) {
+                Some(ByteRange::new(first.range().start, last.range().end))
+            } else {
+                None
+            };
+            if let Some(rr) = right_range {
+                emit_gap(xot, node, source, op_range.end, rr.start)?;
+                let right_node = element(xot, "right", *span);
+                xot.append(node, right_node)?;
+                let mut cursor = rr.start;
+                for v in values {
+                    let vr = v.range();
+                    emit_gap(xot, right_node, source, cursor, vr.start)?;
+                    let expr = element(xot, "expression", v.span());
+                    xot.append(right_node, expr)?;
+                    render_to_xot(xot, expr, v, source)?;
+                    cursor = vr.end;
+                }
+                emit_gap(xot, right_node, source, cursor, rr.end)?;
+                // Trailing gap after right inside <assign>.
+                emit_gap(xot, node, source, rr.end, range.end)?;
+            } else {
+                // Pure type-only declaration — trailing gap after op
+                // (or after type if no op).
+                let after = if !op_text.is_empty() { op_range.end } else { post_type_end };
+                emit_gap(xot, node, source, after, range.end)?;
+            }
+            Ok(node)
+        }
+        Ir::Import { has_alias, children, range, span } => {
+            let node = element(xot, "import", *span);
+            xot.append(parent, node)?;
+            if *has_alias {
+                let m = element(xot, "alias", Span::point(span.line, span.column));
+                xot.append(node, m)?;
+            }
+            render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::From { relative, path, imports, range, span } => {
+            let node = element(xot, "from", *span);
+            xot.append(parent, node)?;
+            if *relative {
+                let m = element(xot, "relative", Span::point(span.line, span.column));
+                xot.append(node, m)?;
+            }
+            // Source-derived children in source order: path first (if
+            // any), then imports.
+            let mut order: Vec<&Ir> = Vec::new();
+            if let Some(p) = path { order.push(p.as_ref()); }
+            for i in imports { order.push(i); }
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::FromImport { has_alias, name, alias, range, span } => {
+            let node = element(xot, "import", *span);
+            xot.append(parent, node)?;
+            if *has_alias {
+                let m = element(xot, "alias", Span::point(span.line, span.column));
+                xot.append(node, m)?;
+            }
+            let mut order: Vec<&Ir> = vec![name.as_ref()];
+            if let Some(a) = alias { order.push(a.as_ref()); }
+            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Path { segments, range, span } => {
+            let node = element(xot, "path", *span);
+            xot.append(parent, node)?;
+            render_with_gaps(xot, node, source, *range, segments, |xot, parent, child| {
+                render_to_xot(xot, parent, child, source).map(|_| ())
+            })?;
+            Ok(node)
+        }
+        Ir::Aliased { inner, range, span } => {
+            let node = element(xot, "aliased", *span);
+            xot.append(parent, node)?;
+            render_with_gaps(xot, node, source, *range, std::slice::from_ref(inner.as_ref()),
+                |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ()),
+            )?;
+            Ok(node)
+        }
         Ir::Call { callee, arguments, range, span } => {
             let node = element(xot, "call", *span);
             xot.append(parent, node)?;

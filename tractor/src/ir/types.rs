@@ -207,6 +207,90 @@ pub enum Ir {
         span: Span,
     },
 
+    // ----- Assignments ----------------------------------------------------
+
+    /// `<assign>` — `target = value` / `target: type = value` /
+    /// `target += value` (augmented). Renders as
+    /// `<assign><left>...</left>[<type>...</type>]<op>...</op><right>...</right></assign>`.
+    ///
+    /// `targets` are the LHS — wrapped in `<expression>` host(s)
+    /// inside `<left>`. Multiple targets only when the source uses
+    /// pattern_list / tuple_pattern (`a, b = ...`).
+    /// `values` are the RHS — wrapped in `<expression>` host(s)
+    /// inside `<right>`. Multiple values only for tuple right-hand
+    /// sides matching the multi-target form.
+    /// `type_annotation` is `Some` for annotated assignments
+    /// (`x: int = …`).
+    /// `op_markers` are emitted as empty children of `<op>`:
+    /// `[]` for plain `=`, `["assign", "plus"]` for `+=`, etc.
+    Assign {
+        targets: Vec<Ir>,
+        type_annotation: Option<Box<Ir>>,
+        op_text: String,
+        op_range: ByteRange,
+        op_markers: Vec<&'static str>,
+        values: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    // ----- Imports --------------------------------------------------------
+
+    /// `<import>` — top-level `import x` / `import x, y` / `import x as a`.
+    /// `has_alias` adds an empty `<alias/>` marker child first; visible
+    /// in the tree-text view as `<import[alias]>`.
+    /// `children` are the import items in source order: each is an
+    /// [`Ir::Path`] (plain), or an [`Ir::Path`] followed by an
+    /// [`Ir::Aliased`] sibling (aliased — `import x as a`).
+    Import {
+        has_alias: bool,
+        children: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<from>` — `from x import y` (with `<relative/>` marker if the
+    /// path is relative). `path` is `None` for bare `from . import x`.
+    /// `imports` are one [`Ir::FromImport`] per imported name.
+    From {
+        relative: bool,
+        path: Option<Box<Ir>>,
+        imports: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<import>` slot inside `<from>`. Holds the imported name (and
+    /// alias if present) directly, *without* a `<path>` wrapper.
+    /// `has_alias` adds an empty `<alias/>` marker child first.
+    FromImport {
+        has_alias: bool,
+        /// Always an [`Ir::Name`] for the imported identifier.
+        name: Box<Ir>,
+        /// Some([`Ir::Aliased`]) if `... as X`.
+        alias: Option<Box<Ir>>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<path>` — dotted name, used in import / from-import paths and
+    /// (later) other path positions. Segments are flat (Principle #19,
+    /// iters 151-153).
+    Path {
+        segments: Vec<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
+    /// `<aliased>` — the renamed-target side of `as` clauses
+    /// (`import x as a`, `from m import y as z`). Wraps the alias
+    /// `<name>` to disambiguate from the original name.
+    Aliased {
+        inner: Box<Ir>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// `<call>` for a *standalone* call `f(args)` whose callee is a
     /// bare atom (typically `<name>`). When the callee is itself a
     /// chain (`a.b()`), lowering folds the call into an
@@ -327,6 +411,12 @@ impl Ir {
             | Ir::Call { span, .. }
             | Ir::Binary { span, .. }
             | Ir::Unary { span, .. }
+            | Ir::Assign { span, .. }
+            | Ir::Import { span, .. }
+            | Ir::From { span, .. }
+            | Ir::FromImport { span, .. }
+            | Ir::Path { span, .. }
+            | Ir::Aliased { span, .. }
             | Ir::Name { span, .. }
             | Ir::Int { span, .. }
             | Ir::Float { span, .. }
@@ -350,6 +440,12 @@ impl Ir {
             | Ir::Call { range, .. }
             | Ir::Binary { range, .. }
             | Ir::Unary { range, .. }
+            | Ir::Assign { range, .. }
+            | Ir::Import { range, .. }
+            | Ir::From { range, .. }
+            | Ir::FromImport { range, .. }
+            | Ir::Path { range, .. }
+            | Ir::Aliased { range, .. }
             | Ir::Name { range, .. }
             | Ir::Int { range, .. }
             | Ir::Float { range, .. }
