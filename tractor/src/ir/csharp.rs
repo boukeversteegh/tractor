@@ -1510,14 +1510,32 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 None => Vec::new(),
             };
             // Chain-fold: if the callee is an access chain, append a
-            // Call segment. Otherwise standalone Call.
+            // Call segment. When the chain's last step was a Member
+            // (`.Method`), absorb its property name into the Call so
+            // the rendered `<call>` carries the `<name>Method</name>`
+            // child — matches the imperative pipeline's
+            // `<object[access]><name>obj</name><call><name>Method</name>...</call>`
+            // shape. Otherwise standalone Call.
             match callee {
                 Ir::Access { receiver, mut segments, range: _, span: _ } => {
-                    let segment_range = ByteRange::new(
-                        segments.last().map(|s| s.range().end).unwrap_or(receiver.range().end),
-                        range.end,
-                    );
+                    // Extract method name from the trailing Member, if
+                    // any, and shorten that segment's range so the
+                    // call's range starts where the member did.
+                    let mut call_start = segments.last().map(|s| s.range().end).unwrap_or(receiver.range().end);
+                    let (call_name, call_name_span) = match segments.last() {
+                        Some(AccessSegment::Member { property_range, property_span, optional: false, range: m_range, .. }) => {
+                            let pr = *property_range;
+                            let ps = *property_span;
+                            call_start = m_range.start;
+                            segments.pop();
+                            (Some(pr), Some(ps))
+                        }
+                        _ => (None, None),
+                    };
+                    let segment_range = ByteRange::new(call_start, range.end);
                     segments.push(AccessSegment::Call {
+                        name: call_name,
+                        name_span: call_name_span,
                         arguments,
                         range: segment_range,
                         span,

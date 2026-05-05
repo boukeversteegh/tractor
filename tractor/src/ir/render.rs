@@ -1567,13 +1567,26 @@ fn render_segments_chain(
             *cursor = inner_cursor;
             node
         }
-        AccessSegment::Call { arguments, range: _, span } => {
+        AccessSegment::Call { name, name_span, arguments, range: _, span } => {
             let node = element(xot, "call", *span);
             xot.append(host, node)?;
-            let inner_refs: Vec<&Ir> = arguments.iter().collect();
-            render_with_gaps(xot, node, source, seg_range, &inner_refs,
-                |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
-            )?;
+            // Optional `<name>Method</name>` first child when the
+            // call absorbed the preceding member's property name.
+            if let (Some(name_range), Some(ns)) = (*name, *name_span) {
+                emit_gap(xot, node, source, seg_range.start, name_range.start)?;
+                leaf(xot, node, "name", source, name_range, ns)?;
+                emit_gap(xot, node, source, name_range.end, seg_range.end.min(name_range.end))?;
+                let inner_refs: Vec<&Ir> = arguments.iter().collect();
+                let arg_range = ByteRange::new(name_range.end, seg_range.end);
+                render_with_gaps(xot, node, source, arg_range, &inner_refs,
+                    |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
+                )?;
+            } else {
+                let inner_refs: Vec<&Ir> = arguments.iter().collect();
+                render_with_gaps(xot, node, source, seg_range, &inner_refs,
+                    |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
+                )?;
+            }
             let mut inner_cursor = seg_range.end;
             render_segments_chain(xot, node, rest, &mut inner_cursor, source)?;
             *cursor = inner_cursor;

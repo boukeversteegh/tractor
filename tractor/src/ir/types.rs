@@ -1163,11 +1163,15 @@ pub enum AccessSegment {
     },
 
     /// `(args)` — call segment in a chain `a.b()`. Renders as
-    /// `<call>{args...}</call>`. The bare-call form (`f()` with no
-    /// preceding chain) stays as `Ir::Call`; lowering decides which
-    /// based on whether the function position is itself an access
-    /// chain.
+    /// `<call>[<name>method</name>]{args...}</call>`. When the
+    /// preceding chain step is a member access (`.Method(...)`),
+    /// `name` carries the method name range so the renderer folds
+    /// the member+call into a single `<call><name>Method</name>...</call>`
+    /// element — matches the imperative pipeline's chain inversion.
+    /// For bare invocations (`f()`), use `Ir::Call` instead.
     Call {
+        name: Option<ByteRange>,
+        name_span: Option<Span>,
         arguments: Vec<Ir>,
         range: ByteRange,
         span: Span,
