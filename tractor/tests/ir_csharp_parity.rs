@@ -253,6 +253,17 @@ fn dump_for_raw_xml() {
 
 #[test]
 #[ignore]
+fn dump_csharp_field_value() {
+    let s = "class C { int x = 1; }";
+    let parsed = tractor::parser::parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else { parsed.root };
+    println!("{}", parsed.xot.to_string(root).unwrap());
+}
+
+#[test]
+#[ignore]
 fn dump_for_render_xml() {
     let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
     let r = parse_string_to_xot(s, "csharp", "<x>".to_string(), None).expect("parse");

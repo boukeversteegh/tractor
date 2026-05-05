@@ -291,45 +291,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .named_children(&mut vc)
                 .filter(|c| c.kind() == "variable_declarator")
                 .collect();
-            if declarators.len() == 1 {
-                let d = declarators[0];
-                lower_variable_declarator(
-                    d,
-                    type_node,
-                    source,
-                    range,
-                    span,
-                    "field",
-                    modifiers,
-                    decorators,
-                )
-            } else if !declarators.is_empty() {
-                let mut children: Vec<Ir> = decorators;
-                children.extend(declarators.into_iter().map(|d| {
-                    lower_variable_declarator(
-                        d,
-                        type_node,
-                        source,
-                        range_of(d),
-                        span_of(d),
-                        "field",
-                        modifiers,
-                        Vec::new(),
-                    )
-                }));
-                Ir::Inline {
-                    children,
-                    list_name: None,
-                    range,
-                    span,
-                }
-            } else {
-                Ir::Unknown {
-                    kind: "field_declaration(no declarators)".to_string(),
-                    range,
-                    span,
-                }
-            }
+            lower_java_multi_declarator(
+                node,
+                type_node,
+                &declarators,
+                source,
+                range,
+                span,
+                "field",
+                modifiers,
+                decorators,
+            )
         }
 
         // Local variable.
@@ -341,38 +313,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .named_children(&mut vc)
                 .filter(|c| c.kind() == "variable_declarator")
                 .collect();
-            if declarators.len() == 1 {
-                let d = declarators[0];
-                lower_variable_declarator(d, type_node, source, range, span, "variable", modifiers, Vec::new())
-            } else if !declarators.is_empty() {
-                let children: Vec<Ir> = declarators
-                    .into_iter()
-                    .map(|d| {
-                        lower_variable_declarator(
-                            d,
-                            type_node,
-                            source,
-                            range_of(d),
-                            span_of(d),
-                            "variable",
-                            modifiers,
-                            Vec::new(),
-                        )
-                    })
-                    .collect();
-                Ir::Inline {
-                    children,
-                    list_name: None,
-                    range,
-                    span,
-                }
-            } else {
-                Ir::Unknown {
-                    kind: "local_variable_declaration(no declarators)".to_string(),
-                    range,
-                    span,
-                }
-            }
+            lower_java_multi_declarator(
+                node,
+                type_node,
+                &declarators,
+                source,
+                range,
+                span,
+                "variable",
+                modifiers,
+                Vec::new(),
+            )
         }
 
         // Block / body.
@@ -977,8 +928,150 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // Switch.
         "switch_expression" | "switch_statement" => simple_statement(node, "switch", source),
+        "switch_block" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
         "switch_block_statement_group" => simple_statement(node, "section", source),
         "switch_label" => simple_statement(node, "case", source),
+
+        // Scoped identifier `java.util.List` — flatten to a path of names.
+        "scoped_identifier" | "scoped_type_identifier" => {
+            let mut cursor = node.walk();
+            let segments: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Path { segments, range, span }
+        }
+
+        "enum_constant" => {
+            // `RED`, `BLUE(0xff)` — has identifier name + optional arguments.
+            let name_node = node.child_by_field_name("name");
+            let name = match name_node {
+                Some(n) => Box::new(Ir::Name {
+                    range: range_of(n),
+                    span: span_of(n),
+                }),
+                None => Box::new(Ir::Unknown {
+                    kind: "enum_constant(no name)".to_string(),
+                    range,
+                    span,
+                }),
+            };
+            Ir::EnumMember {
+                decorators: Vec::new(),
+                name,
+                value: None,
+                range,
+                span,
+            }
+        }
+
+        "explicit_constructor_invocation" => simple_statement(node, "call", source),
+        "annotation_type_declaration" => simple_statement(node, "interface", source),
+        "array_initializer" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::List { children, range, span }
+        }
+        "assert_statement" => simple_statement(node, "assert", source),
+        "catch_type" => {
+            // `IOException | IllegalStateException` — multi-type catch.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        "class_literal" => simple_statement(node, "type", source),
+        "compact_constructor_declaration" => {
+            // record's compact ctor: `record R(int x) { }` — body only.
+            let body_node = node.child_by_field_name("body");
+            let body = match body_node {
+                Some(b) => Box::new(lower_block_like(b, source)),
+                None => Box::new(Ir::Body {
+                    children: Vec::new(),
+                    pass_only: false,
+                    block_wrap: false,
+                    range: ByteRange::empty_at(range.end),
+                    span,
+                }),
+            };
+            let modifiers = lower_java_modifiers(node, source, Some(Access::Public));
+            let name_node = node.child_by_field_name("name");
+            let name = match name_node {
+                Some(n) => Box::new(Ir::Name {
+                    range: range_of(n),
+                    span: span_of(n),
+                }),
+                None => Box::new(Ir::Unknown {
+                    kind: "compact_ctor(no name)".to_string(),
+                    range,
+                    span,
+                }),
+            };
+            Ir::Function {
+                element_name: "constructor",
+                modifiers,
+                decorators: Vec::new(),
+                name,
+                generics: None,
+                parameters: Vec::new(),
+                returns: None,
+                body,
+                range,
+                span,
+            }
+        }
+        "dimensions" => simple_statement(node, "type", source),
+        "enum_body_declarations" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        "instanceof_expression" => {
+            // `expr instanceof Type [name]` — Ir::Is.
+            let value_node = node.child_by_field_name("left");
+            let type_node = node.child_by_field_name("right");
+            match (value_node, type_node) {
+                (Some(v), Some(t)) => Ir::Is {
+                    value: Box::new(lower_node(v, source)),
+                    type_target: Box::new(lower_node(t, source)),
+                    range,
+                    span,
+                },
+                _ => simple_statement(node, "is", source),
+            }
+        }
+        "labeled_statement" => simple_statement(node, "label", source),
+        "method_reference" => simple_statement(node, "member", source),
+        "static_initializer" => {
+            // `static { ... }` — static block. Render as a method-like
+            // body with `<static/>` marker.
+            let mut cursor = node.walk();
+            let inner = node
+                .named_children(&mut cursor)
+                .find(|c| c.kind() == "block");
+            match inner {
+                Some(b) => simple_statement_marked(b, "block", &["static"], source),
+                None => simple_statement(node, "block", source),
+            }
+        }
+        "synchronized_statement" => simple_statement(node, "lock", source),
+        "this" => Ir::Name { range, span },
+        "wildcard" => simple_statement(node, "type", source),
 
         // Yield.
         "yield_statement" => simple_statement(node, "yield", source),
@@ -1105,13 +1198,125 @@ fn lower_block_like(node: TsNode<'_>, source: &str) -> Ir {
         .map(|c| lower_node(c, source))
         .collect();
     let children = merge_java_line_comments(children, source);
-    let block_wrap = node.kind() == "block";
+    // Java method bodies render as bare `<body>` (no inner `<block>`
+    // wrapper) — matches the imperative pipeline's shape and lets
+    // tests assert `//method/body/<stmt>` directly.
     Ir::Body {
         children,
         pass_only: false,
-        block_wrap,
+        block_wrap: false,
         range: range_of(node),
         span: span_of(node),
+    }
+}
+
+/// Lower a Java multi-declarator field/local statement. Single-
+/// declarator: produce a flat `Ir::Variable` so the post-pass'
+/// `flatten_single_declarator_children` keeps it bare. Multi-
+/// declarator: produce one outer `<field>`/`<variable>` wrapping
+/// `<declarator>` children — matches the imperative pipeline's
+/// shape for `int x = 1, y = 2;`.
+fn lower_java_multi_declarator(
+    parent: TsNode<'_>,
+    type_node: Option<TsNode<'_>>,
+    declarators: &[TsNode<'_>],
+    source: &str,
+    range: ByteRange,
+    span: Span,
+    element_name: &'static str,
+    modifiers: Modifiers,
+    decorators: Vec<Ir>,
+) -> Ir {
+    let _ = parent;
+    if declarators.is_empty() {
+        return Ir::Unknown {
+            kind: format!("{}(no declarators)", element_name),
+            range,
+            span,
+        };
+    }
+    if declarators.len() == 1 {
+        let d = declarators[0];
+        return lower_variable_declarator(
+            d,
+            type_node,
+            source,
+            range,
+            span,
+            element_name,
+            modifiers,
+            decorators,
+        );
+    }
+    // Multi-declarator: wrap each in a `<declarator>` SimpleStatement.
+    // Type stays at the outer `<field>` level — wrap in `<type>` if
+    // the inner doesn't already produce a type-shaped element.
+    let mut children: Vec<Ir> = Vec::new();
+    if let Some(t) = type_node {
+        let inner = lower_node(t, source);
+        let already_typed = matches!(
+            inner,
+            Ir::GenericType { .. }
+                | Ir::SimpleStatement { element_name: "type", .. }
+        );
+        if already_typed {
+            children.push(inner);
+        } else {
+            children.push(Ir::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: range_of(t),
+                span: span_of(t),
+            });
+        }
+    }
+    for d in declarators {
+        let name_node = d.child_by_field_name("name");
+        let value_node = d.child_by_field_name("value");
+        let mut decl_children: Vec<Ir> = Vec::new();
+        if let Some(n) = name_node {
+            decl_children.push(Ir::Name {
+                range: range_of(n),
+                span: span_of(n),
+            });
+        }
+        if let Some(v) = value_node {
+            let inner = lower_node(v, source);
+            decl_children.push(Ir::SimpleStatement {
+                element_name: "value",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: range_of(v),
+                span: span_of(v),
+            });
+        }
+        children.push(Ir::SimpleStatement {
+            element_name: "declarator",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: decl_children,
+            range: range_of(*d),
+            span: span_of(*d),
+        });
+    }
+    // Use Ir::Variable as the outer wrapper but with a SimpleStatement
+    // hack: we need the `<field>` element with mixed children
+    // (type + declarator + declarator). Easiest is a SimpleStatement
+    // with `element_name`.
+    Ir::SimpleStatement {
+        element_name,
+        modifiers,
+        extra_markers: &[],
+        children: {
+            let mut all: Vec<Ir> = decorators;
+            all.extend(children);
+            all
+        },
+        range,
+        span,
     }
 }
 
@@ -1145,7 +1350,22 @@ fn lower_variable_declarator(
         span: span_of(n),
     };
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
-    let value_ir = value_node.map(|v| Box::new(lower_node(v, source)));
+    // Wrap the value in a `<value>` SimpleStatement so the post-pass'
+    // `wrap_expression_positions` finds it (it scans for `<value>`,
+    // `<condition>` etc. and adds the `<expression>` host inside).
+    // Java tests assert `value/expression/int='1'`; without the
+    // wrapper the value renders as a bare child of `<field>`.
+    let value_ir = value_node.map(|v| {
+        let inner = lower_node(v, source);
+        Box::new(Ir::SimpleStatement {
+            element_name: "value",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range: range_of(v),
+            span: span_of(v),
+        })
+    });
     Ir::Variable {
         element_name,
         modifiers,
