@@ -640,8 +640,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         else_body = Some(Box::new(lower_block(inner, source)));
                     }
                     "finally_clause" => {
-                        let inner = c.child_by_field_name("body").unwrap_or(c);
-                        finally_body = Some(Box::new(lower_block(inner, source)));
+                        // tree-sitter-python's `finally_clause` doesn't
+                        // expose a `body` field — find the inner
+                        // `block` named child explicitly. Falling back
+                        // to `c` itself produces two `<body>` wrappers
+                        // (the finally-clause range *and* the block
+                        // range) which the no-repeated-parent-child
+                        // contract rejects.
+                        let mut cc = c.walk();
+                        let inner = c.named_children(&mut cc)
+                            .find(|n| n.kind() == "block")
+                            .or_else(|| c.child_by_field_name("body"));
+                        if let Some(b) = inner {
+                            finally_body = Some(Box::new(lower_block(b, source)));
+                        }
                     }
                     _ => {}
                 }

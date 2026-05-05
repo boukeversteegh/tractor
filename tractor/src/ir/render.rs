@@ -1201,9 +1201,16 @@ pub fn render_to_xot(
                 for v in values {
                     let vr = v.range();
                     emit_gap(xot, right_node, source, cursor, vr.start)?;
-                    let expr = element(xot, "expression", v.span());
-                    xot.append(right_node, expr)?;
-                    render_to_xot(xot, expr, v, source)?;
+                    // Don't double-wrap when the value already
+                    // produces an `<expression>` host (Ir::Expression
+                    // / await / non-null markers).
+                    if matches!(v, Ir::Expression { .. }) {
+                        render_to_xot(xot, right_node, v, source)?;
+                    } else {
+                        let expr = element(xot, "expression", v.span());
+                        xot.append(right_node, expr)?;
+                        render_to_xot(xot, expr, v, source)?;
+                    }
                     cursor = vr.end;
                 }
                 emit_gap(xot, right_node, source, cursor, rr.end)?;

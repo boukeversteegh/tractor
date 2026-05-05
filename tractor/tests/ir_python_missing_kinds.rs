@@ -90,4 +90,12 @@ fn python_missing_kinds() {
         let to = (pos + 200).min(final_xml.len());
         eprintln!("first 'unknown' context:\n{}", &final_xml[from..to]);
     }
+    eprintln!("\n=== Look for nested expression/body ===");
+    for needle in &["<expression line=\"58\"", "<body line=\"138\""] {
+        if let Some(pos) = final_xml.find(needle) {
+            let from = pos.saturating_sub(120);
+            let to = (pos + 400).min(final_xml.len());
+            eprintln!("\n{needle}\n{}", &final_xml[from..to]);
+        }
+    }
 }
