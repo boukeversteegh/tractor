@@ -256,6 +256,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Type-related kinds — old pipeline uses Custom transforms
+        // for these; for kind-coverage parity we emit them as
+        // <type> via SimpleStatement.
+        "type"           => simple_statement(node, "type",      source),
+        "generic_type"   => simple_statement(node, "type",      source),
+        "type_parameter" => simple_statement(node, "type",      source),
+        "type_conversion"=> simple_statement(node, "cast",      source),
+
         // Comprehensions and related — `[x for x in y]` etc. Old
         // pipeline names them after their literal kind.
         "list_comprehension"        => simple_statement(node, "list",      source),
