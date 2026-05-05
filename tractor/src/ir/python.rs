@@ -256,6 +256,32 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // Comprehensions and related — `[x for x in y]` etc. Old
+        // pipeline names them after their literal kind.
+        "list_comprehension"        => simple_statement(node, "list",      source),
+        "set_comprehension"         => simple_statement(node, "set",       source),
+        "dictionary_comprehension"  => simple_statement(node, "dictionary",source),
+        "generator_expression"      => simple_statement(node, "generator", source),
+        "for_in_clause"             => simple_statement(node, "for",       source),
+        "if_clause"                 => simple_statement(node, "if",        source),
+        "with_statement"            => simple_statement(node, "with",      source),
+        "with_clause"               => simple_statement(node, "with",      source),
+        "with_item"                 => simple_statement(node, "with_item", source),
+        "match_statement"           => simple_statement(node, "match",     source),
+        "case_clause"               => simple_statement(node, "case",      source),
+        "case_pattern"              => simple_statement(node, "pattern",   source),
+        "class_pattern"             => simple_statement(node, "pattern",   source),
+        "complex_pattern"           => simple_statement(node, "pattern",   source),
+        "dict_pattern"              => simple_statement(node, "pattern",   source),
+        "keyword_pattern"           => simple_statement(node, "pattern",   source),
+        "splat_pattern"             => simple_statement(node, "pattern",   source),
+        "splat_type"                => simple_statement(node, "type",      source),
+        "constrained_type"          => simple_statement(node, "type",      source),
+        "union_type"                => simple_statement(node, "type",      source),
+        "named_expression"          => simple_statement(node, "assign",    source),
+        "future_import_statement"   => simple_statement(node, "import",    source),
+        "interpolation"             => simple_statement(node, "interpolation", source),
+
         // Simple keyword-prefixed statements that the old pipeline
         // just renames. Each is lowered to Ir::SimpleStatement with
         // the right element name and the named CST children.
