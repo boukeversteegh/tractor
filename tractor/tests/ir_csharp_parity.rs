@@ -183,6 +183,26 @@ fn find_unknown_kinds_in_blueprint_ir() {
 
 #[test]
 #[ignore]
+fn dump_collection_expr_cst() {
+    let s = "class C { void M() { return [this]; var x = [1, 2, 3]; } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
 fn find_blueprint_error_nodes() {
     let source = std::fs::read_to_string("../tests/integration/languages/csharp/blueprint.cs")
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/csharp/blueprint.cs"))

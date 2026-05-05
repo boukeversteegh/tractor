@@ -472,10 +472,26 @@ pub fn render_to_xot(
                 }
                 return Ok(node);
             }
+            // Skip the wrap entirely if the inner already produces
+            // an element of the same name — avoids `<X><X>...</X></X>`
+            // double-nesting (mirrors the imperative pipeline's
+            // post-transform deduplication for body/type/name slots).
+            let inner_already_emits_wrapper = match (*wrapper, inner.as_ref()) {
+                ("body", Ir::Body { .. }) => true,
+                ("type", Ir::GenericType { .. }) => true,
+                ("type", Ir::SimpleStatement { element_name: "type", .. }) => true,
+                ("name", Ir::SimpleStatement { element_name: "name", .. }) => true,
+                _ => false,
+            };
+            if inner_already_emits_wrapper {
+                let ir = inner.range();
+                emit_gap(xot, parent, source, range.start, ir.start)?;
+                let inner_node = render_to_xot(xot, parent, inner, source)?;
+                emit_gap(xot, parent, source, ir.end, range.end)?;
+                return Ok(inner_node);
+            }
             let node = element(xot, wrapper, *span);
             xot.append(parent, node)?;
-            // The wrapper has the same range as the inner — emit
-            // any leading gap inside the wrapper, then render inner.
             let ir = inner.range();
             emit_gap(xot, node, source, range.start, ir.start)?;
             render_to_xot(xot, node, inner, source)?;

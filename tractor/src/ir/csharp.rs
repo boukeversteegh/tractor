@@ -692,7 +692,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "file_scoped_namespace_declaration" => simple_statement(node, "namespace", source),
         "operator_declaration"          => simple_statement(node, "operator",   source),
         "fixed_statement"               => simple_statement(node, "fixed",      source),
-        "unsafe_statement"              => simple_statement(node, "unsafe",     source),
+        "unsafe_statement"              => simple_statement_marked(node, "block", &["unsafe"], source),
         "using_statement"               => simple_statement(node, "using",      source),
         "throw_statement"               => simple_statement(node, "throw",      source),
         "throw_expression"              => simple_statement(node, "throw",      source),
@@ -732,7 +732,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "constructor_initializer"       => simple_statement(node, "initializer",source),
         "calling_convention"            => simple_statement(node, "calling",    source),
         "explicit_interface_specifier"  => simple_statement(node, "interface",  source),
-        "ref_expression"                => simple_statement_marked(node, "ref", &[], source),
+        "ref_expression"                => simple_statement_marked(node, "expression", &["ref"], source),
         "shebang_directive"             => simple_statement(node, "shebang",    source),
         "member_binding_expression"     => simple_statement(node, "member",     source),
         "element_binding_expression"    => simple_statement(node, "index",      source),
@@ -758,9 +758,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "array_type"                    => simple_statement(node, "type",       source),
         "tuple_type"                    => simple_statement(node, "type",       source),
-        "nullable_type"                 => simple_statement(node, "type",       source),
-        "ref_type"                      => simple_statement(node, "type",       source),
-        "scoped_type"                   => simple_statement(node, "type",       source),
+        "nullable_type"                 => simple_statement_marked(node, "type", &["nullable"], source),
+        "ref_type"                      => simple_statement_marked(node, "type", &["ref"], source),
         "function_pointer_type"         => simple_statement(node, "type",       source),
         // Array / collection creation — render as <new>. stackalloc
         // forms additionally carry a `<stackalloc/>` marker; anonymous
@@ -839,7 +838,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "preproc_undef"
         | "preproc_warning"
         | "preproc_if_in_attribute_list"
-        | "preproc_arg" => {
+        | "preproc_arg"
+        | "scoped_type" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
@@ -1049,7 +1049,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let inner = node.named_children(&mut c).next();
             match inner {
                 Some(i) => lower_node(i, source),
-                None => Ir::Unknown { kind: "argument(empty)".to_string(), range, span },
+                None => Ir::Inline { children: Vec::new(), range, span },
             }
         }
         "arrow_expression_clause" => {
@@ -1101,6 +1101,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .collect();
             Ir::Inline { children, range, span }
         }
+        "accessor_declaration" => lower_accessor_declaration(node, source),
         "this" | "this_expression" | "base" | "base_expression" => {
             // `this` / `base` keyword — atomic name leaf.
             Ir::Name { range, span }
@@ -2086,18 +2087,16 @@ fn lower_variable_declarator(
     // 1. Missing `name` field (tuple deconstruction, exotic patterns).
     // 2. Name range overlaps with type range (some tree-sitter
     //    variants put the type *inside* the name's reported range).
+    // Tuple deconstruction (`var (a, b) = ...`): no `name` field.
+    // Fall back to Inline so the source bytes are preserved without
+    // a synthetic `<unknown>` element. The deconstructed variables
+    // surface as bare names through gap text + child traversal.
     let Some(n) = name_node else {
-        return Ir::Unknown {
-            kind: "variable_declarator(no_name)".to_string(),
-            range, span,
-        };
+        return Ir::Inline { children: Vec::new(), range, span };
     };
     if let Some(t) = type_node {
         if n.byte_range().start < t.byte_range().end {
-            return Ir::Unknown {
-                kind: "variable_declarator(overlapping_type_and_name)".to_string(),
-                range, span,
-            };
+            return Ir::Inline { children: Vec::new(), range, span };
         }
     }
 
