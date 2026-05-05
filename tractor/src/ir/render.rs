@@ -441,32 +441,44 @@ pub fn render_to_xot(
                 }
                 ParamKind::Regular => {}
             }
-            // Source order: name, optional type, optional default.
+            // Source-ordered children: type / name / default. Python
+            // and C# put these in different orders (`x: int = 5` vs
+            // `int x = 5`); sorting by range avoids duplicating bytes
+            // in gap text.
+            #[derive(Clone, Copy)]
+            enum Slot<'a> { Name(&'a Ir), Type(&'a Ir), Default(&'a Ir) }
+            let mut order: Vec<Slot> = vec![Slot::Name(name)];
+            if let Some(t) = type_ann { order.push(Slot::Type(t)); }
+            if let Some(d) = default { order.push(Slot::Default(d)); }
+            order.sort_by_key(|s| match s {
+                Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i.range().start,
+            });
+
             let mut cursor = range.start;
-            // Pre-name gap.
-            let nr = name.range();
-            emit_gap(xot, node, source, cursor, nr.start)?;
-            render_to_xot(xot, node, name, source)?;
-            cursor = nr.end;
-            // Type annotation wrapped in <type>.
-            if let Some(t) = type_ann {
-                let tr = t.range();
-                emit_gap(xot, node, source, cursor, tr.start)?;
-                let type_el = element(xot, "type", t.span());
-                xot.append(node, type_el)?;
-                render_to_xot(xot, type_el, t, source)?;
-                cursor = tr.end;
-            }
-            // Default wrapped in <value><expression>...</expression></value>.
-            if let Some(d) = default {
-                let dr = d.range();
-                emit_gap(xot, node, source, cursor, dr.start)?;
-                let val = element(xot, "value", d.span());
-                xot.append(node, val)?;
-                let expr = element(xot, "expression", d.span());
-                xot.append(val, expr)?;
-                render_to_xot(xot, expr, d, source)?;
-                cursor = dr.end;
+            for slot in &order {
+                let inner: &Ir = match slot {
+                    Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i,
+                };
+                let ir_range = inner.range();
+                emit_gap(xot, node, source, cursor, ir_range.start)?;
+                match slot {
+                    Slot::Name(_) => {
+                        render_to_xot(xot, node, inner, source)?;
+                    }
+                    Slot::Type(_) => {
+                        let type_el = element(xot, "type", inner.span());
+                        xot.append(node, type_el)?;
+                        render_to_xot(xot, type_el, inner, source)?;
+                    }
+                    Slot::Default(_) => {
+                        let val = element(xot, "value", inner.span());
+                        xot.append(node, val)?;
+                        let expr = element(xot, "expression", inner.span());
+                        xot.append(val, expr)?;
+                        render_to_xot(xot, expr, inner, source)?;
+                    }
+                }
+                cursor = ir_range.end;
             }
             emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)

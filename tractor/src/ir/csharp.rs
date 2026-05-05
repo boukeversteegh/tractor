@@ -113,6 +113,85 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
+        // ----- Parameter (single, inside parameter_list) -----------------
+        //
+        // tree-sitter-c-sharp: `parameter` with `type` and `name` field
+        // children, plus optional `equals_value_clause` for default
+        // values. Parameter modifiers (ref / out / in / params / this)
+        // appear as `modifier` children — for now we lower as Regular
+        // and let the modifier text fall into gap text.
+        "parameter" => {
+            let type_node = node.child_by_field_name("type");
+            let name_node = node.child_by_field_name("name");
+            let mut cursor = node.walk();
+            let default_node = node.named_children(&mut cursor)
+                .find(|c| c.kind() == "equals_value_clause");
+            Ir::Parameter {
+                kind: ParamKind::Regular,
+                name: Box::new(match name_node {
+                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
+                    None => Ir::Unknown {
+                        kind: "parameter(missing name)".to_string(),
+                        range, span,
+                    },
+                }),
+                type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
+                default: default_node.and_then(|d| {
+                    let mut c = d.walk();
+                    let inner = d.named_children(&mut c).next();
+                    inner.map(|n| Box::new(lower_node(n, source)))
+                }),
+                range, span,
+            }
+        }
+
+        // `assignment_expression` — `x = value` / `x += value` etc.
+        // Reuses Ir::Assign (same as Python). The assignment is
+        // expression-level in C# but we model it the same way; the
+        // wrapping `expression_statement` is bypassed for assignments
+        // (handled below) so the rendered shape stays clean.
+        "assignment_expression" => {
+            let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
+            let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
+            let op_text = node.child_by_field_name("operator")
+                .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+                .map(|s| s.to_string())
+                .unwrap_or_default();
+            let op_range = node.child_by_field_name("operator").map(range_of)
+                .unwrap_or(ByteRange::empty_at(range.start));
+            // Map op text to op_markers (same as Python).
+            let op_markers: Vec<&'static str> = match op_text.as_str() {
+                "=" => vec![],
+                "+=" => vec!["assign", "plus"],
+                "-=" => vec!["assign", "minus"],
+                "*=" => vec!["assign", "multiply"],
+                "/=" => vec!["assign", "divide"],
+                "%=" => vec!["assign", "modulo"],
+                "&=" => vec!["assign", "bitwise_and"],
+                "|=" => vec!["assign", "bitwise_or"],
+                "^=" => vec!["assign", "bitwise_xor"],
+                "<<=" => vec!["assign", "shift_left"],
+                ">>=" => vec!["assign", "shift_right"],
+                "??=" => vec!["assign", "null_coalesce"],
+                _ => vec!["assign"],
+            };
+            match (left, right) {
+                (Some(l), Some(r)) => Ir::Assign {
+                    targets: vec![l],
+                    type_annotation: None,
+                    op_text,
+                    op_range,
+                    op_markers,
+                    values: vec![r],
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "assignment_expression(missing operand)".to_string(),
+                    range, span,
+                },
+            }
+        }
+
         // ----- Statements with simple structure -------------------------
 
         "comment" => Ir::Comment { leading: true, range, span },
@@ -284,10 +363,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         "constructor_declaration" => {
             let name_node = node.child_by_field_name("name");
+            let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             let modifiers = lower_csharp_modifiers(node, source, Some(Access::Private));
-            // Parameters lowering deferred for the slice — they
-            // appear under_typed in the audit until then.
             Ir::Constructor {
                 modifiers,
                 decorators: Vec::new(),
@@ -295,7 +373,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown { kind: "constructor(missing name)".to_string(), range, span },
                 }),
-                parameters: Vec::new(),
+                parameters: lower_csharp_parameter_list(params_node, source),
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
                     None => Ir::Body {
@@ -370,10 +448,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // `[modifiers] returntype Name(params) { body }` — name +
-        // body + full Modifiers. Default access for class members:
-        // Private. Return type and parameters deferred.
+        // body + parameters + full Modifiers. Default access for
+        // class members: Private. Return type still deferred (would
+        // need an Ir::Returns wrap; tree-sitter exposes it as a
+        // sibling of `name` rather than a labelled field).
         "method_declaration" => {
             let name_node = node.child_by_field_name("name");
+            let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Private));
             Ir::Function {
@@ -387,7 +468,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     },
                 }),
                 generics: None,
-                parameters: Vec::new(),
+                parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
@@ -460,18 +541,27 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // `expression_statement` — wrap in <expression> host
         // (Principle #15) when its inner is a value-producing
-        // expression. Like Python, skip the wrap for assignments and
-        // similar (added later when we have those variants).
+        // expression. Skip the wrap for assignment-style and other
+        // statement-level kinds (matches Python's bypass logic).
         "expression_statement" => {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(n) => Ir::Expression {
-                    inner: Box::new(lower_node(n, source)),
-                    marker: None,
-                    range,
-                    span,
-                },
+                Some(n) => {
+                    let bypass = matches!(
+                        n.kind(),
+                        "assignment_expression" | "throw_expression"
+                    );
+                    if bypass {
+                        lower_node(n, source)
+                    } else {
+                        Ir::Expression {
+                            inner: Box::new(lower_node(n, source)),
+                            marker: None,
+                            range, span,
+                        }
+                    }
+                }
                 None => Ir::Unknown { kind: "expression_statement(empty)".to_string(), range, span },
             }
         }
@@ -917,6 +1007,18 @@ fn lower_csharp_modifiers(
         }
     }
     m
+}
+
+/// Lower a C# `parameter_list` into a Vec of `Ir::Parameter` (and any
+/// other parameter-like kinds we add later). Skips punctuation; only
+/// keeps named children of kind `parameter`.
+fn lower_csharp_parameter_list(node: Option<TsNode<'_>>, source: &str) -> Vec<Ir> {
+    let Some(n) = node else { return Vec::new() };
+    let mut cursor = n.walk();
+    n.named_children(&mut cursor)
+        .filter(|c| c.kind() == "parameter")
+        .map(|c| lower_node(c, source))
+        .collect()
 }
 
 /// Lower an `accessor_declaration` (`get`, `set`, `init` inside a
