@@ -633,16 +633,22 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // PEP 695 type alias: `type Foo[T] = list[T]`. tree-sitter
-        // structure: type_alias_statement(type(left)?, type(right)).
-        // The left can be a plain identifier or wrapped in a generic.
+        // structure: type_alias_statement(type(left), type(right)).
+        // The renderer wraps left/right in <type> already, so we
+        // unwrap the CST `type` wrapper here to avoid double-nesting.
         "type_alias_statement" => {
             let mut cursor = node.walk();
             let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
-            // First named child is the LHS type-name (often wrapped
-            // in `type`); second is the RHS aliased type.
+            fn unwrap_type<'a>(n: TsNode<'a>) -> TsNode<'a> {
+                if n.kind() == "type" {
+                    let mut c = n.walk();
+                    let inner = n.named_children(&mut c).next();
+                    inner.unwrap_or(n)
+                } else { n }
+            }
             if kids.len() >= 2 {
-                let left = lower_node(kids[0], source);
-                let right = lower_node(kids[kids.len() - 1], source);
+                let left = lower_node(unwrap_type(kids[0]), source);
+                let right = lower_node(unwrap_type(kids[kids.len() - 1]), source);
                 Ir::TypeAlias {
                     name: Box::new(left),
                     type_params: None,
