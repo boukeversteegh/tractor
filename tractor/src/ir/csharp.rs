@@ -19,7 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{Access, AccessSegment, ByteRange, Ir, ParamKind, Span};
+use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a C# tree-sitter root node to [`Ir`].
 ///
@@ -140,20 +140,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Namespace { name: Box::new(name_ir), children, range, span }
         }
 
-        // `class C { ... }` — minimal lowering: name + body + access.
-        // Other modifiers (static, sealed, abstract, partial) are
-        // deferred. The `access` field is exhaustive: every C# class
-        // has *some* access level (default `Internal` for top-level
-        // when no explicit modifier is given). Renderer emits the
-        // corresponding `<public/>` / `<private/>` / etc. marker.
+        // `class C { ... }` — name + body + full Modifiers.
+        // Default access for top-level types: Internal.
         "class_declaration" => {
             let name_node = node.child_by_field_name("name");
             let mut cursor = node.walk();
             let body_node = node.named_children(&mut cursor)
                 .find(|c| c.kind() == "declaration_list");
-            let access = lower_csharp_access(node, source);
+            let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Internal));
             Ir::Class {
-                access: Some(access),
+                modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
@@ -177,13 +173,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
-        // `[modifiers] returntype Name(params) { body }` — minimal:
-        // name + body. Return type, modifiers, parameters deferred.
+        // `[modifiers] returntype Name(params) { body }` — name +
+        // body + full Modifiers. Default access for class members:
+        // Private. Return type and parameters deferred.
         "method_declaration" => {
             let name_node = node.child_by_field_name("name");
             let body_node = node.child_by_field_name("body");
+            let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Private));
             Ir::Function {
-                is_async: false,
+                modifiers,
                 decorators: Vec::new(),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
@@ -655,40 +653,74 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-/// Extract C#'s access level from a declaration's `modifier` children.
-/// tree-sitter-c-sharp surfaces each access keyword (`public`,
-/// `private`, …) as its own `modifier` node child of the declaration.
-/// Compound forms like `protected internal` come as two adjacent
-/// modifier nodes — we detect the pair by source-text co-presence.
+/// Extract C#'s modifier set from a declaration's `modifier` children.
+/// Each modifier keyword (`public`, `static`, `abstract`, …) is a
+/// separate `modifier` CST node. Compound access forms (`protected
+/// internal`, `private protected`) appear as two adjacent modifier
+/// nodes — we detect them by source-text co-presence.
 ///
-/// Default when no explicit access modifier is present is
-/// `Access::Internal` — the C# spec's default for top-level types.
-/// (Nested members default to `Private`; that distinction is for
-/// member-level callers — for class-level we always use `Internal`
-/// here. Refine when nested-class lowering grows.)
-fn lower_csharp_access(node: TsNode<'_>, source: &str) -> Access {
+/// `default_access` is the access level used when no explicit access
+/// modifier is given — varies per declaration kind:
+/// - Top-level types: `Internal`
+/// - Class members: `Private`
+/// - Interface members: `Public` (passed by caller)
+fn lower_csharp_modifiers(
+    node: TsNode<'_>,
+    source: &str,
+    default_access: Option<Access>,
+) -> Modifiers {
     let mut cursor = node.walk();
-    let modifiers: Vec<&str> = node.named_children(&mut cursor)
+    let words: Vec<&str> = node.named_children(&mut cursor)
         .filter(|c| c.kind() == "modifier")
         .filter_map(|c| c.utf8_text(source.as_bytes()).ok())
         .collect();
 
-    // Compound: protected + internal => ProtectedInternal.
-    let has_prot = modifiers.contains(&"protected");
-    let has_int = modifiers.contains(&"internal");
-    let has_priv = modifiers.contains(&"private");
-    if has_prot && has_int { return Access::ProtectedInternal; }
-    if has_priv && has_prot { return Access::PrivateProtected; }
+    let mut m = Modifiers::default();
+    let has_prot = words.contains(&"protected");
+    let has_int = words.contains(&"internal");
+    let has_priv = words.contains(&"private");
 
-    // Single token (or none).
-    for m in &modifiers {
-        if let Some(a) = Access::from_csharp_modifier_text(m) {
-            return a;
+    // Access level — compound forms first, then singletons.
+    if has_prot && has_int {
+        m.access = Some(Access::ProtectedInternal);
+    } else if has_priv && has_prot {
+        m.access = Some(Access::PrivateProtected);
+    } else {
+        for w in &words {
+            if let Some(a) = Access::from_csharp_modifier_text(w) {
+                m.access = Some(a);
+                break;
+            }
+        }
+        if m.access.is_none() {
+            m.access = default_access;
         }
     }
-    // No explicit access modifier — default to Internal for
-    // top-level types.
-    Access::Internal
+
+    // Boolean flags. `protected` / `internal` / `private` consumed
+    // above for access; not flagged separately.
+    for w in &words {
+        match *w {
+            "static"   => m.static_   = true,
+            "abstract" => m.abstract_ = true,
+            "sealed"   => m.sealed    = true,
+            "virtual"  => m.virtual_  = true,
+            "override" => m.override_ = true,
+            "readonly" => m.readonly  = true,
+            "partial"  => m.partial   = true,
+            "async"    => m.async_    = true,
+            "const"    => m.const_    = true,
+            "extern"   => m.extern_   = true,
+            "unsafe"   => m.unsafe_   = true,
+            "volatile" => m.volatile  = true,
+            "new"      => m.new_      = true,
+            "required" => m.required  = true,
+            // access keywords already handled above.
+            "public" | "private" | "protected" | "internal" | "file" => {}
+            _ => {} // unknown — ignored for now.
+        }
+    }
+    m
 }
 
 /// Lower a `block` or `declaration_list` into `Ir::Body`.

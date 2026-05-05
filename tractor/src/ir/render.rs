@@ -361,11 +361,13 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Function { is_async, decorators, name, generics, parameters, returns, body, range, span } => {
+        Ir::Function { modifiers, decorators, name, generics, parameters, returns, body, range, span } => {
             let node = element(xot, "function", *span);
             xot.append(parent, node)?;
-            if *is_async {
-                let m = element(xot, "async", Span::point(span.line, span.column));
+            // Modifier markers first (access + flags). Same
+            // marker-by-derivation pattern as Class.
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, Span::point(span.line, span.column));
                 xot.append(node, m)?;
             }
             // Source-order children: decorators, name, generics,
@@ -384,21 +386,16 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Class { access, decorators, name, generics, bases, body, range, span } => {
+        Ir::Class { modifiers, decorators, name, generics, bases, body, range, span } => {
             let node = element(xot, "class", *span);
             xot.append(parent, node)?;
-            // Access marker(s) first (zero-width, synthetic position).
-            // The marker is *derived* from the enum: flipping
-            // `Ir::Class.access` swaps the marker by construction.
-            // Compound access levels (C# `protected internal`,
-            // `private protected`) emit *multiple* markers per the
-            // "no underscore in names" rule — visible in tree-text
-            // view as `class[protected and internal]`.
-            if let Some(a) = access {
-                for marker in a.marker_names() {
-                    let m = element(xot, marker, *span);
-                    xot.append(node, m)?;
-                }
+            // Modifier markers first (zero-width, synthetic position).
+            // Each marker is *derived* from a typed field on the
+            // Modifiers struct — flipping `modifiers.access` or any
+            // bool flag swaps the marker by construction.
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
             }
             let mut order: Vec<&Ir> = Vec::new();
             for d in decorators { order.push(d); }

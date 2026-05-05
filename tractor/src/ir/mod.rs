@@ -46,7 +46,7 @@ pub mod csharp;
 #[cfg(feature = "native")]
 pub mod coverage;
 
-pub use types::{Access, AccessSegment, ByteRange, Ir, ParamKind, Span, to_source};
+pub use types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span, to_source};
 pub use render::render_to_xot;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;

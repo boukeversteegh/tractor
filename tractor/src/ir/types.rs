@@ -330,9 +330,12 @@ pub enum Ir {
     /// are children at the top (renders before `<name>`); generics
     /// after name; parameters after generics; `<returns>` for return
     /// type; `<body>` last.
-    /// `<function[async]>` adds an `<async/>` empty marker child.
+    ///
+    /// `modifiers` carries `async`, `static`, `virtual`, `override`,
+    /// `abstract`, etc. as exhaustive flags. Python sets only
+    /// `async_`; C# sets many more.
     Function {
-        is_async: bool,
+        modifiers: Modifiers,
         decorators: Vec<Ir>,
         name: Box<Ir>,                  // Ir::Name
         generics: Option<Box<Ir>>,      // Ir::Generic
@@ -346,14 +349,13 @@ pub enum Ir {
     /// `<class>` — `class C(bases): ...`. Same shape pattern as
     /// `Function`.
     ///
-    /// `access` is the language-specific access level when applicable:
-    /// `Some(Access::*)` for languages with explicit access modifiers
-    /// (C# / Java / Kotlin), `None` for languages without (Python).
-    /// The renderer emits the corresponding empty marker as a child;
-    /// flipping `access` swaps the marker by construction (no
-    /// imperative re-write needed).
+    /// `modifiers` carries access + flags. Empty for languages
+    /// without modifier concepts (Python class definitions). The
+    /// renderer emits one zero-width marker per active flag.
+    /// Flipping any flag swaps the corresponding marker by
+    /// construction.
     Class {
-        access: Option<Access>,
+        modifiers: Modifiers,
         decorators: Vec<Ir>,
         name: Box<Ir>,
         generics: Option<Box<Ir>>,
@@ -700,6 +702,121 @@ impl Access {
             // looking at the pair, not here.
             _ => return None,
         })
+    }
+}
+
+/// Set of access-and-modifier flags applicable to declarations
+/// (class, struct, interface, method, field, property, …).
+///
+/// **Exhaustive variations principle.** Every flag has a defined
+/// value (`false` unless set, `None` for `access` if not applicable).
+/// Adding a modifier is one struct-field change; the renderer
+/// produces a marker for each true-valued flag automatically.
+///
+/// **Cross-language usage.** Python uses only `access: None` and
+/// `async_`. C# uses many. Java would use access + static + abstract
+/// + final (which we'd rename to `sealed` to match C#'s naming, or
+/// we add a separate `final_`). The struct holds the union; languages
+/// populate the relevant subset.
+///
+/// **Mutation.** Each field is a typed leaf — `modifiers.access =
+/// Some(Access::Private)` or `modifiers.static_ = true`. Re-render
+/// produces the matching markers. No XML-level edits needed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Modifiers {
+    /// Access level. `None` for languages without explicit access
+    /// modifiers (Python, JavaScript before private fields).
+    pub access: Option<Access>,
+    /// `static` — bound to the type, not instances.
+    pub static_: bool,
+    /// `abstract` — must be overridden / has no implementation.
+    pub abstract_: bool,
+    /// `sealed` (C#) / `final class` (Java) — cannot be inherited.
+    pub sealed: bool,
+    /// `virtual` (C#) — overridable but not abstract.
+    pub virtual_: bool,
+    /// `override` — overrides a base member.
+    pub override_: bool,
+    /// `readonly` (C# field) / `final` (Java field) — cannot be
+    /// reassigned after initialization.
+    pub readonly: bool,
+    /// `partial` (C#) — definition split across multiple files.
+    pub partial: bool,
+    /// `async` — async function/method.
+    pub async_: bool,
+    /// `const` — compile-time constant.
+    pub const_: bool,
+    /// `extern` (C#) — implementation external (DllImport etc.).
+    pub extern_: bool,
+    /// `unsafe` (C#) — relaxes safety checks.
+    pub unsafe_: bool,
+    /// `volatile` (C#/Java) — non-cacheable reads/writes.
+    pub volatile: bool,
+    /// `new` (C#) — explicitly hides an inherited member.
+    pub new_: bool,
+    /// `required` (C# 11) — must be assigned during object init.
+    pub required: bool,
+}
+
+impl Modifiers {
+    /// True iff no modifier is set (no access, no flags). Renders as
+    /// no markers at all.
+    pub fn is_empty(&self) -> bool {
+        self.access.is_none()
+            && !self.static_ && !self.abstract_ && !self.sealed
+            && !self.virtual_ && !self.override_ && !self.readonly
+            && !self.partial && !self.async_ && !self.const_
+            && !self.extern_ && !self.unsafe_ && !self.volatile
+            && !self.new_ && !self.required
+    }
+
+    /// Marker names this modifier set should emit, in stable order
+    /// (access first, then alphabetical-ish for predictability).
+    /// Used by the renderer to produce zero-width markers.
+    pub fn marker_names(&self) -> Vec<&'static str> {
+        let mut names: Vec<&'static str> = Vec::new();
+        if let Some(a) = self.access {
+            for n in a.marker_names() { names.push(n); }
+        }
+        if self.static_   { names.push("static"); }
+        if self.abstract_ { names.push("abstract"); }
+        if self.sealed    { names.push("sealed"); }
+        if self.virtual_  { names.push("virtual"); }
+        if self.override_ { names.push("override"); }
+        if self.readonly  { names.push("readonly"); }
+        if self.partial   { names.push("partial"); }
+        if self.async_    { names.push("async"); }
+        if self.const_    { names.push("const"); }
+        if self.extern_   { names.push("extern"); }
+        if self.unsafe_   { names.push("unsafe"); }
+        if self.volatile  { names.push("volatile"); }
+        if self.new_      { names.push("new"); }
+        if self.required  { names.push("required"); }
+        names
+    }
+
+    /// Flip a modifier flag from text input. Returns Err for unknown
+    /// names. Used by the eventual `tractor modify --set foo=true`
+    /// CLI surface.
+    pub fn set_flag(&mut self, name: &str, value: bool) -> Result<(), &'static str> {
+        match name {
+            "static"   => self.static_ = value,
+            "abstract" => self.abstract_ = value,
+            "sealed"   => self.sealed = value,
+            "virtual"  => self.virtual_ = value,
+            "override" => self.override_ = value,
+            "readonly" => self.readonly = value,
+            "partial"  => self.partial = value,
+            "async"    => self.async_ = value,
+            "const"    => self.const_ = value,
+            "extern"   => self.extern_ = value,
+            "unsafe"   => self.unsafe_ = value,
+            "volatile" => self.volatile = value,
+            "new"      => self.new_ = value,
+            "required" => self.required = value,
+            _ => return Err("unknown modifier flag"),
+        }
+        Ok(())
     }
 }
 

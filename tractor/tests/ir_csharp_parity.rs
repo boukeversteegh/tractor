@@ -481,9 +481,9 @@ fn access_marker_swap_via_enum_mutation() {
     }
     let class = find_class(&mut ir).expect("Ir::Class in tree");
 
-    // Verify it parsed as Public.
-    if let tractor::ir::Ir::Class { access, .. } = class {
-        assert_eq!(*access, Some(tractor::ir::Access::Public),
+    // Verify it parsed with modifiers.access = Public.
+    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+        assert_eq!(modifiers.access, Some(tractor::ir::Access::Public),
             "expected `public class Foo` to lower to Access::Public");
     }
 
@@ -502,8 +502,8 @@ fn access_marker_swap_via_enum_mutation() {
 
     // Mutation: flip access to Private. ONE FIELD CHANGE.
     let class = find_class(&mut ir).unwrap();
-    if let tractor::ir::Ir::Class { access, .. } = class {
-        *access = Some(tractor::ir::Access::Private);
+    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+        modifiers.access = Some(tractor::ir::Access::Private);
     }
 
     // Re-render. Marker swapped by construction — no XML-level
@@ -522,6 +522,72 @@ fn access_marker_swap_via_enum_mutation() {
     };
     assert_eq!(normalize(&before), normalize(&after),
         "non-marker structure should be unchanged by access mutation");
+}
+
+/// Mutation by enum: flipping `static_` flag adds the `<static/>`
+/// marker. Validates the boolean-flag case for Modifiers.
+#[test]
+fn static_marker_via_modifiers_mutation() {
+    let s = "public class Foo { }\n";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    let mut ir = lower_csharp_root(tree.root_node(), s);
+
+    fn find_class(ir: &mut tractor::ir::Ir) -> Option<&mut tractor::ir::Ir> {
+        use tractor::ir::Ir;
+        if matches!(ir, Ir::Class { .. }) { return Some(ir); }
+        match ir {
+            Ir::Module { children, .. } | Ir::Inline { children, .. }
+            | Ir::Body { children, .. } => {
+                for c in children {
+                    if let Some(f) = find_class(c) { return Some(f); }
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+    let class = find_class(&mut ir).expect("Ir::Class");
+    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+        assert!(!modifiers.static_, "should not be static initially");
+        modifiers.static_ = true;
+    }
+
+    fn render_view(ir: &tractor::ir::Ir, src: &str) -> String {
+        let mut xot = Xot::new();
+        let dr_name = xot.add_name("_root");
+        let dr = xot.new_element(dr_name);
+        render_to_xot(&mut xot, dr, ir, src).expect("render");
+        let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+        structural_view(&xot, root)
+    }
+    let view = render_view(&ir, s);
+    eprintln!("--- after static=true ---\n{view}");
+    assert!(view.contains("static"), "view must contain <static/> marker");
+    assert!(view.contains("public"), "view must still contain <public/> marker");
+}
+
+/// Demonstrates the `set_flag(name, value)` API surface that a
+/// mutation CLI would call. Verifies typed validation: unknown flag
+/// names return Err, known flags toggle the right field.
+#[test]
+fn modifiers_set_flag_api() {
+    let mut m = tractor::ir::Modifiers::default();
+    assert!(m.is_empty());
+
+    m.set_flag("static", true).unwrap();
+    assert!(m.static_);
+
+    m.set_flag("abstract", true).unwrap();
+    m.set_flag("sealed", true).unwrap();
+    assert!(m.abstract_ && m.sealed);
+
+    let err = m.set_flag("nonexistent", true);
+    assert!(err.is_err(), "unknown flag must Err");
+
+    m.set_flag("static", false).unwrap();
+    assert!(!m.static_);
 }
 
 // ---------------------------------------------------------------------------

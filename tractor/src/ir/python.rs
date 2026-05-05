@@ -17,7 +17,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
+use super::types::{AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a Python tree-sitter root node to [`Ir`].
 ///
@@ -841,7 +841,7 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
     };
 
     Ir::Function {
-        is_async,
+        modifiers: Modifiers { async_: is_async, ..Modifiers::default() },
         decorators,
         name,
         generics,
@@ -900,7 +900,8 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
     };
 
     Ir::Class {
-        access: None,  // Python has no access-modifier concept.
+        // Python: no access modifiers, no static/abstract/etc on class.
+        modifiers: Modifiers::default(),
         decorators, name, generics, bases, body, range, span,
     }
 }
