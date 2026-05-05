@@ -183,6 +183,98 @@ fn find_unknown_kinds_in_blueprint_ir() {
 
 #[test]
 #[ignore]
+fn dump_global_attribute_cst() {
+    let s = "[assembly: System.Reflection.AssemblyDescription(\"x\")]\nclass C { }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
+fn dump_file_scoped_ns_cst() {
+    let s = "namespace File;\nclass A {}\nclass B {}";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        eprintln!("{indent}{} text={:?}", node.kind(), text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
+fn dump_ifelse_cst() {
+    let s = "class C { void M(int x) { if (x > 0) { } else if (x < 0) { } else { } } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
+        let indent = "  ".repeat(depth);
+        let text = node.utf8_text(src).unwrap_or("?");
+        let text_short: String = text.chars().take(40).collect();
+        let mut field = None;
+        if let Some(parent) = node.parent() {
+            let mut c = parent.walk();
+            for (idx, child) in parent.children(&mut c).enumerate() {
+                if child.id() == node.id() {
+                    field = parent.field_name_for_named_child(idx as u32).map(|s| s.to_string());
+                    break;
+                }
+            }
+        }
+        eprintln!("{indent}{} field={:?} text={:?}", node.kind(), field, text_short);
+        let mut c = node.walk();
+        for child in node.children(&mut c) {
+            if child.is_named() { walk(child, depth + 1, src); }
+        }
+    }
+    walk(tree.root_node(), 0, s.as_bytes());
+}
+
+#[test]
+#[ignore]
+fn dump_ifelse_render() {
+    use tractor::output::{render_query_tree_node, RenderOptions};
+    use tractor::xpath::xot_node_to_xml_node;
+
+    let s = "class C { void M(int x) { if (x > 0) { } else if (x < 0) { } else { } } }";
+    let mut p = tree_sitter::Parser::new();
+    p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
+    let tree = p.parse(s, None).unwrap();
+    let ir = lower_csharp_root(tree.root_node(), s);
+    let mut xot = Xot::new();
+    let n = xot.add_name("_root");
+    let dr = xot.new_element(n);
+    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
+    let xml_node = xot_node_to_xml_node(&xot, root);
+    let mut opts = RenderOptions::new();
+    opts.include_meta = false;
+    eprintln!("{}", render_query_tree_node(&xml_node, &opts));
+}
+
+#[test]
+#[ignore]
 fn dump_collection_expr_cst() {
     let s = "class C { void M() { return [this]; var x = [1, 2, 3]; } }";
     let mut p = tree_sitter::Parser::new();

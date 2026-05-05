@@ -844,11 +844,14 @@ pub enum Ir {
     },
 
     /// `<namespace>` — C#'s `namespace X { ... }` (block-scoped) or
-    /// `namespace X;` (file-scoped). For now block-scoped only;
-    /// renders `<namespace><name>...</name>{children...}</namespace>`.
+    /// `namespace X;` (file-scoped). `file_scoped` adds a `<file/>`
+    /// marker that the C# post_transform's
+    /// `unify_file_scoped_namespace` looks for to fold following
+    /// siblings into the namespace's body.
     Namespace {
         name: Box<Ir>,
         children: Vec<Ir>,
+        file_scoped: bool,
         range: ByteRange,
         span: Span,
     },
@@ -1578,7 +1581,7 @@ impl Ir {
                 v.push(path);
                 if let Some(a) = alias { v.push(a); }
             }
-            Ir::Namespace { name, children, .. } => {
+            Ir::Namespace { name, children, file_scoped: _, .. } => {
                 v.push(name);
                 v.extend(children.iter());
             }

@@ -452,7 +452,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 None => Vec::new(),
             };
-            Ir::Namespace { name: Box::new(name_ir), children, range, span }
+            Ir::Namespace { name: Box::new(name_ir), children, file_scoped: false, range, span }
         }
 
         // `class C { ... }` — name + body + full Modifiers.
@@ -598,17 +598,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             // Default access: Private for class members, Public for
-            // interface members. Walk up to the enclosing type-decl
-            // to choose.
+            // interface members.
             let default_access = match enclosing_type_kind(node) {
                 Some("interface_declaration") => Some(Access::Public),
                 _ => Some(Access::Private),
             };
             let modifiers = lower_csharp_modifiers(node, source, default_access);
+            // Extract type_parameter_list (generics) + attribute_list
+            // (decorators) as direct named children.
+            let mut tpc = node.walk();
+            let type_param_list = node.named_children(&mut tpc)
+                .find(|c| c.kind() == "type_parameter_list");
+            let generics: Option<Box<Ir>> = type_param_list.map(|tpl| {
+                let mut tplc = tpl.walk();
+                let items: Vec<Ir> = tpl.named_children(&mut tplc)
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Box::new(Ir::Generic {
+                    items,
+                    range: range_of(tpl),
+                    span: span_of(tpl),
+                })
+            });
+            let mut ac = node.walk();
+            let decorators: Vec<Ir> = node.named_children(&mut ac)
+                .filter(|c| c.kind() == "attribute_list")
+                .flat_map(|al| {
+                    let mut alc = al.walk();
+                    al.named_children(&mut alc)
+                        .filter(|c| c.kind() == "attribute")
+                        .map(|c| lower_node(c, source))
+                        .collect::<Vec<_>>()
+                })
+                .collect();
             Ir::Function {
                 element_name: "method",
                 modifiers,
-                decorators: Vec::new(),
+                decorators,
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
@@ -616,7 +642,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         range, span,
                     },
                 }),
-                generics: None,
+                generics,
                 parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
                 body: Box::new(match body_node {
@@ -795,6 +821,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Namespace {
                 name: Box::new(name_ir),
                 children: merge_adjacent_line_comments(children, source),
+                file_scoped: true,
                 range, span,
             }
         }
@@ -1953,31 +1980,36 @@ fn lower_csharp_consequence(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-/// Lower a C# `else_clause` to `Ir::ElseIf` (when its inner is an
-/// `if_statement`) or `Ir::Else` otherwise. tree-sitter exposes
-/// `else_clause` as a child of `if_statement` whose first named child
-/// is the inner statement (block / if_statement / single statement).
+/// Lower the `alternative` field of an `if_statement` to an
+/// `Ir::ElseIf` (chained else-if) or `Ir::Else` (terminal else).
+///
+/// tree-sitter-c-sharp exposes the alternative directly (no
+/// intervening `else_clause` kind): for `else if`, it's another
+/// `if_statement`; for terminal `else`, it's a `block` or single
+/// statement. Older grammars wrap in `else_clause` — handled
+/// transparently by unwrapping.
 fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
-    if node.kind() != "else_clause" {
-        // Defensive: caller passed something unexpected.
-        return Ir::Unknown { kind: format!("else_chain({})", node.kind()), range, span };
-    }
-    let mut cursor = node.walk();
-    let inner = node.named_children(&mut cursor).next();
-    let Some(inner) = inner else {
-        return Ir::Unknown { kind: "else_clause(empty)".to_string(), range, span };
+    // Unwrap `else_clause` if present (older grammars).
+    let mut ec = node.walk();
+    let unwrapped = if node.kind() == "else_clause" {
+        node.named_children(&mut ec).next()
+    } else {
+        Some(node)
     };
-    if inner.kind() == "if_statement" {
-        // `else if` — emit Ir::ElseIf using the inner if's parts.
-        let cond = inner.child_by_field_name("condition")
+    let inner_node = match unwrapped {
+        Some(n) => n,
+        None => return Ir::Unknown { kind: "else_clause(empty)".to_string(), range, span },
+    };
+    if inner_node.kind() == "if_statement" {
+        let cond = inner_node.child_by_field_name("condition")
             .map(|n| Box::new(lower_node(n, source)));
-        let body = inner.child_by_field_name("consequence")
+        let body = inner_node.child_by_field_name("consequence")
             .map(|n| Box::new(lower_csharp_consequence(n, source)));
-        let else_node = inner.child_by_field_name("alternative").or_else(|| {
-            let mut c = inner.walk();
-            let r = inner.named_children(&mut c).find(|c| c.kind() == "else_clause");
+        let else_node = inner_node.child_by_field_name("alternative").or_else(|| {
+            let mut c = inner_node.walk();
+            let r = inner_node.named_children(&mut c).find(|c| c.kind() == "else_clause");
             r
         });
         let else_branch = else_node.map(|a| Box::new(lower_csharp_else_chain(a, source)));
@@ -1989,7 +2021,7 @@ fn lower_csharp_else_chain(node: TsNode<'_>, source: &str) -> Ir {
         }
     } else {
         Ir::Else {
-            body: Box::new(lower_csharp_consequence(inner, source)),
+            body: Box::new(lower_csharp_consequence(inner_node, source)),
             range, span,
         }
     }

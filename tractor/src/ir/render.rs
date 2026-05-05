@@ -219,28 +219,61 @@ pub fn render_to_xot(
         Ir::If { condition, body, else_branch, range, span } => {
             let node = element(xot, "if", *span);
             xot.append(parent, node)?;
-            // Source order: condition, body, optional else_branch.
             let cr = condition.range();
             emit_gap(xot, node, source, range.start, cr.start)?;
-            // Condition wrapped in <condition><expression>...</expression></condition>.
             let cond_slot = element(xot, "condition", condition.span());
             xot.append(node, cond_slot)?;
             let cond_expr = element(xot, "expression", condition.span());
             xot.append(cond_slot, cond_expr)?;
             render_to_xot(xot, cond_expr, condition, source)?;
-            // Body
             let br = body.range();
             emit_gap(xot, node, source, cr.end, br.start)?;
             render_to_xot(xot, node, body, source)?;
-            // Else branch
-            if let Some(e) = else_branch {
-                let er = e.range();
-                emit_gap(xot, node, source, br.end, er.start)?;
-                render_to_xot(xot, node, e, source)?;
-                emit_gap(xot, node, source, er.end, range.end)?;
-            } else {
-                emit_gap(xot, node, source, br.end, range.end)?;
+            // Flatten the else-if chain: emit `<else_if>` / `<else>`
+            // siblings under the same `<if>` parent rather than
+            // recursively nesting them. Matches the imperative
+            // pipeline's `collapse_else_if_chain` post-pass.
+            let mut cursor = br.end;
+            let mut next = else_branch.as_ref().map(|b| b.as_ref());
+            while let Some(branch) = next {
+                let br_range = branch.range();
+                emit_gap(xot, node, source, cursor, br_range.start)?;
+                match branch {
+                    Ir::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
+                        let elseif = element(xot, "else_if", *es);
+                        xot.append(node, elseif)?;
+                        let ecr = ec.range();
+                        emit_gap(xot, elseif, source, er.start, ecr.start)?;
+                        let cs = element(xot, "condition", ec.span());
+                        xot.append(elseif, cs)?;
+                        let ce = element(xot, "expression", ec.span());
+                        xot.append(cs, ce)?;
+                        render_to_xot(xot, ce, ec, source)?;
+                        let ebr = eb.range();
+                        emit_gap(xot, elseif, source, ecr.end, ebr.start)?;
+                        render_to_xot(xot, elseif, eb, source)?;
+                        emit_gap(xot, elseif, source, ebr.end, er.end)?;
+                        cursor = er.end;
+                        next = deeper.as_ref().map(|b| b.as_ref());
+                    }
+                    Ir::Else { body: eb, span: es, range: er } => {
+                        let el = element(xot, "else", *es);
+                        xot.append(node, el)?;
+                        let ebr = eb.range();
+                        emit_gap(xot, el, source, er.start, ebr.start)?;
+                        render_to_xot(xot, el, eb, source)?;
+                        emit_gap(xot, el, source, ebr.end, er.end)?;
+                        cursor = er.end;
+                        next = None;
+                    }
+                    _ => {
+                        render_to_xot(xot, node, branch, source)?;
+                        cursor = br_range.end;
+                        next = None;
+                    }
+                }
             }
+            emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)
         }
         Ir::ElseIf { condition, body, else_branch, range, span } => {
@@ -718,8 +751,10 @@ pub fn render_to_xot(
                         render_to_xot(xot, expr, inner, source)?;
                     }
                     Slot::True(_) => {
+                        let then = element(xot, "then", inner.span());
+                        xot.append(node, then)?;
                         let expr = element(xot, "expression", inner.span());
-                        xot.append(node, expr)?;
+                        xot.append(then, expr)?;
                         render_to_xot(xot, expr, inner, source)?;
                     }
                     Slot::False(_) => {
@@ -805,19 +840,23 @@ pub fn render_to_xot(
         Ir::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } => {
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
-            // Modifier markers first (access + flags). Same
-            // marker-by-derivation pattern as Class.
             for marker in modifiers.marker_names() {
                 let m = element(xot, marker, Span::point(span.line, span.column));
                 xot.append(node, m)?;
             }
-            // Source-order children: decorators, name, generics,
-            // parameters (flat), returns, body. Build a list of
-            // (range, render) pairs, sort by range.start.
+            // Generics expand to flat `<generic>` siblings (not wrapped
+            // in an outer `<generic>` container) — matches the
+            // imperative pipeline's flat-list shape (Principle #12).
             let mut order: Vec<&Ir> = Vec::new();
             for d in decorators { order.push(d); }
             order.push(name.as_ref());
-            if let Some(g) = generics { order.push(g.as_ref()); }
+            if let Some(g) = generics {
+                if let Ir::Generic { items, .. } = g.as_ref() {
+                    for it in items { order.push(it); }
+                } else {
+                    order.push(g.as_ref());
+                }
+            }
             for p in parameters { order.push(p); }
             if let Some(r) = returns { order.push(r.as_ref()); }
             order.push(body.as_ref());
@@ -834,10 +873,9 @@ pub fn render_to_xot(
                 let m = element(xot, marker, *span);
                 xot.append(node, m)?;
             }
-            // Source-order children: decorators, name, generics, bases,
-            // body. Bases wrap in `<extends>` per the cross-language
-            // inheritance contract (tested by `generics::csharp_vocabulary`
-            // and `types::csharp_markers`).
+            // Source-order children: decorators, name, generic items
+            // (flat siblings, not wrapped in outer `<generic>`),
+            // bases (wrapped in `<extends><type>...`), body.
             #[derive(Clone, Copy)]
             enum CSlot<'a> {
                 Decor(&'a Ir),
@@ -849,7 +887,13 @@ pub fn render_to_xot(
             let mut order: Vec<CSlot> = Vec::new();
             for d in decorators { order.push(CSlot::Decor(d)); }
             order.push(CSlot::Name(name));
-            if let Some(g) = generics { order.push(CSlot::Generics(g)); }
+            if let Some(g) = generics {
+                if let Ir::Generic { items, .. } = g.as_ref() {
+                    for it in items { order.push(CSlot::Generics(it)); }
+                } else {
+                    order.push(CSlot::Generics(g));
+                }
+            }
             for b in bases { order.push(CSlot::Base(b)); }
             order.push(CSlot::Body(body));
             order.sort_by_key(|s| match s {
@@ -1396,10 +1440,16 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Namespace { name, children, range, span } => {
+        Ir::Namespace { name, children, file_scoped, range, span } => {
             let node = element(xot, "namespace", *span);
             xot.append(parent, node)?;
-            // Source-order: name first, then children (declarations).
+            // `<file/>` marker for `namespace Foo;` form — the C#
+            // post_transform's unify_file_scoped_namespace looks for
+            // this marker to fold following siblings into the body.
+            if *file_scoped {
+                let m = element(xot, "file", *span);
+                xot.append(node, m)?;
+            }
             let mut order: Vec<&Ir> = vec![name.as_ref()];
             for c in children { order.push(c); }
             order.sort_by_key(|c| c.range().start);
