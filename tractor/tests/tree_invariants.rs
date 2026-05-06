@@ -314,7 +314,8 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
         // Java moved off the imperative pipeline: rule table no
         // longer exists. `Ir::Unknown` covers the diagnostic.
         ("ruby",       passthrough_kinds(ruby::rules::rule)),
-        ("php",        passthrough_kinds(php::rules::rule)),
+        // PHP moved off the imperative pipeline: rule table no longer
+        // exists. `Ir::Unknown` covers the diagnostic.
         ("tsql",       passthrough_kinds(tsql::rules::rule)),
         ("toml",       passthrough_kinds(toml::rules::rule)),
         ("ini",        passthrough_kinds(ini::rules::rule)),

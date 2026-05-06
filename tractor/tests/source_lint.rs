@@ -34,15 +34,14 @@ mod support;
 /// splits each `<lang>.rs` into `<lang>/{mod,semantic,transform}.rs`,
 /// so we accept either layout while the migration is in progress.
 const LANGUAGE_FILES: &[&[&str]] = &[
-    // C# / Python / Java moved entirely to the IR pipeline —
-    // `transform.rs` retired for all three. The lint scans for
-    // `map_element_name` strings; on the IR side every element name
-    // is wired via `Ir` variant fields and doesn't need a string-
-    // keyed match arm. Skip those languages here.
+    // C# / Python / Java / PHP moved entirely to the IR pipeline —
+    // `transform.rs` retired. The lint scans for `map_element_name`
+    // strings; on the IR side every element name is wired via `Ir`
+    // variant fields and doesn't need a string-keyed match arm. Skip
+    // those languages here.
     &["tractor/src/languages/typescript/transform.rs", "tractor/src/languages/typescript.rs"],
     &["tractor/src/languages/rust_lang/transform.rs", "tractor/src/languages/rust_lang.rs"],
     &["tractor/src/languages/go/transform.rs", "tractor/src/languages/go.rs"],
-    &["tractor/src/languages/php/transform.rs", "tractor/src/languages/php.rs"],
     &["tractor/src/languages/ruby/transform.rs", "tractor/src/languages/ruby.rs"],
     &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],
 ];
