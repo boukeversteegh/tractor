@@ -59,10 +59,15 @@ pub enum TractorNode {
     // (vs the regular `case X:` form which uses content).
     Default,
     // Unary-shape marker
-    Prefix,
+    Prefix, Postfix,
     // Chain inversion (iter 244): `[access]` distinguishes
     // member-access chains from object literals.
     Access,
+    // Java IR-pipeline additions:
+    //   `<is>` — `instanceof` expression
+    //   `<lock>` — `synchronized (expr) { … }` statement
+    //   `<literal>` — marker on array initializers (`{1, 2, 3}`)
+    Is, Lock, Literal,
 }
 
 impl TractorNode {
@@ -86,9 +91,9 @@ impl TractorNode {
             Self::Public | Self::Private | Self::Protected
             | Self::Static | Self::Final | Self::Abstract
             | Self::Volatile | Self::Transient | Self::Native | Self::Strictfp     => (true, false, Keyword),
-            Self::Void | Self::Variadic | Self::Compact | Self::Prefix
+            Self::Void | Self::Variadic | Self::Compact | Self::Prefix | Self::Postfix
             | Self::Receiver | Self::Resource
-            | Self::Access
+            | Self::Access | Self::Literal
             | Self::Exports | Self::Opens | Self::Provides | Self::Requires | Self::Uses => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------

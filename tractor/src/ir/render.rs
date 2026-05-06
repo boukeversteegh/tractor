@@ -925,7 +925,7 @@ pub fn render_to_xot(
             }
             for p in parameters { order.push(p); }
             if let Some(r) = returns { order.push(r.as_ref()); }
-            order.push(body.as_ref());
+            if let Some(b) = body { order.push(b.as_ref()); }
             order.sort_by_key(|c| c.range().start);
             render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
                 render_to_xot(xot, parent, child, source).map(|_| ())
@@ -981,19 +981,31 @@ pub fn render_to_xot(
                     // Bases wrap in `<extends><type>...</type></extends>`
                     // — when the inner is already a type-shaped IR
                     // (GenericType produces its own `<type>`), don't
-                    // double-wrap.
-                    let ext = element(xot, "extends", inner.span());
-                    xot.append(node, ext)?;
-                    let already_typed = matches!(inner,
-                        Ir::GenericType { .. }
-                            | Ir::SimpleStatement { element_name: "type", .. }
+                    // double-wrap. When the inner is itself an
+                    // `<implements>` SimpleStatement (Java's
+                    // interface base), emit it as-is without the
+                    // `<extends>` wrap.
+                    let inner_already_wrapped = matches!(
+                        inner,
+                        Ir::SimpleStatement { element_name: "implements", .. }
+                            | Ir::SimpleStatement { element_name: "extends", .. }
                     );
-                    if already_typed {
-                        render_to_xot(xot, ext, inner, source)?;
+                    if inner_already_wrapped {
+                        render_to_xot(xot, node, inner, source)?;
                     } else {
-                        let t = element(xot, "type", inner.span());
-                        xot.append(ext, t)?;
-                        render_to_xot(xot, t, inner, source)?;
+                        let ext = element(xot, "extends", inner.span());
+                        xot.append(node, ext)?;
+                        let already_typed = matches!(inner,
+                            Ir::GenericType { .. }
+                                | Ir::SimpleStatement { element_name: "type", .. }
+                        );
+                        if already_typed {
+                            render_to_xot(xot, ext, inner, source)?;
+                        } else {
+                            let t = element(xot, "type", inner.span());
+                            xot.append(ext, t)?;
+                            render_to_xot(xot, t, inner, source)?;
+                        }
                     }
                 } else {
                     render_to_xot(xot, node, inner, source)?;
@@ -1104,12 +1116,24 @@ pub fn render_to_xot(
         Ir::Returns { type_ann, range, span } => {
             let node = element(xot, "returns", *span);
             xot.append(parent, node)?;
-            // <returns> wraps the type annotation in <type>.
+            // <returns> wraps the type annotation in <type>, unless
+            // the inner already produces a `<type>` element (e.g. an
+            // `Ir::GenericType` or a `SimpleStatement<type>`) — in
+            // which case we'd double-wrap.
             let tr = type_ann.range();
             emit_gap(xot, node, source, range.start, tr.start)?;
-            let type_el = element(xot, "type", type_ann.span());
-            xot.append(node, type_el)?;
-            render_to_xot(xot, type_el, type_ann, source)?;
+            let already_typed = matches!(
+                type_ann.as_ref(),
+                Ir::GenericType { .. }
+                    | Ir::SimpleStatement { element_name: "type", .. }
+            );
+            if already_typed {
+                render_to_xot(xot, node, type_ann, source)?;
+            } else {
+                let type_el = element(xot, "type", type_ann.span());
+                xot.append(node, type_el)?;
+                render_to_xot(xot, type_el, type_ann, source)?;
+            }
             emit_gap(xot, node, source, tr.end, range.end)?;
             Ok(node)
         }

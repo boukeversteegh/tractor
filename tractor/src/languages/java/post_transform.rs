@@ -47,6 +47,33 @@ pub fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
             // post-pass below and doesn't reach this tag.
             ("variable", "declarator"),
             ("field", "declarator"),
+            // IR-pipeline coverage — the imperative pipeline tagged
+            // these via per-list `Flatten { distribute_list }` rules
+            // before this post-pass. The IR pipeline carries
+            // arguments / arms / type-args directly on typed variants
+            // so they don't go through that step; tag them here.
+            ("call", "this"),
+            ("call", "super"),
+            ("call", "name"),
+            ("call", "string"),
+            ("call", "int"),
+            ("switch", "arm"),
+            ("object", "call"),
+            ("object", "member"),
+            ("method", "name"),
+            ("method", "parameter"),
+            ("class", "method"),
+            ("class", "field"),
+            ("interface", "method"),
+            ("member", "name"),
+            ("type", "name"),
+            ("body", "variable"),
+            ("body", "expression"),
+            ("body", "if"),
+            ("body", "for"),
+            ("body", "foreach"),
+            ("body", "while"),
+            ("body", "return"),
         ],
     )?;
     java_unwrap_type_in_path(xot, root)?;

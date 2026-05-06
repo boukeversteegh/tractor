@@ -539,7 +539,7 @@ pub enum Ir {
         generics: Option<Box<Ir>>,      // Ir::Generic
         parameters: Vec<Ir>,            // each Ir::Parameter / Ir::PositionalSeparator / Ir::KeywordSeparator
         returns: Option<Box<Ir>>,       // Ir::Returns
-        body: Box<Ir>,                  // Ir::Body
+        body: Option<Box<Ir>>,          // Ir::Body — None for abstract / interface methods
         range: ByteRange,
         span: Span,
     },
@@ -975,6 +975,7 @@ pub enum Access {
     ProtectedInternal,   // C# `protected internal`
     PrivateProtected,    // C# `private protected`
     File,                // C# 11 file-scoped accessibility
+    Package,             // Java package-private (default for class members)
 }
 
 impl Access {
@@ -993,6 +994,7 @@ impl Access {
             Access::ProtectedInternal => &["protected", "internal"],
             Access::PrivateProtected  => &["private", "protected"],
             Access::File              => &["file"],
+            Access::Package           => &["package"],
         }
     }
 
@@ -1065,6 +1067,21 @@ pub struct Modifiers {
     pub new_: bool,
     /// `required` (C# 11) — must be assigned during object init.
     pub required: bool,
+    /// `final` (Java field/method/class) — renders as `<final/>`
+    /// marker. Distinct from C#'s `readonly` (same semantics, different
+    /// wire name) so each language's tests see the marker the
+    /// imperative pipeline produced.
+    pub final_: bool,
+    /// `synchronized` (Java method) — renders as `<synchronized/>`.
+    pub synchronized_: bool,
+    /// `transient` (Java field) — exclude from serialization.
+    pub transient: bool,
+    /// `native` (Java method) — implementation supplied by the JVM.
+    pub native: bool,
+    /// `strictfp` (Java) — strict floating-point.
+    pub strictfp: bool,
+    /// `default` (Java interface method) — has a default body.
+    pub default: bool,
 }
 
 impl Modifiers {
@@ -1087,11 +1104,16 @@ impl Modifiers {
         if let Some(a) = self.access {
             for n in a.marker_names() { names.push(n); }
         }
-        if self.static_   { names.push("static"); }
+        // Source order — matches Java/C# canonical declaration:
+        // access  abstract  static  final/readonly  ... .
+        // Tests assert ordinal positions (`*[1][self::public]`,
+        // `*[2][self::abstract]`), so the order is observable.
         if self.abstract_ { names.push("abstract"); }
-        if self.sealed    { names.push("sealed"); }
+        if self.static_   { names.push("static"); }
         if self.virtual_  { names.push("virtual"); }
         if self.override_ { names.push("override"); }
+        if self.sealed    { names.push("sealed"); }
+        if self.final_    { names.push("final"); }
         if self.readonly  { names.push("readonly"); }
         if self.partial   { names.push("partial"); }
         if self.async_    { names.push("async"); }
@@ -1101,6 +1123,11 @@ impl Modifiers {
         if self.volatile  { names.push("volatile"); }
         if self.new_      { names.push("new"); }
         if self.required  { names.push("required"); }
+        if self.synchronized_ { names.push("synchronized"); }
+        if self.transient { names.push("transient"); }
+        if self.native    { names.push("native"); }
+        if self.strictfp  { names.push("strictfp"); }
+        if self.default   { names.push("default"); }
         names
     }
 
@@ -1503,7 +1530,7 @@ impl Ir {
                 if let Some(g) = generics { v.push(g); }
                 v.extend(parameters.iter());
                 if let Some(r) = returns { v.push(r); }
-                v.push(body);
+                if let Some(b) = body { v.push(b); }
             }
             Ir::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
                 v.extend(decorators.iter());

@@ -61,10 +61,21 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "false" => Ir::False { range, span },
         "null_literal" => Ir::Null { range, span },
 
-        // Predefined / boolean / void types: bare names.
-        "boolean_type" | "void_type" | "integral_type" | "floating_point_type" => {
+        // Predefined types: bare names. (`int`/`long`/`boolean`/...)
+        "boolean_type" | "integral_type" | "floating_point_type" => {
             Ir::Name { range, span }
         }
+        // Java `void` carries an extra `<void/>` marker on the type
+        // (query shortcut for "no return value"). Lower as a typed
+        // SimpleStatement so the marker appears inside `<type>`.
+        "void_type" => Ir::SimpleStatement {
+            element_name: "type",
+            modifiers: Modifiers::default(),
+            extra_markers: &["void"],
+            children: vec![Ir::Name { range, span }],
+            range,
+            span,
+        },
 
         // ----- Containers / declarations ---------------------------------
         "class_declaration" | "interface_declaration" | "record_declaration"
@@ -111,7 +122,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         .collect::<Vec<_>>()
                 })
                 .collect();
-            let modifiers = lower_java_modifiers(node, source, /*default_access*/ Some(Access::Internal));
+            let modifiers = lower_java_modifiers(node, source, /*default_access*/ Some(Access::Package));
             let generics = type_param_list.map(|tpl| {
                 let mut tplc = tpl.walk();
                 let items: Vec<Ir> = tpl
@@ -125,16 +136,49 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 })
             });
             let mut bases: Vec<Ir> = Vec::new();
+            // Superclass (`extends Foo`) — bare type, gets wrapped in
+            // `<extends>` by the Class render's default base path.
             if let Some(sc) = superclass {
                 let mut scc = sc.walk();
                 bases.extend(sc.named_children(&mut scc).map(|c| lower_node(c, source)));
             }
+            // Interfaces (`implements Bar, Baz`) — each wrapped in
+            // a `<implements>` SimpleStatement so the Class render
+            // emits `<implements><type>...</type></implements>`
+            // sibling under `<class>` (matches imperative shape).
             if let Some(ifs) = interfaces {
                 let mut ic2 = ifs.walk();
                 for c in ifs.named_children(&mut ic2) {
                     if c.kind() == "type_list" {
                         let mut tlc = c.walk();
-                        bases.extend(c.named_children(&mut tlc).map(|n| lower_node(n, source)));
+                        for n in c.named_children(&mut tlc) {
+                            let inner = lower_node(n, source);
+                            let already_typed = matches!(
+                                inner,
+                                Ir::GenericType { .. }
+                                    | Ir::SimpleStatement { element_name: "type", .. }
+                            );
+                            let type_inner = if already_typed {
+                                inner
+                            } else {
+                                Ir::SimpleStatement {
+                                    element_name: "type",
+                                    modifiers: Modifiers::default(),
+                                    extra_markers: &[],
+                                    children: vec![inner],
+                                    range: range_of(n),
+                                    span: span_of(n),
+                                }
+                            };
+                            bases.push(Ir::SimpleStatement {
+                                element_name: "implements",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &[],
+                                children: vec![type_inner],
+                                range: range_of(n),
+                                span: span_of(n),
+                            });
+                        }
                     } else {
                         bases.push(lower_node(c, source));
                     }
@@ -176,7 +220,38 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             let returns_node = node.child_by_field_name("type");
-            let modifiers = lower_java_modifiers(node, source, Some(Access::Internal));
+            // Generic type parameters live as a `type_parameters`
+            // named child before the return-type / name.
+            let mut tpc = node.walk();
+            let type_param_list = node
+                .named_children(&mut tpc)
+                .find(|c| c.kind() == "type_parameters");
+            let generics = type_param_list.map(|tpl| {
+                let mut tplc = tpl.walk();
+                let items: Vec<Ir> = tpl
+                    .named_children(&mut tplc)
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Box::new(Ir::Generic {
+                    items,
+                    range: range_of(tpl),
+                    span: span_of(tpl),
+                })
+            });
+            // Default access depends on enclosing type:
+            //   interface + abstract (no body) → implicit `public`
+            //   interface + has body (default method) → `package`
+            //   class / record / enum → `package`
+            // Pins current imperative-pipeline behavior pinned by
+            // visibility::java_interface (`default String name()`
+            // stays `<package/>`, not promoted to `<public/>`).
+            let in_interface = enclosing_type_kind(node).as_deref() == Some("interface_declaration");
+            let default_access = if in_interface && body_node.is_none() {
+                Some(Access::Public)
+            } else {
+                Some(Access::Package)
+            };
+            let modifiers = lower_java_modifiers(node, source, default_access);
             let mut ac = node.walk();
             let decorators: Vec<Ir> = node
                 .named_children(&mut ac)
@@ -205,16 +280,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     span: span_of(t),
                 })
             });
-            let body = match body_node {
-                Some(b) => Box::new(lower_block_like(b, source)),
-                None => Box::new(Ir::Body {
-                    children: Vec::new(),
-                    pass_only: false,
-                    block_wrap: false,
-                    range: ByteRange::empty_at(range.end),
-                    span,
-                }),
-            };
+            // Body is None for abstract / interface methods — the
+            // Function render skips emitting `<body>` when None
+            // (matches imperative shape `<method[abstract]>` only).
+            let body: Option<Box<Ir>> = body_node.map(|b| Box::new(lower_block_like(b, source)));
             let element_name: &'static str = if node.kind() == "constructor_declaration" {
                 "constructor"
             } else {
@@ -232,7 +301,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         span,
                     },
                 }),
-                generics: None,
+                generics,
                 parameters,
                 returns,
                 body,
@@ -242,18 +311,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         "formal_parameter" | "spread_parameter" => {
-            let type_node = node.child_by_field_name("type");
-            let name_node = node.child_by_field_name("name");
-            let kind = if node.kind() == "spread_parameter" {
-                ParamKind::Args
+            // For spread_parameter, the type and name come from
+            // different positions: first named child = type, last
+            // named child has the binding (variable_declarator → name).
+            let is_spread = node.kind() == "spread_parameter";
+            let type_node = node.child_by_field_name("type").or_else(|| {
+                if is_spread {
+                    let mut c = node.walk();
+                    let mut first = None;
+                    for n in node.named_children(&mut c) {
+                        first = Some(n);
+                        break;
+                    }
+                    first
+                } else { None }
+            });
+            let name_node = node.child_by_field_name("name").or_else(|| {
+                if is_spread {
+                    // variable_declarator → identifier[name]
+                    let mut c = node.walk();
+                    for n in node.named_children(&mut c) {
+                        if n.kind() == "variable_declarator" {
+                            return n.child_by_field_name("name");
+                        }
+                    }
+                }
+                None
+            });
+            let extra_markers: &'static [&'static str] = if is_spread {
+                &["variadic"]
             } else {
-                ParamKind::Regular
+                &[]
             };
             let modifiers = lower_java_modifiers(node, source, None);
             let _ = modifiers;
             Ir::Parameter {
-                kind,
-                extra_markers: &[],
+                kind: ParamKind::Regular,
+                extra_markers,
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
@@ -271,7 +365,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // Field.
         "field_declaration" => {
-            let modifiers = lower_java_modifiers(node, source, Some(Access::Internal));
+            let modifiers = lower_java_modifiers(node, source, Some(Access::Package));
             let type_node = node.child_by_field_name("type");
             let mut ac = node.walk();
             let decorators: Vec<Ir> = node
@@ -443,28 +537,59 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         "enhanced_for_statement" => {
-            // `for (T x : xs) body` — Java foreach.
+            // `for (T x : xs) body` — Java foreach. Imperative shape:
+            // `<foreach><type>...</type><name>x</name><value><expression>xs</expression></value><body>...</body></foreach>`
+            // (no `<left>`/`<right>` wrappers like C#'s).
             let type_node = node.child_by_field_name("type");
             let name_node = node.child_by_field_name("name");
             let value_node = node.child_by_field_name("value");
             let body_node = node.child_by_field_name("body");
-            match (name_node, value_node, body_node) {
-                (Some(n), Some(v), Some(b)) => Ir::Foreach {
-                    type_ann: type_node.map(|t| Box::new(lower_node(t, source))),
-                    target: Box::new(Ir::Name {
-                        range: range_of(n),
-                        span: span_of(n),
-                    }),
-                    iterable: Box::new(lower_node(v, source)),
-                    body: Box::new(lower_block_like(b, source)),
-                    range,
-                    span,
-                },
-                _ => Ir::Unknown {
-                    kind: "enhanced_for_statement(missing field)".to_string(),
-                    range,
-                    span,
-                },
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(t) = type_node {
+                let inner = lower_node(t, source);
+                let already_typed = matches!(
+                    inner,
+                    Ir::GenericType { .. } | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    children.push(inner);
+                } else {
+                    children.push(Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(t),
+                        span: span_of(t),
+                    });
+                }
+            }
+            if let Some(n) = name_node {
+                children.push(Ir::Name {
+                    range: range_of(n),
+                    span: span_of(n),
+                });
+            }
+            if let Some(v) = value_node {
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![lower_node(v, source)],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            if let Some(b) = body_node {
+                children.push(lower_block_like(b, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "foreach",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
             }
         }
 
@@ -539,14 +664,26 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "throw_statement" => simple_statement(node, "throw", source),
 
         // Imports & package.
-        "import_declaration" => simple_statement(node, "import", source),
+        "import_declaration" => {
+            // `import static java.util.Foo;` carries a `<static/>`
+            // marker so the keyword doesn't leak as text. Detect by
+            // source-prefix scan ("import static ...").
+            let leading = source[range.start as usize..range.end as usize].trim_start();
+            let prefix = leading.trim_start_matches("import").trim_start();
+            if prefix.starts_with("static") {
+                simple_statement_marked(node, "import", &["static"], source)
+            } else {
+                simple_statement(node, "import", source)
+            }
+        }
         "package_declaration" => simple_statement(node, "package", source),
 
         // Annotations / decorators.
         "annotation" | "marker_annotation" => {
-            // tree-sitter Java's annotation has identifier (name) and
-            // optional `arguments`. Lower as <attribute> with name +
-            // flat argument children.
+            // Java's `@Override`, `@SuppressWarnings("foo")` — render
+            // as `<annotation>` (matches imperative pipeline; C# uses
+            // `<attribute>` for its corresponding construct, hence
+            // the name divergence).
             let mut cursor = node.walk();
             let mut children: Vec<Ir> = Vec::new();
             for c in node.named_children(&mut cursor) {
@@ -561,7 +698,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
             }
             Ir::SimpleStatement {
-                element_name: "attribute",
+                element_name: "annotation",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
                 children,
@@ -710,7 +847,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         "method_invocation" => {
-            // `obj.method(args)` — fold into chain if object present.
+            // `obj.method(args)` — fold name into the chain's Call
+            // segment so the rendered shape is
+            // `<object><name>obj</name><call><name>method</name>...</call></object>`.
+            // For bare `name(args)` (no object), produce Ir::Call.
             let object_node = node.child_by_field_name("object");
             let name_node = node.child_by_field_name("name");
             let args_node = node.child_by_field_name("arguments");
@@ -728,48 +868,29 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     let object_ir = lower_node(o, source);
                     let property_range = range_of(n);
                     let property_span = span_of(n);
-                    let mem_segment = AccessSegment::Member {
-                        property_range,
-                        property_span,
-                        optional: false,
-                        range: ByteRange::new(object_ir.range().end, property_range.end),
-                        span,
-                    };
                     let call_segment = AccessSegment::Call {
                         name: Some(property_range),
                         name_span: Some(property_span),
                         arguments,
-                        range: ByteRange::new(property_range.end, range.end),
+                        range: ByteRange::new(object_ir.range().end, range.end),
                         span,
                     };
-                    let mut segments = match object_ir {
+                    match object_ir {
                         Ir::Access { receiver, mut segments, .. } => {
-                            segments.push(mem_segment);
-                            return Ir::Access {
+                            segments.push(call_segment);
+                            Ir::Access {
                                 receiver,
-                                segments: {
-                                    segments.push(call_segment);
-                                    segments
-                                },
+                                segments,
                                 range,
                                 span,
-                            };
+                            }
                         }
-                        other => {
-                            let receiver = Box::new(other);
-                            return Ir::Access {
-                                receiver,
-                                segments: vec![mem_segment, call_segment],
-                                range,
-                                span,
-                            };
-                        }
-                    };
-                    let _ = &mut segments;
-                    Ir::Unknown {
-                        kind: "method_invocation(unreachable)".to_string(),
-                        range,
-                        span,
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![call_segment],
+                            range,
+                            span,
+                        },
                     }
                 }
                 (None, Some(n)) => {
@@ -787,6 +908,39 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 _ => Ir::Unknown {
                     kind: "method_invocation(missing)".to_string(),
+                    range,
+                    span,
+                },
+            }
+        }
+
+        "array_access" => {
+            // `arr[0]` — fold into Access chain.
+            let array_node = node.child_by_field_name("array");
+            let index_node = node.child_by_field_name("index");
+            match (array_node, index_node) {
+                (Some(a), Some(i)) => {
+                    let array_ir = lower_node(a, source);
+                    let segment = AccessSegment::Index {
+                        indices: vec![lower_node(i, source)],
+                        range: ByteRange::new(array_ir.range().end, range.end),
+                        span,
+                    };
+                    match array_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range,
+                            span,
+                        },
+                    }
+                }
+                _ => Ir::Unknown {
+                    kind: "array_access(missing field)".to_string(),
                     range,
                     span,
                 },
@@ -845,20 +999,74 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         "type_parameter" => {
+            // Java type parameter: `T` or `T extends Bound1 & Bound2`.
+            // tree-sitter exposes a `type_identifier` (the name) + an
+            // optional `type_bound` child whose named children are
+            // the bound types. Render as `<generic>` (matches
+            // imperative shape) with `<name>T</name>` and an
+            // `<extends><type>Bound</type></extends>` child.
             let mut cursor = node.walk();
-            let name = node.named_children(&mut cursor).next();
-            match name {
-                Some(n) => Ir::TypeParameter {
-                    name: Box::new(lower_node(n, source)),
-                    constraint: None,
-                    range,
-                    span,
-                },
-                None => Ir::Unknown {
-                    kind: "type_parameter(empty)".to_string(),
-                    range,
-                    span,
-                },
+            let mut name_node: Option<TsNode> = None;
+            let mut bound_node: Option<TsNode> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "type_bound" => bound_node = Some(c),
+                    _ if name_node.is_none() => name_node = Some(c),
+                    _ => {}
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name {
+                    range: range_of(n),
+                    span: span_of(n),
+                });
+            }
+            if let Some(tb) = bound_node {
+                let mut bc = tb.walk();
+                let inner = tb.named_children(&mut bc).next();
+                let inner_ir = match inner {
+                    Some(t) => lower_node(t, source),
+                    None => Ir::Unknown {
+                        kind: "type_bound(empty)".to_string(),
+                        range: range_of(tb),
+                        span: span_of(tb),
+                    },
+                };
+                let already_typed = matches!(
+                    inner_ir,
+                    Ir::GenericType { .. } | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                let typed = if already_typed {
+                    inner_ir
+                } else {
+                    let r = inner_ir.range();
+                    let s = inner_ir.span();
+                    Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner_ir],
+                        range: r,
+                        span: s,
+                    }
+                };
+                children.push(Ir::SimpleStatement {
+                    element_name: "extends",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![typed],
+                    range: range_of(tb),
+                    span: span_of(tb),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "generic",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
             }
         }
 
@@ -928,6 +1136,50 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // Switch.
         "switch_expression" | "switch_statement" => simple_statement(node, "switch", source),
+        "switch_rule" => {
+            // Java 14+ arrow-form switch: `case X -> result;` or
+            // `default -> result;`. Lower as `<arm>` with the labels
+            // and result as flat children.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "arm",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
+        "annotation_type_element_declaration" => {
+            // `String value() default "x";` — annotation method.
+            // Lower as a method-shaped SimpleStatement so it surfaces.
+            simple_statement(node, "method", source)
+        }
+        "guard" => {
+            // Java 21 record-pattern guard `case R(int x) when x > 0`.
+            simple_statement(node, "guard", source)
+        }
+        "annotation_type_body" => {
+            // Body of `@interface Foo { ... }` — lower like a block
+            // with no extra wrapping; the parent annotation_type_decl
+            // handles its own shape.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Body {
+                children,
+                pass_only: false,
+                block_wrap: false,
+                range,
+                span,
+            }
+        }
         "switch_block" => {
             let mut cursor = node.walk();
             let children: Vec<Ir> = node
@@ -972,15 +1224,60 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
-        "explicit_constructor_invocation" => simple_statement(node, "call", source),
+        "explicit_constructor_invocation" => {
+            // `this(args)` or `super(args)` — emit `<call[this]>` or
+            // `<call[super]>` with the args as flat children. tree-
+            // sitter exposes the keyword as the first unnamed child;
+            // detect by source-text prefix.
+            let leading = source[range.start as usize..range.end as usize].trim_start();
+            let marker: &'static [&'static str] = if leading.starts_with("this") {
+                &["this"]
+            } else if leading.starts_with("super") {
+                &["super"]
+            } else {
+                &[]
+            };
+            // Walk the argument_list children directly so they sit as
+            // call args (matches the imperative `<call>` shape).
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "argument_list" {
+                    let mut ac = c.walk();
+                    for a in c.named_children(&mut ac) {
+                        children.push(lower_node(a, source));
+                    }
+                } else {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "call",
+                modifiers: Modifiers::default(),
+                extra_markers: marker,
+                children,
+                range,
+                span,
+            }
+        }
         "annotation_type_declaration" => simple_statement(node, "interface", source),
         "array_initializer" => {
+            // Java's `{1, 2, 3}` array literal — render as `<array>`
+            // (matches imperative shape; no `<list>` element in
+            // Java's vocabulary).
             let mut cursor = node.walk();
             let children: Vec<Ir> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::List { children, range, span }
+            Ir::SimpleStatement {
+                element_name: "array",
+                modifiers: Modifiers::default(),
+                extra_markers: &["literal"],
+                children,
+                range,
+                span,
+            }
         }
         "assert_statement" => simple_statement(node, "assert", source),
         "catch_type" => {
@@ -996,16 +1293,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "compact_constructor_declaration" => {
             // record's compact ctor: `record R(int x) { }` — body only.
             let body_node = node.child_by_field_name("body");
-            let body = match body_node {
-                Some(b) => Box::new(lower_block_like(b, source)),
-                None => Box::new(Ir::Body {
-                    children: Vec::new(),
-                    pass_only: false,
-                    block_wrap: false,
-                    range: ByteRange::empty_at(range.end),
-                    span,
-                }),
-            };
+            let body: Option<Box<Ir>> = body_node.map(|b| Box::new(lower_block_like(b, source)));
             let modifiers = lower_java_modifiers(node, source, Some(Access::Public));
             let name_node = node.child_by_field_name("name");
             let name = match name_node {
@@ -1058,20 +1346,120 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "labeled_statement" => simple_statement(node, "label", source),
         "method_reference" => simple_statement(node, "member", source),
         "static_initializer" => {
-            // `static { ... }` — static block. Render as a method-like
-            // body with `<static/>` marker.
+            // `static { ... }` — render the WHOLE static_initializer
+            // (including the `static` keyword) as a `<block[static]>`
+            // SimpleStatement so the keyword doesn't leak into the
+            // class body's gap text.
             let mut cursor = node.walk();
-            let inner = node
-                .named_children(&mut cursor)
-                .find(|c| c.kind() == "block");
-            match inner {
-                Some(b) => simple_statement_marked(b, "block", &["static"], source),
-                None => simple_statement(node, "block", source),
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "block" {
+                    let mut bc = c.walk();
+                    children.extend(c.named_children(&mut bc).map(|n| lower_node(n, source)));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "block",
+                modifiers: Modifiers::default(),
+                extra_markers: &["static"],
+                children,
+                range,
+                span,
             }
         }
         "synchronized_statement" => simple_statement(node, "lock", source),
-        "this" => Ir::Name { range, span },
+        // `this` and `super` keywords appear as access-chain receivers
+        // and as direct expressions. Render as `<this>this</this>` /
+        // `<super>super</super>` text leaves so XPath `[. = 'super']`
+        // matches the imperative pipeline shape.
+        "this" => Ir::SimpleStatement {
+            element_name: "this",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range,
+            span,
+        },
+        "super" => Ir::SimpleStatement {
+            element_name: "super",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range,
+            span,
+        },
         "wildcard" => simple_statement(node, "type", source),
+
+        // Java pattern matching constructs.
+        // tree-sitter wraps the actual pattern in a `pattern` node;
+        // unwrap and recurse so `type_pattern` etc. surface directly.
+        "pattern" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => lower_node(i, source),
+                None => Ir::Unknown { kind: "pattern(empty)".to_string(), range, span },
+            }
+        }
+        "type_pattern" => {
+            // `Integer i` — has a `type` field and a `name` field.
+            // Render as `<pattern><type><name>Integer</name></type><name>i</name></pattern>`
+            // (the imperative shape; `<type>` is structural here, not
+            // a marker — Type is dual-use in Java's vocabulary).
+            let mut cursor = node.walk();
+            let mut type_node: Option<TsNode> = None;
+            let mut name_node: Option<TsNode> = None;
+            for c in node.named_children(&mut cursor) {
+                match c.kind() {
+                    "type_identifier" | "scoped_type_identifier" | "generic_type" | "boolean_type"
+                    | "integral_type" | "floating_point_type" | "void_type" | "array_type" => {
+                        if type_node.is_none() {
+                            type_node = Some(c);
+                        }
+                    }
+                    "identifier" => {
+                        if name_node.is_none() {
+                            name_node = Some(c);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(t) = type_node {
+                let inner = lower_node(t, source);
+                let already_typed = matches!(
+                    inner,
+                    Ir::GenericType { .. } | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    children.push(inner);
+                } else {
+                    children.push(Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(t),
+                        span: span_of(t),
+                    });
+                }
+            }
+            if let Some(n) = name_node {
+                children.push(Ir::Name {
+                    range: range_of(n),
+                    span: span_of(n),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "pattern",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
 
         // Yield.
         "yield_statement" => simple_statement(node, "yield", source),
@@ -1411,10 +1799,14 @@ fn lower_java_modifiers(
                 "private" => m.access = Some(Access::Private),
                 "protected" => m.access = Some(Access::Protected),
                 "static" => m.static_ = true,
-                "final" => m.readonly = true,
+                "final" => m.final_ = true,
                 "abstract" => m.abstract_ = true,
-                "native" => m.extern_ = true,
+                "synchronized" => m.synchronized_ = true,
+                "native" => m.native = true,
                 "volatile" => m.volatile = true,
+                "transient" => m.transient = true,
+                "strictfp" => m.strictfp = true,
+                "default" => m.default = true,
                 _ => {}
             }
         }
@@ -1576,6 +1968,25 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "instanceof" => "instanceof",
         _ => return None,
     })
+}
+
+/// Walk up the CST to find the nearest enclosing type declaration
+/// kind (class/interface/record/enum). Used for default-access
+/// derivation: interface members default to `public`, others to
+/// `package`-private.
+fn enclosing_type_kind(node: TsNode<'_>) -> Option<String> {
+    let mut current = node.parent();
+    while let Some(p) = current {
+        match p.kind() {
+            "class_declaration"
+            | "interface_declaration"
+            | "record_declaration"
+            | "enum_declaration"
+            | "annotation_type_declaration" => return Some(p.kind().to_string()),
+            _ => current = p.parent(),
+        }
+    }
+    None
 }
 
 fn span_of(node: TsNode<'_>) -> Span {

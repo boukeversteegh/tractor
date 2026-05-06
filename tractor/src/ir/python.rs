@@ -1567,10 +1567,7 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
         span: span_of(rt),
     }));
 
-    let body = match body_node {
-        Some(b) => Box::new(lower_block(b, source)),
-        None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
-    };
+    let body: Option<Box<Ir>> = body_node.map(|b| Box::new(lower_block(b, source)));
 
     Ir::Function {
         element_name: "function",

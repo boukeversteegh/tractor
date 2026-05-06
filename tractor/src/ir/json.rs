@@ -392,7 +392,9 @@ impl<'a> Renderer<'a> {
                 if let Some(r) = returns {
                     shape.singleton("returns", self.render(r, true));
                 }
-                shape.singleton("body", self.render(body, true));
+                if let Some(b) = body {
+                    shape.singleton("body", self.render(b, true));
+                }
             }
             Ir::Class {
                 modifiers, decorators, name, generics, bases, where_clauses: _, body, ..

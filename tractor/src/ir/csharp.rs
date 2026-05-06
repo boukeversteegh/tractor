@@ -598,22 +598,22 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // Body may be a block or `arrow_expression_clause` (for
             // `=>` form) — both lower correctly via lower_node /
             // lower_block_like.
-            let body = match body_node {
-                Some(b) if b.kind() == "block" => Box::new(lower_block_like(b, source)),
+            let body: Option<Box<Ir>> = match body_node {
+                Some(b) if b.kind() == "block" => Some(Box::new(lower_block_like(b, source))),
                 Some(b) => {
                     // Arrow-bodied: wrap the inner expression in a
                     // synthetic Ir::Body covering the arrow clause's
                     // range so the renderer treats it consistently.
                     let r = range_of(b);
                     let s = span_of(b);
-                    Box::new(Ir::Body {
+                    Some(Box::new(Ir::Body {
                         children: vec![lower_node(b, source)],
                         pass_only: false,
                         block_wrap: false,
                         range: r, span: s,
-                    })
+                    }))
                 }
-                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
+                None => None,
             };
             Ir::Function {
                 element_name: "method",
@@ -691,10 +691,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 generics,
                 parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
-                body: Box::new(match body_node {
-                    Some(b) => lower_block_like(b, source),
-                    None => Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
-                }),
+                body: body_node.map(|b| Box::new(lower_block_like(b, source))),
                 range, span,
             }
         }
