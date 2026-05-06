@@ -183,37 +183,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)
         }
-        Ir::Comparison { left, op_text, op_marker, op_range, right, range, span } => {
-            // Python `comparison_operator` — renders as `<compare>`
-            // with flat `<name>`/`<int>` siblings + an `<op>`
-            // wrapper carrying the operator markers. The imperative
-            // pipeline produces this shape; differs from
-            // `<binary><left>/<right>` Java/C#-style by deliberate
-            // design choice (Python's comparison chains and operators
-            // historically render flat).
-            let node = element(xot, "compare", *span);
-            xot.append(parent, node)?;
-            let lr = left.range();
-            emit_gap(xot, node, source, range.start, lr.start)?;
-            render_to_xot(xot, node, left, source)?;
-
-            emit_gap(xot, node, source, lr.end, op_range.start)?;
-            let op_node = element(xot, "op", *span);
-            xot.append(node, op_node)?;
-            if !op_text.is_empty() {
-                let t = xot.new_text(op_text);
-                xot.append(op_node, t)?;
-            }
-            let _ = op_marker;
-            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-
-            let rr = right.range();
-            emit_gap(xot, node, source, op_range.end, rr.start)?;
-            render_to_xot(xot, node, right, source)?;
-            emit_gap(xot, node, source, rr.end, range.end)?;
-            Ok(node)
-        }
+        Ir::Comparison { .. } => render_ir_comparison(xot, parent, ir, source),
         Ir::If { .. } => render_ir_if(xot, parent, ir, source),
         Ir::ElseIf { condition, body, else_branch, range, span } => {
             let node = element(xot, "else_if", *span);
@@ -248,85 +218,10 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::For { .. } => render_ir_for(xot, parent, ir, source),
-        Ir::While { condition, body, else_body, range, span } => {
-            let node = element(xot, "while", *span);
-            xot.append(parent, node)?;
-            let cr = condition.range();
-            emit_gap(xot, node, source, range.start, cr.start)?;
-            let cond_slot = element(xot, "condition", condition.span());
-            xot.append(node, cond_slot)?;
-            let cond_expr = element(xot, "expression", condition.span());
-            xot.append(cond_slot, cond_expr)?;
-            render_to_xot(xot, cond_expr, condition, source)?;
-            let br = body.range();
-            emit_gap(xot, node, source, cr.end, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            if let Some(e) = else_body {
-                let er = e.range();
-                emit_gap(xot, node, source, br.end, er.start)?;
-                let else_node = element(xot, "else", e.span());
-                xot.append(node, else_node)?;
-                render_to_xot(xot, else_node, e, source)?;
-                emit_gap(xot, node, source, er.end, range.end)?;
-            } else {
-                emit_gap(xot, node, source, br.end, range.end)?;
-            }
-            Ok(node)
-        }
+        Ir::While { .. } => render_ir_while(xot, parent, ir, source),
         Ir::Foreach { .. } => render_ir_foreach(xot, parent, ir, source),
-        Ir::CFor { initializer, condition, updates, body, range, span } => {
-            let node = element(xot, "for", *span);
-            xot.append(parent, node)?;
-            // Render header parts (init / cond / updates) in source
-            // order, then the body. The imperative pipeline wraps
-            // condition in `<condition><expression>`; init/updates
-            // ride in bare.
-            let mut header: Vec<(usize, &Ir, u8)> = Vec::new();
-            if let Some(i) = initializer { header.push((i.range().start as usize, i.as_ref(), 0)); }
-            if let Some(c) = condition { header.push((c.range().start as usize, c.as_ref(), 1)); }
-            for u in updates { header.push((u.range().start as usize, u, 2)); }
-            header.sort_by_key(|(p, _, _)| *p);
-            let mut cursor = range.start;
-            for (_, child, kind) in &header {
-                let cr = child.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                match *kind {
-                    1 => {
-                        let slot = element(xot, "condition", child.span());
-                        xot.append(node, slot)?;
-                        let expr = element(xot, "expression", child.span());
-                        xot.append(slot, expr)?;
-                        render_to_xot(xot, expr, child, source)?;
-                    }
-                    _ => {
-                        render_to_xot(xot, node, child, source)?;
-                    }
-                }
-                cursor = cr.end;
-            }
-            // Body — always rendered after header.
-            let br = body.range();
-            emit_gap(xot, node, source, cursor, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            emit_gap(xot, node, source, br.end, range.end)?;
-            Ok(node)
-        }
-        Ir::DoWhile { body, condition, range, span } => {
-            let node = element(xot, "do", *span);
-            xot.append(parent, node)?;
-            let br = body.range();
-            emit_gap(xot, node, source, range.start, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            let cr = condition.range();
-            emit_gap(xot, node, source, br.end, cr.start)?;
-            let cond_slot = element(xot, "condition", condition.span());
-            xot.append(node, cond_slot)?;
-            let cond_expr = element(xot, "expression", condition.span());
-            xot.append(cond_slot, cond_expr)?;
-            render_to_xot(xot, cond_expr, condition, source)?;
-            emit_gap(xot, node, source, cr.end, range.end)?;
-            Ok(node)
-        }
+        Ir::CFor { .. } => render_ir_cfor(xot, parent, ir, source),
+        Ir::DoWhile { .. } => render_ir_do_while(xot, parent, ir, source),
         Ir::FieldWrap { .. } => render_ir_field_wrap(xot, parent, ir, source),
         Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span } => {
             let node = element(xot, element_name, *span);
@@ -346,40 +241,7 @@ pub fn render_to_xot(
         }
         Ir::Try { .. } => render_ir_try(xot, parent, ir, source),
         Ir::ExceptHandler { .. } => render_ir_except_handler(xot, parent, ir, source),
-        Ir::TypeAlias { name, type_params, value, range, span } => {
-            let node = element(xot, "alias", *span);
-            xot.append(parent, node)?;
-            // Source-order: name, type_params (if any), value.
-            // The `type` keyword + `=` live in gap text.
-            let mut order: Vec<&Ir> = vec![name.as_ref()];
-            if let Some(p) = type_params { order.push(p.as_ref()); }
-            order.push(value.as_ref());
-            order.sort_by_key(|c| c.range().start);
-            // Wrap name in <left>, value in <right> with <type> wrappers.
-            let mut cursor = range.start;
-            for child in &order {
-                let cr = child.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                if std::ptr::eq(*child, name.as_ref()) {
-                    let left = element(xot, "left", child.span());
-                    xot.append(node, left)?;
-                    let type_el = element(xot, "type", child.span());
-                    xot.append(left, type_el)?;
-                    render_to_xot(xot, type_el, child, source)?;
-                } else if type_params.as_ref().map_or(false, |p| std::ptr::eq(*child, p.as_ref())) {
-                    render_to_xot(xot, node, child, source)?;
-                } else {
-                    let right = element(xot, "right", child.span());
-                    xot.append(node, right)?;
-                    let type_el = element(xot, "type", child.span());
-                    xot.append(right, type_el)?;
-                    render_to_xot(xot, type_el, child, source)?;
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::TypeAlias { .. } => render_ir_type_alias(xot, parent, ir, source),
         Ir::KeywordArgument { name, value, range, span } => {
             let node = element(xot, "keyword", *span);
             xot.append(parent, node)?;
@@ -459,29 +321,7 @@ pub fn render_to_xot(
         }
         Ir::Function { .. } => render_ir_function(xot, parent, ir, source),
         Ir::Class { .. } => render_ir_class(xot, parent, ir, source),
-        Ir::Body { children, pass_only, block_wrap, range, span } => {
-            let node = element(xot, "body", *span);
-            xot.append(parent, node)?;
-            // Optional inner `<block>` element so the rendered shape
-            // is `<body><block>{stmts}</block></body>` (C#).
-            let target = if *block_wrap {
-                let block = element(xot, "block", *span);
-                xot.append(node, block)?;
-                block
-            } else {
-                node
-            };
-            if *pass_only {
-                let m = element(xot, "pass", *span);
-                xot.append(target, m)?;
-                emit_gap(xot, target, source, range.start, range.end)?;
-            } else {
-                render_with_gaps(xot, target, source, *range, children, |xot, parent, child| {
-                    render_to_xot(xot, parent, child, source).map(|_| ())
-                })?;
-            }
-            Ok(node)
-        }
+        Ir::Body { .. } => render_ir_body(xot, parent, ir, source),
         Ir::Parameter { .. } => render_ir_parameter(xot, parent, ir, source),
         Ir::PositionalSeparator { range, span } => {
             leaf(xot, parent, "positional", source, *range, *span)
@@ -541,38 +381,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Return { value, range, span } => {
-            let node = element(xot, "return", *span);
-            xot.append(parent, node)?;
-            // `return value` wraps value in <expression> host;
-            // `return a, b, c` (Ir::Inline value) wraps each item in
-            // its own <expression> so the post-pass can tag them with
-            // `list="expressions"` for JSON projection.
-            if let Some(v) = value {
-                let vr = v.range();
-                emit_gap(xot, node, source, range.start, vr.start)?;
-                if let Ir::Inline { children, .. } = v.as_ref() {
-                    let mut cursor = vr.start;
-                    for c in children {
-                        let cr = c.range();
-                        emit_gap(xot, node, source, cursor, cr.start)?;
-                        let expr = element(xot, "expression", c.span());
-                        xot.append(node, expr)?;
-                        render_to_xot(xot, expr, c, source)?;
-                        cursor = cr.end;
-                    }
-                    emit_gap(xot, node, source, cursor, vr.end)?;
-                } else {
-                    let expr = element(xot, "expression", v.span());
-                    xot.append(node, expr)?;
-                    render_to_xot(xot, expr, v, source)?;
-                }
-                emit_gap(xot, node, source, vr.end, range.end)?;
-            } else {
-                emit_gap(xot, node, source, range.start, range.end)?;
-            }
-            Ok(node)
-        }
+        Ir::Return { .. } => render_ir_return(xot, parent, ir, source),
         Ir::Comment { leading, trailing, range, span } => {
             let node = element(xot, "comment", *span);
             xot.append(parent, node)?;
@@ -662,101 +471,8 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Binary { element_name, op_text, op_marker, op_range, left, right, range, span } => {
-            let node = element(xot, element_name, *span);
-            xot.append(parent, node)?;
-
-            // <left><expression>...</expression></left>
-            // <left>'s byte coverage equals left.range; it has no
-            // own source contribution. <expression> wrapper inherits
-            // the same range.
-            let left_range = left.range();
-            // Pre-left gap (typically empty for binary).
-            emit_gap(xot, node, source, range.start, left_range.start)?;
-            let left_slot = element(xot, "left", left.span());
-            xot.append(node, left_slot)?;
-            let left_expr = element(xot, "expression", left.span());
-            xot.append(left_slot, left_expr)?;
-            render_to_xot(xot, left_expr, left, source)?;
-
-            // Gap between left and op (e.g. " " in "a + b").
-            emit_gap(xot, node, source, left_range.end, op_range.start)?;
-
-            let op_node = element(xot, "op", Span::point(span.line, span.column));
-            xot.append(node, op_node)?;
-            if !op_text.is_empty() {
-                let t = xot.new_text(op_text);
-                xot.append(op_node, t)?;
-            }
-            let _ = op_marker;
-            crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-
-            // Gap between op and right.
-            let right_range = right.range();
-            emit_gap(xot, node, source, op_range.end, right_range.start)?;
-
-            // <right><expression>...</expression></right>
-            let right_slot = element(xot, "right", right.span());
-            xot.append(node, right_slot)?;
-            let right_expr = element(xot, "expression", right.span());
-            xot.append(right_slot, right_expr)?;
-            render_to_xot(xot, right_expr, right, source)?;
-
-            // Trailing gap.
-            emit_gap(xot, node, source, right_range.end, range.end)?;
-
-            Ok(node)
-        }
-        Ir::Unary { op_text, op_marker, op_range, operand, extra_markers, range, span } => {
-            let node = element(xot, "unary", *span);
-            xot.append(parent, node)?;
-            for marker in *extra_markers {
-                let m = element(xot, marker, Span::point(span.line, span.column));
-                xot.append(node, m)?;
-            }
-
-            let operand_range = operand.range();
-            let is_postfix = op_range.start >= operand_range.end;
-
-            if is_postfix {
-                // Operand first, then `<op>`. e.g. `i++`.
-                emit_gap(xot, node, source, range.start, operand_range.start)?;
-                render_to_xot(xot, node, operand, source)?;
-                emit_gap(xot, node, source, operand_range.end, op_range.start)?;
-                let op_node = element(xot, "op", Span::point(span.line, span.column));
-                xot.append(node, op_node)?;
-                if !op_text.is_empty() {
-                    let t = xot.new_text(op_text);
-                    xot.append(op_node, t)?;
-                }
-                let _ = op_marker;
-                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-                emit_gap(xot, node, source, op_range.end, range.end)?;
-            } else {
-                // Prefix: pre-op gap, op, gap, operand, trailing gap.
-                emit_gap(xot, node, source, range.start, op_range.start)?;
-
-                let op_node = element(xot, "op", Span::point(span.line, span.column));
-                xot.append(node, op_node)?;
-                if !op_text.is_empty() {
-                    let t = xot.new_text(op_text);
-                    xot.append(op_node, t)?;
-                }
-                let _ = op_marker;
-                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-
-                emit_gap(xot, node, source, op_range.end, operand_range.start)?;
-
-                render_to_xot(xot, node, operand, source)?;
-
-                emit_gap(xot, node, source, operand_range.end, range.end)?;
-            }
-
-            Ok(node)
-        }
+        Ir::Binary { .. } => render_ir_binary(xot, parent, ir, source),
+        Ir::Unary { .. } => render_ir_unary(xot, parent, ir, source),
 
         // ----- Atoms — emit source[range] as the leaf text. ---------
         Ir::Name { range, span } => leaf(xot, parent, "name", source, *range, *span),
@@ -1833,6 +1549,328 @@ fn render_ir_variable(
             }
         }
         render_to_xot(xot, node, *c, source)?;
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_comparison(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Comparison { left, op_text, op_marker, op_range, right, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "compare", *span);
+    xot.append(parent, node)?;
+    let lr = left.range();
+    emit_gap(xot, node, source, range.start, lr.start)?;
+    render_to_xot(xot, node, left, source)?;
+
+    emit_gap(xot, node, source, lr.end, op_range.start)?;
+    let op_node = element(xot, "op", *span);
+    xot.append(node, op_node)?;
+    if !op_text.is_empty() {
+        let t = xot.new_text(op_text);
+        xot.append(op_node, t)?;
+    }
+    let _ = op_marker;
+    crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+        .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+
+    let rr = right.range();
+    emit_gap(xot, node, source, op_range.end, rr.start)?;
+    render_to_xot(xot, node, right, source)?;
+    emit_gap(xot, node, source, rr.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_while(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::While { condition, body, else_body, range, span } = ir else { unreachable!() };
+    let node = element(xot, "while", *span);
+    xot.append(parent, node)?;
+    let cr = condition.range();
+    emit_gap(xot, node, source, range.start, cr.start)?;
+    let cond_slot = element(xot, "condition", condition.span());
+    xot.append(node, cond_slot)?;
+    let cond_expr = element(xot, "expression", condition.span());
+    xot.append(cond_slot, cond_expr)?;
+    render_to_xot(xot, cond_expr, condition, source)?;
+    let br = body.range();
+    emit_gap(xot, node, source, cr.end, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    if let Some(e) = else_body {
+        let er = e.range();
+        emit_gap(xot, node, source, br.end, er.start)?;
+        let else_node = element(xot, "else", e.span());
+        xot.append(node, else_node)?;
+        render_to_xot(xot, else_node, e, source)?;
+        emit_gap(xot, node, source, er.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, br.end, range.end)?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_cfor(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::CFor { initializer, condition, updates, body, range, span } = ir else { unreachable!() };
+    let node = element(xot, "for", *span);
+    xot.append(parent, node)?;
+    let mut header: Vec<(usize, &Ir, u8)> = Vec::new();
+    if let Some(i) = initializer { header.push((i.range().start as usize, i.as_ref(), 0)); }
+    if let Some(c) = condition { header.push((c.range().start as usize, c.as_ref(), 1)); }
+    for u in updates { header.push((u.range().start as usize, u, 2)); }
+    header.sort_by_key(|(p, _, _)| *p);
+    let mut cursor = range.start;
+    for (_, child, kind) in &header {
+        let cr = child.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        match *kind {
+            1 => {
+                let slot = element(xot, "condition", child.span());
+                xot.append(node, slot)?;
+                let expr = element(xot, "expression", child.span());
+                xot.append(slot, expr)?;
+                render_to_xot(xot, expr, child, source)?;
+            }
+            _ => {
+                render_to_xot(xot, node, child, source)?;
+            }
+        }
+        cursor = cr.end;
+    }
+    let br = body.range();
+    emit_gap(xot, node, source, cursor, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    emit_gap(xot, node, source, br.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_do_while(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::DoWhile { body, condition, range, span } = ir else { unreachable!() };
+    let node = element(xot, "do", *span);
+    xot.append(parent, node)?;
+    let br = body.range();
+    emit_gap(xot, node, source, range.start, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    let cr = condition.range();
+    emit_gap(xot, node, source, br.end, cr.start)?;
+    let cond_slot = element(xot, "condition", condition.span());
+    xot.append(node, cond_slot)?;
+    let cond_expr = element(xot, "expression", condition.span());
+    xot.append(cond_slot, cond_expr)?;
+    render_to_xot(xot, cond_expr, condition, source)?;
+    emit_gap(xot, node, source, cr.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_body(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Body { children, pass_only, block_wrap, range, span } = ir else { unreachable!() };
+    let node = element(xot, "body", *span);
+    xot.append(parent, node)?;
+    let target = if *block_wrap {
+        let block = element(xot, "block", *span);
+        xot.append(node, block)?;
+        block
+    } else {
+        node
+    };
+    if *pass_only {
+        let m = element(xot, "pass", *span);
+        xot.append(target, m)?;
+        emit_gap(xot, target, source, range.start, range.end)?;
+    } else {
+        render_with_gaps(xot, target, source, *range, children, |xot, parent, child| {
+            render_to_xot(xot, parent, child, source).map(|_| ())
+        })?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_binary(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Binary { element_name, op_text, op_marker, op_range, left, right, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, element_name, *span);
+    xot.append(parent, node)?;
+    let left_range = left.range();
+    emit_gap(xot, node, source, range.start, left_range.start)?;
+    let left_slot = element(xot, "left", left.span());
+    xot.append(node, left_slot)?;
+    let left_expr = element(xot, "expression", left.span());
+    xot.append(left_slot, left_expr)?;
+    render_to_xot(xot, left_expr, left, source)?;
+    emit_gap(xot, node, source, left_range.end, op_range.start)?;
+    let op_node = element(xot, "op", Span::point(span.line, span.column));
+    xot.append(node, op_node)?;
+    if !op_text.is_empty() {
+        let t = xot.new_text(op_text);
+        xot.append(op_node, t)?;
+    }
+    let _ = op_marker;
+    crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+        .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+    let right_range = right.range();
+    emit_gap(xot, node, source, op_range.end, right_range.start)?;
+    let right_slot = element(xot, "right", right.span());
+    xot.append(node, right_slot)?;
+    let right_expr = element(xot, "expression", right.span());
+    xot.append(right_slot, right_expr)?;
+    render_to_xot(xot, right_expr, right, source)?;
+    emit_gap(xot, node, source, right_range.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_unary(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Unary { op_text, op_marker, op_range, operand, extra_markers, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "unary", *span);
+    xot.append(parent, node)?;
+    for marker in *extra_markers {
+        let m = element(xot, marker, Span::point(span.line, span.column));
+        xot.append(node, m)?;
+    }
+    let operand_range = operand.range();
+    let is_postfix = op_range.start >= operand_range.end;
+    if is_postfix {
+        emit_gap(xot, node, source, range.start, operand_range.start)?;
+        render_to_xot(xot, node, operand, source)?;
+        emit_gap(xot, node, source, operand_range.end, op_range.start)?;
+        let op_node = element(xot, "op", Span::point(span.line, span.column));
+        xot.append(node, op_node)?;
+        if !op_text.is_empty() {
+            let t = xot.new_text(op_text);
+            xot.append(op_node, t)?;
+        }
+        let _ = op_marker;
+        crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+            .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+        emit_gap(xot, node, source, op_range.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, range.start, op_range.start)?;
+        let op_node = element(xot, "op", Span::point(span.line, span.column));
+        xot.append(node, op_node)?;
+        if !op_text.is_empty() {
+            let t = xot.new_text(op_text);
+            xot.append(op_node, t)?;
+        }
+        let _ = op_marker;
+        crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+            .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+        emit_gap(xot, node, source, op_range.end, operand_range.start)?;
+        render_to_xot(xot, node, operand, source)?;
+        emit_gap(xot, node, source, operand_range.end, range.end)?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_return(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Return { value, range, span } = ir else { unreachable!() };
+    let node = element(xot, "return", *span);
+    xot.append(parent, node)?;
+    if let Some(v) = value {
+        let vr = v.range();
+        emit_gap(xot, node, source, range.start, vr.start)?;
+        if let Ir::Inline { children, .. } = v.as_ref() {
+            let mut cursor = vr.start;
+            for c in children {
+                let cr = c.range();
+                emit_gap(xot, node, source, cursor, cr.start)?;
+                let expr = element(xot, "expression", c.span());
+                xot.append(node, expr)?;
+                render_to_xot(xot, expr, c, source)?;
+                cursor = cr.end;
+            }
+            emit_gap(xot, node, source, cursor, vr.end)?;
+        } else {
+            let expr = element(xot, "expression", v.span());
+            xot.append(node, expr)?;
+            render_to_xot(xot, expr, v, source)?;
+        }
+        emit_gap(xot, node, source, vr.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, range.start, range.end)?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_type_alias(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::TypeAlias { name, type_params, value, range, span } = ir else { unreachable!() };
+    let node = element(xot, "alias", *span);
+    xot.append(parent, node)?;
+    let mut order: Vec<&Ir> = vec![name.as_ref()];
+    if let Some(p) = type_params { order.push(p.as_ref()); }
+    order.push(value.as_ref());
+    order.sort_by_key(|c| c.range().start);
+    let mut cursor = range.start;
+    for child in &order {
+        let cr = child.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        if std::ptr::eq(*child, name.as_ref()) {
+            let left = element(xot, "left", child.span());
+            xot.append(node, left)?;
+            let type_el = element(xot, "type", child.span());
+            xot.append(left, type_el)?;
+            render_to_xot(xot, type_el, child, source)?;
+        } else if type_params.as_ref().map_or(false, |p| std::ptr::eq(*child, p.as_ref())) {
+            render_to_xot(xot, node, child, source)?;
+        } else {
+            let right = element(xot, "right", child.span());
+            xot.append(node, right)?;
+            let type_el = element(xot, "type", child.span());
+            xot.append(right, type_el)?;
+            render_to_xot(xot, type_el, child, source)?;
+        }
         cursor = cr.end;
     }
     emit_gap(xot, node, source, cursor, range.end)?;
