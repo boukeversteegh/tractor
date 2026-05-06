@@ -126,9 +126,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "type_item" => rust_decl(node, "alias", source),
         "const_item" => rust_decl(node, "const", source),
         "static_item" => rust_decl(node, "static", source),
-        "function_item" | "function_signature_item" => {
-            rust_decl(node, "function", source)
-        }
+        "function_item" | "function_signature_item" => rust_function(node, source),
         "mod_item" => rust_decl(node, "mod", source),
         "macro_definition" => simple_statement_marked(node, "macro", &["definition"], source),
         "macro_rule" => simple_statement(node, "arm", source),
@@ -218,9 +216,76 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "function_type" => simple_statement_marked(node, "type", &["function"], source),
         "dynamic_type" => simple_statement_marked(node, "type", &["dynamic"], source),
         "pointer_type" => simple_statement_marked(node, "type", &["pointer"], source),
-        "reference_type" => simple_statement_marked(node, "type", &["reference"], source),
+        "reference_type" => {
+            // `&T` / `&mut T` / `&'a T` — emit `<type[borrowed]>` (with
+            // `<mut/>` marker if `mut` keyword present) and wrap the
+            // inner type in `<type>` if it's a leaf identifier.
+            let mut cursor = node.walk();
+            let mut has_mut = false;
+            for c in node.children(&mut cursor) {
+                if !c.is_named() && text_of(c, source) == "mut" {
+                    has_mut = true;
+                }
+                if c.kind() == "mutable_specifier" {
+                    has_mut = true;
+                }
+            }
+            let mut cursor2 = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor2)
+                .filter(|c| c.kind() != "mutable_specifier")
+                .map(|c| {
+                    let inner_ir = lower_node(c, source);
+                    wrap_in_type_if_leaf(inner_ir, range_of(c), span_of(c))
+                })
+                .collect();
+            let extra_markers: &'static [&'static str] =
+                if has_mut { &["borrowed", "mut"] } else { &["borrowed"] };
+            Ir::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
         "bounded_type" => simple_statement_marked(node, "type", &["bounded"], source),
-        "generic_type" => simple_statement_marked(node, "type", &["generic"], source),
+        "generic_type" => {
+            // `Foo<T, U>` — wrap each type argument's content in `<type>`
+            // so XPath sees `type[generic]/type[name='T']`.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| {
+                    if c.kind() == "type_arguments" {
+                        // Inline its children, wrapping each in <type> if leaf.
+                        let mut tc = c.walk();
+                        let typed: Vec<Ir> = c
+                            .named_children(&mut tc)
+                            .map(|t| {
+                                let inner = lower_node(t, source);
+                                wrap_in_type_if_leaf(inner, range_of(t), span_of(t))
+                            })
+                            .collect();
+                        Ir::Inline {
+                            children: typed,
+                            list_name: None,
+                            range: range_of(c),
+                            span: span_of(c),
+                        }
+                    } else {
+                        lower_node(c, source)
+                    }
+                })
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers: &["generic"],
+                children,
+                range, span,
+            }
+        }
         "generic_type_with_turbofish" => {
             simple_statement_marked(node, "type", &["turbofish"], source)
         }
@@ -532,6 +597,69 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
 
 fn text_of(node: TsNode<'_>, source: &str) -> String {
     source[node.start_byte()..node.end_byte()].to_string()
+}
+
+/// Wrap a leaf-like Ir (identifier-shaped) in `<type>` so it surfaces
+/// as `<type><name>X</name></type>`. Already-typed (Ir::Access,
+/// Ir::SimpleStatement<element_name="type"|"path"|"alias">, etc.) pass
+/// through unchanged.
+fn wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
+    match &inner {
+        Ir::Name { .. } => Ir::SimpleStatement {
+            element_name: "type",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range, span,
+        },
+        _ => inner,
+    }
+}
+
+/// Lower a Rust function_item with proper <returns> wrapping.
+/// Tree-sitter rust uses `return_type` as a FIELD on function_item
+/// pointing at the type child (no wrapper element). We detect it via
+/// child_by_field_name and wrap in Ir::Returns.
+fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let return_type_node = node.child_by_field_name("return_type");
+    let mut cursor = node.walk();
+    let mut is_pub = false;
+    let mut children: Vec<Ir> = Vec::new();
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "visibility_modifier" => {
+                let txt = text_of(c, source);
+                if txt.starts_with("pub") {
+                    is_pub = true;
+                }
+            }
+            _ => {
+                if let Some(rt) = return_type_node {
+                    if c.id() == rt.id() {
+                        // Wrap in Ir::Returns instead of lowering inline.
+                        children.push(Ir::Returns {
+                            type_ann: Box::new(lower_node(c, source)),
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+        }
+    }
+    let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+    Ir::SimpleStatement {
+        element_name: "function",
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range,
+        span,
+    }
 }
 
 /// Rust uses `<pub/>` / `<private/>` markers (not `<public/>`).
