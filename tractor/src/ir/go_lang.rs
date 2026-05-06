@@ -61,9 +61,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Type declarations ---------------------------------------
-        "type_declaration" => simple_statement(node, "type", source),
-        "type_spec" => simple_statement(node, "spec", source),
-        "type_alias" => simple_statement_marked(node, "alias", &[], source),
+        // `type Foo bar` / `type Foo = bar` / type-decl block.
+        // type_declaration is a wrapper that holds one or more type_spec
+        // / type_alias children. Inline so each spec/alias becomes a
+        // direct sibling of the parent file/body.
+        "type_declaration" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        },
+        // `Foo bar` (defined type). Emit `<type>` with `<exported/>` /
+        // `<unexported/>` marker, name, and type wrapped in `<type>`.
+        "type_spec" => go_type_spec(node, "type", &[], source),
+        "type_alias" => go_type_spec(node, "alias", &[], source),
         "type_parameter_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: Some("generics"),
@@ -102,9 +112,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Const / Var declarations --------------------------------
         "const_declaration" => simple_statement(node, "const", source),
-        "const_spec" => simple_statement(node, "const", source),
+        "const_spec" => go_decl_with_export_first_name(node, "const", source),
         "var_declaration" => simple_statement(node, "var", source),
-        "var_spec" => simple_statement(node, "var", source),
+        "var_spec" => go_decl_with_export_first_name(node, "var", source),
         "var_spec_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -113,11 +123,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "short_var_declaration" => simple_statement(node, "variable", source),
 
         // ----- Functions / methods -------------------------------------
-        "function_declaration" => simple_statement(node, "function", source),
-        "method_declaration" => simple_statement(node, "method", source),
+        "function_declaration" => go_decl_with_export(node, "function", source),
+        "method_declaration" => go_decl_with_export(node, "method", source),
         "func_literal" => simple_statement(node, "closure", source),
         "method_elem" => simple_statement(node, "method", source),
-        "field_declaration" => simple_statement(node, "field", source),
+        "field_declaration" => go_decl_with_export_first_name(node, "field", source),
         "field_declaration_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -168,7 +178,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Expressions ---------------------------------------------
-        "binary_expression" => simple_statement(node, "binary", source),
+        "binary_expression" => {
+            let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
+            let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            match (left, right, op_marker(&op_text)) {
+                (Some(l), Some(r), Some(marker)) => Ir::Binary {
+                    element_name: if matches!(op_text.as_str(), "&&" | "||") { "logical" } else { "binary" },
+                    op_text,
+                    op_marker: marker,
+                    op_range,
+                    left: Box::new(l),
+                    right: Box::new(r),
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "binary_expression(missing)".to_string(),
+                    range, span,
+                },
+            }
+        }
         "unary_expression" => simple_statement(node, "unary", source),
         "assignment_statement" => simple_statement(node, "assign", source),
         "inc_statement" => simple_statement(node, "unary", source),
@@ -338,6 +369,154 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect()
+}
+
+fn text_of(node: TsNode<'_>, source: &str) -> String {
+    source[node.start_byte()..node.end_byte()].to_string()
+}
+
+/// Go convention: name starting with uppercase → exported; lowercase → unexported.
+fn is_exported(name: &str) -> bool {
+    name.chars().next().map_or(false, |c| c.is_uppercase())
+}
+
+/// Lower a Go type_spec / type_alias with proper `<type>` shape.
+/// The RHS gets wrapped in `<type>` if it's a leaf identifier so the
+/// shape is `<type[name='MyInt']><type[name='int']/></type>` (matching
+/// the imperative pipeline).
+fn go_type_spec(
+    node: TsNode<'_>,
+    element_name: &'static str,
+    extra_markers_in: &'static [&'static str],
+    source: &str,
+) -> Ir {
+    let name_node = node.child_by_field_name("name");
+    let type_node = node.child_by_field_name("type");
+    let name_text = name_node.map(|n| text_of(n, source)).unwrap_or_default();
+    let mut children: Vec<Ir> = Vec::new();
+    if let Some(n) = name_node {
+        children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+    }
+    if let Some(t) = type_node {
+        let inner = lower_node(t, source);
+        children.push(go_wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
+    }
+    let _ = extra_markers_in;
+    let extra_markers: &'static [&'static str] = if is_exported(&name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+/// Wrap a leaf-like Ir in `<type>` so it surfaces as `<type><name>X</name></type>`.
+fn go_wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
+    match &inner {
+        Ir::Name { .. } => Ir::SimpleStatement {
+            element_name: "type",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![inner],
+            range, span,
+        },
+        _ => inner,
+    }
+}
+
+/// Lower a declaration whose name child uses field name "name", and
+/// add `<exported/>`/`<unexported/>` marker by case of first
+/// character. `_` (blank identifier) emits no marker.
+fn go_decl_with_export_first_name(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    // Find the first identifier-shaped named child (skips wrappers).
+    let mut cursor = node.walk();
+    let name_text = node
+        .named_children(&mut cursor)
+        .find(|c| matches!(
+            c.kind(),
+            "identifier" | "field_identifier" | "type_identifier" | "package_identifier"
+        ))
+        .map(|c| text_of(c, source))
+        .unwrap_or_default();
+    let extra_markers: &'static [&'static str] = if name_text == "_" || name_text.is_empty() {
+        &[]
+    } else if is_exported(&name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+    let mut cursor2 = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor2)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+/// Lower a Go function/method declaration with `<exported/>`/`<unexported/>`
+/// marker derived from the name's first-character capitalisation.
+fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let name_node = node.child_by_field_name("name");
+    let name_text = name_node.map(|n| text_of(n, source)).unwrap_or_default();
+    let extra_markers: &'static [&'static str] = if is_exported(&name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+fn op_marker(op: &str) -> Option<&'static str> {
+    Some(match op {
+        "+" => "plus",
+        "-" => "minus",
+        "*" => "multiply",
+        "/" => "divide",
+        "%" => "modulo",
+        "==" => "equal",
+        "!=" => "not_equal",
+        "<" => "less",
+        "<=" => "less_or_equal",
+        ">" => "greater",
+        ">=" => "greater_or_equal",
+        "&&" => "and",
+        "||" => "or",
+        "!" => "not",
+        "&" => "bitwise_and",
+        "|" => "bitwise_or",
+        "^" => "bitwise_xor",
+        "<<" => "shift_left",
+        ">>" => "shift_right",
+        "&^" => "bitwise_clear",
+        "<-" => "channel_receive",
+        _ => return None,
+    })
 }
 
 fn range_of(node: TsNode<'_>) -> ByteRange {
