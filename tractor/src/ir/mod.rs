@@ -40,8 +40,13 @@
 //!   language.
 
 pub mod types;
-pub mod render;
-pub mod json;
+// IR rendering targets — each module renders the IR tree to one
+// concrete representation:
+// - `to_xot`  : Xot tree (XML).
+// - `to_json` : `serde_json::Value` (skips Xot for IR-direct JSON).
+// - `source/` : original byte-anchored or canonical source text.
+pub mod to_xot;
+pub mod to_json;
 pub mod python;
 pub mod csharp;
 pub mod java;
@@ -57,8 +62,8 @@ pub mod source;
 pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span, to_source};
-pub use render::render_to_xot;
-pub use json::ir_to_json;
+pub use to_xot::render_to_xot;
+pub use to_json::ir_to_json;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
 #[cfg(feature = "native")]

@@ -3,7 +3,7 @@
 //! Mirrors the C# IR closely — Java and C# share most CST shapes
 //! (class/method/field declarations, modifiers, generics, blocks).
 //! Per-kind arms recursively lower children; the renderer in
-//! `crate::ir::render` is shared with all other IR-pipeline languages.
+//! `crate::ir::to_xot` is shared with all other IR-pipeline languages.
 //!
 //! Coverage is incremental: each unhandled kind falls through to
 //! `Ir::Unknown`. The diagnostic test

@@ -3,7 +3,7 @@
 //! Single lower function handles all four flavours — the TS / JS / TSX
 //! grammars share most node kinds (TS is a superset, TSX adds JSX-only
 //! kinds). Per-kind arms recursively lower children; the renderer in
-//! `crate::ir::render` is shared.
+//! `crate::ir::to_xot` is shared.
 //!
 //! Production parser routes ts/js/tsx/jsx through this lowering
 //! end-to-end (see `parser::use_ir_pipeline`). The legacy imperative

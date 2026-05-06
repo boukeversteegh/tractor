@@ -2,7 +2,7 @@
 //!
 //! Mirrors the C#/Java/TypeScript IR pipeline patterns. Each per-kind
 //! arm recursively lowers children; unhandled kinds fall through to
-//! `Ir::Unknown`. The renderer in `crate::ir::render` is shared with
+//! `Ir::Unknown`. The renderer in `crate::ir::to_xot` is shared with
 //! the other IR languages.
 //!
 //! Production parser routes Rust through this lowering end-to-end
