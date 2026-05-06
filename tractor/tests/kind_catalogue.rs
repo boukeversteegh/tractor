@@ -55,10 +55,30 @@ fn go_node_metadata_is_well_formed() {
     check_node_metadata(output::nodes(), "tractor/src/languages/go/output.rs");
 }
 
-// `csharp_catalogue_covers_blueprint` retired with the imperative
-// pipeline removal — `CsKind` no longer exists. The IR pipeline
-// dispatches on tree-sitter `node.kind()` strings directly and
-// rejects unknown kinds at lowering time.
+#[test]
+fn csharp_catalogue_covers_blueprint() {
+    use tractor::languages::csharp::input::CsKind;
+
+    let path = fixture_path("csharp", "blueprint.cs");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("csharp", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if CsKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter csharp emitted {} kind(s) not in `CsKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/csharp/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
 
 #[test]
 fn csharp_node_metadata_is_well_formed() {
@@ -66,10 +86,30 @@ fn csharp_node_metadata_is_well_formed() {
     check_node_metadata(output::nodes(), "tractor/src/languages/csharp/output.rs");
 }
 
-// `java_catalogue_covers_blueprint` retired with the imperative
-// pipeline removal — `JavaKind` no longer exists. The IR pipeline
-// dispatches on tree-sitter `node.kind()` strings directly and
-// rejects unknown kinds at lowering time.
+#[test]
+fn java_catalogue_covers_blueprint() {
+    use tractor::languages::java::input::JavaKind;
+
+    let path = fixture_path("java", "blueprint.java");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("java", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if JavaKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter java emitted {} kind(s) not in `JavaKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/java/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
 
 #[test]
 fn java_node_metadata_is_well_formed() {
@@ -108,10 +148,30 @@ fn php_node_metadata_is_well_formed() {
     check_node_metadata(output::nodes(), "tractor/src/languages/php/output.rs");
 }
 
-// `python_catalogue_covers_blueprint` retired with the imperative
-// pipeline removal — `PyKind` no longer exists. The IR pipeline
-// dispatches on tree-sitter `node.kind()` strings directly and
-// rejects unknown kinds at lowering time.
+#[test]
+fn python_catalogue_covers_blueprint() {
+    use tractor::languages::python::input::PyKind;
+
+    let path = fixture_path("python", "blueprint.py");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("python", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if PyKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter python emitted {} kind(s) not in `PyKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/python/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
 
 #[test]
 fn python_node_metadata_is_well_formed() {

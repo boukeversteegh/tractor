@@ -1,13 +1,15 @@
 //! Java language module.
 //!
-//! As of the IR migration, the imperative pipeline (`rules.rs` /
-//! `transformations.rs` / `transform.rs` / `input.rs` (`JavaKind`))
-//! has been retired — Java now flows through `crate::ir::java` and
-//! is rendered via `crate::ir::render_to_xot`.
+//! Java runs through `crate::ir::java` end-to-end. The legacy
+//! imperative `rules.rs` / `transformations.rs` / `transform.rs`
+//! modules have been retired.
 //!
-//!   - [`output`] — semantic-name vocabulary (`TractorNode` enum).
+//!   - [`input`]   — generated `JavaKind` enum, kept as a kind-coverage
+//!                   catalogue for `tests/kind_catalogue.rs`.
+//!   - [`output`]  — semantic-name vocabulary (`TractorNode` enum).
 //!   - [`post_transform`] — IR-pipeline post-passes.
 
+pub mod input;
 pub mod output;
 pub mod post_transform;
 
