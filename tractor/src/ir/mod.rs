@@ -52,6 +52,8 @@ pub mod ruby;
 pub mod php;
 pub mod tsql;
 #[cfg(feature = "native")]
+pub mod source;
+#[cfg(feature = "native")]
 pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span, to_source};
