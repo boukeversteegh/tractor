@@ -1082,6 +1082,15 @@ pub struct Modifiers {
     pub strictfp: bool,
     /// `default` (Java interface method) — has a default body.
     pub default: bool,
+    /// `get` (TypeScript / JS class accessor) — `get foo() {...}` —
+    /// renders as `<get/>` marker on the method.
+    pub getter: bool,
+    /// `set` (TypeScript / JS class accessor) — `set foo(v) {...}` —
+    /// renders as `<set/>` marker on the method.
+    pub setter: bool,
+    /// `*` (TypeScript / JS generator function) — renders as
+    /// `<generator/>` marker on the method/function.
+    pub generator: bool,
 }
 
 impl Modifiers {
@@ -1128,6 +1137,9 @@ impl Modifiers {
         if self.native    { names.push("native"); }
         if self.strictfp  { names.push("strictfp"); }
         if self.default   { names.push("default"); }
+        if self.getter    { names.push("get"); }
+        if self.setter    { names.push("set"); }
+        if self.generator { names.push("generator"); }
         names
     }
 

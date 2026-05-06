@@ -46,8 +46,46 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- Atoms -----------------------------------------------------
         "identifier" | "type_identifier" | "property_identifier" | "shorthand_property_identifier"
         | "shorthand_property_identifier_pattern" => Ir::Name { range, span },
-        "number" => Ir::Int { range, span },
-        "string" | "template_string" => Ir::String { range, span },
+        // TS `number` is dual-purpose (int + float); the imperative
+        // pipeline emits `<number>` (not `<int>` like C#/Python).
+        // Use SimpleStatement with element_name="number" to preserve
+        // source bytes as text.
+        "number" => Ir::SimpleStatement {
+            element_name: "number",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range,
+            span,
+        },
+        "string" => Ir::String { range, span },
+        // Template literals contain `template_substitution` (`${...}`)
+        // children. Lower as `<template>` with interpolation children
+        // so XPath can address `template[interpolation/name='x']`.
+        // Plain templates (no substitutions) still emit `<template>`.
+        "template_string" => {
+            let mut cursor = node.walk();
+            let has_subs = node.named_children(&mut cursor)
+                .any(|c| c.kind() == "template_substitution");
+            if !has_subs {
+                Ir::String { range, span }
+            } else {
+                let mut cursor2 = node.walk();
+                let children: Vec<Ir> = node
+                    .named_children(&mut cursor2)
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Ir::SimpleStatement {
+                    element_name: "template",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children,
+                    range,
+                    span,
+                }
+            }
+        }
+        "template_substitution" => simple_statement(node, "interpolation", source),
         "true" => Ir::True { range, span },
         "false" => Ir::False { range, span },
         "null" => Ir::Null { range, span },
@@ -196,7 +234,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             let return_type_node = node.child_by_field_name("return_type");
-            let modifiers = lower_ts_modifiers(node, source, None);
+            // TS class methods default to `public`; standalone
+            // functions have no access modifier.
+            let is_class_member = matches!(
+                node.kind(),
+                "method_definition" | "method_signature" | "abstract_method_signature"
+            );
+            let default_access = if is_class_member {
+                Some(Access::Public)
+            } else {
+                None
+            };
+            let modifiers = lower_ts_modifiers(node, source, default_access);
             let parameters: Vec<Ir> = match params_node {
                 Some(p) => {
                     let mut pc = p.walk();
@@ -223,6 +272,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 } else {
                     "function"
                 };
+            // Type parameters: `<T, U>` lower to flat `<generic>` siblings.
+            let mut tpc = node.walk();
+            let type_params_node = node
+                .named_children(&mut tpc)
+                .find(|c| c.kind() == "type_parameters");
+            let generics: Option<Box<Ir>> = type_params_node.map(|tp| {
+                let mut tc = tp.walk();
+                let items: Vec<Ir> = tp
+                    .named_children(&mut tc)
+                    .map(|c| lower_node(c, source))
+                    .collect();
+                Box::new(Ir::Generic {
+                    items,
+                    range: range_of(tp),
+                    span: span_of(tp),
+                })
+            });
             Ir::Function {
                 element_name,
                 modifiers,
@@ -235,7 +301,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         span,
                     },
                 }),
-                generics: None,
+                generics,
                 parameters,
                 returns,
                 body,
@@ -244,7 +310,78 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
-        "arrow_function" => simple_statement(node, "lambda", source),
+        "arrow_function" => {
+            // Arrow has a parameter list (or single bare identifier) and
+            // a body which is either a `<block>` or an expression.
+            // Emits `<arrow>` with parameter children + `<body>` (block)
+            // or `<value><expression>...</expression></value>` (expr).
+            let params_node = node.child_by_field_name("parameters");
+            let body_node = node.child_by_field_name("body");
+            let return_type_node = node.child_by_field_name("return_type");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(p) = params_node {
+                let mut pc = p.walk();
+                for c in p.named_children(&mut pc) {
+                    children.push(lower_node(c, source));
+                }
+            } else {
+                // Single bare identifier — `x => ...`. Tree-sitter
+                // exposes the parameter as the `parameter` field
+                // (single identifier).
+                if let Some(p) = node.child_by_field_name("parameter") {
+                    // Wrap as a Parameter so shape stays uniform.
+                    children.push(Ir::Parameter {
+                        kind: ParamKind::Regular,
+                        extra_markers: &["required"],
+                        name: Box::new(Ir::Name { range: range_of(p), span: span_of(p) }),
+                        type_ann: None,
+                        default: None,
+                        range: range_of(p),
+                        span: span_of(p),
+                    });
+                }
+            }
+            if let Some(rt) = return_type_node {
+                let mut tc = rt.walk();
+                let inner = rt.named_children(&mut tc).next().unwrap_or(rt);
+                children.push(Ir::Returns {
+                    type_ann: Box::new(lower_node(inner, source)),
+                    range: range_of(rt),
+                    span: span_of(rt),
+                });
+            }
+            if let Some(b) = body_node {
+                if b.kind() == "statement_block" {
+                    children.push(lower_block_like(b, source));
+                } else {
+                    // Expression body — wrap in <value><expression>.
+                    let inner = lower_node(b, source);
+                    children.push(Ir::SimpleStatement {
+                        element_name: "value",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![Ir::SimpleStatement {
+                            element_name: "expression",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![inner],
+                            range: range_of(b),
+                            span: span_of(b),
+                        }],
+                        range: range_of(b),
+                        span: span_of(b),
+                    });
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "arrow",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
 
         // Required / optional / rest parameter.
         "required_parameter" | "optional_parameter" => {
@@ -254,7 +391,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let extra_markers: &'static [&'static str] = if node.kind() == "optional_parameter" {
                 &["optional"]
             } else {
-                &[]
+                &["required"]
             };
             let modifiers = lower_ts_modifiers(node, source, None);
             let _ = modifiers;
@@ -300,38 +437,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             } else {
                 &[]
             };
-            if declarators.len() == 1 {
-                let d = declarators[0];
-                lower_ts_variable_declarator(d, source, range, span, "variable", modifiers, kw_marker)
-            } else if !declarators.is_empty() {
-                let children: Vec<Ir> = declarators
-                    .into_iter()
-                    .map(|d| {
-                        lower_ts_variable_declarator(
-                            d,
-                            source,
-                            range_of(d),
-                            span_of(d),
-                            "variable",
-                            modifiers,
-                            &[],
-                        )
-                    })
-                    .collect();
-                Ir::SimpleStatement {
-                    element_name: "variable",
-                    modifiers,
-                    extra_markers: kw_marker,
-                    children,
-                    range,
-                    span,
-                }
-            } else {
-                Ir::Unknown {
+            if declarators.is_empty() {
+                return Ir::Unknown {
                     kind: "lexical_declaration(no declarators)".to_string(),
                     range,
                     span,
+                };
+            }
+            // Always emit `<variable[let|const|var]>` with markers
+            // controlled here. Single-declarator inlines its
+            // type/name/value as flat children of `<variable>`;
+            // multi-declarator keeps a `<declarator>` wrapper per
+            // entry. Type comes from individual declarators in TS
+            // (not the parent statement, unlike Java).
+            let mut children: Vec<Ir> = Vec::new();
+            if declarators.len() == 1 {
+                let d = declarators[0];
+                let parts = lower_ts_declarator_parts(d, source);
+                children.extend(parts);
+            } else {
+                for d in declarators {
+                    children.push(Ir::SimpleStatement {
+                        element_name: "declarator",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: lower_ts_declarator_parts(d, source),
+                        range: range_of(d),
+                        span: span_of(d),
+                    });
                 }
+            }
+            Ir::SimpleStatement {
+                element_name: "variable",
+                modifiers,
+                extra_markers: kw_marker,
+                children,
+                range,
+                span,
             }
         }
 
@@ -340,7 +482,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let name_node = node.child_by_field_name("name");
             let type_node = node.child_by_field_name("type");
             let value_node = node.child_by_field_name("value");
-            let modifiers = lower_ts_modifiers(node, source, None);
+            // TS class fields default to `public`.
+            let modifiers = lower_ts_modifiers(node, source, Some(Access::Public));
             let value_ir = value_node.map(|v| {
                 Box::new(Ir::SimpleStatement {
                     element_name: "value",
@@ -375,8 +518,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // Block / body.
-        "statement_block" | "class_body" | "interface_body" | "enum_body"
-        | "object_type" => lower_block_like(node, source),
+        "statement_block" | "class_body" | "interface_body" | "enum_body" => lower_block_like(node, source),
+        "object_type" => simple_statement_marked(node, "type", &["object"], source),
 
         // Statements.
         "expression_statement" => {
@@ -462,7 +605,19 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let body = node
                 .child_by_field_name("body")
                 .map(|n| Box::new(lower_block_like(n, source)));
-            let updates: Vec<Ir> = update_node.map(|u| vec![lower_node(u, source)]).unwrap_or_default();
+            let updates: Vec<Ir> = update_node
+                .map(|u| {
+                    if u.kind() == "sequence_expression" {
+                        // Comma-separated updates `j--, i++` — flatten.
+                        let mut cursor = u.walk();
+                        u.named_children(&mut cursor)
+                            .map(|c| lower_node(c, source))
+                            .collect()
+                    } else {
+                        vec![lower_node(u, source)]
+                    }
+                })
+                .unwrap_or_default();
             match body {
                 Some(b) => Ir::CFor {
                     initializer: init.map(|i| Box::new(lower_node(i, source))),
@@ -481,13 +636,61 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         "for_in_statement" => {
-            // `for (k in obj)` or `for (item of items)` — TS uses
-            // `for_in_statement` for both. Distinguish by the keyword
-            // (`in` vs `of`) in source.
-            let kind_node = node.child_by_field_name("kind");
-            let kw = kind_node.map(|n| text_of(n, source)).unwrap_or_default();
-            let _ = kw;
-            simple_statement(node, "for", source)
+            // `for (k in obj)` or `for (item of items)` — TS shape:
+            // `<for><left><expression>{binding}</expression></left><right><expression>{iter}</expression></right><body>...</body></for>`.
+            let left_node = node.child_by_field_name("left");
+            let right_node = node.child_by_field_name("right");
+            let body_node = node.child_by_field_name("body");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(l) = left_node {
+                let inner = lower_node(l, source);
+                let inner_range = range_of(l);
+                let inner_span = span_of(l);
+                let expr = Ir::Expression {
+                    inner: Box::new(inner),
+                    marker: None,
+                    range: inner_range,
+                    span: inner_span,
+                };
+                children.push(Ir::SimpleStatement {
+                    element_name: "left",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![expr],
+                    range: inner_range,
+                    span: inner_span,
+                });
+            }
+            if let Some(r) = right_node {
+                let inner = lower_node(r, source);
+                let inner_range = range_of(r);
+                let inner_span = span_of(r);
+                let expr = Ir::Expression {
+                    inner: Box::new(inner),
+                    marker: None,
+                    range: inner_range,
+                    span: inner_span,
+                };
+                children.push(Ir::SimpleStatement {
+                    element_name: "right",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![expr],
+                    range: inner_range,
+                    span: inner_span,
+                });
+            }
+            if let Some(b) = body_node {
+                children.push(lower_block_like(b, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "for",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
         }
 
         "do_statement" => {
@@ -633,6 +836,25 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 },
             }
         }
+
+        // `a, b, c` — sequence/comma-expression. Flattens via Inline so
+        // the parent (e.g. for-loop update) sees the inner expressions
+        // directly.
+        "sequence_expression" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+
+        // `import.meta` / `new.target` — JS meta-properties are
+        // atomic identifiers. We render them as a single <name> leaf
+        // covering the dot-spanning text so the chain receiver shape
+        // is `<name>import.meta</name>` (matches Python's __file__
+        // precedent).
+        "meta_property" => Ir::Name { range, span },
 
         // Member / call chains.
         "member_expression" => {
@@ -872,7 +1094,158 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "tuple_type" => simple_statement_marked(node, "type", &["tuple"], source),
         "union_type" => simple_statement_marked(node, "type", &["union"], source),
         "intersection_type" => simple_statement_marked(node, "type", &["intersection"], source),
-        "type_alias_declaration" => simple_statement(node, "type_alias", source),
+        "literal_type" => simple_statement_marked(node, "type", &["literal"], source),
+        "function_type" => simple_statement_marked(node, "type", &["function"], source),
+        "readonly_type" => simple_statement_marked(node, "type", &["readonly"], source),
+        "constructor_type" => simple_statement_marked(node, "type", &["constructor"], source),
+        "type_query" => simple_statement_marked(node, "type", &["typeof"], source),
+        "index_type_query" => simple_statement_marked(node, "type", &["keyof"], source),
+        "lookup_type" => simple_statement_marked(node, "type", &["lookup"], source),
+        "conditional_type" => simple_statement_marked(node, "type", &["conditional"], source),
+        "mapped_type_clause" => simple_statement_marked(node, "type", &["mapped"], source),
+        "template_literal_type" => simple_statement_marked(node, "type", &["template"], source),
+        // `x is number` — a type-predicate wrapper. Inlines its
+        // children (`<name>x</name><type><name>number</name></type>`)
+        // into the parent so naked `<predicate>` and `asserts_annotation`
+        // both end up with flat children. The standalone case (no
+        // `asserts` keyword) is wrapped at lowering time at the call
+        // site (we wrap with simple_statement so it still emits
+        // `<predicate>`).
+        "type_predicate" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| {
+                    // The right side is the type; wrap it in `<type>`
+                    // if it's a leaf identifier so consumers see
+                    // `<type><name>...</name></type>`.
+                    if c.kind() == "type_identifier" || c.kind() == "predefined_type"
+                        || c.kind() == "identifier"
+                    {
+                        // Decide whether this is the LHS (variable name) or RHS (type).
+                        // The first identifier is the LHS, second is RHS. We rely on the
+                        // `name` field for LHS detection.
+                        if let Some(name_n) = node.child_by_field_name("name") {
+                            if name_n.id() == c.id() {
+                                return Ir::Name { range: range_of(c), span: span_of(c) };
+                            }
+                        }
+                        // Otherwise treat as type leaf — wrap in <type><name/></type>.
+                        return Ir::SimpleStatement {
+                            element_name: "type",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![Ir::Name { range: range_of(c), span: span_of(c) }],
+                            range: range_of(c),
+                            span: span_of(c),
+                        };
+                    }
+                    lower_node(c, source)
+                })
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "predicate",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
+        "asserts_annotation" | "asserts" => {
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "type_predicate" {
+                    // Inline type_predicate's children directly.
+                    let mut tc = c.walk();
+                    for inner in c.named_children(&mut tc) {
+                        if inner.kind() == "type_identifier" || inner.kind() == "predefined_type"
+                            || inner.kind() == "identifier"
+                        {
+                            if let Some(name_n) = c.child_by_field_name("name") {
+                                if name_n.id() == inner.id() {
+                                    children.push(Ir::Name { range: range_of(inner), span: span_of(inner) });
+                                    continue;
+                                }
+                            }
+                            children.push(Ir::SimpleStatement {
+                                element_name: "type",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &[],
+                                children: vec![Ir::Name { range: range_of(inner), span: span_of(inner) }],
+                                range: range_of(inner),
+                                span: span_of(inner),
+                            });
+                        } else {
+                            children.push(lower_node(inner, source));
+                        }
+                    }
+                } else {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "predicate",
+                modifiers: Modifiers::default(),
+                extra_markers: &["asserts"],
+                children,
+                range,
+                span,
+            }
+        }
+        "infer_type" => simple_statement_marked(node, "type", &["infer"], source),
+        // `type X = Y;` — alias with a name and a value type. The
+        // value gets wrapped in `<type>` if it's a leaf identifier
+        // (predefined_type / type_identifier) so XPath can address
+        // `alias/type[name='Y']`. Already-typed inner (generic_type,
+        // SimpleStatement<type>) passes through unchanged.
+        "type_alias_declaration" => {
+            let name_node = node.child_by_field_name("name");
+            let value_node = node.child_by_field_name("value");
+            let type_params_node = node.child_by_field_name("type_parameters");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            if let Some(tp) = type_params_node {
+                let mut tc = tp.walk();
+                for c in tp.named_children(&mut tc) {
+                    children.push(lower_node(c, source));
+                }
+            }
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                let already_typed = matches!(
+                    &inner,
+                    Ir::GenericType { .. }
+                        | Ir::SimpleStatement { element_name: "type", .. }
+                        | Ir::SimpleStatement { element_name: "predicate", .. }
+                );
+                if already_typed {
+                    children.push(inner);
+                } else {
+                    let r = inner.range();
+                    let s = inner.span();
+                    children.push(Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: r,
+                        span: s,
+                    });
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "alias",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
         "enum_declaration" => simple_statement(node, "enum", source),
 
         // Comments.
@@ -971,6 +1344,38 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
 
+        // Array/object destructuring patterns. Lower to `<pattern>`
+        // with an `<array/>`/`<object/>` shape marker. Children are
+        // the inner names / pair patterns.
+        "array_pattern" => simple_statement_marked(node, "pattern", &["array"], source),
+        "object_pattern" => simple_statement_marked(node, "pattern", &["object"], source),
+        // Shorthand `{ x }` in an object pattern — just a name.
+        "shorthand_property_identifier_pattern" => Ir::Name { range, span },
+        // `{ x: a }` in an object pattern — `<pair>`.
+        "pair_pattern" => simple_statement(node, "pair", source),
+
+        // `...rest` pattern in a parameter list. Tree-sitter wraps the
+        // identifier in a `rest_pattern`. We lower to `<rest><name>rest</name></rest>`
+        // so the enclosing `<parameter>` element ends up with the shape
+        // `<parameter><required/><rest/><rest><name>rest</name></rest></parameter>`
+        // (the outer parameter is responsible for the `<rest/>` marker).
+        "rest_pattern" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            let children: Vec<Ir> = match inner {
+                Some(i) => vec![lower_node(i, source)],
+                None => Vec::new(),
+            };
+            Ir::SimpleStatement {
+                element_name: "rest",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
+
         // Switch.
         "switch_statement" => simple_statement(node, "switch", source),
         "switch_case" | "switch_default" => simple_statement(node, "arm", source),
@@ -1061,6 +1466,49 @@ fn lower_block_like(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
+/// Lower a TS `variable_declarator`'s children into a flat list:
+/// `<type>` (when annotated), `<name>`, and `<value>` (when
+/// initialized). Used for both single- and multi-declarator
+/// statements.
+fn lower_ts_declarator_parts(d: TsNode<'_>, source: &str) -> Vec<Ir> {
+    let mut parts: Vec<Ir> = Vec::new();
+    if let Some(t) = d.child_by_field_name("type") {
+        let mut tc = t.walk();
+        let inner = t.named_children(&mut tc).next().unwrap_or(t);
+        let inner_ir = lower_node(inner, source);
+        let already_typed = matches!(
+            inner_ir,
+            Ir::GenericType { .. } | Ir::SimpleStatement { element_name: "type", .. }
+        );
+        if already_typed {
+            parts.push(inner_ir);
+        } else {
+            parts.push(Ir::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner_ir],
+                range: range_of(t),
+                span: span_of(t),
+            });
+        }
+    }
+    if let Some(n) = d.child_by_field_name("name") {
+        parts.push(lower_node(n, source));
+    }
+    if let Some(v) = d.child_by_field_name("value") {
+        parts.push(Ir::SimpleStatement {
+            element_name: "value",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![lower_node(v, source)],
+            range: range_of(v),
+            span: span_of(v),
+        });
+    }
+    parts
+}
+
 fn lower_ts_variable_declarator(
     declarator: TsNode<'_>,
     source: &str,
@@ -1103,7 +1551,13 @@ fn lower_ts_variable_declarator(
             span: span_of(v),
         })
     });
-    let mut variable = Ir::Variable {
+    // For now ignore extra_markers (let/const/var). The
+    // imperative pipeline emits these as `<variable[const]>` etc.
+    // — we'll add this as Ir::Variable.extra_markers later if
+    // tests require it; for now, omit and let the post-pass
+    // populate `list=` if needed.
+    let _ = extra_markers;
+    Ir::Variable {
         element_name,
         modifiers,
         decorators: Vec::new(),
@@ -1112,30 +1566,7 @@ fn lower_ts_variable_declarator(
         value: value_ir,
         range,
         span,
-    };
-    // Apply `extra_markers` (let/const/var) by wrapping in a
-    // SimpleStatement that prepends the markers — since Ir::Variable
-    // doesn't have an extra_markers field. The resulting shape is
-    // `<variable[const]>...</variable>`.
-    if !extra_markers.is_empty() {
-        let mut new_variable = std::mem::replace(
-            &mut variable,
-            Ir::Unknown { kind: "swap".to_string(), range, span },
-        );
-        // Re-emit with markers via a thin SimpleStatement wrapper —
-        // but we want the markers ON the variable element. Easiest:
-        // mutate via inserting markers into modifiers' marker_names
-        // — but those are typed flags. For now, wrap and let the
-        // post-pass handle list-tagging.
-        let _ = new_variable;
-        // Use SimpleStatement to encode the kw marker; renderer
-        // emits `<variable[let]>` etc.
-        // Recreate the Ir::Variable values by destructuring.
-        // (The above swap returned the original variable; rebuild
-        // using a fresh new_variable construction is cleaner.)
     }
-    let _ = extra_markers;
-    variable
 }
 
 fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
@@ -1193,6 +1624,9 @@ fn lower_ts_modifiers(
                         "public" => m.access = Some(Access::Public),
                         "private" => m.access = Some(Access::Private),
                         "protected" => m.access = Some(Access::Protected),
+                        "get" => m.getter = true,
+                        "set" => m.setter = true,
+                        "*" => m.generator = true,
                         _ => {}
                     }
                 }
@@ -1328,6 +1762,9 @@ fn op_marker(op: &str) -> Option<&'static str> {
         "??" => "null_coalesce",
         "instanceof" => "instanceof",
         "in" => "in",
+        "typeof" => "typeof",
+        "void" => "void",
+        "delete" => "delete",
         _ => return None,
     })
 }

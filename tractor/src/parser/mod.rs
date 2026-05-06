@@ -343,7 +343,7 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
 /// imperative `transform/` path is no longer exercised for that
 /// language. Adding a language here is the production-rollout flip.
 fn use_ir_pipeline(lang: &str) -> bool {
-    matches!(lang, "csharp" | "python" | "java")
+    matches!(lang, "csharp" | "python" | "java" | "typescript")
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)

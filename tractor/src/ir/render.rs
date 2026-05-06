@@ -1126,6 +1126,7 @@ pub fn render_to_xot(
                 type_ann.as_ref(),
                 Ir::GenericType { .. }
                     | Ir::SimpleStatement { element_name: "type", .. }
+                    | Ir::SimpleStatement { element_name: "predicate", .. }
             );
             if already_typed {
                 render_to_xot(xot, node, type_ann, source)?;
