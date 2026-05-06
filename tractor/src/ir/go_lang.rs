@@ -43,7 +43,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         "int_literal" => Ir::Int { range, span },
         "float_literal" | "imaginary_literal" => Ir::Float { range, span },
-        "interpreted_string_literal" | "raw_string_literal" => Ir::String { range, span },
+        "interpreted_string_literal" => Ir::String { range, span },
+        "raw_string_literal" => simple_statement_marked(node, "string", &["raw"], source),
         "rune_literal" => simple_statement(node, "char", source),
         "true" => Ir::True { range, span },
         "false" => Ir::False { range, span },
@@ -317,7 +318,34 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 },
             }
         }
-        "unary_expression" => simple_statement(node, "unary", source),
+        "unary_expression" => {
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            let mut cursor = node.walk();
+            let operand = node.named_children(&mut cursor).next();
+            let marker = match op_text.as_str() {
+                "+" => "plus",
+                "-" => "minus",
+                "*" => "dereference",
+                "&" => "address",
+                "!" => "not",
+                "^" => "bitwise_not",
+                "<-" => "receive",
+                _ => "",
+            };
+            match operand {
+                Some(o) if !marker.is_empty() => Ir::Unary {
+                    op_text,
+                    op_marker: marker,
+                    op_range: op_byte_range,
+                    operand: Box::new(lower_node(o, source)),
+                    extra_markers: &[],
+                    range, span,
+                },
+                _ => simple_statement(node, "unary", source),
+            }
+        }
         "assignment_statement" => {
             // `lhs = rhs` / `lhs += rhs` — emit `<assign>` with `<op>`
             // marker and `<left><expression>` / `<right><expression>`
@@ -359,8 +387,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 },
             }
         }
-        "inc_statement" => simple_statement(node, "unary", source),
-        "dec_statement" => simple_statement(node, "unary", source),
+        "inc_statement" => go_inc_dec(node, "increment", "++", source),
+        "dec_statement" => go_inc_dec(node, "decrement", "--", source),
         // Chain inversion for Go: selector_expression (`obj.field`) +
         // call_expression — fold into Ir::Access mirroring TS/Rust.
         "selector_expression" => {
@@ -441,7 +469,121 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "type_conversion_expression" => simple_statement_marked(node, "call", &["type"], source),
         "type_instantiation_expression" => simple_statement_marked(node, "type", &["generic"], source),
         "index_expression" => simple_statement(node, "index", source),
-        "slice_expression" => simple_statement_marked(node, "index", &["slice"], source),
+        "slice_expression" => {
+            // `s[i:j]` / `s[i:j:k]` — chain-fold into Ir::Access only
+            // when bounds exist. Full-slice `s[:]` stays un-inverted
+            // (renders as `<index[slice]><object>s</object></index>`)
+            // matching the imperative pipeline shape.
+            let operand_node = node.child_by_field_name("operand");
+            let start_node = node.child_by_field_name("start");
+            let end_node = node.child_by_field_name("end");
+            let capacity_node = node.child_by_field_name("capacity");
+
+            let no_bounds = start_node.is_none() && end_node.is_none() && capacity_node.is_none();
+            if no_bounds {
+                let mut children: Vec<Ir> = Vec::new();
+                if let Some(o) = operand_node {
+                    let inner = lower_node(o, source);
+                    children.push(Ir::SimpleStatement {
+                        element_name: "object",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(o),
+                        span: span_of(o),
+                    });
+                }
+                return Ir::SimpleStatement {
+                    element_name: "index",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &["slice"],
+                    children,
+                    range, span,
+                };
+            }
+
+            let mut slice_children: Vec<Ir> = Vec::new();
+            if let Some(s) = start_node {
+                let inner = lower_node(s, source);
+                slice_children.push(Ir::SimpleStatement {
+                    element_name: "from",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(s),
+                    span: span_of(s),
+                });
+            }
+            if let Some(e) = end_node {
+                let inner = lower_node(e, source);
+                slice_children.push(Ir::SimpleStatement {
+                    element_name: "to",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(e),
+                    span: span_of(e),
+                });
+            }
+            if let Some(c) = capacity_node {
+                let inner = lower_node(c, source);
+                slice_children.push(Ir::SimpleStatement {
+                    element_name: "capacity",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+            }
+            // Wrap into a single Inline holding slice marker + slots so the
+            // renderer treats them as a single index argument (no <argument>
+            // wrap).
+            let slice_marker_then_slots = vec![
+                Ir::Inline {
+                    children: {
+                        let mut v: Vec<Ir> = Vec::new();
+                        // Empty <slice/> marker first.
+                        v.push(Ir::SimpleStatement {
+                            element_name: "slice",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: Vec::new(),
+                            range: ByteRange::empty_at(range.start),
+                            span,
+                        });
+                        v.extend(slice_children);
+                        v
+                    },
+                    list_name: None,
+                    range,
+                    span,
+                },
+            ];
+            match operand_node {
+                Some(obj) => {
+                    let object_ir = lower_node(obj, source);
+                    let segment_range = ByteRange::new(object_ir.range().end, range.end);
+                    let segment = AccessSegment::Index {
+                        indices: slice_marker_then_slots,
+                        range: segment_range,
+                        span,
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range, span,
+                        },
+                    }
+                }
+                None => simple_statement_marked(node, "index", &["slice"], source),
+            }
+        }
         "type_assertion_expression" => simple_statement(node, "assert", source),
         "composite_literal" => simple_statement(node, "literal", source),
         "literal_value" => Ir::Inline {
@@ -585,6 +727,44 @@ fn go_wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
             range, span,
         },
         _ => inner,
+    }
+}
+
+/// Lower a Go inc/dec_statement (`i++` / `i--`) to Ir::Unary with the
+/// appropriate op marker.
+fn go_inc_dec(
+    node: TsNode<'_>,
+    op_marker: &'static str,
+    op_text_str: &str,
+    source: &str,
+) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let operand = node.named_children(&mut cursor).next();
+    // Locate the unnamed `++`/`--` token.
+    let mut cursor2 = node.walk();
+    let mut op_byte_range = ByteRange::empty_at(range.end);
+    for c in node.children(&mut cursor2) {
+        if !c.is_named() && text_of(c, source) == op_text_str {
+            op_byte_range = range_of(c);
+            break;
+        }
+    }
+    match operand {
+        Some(o) => Ir::Unary {
+            op_text: op_text_str.to_string(),
+            op_marker,
+            op_range: op_byte_range,
+            operand: Box::new(lower_node(o, source)),
+            extra_markers: &["postfix"],
+            range,
+            span,
+        },
+        None => Ir::Unknown {
+            kind: format!("{} (no operand)", node.kind()),
+            range, span,
+        },
     }
 }
 
