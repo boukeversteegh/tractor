@@ -192,13 +192,6 @@ fn java_import_and_package() {
 /// a time; this test pins them all uniformly.
 #[test]
 fn cross_language_import_path_flat_segments() {
-    let canonical = r#"
-        //import/path
-            [name='aaa']
-            [name='bbb']
-            [name='ccc']
-    "#;
-
     for (lang, src) in &[
         ("csharp", "using aaa.bbb.ccc;\n"),
         ("java",   "import aaa.bbb.ccc;\n"),
@@ -207,7 +200,12 @@ fn cross_language_import_path_flat_segments() {
         claim(
             &format!("{lang}: dotted import flattens to <import>/<path>/<name>+"),
             &mut parse_src(lang, src),
-            &multi_xpath(canonical),
+            &multi_xpath(r#"
+                //import/path
+                    [name='aaa']
+                    [name='bbb']
+                    [name='ccc']
+            "#),
             1,
         );
     }

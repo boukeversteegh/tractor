@@ -153,8 +153,6 @@ fn rust_field_unification() {
 /// into shape with both Ruby and PHP-internal conventions.
 #[test]
 fn cross_language_static_member_access_marker() {
-    let canonical = "//member[static]";
-
     for (lang, src) in &[
         ("php", "<?php $x = Foo::BAR;"),
         ("ruby", "x = Foo::Bar\n"),
@@ -162,7 +160,7 @@ fn cross_language_static_member_access_marker() {
         claim(
             &format!("{lang}: `Foo::X` scope-resolution renders as <member[static]>"),
             &mut parse_src(lang, src),
-            canonical,
+            "//member[static]",
             1,
         );
     }

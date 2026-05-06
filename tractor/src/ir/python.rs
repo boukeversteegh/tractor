@@ -1007,7 +1007,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `block` lowering. Direct `pass_statement` here renders as a
         // bare `<pass/>` marker — but actually the existing pipeline
         // uses `<body[pass]>` for "body is just pass". For mid-block
-        // pass we'd need its own handling — TODO when test surfaces it.
+        // pass we'd need its own handling — to be added when a test surfaces it.
         // For now, treat as Unknown (won't fire because pass-only
         // bodies are caught in lower_block).
         "pass_statement" => Ir::Unknown {

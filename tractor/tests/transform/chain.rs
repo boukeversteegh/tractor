@@ -314,8 +314,6 @@ fn cross_language_uniformity() {
 /// pins the structural unification across 7 languages.
 #[test]
 fn cross_language_index_access_chain_inverts() {
-    let canonical = "//object[access]/index";
-
     for (lang, src) in &[
         ("typescript", "let _ = arr[0];"),
         ("python",     "_ = arr[0]\n"),
@@ -328,7 +326,7 @@ fn cross_language_index_access_chain_inverts() {
         claim(
             &format!("{lang}: `arr[0]` chain-inverts to <object[access]>/<receiver/>/<index>/<key>"),
             &mut parse_src(lang, src),
-            canonical,
+            "//object[access]/index",
             1,
         );
     }

@@ -122,13 +122,6 @@ fn php_binary() {
 /// where `x + y` is the canonical form), or `<variable>` (PHP).
 #[test]
 fn cross_language_binary_plus_extracts_op_marker() {
-    let canonical = r#"
-        //binary
-            [left/expression]
-            [op[plus]]
-            [right/expression]
-    "#;
-
     for (lang, src) in &[
         ("typescript", "let z = 1 + 2;"),
         ("rust",       "fn f() { let z = 1 + 2; }"),
@@ -141,7 +134,12 @@ fn cross_language_binary_plus_extracts_op_marker() {
         claim(
             &format!("{lang}: binary `+` extracts <op[plus]> with expression-wrapped operands"),
             &mut parse_src(lang, src),
-            &multi_xpath(canonical),
+            &multi_xpath(r#"
+                //binary
+                    [left/expression]
+                    [op[plus]]
+                    [right/expression]
+            "#),
             1,
         );
     }
@@ -165,8 +163,6 @@ fn cross_language_binary_plus_extracts_op_marker() {
 /// `python/transformations.rs::assignment`.
 #[test]
 fn cross_language_plain_assign_extracts_op_equals() {
-    let canonical = "//assign/op='='";
-
     for (lang, src) in &[
         ("typescript", "let x = 5; x = 10;"),
         ("rust",       "fn f() { let mut x = 5; x = 10; }"),
@@ -180,7 +176,7 @@ fn cross_language_plain_assign_extracts_op_equals() {
         claim(
             &format!("{lang}: plain `=` assignment carries <op>=</op> child (Principle #5)"),
             &mut parse_src(lang, src),
-            canonical,
+            "//assign/op='='",
             // TS source has 1 plain assign (`x = 10` only — `let x = 5;`
             // is a variable declaration, not an assign). Java/C#/Go
             // similar — TS, Java, C# have just the second statement;
@@ -204,8 +200,6 @@ fn cross_language_plain_assign_extracts_op_equals() {
 /// somewhere within the `<unary>`.
 #[test]
 fn cross_language_unary_minus_extracts_op_marker() {
-    let canonical = "//unary[op[minus]]//name='x'";
-
     for (lang, src) in &[
         ("typescript", "let y = -x;"),
         ("rust",       "fn f() { let _y = -x; }"),
@@ -219,7 +213,7 @@ fn cross_language_unary_minus_extracts_op_marker() {
         claim(
             &format!("{lang}: unary `-x` extracts <op[minus]> with <name>='x' operand somewhere inside"),
             &mut parse_src(lang, src),
-            canonical,
+            "//unary[op[minus]]//name='x'",
             1,
         );
     }

@@ -2620,7 +2620,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
             // PARENT chain. For this slice we wire it through a
             // future `optional` field on Index when we add it. For
             // now, mark Member-style optional only.
-            // TODO: extend AccessSegment::Index with an optional flag.
+            // Future work: extend AccessSegment::Index with an optional flag.
             vec![AccessSegment::Index { indices, range, span }]
         }
         // Tree-sitter sometimes nests further accesses inside the

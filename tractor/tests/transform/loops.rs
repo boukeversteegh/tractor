@@ -546,8 +546,6 @@ fn cross_language_loop_body_is_structural_slot() {
 /// test rather than the maintainer noticing per-language drift.
 #[test]
 fn cross_language_while_condition_has_expression_host() {
-    let canonical = "//while/condition/expression";
-
     for (lang, src) in &[
         ("typescript", "while (running) { tick(); }"),
         ("java",       "class X { void f(boolean running) { while (running) { tick(); } } }"),
@@ -560,15 +558,14 @@ fn cross_language_while_condition_has_expression_host() {
     ] {
         // Note: Go uses `for` with a single condition for while-loops;
         // the canonical xpath becomes `//for/condition/expression`.
-        let xpath = if *lang == "go" {
-            "//for/condition/expression"
-        } else {
-            canonical
-        };
         claim(
             &format!("{lang}: while loop condition wraps in <expression> host (Principle #15)"),
             &mut parse_src(lang, src),
-            xpath,
+            if *lang == "go" {
+                "//for/condition/expression"
+            } else {
+                "//while/condition/expression"
+            },
             1,
         );
     }

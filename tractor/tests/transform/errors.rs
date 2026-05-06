@@ -31,8 +31,6 @@ use crate::support::semantic::*;
 /// "names differ slightly is fine".
 #[test]
 fn cross_language_try_catch_finally_slot_contract() {
-    let canonical = "//try[body][catch][finally]";
-
     for (lang, src) in &[
         ("java", r#"
             class S {
@@ -67,7 +65,7 @@ fn cross_language_try_catch_finally_slot_contract() {
         claim(
             &format!("{lang}: try/catch/finally renders as <try> with body/catch/finally slot children"),
             &mut parse_src(lang, src),
-            canonical,
+            "//try[body][catch][finally]",
             1,
         );
     }
