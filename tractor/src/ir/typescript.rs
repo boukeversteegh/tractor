@@ -1677,8 +1677,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // the inner names / pair patterns.
         "array_pattern" => simple_statement_marked(node, "pattern", &["array"], source),
         "object_pattern" => simple_statement_marked(node, "pattern", &["object"], source),
-        // Shorthand `{ x }` in an object pattern — just a name.
-        "shorthand_property_identifier_pattern" => Ir::Name { range, span },
+        // `shorthand_property_identifier_pattern` is handled earlier
+        // in this match (atom arm) — Ir::Name. Comment kept for
+        // navigation.
         // `{ x: a }` in an object pattern — `<pair>`.
         "pair_pattern" => simple_statement(node, "pair", source),
 
@@ -1835,66 +1836,6 @@ fn lower_ts_declarator_parts(d: TsNode<'_>, source: &str) -> Vec<Ir> {
         });
     }
     parts
-}
-
-fn lower_ts_variable_declarator(
-    declarator: TsNode<'_>,
-    source: &str,
-    range: ByteRange,
-    span: Span,
-    element_name: &'static str,
-    modifiers: Modifiers,
-    extra_markers: &'static [&'static str],
-) -> Ir {
-    let name_node = declarator.child_by_field_name("name");
-    let type_node = declarator.child_by_field_name("type");
-    let value_node = declarator.child_by_field_name("value");
-    let Some(n) = name_node else {
-        let mut cursor = declarator.walk();
-        let children: Vec<Ir> = declarator
-            .named_children(&mut cursor)
-            .map(|c| lower_node(c, source))
-            .collect();
-        return Ir::Inline {
-            children,
-            list_name: None,
-            range,
-            span,
-        };
-    };
-    let name_ir = lower_node(n, source);
-    let type_ir = type_node.map(|t| {
-        let mut tc = t.walk();
-        let inner = t.named_children(&mut tc).next().unwrap_or(t);
-        Box::new(lower_node(inner, source))
-    });
-    let value_ir = value_node.map(|v| {
-        let inner = lower_node(v, source);
-        Box::new(Ir::SimpleStatement {
-            element_name: "value",
-            modifiers: Modifiers::default(),
-            extra_markers: &[],
-            children: vec![inner],
-            range: range_of(v),
-            span: span_of(v),
-        })
-    });
-    // For now ignore extra_markers (let/const/var). The
-    // imperative pipeline emits these as `<variable[const]>` etc.
-    // — we'll add this as Ir::Variable.extra_markers later if
-    // tests require it; for now, omit and let the post-pass
-    // populate `list=` if needed.
-    let _ = extra_markers;
-    Ir::Variable {
-        element_name,
-        modifiers,
-        decorators: Vec::new(),
-        type_ann: type_ir,
-        name: Box::new(name_ir),
-        value: value_ir,
-        range,
-        span,
-    }
 }
 
 fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {

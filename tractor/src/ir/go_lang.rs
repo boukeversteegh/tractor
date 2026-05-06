@@ -1434,42 +1434,6 @@ fn go_if_statement(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-/// Lower a declaration whose name child uses field name "name", and
-/// add `<exported/>`/`<unexported/>` marker by case of first
-/// character. `_` (blank identifier) emits no marker.
-fn go_decl_with_export_first_name(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
-    // Find the first identifier-shaped named child (skips wrappers).
-    let mut cursor = node.walk();
-    let name_text = node
-        .named_children(&mut cursor)
-        .find(|c| matches!(
-            c.kind(),
-            "identifier" | "field_identifier" | "type_identifier" | "package_identifier"
-        ))
-        .map(|c| text_of(c, source))
-        .unwrap_or_default();
-    let extra_markers: &'static [&'static str] = if name_text == "_" || name_text.is_empty() {
-        &[]
-    } else if is_exported(&name_text) {
-        &["exported"]
-    } else {
-        &["unexported"]
-    };
-    let mut cursor2 = node.walk();
-    let children: Vec<Ir> = node
-        .named_children(&mut cursor2)
-        .map(|c| lower_node(c, source))
-        .collect();
-    Ir::SimpleStatement {
-        element_name,
-        modifiers: Modifiers::default(),
-        extra_markers,
-        children,
-        range: range_of(node),
-        span: span_of(node),
-    }
-}
-
 /// Lower a Go function/method declaration with `<exported/>`/`<unexported/>`
 /// marker. The body block field renames to `<body>` with inner
 /// statements lowered directly.

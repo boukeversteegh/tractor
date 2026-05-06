@@ -1193,7 +1193,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "switch_label" => simple_statement(node, "case", source),
 
         // Scoped identifier `java.util.List` — flatten to a path of names.
-        "scoped_identifier" | "scoped_type_identifier" => {
+        // (`scoped_type_identifier` is also handled by the atom arm
+        // above as `Ir::Name` for the simple cases; this arm is the
+        // path-shaped catch-all for `scoped_identifier` proper.)
+        "scoped_identifier" => {
             let mut cursor = node.walk();
             let segments: Vec<Ir> = node
                 .named_children(&mut cursor)

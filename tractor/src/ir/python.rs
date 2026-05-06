@@ -2024,7 +2024,7 @@ fn augmented_op_markers(op: &str) -> Vec<&'static str> {
 /// `Ir::Name` per segment. Single-segment dotted_names (`os`) become a
 /// `Path` with one segment, matching the existing pipeline shape
 /// (always wrap module paths in `<path>`).
-fn lower_dotted_as_path(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_dotted_as_path(node: TsNode<'_>, _source: &str) -> Ir {
     let mut cursor = node.walk();
     let segments: Vec<Ir> = node
         .named_children(&mut cursor)
@@ -2042,7 +2042,7 @@ fn lower_dotted_as_path(node: TsNode<'_>, source: &str) -> Ir {
 /// dotted_name in the CST but renders as a bare `<name>` in the
 /// existing pipeline). Falls back to `Unknown` if the dotted_name has
 /// multiple segments (shouldn't happen for `from` imports).
-fn lower_dotted_first_name(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_dotted_first_name(node: TsNode<'_>, _source: &str) -> Ir {
     let mut cursor = node.walk();
     let mut iter = node.named_children(&mut cursor);
     if let Some(first) = iter.next() {
