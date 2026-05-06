@@ -101,7 +101,12 @@ impl TractorNode {
             | Self::Inclusive | Self::Exclusive
             | Self::Group | Self::Wildcard | Self::Reexport                            => (true, false, Default),
             Self::Private | Self::Mut | Self::Async
-            | Self::Await | Self::Extern | Self::Gen                                   => (true, false, Keyword),
+            | Self::Extern | Self::Gen                                                 => (true, false, Keyword),
+            // `Await` dual-use: marker `<await/>` on `<expression[await]>`
+            // host (imperative iter), AND structural `<await>operand</await>`
+            // wrapper from the IR pipeline's `await_expression` lowering
+            // when no surrounding expression host is present.
+            Self::Await                                                                => (true, true, Keyword),
             // `Crate` and `Super` are dual-use:
             //   - empty `<crate/>` / `<super/>` marker for `pub(crate)`
             //     / `pub(super)` visibility modifiers.
@@ -113,7 +118,11 @@ impl TractorNode {
             // shape-contract `marker-stays-empty` rule (iter 294)
             // when run on tractor's own source code via source_lint.
             Self::Crate | Self::Super                                                  => (true, true, Keyword),
-            Self::Try                                                                  => (true, false, Operator),
+            // `Try` dual-use: marker `<try/>` on `<expression[try]>`
+            // host (most cases), AND structural wrapper for nested
+            // try expressions where the parent isn't an
+            // expression_statement (e.g., `foo()? + bar()?`).
+            Self::Try                                                                  => (true, true, Operator),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Struct | Self::Trait | Self::Const | Self::Macro    => (true, true, Keyword),

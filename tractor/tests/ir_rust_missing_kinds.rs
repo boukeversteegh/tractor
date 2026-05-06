@@ -50,4 +50,26 @@ fn rust_missing_kinds() {
     for (k, n) in &untyped {
         eprintln!("  {n:>3}  {k}");
     }
+
+    let parsed = tractor::parser::parse_string_to_xot(
+        &source,
+        "rust",
+        "<x>".to_string(),
+        None,
+    )
+    .expect("parse");
+    let root = if parsed.xot.is_document(parsed.root) {
+        parsed.xot.document_element(parsed.root).expect("doc")
+    } else {
+        parsed.root
+    };
+    let final_xml = parsed.xot.to_string(root).unwrap();
+    let mut counts = std::collections::BTreeMap::<String, usize>::new();
+    for token in final_xml.split("<unknown kind=\"").skip(1) {
+        if let Some(end) = token.find('"') {
+            *counts.entry(token[..end].to_string()).or_insert(0) += 1;
+        }
+    }
+    eprintln!("\nUnknowns in FINAL pipeline output:");
+    for (k, n) in &counts { eprintln!("  {n:>3}  {k}"); }
 }

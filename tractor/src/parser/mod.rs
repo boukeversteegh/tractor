@@ -343,7 +343,7 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
 /// imperative `transform/` path is no longer exercised for that
 /// language. Adding a language here is the production-rollout flip.
 fn use_ir_pipeline(lang: &str) -> bool {
-    matches!(lang, "csharp" | "python" | "java" | "typescript")
+    matches!(lang, "csharp" | "python" | "java" | "typescript" | "rust")
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)
@@ -357,12 +357,16 @@ pub fn parse_string_to_xot_with_options(
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
-    if use_ir_pipeline(lang) {
-        return parse_with_ir_pipeline(source, lang, file_path);
-    }
-
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
+
+    // Honour explicit Raw tree-mode requests by bypassing the IR
+    // pipeline. Raw mode emits raw tree-sitter kind names (e.g.
+    // `let_declaration`) — the IR pipeline replaces those with the
+    // semantic vocabulary (`<let>`).
+    if use_ir_pipeline(lang) && resolved != TreeMode::Raw {
+        return parse_with_ir_pipeline(source, lang, file_path);
+    }
 
     let language = get_tree_sitter_language(lang)?;
 
@@ -655,12 +659,12 @@ pub fn parse_string_to_xee_with_options(
 ) -> Result<XeeParseResult, ParseError> {
     use std::time::Instant;
 
-    if use_ir_pipeline(lang) {
-        return parse_with_ir_pipeline_to_xee(source, lang, file_path);
-    }
-
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
+
+    if use_ir_pipeline(lang) && resolved != TreeMode::Raw {
+        return parse_with_ir_pipeline_to_xee(source, lang, file_path);
+    }
     let language = get_tree_sitter_language(lang)?;
 
     let t0 = Instant::now();

@@ -154,8 +154,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         | "shorthand_field_identifier" | "primitive_type" | "self"
         | "super" | "super_" | "metavariable" | "label" => Ir::Name { range, span },
 
-        // `'a` lifetime — leaf name (text includes the apostrophe).
-        "lifetime" => simple_statement(node, "lifetime", source),
+        // `_` wildcard pattern (unnamed token, but reachable via the
+        // pattern field of let_declaration / match_arm / etc.).
+        "_" => simple_statement_marked(node, "pattern", &["wildcard"], source),
+
+        // `'a` lifetime — emit `<lifetime>` with `<name>` leaf inside.
+        // The inner identifier text is the lifetime name without the
+        // apostrophe.
+        "lifetime" => {
+            let mut cursor = node.walk();
+            let identifier = node.named_children(&mut cursor).find(|c| c.kind() == "identifier");
+            let children = match identifier {
+                Some(id) => vec![Ir::Name { range: range_of(id), span: span_of(id) }],
+                None => Vec::new(),
+            };
+            Ir::SimpleStatement {
+                element_name: "lifetime",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
 
         // Path-form identifiers (`std::collections::HashMap`).
         "scoped_identifier" | "scoped_type_identifier" => {
@@ -372,7 +392,69 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "const_item" => rust_decl(node, "const", source),
         "static_item" => rust_decl(node, "static", source),
         "function_item" | "function_signature_item" => rust_function(node, source),
-        "mod_item" => rust_decl(node, "mod", source),
+        "mod_item" => {
+            // `mod outer { ... }` — wrap declaration_list body in `<body>`.
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut is_pub = false;
+            let mut pub_qual: Option<Ir> = None;
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "visibility_modifier" {
+                    if let RustVis::PubQualified(q) = classify_rust_visibility(node, source) {
+                        pub_qual = Some(q);
+                        break;
+                    }
+                    if text_of(c, source).starts_with("pub") { is_pub = true; }
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(q) = &pub_qual {
+                children.push(Ir::SimpleStatement {
+                    element_name: "pub",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![q.clone()],
+                    range, span,
+                });
+            }
+            let mut cursor2 = node.walk();
+            for c in node.named_children(&mut cursor2) {
+                if c.kind() == "visibility_modifier" {
+                    continue;
+                }
+                if let Some(b) = body_node {
+                    if c.id() == b.id() {
+                        let mut bc = c.walk();
+                        let body_children: Vec<Ir> = c
+                            .named_children(&mut bc)
+                            .map(|s| lower_node(s, source))
+                            .collect();
+                        children.push(Ir::SimpleStatement {
+                            element_name: "body",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: merge_rust_line_comments(body_children, source),
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            let extra_markers: &'static [&'static str] = match (&pub_qual, is_pub) {
+                (Some(_), _) => &[],
+                (None, true) => &["pub"],
+                (None, false) => &["private"],
+            };
+            Ir::SimpleStatement {
+                element_name: "mod",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
         "macro_definition" => simple_statement_marked(node, "macro", &["definition"], source),
         "macro_rule" => simple_statement(node, "arm", source),
         "macro_invocation" => simple_statement(node, "macro", source),
@@ -541,7 +623,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Generics ------------------------------------------------
         "type_parameter" => simple_statement(node, "generic", source),
-        "lifetime_parameter" => simple_statement(node, "lifetime", source),
+        "lifetime_parameter" => {
+            // Tree-sitter wraps the lifetime in a parameter node; we
+            // unwrap to a single `<lifetime>` element instead of
+            // producing `<lifetime><lifetime>...</lifetime></lifetime>`.
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).find(|c| c.kind() == "lifetime");
+            match inner {
+                Some(l) => lower_node(l, source),
+                None => Ir::SimpleStatement {
+                    element_name: "lifetime",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: Vec::new(),
+                    range, span,
+                },
+            }
+        }
         "type_parameters" | "type_arguments" => Ir::Inline {
             children: lower_children(node, source),
             list_name: Some("arguments"),
@@ -678,7 +776,52 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Statements ----------------------------------------------
-        "let_declaration" => simple_statement(node, "variable", source),
+        "let_declaration" => {
+            // `let pat: T = value;` — emit
+            // `<let>{mut?}<name>pat</name>{type}?<value><expression>value</expression></value></let>`.
+            let pattern_node = node.child_by_field_name("pattern");
+            let type_node = node.child_by_field_name("type");
+            let value_node = node.child_by_field_name("value");
+            let mut cursor = node.walk();
+            let mut has_mut = false;
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "mutable_specifier" { has_mut = true; }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(p) = pattern_node {
+                children.push(lower_node(p, source));
+            }
+            if let Some(t) = type_node {
+                let inner = lower_node(t, source);
+                children.push(wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
+            }
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(v),
+                        span: span_of(v),
+                    }],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            let extra_markers: &'static [&'static str] = if has_mut { &["mut"] } else { &[] };
+            Ir::SimpleStatement {
+                element_name: "let",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
         "expression_statement" => {
             // Control-flow and declaration expressions surface as direct
             // siblings of the parent <body>/<block> (no <expression>
@@ -745,10 +888,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
         "block" => simple_statement(node, "block", source),
-        "async_block" => simple_statement_marked(node, "block", &["async"], source),
-        "const_block" => simple_statement_marked(node, "block", &["const"], source),
-        "try_block" => simple_statement_marked(node, "block", &["try"], source),
-        "gen_block" => simple_statement_marked(node, "block", &["gen"], source),
+        // `async { ... }` / `const { ... }` / `try { ... }` / `gen { ... }`
+        // wrap an inner block — inline the inner block's children
+        // directly under the marker-tagged outer block to avoid
+        // `<block[async]><block>...</block></block>` nesting.
+        "async_block" => rust_marked_block(node, "block", &["async"], source),
+        "const_block" => rust_marked_block(node, "block", &["const"], source),
+        "try_block" => rust_marked_block(node, "block", &["try"], source),
+        "gen_block" => rust_marked_block(node, "block", &["gen"], source),
         "unsafe_block" => simple_statement(node, "unsafe", source),
         "declaration_list" => Ir::Inline {
             children: lower_children(node, source),
@@ -1142,7 +1289,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "unary_expression" => simple_statement(node, "unary", source),
         "assignment_expression" => simple_statement(node, "assign", source),
         "compound_assignment_expr" => simple_statement(node, "assign", source),
-        "type_cast_expression" => simple_statement(node, "cast", source),
+        "type_cast_expression" => {
+            // `expr as Type` — emit
+            // `<cast><value><expression>expr</expression></value><type>Type</type></cast>`.
+            // tree-sitter rust uses fields `value` and `type`.
+            let value_node = node.child_by_field_name("value");
+            let type_node = node.child_by_field_name("type");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(v),
+                        span: span_of(v),
+                    }],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            if let Some(t) = type_node {
+                let inner = lower_node(t, source);
+                children.push(wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
+            }
+            Ir::SimpleStatement {
+                element_name: "cast",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "reference_expression" => simple_statement(node, "ref", source),
         "await_expression" => simple_statement(node, "await", source),
         "try_expression" => simple_statement(node, "try", source),
@@ -1395,6 +1578,38 @@ fn wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
             range, span,
         },
         _ => inner,
+    }
+}
+
+/// Lower a marker-prefixed block (`async { ... }`, `const { ... }`,
+/// `try { ... }`, `gen { ... }`) — produce `<block[marker]>` whose
+/// children are the inner block's children (NOT a nested `<block>`).
+fn rust_marked_block(
+    node: TsNode<'_>,
+    element_name: &'static str,
+    extra_markers: &'static [&'static str],
+    source: &str,
+) -> Ir {
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    for c in node.named_children(&mut cursor) {
+        if c.kind() == "block" {
+            // Inline the inner block's children.
+            let mut bc = c.walk();
+            for inner in c.named_children(&mut bc) {
+                children.push(lower_node(inner, source));
+            }
+        } else {
+            children.push(lower_node(c, source));
+        }
+    }
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children: merge_rust_line_comments(children, source),
+        range: range_of(node),
+        span: span_of(node),
     }
 }
 
@@ -1677,10 +1892,12 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
 }
 
 /// Rust uses `<pub/>` / `<private/>` markers (not `<public/>`).
-/// Detect visibility and emit appropriate extra_markers.
+/// Detect visibility and emit appropriate extra_markers. Also detects
+/// `mut` modifier (for `static mut COUNTER` etc.).
 fn rust_decl(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let mut cursor = node.walk();
     let mut is_pub = false;
+    let mut has_mut = false;
     for c in node.named_children(&mut cursor) {
         if c.kind() == "visibility_modifier" {
             let txt = text_of(c, source);
@@ -1688,14 +1905,19 @@ fn rust_decl(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
                 is_pub = true;
             }
         }
+        if c.kind() == "mutable_specifier" {
+            has_mut = true;
+        }
     }
-    let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+    let extra_markers: &'static [&'static str] = match (is_pub, has_mut) {
+        (true, true) => &["pub", "mut"],
+        (true, false) => &["pub"],
+        (false, true) => &["private", "mut"],
+        (false, false) => &["private"],
+    };
     let mut cursor2 = node.walk();
     let children: Vec<Ir> = node
         .named_children(&mut cursor2)
-        // Visibility_modifier's semantic content is on extra_markers,
-        // but we still need it lowered if pub(crate) etc. has internal
-        // structure. For now, keep it as Inline so source bytes survive.
         .map(|c| lower_node(c, source))
         .collect();
     Ir::SimpleStatement {

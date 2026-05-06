@@ -93,6 +93,20 @@ pub fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
             // multi-cardinality element types in the blueprint.
             ("array", "int"),
             ("array", "binary"),
+            // IR-pipeline additions for Rust (cover multi-cardinality
+            // children that overflow $children otherwise):
+            ("attribute", "name"),
+            ("const", "name"),
+            ("static", "name"),
+            ("extends", "type"),
+            ("enum", "variant"),
+            ("type", "name"),
+            ("object", "call"),
+            ("call", "int"),
+            ("call", "name"),
+            ("for", "name"),
+            ("expression", "name"),
+            ("parameter", "name"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
