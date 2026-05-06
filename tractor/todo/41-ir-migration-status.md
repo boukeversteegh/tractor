@@ -2,6 +2,25 @@
 
 ## Done
 
+### Java IR-only end-to-end ✅
+All 274 transform tests + integration suites pass with Java on the
+IR pipeline. Imperative artefacts retired:
+  - `src/languages/java/input.rs` (JavaKind enum) — DELETED
+  - `src/languages/java/rules.rs` — DELETED
+  - `src/languages/java/transformations.rs` — DELETED
+  - `src/languages/java/transform.rs` — DELETED
+  - `LanguageOps.transform` for Java now uses `passthrough_transform`.
+Modifiers struct gained `final_`/`synchronized_`/`transient`/`native`/
+`strictfp`/`default` and `Access::Package`. Marker order in
+`marker_names()` is now canonical Java/C# declaration order. Method
+bodies are `Option<Box<Ir>>` so abstract / interface methods skip
+the `<body>` element.
+
+### TypeScript IR scaffold ⚠️ (switch off)
+`src/ir/typescript.rs` (~900 LOC) covers core constructs but a trial
+hard-switch shows 21 transform-test divergences. Foundation done;
+parity work pending.
+
 ### Python IR-only end-to-end ✅
 All 274 transform tests + lib + integration suites pass with Python on
 the IR pipeline. Imperative artefacts retired:
