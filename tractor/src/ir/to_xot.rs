@@ -74,37 +74,7 @@ pub fn render_to_xot(
             )?;
             Ok(node)
         }
-        Ir::Access { receiver, segments, range, span } => {
-            let object = element(xot, "object", *span);
-            xot.append(parent, object)?;
-            let access = element(xot, "access", Span::point(span.line, span.column));
-            xot.append(object, access)?;
-            // Synthetic `<base/>` / `<this/>` markers when the receiver
-            // is the corresponding C# keyword — `base.Method()` /
-            // `this.X` queryable as `//object[base]` / `//object[this]`.
-            // The receiver's source text identifies the keyword.
-            let receiver_range = receiver.range();
-            let recv_text = receiver_range.slice(source);
-            if matches!(receiver.as_ref(), Ir::Name { .. }) {
-                if recv_text == "base" {
-                    let m = element(xot, "base", Span::point(span.line, span.column));
-                    xot.append(object, m)?;
-                } else if recv_text == "this" {
-                    let m = element(xot, "this", Span::point(span.line, span.column));
-                    xot.append(object, m)?;
-                }
-            }
-            emit_gap(xot, object, source, range.start, receiver_range.start)?;
-            render_to_xot(xot, object, receiver, source)?;
-            // Segments — right-nested. The first segment is a child of
-            // <object>; deeper segments are children of the previous
-            // segment.
-            let mut cursor = receiver_range.end;
-            render_segments_chain(xot, object, segments, &mut cursor, source)?;
-            // Trailing gap inside <object>.
-            emit_gap(xot, object, source, cursor, range.end)?;
-            Ok(object)
-        }
+        Ir::Access { .. } => render_ir_access(xot, parent, ir, source),
         Ir::Tuple { children, range, span } => {
             let node = element(xot, "tuple", *span);
             xot.append(parent, node)?;
@@ -160,54 +130,10 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, vr.end, range.end)?;
             Ok(node)
         }
-        Ir::GenericType { name, params, range, span } => {
-            // <type[generic]>
-            let node = element(xot, "type", *span);
-            xot.append(parent, node)?;
-            let g = element(xot, "generic", *span);
-            xot.append(node, g)?;
-            // Source-derived children: name, then each param wrapped
-            // in <type>.
-            let name_range = name.range();
-            emit_gap(xot, node, source, range.start, name_range.start)?;
-            render_to_xot(xot, node, name, source)?;
-            let mut cursor = name_range.end;
-            for p in params {
-                let pr = p.range();
-                emit_gap(xot, node, source, cursor, pr.start)?;
-                let type_el = element(xot, "type", p.span());
-                xot.append(node, type_el)?;
-                render_to_xot(xot, type_el, p, source)?;
-                cursor = pr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::GenericType { .. } => render_ir_generic_type(xot, parent, ir, source),
         Ir::Comparison { .. } => render_ir_comparison(xot, parent, ir, source),
         Ir::If { .. } => render_ir_if(xot, parent, ir, source),
-        Ir::ElseIf { condition, body, else_branch, range, span } => {
-            let node = element(xot, "else_if", *span);
-            xot.append(parent, node)?;
-            let cr = condition.range();
-            emit_gap(xot, node, source, range.start, cr.start)?;
-            let cond_slot = element(xot, "condition", condition.span());
-            xot.append(node, cond_slot)?;
-            let cond_expr = element(xot, "expression", condition.span());
-            xot.append(cond_slot, cond_expr)?;
-            render_to_xot(xot, cond_expr, condition, source)?;
-            let br = body.range();
-            emit_gap(xot, node, source, cr.end, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            if let Some(e) = else_branch {
-                let er = e.range();
-                emit_gap(xot, node, source, br.end, er.start)?;
-                render_to_xot(xot, node, e, source)?;
-                emit_gap(xot, node, source, er.end, range.end)?;
-            } else {
-                emit_gap(xot, node, source, br.end, range.end)?;
-            }
-            Ok(node)
-        }
+        Ir::ElseIf { .. } => render_ir_else_if(xot, parent, ir, source),
         Ir::Else { body, range, span } => {
             let node = element(xot, "else", *span);
             xot.append(parent, node)?;
@@ -337,31 +263,7 @@ pub fn render_to_xot(
             )?;
             Ok(node)
         }
-        Ir::Returns { type_ann, range, span } => {
-            let node = element(xot, "returns", *span);
-            xot.append(parent, node)?;
-            // <returns> wraps the type annotation in <type>, unless
-            // the inner already produces a `<type>` element (e.g. an
-            // `Ir::GenericType` or a `SimpleStatement<type>`) — in
-            // which case we'd double-wrap.
-            let tr = type_ann.range();
-            emit_gap(xot, node, source, range.start, tr.start)?;
-            let already_typed = matches!(
-                type_ann.as_ref(),
-                Ir::GenericType { .. }
-                    | Ir::SimpleStatement { element_name: "type", .. }
-                    | Ir::SimpleStatement { element_name: "predicate", .. }
-            );
-            if already_typed {
-                render_to_xot(xot, node, type_ann, source)?;
-            } else {
-                let type_el = element(xot, "type", type_ann.span());
-                xot.append(node, type_el)?;
-                render_to_xot(xot, type_el, type_ann, source)?;
-            }
-            emit_gap(xot, node, source, tr.end, range.end)?;
-            Ok(node)
-        }
+        Ir::Returns { .. } => render_ir_returns(xot, parent, ir, source),
         Ir::Generic { items, range, span } => {
             let node = element(xot, "generic", *span);
             xot.append(parent, node)?;
@@ -605,78 +507,10 @@ pub fn render_to_xot(
             Ok(node)
         }
         Ir::Variable { .. } => render_ir_variable(xot, parent, ir, source),
-        Ir::Is { value, type_target, range, span } => {
-            let node = element(xot, "is", *span);
-            xot.append(parent, node)?;
-            // <left><expression>{value}</expression></left>
-            let vr = value.range();
-            emit_gap(xot, node, source, range.start, vr.start)?;
-            let left_slot = element(xot, "left", value.span());
-            xot.append(node, left_slot)?;
-            let left_expr = element(xot, "expression", value.span());
-            xot.append(left_slot, left_expr)?;
-            render_to_xot(xot, left_expr, value, source)?;
-            // Gap between value and type (`is` keyword + spaces).
-            let tr = type_target.range();
-            emit_gap(xot, node, source, vr.end, tr.start)?;
-            // <right><expression><type>{type_target}</type></expression></right>
-            let right_slot = element(xot, "right", type_target.span());
-            xot.append(node, right_slot)?;
-            let right_expr = element(xot, "expression", type_target.span());
-            xot.append(right_slot, right_expr)?;
-            let type_el = element(xot, "type", type_target.span());
-            xot.append(right_expr, type_el)?;
-            render_to_xot(xot, type_el, type_target, source)?;
-            // Trailing.
-            emit_gap(xot, node, source, tr.end, range.end)?;
-            Ok(node)
-        }
-        Ir::Cast { type_ann, value, range, span } => {
-            let node = element(xot, "cast", *span);
-            xot.append(parent, node)?;
-            // <type>...</type>
-            let tr = type_ann.range();
-            emit_gap(xot, node, source, range.start, tr.start)?;
-            let type_el = element(xot, "type", type_ann.span());
-            xot.append(node, type_el)?;
-            render_to_xot(xot, type_el, type_ann, source)?;
-            // <value><expression>...</expression></value>
-            let vr = value.range();
-            emit_gap(xot, node, source, tr.end, vr.start)?;
-            let value_el = element(xot, "value", value.span());
-            xot.append(node, value_el)?;
-            let expr_el = element(xot, "expression", value.span());
-            xot.append(value_el, expr_el)?;
-            render_to_xot(xot, expr_el, value, source)?;
-            // Trailing gap after value.
-            emit_gap(xot, node, source, vr.end, range.end)?;
-            Ok(node)
-        }
+        Ir::Is { .. } => render_ir_is(xot, parent, ir, source),
+        Ir::Cast { .. } => render_ir_cast(xot, parent, ir, source),
 
-        Ir::Inline { children, list_name, range, span: _ } => {
-            // Inline contributes no element of its own. Children render
-            // at the parent level; gap text from the inline's range
-            // wraps them. When `list_name` is set, every direct
-            // element child gets a `list="X"` attribute — matches the
-            // imperative pipeline's `distribute_list` post-pass and
-            // enables plural-key JSON projection.
-            let before: Vec<XotNode> = xot.children(parent).collect();
-            render_with_gaps(xot, parent, source, *range, children, |xot, parent, child| {
-                render_to_xot(xot, parent, child, source).map(|_| ())
-            })?;
-            if let Some(list) = list_name {
-                let list_attr = xot.add_name("list");
-                let new_children: Vec<XotNode> = xot.children(parent)
-                    .filter(|c| !before.contains(c))
-                    .collect();
-                for c in new_children {
-                    if xot.element(c).is_some() {
-                        xot.attributes_mut(c).insert(list_attr, list.to_string());
-                    }
-                }
-            }
-            Ok(parent)
-        }
+        Ir::Inline { .. } => render_ir_inline(xot, parent, ir, source),
         Ir::Unknown { kind, range, span } => {
             let node = element(xot, "unknown", *span);
             let kind_attr = xot.add_name("kind");
@@ -1875,6 +1709,207 @@ fn render_ir_type_alias(
     }
     emit_gap(xot, node, source, cursor, range.end)?;
     Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_access(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Access { receiver, segments, range, span } = ir else { unreachable!() };
+    let object = element(xot, "object", *span);
+    xot.append(parent, object)?;
+    let access = element(xot, "access", Span::point(span.line, span.column));
+    xot.append(object, access)?;
+    let receiver_range = receiver.range();
+    let recv_text = receiver_range.slice(source);
+    if matches!(receiver.as_ref(), Ir::Name { .. }) {
+        if recv_text == "base" {
+            let m = element(xot, "base", Span::point(span.line, span.column));
+            xot.append(object, m)?;
+        } else if recv_text == "this" {
+            let m = element(xot, "this", Span::point(span.line, span.column));
+            xot.append(object, m)?;
+        }
+    }
+    emit_gap(xot, object, source, range.start, receiver_range.start)?;
+    render_to_xot(xot, object, receiver, source)?;
+    let mut cursor = receiver_range.end;
+    render_segments_chain(xot, object, segments, &mut cursor, source)?;
+    emit_gap(xot, object, source, cursor, range.end)?;
+    Ok(object)
+}
+
+#[inline(never)]
+fn render_ir_generic_type(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::GenericType { name, params, range, span } = ir else { unreachable!() };
+    let node = element(xot, "type", *span);
+    xot.append(parent, node)?;
+    let g = element(xot, "generic", *span);
+    xot.append(node, g)?;
+    let name_range = name.range();
+    emit_gap(xot, node, source, range.start, name_range.start)?;
+    render_to_xot(xot, node, name, source)?;
+    let mut cursor = name_range.end;
+    for p in params {
+        let pr = p.range();
+        emit_gap(xot, node, source, cursor, pr.start)?;
+        let type_el = element(xot, "type", p.span());
+        xot.append(node, type_el)?;
+        render_to_xot(xot, type_el, p, source)?;
+        cursor = pr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_else_if(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::ElseIf { condition, body, else_branch, range, span } = ir else { unreachable!() };
+    let node = element(xot, "else_if", *span);
+    xot.append(parent, node)?;
+    let cr = condition.range();
+    emit_gap(xot, node, source, range.start, cr.start)?;
+    let cond_slot = element(xot, "condition", condition.span());
+    xot.append(node, cond_slot)?;
+    let cond_expr = element(xot, "expression", condition.span());
+    xot.append(cond_slot, cond_expr)?;
+    render_to_xot(xot, cond_expr, condition, source)?;
+    let br = body.range();
+    emit_gap(xot, node, source, cr.end, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    if let Some(e) = else_branch {
+        let er = e.range();
+        emit_gap(xot, node, source, br.end, er.start)?;
+        render_to_xot(xot, node, e, source)?;
+        emit_gap(xot, node, source, er.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, br.end, range.end)?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_returns(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Returns { type_ann, range, span } = ir else { unreachable!() };
+    let node = element(xot, "returns", *span);
+    xot.append(parent, node)?;
+    let tr = type_ann.range();
+    emit_gap(xot, node, source, range.start, tr.start)?;
+    let already_typed = matches!(
+        type_ann.as_ref(),
+        Ir::GenericType { .. }
+            | Ir::SimpleStatement { element_name: "type", .. }
+            | Ir::SimpleStatement { element_name: "predicate", .. }
+    );
+    if already_typed {
+        render_to_xot(xot, node, type_ann, source)?;
+    } else {
+        let type_el = element(xot, "type", type_ann.span());
+        xot.append(node, type_el)?;
+        render_to_xot(xot, type_el, type_ann, source)?;
+    }
+    emit_gap(xot, node, source, tr.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_is(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Is { value, type_target, range, span } = ir else { unreachable!() };
+    let node = element(xot, "is", *span);
+    xot.append(parent, node)?;
+    let vr = value.range();
+    emit_gap(xot, node, source, range.start, vr.start)?;
+    let left_slot = element(xot, "left", value.span());
+    xot.append(node, left_slot)?;
+    let left_expr = element(xot, "expression", value.span());
+    xot.append(left_slot, left_expr)?;
+    render_to_xot(xot, left_expr, value, source)?;
+    let tr = type_target.range();
+    emit_gap(xot, node, source, vr.end, tr.start)?;
+    let right_slot = element(xot, "right", type_target.span());
+    xot.append(node, right_slot)?;
+    let right_expr = element(xot, "expression", type_target.span());
+    xot.append(right_slot, right_expr)?;
+    let type_el = element(xot, "type", type_target.span());
+    xot.append(right_expr, type_el)?;
+    render_to_xot(xot, type_el, type_target, source)?;
+    emit_gap(xot, node, source, tr.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_cast(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Cast { type_ann, value, range, span } = ir else { unreachable!() };
+    let node = element(xot, "cast", *span);
+    xot.append(parent, node)?;
+    let tr = type_ann.range();
+    emit_gap(xot, node, source, range.start, tr.start)?;
+    let type_el = element(xot, "type", type_ann.span());
+    xot.append(node, type_el)?;
+    render_to_xot(xot, type_el, type_ann, source)?;
+    let vr = value.range();
+    emit_gap(xot, node, source, tr.end, vr.start)?;
+    let value_el = element(xot, "value", value.span());
+    xot.append(node, value_el)?;
+    let expr_el = element(xot, "expression", value.span());
+    xot.append(value_el, expr_el)?;
+    render_to_xot(xot, expr_el, value, source)?;
+    emit_gap(xot, node, source, vr.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_inline(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Inline { children, list_name, range, span: _ } = ir else { unreachable!() };
+    let before: Vec<XotNode> = xot.children(parent).collect();
+    render_with_gaps(xot, parent, source, *range, children, |xot, parent, child| {
+        render_to_xot(xot, parent, child, source).map(|_| ())
+    })?;
+    if let Some(list) = list_name {
+        let list_attr = xot.add_name("list");
+        let new_children: Vec<XotNode> = xot.children(parent)
+            .filter(|c| !before.contains(c))
+            .collect();
+        for c in new_children {
+            if xot.element(c).is_some() {
+                xot.attributes_mut(c).insert(list_attr, list.to_string());
+            }
+        }
+    }
+    Ok(parent)
 }
 
 // ---------------------------------------------------------------------------

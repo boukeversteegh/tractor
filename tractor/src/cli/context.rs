@@ -126,11 +126,9 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
-        // 21 of ~72 `render_to_xot` arms extracted to per-arm helpers
-        // (task #85), but the dispatcher's match still has a wide
-        // worst-case frame for the un-extracted arms. Release rayon
-        // worker threads default to ~2 MiB stacks, which the recursion
-        // depth on real C# blueprints still exceeds. Bump to 16 MiB.
+        // 28 of ~72 render_to_xot arms extracted as per-arm helpers
+        // (task #85). Rayon worker threads still need 16 MiB on
+        // production workloads — more arms remain un-extracted.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
             .stack_size(16 * 1024 * 1024)
