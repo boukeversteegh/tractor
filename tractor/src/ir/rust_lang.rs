@@ -15,7 +15,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{Access, ByteRange, Ir, Modifiers, ParamKind, Span};
+use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`Ir`].
 pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -283,9 +283,87 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "yield_expression" => simple_statement(node, "yield", source),
 
         // ----- Expressions ---------------------------------------------
-        "call_expression" => simple_statement(node, "call", source),
+        // ----- Chain inversion -----------------------------------------
+        // `obj.field` — fold into Ir::Access if obj is itself a chain.
+        "field_expression" => {
+            let value_node = node.child_by_field_name("value");
+            let field_node = node.child_by_field_name("field");
+            match (value_node, field_node) {
+                (Some(obj), Some(prop)) => {
+                    let object_ir = lower_node(obj, source);
+                    let property_range = range_of(prop);
+                    let property_span = span_of(prop);
+                    let segment_range = ByteRange::new(object_ir.range().end, property_range.end);
+                    let segment = AccessSegment::Member {
+                        property_range,
+                        property_span,
+                        optional: false,
+                        range: segment_range,
+                        span,
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range, span,
+                        },
+                    }
+                }
+                _ => Ir::Unknown { kind: "field_expression(missing)".to_string(), range, span },
+            }
+        }
+        "call_expression" => {
+            let function_node = node.child_by_field_name("function");
+            let args_node = node.child_by_field_name("arguments");
+            let arguments: Vec<Ir> = match args_node {
+                Some(a) => {
+                    let mut ac = a.walk();
+                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                }
+                None => Vec::new(),
+            };
+            match function_node {
+                Some(f) => {
+                    let callee = lower_node(f, source);
+                    let callee_range = callee.range();
+                    if let Ir::Access { receiver, mut segments, .. } = callee {
+                        let last_member = if let Some(AccessSegment::Member {
+                            property_range, property_span, ..
+                        }) = segments.last() {
+                            Some((*property_range, *property_span))
+                        } else {
+                            None
+                        };
+                        let call_segment = if let Some((pr, ps)) = last_member {
+                            segments.pop();
+                            AccessSegment::Call {
+                                name: Some(pr),
+                                name_span: Some(ps),
+                                arguments,
+                                range: ByteRange::new(pr.start, range.end),
+                                span,
+                            }
+                        } else {
+                            AccessSegment::Call {
+                                name: None, name_span: None,
+                                arguments,
+                                range: ByteRange::new(callee_range.end, range.end),
+                                span,
+                            }
+                        };
+                        segments.push(call_segment);
+                        return Ir::Access { receiver, segments, range, span };
+                    }
+                    Ir::Call { callee: Box::new(callee), arguments, range, span }
+                }
+                None => Ir::Unknown { kind: "call_expression(missing)".to_string(), range, span },
+            }
+        }
         "generic_function" => simple_statement_marked(node, "call", &["generic"], source),
-        "field_expression" => simple_statement(node, "field", source),
         "index_expression" => simple_statement(node, "index", source),
         "tuple_expression" => simple_statement(node, "tuple", source),
         "array_expression" => simple_statement(node, "array", source),
