@@ -140,7 +140,26 @@ pub struct LanguageOps {
 /// fan-out collapses to simple `iter().find()` calls below.
 pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
-        ids: &["typescript", "ts", "tsx", "javascript", "js", "jsx"],
+        ids: &["typescript", "ts"],
+        // TS flows entirely through `crate::ir::typescript`. The
+        // imperative walker is no longer reachable; passthrough
+        // satisfies the registry contract.
+        transform: passthrough_transform,
+        post_transform: Some(typescript::typescript_post_transform),
+        syntax_category: typescript::syntax_category,
+        field_wrappings: TS_FIELD_WRAPPINGS,
+        node_spec: Some(typescript::output::spec),
+        is_programming: true,
+        supports_data_tree: false,
+        data_transforms: None,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
+    },
+    LanguageOps {
+        // JS / TSX still go through the imperative walker. JS has
+        // no IR yet (no `lower_javascript_root`); TSX has JSX-only
+        // node kinds that the TS IR doesn't lower. Both share TS's
+        // post_transform / output vocabulary.
+        ids: &["javascript", "js", "jsx", "tsx"],
         transform: typescript::transform,
         post_transform: Some(typescript::typescript_post_transform),
         syntax_category: typescript::syntax_category,
@@ -234,7 +253,10 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["php"],
-        transform: php::transform,
+        // PHP flows entirely through `crate::ir::php`. The imperative
+        // walker is no longer reachable; passthrough satisfies the
+        // registry contract.
+        transform: passthrough_transform,
         post_transform: Some(php::php_post_transform),
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
