@@ -55,6 +55,10 @@ pub enum TractorNode {
     Path, Blank, Dot,
     // Marker-only
     Raw, Short, Exported, Unexported, Approximation, Generic, Implicit,
+    // IR-pipeline additions: Spec wraps each import_spec / type_spec /
+    // var_spec / const_spec; Variadic marks `...T` parameters; Postfix
+    // marks `i++`/`i--` post-increment/-decrement unary forms.
+    Spec, Variadic, Postfix,
     // Chain inversion (iter 242): `[access]` marker distinguishes
     // member-access chains (`obj.method()`) from object literals.
     Access,
@@ -81,7 +85,7 @@ impl TractorNode {
             // ---- Markers only ------------------------------------------------
             Self::Trailing | Self::Leading
             | Self::Raw | Self::Short | Self::Approximation
-            | Self::Implicit
+            | Self::Implicit | Self::Variadic | Self::Postfix
             | Self::Blank | Self::Dot
             | Self::Access                                                          => (true, false, Default),
             // `Generic` is dual-use: marker `[generic]` on `<type>`

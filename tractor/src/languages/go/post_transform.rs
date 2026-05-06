@@ -89,6 +89,18 @@ pub fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
             // uniform.
             ("then", "assign"),
             ("else", "assign"),
+            // IR-pipeline additions for Go (cover multi-cardinality
+            // children that overflow $children otherwise):
+            ("import", "spec"),
+            ("var", "value"),
+            ("interface", "name"),
+            ("type", "name"),
+            ("call", "name"),
+            ("call", "object"),
+            ("method", "name"),
+            ("function", "name"),
+            ("expression", "name"),
+            ("literal", "int"),
         ],
     )?;
     // Go's `if x { ... }` has `<then>` body; strip braces there too.

@@ -20,12 +20,74 @@ pub fn lower_go_root(root: TsNode<'_>, source: &str) -> Ir {
     match root.kind() {
         "source_file" => Ir::Module {
             element_name: "file",
-            children: lower_children(root, source),
+            children: merge_go_line_comments(lower_children(root, source), source),
             range,
             span,
         },
         other => Ir::Unknown { kind: other.to_string(), range, span },
     }
+}
+
+/// Classify Go comments into leading/trailing/floating. Mirrors
+/// merge_rust_line_comments — Go uses `//` and `/*...*/`, and like
+/// rust, tree-sitter Go includes the trailing \n in the comment range.
+fn merge_go_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
+    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+    for child in children {
+        if let Ir::Comment { leading, trailing, range, span } = child {
+            let prev_non_comment = out.iter().rev().find(|c| !matches!(c, Ir::Comment { .. }));
+            let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
+                let prev_end = prev.range().end as usize;
+                let between = &source[prev_end..range.start as usize];
+                !between.contains('\n')
+            });
+            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+                let gap = &source[prev_range.end as usize..range.start as usize];
+                let no_newline = !gap.contains('\n') && gap.chars().all(|c| c.is_whitespace());
+                let prev_text = &source[prev_range.start as usize..prev_range.end as usize];
+                let curr_text = &source[range.start as usize..range.end as usize];
+                let prev_is_line_comment = prev_text.trim_start().starts_with("//");
+                let curr_is_line_comment = curr_text.trim_start().starts_with("//");
+                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                if no_newline
+                    && prev_is_line_comment
+                    && curr_is_line_comment
+                    && !prev_was_trailing
+                    && !curr_is_trailing
+                {
+                    if let Some(Ir::Comment { range: r, span: s, .. }) = out.last_mut() {
+                        r.end = range.end;
+                        s.end_line = span.end_line;
+                        s.end_column = span.end_column;
+                    }
+                    continue;
+                }
+            }
+            let trailing = trailing || curr_is_trailing;
+            out.push(Ir::Comment { leading, trailing, range, span });
+        } else {
+            out.push(child);
+        }
+    }
+    let n = out.len();
+    for i in 0..n {
+        if let Ir::Comment { trailing, range, .. } = &out[i] {
+            if *trailing { continue; }
+            let comment_end = range.end as usize;
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            if let Some(next_ir) = next {
+                let next_start = next_ir.range().start as usize;
+                let between = &source[comment_end..next_start];
+                let newlines = between.chars().filter(|&c| c == '\n').count();
+                if newlines <= 1 && between.chars().all(|c| c.is_whitespace()) {
+                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                        *leading = true;
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 pub fn lower_go_node(node: TsNode<'_>, source: &str) -> Ir {
@@ -48,7 +110,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "rune_literal" => simple_statement(node, "char", source),
         "true" => Ir::True { range, span },
         "false" => Ir::False { range, span },
-        "nil" => Ir::Null { range, span },
+        "nil" => Ir::SimpleStatement {
+            element_name: "nil",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range, span,
+        },
         "comment" => Ir::Comment { leading: false, trailing: false, range, span },
 
         // ----- Top-level structure -------------------------------------
@@ -112,10 +180,21 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Const / Var declarations --------------------------------
-        "const_declaration" => simple_statement(node, "const", source),
-        "const_spec" => go_decl_with_export_first_name(node, "const", source),
-        "var_declaration" => simple_statement(node, "var", source),
-        "var_spec" => go_decl_with_export_first_name(node, "var", source),
+        // const_declaration / var_declaration are wrappers around one
+        // or more specs — flatten so each spec becomes a direct
+        // sibling of the parent file/body.
+        "const_declaration" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        },
+        "var_declaration" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        },
+        "const_spec" => go_var_const_spec(node, "const", source),
+        "var_spec" => go_var_const_spec(node, "var", source),
         "var_spec_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -176,8 +255,35 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "function_declaration" => go_decl_with_export(node, "function", source),
         "method_declaration" => go_decl_with_export(node, "method", source),
         "func_literal" => simple_statement(node, "closure", source),
-        "method_elem" => simple_statement(node, "method", source),
-        "field_declaration" => go_decl_with_export_first_name(node, "field", source),
+        "method_elem" => {
+            // `Method() returnType` inside an interface body.
+            let name_node = node.child_by_field_name("name");
+            let parameters_node = node.child_by_field_name("parameters");
+            let result_node = node.child_by_field_name("result");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            if let Some(p) = parameters_node {
+                children.push(lower_node(p, source));
+            }
+            if let Some(r) = result_node {
+                let inner = lower_node(r, source);
+                children.push(Ir::Returns {
+                    type_ann: Box::new(go_wrap_in_type_if_leaf(inner, range_of(r), span_of(r))),
+                    range: range_of(r),
+                    span: span_of(r),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "method",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "field_declaration" => go_field_declaration(node, source),
         "field_declaration_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
@@ -268,9 +374,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 range, span,
             }
         }
-        "expression_switch_statement" => simple_statement(node, "switch", source),
-        "type_switch_statement" => simple_statement_marked(node, "switch", &["type"], source),
-        "expression_case" | "type_case" | "communication_case" => simple_statement(node, "case", source),
+        "expression_switch_statement" => go_switch(node, false, source),
+        "type_switch_statement" => go_switch(node, true, source),
+        "expression_case" | "type_case" | "communication_case" => go_case(node, source),
         "default_case" => simple_statement(node, "default", source),
         "select_statement" => simple_statement(node, "select", source),
         "send_statement" => simple_statement(node, "send", source),
@@ -596,7 +702,38 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             list_name: None,
             range, span,
         },
-        "keyed_element" => simple_statement(node, "pair", source),
+        "keyed_element" => {
+            // `key: value` inside a composite literal. tree-sitter Go
+            // doesn't field-name the children — the first is the key,
+            // second is the value. Wrap the value in `<value>` to avoid
+            // nested `<pair><pair>` when the value is itself a composite
+            // literal.
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let mut children: Vec<Ir> = Vec::new();
+            for (i, c) in kids.iter().enumerate() {
+                if i == 0 {
+                    children.push(lower_node(*c, source));
+                } else {
+                    let inner = lower_node(*c, source);
+                    children.push(Ir::SimpleStatement {
+                        element_name: "value",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(*c),
+                        span: span_of(*c),
+                    });
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "pair",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "argument_list" => Ir::Inline {
             children: lower_children(node, source),
             list_name: Some("arguments"),
@@ -680,9 +817,10 @@ fn is_exported(name: &str) -> bool {
 }
 
 /// Lower a Go type_spec / type_alias with proper `<type>` shape.
-/// The RHS gets wrapped in `<type>` if it's a leaf identifier so the
-/// shape is `<type[name='MyInt']><type[name='int']/></type>` (matching
-/// the imperative pipeline).
+/// When the RHS is a struct_type or interface_type, hoist it: emit
+/// `<struct>` or `<interface>` directly (with name as a child) instead
+/// of `<type><name/></type>...<type><struct/></type>`. This matches
+/// the imperative pipeline shape.
 fn go_type_spec(
     node: TsNode<'_>,
     element_name: &'static str,
@@ -692,6 +830,40 @@ fn go_type_spec(
     let name_node = node.child_by_field_name("name");
     let type_node = node.child_by_field_name("type");
     let name_text = name_node.map(|n| text_of(n, source)).unwrap_or_default();
+    let _ = extra_markers_in;
+    let extra_markers: &'static [&'static str] = if is_exported(&name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+
+    // Hoist struct/interface directly to top-level.
+    if let Some(t) = type_node {
+        if matches!(t.kind(), "struct_type" | "interface_type") {
+            let element = if t.kind() == "struct_type" { "struct" } else { "interface" };
+            // Lower the struct/interface body but make the parent
+            // element_name be `struct`/`interface` and add the name child.
+            let mut inner_children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                inner_children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            // Lower the struct/interface contents — for struct_type
+            // that's the field_declaration_list child.
+            let mut tcursor = t.walk();
+            for c in t.named_children(&mut tcursor) {
+                inner_children.push(lower_node(c, source));
+            }
+            return Ir::SimpleStatement {
+                element_name: element,
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children: inner_children,
+                range: range_of(node),
+                span: span_of(node),
+            };
+        }
+    }
+
     let mut children: Vec<Ir> = Vec::new();
     if let Some(n) = name_node {
         children.push(Ir::Name { range: range_of(n), span: span_of(n) });
@@ -700,12 +872,6 @@ fn go_type_spec(
         let inner = lower_node(t, source);
         children.push(go_wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
     }
-    let _ = extra_markers_in;
-    let extra_markers: &'static [&'static str] = if is_exported(&name_text) {
-        &["exported"]
-    } else {
-        &["unexported"]
-    };
     Ir::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
@@ -765,6 +931,269 @@ fn go_inc_dec(
             kind: format!("{} (no operand)", node.kind()),
             range, span,
         },
+    }
+}
+
+/// Lower a Go const_spec / var_spec: `name = value` / `name type = value`.
+/// tree-sitter Go uses `name` (multiple), `type`, `value` fields. The
+/// value child is an expression_list — its inner expressions become
+/// `<value><expression>...` slot wrappers.
+fn go_var_const_spec(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let type_node = node.child_by_field_name("type");
+    // Collect name field children.
+    let mut name_nodes: Vec<TsNode<'_>> = Vec::new();
+    let mut value_nodes: Vec<TsNode<'_>> = Vec::new();
+    {
+        let mut p = node.walk();
+        for (i, ch) in node.children(&mut p).enumerate() {
+            match node.field_name_for_child(i as u32) {
+                Some("name") => name_nodes.push(ch),
+                Some("value") => value_nodes.push(ch),
+                _ => {}
+            }
+        }
+    }
+    let first_name_text = name_nodes.first().map(|n| text_of(*n, source)).unwrap_or_default();
+    let extra_markers: &'static [&'static str] = if first_name_text.is_empty() {
+        &[]
+    } else if is_exported(&first_name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+    let mut children: Vec<Ir> = Vec::new();
+    for n in &name_nodes {
+        children.push(Ir::Name { range: range_of(*n), span: span_of(*n) });
+    }
+    if let Some(t) = type_node {
+        let inner = lower_node(t, source);
+        children.push(go_wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
+    }
+    // Value field: tree-sitter Go gives `value` as expression_list. Each
+    // inner expression wraps in `<value><expression>...</expression></value>`.
+    for v in &value_nodes {
+        let mut emitted_any = false;
+        if v.kind() == "expression_list" {
+            let mut vc = v.walk();
+            for e in v.named_children(&mut vc) {
+                let inner = lower_node(e, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(e),
+                        span: span_of(e),
+                    }],
+                    range: range_of(e),
+                    span: span_of(e),
+                });
+                emitted_any = true;
+            }
+        }
+        if !emitted_any {
+            let inner = lower_node(*v, source);
+            children.push(Ir::SimpleStatement {
+                element_name: "value",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![Ir::SimpleStatement {
+                    element_name: "expression",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(*v),
+                    span: span_of(*v),
+                }],
+                range: range_of(*v),
+                span: span_of(*v),
+            });
+        }
+    }
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range, span,
+    }
+}
+
+/// Lower a Go field_declaration: `Name1, Name2 Type` or `Name1 Type`.
+/// tree-sitter Go uses field name "name" (multiple) and "type".
+/// Emit `<field>` with name child(ren) and `<type>` wrapper.
+fn go_field_declaration(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let type_node = node.child_by_field_name("type");
+    let mut cursor = node.walk();
+    // Collect all "name" field children to determine export.
+    let mut name_nodes: Vec<TsNode<'_>> = Vec::new();
+    {
+        let mut p = node.walk();
+        for (i, ch) in node.children(&mut p).enumerate() {
+            if node.field_name_for_child(i as u32) == Some("name") {
+                name_nodes.push(ch);
+            }
+        }
+    }
+    let first_name_text = name_nodes.first().map(|n| text_of(*n, source)).unwrap_or_default();
+    let extra_markers: &'static [&'static str] = if first_name_text.is_empty() {
+        &[]
+    } else if is_exported(&first_name_text) {
+        &["exported"]
+    } else {
+        &["unexported"]
+    };
+    let mut children: Vec<Ir> = Vec::new();
+    for n in &name_nodes {
+        children.push(Ir::Name { range: range_of(*n), span: span_of(*n) });
+    }
+    if let Some(t) = type_node {
+        let inner = lower_node(t, source);
+        children.push(go_wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
+    }
+    // Process other named children (e.g. tag).
+    for c in node.named_children(&mut cursor) {
+        if let Some(t) = type_node { if c.id() == t.id() { continue; } }
+        if name_nodes.iter().any(|n| n.id() == c.id()) { continue; }
+        children.push(lower_node(c, source));
+    }
+    Ir::SimpleStatement {
+        element_name: "field",
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower a Go switch (expression_switch / type_switch). Wraps
+/// `value` field in `<value><expression>...` host. Type switch
+/// adds `[type]` marker.
+fn go_switch(node: TsNode<'_>, type_switch: bool, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let value_node = node.child_by_field_name("value");
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    if let Some(v) = value_node {
+        let inner = lower_node(v, source);
+        children.push(Ir::SimpleStatement {
+            element_name: "value",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![Ir::SimpleStatement {
+                element_name: "expression",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: range_of(v),
+                span: span_of(v),
+            }],
+            range: range_of(v),
+            span: span_of(v),
+        });
+    }
+    for c in node.named_children(&mut cursor) {
+        if let Some(v) = value_node {
+            if c.id() == v.id() {
+                continue;
+            }
+        }
+        // Skip the `type` token (unnamed in tree-sitter for type-switch).
+        if c.kind() == "type" {
+            continue;
+        }
+        children.push(lower_node(c, source));
+    }
+    let extra_markers: &'static [&'static str] = if type_switch { &["type"] } else { &[] };
+    Ir::SimpleStatement {
+        element_name: "switch",
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range, span,
+    }
+}
+
+/// Lower an expression_case / type_case / communication_case.
+/// Type-case: each type field becomes `<type>` (wrapped if leaf).
+/// Expression-case: each value field wraps in `<value><expression>`.
+fn go_case(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut children: Vec<Ir> = Vec::new();
+    if node.kind() == "type_case" {
+        // Collect all `type` field children.
+        let mut cursor = node.walk();
+        for c in node.children(&mut cursor) {
+            // Check field name.
+            let mut p = node.walk();
+            let mut field = None;
+            for (i, ch) in node.children(&mut p).enumerate() {
+                if ch.id() == c.id() {
+                    field = node.field_name_for_child(i as u32);
+                    break;
+                }
+            }
+            if field == Some("type") && c.is_named() {
+                let inner = lower_node(c, source);
+                children.push(go_wrap_in_type_if_leaf(inner, range_of(c), span_of(c)));
+            } else if c.is_named() && field != Some("type") {
+                // Other named children (statements after the case label).
+                children.push(lower_node(c, source));
+            }
+        }
+    } else {
+        // expression_case / communication_case — value field is the
+        // case discriminator(s).
+        let mut cursor = node.walk();
+        for c in node.named_children(&mut cursor) {
+            // Determine field name.
+            let mut p = node.walk();
+            let mut field = None;
+            for (i, ch) in node.children(&mut p).enumerate() {
+                if ch.id() == c.id() {
+                    field = node.field_name_for_child(i as u32);
+                    break;
+                }
+            }
+            if field == Some("value") {
+                let inner = lower_node(c, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(c),
+                        span: span_of(c),
+                    }],
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+            } else {
+                children.push(lower_node(c, source));
+            }
+        }
+    }
+    Ir::SimpleStatement {
+        element_name: "case",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range, span,
     }
 }
 
@@ -1066,7 +1495,7 @@ fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &st
                     element_name: "body",
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
-                    children: body_children,
+                    children: merge_go_line_comments(body_children, source),
                     range: range_of(c),
                     span: span_of(c),
                 });
