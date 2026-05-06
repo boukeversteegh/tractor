@@ -1213,104 +1213,7 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } => {
-            let node = element(xot, "assign", *span);
-            xot.append(parent, node)?;
-
-            // <left><expression>...</expression>... </left> — each
-            // target wrapped in an <expression> host, in source order.
-            let left_node = element(xot, "left", *span);
-            xot.append(node, left_node)?;
-            // Compute left's source range from first to last target.
-            let left_range = if let (Some(first), Some(last)) = (targets.first(), targets.last()) {
-                ByteRange::new(first.range().start, last.range().end)
-            } else {
-                ByteRange::empty_at(range.start)
-            };
-            // Pre-target gap inside <left> (typically empty).
-            let mut cursor = left_range.start;
-            for t in targets {
-                let tr = t.range();
-                emit_gap(xot, left_node, source, cursor, tr.start)?;
-                let expr = element(xot, "expression", t.span());
-                xot.append(left_node, expr)?;
-                render_to_xot(xot, expr, t, source)?;
-                cursor = tr.end;
-            }
-            emit_gap(xot, left_node, source, cursor, left_range.end)?;
-
-            // Gap from end-of-left to start-of-type (if any) or op.
-            let post_left_end = left_range.end;
-            let next_start = type_annotation.as_ref().map(|t| t.range().start)
-                .unwrap_or(op_range.start);
-            emit_gap(xot, node, source, post_left_end, next_start)?;
-
-            // <type>...</type> — type annotation if present.
-            let post_type_end = if let Some(t) = type_annotation {
-                let tr = t.range();
-                let type_node = element(xot, "type", t.span());
-                xot.append(node, type_node)?;
-                render_with_gaps(xot, type_node, source, tr,
-                    std::slice::from_ref(t.as_ref()),
-                    |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ()))?;
-                emit_gap(xot, node, source, tr.end, op_range.start)?;
-                tr.end
-            } else {
-                post_left_end
-            };
-            let _ = post_type_end;
-
-            // <op>{op_text}{markers}</op> — markers come from the
-            // canonical OPERATOR_MARKERS table (shared with the
-            // imperative pipeline) keyed by op_text. The `op_markers`
-            // field on Ir::Assign is now unused.
-            let _ = op_markers;
-            if !op_text.is_empty() {
-                let op_node = element(xot, "op", *span);
-                xot.append(node, op_node)?;
-                let t = xot.new_text(op_text);
-                xot.append(op_node, t)?;
-                crate::transform::operators::add_operator_markers(xot, op_node, op_text)
-                    .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
-            }
-
-            // Gap from op to right.
-            let right_range = if let (Some(first), Some(last)) = (values.first(), values.last()) {
-                Some(ByteRange::new(first.range().start, last.range().end))
-            } else {
-                None
-            };
-            if let Some(rr) = right_range {
-                emit_gap(xot, node, source, op_range.end, rr.start)?;
-                let right_node = element(xot, "right", *span);
-                xot.append(node, right_node)?;
-                let mut cursor = rr.start;
-                for v in values {
-                    let vr = v.range();
-                    emit_gap(xot, right_node, source, cursor, vr.start)?;
-                    // Don't double-wrap when the value already
-                    // produces an `<expression>` host (Ir::Expression
-                    // / await / non-null markers).
-                    if matches!(v, Ir::Expression { .. }) {
-                        render_to_xot(xot, right_node, v, source)?;
-                    } else {
-                        let expr = element(xot, "expression", v.span());
-                        xot.append(right_node, expr)?;
-                        render_to_xot(xot, expr, v, source)?;
-                    }
-                    cursor = vr.end;
-                }
-                emit_gap(xot, right_node, source, cursor, rr.end)?;
-                // Trailing gap after right inside <assign>.
-                emit_gap(xot, node, source, rr.end, range.end)?;
-            } else {
-                // Pure type-only declaration — trailing gap after op
-                // (or after type if no op).
-                let after = if !op_text.is_empty() { op_range.end } else { post_type_end };
-                emit_gap(xot, node, source, after, range.end)?;
-            }
-            Ok(node)
-        }
+        Ir::Assign { .. } => render_ir_assign(xot, parent, ir, source),
         Ir::Import { has_alias, children, range, span } => {
             let node = element(xot, "import", *span);
             xot.append(parent, node)?;
@@ -1741,6 +1644,125 @@ pub fn render_to_xot(
             Ok(node)
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Per-arm renderers (out-of-line)
+// ---------------------------------------------------------------------------
+//
+// Each `render_ir_<variant>` mirrors one arm of `render_to_xot`'s match.
+// They're `#[inline(never)]` so the compiler doesn't fold them back into
+// the dispatcher's frame — that's the whole point: the dispatcher's
+// match becomes a thin jump table rather than a wide-frame function
+// reserving stack space worst-case across every arm. Recursive
+// IR walks at depth 20-30+ now run on default 2 MiB thread stacks
+// instead of overflowing.
+
+#[inline(never)]
+fn render_ir_assign(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "assign", *span);
+    xot.append(parent, node)?;
+
+    // <left><expression>...</expression>... </left> — each
+    // target wrapped in an <expression> host, in source order.
+    let left_node = element(xot, "left", *span);
+    xot.append(node, left_node)?;
+    // Compute left's source range from first to last target.
+    let left_range = if let (Some(first), Some(last)) = (targets.first(), targets.last()) {
+        ByteRange::new(first.range().start, last.range().end)
+    } else {
+        ByteRange::empty_at(range.start)
+    };
+    // Pre-target gap inside <left> (typically empty).
+    let mut cursor = left_range.start;
+    for t in targets {
+        let tr = t.range();
+        emit_gap(xot, left_node, source, cursor, tr.start)?;
+        let expr = element(xot, "expression", t.span());
+        xot.append(left_node, expr)?;
+        render_to_xot(xot, expr, t, source)?;
+        cursor = tr.end;
+    }
+    emit_gap(xot, left_node, source, cursor, left_range.end)?;
+
+    // Gap from end-of-left to start-of-type (if any) or op.
+    let post_left_end = left_range.end;
+    let next_start = type_annotation.as_ref().map(|t| t.range().start)
+        .unwrap_or(op_range.start);
+    emit_gap(xot, node, source, post_left_end, next_start)?;
+
+    // <type>...</type> — type annotation if present.
+    let post_type_end = if let Some(t) = type_annotation {
+        let tr = t.range();
+        let type_node = element(xot, "type", t.span());
+        xot.append(node, type_node)?;
+        render_with_gaps(xot, type_node, source, tr,
+            std::slice::from_ref(t.as_ref()),
+            |xot, parent, child| render_to_xot(xot, parent, child, source).map(|_| ()))?;
+        emit_gap(xot, node, source, tr.end, op_range.start)?;
+        tr.end
+    } else {
+        post_left_end
+    };
+    let _ = post_type_end;
+
+    // <op>{op_text}{markers}</op> — markers come from the
+    // canonical OPERATOR_MARKERS table (shared with the
+    // imperative pipeline) keyed by op_text. The `op_markers`
+    // field on Ir::Assign is now unused.
+    let _ = op_markers;
+    if !op_text.is_empty() {
+        let op_node = element(xot, "op", *span);
+        xot.append(node, op_node)?;
+        let t = xot.new_text(op_text);
+        xot.append(op_node, t)?;
+        crate::transform::operators::add_operator_markers(xot, op_node, op_text)
+            .map_err(|e| xot::Error::Io(format!("op marker: {e}")))?;
+    }
+
+    // Gap from op to right.
+    let right_range = if let (Some(first), Some(last)) = (values.first(), values.last()) {
+        Some(ByteRange::new(first.range().start, last.range().end))
+    } else {
+        None
+    };
+    if let Some(rr) = right_range {
+        emit_gap(xot, node, source, op_range.end, rr.start)?;
+        let right_node = element(xot, "right", *span);
+        xot.append(node, right_node)?;
+        let mut cursor = rr.start;
+        for v in values {
+            let vr = v.range();
+            emit_gap(xot, right_node, source, cursor, vr.start)?;
+            // Don't double-wrap when the value already
+            // produces an `<expression>` host (Ir::Expression
+            // / await / non-null markers).
+            if matches!(v, Ir::Expression { .. }) {
+                render_to_xot(xot, right_node, v, source)?;
+            } else {
+                let expr = element(xot, "expression", v.span());
+                xot.append(right_node, expr)?;
+                render_to_xot(xot, expr, v, source)?;
+            }
+            cursor = vr.end;
+        }
+        emit_gap(xot, right_node, source, cursor, rr.end)?;
+        // Trailing gap after right inside <assign>.
+        emit_gap(xot, node, source, rr.end, range.end)?;
+    } else {
+        // Pure type-only declaration — trailing gap after op
+        // (or after type if no op).
+        let after = if !op_text.is_empty() { op_range.end } else { post_type_end };
+        emit_gap(xot, node, source, after, range.end)?;
+    }
+    Ok(node)
 }
 
 // ---------------------------------------------------------------------------
