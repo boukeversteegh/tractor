@@ -1,22 +1,35 @@
-//! Go language transform pipeline.
+//! Go language pipeline.
 //!
-//!   - [`input`]    — generated `GoKind` enum (the input vocabulary).
-//!   - [`output`]   — semantic-name constants and `NODES` (the output
-//!                    vocabulary).
-//!   - [`rules`]    — `rule(GoKind) -> Rule`, the input→output table.
-//!   - [`transformations`] — named functions referenced by
-//!                    `Rule::Custom` arms in `rules`.
-//!   - [`transform`]      — orchestrator: dispatch each AST node
-//!                    through `rules::rule` (or by element name for
-//!                    builder-inserted wrappers) to the shared
-//!                    [`crate::languages::rule::dispatch`] helper.
+//! Go runs through `crate::ir::go_lang` end-to-end. The legacy
+//! imperative `transform` / `rules` / `transformations` modules have
+//! been retired (the parser dispatches to `parse_with_ir_pipeline`
+//! for Go, so they were unreachable). Only the IR-pipeline polish
+//! layer remains:
+//!
+//!   - [`input`]    — generated `GoKind` enum, kept as a kind-coverage
+//!                    catalogue for `tests/kind_catalogue.rs`.
+//!   - [`output`]   — `TractorNode` enum + spec table.
+//!   - [`post_transform`] — list-distribute + chain-inversion + slot-
+//!                          wrapping passes that run after IR rendering.
+
+use crate::output::syntax_highlight::SyntaxCategory;
+use crate::transform::operators::is_operator_marker;
 
 pub mod input;
 pub mod output;
 pub mod post_transform;
-pub mod rules;
-pub mod transform;
-pub mod transformations;
 
 pub use post_transform::go_post_transform;
-pub use transform::{transform, syntax_category};
+
+/// Map a transformed element name to a syntax category for highlighting.
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = output::spec(element) {
+        return spec.syntax;
+    }
+    match element {
+        // Builder wrappers / non-spec names that still need a category.
+        "parameters" => SyntaxCategory::Keyword,
+        _ if is_operator_marker(element) => SyntaxCategory::Operator,
+        _ => SyntaxCategory::Default,
+    }
+}

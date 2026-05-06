@@ -41,7 +41,6 @@ const LANGUAGE_FILES: &[&[&str]] = &[
     // those languages here.
     &["tractor/src/languages/typescript/transform.rs", "tractor/src/languages/typescript.rs"],
     &["tractor/src/languages/rust_lang/transform.rs", "tractor/src/languages/rust_lang.rs"],
-    &["tractor/src/languages/go/transform.rs", "tractor/src/languages/go.rs"],
     &["tractor/src/languages/ruby/transform.rs", "tractor/src/languages/ruby.rs"],
     &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],
 ];

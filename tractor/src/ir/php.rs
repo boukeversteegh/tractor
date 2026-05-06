@@ -1,7 +1,9 @@
 //! PHP tree-sitter CST → IR lowering.
 //!
-//! **Status: under construction.** Production parser does NOT yet
-//! route PHP through this lowering.
+//! Production parser routes PHP through this lowering end-to-end
+//! (see `parser::use_ir_pipeline`). The legacy imperative
+//! `languages/php/{rules,transformations,transform}.rs` modules
+//! were retired in 7c13d427.
 
 #![cfg(feature = "native")]
 
