@@ -32,6 +32,12 @@ pub fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error
         &["value", "condition", "left", "right", "return"],
     )?;
     php_restructure_use(xot, root)?;
+    // Wrap bare-name relationship targets in `<type>` BEFORE tagging
+    // multi-role children so `("implements", "type")` sees the wrapped
+    // shape. Iter 339: PHP `implements A, B` lowers as bare `<name>`
+    // children, and the wrap pass needs to run first so the role-tag
+    // pass can find the `<type>` siblings.
+    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::tag_multi_same_name_children(xot, root, &["type", "pattern", "string", "import"])?;
     crate::transform::tag_multi_target_expressions(xot, root)?;
     crate::transform::tag_multi_role_children(
@@ -65,11 +71,22 @@ pub fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error
             // this targeted tag covers the multi-name path case.
             // Single-name namespaces lift as `name: "App"` singleton.
             ("namespace", "name"),
+            // IR-pipeline additions: cover multi-cardinality role
+            // children that overflow $children otherwise.
+            ("class", "field"),
+            ("class", "const"),
+            ("class", "method"),
+            ("member", "name"),
+            ("implements", "type"),
+            ("ternary", "string"),
+            ("match", "arm"),
+            ("pair", "variable"),
+            ("enum", "constant"),
+            ("call", "argument"),
         ],
     )?;
     crate::transform::flatten_nested_paths(xot, root)?;
     crate::transform::strip_body_braces(xot, root, &["body", "then", "else"])?;
-    crate::transform::wrap_relationship_targets_in_type(xot, root)?;
     crate::transform::distribute_member_list_attrs(
         // `"namespace"` removed iter 328 — see targeted role tag above.
         xot, root, &["body", "program", "tuple", "list", "dict", "array", "repetition"],

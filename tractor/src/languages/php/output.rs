@@ -87,7 +87,7 @@ impl TractorNode {
             Self::Trailing | Self::Leading
             | Self::Instance | Self::Primitive | Self::Union | Self::Optional
             | Self::Underlying
-            | Self::Variadic | Self::Anonymous | Self::Arrow | Self::Open
+            | Self::Variadic | Self::Anonymous | Self::Open
             | Self::Prefix
             | Self::Nullsafe | Self::Bottom | Self::Intersection | Self::Disjunctive
             | Self::Dynamic | Self::Promoted | Self::Heredoc | Self::Nowdoc
@@ -98,6 +98,10 @@ impl TractorNode {
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Constant | Self::Static | Self::Default               => (true, true, Keyword),
+            // Arrow is dual-use: container `<arrow>` for arrow_function
+            // (PHP `fn (x) => x`) AND marker on `<function[arrow]>` in
+            // some contexts.
+            Self::Arrow                                                                  => (true, true, Keyword),
             // `Alias` is the `[alias]` marker on `<use>` for
             // `use App\Foo as Bar`. The local-binding wrapper uses
             // `<aliased>` (renamed iter 184) so the marker and

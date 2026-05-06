@@ -111,7 +111,44 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "integer" => Ir::Int { range, span },
         "float" => Ir::Float { range, span },
         "string" => Ir::String { range, span },
-        "encapsed_string" => simple_statement(node, "string", source),
+        "encapsed_string" => {
+            // PHP `"hello $name"` — wrap each variable / expression
+            // child in `<interpolation>`. string_value text and
+            // escape_sequence stay flat (their gap-text holds the
+            // literal string content).
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| {
+                    match c.kind() {
+                        "variable_name" | "dynamic_variable_name"
+                        | "subscript_expression" | "member_access_expression"
+                        | "nullsafe_member_access_expression"
+                        | "member_call_expression"
+                        | "nullsafe_member_call_expression"
+                        | "function_call_expression" => {
+                            let inner = lower_node(c, source);
+                            Ir::SimpleStatement {
+                                element_name: "interpolation",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &[],
+                                children: vec![inner],
+                                range: range_of(c),
+                                span: span_of(c),
+                            }
+                        }
+                        _ => lower_node(c, source),
+                    }
+                })
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "string",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "heredoc" => simple_statement_marked(node, "string", &["heredoc"], source),
         "nowdoc" | "nowdoc_string" => simple_statement_marked(node, "string", &["nowdoc"], source),
         "boolean" => Ir::SimpleStatement {
@@ -134,10 +171,30 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Top-level structures ------------------------------------
         "namespace_definition" => simple_statement(node, "namespace", source),
-        "namespace_use_declaration" => simple_statement(node, "use", source),
-        "use_declaration" => simple_statement(node, "use", source),
-        "namespace_use_clause" | "namespace_use_group"
-        | "use_as_clause" | "use_instead_of_clause" | "use_list" => Ir::Inline {
+        // `use Foo\Bar;` — single use. Lower as `<use>` with the path
+        // children inlined.
+        "namespace_use_declaration" | "use_declaration" => {
+            // Detect a `namespace_use_group` child; if present, mark
+            // this use as a group and its inner namespace_use_clauses
+            // emit as `<use>` siblings.
+            let mut cursor = node.walk();
+            let has_group = node.named_children(&mut cursor)
+                .any(|c| c.kind() == "namespace_use_group");
+            if has_group {
+                php_use_group(node, source)
+            } else {
+                simple_statement(node, "use", source)
+            }
+        }
+        "namespace_use_clause" | "use_as_clause"
+        | "use_instead_of_clause" | "use_list" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        },
+        // namespace_use_group: emits multiple <use> siblings — handled
+        // inside php_use_group at the parent level.
+        "namespace_use_group" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
@@ -170,7 +227,24 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             list_name: None,
             range, span,
         },
-        "const_declaration" => simple_statement(node, "const", source),
+        "const_declaration" => {
+            // Class constants can have visibility modifiers (`public
+            // const X = 1;`). Lift them onto the `<const>` element.
+            let modifiers = php_modifiers(node, source, false);
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .filter(|c| !is_php_modifier(c.kind()))
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "const",
+                modifiers,
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "const_element" => simple_statement(node, "constant", source),
         "enum_case" => simple_statement(node, "constant", source),
         "enum_declaration_list" => Ir::Inline {
@@ -179,7 +253,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             range, span,
         },
         "declaration_list" => Ir::Inline {
-            children: lower_children(node, source),
+            children: merge_php_line_comments(lower_children(node, source), source),
             list_name: None,
             range, span,
         },
@@ -219,7 +293,25 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
         "simple_parameter" => simple_statement(node, "parameter", source),
         "variadic_parameter" => simple_statement_marked(node, "parameter", &["variadic"], source),
-        "property_promotion_parameter" => simple_statement_marked(node, "parameter", &["promoted"], source),
+        "property_promotion_parameter" => {
+            // Constructor promotion: `public readonly int $x` —
+            // lift the visibility / readonly modifiers onto the
+            // <parameter> element.
+            let modifiers = php_modifiers(node, source, false);
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .filter(|c| !is_php_modifier(c.kind()))
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "parameter",
+                modifiers,
+                extra_markers: &["promoted"],
+                children,
+                range, span,
+            }
+        }
 
         // ----- Types ---------------------------------------------------
         "named_type" => simple_statement(node, "type", source),
@@ -246,9 +338,66 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "foreach_statement" => php_foreach_statement(node, source),
         "while_statement" => php_while_statement(node, source),
         "do_statement" => php_do_statement(node, source),
-        "try_statement" => simple_statement(node, "try", source),
-        "catch_clause" => simple_statement(node, "catch", source),
-        "finally_clause" => simple_statement(node, "finally", source),
+        "try_statement" => {
+            // Wrap the body's compound_statement in `<body>`. catch_clause
+            // / finally_clause children stay positional.
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if Some(c.id()) == body_node.map(|b| b.id()) {
+                    children.push(body_of(c, source));
+                    continue;
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "try",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "catch_clause" => {
+            // Body block → <body>.
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if Some(c.id()) == body_node.map(|b| b.id()) {
+                    children.push(body_of(c, source));
+                    continue;
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "catch",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "finally_clause" => {
+            // Body block → <body>.
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "compound_statement" {
+                    children.push(body_of(c, source));
+                    continue;
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "finally",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "throw_expression" => simple_statement(node, "throw", source),
         "return_statement" => simple_statement(node, "return", source),
         "break_statement" => simple_statement(node, "break", source),
@@ -418,7 +567,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "scoped_property_access_expression" => simple_statement_marked(node, "member", &["static"], source),
         "nullsafe_member_access_expression" => simple_statement_marked(node, "member", &["nullsafe"], source),
-        "class_constant_access_expression" => simple_statement(node, "member", source),
+        "class_constant_access_expression" => simple_statement_marked(node, "member", &["static"], source),
         "subscript_expression" => simple_statement(node, "index", source),
         "object_creation_expression" => simple_statement(node, "new", source),
         "cast_expression" => simple_statement(node, "cast", source),
@@ -585,7 +734,7 @@ fn body_of(block: TsNode<'_>, source: &str) -> Ir {
         element_name: "body",
         modifiers: Modifiers::default(),
         extra_markers: &[],
-        children: body_children,
+        children: merge_php_line_comments(body_children, source),
         range: range_of(block),
         span: span_of(block),
     }
@@ -935,6 +1084,55 @@ fn php_do_statement(node: TsNode<'_>, source: &str) -> Ir {
 /// update fields and a body. Wrap the condition in
 /// `<condition><expression>...` and the body in `<body>`. Init and
 /// update stay bare.
+/// Lower a PHP `use Foo\{Bar, Baz};` group-form. Produces
+/// `<use[group]><path>Foo</path><use>Bar</use><use>Baz</use>...</use>`
+/// matching the imperative shape.
+fn php_use_group(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut children: Vec<Ir> = Vec::new();
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        if c.kind() == "namespace_name" {
+            // The path before the `\{...}`.
+            let inner = lower_node(c, source);
+            children.push(Ir::SimpleStatement {
+                element_name: "path",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: range_of(c),
+                span: span_of(c),
+            });
+            continue;
+        }
+        if c.kind() == "namespace_use_group" {
+            // Emit each clause inside as a `<use>` sibling.
+            let mut gc = c.walk();
+            for clause in c.named_children(&mut gc) {
+                children.push(Ir::SimpleStatement {
+                    element_name: "use",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![lower_node(clause, source)],
+                    range: range_of(clause),
+                    span: span_of(clause),
+                });
+            }
+            continue;
+        }
+        children.push(lower_node(c, source));
+    }
+    Ir::SimpleStatement {
+        element_name: "use",
+        modifiers: Modifiers::default(),
+        extra_markers: &["group"],
+        children,
+        range,
+        span,
+    }
+}
+
 fn php_for_statement(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
