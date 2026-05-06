@@ -1,282 +1,143 @@
-# IR migration status (snapshot 2026-05-06, updated)
+# IR migration status (snapshot 2026-05-07)
 
-## Done
+## Done — IR-only end-to-end
 
-### Java IR-only end-to-end ✅
-All 274 transform tests + integration suites pass with Java on the
-IR pipeline. Imperative artefacts retired:
-  - `src/languages/java/input.rs` (JavaKind enum) — DELETED
-  - `src/languages/java/rules.rs` — DELETED
-  - `src/languages/java/transformations.rs` — DELETED
-  - `src/languages/java/transform.rs` — DELETED
-  - `LanguageOps.transform` for Java now uses `passthrough_transform`.
-Modifiers struct gained `final_`/`synchronized_`/`transient`/`native`/
-`strictfp`/`default` and `Access::Package`. Marker order in
-`marker_names()` is now canonical Java/C# declaration order. Method
-bodies are `Option<Box<Ir>>` so abstract / interface methods skip
-the `<body>` element.
+All 9 programming-language flavours run through `crate::ir::*`
+end-to-end via `parse_with_ir_pipeline`. Their imperative
+`{rules,transformations,transform}.rs` files are deleted; only
+`{input,output,post_transform}.rs` remain (input is the kind-
+catalogue enum; output is the TractorNode vocabulary;
+post_transform is the IR-pipeline polish layer for list-
+distribution / chain inversion / slot-wrapping).
 
-### TypeScript IR-only end-to-end ✅
-All 274 transform tests + shape contracts + lib tests pass with
-TypeScript on the IR pipeline. `src/ir/typescript.rs` (~2090 LOC)
-covers the full TS surface including constructor parameter
-shorthand (Modifiers field added to Ir::Parameter), arrow
-expression bodies, type predicates / asserts, accessor get/set,
-import/export clauses, property/index signatures, generators,
-template literals, type assertions, switch expressions, and
-destructuring patterns.
+| Language        | LOC saved | Status |
+|-----------------|-----------|--------|
+| C#              | ~1500     | ✅ end-to-end |
+| Python          | ~1400     | ✅ end-to-end |
+| Java            | ~900      | ✅ end-to-end |
+| TypeScript / JS / TSX / JSX | 1255 | ✅ end-to-end (via TS lower fn) |
+| Rust            | ~1100     | ✅ end-to-end |
+| Go              | ~1068     | ✅ end-to-end |
+| Ruby            | ~700      | ✅ end-to-end |
+| PHP             | ~872      | ✅ end-to-end |
 
-Imperative TS still present (`src/languages/typescript/{input,
-rules,transformations,transform}.rs`) — the IR pipeline takes the
-production path via `parse_with_ir_pipeline`, so the imperative
-files are dead code awaiting deletion.
+Snapshot regen across 57 fixtures committed once IR shape was
+stable. 274 transform tests + 18 catalogue + lib tests + 149
+integration snapshots all green.
 
-### Python IR-only end-to-end ✅
-All 274 transform tests + lib + integration suites pass with Python on
-the IR pipeline. Imperative artefacts retired:
-  - `src/languages/python/input.rs` (PyKind enum) — DELETED
-  - `src/languages/python/rules.rs` (kind→Rule table) — DELETED
-  - `src/languages/python/transformations.rs` (~1400 lines) — DELETED
-  - `src/languages/python/transform.rs` (dispatcher) — DELETED
-  - `LanguageOps.transform` for Python now uses `passthrough_transform`.
-The IR-aware `python_post_transform` keeps chain inversion +
-expression-host wrapping + the new `inject_python_visibility_markers`
-+ extended `tag_multi_role_children` table. `merge_python_line_comments`
-runs in `lower_block` for leading/trailing comment classification.
+### `render_to_xot` per-arm extraction ✅
 
-### C# IR-only end-to-end
-- `src/ir/csharp.rs` — typed lowering (lower_csharp_root) is the
-  sole C# transform path. `parse_with_ir_pipeline` dispatches
-  unconditionally for `lang == "csharp"`.
-- File-scoped namespace folding moved into IR lowering
-  (`fold_file_scoped_namespace_siblings`); no post-pass needed.
-- All previously-imperative C# transforms retired:
-  - `src/languages/csharp/input.rs` (CsKind enum) — DELETED
-  - `src/languages/csharp/rules.rs` (kind→Rule table) — DELETED
-  - `src/languages/csharp/transformations.rs` (~1500 lines) — DELETED
-  - `src/languages/csharp/transform.rs` (dispatcher) — DELETED
-  - Imperative-only post-passes in `csharp/post_transform.rs`:
-    - `attach_where_clause_constraints` — DELETED (replaced by
-      `attach_ir_where_clauses`)
-    - `unify_file_scoped_namespace` — DELETED (folded into lowering)
-    - `csharp_normalize_conditional_access` — DELETED (IR emits
-      canonical `<object>` directly)
-- Modifier constants (`ACCESS_MODIFIERS`, `OTHER_MODIFIERS`) and
-  `syntax_category` moved to `csharp/output.rs`.
-- `LanguageOps.transform` for C# points at `passthrough_transform`
-  (the field is required by the registry contract; never fires).
-- All tests green (274 transform tests, full lib + integration suite).
+`src/ir/to_xot.rs` (renamed from `render.rs` to clarify it's the
+Xot renderer) now extracts all 50 non-trivial match arms into
+`#[inline(never)]` per-arm helpers. Dispatcher's match is a thin
+jump table. Workspace tests pass at default opt-level=0.
 
-### IR→JSON renderer
-- `src/ir/json.rs` — `ir_to_json(ir, source) -> serde_json::Value`
-  walks the typed Ir and produces JSON without the XML intermediate.
-- Each variant maps to a structured JSON shape:
-  - `Vec<Ir>` → arrays (pluralised key)
-  - `Box<Ir>` → singleton (element-name key)
-  - `modifiers.marker_names()` → boolean flags
-  - `Ir::Inline` transparent — children flatten into parent
-  - Scalar leaves (Name, Int, …) → JSON strings
-- Two ignored tests in `tests/ir_csharp_json_parity.rs`:
-  - `dump_ir_json` — prints output for inspection
-  - `ir_json_matches_snapshot` — byte-diff against legacy snapshot
-- **NOT yet wired to CLI** — the JSON projection in
-  `src/format/json.rs` still uses `xml_node_to_json`. Hooking it up
-  for C# is the next concrete step.
+A 16 MiB `rayon::ThreadPoolBuilder::stack_size` hack remains in
+`cli/context.rs`, but its load-bearing reason is now the **xee
+XPath evaluator's** recursive AST walks during query evaluation,
+NOT `render_to_xot` (which has been split). Comment in context.rs
+reflects this.
 
-## Pending
+### Module reorganization ✅
 
-### C# end-to-end (to fully retire `list=`/`field=` for C#)
-1. Plumb `Ir` through the report system. Today `ReportMatch.tree`
-   holds an `XmlNode`; for IR-direct JSON, the matched IR sub-tree
-   needs to ride alongside (or replace) the XmlNode for the C# case.
-2. In `format/json.rs::project_match_field_to_json`, dispatch on
-   language: csharp → `ir_to_json`, else → `xml_node_to_json`.
-3. Drop `list=` / `field=` emission in `csharp/post_transform.rs`'s
-   `tag_multi_role_children` and `distribute_member_list_attrs`
-   calls. Update C# XPath tests that asserted these attrs (or move
-   them to remain-on-XML languages only).
-4. Regenerate `tests/integration/languages/csharp/blueprint.cs.snapshot.json`
-   from the IR→JSON output. Inspect for unintended divergence.
+- `src/ir/render.rs` → `src/ir/to_xot.rs`  (renders IR → Xot tree)
+- `src/ir/json.rs` → `src/ir/to_json.rs`   (renders IR → serde_json::Value)
+- `src/ir/source/` (was already there)     (renders IR → original source bytes)
 
-### Python migration to IR-only
-Updated 2026-05-06:
+Public function names (`render_to_xot`, `ir_to_json`) unchanged.
 
-**Coverage**: 0 shape-contract errors against the Python blueprint
-when Python is hard-switched to the IR pipeline. All previously-
-identified issues addressed:
-  - ✅ Splat shape — Ir::ListSplat / Ir::DictSplat render as
-    `<spread>` with `<list/>`/`<dict/>` discriminator markers
-    (matches imperative `RenameWithMarker(Spread, List)`).
-  - ✅ Missing CST kinds (~13 added): `type`, `expression_list`,
-    `pattern_list`, `constrained_type`, `splat_type`,
-    `list_splat_pattern`, `block`, `await`, `as_pattern`,
-    `as_pattern_target`, `list_pattern`, `tuple_pattern`,
-    `union_pattern`, `with_clause`, `with_item`,
-    `dictionary_comprehension`.
-  - ✅ `<async/>` marker on async-with — `simple_statement_marked`
-    detects the `async` keyword in source.
-  - ✅ `<with><with>` and `<expression><expression>` nesting fixed
-    (finally-clause inner block + assign-right expression-host
-    bypass for already-wrapped values).
-  - ✅ `<dictionary>` → `<dict>` (Python's vocabulary uses short
-    form).
-  - ✅ Operator marker map extended (`//`, `%`, `**`, `@`, bitwise,
-    shifts).
+### Build hygiene ✅
 
-**Resolved** (16 → 5 transform-test divergences this session):
-  - ✅ `comments::python` — `merge_python_line_comments` post-pass
-    classifies leading/trailing/floating (port of csharp's).
-  - ✅ `if_else::python` — collect ALL `alternative` field children
-    (not just first), chain into Ir::ElseIf/Ir::Else; ternary
-    drops `<expression>` wrapper around `<then>`/`<else>` slots.
-  - ✅ `operators::python_compare` — Ir::Comparison renders as
-    `<compare>` with flat children (no `<left>`/`<right>` wrappers).
-  - ✅ `functions::python_multi_value_return_lists_expressions` +
-    `python::expression_list::python` — Return render emits each
-    Inline child in its own `<expression>`; expression_list /
-    pattern_list lower to Ir::Inline (transparent flatten).
-  - ✅ `visibility::python` — new `inject_python_visibility_markers`
-    post-pass adds `<public/>`/`<protected/>`/`<private/>` to
-    class-method `<function>` elements based on Python's
-    name-convention.
-  - ✅ `collections::python_collections` — comprehension lowerings
-    add `<comprehension/>` marker via simple_statement_marked.
-  - ✅ `strings::python_fstring` / `strings::python_interpolation` —
-    f-strings lift to SimpleStatement when CST has `interpolation`
-    / `escape_sequence` children; plain strings stay scalar.
+Source-side build warnings reduced from 6 to 0 (only Cargo's
+cosmetic PDB-filename collision warning remains, which is not
+source-actionable).
 
-**Pending gating items** (5 transform-test divergences left):
-  - `chain::python` + `chain::cross_language_uniformity` — chain
-    inversion sees 2 `<object[access]>` instead of 1 for
-    `obj.foo().bar.baz()`. Likely an accumulator edge case in
-    `walk_chain` when calls + members alternate.
-  - `errors::python` — `except ValueError as err:` should render as
-    `<except><value><expression><as>...</as></expression></value></except>`.
-    Current Ir::ExceptHandler render emits `<type>...<name>...`
-    with separate fields. Needs a Python-flavoured ExceptHandler
-    render variant or a parallel post-pass.
-  - `patterns::python` — `[1, 2, *rest]` list pattern needs
-    `<pattern[splat]><name>rest</name>` for the splat element.
-  - `patterns::python_dict_pattern_lists_values` — dict-pattern key
-    strings need `list="strings"` attr; the existing
-    `tag_multi_same_name_children` should cover this but isn't
-    triggering for some structural reason.
+## Pending — architectural
 
-Plus the post-pass `tag_multi_role_children` advisory tally is
-elevated under the hard switch (40 vs grandfathered 20). Bumping
-the ratchet or adding the missing Python pairs unblocks that.
+### Drop `list=`/`field=` from C# (and eventually all IR-pipelined
+languages) XML output
 
-Estimate: 1–3 hours to close the remaining 5 + ratchet.
+**Blocked on:** `ir_to_json` not wired into the production JSON
+output path.
 
-**Foundation done**: `tests/ir_python_missing_kinds.rs` is the
-diagnostic for any future coverage push (run with `--ignored
---nocapture`).
+The IR has typed children (`Vec<Comment>`, `Vec<Class>`, etc.) so
+`list=` attributes are redundant for JSON projection. But the
+production JSON path still flows through `xml_to_json`, which
+reads `list=` to decide singleton-vs-array. Wiring `ir_to_json`
+into that path requires:
 
-### Java IR scaffold ⚠️ (switch off)
-`src/ir/java.rs` (~1400 LOC) lowers compilation_unit/program +
-class/interface/record/enum, method/constructor/field, control flow,
-chains, generics, comments, scoped_identifier paths, enum_constant,
-explicit_constructor_invocation, instanceof, annotations, etc.
-Wired through `parse_with_ir_pipeline` but NOT enabled.
+1. Plumb `Option<Ir>` through `XotParseResult` → `XeeParseResult`
+   → `Match::tree`. Today only the Xot tree carries semantic info.
+2. In the JSON output renderer, when the parse came from the IR
+   pipeline, dispatch to `ir_to_json` instead of `xml_to_json`.
+3. Confirm parity vs current snapshots — tests/ir_csharp_json_parity.rs
+   has a known divergence around singleton-vs-plural decisions
+   (xml_to_json forces plural arrays via `list="X"` even for
+   singletons; `ir_to_json` keeps singletons singular). Needs a
+   per-element-name "always plural" rule table OR encoding plurality
+   in the IR's typed structure.
+4. Once `ir_to_json` is the production JSON path, drop
+   `tag_multi_role_children` + `distribute_member_list_attrs`
+   from C# `post_transform`.
 
-Trial flip status: **13 transform-test divergences** (down from 18):
-  - calls::java_method_call (chain folding edge case)
-  - chain::java + cross_language chain tests (chain inversion edge)
-  - decorators::java_annotation_is_direct_child (annotation
-    placement)
-  - flat_lists::java
-  - functions::java_constructor_rename
-  - generics::java_vocabulary
-  - loops::java
-  - modifiers::java — needs `<final/>`, `<package/>`,
-    `<synchronized/>` markers (Java-specific, not in `Modifiers`
-    struct). Either extend `Ir::Variable`/`Function`/`Class` with
-    `extra_markers: &'static [&'static str]` field, or render Java
-    elements via `Ir::SimpleStatement` to allow custom marker lists.
-  - patterns::java_type_pattern_no_marker_collision
-  - types::java_markers
-  - visibility::java_interface
+Estimate: 4–8 hours.
 
-Foundation done in this session:
-  - Single-declarator field flattens via existing post-pass
-  - Multi-declarator wraps each in `<declarator>` with `<value>` slot
-  - Java method bodies render bare `<body>` (no inner `<block>`)
-  - Java field/local values get `<value>` slot for post-pass
-    `wrap_expression_positions` to add `<expression>` host
+### Data-language IR migration (JSON/YAML/TOML/INI/Markdown)
 
-Estimate: 4–8 hours to close the remaining 13 + add language-
-specific modifier markers + delete imperative Java.
+**Architectural blocker:** the IR's text-recovery + round-trip
+invariants don't match the data-branch shape.
 
-### Rust IR-only end-to-end ✅
-All 274 transform tests + shape contracts + lib tests pass with
-Rust on the IR pipeline. `src/ir/rust_lang.rs` (~1000 LOC) covers
-the full Rust surface including chain inversion (Ir::Access for
-field/call/index expressions), match expressions with guard
-detection, qualified visibility (`pub(crate)/super/self`),
-marker-prefixed blocks (`async`/`const`/`try`/`gen`), if-else-if
-chain collapse, range expressions with from/to slots, comment
-classification (port of merge_java_line_comments adapted for
-tree-sitter rust quirks), wildcard pattern handling.
+The data branch produces XML where element names are user-keyed
+(e.g. `[database]\nhost = localhost` → `<database><host>localhost</host></database>`).
+The bracket markup and `=` are dropped, not preserved as gap text.
+The IR's invariants explicitly forbid that:
+- `string(IR_root) == source`
+- `to_source(ir, source) == source`
 
-`use_ir_pipeline` allowlist for `rust` is ON. Raw tree-mode
-requests bypass the IR pipeline (semantic transforms shouldn't
-apply when raw kind names are explicitly requested).
+Two approaches:
 
-Imperative `src/languages/rust_lang/{input,rules,transformations,
-transform}.rs` files are now dead code awaiting deletion.
+A. **New data IR variants with relaxed invariants.** Define
+   `Ir::DataElement { name: String, children: Vec<Ir> }` and
+   `Ir::DataScalar { name: String, value_text: String }`,
+   document that they break text-recovery, restrict them to the
+   data branch.
 
-### Go IR-only end-to-end ✅
-All 274 transform tests + shape contracts + lib tests pass with
-Go on the IR pipeline. `src/ir/go_lang.rs` covers the full Go
-surface including chain inversion (selector_expression / call /
-slice_expression with chain-fold + bounds slots), switch+case
-(both expression and type forms with proper value/type slot
-wrapping), if-elseif chain collapse, struct/interface hoisting
-out of type_spec, method signatures with returns, const/var
-spec value-list flattening, exported/unexported markers, nil →
-`<nil>`, comment classification.
+B. **Keep data languages on the imperative path long-term.** A
+   deliberate split: structural (programming) languages on IR,
+   data languages on imperative. The IR architecture is for
+   round-trip-preserving structure; data branch isn't the same
+   problem.
 
-`use_ir_pipeline` allowlist for `go` is ON. Imperative
-`src/languages/go/{input,rules,transformations,transform}.rs`
-files are now dead code awaiting deletion.
+Recommendation: do (B) unless there's a concrete need for
+data-language IR mutation surface.
 
-### Ruby / PHP / TSQL — IR layer 100% covered (switch off)
-Each has a comprehensive `src/ir/<lang>.rs` lowering with full
-per-kind coverage of the respective blueprint:
+JSON's *syntax* branch (which preserves brackets etc.) could go
+through IR using existing variants (Dictionary/List/Pair) with
+parameterized `element_name` (currently the variants render with
+fixed names: `<dict>`, `<list>`, `<pair>`, but JSON wants
+`<object>`, `<array>`, `<property>`). Achievable but moderate
+effort (~2–4 hours per language).
 
-| Language | Kinds | CST nodes | Roundtrip | Switch |
-|----------|-------|-----------|-----------|--------|
-| Ruby     | 105   | 740       | ✅        | OFF    |
-| PHP      | 120   | 921       | ✅        | OFF    |
-| TSQL     | 128   | 799       | ✅        | OFF    |
+## What this PR delivers
 
-All 5 produce `0 dropped` + `0 untyped` against their blueprints
-(`tests/ir_<lang>_missing_kinds.rs`). Roundtrip identity
-(`to_source(ir, source) == source`) holds.
+- **8 programming language flavours** moved off the imperative
+  pipeline onto a single, typed IR pipeline (~9 KLOC of imperative
+  code deleted).
+- **TSX / JSX migration** unifies all 4 TS/JS variants under one
+  `lower_typescript_root` (the imperative pipeline already shared
+  the same transform; the IR continues that unification).
+- **`render_to_xot` decomposition** — wide-match → per-arm helpers
+  fix the dev-build stack-overflow that was forcing
+  `[profile.dev/test] opt-level = 1` and the 16 MiB rayon worker
+  stack hacks. opt-level=1 is removed; rayon stack remains for
+  xee's recursion.
+- **Module reorg** clarifies that `ir/` has 3 render targets
+  (`to_xot`, `to_json`, `to_source/`).
+- **All-language kind catalogues** restored (`csharp/java/python`
+  had lost theirs; regenerated via `task gen:kinds`). Drift detection
+  via `task verify:gen-kinds` still works.
+- **Build clean**: 0 source warnings (down from 6).
+- **CI green** on Linux + Windows.
+- **149 snapshot fixtures** regenerated to match IR shape.
 
-**To complete each migration, the next iteration must:**
-1. Hard-switch in `parse_with_ir_pipeline`'s allowlist.
-2. Resolve transform-test divergences (TypeScript took 21 → 0).
-3. Resolve shape-contract violations on each blueprint.
-4. Add per-language post-pass tag-pairs (list= attributes) for
-   JSON $children no-overflow.
-5. Delete imperative `<lang>/{input,rules,transformations,
-   transform}.rs`.
-
-Data languages (JSON/YAML/TOML/INI/Markdown) don't have blueprint
-files yet and need the `--set` mutation surface kept working via
-XPath; IR mutation semantics must be carved out before deletion.
-
-## Suggested next steps (priority)
-1. **Wire IR→JSON for C#** (1–2 h): plumb Ir through ReportMatch
-   for csharp, dispatch in format/json.rs, regenerate the snapshot,
-   make sure --check passes.
-2. **Drop `list=`/`field=` for C#** (1–2 h): remove the
-   tag-multi-role-children calls + distribute_member_list_attrs;
-   update XPath tests that asserted these attrs.
-3. **Python coverage push** (4–6 h): close the 45 contract
-   violations one by one. Splat shape first (universal IR fix),
-   then missing kinds, then `<with>` async marker.
-4. **Java migration** (similar scale to C#): start a new
-   `src/ir/java.rs` modelled on csharp.rs.
-5. **Iterate**.
+850 commits ahead of `main`. +96K / -21K LOC net.
