@@ -431,6 +431,7 @@ fn parse_with_ir_pipeline(
         "csharp" => ir::lower_csharp_root(tree.root_node(), source),
         "python" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
+        "typescript" => ir::lower_typescript_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
@@ -499,6 +500,7 @@ fn parse_with_ir_pipeline_to_xee(
         "csharp" => ir::lower_csharp_root(tree.root_node(), source),
         "python" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
+        "typescript" => ir::lower_typescript_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
