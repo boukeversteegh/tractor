@@ -207,13 +207,30 @@ Foundation done in this session:
 Estimate: 4–8 hours to close the remaining 13 + add language-
 specific modifier markers + delete imperative Java.
 
-### Rust / Go / Ruby / PHP / TSQL — IR layer 100% covered (switch off)
+### Rust IR-only end-to-end ✅
+All 274 transform tests + shape contracts + lib tests pass with
+Rust on the IR pipeline. `src/ir/rust_lang.rs` (~1000 LOC) covers
+the full Rust surface including chain inversion (Ir::Access for
+field/call/index expressions), match expressions with guard
+detection, qualified visibility (`pub(crate)/super/self`),
+marker-prefixed blocks (`async`/`const`/`try`/`gen`), if-else-if
+chain collapse, range expressions with from/to slots, comment
+classification (port of merge_java_line_comments adapted for
+tree-sitter rust quirks), wildcard pattern handling.
+
+`use_ir_pipeline` allowlist for `rust` is ON. Raw tree-mode
+requests bypass the IR pipeline (semantic transforms shouldn't
+apply when raw kind names are explicitly requested).
+
+Imperative `src/languages/rust_lang/{input,rules,transformations,
+transform}.rs` files are now dead code awaiting deletion.
+
+### Go / Ruby / PHP / TSQL — IR layer 100% covered (switch off)
 Each has a comprehensive `src/ir/<lang>.rs` lowering with full
 per-kind coverage of the respective blueprint:
 
 | Language | Kinds | CST nodes | Roundtrip | Switch |
 |----------|-------|-----------|-----------|--------|
-| Rust     | 144   | 1348      | ✅        | OFF    |
 | Go       | 99    | 1063      | ✅        | OFF    |
 | Ruby     | 105   | 740       | ✅        | OFF    |
 | PHP      | 120   | 921       | ✅        | OFF    |
