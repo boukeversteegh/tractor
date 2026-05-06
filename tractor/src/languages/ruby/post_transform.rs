@@ -73,6 +73,13 @@ pub fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
             ("array", "int"),
             ("array", "name"),
             ("array", "object"),
+            // IR-pipeline additions: cover multi-cardinality role
+            // children that overflow $children otherwise.
+            ("assign", "name"),
+            ("call", "name"),
+            ("call", "int"),
+            ("range", "int"),
+            ("method", "name"),
         ],
     )?;
     crate::transform::wrap_body_value_children(
