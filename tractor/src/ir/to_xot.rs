@@ -273,62 +273,7 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Foreach { type_ann, target, iterable, body, range, span } => {
-            let node = element(xot, "foreach", *span);
-            xot.append(parent, node)?;
-            // `<in/>` marker for the `in` keyword in `foreach (T x in coll)`.
-            let in_marker = element(xot, "in", *span);
-            xot.append(node, in_marker)?;
-            // Source-order children: type? target iterable body. The
-            // header `(... in ...)` punctuation lives in gap text.
-            // type → <type>, target → <left><expression>,
-            // iterable → <right><expression>, body → as-is.
-            #[derive(Clone, Copy)]
-            enum Slot<'a> { Type(&'a Ir), Target(&'a Ir), Iter(&'a Ir), Body(&'a Ir) }
-            let mut order: Vec<Slot> = Vec::new();
-            if let Some(t) = type_ann { order.push(Slot::Type(t)); }
-            order.push(Slot::Target(target));
-            order.push(Slot::Iter(iterable));
-            order.push(Slot::Body(body));
-            order.sort_by_key(|s| match s {
-                Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i.range().start,
-            });
-            let mut cursor = range.start;
-            for slot in &order {
-                let inner: &Ir = match slot {
-                    Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i,
-                };
-                let cr = inner.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                match slot {
-                    Slot::Type(_) => {
-                        let t = element(xot, "type", inner.span());
-                        xot.append(node, t)?;
-                        render_to_xot(xot, t, inner, source)?;
-                    }
-                    Slot::Target(_) => {
-                        let slot_el = element(xot, "left", inner.span());
-                        xot.append(node, slot_el)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(slot_el, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
-                    }
-                    Slot::Iter(_) => {
-                        let slot_el = element(xot, "right", inner.span());
-                        xot.append(node, slot_el)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(slot_el, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
-                    }
-                    Slot::Body(_) => {
-                        render_to_xot(xot, node, inner, source)?;
-                    }
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Foreach { .. } => render_ir_foreach(xot, parent, ir, source),
         Ir::CFor { initializer, condition, updates, body, range, span } => {
             let node = element(xot, "for", *span);
             xot.append(parent, node)?;
@@ -382,61 +327,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cr.end, range.end)?;
             Ok(node)
         }
-        Ir::FieldWrap { wrapper, inner, range, span } => {
-            // When the wrapper is `name`, collapse the inner to a flat
-            // text leaf — `<name>` is text-only by contract. Works for
-            // bare identifiers (Ir::Name), dotted paths (Ir::Path),
-            // generic types (Ir::GenericType), and any other inner: we
-            // emit the full source slice as the text content.
-            // Mirrors the imperative pipeline's `name_wrapper`.
-            if *wrapper == "name" {
-                let node = element(xot, "name", *span);
-                xot.append(parent, node)?;
-                let text = inner.range().slice(source);
-                if !text.is_empty() {
-                    let t = xot.new_text(text);
-                    xot.append(node, t)?;
-                }
-                return Ok(node);
-            }
-            // Skip the wrap entirely if the inner already produces
-            // an element of the same name — avoids `<X><X>...</X></X>`
-            // double-nesting (mirrors the imperative pipeline's
-            // post-transform deduplication for body/type/name slots).
-            let inner_already_emits_wrapper = match (*wrapper, inner.as_ref()) {
-                ("body", Ir::Body { .. }) => true,
-                ("type", Ir::GenericType { .. }) => true,
-                ("type", Ir::SimpleStatement { element_name: "type", .. }) => true,
-                ("name", Ir::SimpleStatement { element_name: "name", .. }) => true,
-                _ => false,
-            };
-            if inner_already_emits_wrapper {
-                let ir = inner.range();
-                emit_gap(xot, parent, source, range.start, ir.start)?;
-                let inner_node = render_to_xot(xot, parent, inner, source)?;
-                emit_gap(xot, parent, source, ir.end, range.end)?;
-                return Ok(inner_node);
-            }
-            let node = element(xot, wrapper, *span);
-            xot.append(parent, node)?;
-            let ir = inner.range();
-            emit_gap(xot, node, source, range.start, ir.start)?;
-            // Slot wrappers for value-producing positions (Principle #15).
-            // `<value>` always contains an `<expression>` host so XPath
-            // queries like `//value/expression/...` work uniformly.
-            let target = if matches!(*wrapper, "value" | "condition")
-                && !matches!(inner.as_ref(), Ir::Expression { .. })
-            {
-                let expr = element(xot, "expression", *span);
-                xot.append(node, expr)?;
-                expr
-            } else {
-                node
-            };
-            render_to_xot(xot, target, inner, source)?;
-            emit_gap(xot, node, source, ir.end, range.end)?;
-            Ok(node)
-        }
+        Ir::FieldWrap { .. } => render_ir_field_wrap(xot, parent, ir, source),
         Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span } => {
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
@@ -1802,6 +1693,124 @@ fn render_ir_if(
         }
     }
     emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_foreach(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Foreach { type_ann, target, iterable, body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "foreach", *span);
+    xot.append(parent, node)?;
+    let in_marker = element(xot, "in", *span);
+    xot.append(node, in_marker)?;
+    #[derive(Clone, Copy)]
+    enum Slot<'a> { Type(&'a Ir), Target(&'a Ir), Iter(&'a Ir), Body(&'a Ir) }
+    let mut order: Vec<Slot> = Vec::new();
+    if let Some(t) = type_ann { order.push(Slot::Type(t)); }
+    order.push(Slot::Target(target));
+    order.push(Slot::Iter(iterable));
+    order.push(Slot::Body(body));
+    order.sort_by_key(|s| match s {
+        Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i.range().start,
+    });
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i,
+        };
+        let cr = inner.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        match slot {
+            Slot::Type(_) => {
+                let t = element(xot, "type", inner.span());
+                xot.append(node, t)?;
+                render_to_xot(xot, t, inner, source)?;
+            }
+            Slot::Target(_) => {
+                let slot_el = element(xot, "left", inner.span());
+                xot.append(node, slot_el)?;
+                let expr = element(xot, "expression", inner.span());
+                xot.append(slot_el, expr)?;
+                render_to_xot(xot, expr, inner, source)?;
+            }
+            Slot::Iter(_) => {
+                let slot_el = element(xot, "right", inner.span());
+                xot.append(node, slot_el)?;
+                let expr = element(xot, "expression", inner.span());
+                xot.append(slot_el, expr)?;
+                render_to_xot(xot, expr, inner, source)?;
+            }
+            Slot::Body(_) => {
+                render_to_xot(xot, node, inner, source)?;
+            }
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_field_wrap(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::FieldWrap { wrapper, inner, range, span } = ir else { unreachable!() };
+    // When the wrapper is `name`, collapse the inner to a flat text
+    // leaf — `<name>` is text-only by contract. Works for bare
+    // identifiers (Ir::Name), dotted paths (Ir::Path), generic types
+    // (Ir::GenericType), and any other inner: we emit the full source
+    // slice as the text content. Mirrors the imperative pipeline's
+    // `name_wrapper`.
+    if *wrapper == "name" {
+        let node = element(xot, "name", *span);
+        xot.append(parent, node)?;
+        let text = inner.range().slice(source);
+        if !text.is_empty() {
+            let t = xot.new_text(text);
+            xot.append(node, t)?;
+        }
+        return Ok(node);
+    }
+    // Skip the wrap entirely if the inner already produces an element
+    // of the same name — avoids `<X><X>...</X></X>` double-nesting.
+    let inner_already_emits_wrapper = match (*wrapper, inner.as_ref()) {
+        ("body", Ir::Body { .. }) => true,
+        ("type", Ir::GenericType { .. }) => true,
+        ("type", Ir::SimpleStatement { element_name: "type", .. }) => true,
+        ("name", Ir::SimpleStatement { element_name: "name", .. }) => true,
+        _ => false,
+    };
+    if inner_already_emits_wrapper {
+        let ir_range = inner.range();
+        emit_gap(xot, parent, source, range.start, ir_range.start)?;
+        let inner_node = render_to_xot(xot, parent, inner, source)?;
+        emit_gap(xot, parent, source, ir_range.end, range.end)?;
+        return Ok(inner_node);
+    }
+    let node = element(xot, wrapper, *span);
+    xot.append(parent, node)?;
+    let ir_range = inner.range();
+    emit_gap(xot, node, source, range.start, ir_range.start)?;
+    let target = if matches!(*wrapper, "value" | "condition")
+        && !matches!(inner.as_ref(), Ir::Expression { .. })
+    {
+        let expr = element(xot, "expression", *span);
+        xot.append(node, expr)?;
+        expr
+    } else {
+        node
+    };
+    render_to_xot(xot, target, inner, source)?;
+    emit_gap(xot, node, source, ir_range.end, range.end)?;
     Ok(node)
 }
 

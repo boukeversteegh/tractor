@@ -4,18 +4,6 @@ members = [
     "tractor",
 ]
 
-# Bump opt-level for dev/test. Debug builds otherwise reserve stack
-# space worst-case across all 72 arms of `render_to_xot` (which
-# recurses), and walk the C# blueprint deeply enough to overflow
-# the default 2 MiB thread stack. opt-level=1 enables stack-slot
-# reuse. Will be removed as more `render_to_xot` arms are extracted
-# into per-arm `#[inline(never)]` helpers (task #85).
-[profile.dev]
-opt-level = 1
-
-[profile.test]
-opt-level = 1
-
 [workspace.package]
 version = "0.1.0"
 edition = "2021"

@@ -126,13 +126,12 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
-        // Rayon worker threads default to ~2 MiB stacks. `render_to_xot`
-        // is a 72-arm match that recurses, and the per-arm locals make
-        // each frame fat enough to overflow 2 MiB after ~30 levels of
-        // C# blueprint nesting — even at release opt-level=3. Bumping
-        // worker stacks to 16 MiB matches the Windows main-thread stack
-        // (set in .cargo/config.toml). Per-arm extraction is the proper
-        // fix; this bandaid stays until that lands.
+        // Rayon worker threads default to ~2 MiB stacks. Even with
+        // many `render_to_xot` arms extracted into per-arm helpers,
+        // the dispatcher still needs more than 2 MiB on real-world
+        // workloads. Bump worker stacks to 16 MiB to match the
+        // Windows main-thread reservation (.cargo/config.toml).
+        // Tracked alongside task #85.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
             .stack_size(16 * 1024 * 1024)
