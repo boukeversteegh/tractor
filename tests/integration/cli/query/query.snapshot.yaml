@@ -6,7 +6,7 @@ results:
     public: true
     name: Calculator
     body:
-      $truncated: 81
+      $truncated: 72
 - file: tests/integration/sample.cs
   line: 9
   tree:
@@ -14,4 +14,4 @@ results:
     public: true
     name: Greeter
     body:
-      $truncated: 52
+      $truncated: 45

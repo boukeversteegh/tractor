@@ -17,16 +17,12 @@
           }
         }
       },
-      "condition": {
-        "expression": {
-          "object": {
-            "call": {
-              "name": "zero?"
-            },
-            "access": true,
-            "name": "MAX_RETRIES"
-          }
-        }
+      "object": {
+        "call": {
+          "name": "zero?"
+        },
+        "access": true,
+        "name": "MAX_RETRIES"
       }
     }
   ],
@@ -40,21 +36,13 @@
                 "symbol": ":unknown"
               }
             },
-            "value": {
-              "expression": {
-                "name": "value"
-              }
-            },
+            "name": "value",
             "whens": [
               {
-                "body": {
-                  "thens": [
-                    {
-                      "expression": {
-                        "symbol": ":number"
-                      }
-                    }
-                  ]
+                "then": {
+                  "expression": {
+                    "symbol": ":number"
+                  }
                 },
                 "patterns": [
                   {
@@ -66,38 +54,27 @@
                 ]
               },
               {
-                "body": {
-                  "thens": [
-                    {
-                      "expression": {
-                        "symbol": ":digit"
-                      }
-                    }
-                  ]
+                "then": {
+                  "expression": {
+                    "symbol": ":digit"
+                  }
                 },
                 "patterns": [
                   {
                     "range": {
-                      "to": {
-                        "int": "9"
-                      },
-                      "inclusive": true,
-                      "from": {
-                        "int": "1"
-                      }
+                      "ints": [
+                        "1",
+                        "9"
+                      ]
                     }
                   }
                 ]
               },
               {
-                "body": {
-                  "thens": [
-                    {
-                      "expression": {
-                        "symbol": ":string"
-                      }
-                    }
-                  ]
+                "then": {
+                  "expression": {
+                    "symbol": ":string"
+                  }
                 },
                 "patterns": [
                   {
@@ -106,14 +83,10 @@
                 ]
               },
               {
-                "body": {
-                  "thens": [
-                    {
-                      "expression": {
-                        "symbol": ":triple"
-                      }
-                    }
-                  ]
+                "then": {
+                  "expression": {
+                    "symbol": ":triple"
+                  }
                 },
                 "patterns": [
                   {
@@ -128,14 +101,10 @@
                 ]
               },
               {
-                "body": {
-                  "thens": [
-                    {
-                      "expression": {
-                        "symbol": ":nothing"
-                      }
-                    }
-                  ]
+                "then": {
+                  "expression": {
+                    "symbol": ":nothing"
+                  }
                 },
                 "patterns": [
                   {
@@ -160,75 +129,9 @@
           {
             "call": {
               "block": {
-                "value": {
-                  "expression": {
-                    "break": true
-                  }
-                }
+                "break": "break"
               },
               "name": "loop"
-            }
-          },
-          {
-            "binary": {
-              "right": {
-                "expression": {
-                  "false": "false"
-                }
-              },
-              "left": {
-                "expression": {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "true": "true"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "flag"
-                      }
-                    },
-                    "op": "="
-                  }
-                }
-              },
-              "op": {
-                "text": "and",
-                "logical": true,
-                "and": true
-              }
-            }
-          },
-          {
-            "binary": {
-              "right": {
-                "expression": {
-                  "false": "false"
-                }
-              },
-              "left": {
-                "expression": {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "true": "true"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "flag"
-                      }
-                    },
-                    "op": "="
-                  }
-                }
-              },
-              "op": {
-                "text": "or",
-                "logical": true,
-                "or": true
-              }
             }
           },
           {
@@ -244,7 +147,7 @@
               "objects": [
                 {
                   "call": {
-                    "arguments": [
+                    "ints": [
                       "1",
                       "2"
                     ],
@@ -255,9 +158,7 @@
                 },
                 {
                   "call": {
-                    "arguments": [
-                      "3"
-                    ],
+                    "int": "3",
                     "name": "call"
                   },
                   "access": true,
@@ -270,88 +171,6 @@
         "objects": [
           {
             "call": {
-              "block": {
-                "value": {
-                  "expression": {
-                    "if": {
-                      "else": {
-                        "if": {
-                          "condition": {
-                            "expression": {
-                              "false": "false"
-                            }
-                          },
-                          "body": {
-                            "redo": true
-                          }
-                        },
-                        "assign": {
-                          "right": {
-                            "expression": {
-                              "name": "x"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "total"
-                            }
-                          },
-                          "op": {
-                            "text": "+=",
-                            "assign": true,
-                            "plus": true
-                          }
-                        }
-                      },
-                      "condition": {
-                        "expression": {
-                          "object": {
-                            "call": {
-                              "name": "nil?"
-                            },
-                            "access": true,
-                            "name": "x"
-                          }
-                        }
-                      },
-                      "then": {
-                        "next": true
-                      },
-                      "else_if": {
-                        "then": {
-                          "break": true
-                        },
-                        "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "symbol": ":stop"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "x"
-                                }
-                              },
-                              "op": {
-                                "text": "==",
-                                "equals": true
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "do": true,
-                "parameters": [
-                  {
-                    "name": "x"
-                  }
-                ]
-              },
               "name": "each"
             },
             "access": true,
@@ -360,396 +179,163 @@
         ],
         "assigns": [
           {
-            "right": {
-              "expression": {
-                "int": "0"
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "total"
-              }
-            },
-            "op": "="
+            "int": "0",
+            "name": "total"
           },
           {
-            "right": {
-              "expression": {
-                "int": "0"
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "i"
-              }
-            },
-            "op": "="
+            "int": "0",
+            "name": "i"
           },
           {
-            "right": {
-              "expression": {
-                "begin": {
-                  "ensure": {
-                    "if": {
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "false": "false"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "unary": {
-                                  "name": "items",
-                                  "op": {
-                                    "text": "defined?",
-                                    "defined": true
-                                  }
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "&&",
-                              "logical": true,
-                              "and": true
-                            }
-                          }
-                        }
-                      },
-                      "body": {
-                        "objects": [
-                          {
-                            "call": {
-                              "name": "clear"
-                            },
-                            "access": true,
-                            "name": "items"
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  "unless": {
-                    "condition": {
+            "begin": {
+              "ensure": {
+                "if": {
+                  "logical": {
+                    "right": {
                       "expression": {
-                        "object": {
-                          "call": {
-                            "name": "any?"
-                          },
-                          "access": true,
-                          "name": "items"
+                        "false": "false"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "unary": {
+                          "name": "items",
+                          "op": {
+                            "text": "defined?",
+                            "defined": true
+                          }
                         }
                       }
                     },
-                    "body": {
-                      "expressions": [
-                        {
-                          "call": {
-                            "arguments": [
-                              "'boom'"
-                            ],
-                            "name": "raise"
-                          }
-                        }
-                      ]
+                    "op": {
+                      "text": "&&",
+                      "logical": true,
+                      "and": true
                     }
                   },
                   "object": {
                     "call": {
-                      "name": "first"
+                      "name": "clear"
                     },
                     "access": true,
                     "name": "items"
-                  },
-                  "rescue": {
-                    "body": {
-                      "thens": [
-                        {
-                          "object": {
-                            "call": {
-                              "name": "message"
-                            },
-                            "access": true,
-                            "name": "e"
-                          },
-                          "if": {
-                            "condition": {
-                              "expression": {
-                                "false": "false"
-                              }
-                            },
-                            "body": {
-                              "retry": true
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    "exceptions": {
-                      "name": "StandardError"
-                    },
-                    "variable": {
-                      "name": "e"
-                    }
-                  },
-                  "else": {
-                    "expression": {
-                      "string": "'ok'"
-                    }
                   }
+                }
+              },
+              "unless": {
+                "object": {
+                  "call": {
+                    "name": "any?"
+                  },
+                  "access": true,
+                  "name": "items"
+                },
+                "call": {
+                  "arguments": [
+                    "'boom'"
+                  ],
+                  "name": "raise"
+                }
+              },
+              "object": {
+                "call": {
+                  "name": "first"
+                },
+                "access": true,
+                "name": "items"
+              },
+              "rescue": {
+                "then": {
+                  "object": {
+                    "call": {
+                      "name": "message"
+                    },
+                    "access": true,
+                    "name": "e"
+                  },
+                  "if": {
+                    "false": "false",
+                    "retry": "retry"
+                  }
+                },
+                "exceptions": {
+                  "name": "StandardError"
+                },
+                "variable": {
+                  "name": "e"
+                }
+              },
+              "else": {
+                "expression": {
+                  "string": "'ok'"
                 }
               }
             },
-            "left": {
-              "expression": {
-                "name": "result"
-              }
-            },
-            "op": "="
+            "name": "result"
           },
           {
-            "right": {
-              "expression": {
-                "lambda": {
-                  "value": {
+            "lambda": {
+              "block": {
+                "binary": {
+                  "right": {
                     "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
-                          }
-                        },
-                        "op": {
-                          "text": "+",
-                          "plus": true
-                        }
-                      }
-                    }
-                  },
-                  "parameters": [
-                    {
-                      "name": "a"
-                    },
-                    {
                       "name": "b"
                     }
-                  ]
-                }
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "adder"
-              }
-            },
-            "op": "="
-          },
-          {
-            "right": {
-              "expression": {
-                "call": {
-                  "block": {
-                    "value": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "2"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "n"
-                            }
-                          },
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
-                        }
-                      }
-                    },
-                    "parameters": [
-                      {
-                        "name": "n"
-                      }
-                    ]
                   },
-                  "name": "proc"
-                }
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "doubler"
-              }
-            },
-            "op": "="
-          },
-          {
-            "right": {
-              "expression": {
-                "call": {
-                  "block": {
-                    "body": {
-                      "expressions": [
-                        {
-                          "call": {
-                            "arguments": [
-                              "n"
-                            ],
-                            "name": "puts"
-                          }
-                        },
-                        {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "int": "1"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    "parameters": [
-                      {
-                        "name": "n"
-                      }
-                    ]
-                  },
-                  "name": "proc"
-                }
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "multi_stmt"
-              }
-            },
-            "op": "="
-          },
-          {
-            "right": {
-              "expression": {
-                "lambda": {
-                  "body": {
-                    "expressions": [
-                      {
-                        "call": {
-                          "arguments": [
-                            "n"
-                          ],
-                          "name": "puts"
-                        }
-                      },
-                      {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "int": "1"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "n"
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "parameters": [
-                    {
-                      "name": "n"
-                    }
-                  ]
-                }
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "multi_lambda"
-              }
-            },
-            "op": "="
-          },
-          {
-            "right": {
-              "expression": {
-                "ternary": {
-                  "else": {
+                  "left": {
                     "expression": {
-                      "symbol": ":filled"
+                      "name": "a"
                     }
                   },
-                  "condition": {
-                    "expression": {
-                      "object": {
-                        "call": {
-                          "name": "zero?"
-                        },
-                        "access": true,
-                        "name": "total"
-                      }
-                    }
-                  },
-                  "then": {
-                    "expression": {
-                      "symbol": ":empty"
-                    }
+                  "op": {
+                    "text": "+",
+                    "plus": true
                   }
                 }
-              }
+              },
+              "parameters": [
+                {
+                  "name": "a"
+                },
+                {
+                  "name": "b"
+                }
+              ]
             },
-            "left": {
-              "expression": {
-                "name": "ternary"
-              }
-            },
-            "op": "="
+            "name": "adder"
           },
           {
-            "right": {
-              "expression": {
-                "int": "0"
-              }
+            "call": {
+              "block": {
+                "binary": {
+                  "right": {
+                    "expression": {
+                      "int": "2"
+                    }
+                  },
+                  "left": {
+                    "expression": {
+                      "name": "n"
+                    }
+                  },
+                  "op": {
+                    "text": "*",
+                    "multiply": true
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "n"
+                  }
+                ]
+              },
+              "name": "proc"
             },
-            "left": {
-              "expression": {
-                "name": "total"
-              }
-            },
-            "op": {
-              "text": "||=",
-              "assign": true,
-              "logical": true,
-              "or": true
-            }
+            "name": "doubler"
           },
           {
-            "right": {
-              "expression": {
+            "call": {
+              "block": {
                 "binary": {
                   "right": {
                     "expression": {
@@ -758,140 +344,192 @@
                   },
                   "left": {
                     "expression": {
-                      "name": "total"
+                      "name": "n"
                     }
                   },
                   "op": {
                     "text": "+",
                     "plus": true
                   }
-                }
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "total"
-              }
-            },
-            "op": {
-              "text": "&&=",
-              "assign": true,
-              "logical": true,
-              "and": true
-            }
-          },
-          {
-            "right": {
-              "expression": {
-                "array": {
-                  "ints": [
-                    "1",
-                    "2",
-                    "3",
-                    "4"
+                },
+                "parameters": [
+                  {
+                    "name": "n"
+                  }
+                ],
+                "call": {
+                  "arguments": [
+                    "n"
+                  ],
+                  "names": [
+                    "puts"
                   ]
                 }
-              }
+              },
+              "name": "proc"
             },
-            "left": {
-              "expressions": [
-                {
-                  "name": "a"
-                },
-                {
-                  "name": "b"
-                },
-                {
-                  "spread": {
-                    "name": "rest"
-                  }
-                }
-              ]
-            },
-            "op": "="
+            "name": "multi_stmt"
           },
           {
-            "right": {
-              "expression": {
+            "lambda": {
+              "block": {
                 "binary": {
                   "right": {
                     "expression": {
-                      "unary": {
-                        "name": "flag",
-                        "op": {
-                          "text": "!",
-                          "logical": true,
-                          "not": true
-                        }
-                      }
+                      "int": "1"
                     }
                   },
                   "left": {
                     "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "flag"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "unary": {
-                              "name": "flag",
-                              "op": {
-                                "text": "not",
-                                "logical": true,
-                                "not": true
-                              }
-                            }
-                          }
-                        },
-                        "op": {
-                          "text": "&&",
-                          "logical": true,
-                          "and": true
-                        }
-                      }
+                      "name": "n"
                     }
                   },
                   "op": {
-                    "text": "||",
-                    "logical": true,
-                    "or": true
+                    "text": "+",
+                    "plus": true
                   }
+                },
+                "call": {
+                  "arguments": [
+                    "n"
+                  ],
+                  "names": [
+                    "puts"
+                  ]
+                }
+              },
+              "parameters": [
+                {
+                  "name": "n"
+                }
+              ]
+            },
+            "name": "multi_lambda"
+          },
+          {
+            "ternary": {
+              "else": {
+                "expression": {
+                  "symbol": ":filled"
+                }
+              },
+              "condition": {
+                "expression": {
+                  "object": {
+                    "call": {
+                      "name": "zero?"
+                    },
+                    "access": true,
+                    "name": "total"
+                  }
+                }
+              },
+              "then": {
+                "expression": {
+                  "symbol": ":empty"
                 }
               }
             },
-            "left": {
-              "expression": {
-                "name": "flag"
+            "name": "ternary"
+          },
+          {
+            "int": "0",
+            "name": "total"
+          },
+          {
+            "binary": {
+              "right": {
+                "expression": {
+                  "int": "1"
+                }
+              },
+              "left": {
+                "expression": {
+                  "name": "total"
+                }
+              },
+              "op": {
+                "text": "+",
+                "plus": true
               }
             },
-            "op": "="
+            "name": "total"
+          },
+          {
+            "array": {
+              "ints": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ]
+            },
+            "names": [
+              "a",
+              "b"
+            ],
+            "spread": {
+              "name": "rest"
+            }
+          },
+          {
+            "logical": {
+              "right": {
+                "expression": {
+                  "unary": {
+                    "name": "flag",
+                    "op": {
+                      "text": "!",
+                      "logical": true,
+                      "not": true
+                    }
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "logical": {
+                    "right": {
+                      "expression": {
+                        "name": "flag"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "unary": {
+                          "name": "flag",
+                          "op": {
+                            "text": "not",
+                            "logical": true,
+                            "not": true
+                          }
+                        }
+                      }
+                    },
+                    "op": {
+                      "text": "&&",
+                      "logical": true,
+                      "and": true
+                    }
+                  }
+                }
+              },
+              "op": {
+                "text": "||",
+                "logical": true,
+                "or": true
+              }
+            },
+            "name": "flag"
           }
         ],
         "whiles": [
           {
             "body": {
-              "dos": [
+              "assigns": [
                 {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "int": "1"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "i"
-                      }
-                    },
-                    "op": {
-                      "text": "+=",
-                      "assign": true,
-                      "plus": true
-                    }
-                  }
+                  "int": "1",
+                  "name": "i"
                 }
               ]
             },
@@ -921,25 +559,10 @@
         "untils": [
           {
             "body": {
-              "dos": [
+              "assigns": [
                 {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "int": "1"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "i"
-                      }
-                    },
-                    "op": {
-                      "text": "+=",
-                      "assign": true,
-                      "plus": true
-                    }
-                  }
+                  "int": "1",
+                  "name": "i"
                 }
               ]
             },
@@ -970,25 +593,12 @@
         "fors": [
           {
             "body": {
-              "dos": [
+              "assigns": [
                 {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "name": "j"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
-                      }
-                    },
-                    "op": {
-                      "text": "+=",
-                      "assign": true,
-                      "plus": true
-                    }
-                  }
+                  "names": [
+                    "total",
+                    "j"
+                  ]
                 }
               ]
             },
@@ -996,15 +606,54 @@
             "value": {
               "expression": {
                 "range": {
-                  "to": {
-                    "int": "3"
-                  },
-                  "inclusive": true,
-                  "from": {
-                    "int": "1"
-                  }
+                  "ints": [
+                    "1",
+                    "3"
+                  ]
                 }
               }
+            }
+          }
+        ],
+        "logicals": [
+          {
+            "right": {
+              "expression": {
+                "false": "false"
+              }
+            },
+            "left": {
+              "expression": {
+                "assign": {
+                  "true": "true",
+                  "name": "flag"
+                }
+              }
+            },
+            "op": {
+              "text": "and",
+              "logical": true,
+              "and": true
+            }
+          },
+          {
+            "right": {
+              "expression": {
+                "false": "false"
+              }
+            },
+            "left": {
+              "expression": {
+                "assign": {
+                  "true": "true",
+                  "name": "flag"
+                }
+              }
+            },
+            "op": {
+              "text": "or",
+              "logical": true,
+              "or": true
             }
           }
         ]
@@ -1021,13 +670,7 @@
         "rescues": [
           {
             "symbol": ":failed",
-            "body": {
-              "expressions": [
-                {
-                  "name": "result"
-                }
-              ]
-            }
+            "name": "result"
           }
         ],
         "expressions": [
@@ -1055,248 +698,178 @@
         ],
         "assigns": [
           {
-            "right": {
-              "expression": {
-                "match": {
-                  "ins": [
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "symbol": ":empty"
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "text": "[]",
-                        "array": true
-                      }
-                    },
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "object": {
-                                      "call": {
-                                        "name": "size"
-                                      },
-                                      "access": true,
-                                      "name": "tail"
-                                    }
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "head"
-                                  }
-                                },
-                                "op": {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "parameter": {
-                          "name": "tail",
-                          "splat": true
-                        },
-                        "array": true,
-                        "name": "head"
-                      },
-                      "if": {
-                        "condition": {
+            "match": {
+              "ins": [
+                {
+                  "then": {
+                    "expression": {
+                      "symbol": ":empty"
+                    }
+                  },
+                  "pattern": {
+                    "text": "[]",
+                    "array": true
+                  }
+                },
+                {
+                  "then": {
+                    "expression": {
+                      "binary": {
+                        "right": {
                           "expression": {
                             "object": {
                               "call": {
-                                "arguments": [
-                                  "Integer"
-                                ],
-                                "name": "is_a?"
+                                "name": "size"
                               },
                               "access": true,
-                              "name": "head"
+                              "name": "tail"
                             }
                           }
-                        }
-                      }
-                    },
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "symbol": ":find_pattern"
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "names": [
-                          "first",
-                          "last"
-                        ],
-                        "array": true,
-                        "parameter": {
-                          "text": "*",
-                          "splat": true
-                        }
-                      },
-                      "unless": {
-                        "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "name": "last"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "first"
-                                }
-                              },
-                              "op": {
-                                "text": "==",
-                                "equals": true
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "name": "k"
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "pattern": {
-                          "value": {
-                            "expression": {
-                              "pattern": {
-                                "name": "k",
-                                "as": true,
-                                "value": {
-                                  "expression": {
-                                    "name": "Integer"
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          "keyword": true
                         },
-                        "hash": true
-                      }
-                    },
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "symbol": ":small"
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "ints": [
-                          "1",
-                          "2",
-                          "3"
-                        ],
-                        "alternative": true
-                      }
-                    },
-                    {
-                      "body": {
-                        "thens": [
-                          {
-                            "expression": {
-                              "name": "n"
-                            }
-                          }
-                        ]
-                      },
-                      "pattern": {
-                        "name": "n",
-                        "as": true,
-                        "value": {
+                        "left": {
                           "expression": {
-                            "name": "Integer"
+                            "name": "head"
                           }
+                        },
+                        "op": {
+                          "text": "+",
+                          "plus": true
                         }
                       }
                     }
-                  ],
-                  "value": {
-                    "expression": {
-                      "name": "values"
+                  },
+                  "pattern": {
+                    "parameter": {
+                      "name": "tail",
+                      "splat": true
+                    },
+                    "array": true,
+                    "name": "head"
+                  },
+                  "if": {
+                    "object": {
+                      "call": {
+                        "names": [
+                          "is_a?",
+                          "Integer"
+                        ]
+                      },
+                      "access": true,
+                      "name": "head"
                     }
                   }
+                },
+                {
+                  "then": {
+                    "expression": {
+                      "symbol": ":find_pattern"
+                    }
+                  },
+                  "pattern": {
+                    "names": [
+                      "first",
+                      "last"
+                    ],
+                    "array": true,
+                    "parameter": {
+                      "text": "*",
+                      "splat": true
+                    }
+                  },
+                  "unless": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "last"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "first"
+                        }
+                      },
+                      "op": {
+                        "text": "==",
+                        "equals": true
+                      }
+                    }
+                  }
+                },
+                {
+                  "then": {
+                    "expression": {
+                      "name": "k"
+                    }
+                  },
+                  "pattern": {
+                    "pattern": {
+                      "pattern": {
+                        "names": [
+                          "Integer",
+                          "k"
+                        ],
+                        "as": true
+                      },
+                      "keyword": true,
+                      "symbol": "key"
+                    },
+                    "hash": true
+                  }
+                },
+                {
+                  "then": {
+                    "expression": {
+                      "symbol": ":small"
+                    }
+                  },
+                  "pattern": {
+                    "ints": [
+                      "1",
+                      "2",
+                      "3"
+                    ],
+                    "alternative": true
+                  }
+                },
+                {
+                  "then": {
+                    "expression": {
+                      "name": "n"
+                    }
+                  },
+                  "pattern": {
+                    "names": [
+                      "Integer",
+                      "n"
+                    ],
+                    "as": true
+                  }
                 }
-              }
+              ],
+              "name": "values"
             },
-            "left": {
-              "expression": {
-                "name": "result"
-              }
-            },
-            "op": "="
+            "name": "result"
           },
           {
-            "right": {
-              "expression": {
-                "string": {
-                  "strings": [
-                    "\"first \"",
-                    "\"second \"",
-                    "\"third\""
-                  ],
-                  "concatenated": true
-                }
-              }
+            "string": {
+              "strings": [
+                "\"first \"",
+                "\"second \"",
+                "\"third\""
+              ],
+              "concatenated": true
             },
-            "left": {
-              "expression": {
-                "name": "joined"
-              }
-            },
-            "op": "="
+            "name": "joined"
           },
           {
-            "right": {
-              "expression": {
-                "array": {
-                  "ints": [
-                    "10",
-                    "20",
-                    "30"
-                  ]
-                }
-              }
+            "array": {
+              "ints": [
+                "10",
+                "20",
+                "30"
+              ]
             },
-            "left": {
-              "expression": {
-                "name": "arr"
-              }
-            },
-            "op": "="
+            "name": "arr"
           }
         ],
         "objects": [
@@ -1325,11 +898,11 @@
         "objects": [
           {
             "call": {
-              "arguments": [
+              "names": [
+                "call",
                 "x",
                 "y"
-              ],
-              "name": "call"
+              ]
             },
             "access": true,
             "name": "block"
@@ -1358,13 +931,9 @@
         "methods": [
           {
             "body": {
-              "expressions": [
+              "interpolations": [
                 {
-                  "string": {
-                    "interpolation": {
-                      "name": "name"
-                    }
-                  }
+                  "name": "name"
                 }
               ]
             },
@@ -1421,46 +990,30 @@
                   "body": {
                     "assigns": [
                       {
-                        "right": {
-                          "expression": {
-                            "name": "name"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "@name"
-                          }
-                        },
-                        "op": "="
+                        "names": [
+                          "@name",
+                          "name"
+                        ]
                       },
                       {
-                        "right": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "int": "0"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "id"
-                                }
-                              },
-                              "op": {
-                                "text": "||",
-                                "logical": true,
-                                "or": true
-                              }
+                        "logical": {
+                          "right": {
+                            "expression": {
+                              "int": "0"
                             }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "id"
+                            }
+                          },
+                          "op": {
+                            "text": "||",
+                            "logical": true,
+                            "or": true
                           }
                         },
-                        "left": {
-                          "expression": {
-                            "name": "@id"
-                          }
-                        },
-                        "op": "="
+                        "name": "@id"
                       }
                     ]
                   },
@@ -1482,54 +1035,52 @@
                 },
                 {
                   "body": {
-                    "expressions": [
+                    "logicals": [
                       {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "@name"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "object": {
-                                      "call": {
-                                        "name": "name"
-                                      },
-                                      "access": true,
-                                      "name": "other"
-                                    }
-                                  }
-                                },
-                                "op": {
-                                  "text": "==",
-                                  "equals": true
+                        "right": {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "name": "@name"
                                 }
+                              },
+                              "left": {
+                                "expression": {
+                                  "object": {
+                                    "call": {
+                                      "name": "name"
+                                    },
+                                    "access": true,
+                                    "name": "other"
+                                  }
+                                }
+                              },
+                              "op": {
+                                "text": "==",
+                                "equals": true
                               }
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "object": {
-                                "call": {
-                                  "arguments": [
-                                    "Base"
-                                  ],
-                                  "name": "is_a?"
-                                },
-                                "access": true,
-                                "name": "other"
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "&&",
-                            "logical": true,
-                            "and": true
                           }
+                        },
+                        "left": {
+                          "expression": {
+                            "object": {
+                              "call": {
+                                "names": [
+                                  "is_a?",
+                                  "Base"
+                                ]
+                              },
+                              "access": true,
+                              "name": "other"
+                            }
+                          }
+                        },
+                        "op": {
+                          "text": "&&",
+                          "logical": true,
+                          "and": true
                         }
                       }
                     ]
@@ -1574,14 +1125,18 @@
                           "arguments": [
                             "name"
                           ],
-                          "name": "new"
+                          "names": [
+                            "new"
+                          ]
                         }
                       }
                     ]
                   },
                   "singleton": true,
-                  "self": "self",
-                  "name": "build",
+                  "names": [
+                    "self",
+                    "build"
+                  ],
                   "parameters": [
                     {
                       "name": "name"
@@ -1632,81 +1187,63 @@
                     ],
                     "assigns": [
                       {
-                        "right": {
-                          "expression": {
-                            "ternary": {
-                              "else": {
-                                "expression": {
-                                  "string": {
-                                    "interpolations": [
-                                      {
-                                        "name": "greeting"
-                                      },
-                                      {
-                                        "name": "@name"
-                                      }
-                                    ]
+                        "ternary": {
+                          "else": {
+                            "expression": {
+                              "string": {
+                                "interpolations": [
+                                  {
+                                    "name": "greeting"
+                                  },
+                                  {
+                                    "name": "@name"
                                   }
-                                }
-                              },
-                              "condition": {
-                                "expression": {
-                                  "name": "formal"
-                                }
-                              },
-                              "then": {
-                                "expression": {
-                                  "string": {
-                                    "interpolation": {
-                                      "name": "@name"
-                                    }
-                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "condition": {
+                            "expression": {
+                              "name": "formal"
+                            }
+                          },
+                          "then": {
+                            "expression": {
+                              "string": {
+                                "interpolation": {
+                                  "name": "@name"
                                 }
                               }
                             }
                           }
                         },
-                        "left": {
-                          "expression": {
-                            "name": "msg"
-                          }
-                        },
-                        "op": "="
+                        "name": "msg"
                       },
                       {
-                        "right": {
-                          "expression": {
-                            "ternary": {
-                              "else": {
-                                "expression": {
-                                  "name": "msg"
-                                }
-                              },
-                              "condition": {
-                                "expression": {
-                                  "call": {
-                                    "name": "block_given?"
-                                  }
-                                }
-                              },
-                              "then": {
-                                "expression": {
-                                  "yield": {
-                                    "arguments": [
-                                      "msg"
-                                    ]
-                                  }
-                                }
+                        "ternary": {
+                          "else": {
+                            "expression": {
+                              "name": "msg"
+                            }
+                          },
+                          "condition": {
+                            "expression": {
+                              "call": {
+                                "name": "block_given?"
+                              }
+                            }
+                          },
+                          "then": {
+                            "expression": {
+                              "yield": {
+                                "arguments": [
+                                  "msg"
+                                ]
                               }
                             }
                           }
                         },
-                        "left": {
-                          "expression": {
-                            "name": "msg"
-                          }
-                        },
-                        "op": "="
+                        "name": "msg"
                       }
                     ]
                   },
@@ -1744,23 +1281,14 @@
                   "body": {
                     "assigns": [
                       {
-                        "right": {
-                          "expression": {
-                            "object": {
-                              "call": {
-                                "name": "upcase"
-                              },
-                              "access": true,
-                              "name": "@name"
-                            }
-                          }
+                        "object": {
+                          "call": {
+                            "name": "upcase"
+                          },
+                          "access": true,
+                          "name": "@name"
                         },
-                        "left": {
-                          "expression": {
-                            "name": "@name"
-                          }
-                        },
-                        "op": "="
+                        "name": "@name"
                       }
                     ]
                   },
@@ -1787,30 +1315,6 @@
                               "object": {
                                 "call": {
                                   "call": {
-                                    "block": {
-                                      "value": {
-                                        "expression": {
-                                          "string": {
-                                            "interpolations": [
-                                              {
-                                                "name": "i"
-                                              },
-                                              {
-                                                "name": "it"
-                                              }
-                                            ]
-                                          }
-                                        }
-                                      },
-                                      "parameters": [
-                                        {
-                                          "name": "it"
-                                        },
-                                        {
-                                          "name": "i"
-                                        }
-                                      ]
-                                    },
                                     "name": "map"
                                   },
                                   "name": "each_with_index"
@@ -1876,137 +1380,77 @@
                     ],
                     "assigns": [
                       {
-                        "right": {
-                          "expression": {
-                            "hash": {
-                              "pairs": [
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "name": "@id"
-                                    }
-                                  },
-                                  "name": "id"
-                                },
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "name": "@name"
-                                    }
-                                  },
-                                  "name": "name"
-                                },
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "true": "true"
-                                    }
-                                  },
-                                  "string": "'legacy'"
-                                }
-                              ]
+                        "hash": {
+                          "pairs": [
+                            {
+                              "name": "@id",
+                              "symbol": "id"
+                            },
+                            {
+                              "name": "@name",
+                              "symbol": "name"
+                            },
+                            {
+                              "true": "true",
+                              "string": "'legacy'"
                             }
-                          }
+                          ]
                         },
-                        "left": {
-                          "expression": {
-                            "name": "data"
-                          }
-                        },
-                        "op": "="
+                        "name": "data"
                       },
                       {
-                        "right": {
-                          "expression": {
-                            "hash": {
-                              "pairs": [
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "int": "1"
-                                    }
-                                  },
-                                  "symbol": ":foo"
-                                },
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "int": "2"
-                                    }
-                                  },
-                                  "symbol": {
-                                    "text": ":\"hello world\"",
-                                    "delimited": true
-                                  }
-                                }
-                              ]
+                        "hash": {
+                          "pairs": [
+                            {
+                              "int": "1",
+                              "symbol": ":foo"
+                            },
+                            {
+                              "int": "2",
+                              "symbol": {
+                                "text": ":\"hello world\"",
+                                "delimited": true
+                              }
                             }
-                          }
+                          ]
                         },
-                        "left": {
-                          "expression": {
-                            "name": "rocket"
-                          }
-                        },
-                        "op": "="
+                        "name": "rocket"
                       },
                       {
-                        "right": {
-                          "expression": {
+                        "array": {
+                          "spread": {
                             "array": {
-                              "spread": {
-                                "array": {
-                                  "ints": [
-                                    "4",
-                                    "5"
-                                  ]
-                                },
-                                "list": true
-                              },
                               "ints": [
-                                "1",
-                                "2",
-                                "3"
+                                "4",
+                                "5"
                               ]
-                            }
-                          }
+                            },
+                            "list": true
+                          },
+                          "ints": [
+                            "1",
+                            "2",
+                            "3"
+                          ]
                         },
-                        "left": {
-                          "expression": {
-                            "name": "list"
-                          }
-                        },
-                        "op": "="
+                        "name": "list"
                       },
                       {
-                        "right": {
-                          "expression": {
-                            "hash": {
-                              "pairs": [
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "nil": "nil"
-                                    }
-                                  },
-                                  "name": "extra"
-                                }
-                              ],
-                              "spreads": [
-                                {
-                                  "name": "data",
-                                  "dict": true
-                                }
-                              ]
+                        "hash": {
+                          "pairs": [
+                            {
+                              "nil": "nil",
+                              "symbol": "extra"
                             }
-                          }
+                          ],
+                          "spreads": [
+                            {
+                              "name": "data",
+                              "dict": true
+                            }
+                          ]
                         },
-                        "left": {
-                          "expression": {
-                            "name": "merged"
-                          }
-                        },
-                        "op": "="
+                        "name": "merged"
                       }
                     ]
                   },
@@ -2019,7 +1463,9 @@
                     "arguments": [
                       "Greeter"
                     ],
-                    "name": "include"
+                    "names": [
+                      "include"
+                    ]
                   }
                 },
                 {
@@ -2027,18 +1473,23 @@
                     "arguments": [
                       "Logging"
                     ],
-                    "name": "extend"
+                    "names": [
+                      "extend"
+                    ]
                   }
                 },
                 {
                   "call": {
-                    "object": {
-                      "call": {
-                        "name": "new"
-                      },
-                      "access": true,
-                      "name": "Module"
-                    },
+                    "arguments": [
+                      {
+                        "$type": "object",
+                        "access": true,
+                        "name": "Module",
+                        "call": {
+                          "name": "new"
+                        }
+                      }
+                    ],
                     "name": "prepend"
                   }
                 },
@@ -2059,107 +1510,44 @@
               ],
               "assigns": [
                 {
-                  "right": {
-                    "expression": {
-                      "string": "'single-quoted \\n'"
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "SINGLE"
-                    }
-                  },
-                  "op": "="
+                  "string": "'single-quoted \\n'",
+                  "name": "SINGLE"
                 },
                 {
-                  "right": {
-                    "expression": {
-                      "string": {
-                        "interpolation": {
-                          "name": "MAX_RETRIES"
-                        }
-                      }
+                  "string": {
+                    "interpolation": {
+                      "name": "MAX_RETRIES"
                     }
                   },
-                  "left": {
-                    "expression": {
-                      "name": "DOUBLE"
-                    }
-                  },
-                  "op": "="
+                  "name": "DOUBLE"
                 },
                 {
-                  "right": "<<-TEXT",
-                  "left": {
-                    "expression": {
-                      "name": "HEREDOC"
-                    }
-                  },
-                  "op": "="
+                  "name": "HEREDOC"
                 },
                 {
-                  "right": "<<~TEXT",
-                  "left": {
-                    "expression": {
-                      "name": "SQUIGGLY"
-                    }
-                  },
-                  "op": "="
+                  "name": "SQUIGGLY"
                 },
                 {
-                  "right": {
-                    "expression": {
-                      "regex": "/\\A[a-z]+\\z/i"
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "PATTERN"
-                    }
-                  },
-                  "op": "="
+                  "regex": "/\\A[a-z]+\\z/i",
+                  "name": "PATTERN"
                 },
                 {
-                  "right": {
-                    "expression": {
-                      "range": {
-                        "to": {
-                          "int": "10"
-                        },
-                        "inclusive": true,
-                        "from": {
-                          "int": "1"
-                        }
-                      }
-                    }
+                  "range": {
+                    "ints": [
+                      "1",
+                      "10"
+                    ]
                   },
-                  "left": {
-                    "expression": {
-                      "name": "RANGE_INCL"
-                    }
-                  },
-                  "op": "="
+                  "name": "RANGE_INCL"
                 },
                 {
-                  "right": {
-                    "expression": {
-                      "range": {
-                        "to": {
-                          "int": "10"
-                        },
-                        "exclusive": true,
-                        "from": {
-                          "int": "1"
-                        }
-                      }
-                    }
+                  "range": {
+                    "ints": [
+                      "1",
+                      "10"
+                    ]
                   },
-                  "left": {
-                    "expression": {
-                      "name": "RANGE_EXCL"
-                    }
-                  },
-                  "op": "="
+                  "name": "RANGE_EXCL"
                 }
               ],
               "classes": [
@@ -2170,22 +1558,8 @@
                         "body": {
                           "assigns": [
                             {
-                              "right": {
-                                "expression": {
-                                  "hash": "{}"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "@registry"
-                                }
-                              },
-                              "op": {
-                                "text": "||=",
-                                "assign": true,
-                                "logical": true,
-                                "or": true
-                              }
+                              "hash": "{}",
+                              "name": "@registry"
                             }
                           ]
                         },
@@ -2194,22 +1568,16 @@
                     ]
                   },
                   "singleton": true,
-                  "value": {
-                    "expression": {
-                      "self": "self"
-                    }
-                  }
+                  "name": "self"
                 }
               ]
             },
             "name": "User",
-            "extends": [
-              {
-                "type": {
-                  "name": "Base"
-                }
+            "extends": {
+              "type": {
+                "name": "Base"
               }
-            ]
+            }
           }
         ]
       },
@@ -2229,102 +1597,56 @@
   ],
   "assigns": [
     {
-      "right": {
-        "expression": {
-          "int": "3"
-        }
-      },
-      "left": {
-        "expression": {
-          "name": "MAX_RETRIES"
-        }
-      },
-      "op": "="
+      "int": "3",
+      "name": "MAX_RETRIES"
     },
     {
-      "right": {
-        "expression": {
-          "array": {
-            "text": "%w[hi hello hey]",
-            "string": true
-          }
-        }
+      "array": {
+        "text": "%w[hi hello hey]",
+        "string": true
       },
-      "left": {
-        "expression": {
-          "name": "GREETINGS"
-        }
-      },
-      "op": "="
+      "name": "GREETINGS"
     },
     {
-      "right": {
-        "expression": {
-          "array": {
-            "text": "%i[one two three]",
-            "symbol": true
-          }
-        }
+      "array": {
+        "text": "%i[one two three]",
+        "symbol": true
       },
-      "left": {
-        "expression": {
-          "name": "SYMBOLS"
-        }
-      },
-      "op": "="
+      "name": "SYMBOLS"
     },
     {
-      "right": {
-        "expression": {
-          "array": {
-            "ints": [
-              "10",
-              "20"
-            ]
-          }
-        }
+      "array": {
+        "ints": [
+          "10",
+          "20"
+        ]
       },
       "left": {
-        "expression": {
-          "left": {
-            "expressions": [
-              {
-                "destructured": true
-              },
-              {
-                "name": "a"
-              },
-              {
-                "name": "b"
-              }
-            ]
+        "expressions": [
+          {
+            "destructured": true
+          },
+          {
+            "name": "a"
+          },
+          {
+            "name": "b"
           }
-        }
-      },
-      "op": "="
+        ]
+      }
     },
     {
-      "right": {
-        "expression": {
-          "object": {
-            "call": {
-              "arguments": [
-                "arg"
-              ],
-              "optional": true,
-              "name": "method"
-            },
-            "access": true,
-            "name": "obj"
-          }
-        }
+      "object": {
+        "call": {
+          "names": [
+            "method",
+            "arg"
+          ]
+        },
+        "access": true,
+        "name": "obj"
       },
-      "left": {
-        "expression": {
-          "name": "maybe"
-        }
-      },
-      "op": "="
+      "name": "maybe"
     }
   ],
   "blocks": [

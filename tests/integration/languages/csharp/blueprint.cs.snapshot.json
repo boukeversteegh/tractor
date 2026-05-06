@@ -51,23 +51,15 @@
               {
                 "name": "Describe",
                 "public": true,
-                "abstract": true,
-                "returns": {
-                  "type": {
-                    "name": "string"
-                  }
-                }
+                "abstract": true
               },
               {
                 "body": {
                   "objects": [
                     {
-                      "call": {
-                        "arguments": [
-                          "this"
-                        ],
-                        "optional": true,
-                        "name": "Invoke"
+                      "member": {
+                        "name": "Invoke",
+                        "optional": true
                       },
                       "access": true,
                       "name": "Changed"
@@ -76,11 +68,6 @@
                 },
                 "protected": true,
                 "virtual": true,
-                "returns": {
-                  "type": {
-                    "name": "void"
-                  }
-                },
                 "name": "OnChanged"
               }
             ],
@@ -96,16 +83,10 @@
               },
               {
                 "new": {
-                  "arguments": [
-                    {
-                      "int": "1970"
-                    },
-                    {
-                      "int": "1"
-                    },
-                    {
-                      "int": "1"
-                    }
+                  "ints": [
+                    "1970",
+                    "1",
+                    "1"
                   ]
                 },
                 "protected": true,
@@ -127,58 +108,43 @@
             ],
             "properties": [
               {
-                "accessors": [
-                  "get;",
-                  "init;"
+                "init": "init;",
+                "public": true,
+                "names": [
+                  "int",
+                  "Id"
                 ],
-                "public": true,
-                "type": {
-                  "name": "int"
-                },
-                "name": "Id"
+                "get": "get;"
               },
               {
-                "value": {
-                  "expression": {
-                    "string": "\"\""
-                  }
-                },
+                "string": "\"\"",
                 "public": true,
-                "type": {
-                  "name": "string"
-                },
-                "name": "Name",
-                "accessors": [
-                  "get;",
-                  "set;"
-                ]
+                "names": [
+                  "string",
+                  "Name"
+                ],
+                "get": "get;",
+                "set": "set;"
               },
               {
-                "value": {
-                  "expression": {
-                    "object": {
-                      "member": {
-                        "name": "Low"
-                      },
-                      "access": true,
-                      "name": "Priority"
-                    }
-                  }
+                "object": {
+                  "member": {
+                    "name": "Low"
+                  },
+                  "access": true,
+                  "name": "Priority"
                 },
                 "public": true,
                 "virtual": true,
-                "type": {
-                  "name": "Priority"
-                },
-                "name": "Priority",
-                "accessors": [
-                  "get;",
-                  {
-                    "$type": "set",
-                    "protected": true,
-                    "text": "protected set;"
-                  }
-                ]
+                "names": [
+                  "Priority",
+                  "Priority"
+                ],
+                "get": "get;",
+                "set": {
+                  "text": "protected set;",
+                  "protected": true
+                }
               }
             ],
             "indexers": [
@@ -214,15 +180,13 @@
                   "name": "Changed",
                   "type": {
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "EntityBase"
-                        }
-                      ],
+                      "type": {
+                        "name": "EntityBase"
+                      },
                       "generic": true,
                       "name": "Action"
-                    }
+                    },
+                    "nullable": true
                   }
                 },
                 "public": true
@@ -230,13 +194,10 @@
             ],
             "constructors": [
               {
-                "call": {
-                  "arguments": [
-                    {
-                      "int": "0"
-                    }
-                  ],
-                  "this": true
+                "body": {
+                  "blocks": [
+                    "{ }"
+                  ]
                 },
                 "protected": true,
                 "name": "EntityBase"
@@ -245,21 +206,19 @@
                 "body": {
                   "blocks": [
                     {
-                      "expressions": [
+                      "assigns": [
                         {
-                          "assign": {
-                            "right": {
-                              "expression": {
-                                "name": "id"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "Id"
-                              }
-                            },
-                            "op": "="
-                          }
+                          "right": {
+                            "expression": {
+                              "name": "id"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "Id"
+                            }
+                          },
+                          "op": "="
                         }
                       ]
                     }
@@ -267,14 +226,12 @@
                 },
                 "protected": true,
                 "name": "EntityBase",
-                "parameters": [
-                  {
-                    "name": "id",
-                    "type": {
-                      "name": "int"
-                    }
+                "parameter": {
+                  "name": "id",
+                  "type": {
+                    "name": "int"
                   }
-                ]
+                }
               }
             ],
             "destructors": [
@@ -336,11 +293,6 @@
                 },
                 "public": true,
                 "override": true,
-                "returns": {
-                  "type": {
-                    "name": "string"
-                  }
-                },
                 "name": "Describe"
               },
               {
@@ -369,26 +321,21 @@
                             }
                           }
                         }
+                      },
+                      "then": {
+                        "name": "this"
                       }
                     }
                   ]
                 },
                 "public": true,
-                "returns": {
-                  "type": {
-                    "text": "Widget",
-                    "nullable": true
-                  }
-                },
                 "name": "Find",
-                "parameters": [
-                  {
-                    "name": "id",
-                    "type": {
-                      "name": "int"
-                    }
+                "parameter": {
+                  "name": "id",
+                  "type": {
+                    "name": "int"
                   }
-                ]
+                }
               },
               {
                 "body": {
@@ -397,9 +344,7 @@
                       "returns": [
                         {
                           "expression": {
-                            "index": {
-                              "argument": "this"
-                            }
+                            "index": "[this]"
                           }
                         }
                       ],
@@ -407,11 +352,7 @@
                         {
                           "object": {
                             "call": {
-                              "arguments": [
-                                {
-                                  "int": "1"
-                                }
-                              ],
+                              "int": "1",
                               "name": "Delay"
                             },
                             "access": true,
@@ -425,55 +366,28 @@
                 },
                 "public": true,
                 "async": true,
-                "returns": {
-                  "type": {
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "generic": true,
-                        "name": "IReadOnlyList",
-                        "arguments": [
-                          {
-                            "$type": "type",
-                            "name": "Widget"
-                          }
-                        ]
-                      }
-                    ],
-                    "generic": true,
-                    "name": "Task"
-                  }
-                },
                 "name": "AllAsync"
               },
               {
                 "body": {
                   "calls": [
                     {
-                      "arguments": [
-                        {
-                          "name": "input"
-                        }
-                      ],
-                      "name": "fn"
+                      "names": [
+                        "fn",
+                        "input"
+                      ]
                     }
                   ]
                 },
                 "public": true,
                 "static": true,
-                "returns": {
-                  "type": {
-                    "name": "TResult"
-                  }
-                },
                 "name": "Pipe",
                 "generics": [
                   {
                     "name": "T"
                   },
                   {
-                    "name": "TResult",
-                    "notnull": true
+                    "name": "TResult"
                   }
                 ],
                 "parameters": [
@@ -486,18 +400,18 @@
                   {
                     "name": "fn",
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "T"
-                        },
-                        {
-                          "$type": "type",
-                          "name": "TResult"
-                        }
-                      ],
-                      "generic": true,
-                      "name": "Transformer"
+                      "type": {
+                        "types": [
+                          {
+                            "name": "T"
+                          },
+                          {
+                            "name": "TResult"
+                          }
+                        ],
+                        "generic": true,
+                        "name": "Transformer"
+                      }
                     }
                   }
                 ]
@@ -509,15 +423,13 @@
                   "name": "Added",
                   "type": {
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "Widget"
-                        }
-                      ],
+                      "type": {
+                        "name": "Widget"
+                      },
                       "generic": true,
                       "name": "EventHandler"
-                    }
+                    },
+                    "nullable": true
                   }
                 },
                 "public": true
@@ -525,13 +437,10 @@
             ],
             "constructors": [
               {
-                "call": {
-                  "arguments": [
-                    {
-                      "int": "0"
-                    }
-                  ],
-                  "base": true
+                "body": {
+                  "blocks": [
+                    "{ }"
+                  ]
                 },
                 "public": true,
                 "name": "Widget"
@@ -540,21 +449,19 @@
                 "body": {
                   "blocks": [
                     {
-                      "expressions": [
+                      "assigns": [
                         {
-                          "assign": {
-                            "right": {
-                              "expression": {
-                                "name": "name"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "Name"
-                              }
-                            },
-                            "op": "="
-                          }
+                          "right": {
+                            "expression": {
+                              "name": "name"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "Name"
+                            }
+                          },
+                          "op": "="
                         }
                       ]
                     }
@@ -575,68 +482,50 @@
                       "name": "string"
                     }
                   }
-                ],
-                "call": {
-                  "arguments": [
-                    {
-                      "name": "id"
-                    }
-                  ],
-                  "base": true
-                }
+                ]
               }
             ],
             "properties": [
               {
-                "accessors": [
-                  {
-                    "$type": "get",
-                    "body": {
-                      "objects": [
-                        {
+                "set": {
+                  "assign": {
+                    "right": {
+                      "expression": {
+                        "name": "value"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "object": {
                           "member": {
                             "name": "Priority"
                           },
                           "access": true,
-                          "base": true
+                          "base": true,
+                          "name": "base"
                         }
-                      ]
-                    }
+                      }
+                    },
+                    "op": "="
                   },
-                  {
-                    "$type": "set",
-                    "protected": true,
-                    "body": {
-                      "assigns": [
-                        {
-                          "right": {
-                            "expression": {
-                              "name": "value"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "Priority"
-                                },
-                                "access": true,
-                                "base": true
-                              }
-                            }
-                          },
-                          "op": "="
-                        }
-                      ]
-                    }
-                  }
-                ],
+                  "protected": true
+                },
                 "public": true,
                 "override": true,
-                "type": {
-                  "name": "Priority"
-                },
-                "name": "Priority"
+                "names": [
+                  "Priority",
+                  "Priority"
+                ],
+                "get": {
+                  "object": {
+                    "member": {
+                      "name": "Priority"
+                    },
+                    "access": true,
+                    "base": true,
+                    "name": "base"
+                  }
+                }
               }
             ]
           },
@@ -652,12 +541,9 @@
             },
             {
               "type": {
-                "arguments": [
-                  {
-                    "$type": "type",
-                    "name": "Widget"
-                  }
-                ],
+                "type": {
+                  "name": "Widget"
+                },
                 "generic": true,
                 "name": "IRepository"
               }
@@ -699,21 +585,14 @@
                 },
                 "public": true,
                 "static": true,
-                "returns": {
-                  "type": {
-                    "name": "string"
-                  }
-                },
                 "name": "Shout",
-                "parameters": [
-                  {
-                    "name": "w",
-                    "this": true,
-                    "type": {
-                      "name": "Widget"
-                    }
+                "parameter": {
+                  "name": "w",
+                  "this": true,
+                  "type": {
+                    "name": "Widget"
                   }
-                ]
+                }
               }
             ]
           },
@@ -911,27 +790,25 @@
                       ],
                       "ifs": [
                         {
-                          "then": {
-                            "expression": {
-                              "object": {
-                                "call": {
-                                  "arguments": [
-                                    {
-                                      "object": {
-                                        "member": {
-                                          "name": "Id"
-                                        },
-                                        "access": true,
-                                        "name": "probe"
-                                      }
-                                    }
-                                  ],
-                                  "name": "WriteLine"
-                                },
-                                "access": true,
-                                "name": "Console"
+                          "body": {
+                            "expressions": [
+                              {
+                                "object": {
+                                  "call": {
+                                    "object": {
+                                      "member": {
+                                        "name": "Id"
+                                      },
+                                      "access": true,
+                                      "name": "probe"
+                                    },
+                                    "name": "WriteLine"
+                                  },
+                                  "access": true,
+                                  "name": "Console"
+                                }
                               }
-                            }
+                            ]
                           },
                           "condition": {
                             "expression": {
@@ -971,18 +848,13 @@
                               }
                             ]
                           },
-                          "type": {
-                            "name": "int"
-                          },
                           "name": "Square",
-                          "parameters": [
-                            {
-                              "name": "x",
-                              "type": {
-                                "name": "int"
-                              }
+                          "parameter": {
+                            "name": "x",
+                            "type": {
+                              "name": "int"
                             }
-                          ]
+                          }
                         }
                       ],
                       "switches": [
@@ -990,41 +862,35 @@
                           "body": {
                             "arms": [
                               {
-                                "expression": {
-                                  "object": {
-                                    "call": {
-                                      "arguments": [
-                                        {
-                                          "object": {
-                                            "call": {
-                                              "name": "Describe"
-                                            },
-                                            "access": true,
-                                            "name": "w"
-                                          }
-                                        }
-                                      ],
-                                      "name": "WriteLine"
-                                    },
-                                    "access": true,
-                                    "name": "Console"
-                                  }
-                                },
-                                "break": true,
+                                "break": "break;",
                                 "pattern": {
                                   "name": "w",
                                   "declaration": true,
                                   "type": {
                                     "name": "Widget"
                                   }
+                                },
+                                "expression": {
+                                  "object": {
+                                    "call": {
+                                      "object": {
+                                        "call": {
+                                          "name": "Describe"
+                                        },
+                                        "access": true,
+                                        "name": "w"
+                                      },
+                                      "name": "WriteLine"
+                                    },
+                                    "access": true,
+                                    "name": "Console"
+                                  }
                                 }
                               },
                               {
                                 "throw": {
                                   "new": {
-                                    "type": {
-                                      "name": "InvalidOperationException"
-                                    }
+                                    "name": "InvalidOperationException"
                                   }
                                 },
                                 "pattern": {
@@ -1033,8 +899,7 @@
                                 }
                               },
                               {
-                                "text": "default: break",
-                                "break": true
+                                "break": "break;"
                               }
                             ]
                           },
@@ -1048,43 +913,31 @@
                       "expressions": [
                         {
                           "call": {
-                            "arguments": [
-                              {
-                                "string": {
-                                  "interpolations": [
-                                    {
-                                      "object": {
-                                        "call": {
-                                          "name": "Sum"
-                                        },
-                                        "access": true,
-                                        "name": "evens"
-                                      }
+                            "string": {
+                              "interpolations": [
+                                {
+                                  "object": {
+                                    "call": {
+                                      "name": "Sum"
                                     },
-                                    {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "int": "3"
-                                          }
-                                        ],
-                                        "name": "cube"
-                                      }
-                                    },
-                                    {
-                                      "call": {
-                                        "arguments": [
-                                          {
-                                            "int": "4"
-                                          }
-                                        ],
-                                        "name": "Square"
-                                      }
-                                    }
-                                  ]
+                                    "access": true,
+                                    "name": "evens"
+                                  }
+                                },
+                                {
+                                  "call": {
+                                    "int": "3",
+                                    "name": "cube"
+                                  }
+                                },
+                                {
+                                  "call": {
+                                    "int": "4",
+                                    "name": "Square"
+                                  }
                                 }
-                              }
-                            ],
+                              ]
+                            },
                             "name": "log"
                           }
                         }
@@ -1133,6 +986,7 @@
                               "text": "++",
                               "increment": true
                             },
+                            "postfix": true,
                             "name": "i"
                           }
                         }
@@ -1143,22 +997,19 @@
                             "expressions": [
                               {
                                 "call": {
-                                  "arguments": [
-                                    {
-                                      "object": {
-                                        "call": {
-                                          "name": "ToString"
-                                        },
-                                        "access": true,
-                                        "name": "n"
-                                      }
-                                    }
-                                  ],
+                                  "object": {
+                                    "call": {
+                                      "name": "ToString"
+                                    },
+                                    "access": true,
+                                    "name": "n"
+                                  },
                                   "name": "log"
                                 }
                               }
                             ]
                           },
+                          "in": true,
                           "type": {
                             "name": "var"
                           },
@@ -1176,6 +1027,11 @@
                       ],
                       "whiles": [
                         {
+                          "body": {
+                            "blocks": [
+                              "{ }"
+                            ]
+                          },
                           "condition": {
                             "expression": {
                               "binary": {
@@ -1191,6 +1047,7 @@
                                         "text": "++",
                                         "increment": true
                                       },
+                                      "postfix": true,
                                       "name": "j"
                                     }
                                   }
@@ -1208,16 +1065,20 @@
                       "tries": [
                         {
                           "finally": {
-                            "block": {
-                              "expressions": [
+                            "body": {
+                              "blocks": [
                                 {
-                                  "object": {
-                                    "call": {
-                                      "name": "Flush"
-                                    },
-                                    "access": true,
-                                    "name": "scope"
-                                  }
+                                  "expressions": [
+                                    {
+                                      "object": {
+                                        "call": {
+                                          "name": "Flush"
+                                        },
+                                        "access": true,
+                                        "name": "scope"
+                                      }
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -1228,14 +1089,8 @@
                                 "throws": [
                                   {
                                     "new": {
-                                      "arguments": [
-                                        {
-                                          "string": "\"boom\""
-                                        }
-                                      ],
-                                      "type": {
-                                        "name": "InvalidOperationException"
-                                      }
+                                      "string": "\"boom\"",
+                                      "name": "InvalidOperationException"
                                     }
                                   }
                                 ],
@@ -1248,11 +1103,7 @@
                                             {
                                               "object": {
                                                 "call": {
-                                                  "arguments": [
-                                                    {
-                                                      "int": "1"
-                                                    }
-                                                  ],
+                                                  "int": "1",
                                                   "name": "WriteByte"
                                                 },
                                                 "access": true,
@@ -1291,17 +1142,13 @@
                                     "expressions": [
                                       {
                                         "call": {
-                                          "arguments": [
-                                            {
-                                              "object": {
-                                                "member": {
-                                                  "name": "Message"
-                                                },
-                                                "access": true,
-                                                "name": "ex"
-                                              }
-                                            }
-                                          ],
+                                          "object": {
+                                            "member": {
+                                              "name": "Message"
+                                            },
+                                            "access": true,
+                                            "name": "ex"
+                                          },
                                           "name": "log"
                                         }
                                       }
@@ -1309,37 +1156,37 @@
                                   }
                                 ]
                               },
-                              "declaration": {
-                                "name": "ex",
-                                "type": {
-                                  "name": "InvalidOperationException"
-                                }
+                              "type": {
+                                "name": "InvalidOperationException"
                               },
+                              "name": "ex",
                               "filter": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "int": "0"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "object": {
-                                        "member": {
-                                          "member": {
-                                            "name": "Length"
-                                          },
-                                          "name": "Message"
-                                        },
-                                        "access": true,
-                                        "name": "ex"
+                                "expression": {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "int": "0"
                                       }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "object": {
+                                          "member": {
+                                            "member": {
+                                              "name": "Length"
+                                            },
+                                            "name": "Message"
+                                          },
+                                          "access": true,
+                                          "name": "ex"
+                                        }
+                                      }
+                                    },
+                                    "op": {
+                                      "text": ">",
+                                      "compare": true,
+                                      "greater": true
                                     }
-                                  },
-                                  "op": {
-                                    "text": ">",
-                                    "compare": true,
-                                    "greater": true
                                   }
                                 }
                               }
@@ -1348,14 +1195,14 @@
                               "body": {
                                 "blocks": [
                                   {
-                                    "throw": true
+                                    "throws": [
+                                      "throw;"
+                                    ]
                                   }
                                 ]
                               },
-                              "declaration": {
-                                "type": {
-                                  "name": "Exception"
-                                }
+                              "type": {
+                                "name": "Exception"
                               }
                             }
                           ]
@@ -1394,6 +1241,7 @@
                                         "text": "++",
                                         "increment": true
                                       },
+                                      "postfix": true,
                                       "name": "k"
                                     }
                                   }
@@ -1437,23 +1285,28 @@
                           "leading": true
                         }
                       ],
+                      "names": [
+                        "var",
+                        "pair"
+                      ],
+                      "patterns": [
+                        {
+                          "names": [
+                            "cnt",
+                            "tg"
+                          ],
+                          "tuple": true
+                        }
+                      ],
                       "variables": [
                         {
                           "binary": {
                             "right": {
                               "expression": {
                                 "new": {
-                                  "arguments": [
-                                    {
-                                      "int": "1"
-                                    },
-                                    {
-                                      "string": "\"alpha\""
-                                    }
-                                  ],
-                                  "type": {
-                                    "name": "Widget"
-                                  }
+                                  "string": "\"alpha\"",
+                                  "name": "Widget",
+                                  "int": "1"
                                 }
                               }
                             },
@@ -1482,7 +1335,7 @@
                             "left": {
                               "expression": {
                                 "object": {
-                                  "call": {
+                                  "member": {
                                     "name": "Shout",
                                     "optional": true
                                   },
@@ -1647,6 +1500,7 @@
                                   "name": "numbers"
                                 }
                               },
+                              "in": true,
                               "name": "n"
                             },
                             "where": {
@@ -1699,15 +1553,48 @@
                                   "name": "ToList"
                                 },
                                 "name": "Select",
-                                "arguments": [
-                                  {
-                                    "lambda": {
-                                      "value": {
+                                "lambda": {
+                                  "value": {
+                                    "expression": {
+                                      "binary": {
+                                        "right": {
+                                          "expression": {
+                                            "int": "1"
+                                          }
+                                        },
+                                        "left": {
+                                          "expression": {
+                                            "name": "n"
+                                          }
+                                        },
+                                        "op": {
+                                          "text": "+",
+                                          "plus": true
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "parameter": {
+                                    "name": "n"
+                                  }
+                                }
+                              },
+                              "name": "Where",
+                              "lambda": {
+                                "value": {
+                                  "expression": {
+                                    "binary": {
+                                      "right": {
+                                        "expression": {
+                                          "int": "0"
+                                        }
+                                      },
+                                      "left": {
                                         "expression": {
                                           "binary": {
                                             "right": {
                                               "expression": {
-                                                "int": "1"
+                                                "int": "2"
                                               }
                                             },
                                             "left": {
@@ -1716,60 +1603,23 @@
                                               }
                                             },
                                             "op": {
-                                              "text": "+",
-                                              "plus": true
+                                              "text": "%",
+                                              "modulo": true
                                             }
                                           }
                                         }
                                       },
-                                      "parameter": "n"
+                                      "op": {
+                                        "text": "!=",
+                                        "inequality": true
+                                      }
                                     }
                                   }
-                                ]
-                              },
-                              "name": "Where",
-                              "arguments": [
-                                {
-                                  "lambda": {
-                                    "value": {
-                                      "expression": {
-                                        "binary": {
-                                          "right": {
-                                            "expression": {
-                                              "int": "0"
-                                            }
-                                          },
-                                          "left": {
-                                            "expression": {
-                                              "binary": {
-                                                "right": {
-                                                  "expression": {
-                                                    "int": "2"
-                                                  }
-                                                },
-                                                "left": {
-                                                  "expression": {
-                                                    "name": "n"
-                                                  }
-                                                },
-                                                "op": {
-                                                  "text": "%",
-                                                  "modulo": true
-                                                }
-                                              }
-                                            }
-                                          },
-                                          "op": {
-                                            "text": "!=",
-                                            "inequality": true
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "parameter": "n"
-                                  }
+                                },
+                                "parameter": {
+                                  "name": "n"
                                 }
-                              ]
+                              }
                             },
                             "access": true,
                             "name": "numbers"
@@ -1816,16 +1666,16 @@
                                 }
                               }
                             },
-                            "parameter": "x"
+                            "parameter": {
+                              "name": "x"
+                            }
                           },
                           "type": {
-                            "arguments": [
+                            "types": [
                               {
-                                "$type": "type",
                                 "name": "int"
                               },
                               {
-                                "$type": "type",
                                 "name": "int"
                               }
                             ],
@@ -1864,16 +1714,16 @@
                                 }
                               ]
                             },
-                            "parameter": "x"
+                            "parameter": {
+                              "name": "x"
+                            }
                           },
                           "type": {
-                            "arguments": [
+                            "types": [
                               {
-                                "$type": "type",
                                 "name": "int"
                               },
                               {
-                                "$type": "type",
                                 "name": "int"
                               }
                             ],
@@ -1888,27 +1738,24 @@
                               "expression": {
                                 "object": {
                                   "call": {
-                                    "arguments": [
-                                      {
-                                        "name": "msg"
-                                      }
-                                    ],
-                                    "name": "WriteLine"
+                                    "names": [
+                                      "WriteLine",
+                                      "msg"
+                                    ]
                                   },
                                   "access": true,
                                   "name": "Console"
                                 }
                               }
                             },
-                            "parameter": "msg"
+                            "parameter": {
+                              "name": "msg"
+                            }
                           },
                           "type": {
-                            "arguments": [
-                              {
-                                "$type": "type",
-                                "name": "string"
-                              }
-                            ],
+                            "type": {
+                              "name": "string"
+                            },
                             "generic": true,
                             "name": "Action"
                           },
@@ -1945,18 +1792,16 @@
                         },
                         {
                           "tuple": {
-                            "arguments": [
+                            "strings": [
+                              "\"odd\""
+                            ],
+                            "objects": [
                               {
-                                "object": {
-                                  "member": {
-                                    "name": "Count"
-                                  },
-                                  "access": true,
-                                  "name": "odds"
-                                }
-                              },
-                              {
-                                "string": "\"odd\""
+                                "member": {
+                                  "name": "Count"
+                                },
+                                "access": true,
+                                "name": "odds"
                               }
                             ]
                           },
@@ -1980,47 +1825,23 @@
                           "name": "pair"
                         },
                         {
-                          "name": "pair",
-                          "type": {
-                            "name": "var"
-                          },
-                          "pattern": {
-                            "names": [
-                              "cnt",
-                              "tg"
-                            ],
-                            "tuple": true
-                          }
-                        },
-                        {
                           "object": {
                             "index": {
-                              "arguments": [
-                                {
-                                  "int": "2"
-                                },
-                                {
-                                  "int": "3"
-                                },
-                                {
-                                  "range": {
-                                    "name": "odds"
-                                  }
-                                }
+                              "range": {
+                                "name": "odds"
+                              },
+                              "ints": [
+                                "2",
+                                "3"
                               ]
                             },
                             "access": true,
-                            "argument": {
-                              "int": "1"
-                            }
+                            "int": "1"
                           },
                           "type": {
-                            "arguments": [
-                              {
-                                "$type": "type",
-                                "name": "int"
-                              }
-                            ],
+                            "type": {
+                              "name": "int"
+                            },
                             "generic": true,
                             "name": "List"
                           },
@@ -2028,53 +1849,45 @@
                         },
                         {
                           "new": {
-                            "literal": {
-                              "assigns": [
-                                {
-                                  "right": {
-                                    "expression": {
-                                      "int": "1"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "index": {
-                                        "argument": {
-                                          "string": "\"a\""
-                                        }
-                                      }
-                                    }
-                                  },
-                                  "op": "="
+                            "assigns": [
+                              {
+                                "right": {
+                                  "expression": {
+                                    "int": "1"
+                                  }
                                 },
-                                {
-                                  "right": {
-                                    "expression": {
-                                      "int": "2"
+                                "left": {
+                                  "expression": {
+                                    "index": {
+                                      "string": "\"a\""
                                     }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "index": {
-                                        "argument": {
-                                          "string": "\"b\""
-                                        }
-                                      }
+                                  }
+                                },
+                                "op": "="
+                              },
+                              {
+                                "right": {
+                                  "expression": {
+                                    "int": "2"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "index": {
+                                      "string": "\"b\""
                                     }
-                                  },
-                                  "op": "="
-                                }
-                              ]
-                            }
+                                  }
+                                },
+                                "op": "="
+                              }
+                            ]
                           },
                           "type": {
-                            "arguments": [
+                            "types": [
                               {
-                                "$type": "type",
                                 "name": "string"
                               },
                               {
-                                "$type": "type",
                                 "name": "int"
                               }
                             ],
@@ -2127,38 +1940,29 @@
                 "public": true,
                 "static": true,
                 "async": true,
-                "returns": {
-                  "type": {
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "name": "int"
-                      }
-                    ],
-                    "generic": true,
-                    "name": "Task"
-                  }
-                },
                 "name": "RunAsync",
                 "parameters": [
                   {
                     "name": "maybe",
                     "type": {
-                      "text": "Widget",
-                      "nullable": true
+                      "type": {
+                        "type": {
+                          "name": "Widget"
+                        },
+                        "nullable": true
+                      }
                     }
                   },
                   {
                     "name": "numbers",
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
+                      "type": {
+                        "type": {
                           "name": "int"
-                        }
-                      ],
-                      "generic": true,
-                      "name": "IEnumerable"
+                        },
+                        "generic": true,
+                        "name": "IEnumerable"
+                      }
                     }
                   }
                 ]
@@ -2187,79 +1991,52 @@
         "name": "Transformer",
         "generics": [
           {
-            "name": "T"
+            "name": "T",
+            "in": true
           },
           {
-            "name": "TResult"
+            "name": "TResult",
+            "out": true
           }
         ]
       },
       "enums": [
         {
-          "body": {
-            "constants": [
-              {
-                "name": "Low"
-              },
-              {
-                "name": "Medium"
-              },
-              {
-                "name": "High"
-              }
-            ]
-          },
+          "constants": [
+            {
+              "name": "Low"
+            },
+            {
+              "name": "Medium"
+            },
+            {
+              "name": "High"
+            }
+          ],
           "public": true,
           "name": "Priority"
         },
         {
-          "body": {
-            "constants": [
-              {
-                "value": {
-                  "expression": {
-                    "int": "0"
-                  }
-                },
-                "name": "None"
-              },
-              {
-                "value": {
-                  "expression": {
-                    "int": "1"
-                  }
-                },
-                "name": "Fast"
-              },
-              {
-                "value": {
-                  "expression": {
-                    "int": "2"
-                  }
-                },
-                "name": "Safe"
-              },
-              {
-                "value": {
-                  "expression": {
-                    "int": "4"
-                  }
-                },
-                "name": "Cheap"
-              }
-            ]
-          },
-          "public": true,
-          "attributes": [
+          "constants": [
             {
-              "name": "Flags"
+              "int": "0",
+              "name": "None"
+            },
+            {
+              "int": "1",
+              "name": "Fast"
+            },
+            {
+              "int": "2",
+              "name": "Safe"
+            },
+            {
+              "int": "4",
+              "name": "Cheap"
             }
           ],
-          "name": "Trait",
-          "type": {
-            "name": "uint",
-            "underlying": true
-          }
+          "public": true,
+          "name": "Trait"
         }
       ],
       "interface": {
@@ -2270,91 +2047,65 @@
                 "name": "Added",
                 "type": {
                   "type": {
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "name": "T"
-                      }
-                    ],
+                    "type": {
+                      "name": "T"
+                    },
                     "generic": true,
                     "name": "EventHandler"
-                  }
+                  },
+                  "nullable": true
                 }
               }
             }
           ],
           "methods": [
             {
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": {
-                    "name": "int"
-                  }
-                }
-              ],
-              "public": true,
-              "returns": {
+              "parameter": {
+                "name": "id",
                 "type": {
-                  "text": "T",
-                  "nullable": true
+                  "name": "int"
                 }
               },
+              "public": true,
               "name": "Find"
             },
             {
               "name": "AllAsync",
-              "public": true,
-              "returns": {
-                "type": {
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "generic": true,
-                      "name": "IReadOnlyList",
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "T"
-                        }
-                      ]
-                    }
-                  ],
-                  "generic": true,
-                  "name": "Task"
-                }
-              }
+              "public": true
             }
           ]
         },
         "public": true,
         "name": "IRepository",
-        "generics": [
-          {
-            "name": "T",
-            "class": true,
-            "new": true
-          }
-        ]
+        "generic": {
+          "name": "T",
+          "class": true,
+          "new": true
+        }
       },
       "struct": {
         "body": {
           "methods": [
             {
               "body": {
-                "binaries": [
+                "logicals": [
                   {
                     "right": {
                       "expression": {
                         "binary": {
-                          "op": {
-                            "text": "==",
-                            "equals": true
+                          "right": {
+                            "expression": {
+                              "name": "this"
+                            }
                           },
                           "left": {
                             "expression": {
                               "name": "p"
                             }
+                          },
+                          "op": {
+                            "text": "==",
+                            "equals": true
                           }
                         }
                       }
@@ -2383,36 +2134,29 @@
               },
               "public": true,
               "override": true,
-              "returns": {
-                "type": {
-                  "name": "bool"
-                }
-              },
               "name": "Equals",
-              "parameters": [
-                {
-                  "name": "o",
+              "parameter": {
+                "name": "o",
+                "type": {
                   "type": {
-                    "text": "object",
+                    "type": {
+                      "name": "object"
+                    },
                     "nullable": true
                   }
                 }
-              ]
+              }
             },
             {
               "body": {
                 "objects": [
                   {
                     "call": {
-                      "arguments": [
-                        {
-                          "name": "X"
-                        },
-                        {
-                          "name": "Y"
-                        }
-                      ],
-                      "name": "Combine"
+                      "names": [
+                        "Combine",
+                        "X",
+                        "Y"
+                      ]
                     },
                     "access": true,
                     "name": "HashCode"
@@ -2421,44 +2165,27 @@
               },
               "public": true,
               "override": true,
-              "returns": {
-                "type": {
-                  "name": "int"
-                }
-              },
               "name": "GetHashCode"
             }
           ],
           "properties": [
             {
-              "value": {
-                "expression": {
-                  "name": "x"
-                }
-              },
+              "names": [
+                "double",
+                "X",
+                "x"
+              ],
               "public": true,
-              "type": {
-                "name": "double"
-              },
-              "name": "X",
-              "accessors": [
-                "get;"
-              ]
+              "get": "get;"
             },
             {
-              "value": {
-                "expression": {
-                  "name": "y"
-                }
-              },
+              "names": [
+                "double",
+                "Y",
+                "y"
+              ],
               "public": true,
-              "type": {
-                "name": "double"
-              },
-              "name": "Y",
-              "accessors": [
-                "get;"
-              ]
+              "get": "get;"
             }
           ],
           "operators": [
@@ -2466,65 +2193,61 @@
               "body": {
                 "news": [
                   {
-                    "arguments": [
+                    "binaries": [
                       {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "X"
-                                },
-                                "access": true,
-                                "name": "b"
-                              }
+                        "right": {
+                          "expression": {
+                            "object": {
+                              "member": {
+                                "name": "X"
+                              },
+                              "access": true,
+                              "name": "b"
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "X"
-                                },
-                                "access": true,
-                                "name": "a"
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
                           }
+                        },
+                        "left": {
+                          "expression": {
+                            "object": {
+                              "member": {
+                                "name": "X"
+                              },
+                              "access": true,
+                              "name": "a"
+                            }
+                          }
+                        },
+                        "op": {
+                          "text": "+",
+                          "plus": true
                         }
                       },
                       {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "Y"
-                                },
-                                "access": true,
-                                "name": "b"
-                              }
+                        "right": {
+                          "expression": {
+                            "object": {
+                              "member": {
+                                "name": "Y"
+                              },
+                              "access": true,
+                              "name": "b"
                             }
-                          },
-                          "left": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "Y"
-                                },
-                                "access": true,
-                                "name": "a"
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
                           }
+                        },
+                        "left": {
+                          "expression": {
+                            "object": {
+                              "member": {
+                                "name": "Y"
+                              },
+                              "access": true,
+                              "name": "a"
+                            }
+                          }
+                        },
+                        "op": {
+                          "text": "+",
+                          "plus": true
                         }
                       }
                     ]
@@ -2553,7 +2276,7 @@
             },
             {
               "body": {
-                "binaries": [
+                "logicals": [
                   {
                     "right": {
                       "expression": {
@@ -2699,103 +2422,91 @@
         },
         "public": true,
         "readonly": true,
-        "name": "Point",
-        "parameters": [
-          {
-            "name": "x",
-            "type": {
-              "name": "double"
-            }
-          },
-          {
-            "name": "y",
-            "type": {
-              "name": "double"
-            }
-          }
-        ]
+        "name": "Point"
       },
       "records": [
         {
-          "parameters": [
-            {
-              "name": "Amount",
-              "type": {
-                "name": "decimal"
-              }
-            },
-            {
-              "name": "Currency",
-              "type": {
-                "name": "string"
-              }
-            }
-          ],
-          "public": true,
-          "name": "Money"
+          "name": "Money",
+          "public": true
         },
         {
-          "extends": [
-            {
+          "extends": {
+            "type": {
               "arguments": [
-                {
-                  "name": "Amount"
-                },
-                {
-                  "name": "Currency"
-                }
+                "Amount",
+                "Currency"
               ],
-              "type": {
-                "name": "Money"
-              }
+              "name": "Money"
             }
-          ],
+          },
           "public": true,
-          "name": "TaxedMoney",
-          "parameters": [
-            {
-              "name": "Amount",
-              "type": {
-                "name": "decimal"
-              }
-            },
-            {
-              "name": "Currency",
-              "type": {
-                "name": "string"
-              }
-            },
-            {
-              "name": "TaxRate",
-              "type": {
-                "name": "decimal"
-              }
-            }
-          ]
+          "name": "TaxedMoney"
         }
       ]
     },
     {
+      "$children": [
+        "DEBUG",
+        "LEGACY"
+      ],
+      "file": true,
+      "int": "0168",
+      "import": {
+        "name": "System"
+      },
+      "record": {
+        "name": "Point",
+        "public": true
+      },
+      "interface": {
+        "body": {
+          "methods": [
+            {
+              "name": "IFormat",
+              "public": true
+            }
+          ]
+        },
+        "internal": true,
+        "name": "IFormatProvider2"
+      },
+      "name": "Tractor.Fixtures.FileScoped",
+      "attribute": {
+        "argument": {
+          "string": "\"blueprint\""
+        },
+        "path": {
+          "names": [
+            "System",
+            "Reflection",
+            "AssemblyDescription"
+          ]
+        }
+      },
+      "comments": [
+        "// Iter 20: new shapes — statements, expressions, patterns, literals.",
+        "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>",
+        "// Record declaration with positional parameters + with-expression.",
+        "// Global / assembly-level attribute (file scope).",
+        "// Preprocessor regions, conditionals, define/elif, nullable, pragma."
+      ],
       "classes": [
         {
           "body": {
             "properties": [
               {
-                "value": {
-                  "expression": {
-                    "int": "42"
-                  }
+                "get": {
+                  "int": "42"
                 },
                 "public": true,
                 "static": true,
-                "type": {
-                  "name": "int"
-                },
-                "name": "Answer"
+                "names": [
+                  "int",
+                  "Answer"
+                ]
               }
             ]
           },
-          "internal": true,
           "file": true,
           "sealed": true,
           "name": "Hidden"
@@ -2817,11 +2528,6 @@
                 },
                 "public": true,
                 "static": true,
-                "returns": {
-                  "type": {
-                    "name": "int"
-                  }
-                },
                 "name": "Get"
               }
             ]
@@ -2855,7 +2561,7 @@
                           "name": "n"
                         },
                         {
-                          "char": "'A'",
+                          "string": "'A'",
                           "type": {
                             "name": "char"
                           },
@@ -2870,17 +2576,9 @@
                         },
                         {
                           "new": {
-                            "arguments": [
-                              {
-                                "float": "1.0m"
-                              },
-                              {
-                                "string": "\"USD\""
-                              }
-                            ],
-                            "type": {
-                              "name": "Money"
-                            }
+                            "string": "\"USD\"",
+                            "name": "Money",
+                            "float": "1.0m"
                           },
                           "type": {
                             "name": "var"
@@ -2902,13 +2600,13 @@
                         },
                         {
                           "new": {
-                            "$children": [
-                              "Value"
-                            ],
+                            "int": "42",
                             "anonymous": true,
                             "string": "\"foo\"",
-                            "name": "Name",
-                            "int": "42"
+                            "names": [
+                              "Name",
+                              "Value"
+                            ]
                           },
                           "type": {
                             "name": "var"
@@ -2917,14 +2615,11 @@
                         },
                         {
                           "new": {
-                            "literal": {
-                              "ints": [
-                                "1",
-                                "2",
-                                "3"
-                              ]
-                            },
-                            "array": true,
+                            "ints": [
+                              "1",
+                              "2",
+                              "3"
+                            ],
                             "type": {
                               "type": {
                                 "name": "int"
@@ -2942,14 +2637,11 @@
                         },
                         {
                           "new": {
-                            "literal": {
-                              "ints": [
-                                "4",
-                                "5",
-                                "6"
-                              ]
-                            },
-                            "array": true
+                            "ints": [
+                              "4",
+                              "5",
+                              "6"
+                            ]
                           },
                           "type": {
                             "type": {
@@ -3005,21 +2697,13 @@
                               "expression": {
                                 "throw": {
                                   "new": {
-                                    "arguments": [
-                                      {
-                                        "call": {
-                                          "arguments": [
-                                            {
-                                              "name": "s"
-                                            }
-                                          ],
-                                          "name": "nameof"
-                                        }
-                                      }
-                                    ],
-                                    "type": {
-                                      "name": "ArgumentNullException"
-                                    }
+                                    "call": {
+                                      "names": [
+                                        "nameof",
+                                        "s"
+                                      ]
+                                    },
+                                    "name": "ArgumentNullException"
                                   }
                                 }
                               }
@@ -3047,37 +2731,39 @@
                       ],
                       "checkeds": [
                         {
-                          "block": {
-                            "expressions": [
+                          "body": {
+                            "blocks": [
                               {
-                                "assign": {
-                                  "right": {
-                                    "expression": {
-                                      "binary": {
-                                        "right": {
-                                          "expression": {
-                                            "int": "1"
+                                "assigns": [
+                                  {
+                                    "right": {
+                                      "expression": {
+                                        "binary": {
+                                          "right": {
+                                            "expression": {
+                                              "int": "1"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "name": "n"
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "+",
+                                            "plus": true
                                           }
-                                        },
-                                        "left": {
-                                          "expression": {
-                                            "name": "n"
-                                          }
-                                        },
-                                        "op": {
-                                          "text": "+",
-                                          "plus": true
                                         }
                                       }
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "n"
-                                    }
-                                  },
-                                  "op": "="
-                                }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "name": "n"
+                                      }
+                                    },
+                                    "op": "="
+                                  }
+                                ]
                               }
                             ]
                           }
@@ -3085,20 +2771,18 @@
                       ],
                       "labels": [
                         {
-                          "expression": {
-                            "assign": {
-                              "right": {
-                                "expression": {
-                                  "name": "n"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "_"
-                                }
-                              },
-                              "op": "="
-                            }
+                          "assign": {
+                            "right": {
+                              "expression": {
+                                "name": "n"
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "_"
+                              }
+                            },
+                            "op": "="
                           },
                           "name": "skip"
                         }
@@ -3117,7 +2801,7 @@
                           "leading": true
                         },
                         {
-                          "text": "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n// goto + labeled statement",
+                          "text": "// fixed + unsafe handled in unsafe context (pointer omitted for clarity)\n        // goto + labeled statement",
                           "leading": true
                         },
                         {
@@ -3151,16 +2835,21 @@
                       ],
                       "locks": [
                         {
-                          "block": {
-                            "expressions": [
+                          "body": {
+                            "blocks": [
                               {
-                                "unary": {
-                                  "op": {
-                                    "text": "++",
-                                    "increment": true
-                                  },
-                                  "name": "n"
-                                }
+                                "expressions": [
+                                  {
+                                    "unary": {
+                                      "op": {
+                                        "text": "++",
+                                        "increment": true
+                                      },
+                                      "postfix": true,
+                                      "name": "n"
+                                    }
+                                  }
+                                ]
                               }
                             ]
                           },
@@ -3176,20 +2865,13 @@
                 },
                 "public": true,
                 "static": true,
-                "returns": {
-                  "type": {
-                    "name": "void"
-                  }
-                },
                 "name": "Statements",
-                "parameters": [
-                  {
-                    "name": "o",
-                    "type": {
-                      "name": "object"
-                    }
+                "parameter": {
+                  "name": "o",
+                  "type": {
+                    "name": "object"
                   }
-                ]
+                }
               },
               {
                 "body": {
@@ -3208,18 +2890,6 @@
                 },
                 "public": true,
                 "static": true,
-                "returns": {
-                  "type": {
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "name": "int"
-                      }
-                    ],
-                    "generic": true,
-                    "name": "IEnumerable"
-                  }
-                },
                 "name": "Yields"
               },
               {
@@ -3347,17 +3017,1627 @@
                 },
                 "public": true,
                 "static": true,
-                "returns": {
+                "name": "Patterns",
+                "parameter": {
+                  "name": "o",
+                  "type": {
+                    "name": "object"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "assigns": [
+                        {
+                          "right": {
+                            "expression": {
+                              "int": "1"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "x"
+                            }
+                          },
+                          "op": "="
+                        },
+                        {
+                          "right": {
+                            "expression": {
+                              "int": "2"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "y"
+                            }
+                          },
+                          "op": "="
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Deconstruct",
+                "parameters": [
+                  {
+                    "name": "x",
+                    "out": true,
+                    "type": {
+                      "name": "int"
+                    }
+                  },
+                  {
+                    "name": "y",
+                    "out": true,
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "tuples": [
+                    {
+                      "ints": [
+                        "1",
+                        "2"
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Pair"
+              },
+              {
+                "body": {
+                  "switches": [
+                    {
+                      "arms": [
+                        {
+                          "string": "\"origin\"",
+                          "pattern": {
+                            "tuple": {
+                              "ints": [
+                                "0",
+                                "0"
+                              ]
+                            },
+                            "constant": true
+                          }
+                        },
+                        {
+                          "string": "\"x-axis\"",
+                          "pattern": {
+                            "subpatterns": [
+                              {
+                                "pattern": {
+                                  "name": "x",
+                                  "declaration": true,
+                                  "type": {
+                                    "name": "var"
+                                  }
+                                }
+                              },
+                              {
+                                "pattern": {
+                                  "int": "0",
+                                  "constant": true
+                                }
+                              }
+                            ],
+                            "recursive": true
+                          }
+                        },
+                        {
+                          "string": "\"other\"",
+                          "discard": "_"
+                        }
+                      ],
+                      "name": "o"
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Origin",
+                "parameter": {
+                  "name": "o",
+                  "type": {
+                    "name": "object"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "objects": [
+                    {
+                      "call": {
+                        "name": "Trim"
+                      },
+                      "access": true,
+                      "name": "s"
+                    }
+                  ]
+                },
+                "public": true,
+                "attribute": {
+                  "path": {
+                    "names": [
+                      "System",
+                      "Diagnostics",
+                      "CodeAnalysis",
+                      "NotNull"
+                    ]
+                  }
+                },
+                "name": "Trim",
+                "parameter": {
+                  "name": "s",
                   "type": {
                     "name": "string"
                   }
+                }
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "returns": [
+                        {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "int": "0"
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "object": {
+                                          "member": {
+                                            "name": "Length",
+                                            "optional": true
+                                          },
+                                          "access": true,
+                                          "name": "asArr"
+                                        }
+                                      }
+                                    },
+                                    "op": {
+                                      "text": "??",
+                                      "nullish": true
+                                    }
+                                  }
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "object": {
+                                    "call": {
+                                      "name": "Count"
+                                    },
+                                    "access": true,
+                                    "name": "joined"
+                                  }
+                                }
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "ifs": [
+                        {
+                          "body": {
+                            "blocks": [
+                              {
+                                "returns": [
+                                  {
+                                    "expression": {
+                                      "object": {
+                                        "member": {
+                                          "name": "Length"
+                                        },
+                                        "access": true,
+                                        "name": "arr"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "condition": {
+                            "expression": {
+                              "is": {
+                                "pattern": {
+                                  "name": "arr",
+                                  "declaration": true,
+                                  "type": {
+                                    "type": {
+                                      "name": "int"
+                                    },
+                                    "array": true
+                                  }
+                                },
+                                "name": "xs"
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "variables": [
+                        {
+                          "query": {
+                            "select": {
+                              "object": {
+                                "call": {
+                                  "name": "Count"
+                                },
+                                "access": true,
+                                "name": "grp"
+                              }
+                            },
+                            "from": {
+                              "value": {
+                                "expression": {
+                                  "name": "xs"
+                                }
+                              },
+                              "in": true,
+                              "name": "x"
+                            },
+                            "let": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "name": "x"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "name": "x"
+                                  }
+                                },
+                                "op": {
+                                  "text": "*",
+                                  "multiply": true
+                                }
+                              },
+                              "name": "xx"
+                            },
+                            "join": {
+                              "names": [
+                                "y",
+                                "ys",
+                                "x",
+                                "y"
+                              ],
+                              "in": true
+                            },
+                            "group": {
+                              "names": [
+                                "y",
+                                "x"
+                              ]
+                            },
+                            "name": "grp"
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "joined"
+                        },
+                        {
+                          "names": [
+                            "o",
+                            "xs"
+                          ],
+                          "type": {
+                            "name": "object"
+                          }
+                        },
+                        {
+                          "is": {
+                            "right": {
+                              "expression": {
+                                "type": {
+                                  "type": {
+                                    "name": "int"
+                                  },
+                                  "array": true
+                                }
+                              }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "o"
+                              }
+                            }
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "asArr"
+                        }
+                      ]
+                    }
+                  ]
                 },
-                "name": "Patterns",
+                "public": true,
+                "static": true,
+                "name": "LinqExtras",
                 "parameters": [
                   {
-                    "name": "o",
+                    "name": "xs",
                     "type": {
-                      "name": "object"
+                      "type": {
+                        "type": {
+                          "name": "int"
+                        },
+                        "array": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "ys",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "int"
+                        },
+                        "array": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "switches": [
+                    {
+                      "arms": [
+                        {
+                          "string": "\"empty\"",
+                          "pattern": {
+                            "text": "[]",
+                            "list": true
+                          }
+                        },
+                        {
+                          "string": "\"exactly three\"",
+                          "pattern": {
+                            "patterns": [
+                              {
+                                "int": "1",
+                                "constant": true
+                              },
+                              {
+                                "int": "2",
+                                "constant": true
+                              },
+                              {
+                                "int": "3",
+                                "constant": true
+                              }
+                            ],
+                            "list": true
+                          }
+                        },
+                        {
+                          "string": "\"other\"",
+                          "discard": "_"
+                        }
+                      ],
+                      "name": "xs"
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Listy",
+                "parameter": {
+                  "name": "xs",
+                  "type": {
+                    "type": {
+                      "type": {
+                        "name": "int"
+                      },
+                      "array": true
+                    }
+                  }
+                }
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "returns": [
+                        {
+                          "expression": {
+                            "int": "0"
+                          }
+                        }
+                      ],
+                      "fors": [
+                        {
+                          "body": {
+                            "blocks": [
+                              {
+                                "ifs": [
+                                  {
+                                    "body": {
+                                      "continues": [
+                                        "continue;"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "expression": {
+                                        "binary": {
+                                          "right": {
+                                            "expression": {
+                                              "int": "1"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "name": "i"
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "==",
+                                            "equals": true
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "body": {
+                                      "breaks": [
+                                        "break;"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "expression": {
+                                        "binary": {
+                                          "right": {
+                                            "expression": {
+                                              "int": "2"
+                                            }
+                                          },
+                                          "left": {
+                                            "expression": {
+                                              "name": "i"
+                                            }
+                                          },
+                                          "op": {
+                                            "text": "==",
+                                            "equals": true
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "variable": {
+                            "int": "0",
+                            "type": {
+                              "name": "int"
+                            },
+                            "name": "i"
+                          },
+                          "condition": {
+                            "expression": {
+                              "binary": {
+                                "right": {
+                                  "expression": {
+                                    "int": "3"
+                                  }
+                                },
+                                "left": {
+                                  "expression": {
+                                    "name": "i"
+                                  }
+                                },
+                                "op": {
+                                  "text": "<",
+                                  "compare": true,
+                                  "less": true
+                                }
+                              }
+                            }
+                          },
+                          "unary": {
+                            "op": {
+                              "text": "++",
+                              "increment": true
+                            },
+                            "postfix": true,
+                            "name": "i"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Trivial"
+              },
+              {
+                "body": {
+                  "strings": [
+                    {
+                      "interpolation": {
+                        "int": "5",
+                        "name": "n"
+                      }
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Aligned",
+                "parameter": {
+                  "name": "n",
+                  "type": {
+                    "name": "int"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "checkeds": [
+                    {
+                      "binary": {
+                        "right": {
+                          "expression": {
+                            "name": "b"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "a"
+                          }
+                        },
+                        "op": {
+                          "text": "+",
+                          "plus": true
+                        }
+                      }
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Checks",
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "name": "int"
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "fixeds": [
+                        {
+                          "body": {
+                            "blocks": [
+                              {
+                                "returns": [
+                                  {
+                                    "expression": {
+                                      "unary": {
+                                        "name": "q",
+                                        "op": {
+                                          "text": "*",
+                                          "multiply": true
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "variable": {
+                            "unary": {
+                              "name": "a",
+                              "op": {
+                                "text": "&",
+                                "bitwise": true,
+                                "and": true
+                              }
+                            },
+                            "type": {
+                              "type": {
+                                "name": "int"
+                              }
+                            },
+                            "name": "q"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "unsafe": true,
+                "name": "Pointer",
+                "parameter": {
+                  "name": "p",
+                  "type": {
+                    "type": {
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "expressions": [
+                        {
+                          "call": {
+                            "names": [
+                              "fn",
+                              "x"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "unsafe": true,
+                "name": "FnPtr",
+                "parameters": [
+                  {
+                    "name": "fn",
+                    "type": {
+                      "type": {
+                        "returns": {
+                          "type": {
+                            "name": "void"
+                          }
+                        },
+                        "parameter": {
+                          "type": {
+                            "name": "int"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "x",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "variables": [
+                        {
+                          "new": {
+                            "type": {
+                              "int": "3",
+                              "array": true,
+                              "type": {
+                                "name": "int"
+                              }
+                            },
+                            "stackalloc": true
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
+                            }
+                          },
+                          "name": "buf"
+                        },
+                        {
+                          "new": {
+                            "ints": [
+                              "1",
+                              "2",
+                              "3"
+                            ],
+                            "stackalloc": true,
+                            "type": {
+                              "int": "3",
+                              "array": true,
+                              "type": {
+                                "name": "int"
+                              }
+                            }
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
+                            },
+                            "generic": true,
+                            "name": "Span"
+                          },
+                          "name": "span"
+                        },
+                        {
+                          "new": {
+                            "ints": [
+                              "1",
+                              "2",
+                              "3"
+                            ],
+                            "stackalloc": true
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
+                            },
+                            "generic": true,
+                            "name": "Span"
+                          },
+                          "name": "auto"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "unsafe": true,
+                "name": "Alloc"
+              },
+              {
+                "body": {
+                  "lambdas": [
+                    {
+                      "body": {
+                        "blocks": [
+                          {
+                            "returns": [
+                              {
+                                "expression": {
+                                  "binary": {
+                                    "right": {
+                                      "expression": {
+                                        "int": "1"
+                                      }
+                                    },
+                                    "left": {
+                                      "expression": {
+                                        "name": "x"
+                                      }
+                                    },
+                                    "op": {
+                                      "text": "+",
+                                      "plus": true
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "parameters": [
+                        {
+                          "name": "x",
+                          "type": {
+                            "name": "int"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "AnonMethod"
+              },
+              {
+                "body": {
+                  "ises": [
+                    {
+                      "right": {
+                        "expression": {
+                          "type": {
+                            "name": "int"
+                          }
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "o"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "IsInt",
+                "parameter": {
+                  "name": "o",
+                  "type": {
+                    "name": "object"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "objects": [
+                    {
+                      "index": {
+                        "name": "i"
+                      },
+                      "access": true,
+                      "name": "xs"
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "ElementAt",
+                "parameters": [
+                  {
+                    "name": "xs",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "int"
+                        },
+                        "array": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "i",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "strings": [
+                    "\"newline\\\\nquote\\\\\\\"backslash\\\\\\\\\""
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Esc"
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "assigns": [
+                        {
+                          "right": {
+                            "expression": {
+                              "int": "5"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "r"
+                            }
+                          },
+                          "op": "="
+                        }
+                      ],
+                      "variables": [
+                        {
+                          "int": "0",
+                          "type": {
+                            "name": "int"
+                          },
+                          "name": "x"
+                        },
+                        {
+                          "expression": {
+                            "name": "x",
+                            "ref": true
+                          },
+                          "type": {
+                            "type": {
+                              "name": "int"
+                            },
+                            "ref": true
+                          },
+                          "name": "r"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "unsafe": true,
+                "name": "RefExample"
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "assigns": [
+                        {
+                          "right": {
+                            "expression": {
+                              "object": {
+                                "index": {
+                                  "int": "0"
+                                },
+                                "access": true,
+                                "name": "data"
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "target"
+                            }
+                          },
+                          "op": "="
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Scoped",
+                "parameters": [
+                  {
+                    "name": "data",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "path": {
+                            "type": {
+                              "type": {
+                                "name": "int"
+                              },
+                              "generic": true,
+                              "name": "Span"
+                            },
+                            "names": [
+                              "System"
+                            ]
+                          }
+                        },
+                        "scoped": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "target",
+                    "ref": true,
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "returns": [
+                        {
+                          "expression": {
+                            "switch": {
+                              "arms": [
+                                {
+                                  "string": "\"string\"",
+                                  "pattern": {
+                                    "name": "v",
+                                    "declaration": true,
+                                    "type": {
+                                      "name": "var"
+                                    }
+                                  },
+                                  "when": {
+                                    "is": {
+                                      "right": {
+                                        "expression": {
+                                          "type": {
+                                            "name": "string"
+                                          }
+                                        }
+                                      },
+                                      "left": {
+                                        "expression": {
+                                          "name": "v"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "string": "\"one\"",
+                                  "pattern": {
+                                    "int": "1",
+                                    "constant": true
+                                  }
+                                },
+                                {
+                                  "string": {
+                                    "interpolations": [
+                                      {
+                                        "name": "x"
+                                      },
+                                      {
+                                        "name": "y"
+                                      }
+                                    ]
+                                  },
+                                  "discard": "_"
+                                }
+                              ],
+                              "name": "o"
+                            }
+                          }
+                        }
+                      ],
+                      "assigns": [
+                        {
+                          "right": {
+                            "expression": {
+                              "tuple": {
+                                "ints": [
+                                  "1",
+                                  "2"
+                                ]
+                              }
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "tuple": {
+                                "declarations": [
+                                  {
+                                    "name": "x",
+                                    "type": {
+                                      "name": "int"
+                                    }
+                                  },
+                                  {
+                                    "name": "y",
+                                    "type": {
+                                      "name": "int"
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "op": "="
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "VarPat",
+                "parameter": {
+                  "name": "o",
+                  "type": {
+                    "name": "object"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "blocks": [
+                    {
+                      "returns": [
+                        {
+                          "expression": {
+                            "object": {
+                              "call": {
+                                "name": "Count"
+                              },
+                              "access": true,
+                              "name": "q"
+                            }
+                          }
+                        }
+                      ],
+                      "variables": [
+                        {
+                          "query": {
+                            "select": {
+                              "object": {
+                                "call": {
+                                  "name": "Count"
+                                },
+                                "access": true,
+                                "name": "matched"
+                              }
+                            },
+                            "from": {
+                              "value": {
+                                "expression": {
+                                  "name": "a"
+                                }
+                              },
+                              "in": true,
+                              "name": "x"
+                            },
+                            "join": {
+                              "names": [
+                                "y",
+                                "b",
+                                "x",
+                                "y",
+                                "matched"
+                              ],
+                              "in": true
+                            }
+                          },
+                          "type": {
+                            "name": "var"
+                          },
+                          "name": "q"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "JoinInto",
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "int"
+                        },
+                        "array": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "int"
+                        },
+                        "array": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "strings": [
+                    "\"default\""
+                  ]
+                },
+                "public": true,
+                "name": "IFormat"
+              }
+            ],
+            "fields": [
+              {
+                "int": "0",
+                "private": true,
+                "type": {
+                  "path": {
+                    "names": [
+                      "global::System",
+                      "Int32"
+                    ]
+                  }
+                },
+                "name": "aliased"
+              },
+              {
+                "int": "1",
+                "private": true,
+                "static": true,
+                "type": {
+                  "name": "int"
+                },
+                "name": "a"
+              }
+            ],
+            "classes": [
+              {
+                "body": {
+                  "constructors": [
+                    {
+                      "body": {
+                        "blocks": [
+                          "{ }"
+                        ]
+                      },
+                      "public": true,
+                      "name": "Container"
+                    }
+                  ],
+                  "properties": [
+                    {
+                      "new": {
+                        "name": "T"
+                      },
+                      "public": true,
+                      "names": [
+                        "T",
+                        "Value"
+                      ],
+                      "get": "get;",
+                      "set": "set;"
+                    }
+                  ],
+                  "indexers": [
+                    {
+                      "value": {
+                        "expression": {
+                          "name": "Value"
+                        }
+                      },
+                      "public": true,
+                      "type": {
+                        "name": "T"
+                      },
+                      "parameters": [
+                        {
+                          "name": "i",
+                          "type": {
+                            "name": "int"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "destructors": [
+                    {
+                      "body": {
+                        "blocks": [
+                          {
+                            "comments": [
+                              "/* finalizer */"
+                            ]
+                          }
+                        ]
+                      },
+                      "name": "Container"
+                    }
+                  ]
+                },
+                "public": true,
+                "attribute": {
+                  "arguments": [
+                    {
+                      "string": "\"legacy\""
+                    },
+                    {
+                      "bool": "false"
+                    }
+                  ],
+                  "name": "Obsolete"
+                },
+                "name": "Container",
+                "generic": {
+                  "name": "T",
+                  "class": true,
+                  "new": true
+                }
+              }
+            ],
+            "events": [
+              {
+                "variable": {
+                  "name": "Changed",
+                  "type": {
+                    "name": "OnChanged"
+                  }
+                },
+                "public": true
+              },
+              {
+                "variable": {
+                  "name": "_changed",
+                  "type": {
+                    "name": "OnChanged"
+                  }
+                },
+                "private": true
+              },
+              {
+                "accessors": [
+                  {
+                    "$type": "get",
+                    "body": {
+                      "blocks": [
+                        {
+                          "assigns": [
+                            {
+                              "right": {
+                                "expression": {
+                                  "name": "value"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "_changed"
+                                }
+                              },
+                              "op": {
+                                "text": "+=",
+                                "assign": true,
+                                "plus": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "$type": "get",
+                    "body": {
+                      "blocks": [
+                        {
+                          "assigns": [
+                            {
+                              "right": {
+                                "expression": {
+                                  "name": "value"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "_changed"
+                                }
+                              },
+                              "op": {
+                                "text": "-=",
+                                "assign": true,
+                                "minus": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "public": true,
+                "type": {
+                  "name": "OnChanged"
+                },
+                "name": "Explicit"
+              }
+            ],
+            "delegates": [
+              {
+                "parameters": [
+                  {
+                    "name": "newValue",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ],
+                "public": true,
+                "type": {
+                  "name": "void"
+                },
+                "name": "OnChanged"
+              }
+            ],
+            "comments": [
+              {
+                "text": "// Attributes, generic constraints, indexer, destructor.",
+                "leading": true
+              },
+              {
+                "text": "// Delegate + event.",
+                "leading": true
+              },
+              {
+                "text": "// Alias-qualified name + extern alias forms.",
+                "leading": true
+              },
+              {
+                "text": "// Operator overloads + conversion operator.",
+                "leading": true
+              },
+              {
+                "text": "// Event with explicit add/remove accessors.",
+                "leading": true
+              },
+              {
+                "text": "// Tuple deconstruction with parenthesized variable designation.",
+                "leading": true
+              },
+              {
+                "text": "// Positional pattern in switch arm.",
+                "leading": true
+              },
+              {
+                "text": "// Attribute target specifier + global attribute target.",
+                "leading": true
+              },
+              {
+                "text": "// LINQ join / let / group, as / is simple expressions.",
+                "leading": true
+              },
+              {
+                "text": "// List patterns (C# 11). Slice patterns omitted because the\n    // pinned tree-sitter-c-sharp grammar emits ERROR for `..` in\n    // list patterns; the IR pipeline handles them when the grammar\n    // is regenerated.",
+                "leading": true
+              },
+              {
+                "text": "// empty + continue + break statements in a loop.",
+                "leading": true
+              },
+              {
+                "text": "// Interpolation with alignment + format specifier.",
+                "leading": true
+              },
+              {
+                "text": "// Checked expression / unchecked / fixed (unsafe) — exercise more\n    // statement kinds.",
+                "leading": true
+              },
+              {
+                "text": "// Function pointer type + parameter.",
+                "leading": true
+              },
+              {
+                "text": "// Stackalloc + implicit stackalloc.",
+                "leading": true
+              },
+              {
+                "text": "// Anonymous method expression (older closure form).",
+                "leading": true
+              },
+              {
+                "text": "// Simple is-expression (type test, no pattern binding).",
+                "leading": true
+              },
+              {
+                "text": "// Element access (indexer/array).",
+                "leading": true
+              },
+              {
+                "text": "// String escape sequences.",
+                "leading": true
+              },
+              {
+                "text": "// Unsafe block + ref expression.",
+                "leading": true
+              },
+              {
+                "text": "// Scoped type (C# 11) and ref type in parameters.",
+                "leading": true
+              },
+              {
+                "text": "// Var pattern + parenthesized pattern + parenthesized variable\n    // designation (`(int x, int y) = pair`).",
+                "leading": true
+              },
+              "// Unsafe statement (block form, distinct from unsafe modifier) —\n    // omitted here pending shape decision: tree-sitter exposes a\n    // `block` child of `unsafe_statement`, and naively wrapping the\n    // outer in `<block>` produces nested `<block><block>` which the\n    // `no-repeated-parent-child-name` shape contract rejects. The\n    // `unsafe` modifier on methods (above) is sufficient for now.",
+              {
+                "text": "// C# 9 top-level expression in a global_statement context: we\n    // can't add top-level statements to the existing file (already\n    // has namespace/classes), but we exercise extra LINQ join_into.",
+                "leading": true
+              },
+              {
+                "text": "// Explicit interface implementation.",
+                "leading": true
+              }
+            ],
+            "operators": [
+              {
+                "body": {
+                  "names": [
+                    "a"
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "type": {
+                  "type": {
+                    "name": "T"
+                  },
+                  "generic": true,
+                  "name": "Container"
+                },
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "T"
+                        },
+                        "generic": true,
+                        "name": "Container"
+                      }
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "T"
+                        },
+                        "generic": true,
+                        "name": "Container"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "body": {
+                  "ints": [
+                    "0"
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "type": {
+                  "name": "int"
+                },
+                "parameters": [
+                  {
+                    "name": "c",
+                    "type": {
+                      "type": {
+                        "type": {
+                          "name": "T"
+                        },
+                        "generic": true,
+                        "name": "Container"
+                      }
                     }
                   }
                 ]
@@ -3367,18 +4647,103 @@
           "public": true,
           "static": true,
           "name": "Extras"
-        }
-      ],
-      "file": true,
-      "name": "Tractor.Fixtures.FileScoped",
-      "import": {
-        "name": "System"
-      },
-      "comments": [
-        "// Iter 20: new shapes — statements, expressions, patterns, literals.",
+        },
         {
-          "text": "/// <summary>cast + char + checked + with + patterns + array/stackalloc new</summary>",
-          "leading": true
+          "body": {
+            "methods": [
+              {
+                "body": {
+                  "strings": [
+                    "\"explicit\""
+                  ]
+                },
+                "private": true,
+                "name": "IFormat"
+              }
+            ]
+          },
+          "public": true,
+          "name": "Wrap",
+          "extends": {
+            "type": {
+              "name": "IFormatProvider2"
+            }
+          }
+        },
+        {
+          "body": {
+            "methods": [
+              {
+                "body": {
+                  "withs": [
+                    {
+                      "literal": {
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "name": "dx"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "object": {
+                                "member": {
+                                  "name": "X"
+                                },
+                                "access": true,
+                                "name": "p"
+                              }
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        },
+                        "name": "X"
+                      },
+                      "name": "p"
+                    }
+                  ]
+                },
+                "public": true,
+                "static": true,
+                "name": "Move",
+                "parameters": [
+                  {
+                    "name": "p",
+                    "type": {
+                      "name": "Point"
+                    }
+                  },
+                  {
+                    "name": "dx",
+                    "type": {
+                      "name": "int"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "public": true,
+          "static": true,
+          "name": "RecordUse"
+        },
+        {
+          "name": "Debugging",
+          "internal": true,
+          "static": true
+        },
+        {
+          "name": "Legacy",
+          "internal": true,
+          "static": true
+        },
+        {
+          "name": "Modern",
+          "internal": true,
+          "static": true
         }
       ]
     }

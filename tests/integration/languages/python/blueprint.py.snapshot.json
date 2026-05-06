@@ -29,8 +29,7 @@
         "names": [
           "annotations"
         ]
-      },
-      "future": true
+      }
     }
   ],
   "froms": [
@@ -104,16 +103,13 @@
     {
       "imports": [
         {
-          "name": "path"
-        },
-        {
-          "text": "*",
-          "wildcard": true
+          "name": "*"
         }
       ],
       "path": {
         "names": [
-          "os"
+          "os",
+          "path"
         ]
       }
     }
@@ -193,19 +189,23 @@
       "right": {
         "type": {
           "type": {
-            "name": "T"
-          },
-          "generic": true,
-          "name": "list"
+            "type": {
+              "name": "T"
+            },
+            "generic": true,
+            "name": "list"
+          }
         }
       },
       "left": {
         "type": {
           "type": {
-            "name": "T"
-          },
-          "generic": true,
-          "name": "Vec"
+            "type": {
+              "name": "T"
+            },
+            "generic": true,
+            "name": "Vec"
+          }
         }
       }
     },
@@ -240,67 +240,59 @@
     {
       "right": {
         "type": {
-          "types": [
-            {
-              "name": "T"
-            },
-            {
-              "name": "U"
-            },
-            {
-              "type": {
-                "name": "Ts",
-                "splat": true
+          "type": {
+            "types": [
+              {
+                "name": "T"
+              },
+              {
+                "name": "U"
+              },
+              {
+                "spread": {
+                  "name": "Ts",
+                  "list": true
+                }
               }
-            }
-          ],
-          "generic": true,
-          "name": "tuple"
+            ],
+            "generic": true,
+            "name": "tuple"
+          }
         }
       },
       "left": {
         "type": {
-          "types": [
-            {
-              "type": {
-                "types": [
-                  {
-                    "name": "T"
+          "type": {
+            "types": [
+              {
+                "type": {
+                  "$children": [
+                    "int"
+                  ],
+                  "name": "T"
+                }
+              },
+              {
+                "type": {
+                  "tuple": {
+                    "names": [
+                      "int",
+                      "str"
+                    ]
                   },
-                  {
-                    "name": "int"
-                  }
-                ],
-                "constrained": true
+                  "name": "U"
+                }
+              },
+              {
+                "spread": {
+                  "name": "Ts",
+                  "list": true
+                }
               }
-            },
-            {
-              "type": {
-                "types": [
-                  {
-                    "name": "U"
-                  },
-                  {
-                    "tuple": {
-                      "names": [
-                        "int",
-                        "str"
-                      ]
-                    }
-                  }
-                ],
-                "constrained": true
-              }
-            },
-            {
-              "type": {
-                "name": "Ts",
-                "splat": true
-              }
-            }
-          ],
-          "generic": true,
-          "name": "Pair"
+            ],
+            "generic": true,
+            "name": "Pair"
+          }
         }
       }
     },
@@ -347,10 +339,8 @@
         "pass": true
       },
       "name": "Box",
-      "generic": {
-        "type": {
-          "name": "T"
-        }
+      "type": {
+        "name": "T"
       }
     },
     {
@@ -392,16 +382,14 @@
             "right": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "value": {
-                        "expression": {
-                          "name": "list"
-                        }
-                      },
-                      "name": "default_factory"
-                    }
-                  ],
+                  "keyword": {
+                    "value": {
+                      "expression": {
+                        "name": "list"
+                      }
+                    },
+                    "name": "default_factory"
+                  },
                   "name": "field"
                 }
               }
@@ -413,10 +401,12 @@
             },
             "type": {
               "type": {
-                "name": "str"
-              },
-              "generic": true,
-              "name": "list"
+                "type": {
+                  "name": "str"
+                },
+                "generic": true,
+                "name": "list"
+              }
             },
             "op": "="
           }
@@ -443,13 +433,11 @@
         "pass": true
       },
       "name": "Meta",
-      "extends": [
-        {
-          "type": {
-            "name": "type"
-          }
+      "extends": {
+        "type": {
+          "name": "type"
         }
-      ]
+      }
     },
     {
       "body": {
@@ -527,11 +515,11 @@
                       "left": {
                         "expression": {
                           "call": {
-                            "arguments": [
+                            "names": [
+                              "isinstance",
                               "other",
                               "Derived"
-                            ],
-                            "name": "isinstance"
+                            ]
                           }
                         }
                       },
@@ -591,16 +579,20 @@
           "type": {
             "name": "Base"
           }
-        }
-      ],
-      "argument": {
-        "value": {
-          "expression": {
-            "name": "Meta"
-          }
         },
-        "name": "metaclass"
-      }
+        {
+          "type": {
+            "keyword": {
+              "value": {
+                "expression": {
+                  "name": "Meta"
+                }
+              },
+              "name": "metaclass"
+            }
+          }
+        }
+      ]
     }
   ],
   "functions": [
@@ -705,6 +697,8 @@
         ]
       },
       "name": "pos_only",
+      "positional": "/",
+      "keyword": "*",
       "parameters": [
         {
           "name": "a"
@@ -712,14 +706,12 @@
         {
           "name": "b"
         },
-        "/",
         {
           "name": "c"
         },
         {
           "name": "d"
         },
-        "*",
         {
           "name": "e"
         },
@@ -744,19 +736,15 @@
         ]
       },
       "name": "identity",
-      "generic": {
+      "type": {
+        "name": "T"
+      },
+      "parameter": {
         "type": {
           "name": "T"
-        }
+        },
+        "name": "v"
       },
-      "parameters": [
-        {
-          "type": {
-            "name": "T"
-          },
-          "name": "v"
-        }
-      ],
       "returns": {
         "type": {
           "name": "T"
@@ -917,10 +905,12 @@
           "name": "y",
           "type": {
             "type": {
-              "name": "str"
-            },
-            "generic": true,
-            "name": "Optional"
+              "type": {
+                "name": "str"
+              },
+              "generic": true,
+              "name": "Optional"
+            }
           }
         },
         {
@@ -932,19 +922,14 @@
           "name": "z",
           "type": {
             "type": {
-              "types": [
-                {
-                  "type": {
-                    "name": "int"
-                  },
-                  "generic": true,
-                  "name": "list"
+              "none": "None",
+              "type": {
+                "type": {
+                  "name": "int"
                 },
-                {
-                  "none": "None"
-                }
-              ],
-              "union": true
+                "generic": true,
+                "name": "list"
+              }
             }
           }
         }
@@ -1022,17 +1007,13 @@
               ]
             },
             "async": true,
-            "value": {
-              "expression": {
-                "as": {
-                  "name": "conn",
-                  "call": {
-                    "arguments": [
-                      "url"
-                    ],
-                    "name": "open_conn"
-                  }
-                }
+            "as": {
+              "name": "conn",
+              "call": {
+                "names": [
+                  "open_conn",
+                  "url"
+                ]
               }
             }
           }
@@ -1040,14 +1021,12 @@
       },
       "async": true,
       "name": "async_work",
-      "parameters": [
-        {
-          "type": {
-            "name": "str"
-          },
-          "name": "url"
-        }
-      ],
+      "parameter": {
+        "type": {
+          "name": "str"
+        },
+        "name": "url"
+      },
       "returns": {
         "type": {
           "name": "bytes"
@@ -1059,29 +1038,27 @@
         "yields": [
           {
             "call": {
-              "arguments": [
-                "n",
-                {
-                  "$type": "binary",
-                  "left": {
-                    "expression": {
-                      "name": "n"
-                    }
-                  },
-                  "op": {
-                    "text": "*",
-                    "multiply": true
-                  },
-                  "right": {
-                    "expression": {
-                      "int": "2"
-                    }
+              "binary": {
+                "right": {
+                  "expression": {
+                    "int": "2"
                   }
+                },
+                "left": {
+                  "expression": {
+                    "name": "n"
+                  }
+                },
+                "op": {
+                  "text": "*",
+                  "multiply": true
                 }
-              ],
-              "name": "range"
-            },
-            "from": true
+              },
+              "names": [
+                "range",
+                "n"
+              ]
+            }
           }
         ],
         "fors": [
@@ -1101,10 +1078,10 @@
             "right": {
               "expression": {
                 "call": {
-                  "arguments": [
+                  "names": [
+                    "range",
                     "n"
-                  ],
-                  "name": "range"
+                  ]
                 }
               }
             }
@@ -1112,11 +1089,9 @@
         ]
       },
       "name": "gen_demo",
-      "parameters": [
-        {
-          "name": "n"
-        }
-      ]
+      "parameter": {
+        "name": "n"
+      }
     },
     {
       "body": {
@@ -1146,16 +1121,14 @@
                           "expressions": [
                             {
                               "call": {
-                                "arguments": [
+                                "spreads": [
                                   {
-                                    "$type": "spread",
-                                    "list": true,
-                                    "name": "a"
+                                    "name": "a",
+                                    "list": true
                                   },
                                   {
-                                    "$type": "spread",
-                                    "dict": true,
-                                    "name": "kw"
+                                    "name": "kw",
+                                    "dict": true
                                   }
                                 ],
                                 "name": "fn"
@@ -1171,10 +1144,10 @@
                         "right": {
                           "expression": {
                             "call": {
-                              "arguments": [
+                              "names": [
+                                "range",
                                 "times"
-                              ],
-                              "name": "range"
+                              ]
                             }
                           }
                         }
@@ -1196,20 +1169,16 @@
               ]
             },
             "name": "decorator",
-            "parameters": [
-              {
-                "name": "fn"
-              }
-            ]
+            "parameter": {
+              "name": "fn"
+            }
           }
         ]
       },
       "name": "repeat",
-      "parameters": [
-        {
-          "name": "times"
-        }
-      ]
+      "parameter": {
+        "name": "times"
+      }
     },
     {
       "body": {
@@ -1221,9 +1190,7 @@
         },
         {
           "call": {
-            "arguments": [
-              "3"
-            ],
+            "int": "3",
             "name": "repeat"
           }
         }
@@ -1277,10 +1244,10 @@
             "right": {
               "expression": {
                 "call": {
-                  "arguments": [
+                  "names": [
+                    "enumerate",
                     "items"
-                  ],
-                  "name": "enumerate"
+                  ]
                 }
               }
             },
@@ -1323,14 +1290,16 @@
                       }
                     }
                   },
-                  "then": {
-                    "text": "continue",
-                    "continue": true
+                  "body": {
+                    "continues": [
+                      "continue"
+                    ]
                   },
                   "else_if": {
-                    "then": {
-                      "text": "break",
-                      "break": true
+                    "body": {
+                      "breaks": [
+                        "break"
+                      ]
                     },
                     "condition": {
                       "expression": {
@@ -1424,10 +1393,14 @@
         "tries": [
           {
             "finally": {
-              "expression": {
-                "call": {
-                  "name": "cleanup"
-                }
+              "body": {
+                "expressions": [
+                  {
+                    "call": {
+                      "name": "cleanup"
+                    }
+                  }
+                ]
               }
             },
             "body": {
@@ -1441,14 +1414,16 @@
             },
             "excepts": [
               {
-                "raise": {
-                  "name": "e",
-                  "call": {
-                    "arguments": [
-                      "\"bad\""
-                    ],
-                    "name": "RuntimeError"
-                  }
+                "body": {
+                  "raises": [
+                    {
+                      "name": "e",
+                      "call": {
+                        "string": "\"bad\"",
+                        "name": "RuntimeError"
+                      }
+                    }
+                  ]
                 },
                 "value": {
                   "expression": {
@@ -1465,12 +1440,14 @@
                 }
               },
               {
+                "body": {
+                  "pass": true
+                },
                 "value": {
                   "expression": {
                     "name": "Exception"
                   }
-                },
-                "pass": true
+                }
               }
             ],
             "else": {
@@ -1522,31 +1499,19 @@
                 }
               ]
             },
-            "values": [
+            "ases": [
               {
-                "expression": {
-                  "as": {
-                    "name": "fa",
-                    "call": {
-                      "arguments": [
-                        "\"a\""
-                      ],
-                      "name": "open"
-                    }
-                  }
+                "name": "fa",
+                "call": {
+                  "string": "\"a\"",
+                  "name": "open"
                 }
               },
               {
-                "expression": {
-                  "as": {
-                    "name": "fb",
-                    "call": {
-                      "arguments": [
-                        "\"b\""
-                      ],
-                      "name": "open"
-                    }
-                  }
+                "name": "fb",
+                "call": {
+                  "string": "\"b\"",
+                  "name": "open"
                 }
               }
             ]
@@ -1554,11 +1519,9 @@
         ]
       },
       "name": "control_flow",
-      "parameters": [
-        {
-          "name": "items"
-        }
-      ]
+      "parameter": {
+        "name": "items"
+      }
     },
     {
       "body": {
@@ -1567,37 +1530,37 @@
             "body": {
               "arms": [
                 {
-                  "then": {
-                    "return": {
-                      "expression": {
-                        "name": "pid"
+                  "body": {
+                    "returns": [
+                      {
+                        "expression": {
+                          "name": "pid"
+                        }
                       }
-                    }
+                    ]
                   },
                   "pattern": {
-                    "pattern": {
-                      "values": [
-                        {
-                          "expression": {
-                            "pattern": {
-                              "string": "\"ping\""
-                            }
-                          }
-                        },
-                        {
-                          "expression": {
-                            "pattern": {
-                              "name": "pid"
-                            }
+                    "values": [
+                      {
+                        "expression": {
+                          "string": "\"ping\""
+                        }
+                      },
+                      {
+                        "expression": {
+                          "path": {
+                            "names": [
+                              "pid"
+                            ]
                           }
                         }
-                      ],
-                      "dict": true,
-                      "strings": [
-                        "\"type\"",
-                        "\"id\""
-                      ]
-                    }
+                      }
+                    ],
+                    "dict": true,
+                    "strings": [
+                      "\"type\"",
+                      "\"id\""
+                    ]
                   },
                   "guard": {
                     "compare": {
@@ -1612,95 +1575,87 @@
                   }
                 },
                 {
-                  "then": {
-                    "return": {
-                      "expression": {
-                        "name": "rest"
+                  "body": {
+                    "returns": [
+                      {
+                        "expression": {
+                          "name": "rest"
+                        }
                       }
-                    }
+                    ]
                   },
                   "pattern": {
                     "pattern": {
-                      "patterns": [
-                        {
-                          "int": "1"
-                        },
-                        {
-                          "int": "2"
-                        },
-                        {
-                          "pattern": {
-                            "name": "rest",
-                            "splat": true
-                          }
-                        }
-                      ],
-                      "list": true
-                    }
+                      "name": "rest",
+                      "splat": true
+                    },
+                    "list": true,
+                    "ints": [
+                      "1",
+                      "2"
+                    ]
                   }
                 },
                 {
-                  "then": {
-                    "return": {
-                      "expression": {
+                  "body": {
+                    "returns": [
+                      {
+                        "expression": {
+                          "name": "y"
+                        }
+                      }
+                    ]
+                  },
+                  "pattern": {
+                    "patterns": [
+                      {
+                        "int": "0",
+                        "name": "x"
+                      },
+                      {
+                        "path": {
+                          "names": [
+                            "y"
+                          ]
+                        },
                         "name": "y"
                       }
+                    ],
+                    "path": {
+                      "names": [
+                        "Point"
+                      ]
                     }
-                  },
-                  "pattern": {
-                    "pattern": {
-                      "patterns": [
-                        {
-                          "pattern": {
-                            "int": "0",
-                            "keyword": true,
-                            "name": "x"
-                          }
-                        },
-                        {
-                          "pattern": {
-                            "names": [
-                              "y",
-                              "y"
-                            ],
-                            "keyword": true
-                          }
+                  }
+                },
+                {
+                  "body": {
+                    "returns": [
+                      {
+                        "expression": {
+                          "true": "True"
                         }
-                      ],
-                      "class": true,
-                      "name": "Point"
-                    }
+                      }
+                    ]
+                  },
+                  "pattern": {
+                    "strings": [
+                      "\"yes\"",
+                      "\"y\"",
+                      "\"Y\""
+                    ],
+                    "union": true
                   }
                 },
                 {
-                  "then": {
-                    "return": {
-                      "expression": {
-                        "true": "True"
+                  "body": {
+                    "returns": [
+                      {
+                        "expression": {
+                          "none": "None"
+                        }
                       }
-                    }
-                  },
-                  "pattern": {
-                    "pattern": {
-                      "strings": [
-                        "\"yes\"",
-                        "\"y\"",
-                        "\"Y\""
-                      ],
-                      "union": true
-                    }
-                  }
-                },
-                {
-                  "then": {
-                    "return": {
-                      "expression": {
-                        "none": "None"
-                      }
-                    }
-                  },
-                  "pattern": {
-                    "wildcard": true
+                    ]
                   }
                 }
               ]
@@ -1710,11 +1665,9 @@
         ]
       },
       "name": "match_demo",
-      "parameters": [
-        {
-          "name": "msg"
-        }
-      ]
+      "parameter": {
+        "name": "msg"
+      }
     },
     {
       "body": {
@@ -1756,40 +1709,30 @@
                     }
                   ],
                   "comprehension": true,
-                  "bodies": [
+                  "binaries": [
                     {
-                      "binaries": [
-                        {
-                          "right": {
-                            "expression": {
-                              "name": "x"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "x"
-                            }
-                          },
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
+                      "right": {
+                        "expression": {
+                          "name": "x"
                         }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "x"
+                        }
+                      },
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      }
+                    }
+                  ],
+                  "fors": [
+                    {
+                      "names": [
+                        "x",
+                        "data"
                       ]
-                    }
-                  ],
-                  "lefts": [
-                    {
-                      "expression": {
-                        "name": "x"
-                      }
-                    }
-                  ],
-                  "rights": [
-                    {
-                      "expression": {
-                        "name": "data"
-                      }
                     }
                   ]
                 }
@@ -1810,43 +1753,27 @@
                     "v"
                   ],
                   "comprehension": true,
-                  "bodies": [
+                  "pairs": [
                     {
-                      "pairs": [
-                        {
-                          "value": {
-                            "expression": {
-                              "name": "v"
-                            }
-                          },
-                          "name": "k"
-                        }
+                      "names": [
+                        "k",
+                        "v"
                       ]
                     }
                   ],
-                  "lefts": [
+                  "fors": [
                     {
-                      "expressions": [
-                        {
-                          "name": "k"
+                      "object": {
+                        "call": {
+                          "name": "items"
                         },
-                        {
-                          "name": "v"
-                        }
+                        "access": true,
+                        "name": "data"
+                      },
+                      "names": [
+                        "k",
+                        "v"
                       ]
-                    }
-                  ],
-                  "rights": [
-                    {
-                      "expression": {
-                        "object": {
-                          "call": {
-                            "name": "items"
-                          },
-                          "access": true,
-                          "name": "data"
-                        }
-                      }
                     }
                   ]
                 }
@@ -1863,22 +1790,14 @@
             "right": {
               "expression": {
                 "set": {
-                  "right": {
-                    "expression": {
-                      "name": "data"
-                    }
-                  },
-                  "comprehension": true,
-                  "body": {
+                  "for": {
                     "names": [
-                      "x"
+                      "x",
+                      "data"
                     ]
                   },
-                  "left": {
-                    "expression": {
-                      "name": "x"
-                    }
-                  }
+                  "comprehension": true,
+                  "name": "x"
                 }
               }
             },
@@ -1893,39 +1812,23 @@
             "right": {
               "expression": {
                 "generator": {
-                  "name": "x",
-                  "body": {
-                    "names": [
-                      "x"
-                    ]
-                  },
-                  "lefts": [
-                    {
-                      "expression": {
-                        "name": "x"
-                      }
-                    },
-                    {
-                      "expression": {
-                        "name": "_"
-                      }
-                    }
+                  "names": [
+                    "x",
+                    "x"
                   ],
-                  "rights": [
+                  "fors": [
                     {
-                      "expression": {
-                        "name": "data"
-                      }
+                      "names": [
+                        "x",
+                        "data"
+                      ]
                     },
                     {
-                      "expression": {
-                        "call": {
-                          "arguments": [
-                            "2"
-                          ],
-                          "name": "range"
-                        }
-                      }
+                      "call": {
+                        "int": "2",
+                        "name": "range"
+                      },
+                      "name": "_"
                     }
                   ]
                 }
@@ -1955,50 +1858,28 @@
                     }
                   ],
                   "comprehension": true,
-                  "bodies": [
+                  "tuples": [
                     {
-                      "tuples": [
-                        {
-                          "names": [
-                            "i",
-                            "j"
-                          ]
-                        }
+                      "names": [
+                        "i",
+                        "j"
                       ]
                     }
                   ],
-                  "lefts": [
+                  "fors": [
                     {
-                      "expression": {
-                        "name": "i"
-                      }
+                      "call": {
+                        "int": "3",
+                        "name": "range"
+                      },
+                      "name": "i"
                     },
                     {
-                      "expression": {
-                        "name": "j"
-                      }
-                    }
-                  ],
-                  "rights": [
-                    {
-                      "expression": {
-                        "call": {
-                          "arguments": [
-                            "3"
-                          ],
-                          "name": "range"
-                        }
-                      }
-                    },
-                    {
-                      "expression": {
-                        "call": {
-                          "arguments": [
-                            "3"
-                          ],
-                          "name": "range"
-                        }
-                      }
+                      "call": {
+                        "int": "3",
+                        "name": "range"
+                      },
+                      "name": "j"
                     }
                   ]
                 }
@@ -2014,11 +1895,9 @@
         ]
       },
       "name": "comprehensions",
-      "parameters": [
-        {
-          "name": "data"
-        }
-      ]
+      "parameter": {
+        "name": "data"
+      }
     },
     {
       "body": {
@@ -2054,42 +1933,32 @@
         ],
         "ifs": [
           {
-            "then": {
-              "expression": {
-                "call": {
-                  "arguments": [
-                    {
-                      "$type": "string",
+            "body": {
+              "expressions": [
+                {
+                  "call": {
+                    "string": {
                       "interpolation": {
                         "name": "n"
                       }
-                    }
-                  ],
-                  "name": "print"
+                    },
+                    "name": "print"
+                  }
                 }
-              }
+              ]
             },
             "condition": {
               "expression": {
                 "compare": {
                   "int": "3",
                   "assign": {
-                    "value": {
-                      "expression": {
-                        "call": {
-                          "arguments": [
-                            "items"
-                          ],
-                          "name": "len"
-                        }
-                      }
+                    "call": {
+                      "names": [
+                        "len",
+                        "items"
+                      ]
                     },
-                    "name": "n",
-                    "op": {
-                      "text": ":=",
-                      "assign": true,
-                      "walrus": true
-                    }
+                    "name": "n"
                   },
                   "op": {
                     "text": ">",
@@ -2186,39 +2055,37 @@
             "right": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "$type": "call",
-                      "name": "map",
-                      "arguments": [
-                        {
-                          "$type": "lambda",
-                          "name": "v",
-                          "value": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "2"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "v"
-                                  }
-                                },
-                                "op": {
-                                  "text": "*",
-                                  "multiply": true
-                                }
+                  "call": {
+                    "names": [
+                      "map",
+                      "items"
+                    ],
+                    "lambda": {
+                      "value": {
+                        "expression": {
+                          "binary": {
+                            "right": {
+                              "expression": {
+                                "int": "2"
                               }
+                            },
+                            "left": {
+                              "expression": {
+                                "name": "v"
+                              }
+                            },
+                            "op": {
+                              "text": "*",
+                              "multiply": true
                             }
                           }
-                        },
-                        "items"
-                      ]
+                        }
+                      },
+                      "parameter": {
+                        "name": "v"
+                      }
                     }
-                  ],
+                  },
                   "name": "list"
                 }
               }
@@ -2242,9 +2109,9 @@
                   "name": "head"
                 },
                 {
-                  "parameter": {
+                  "spread": {
                     "name": "mid",
-                    "args": true
+                    "list": true
                   }
                 },
                 {
@@ -2266,11 +2133,7 @@
                           "literal": true,
                           "pairs": [
                             {
-                              "value": {
-                                "expression": {
-                                  "int": "1"
-                                }
-                              },
+                              "int": "1",
                               "string": "\"a\""
                             }
                           ]
@@ -2285,11 +2148,7 @@
                           "literal": true,
                           "pairs": [
                             {
-                              "value": {
-                                "expression": {
-                                  "int": "2"
-                                }
-                              },
+                              "int": "2",
                               "string": "\"b\""
                             }
                           ]
@@ -2350,11 +2209,9 @@
         ]
       },
       "name": "expression_demo",
-      "parameters": [
-        {
-          "name": "items"
-        }
-      ]
+      "parameter": {
+        "name": "items"
+      }
     },
     {
       "body": {
@@ -2445,6 +2302,9 @@
               },
               {
                 "name": "banner"
+              },
+              {
+                "name": "s"
               }
             ]
           }
@@ -2457,28 +2317,35 @@
         "tries": [
           {
             "except": {
-              "assign": {
-                "right": {
-                  "expression": {
-                    "list": {
-                      "text": "[]",
-                      "literal": true
-                    }
+              "body": {
+                "assigns": [
+                  {
+                    "right": {
+                      "expression": {
+                        "list": {
+                          "text": "[]",
+                          "literal": true
+                        }
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "result"
+                      }
+                    },
+                    "op": "="
                   }
-                },
-                "left": {
-                  "expression": {
-                    "name": "result"
-                  }
-                },
-                "op": "="
-              },
-              "group": true,
-              "tuple": {
-                "names": [
-                  "ValueError",
-                  "TypeError"
                 ]
+              },
+              "value": {
+                "expression": {
+                  "tuple": {
+                    "names": [
+                      "ValueError",
+                      "TypeError"
+                    ]
+                  }
+                }
               }
             },
             "body": {
@@ -2487,10 +2354,10 @@
                   "right": {
                     "expression": {
                       "call": {
-                        "arguments": [
+                        "names": [
+                          "list",
                           "items"
-                        ],
-                        "name": "list"
+                        ]
                       }
                     }
                   },
@@ -2510,100 +2377,103 @@
             "body": {
               "arms": [
                 {
-                  "then": {
-                    "assign": {
-                      "right": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "name": "b"
+                  "body": {
+                    "assigns": [
+                      {
+                        "right": {
+                          "expression": {
+                            "binary": {
+                              "right": {
+                                "expression": {
+                                  "name": "b"
+                                }
+                              },
+                              "left": {
+                                "expression": {
+                                  "name": "a"
+                                }
+                              },
+                              "op": {
+                                "text": "+",
+                                "plus": true
                               }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "a"
-                              }
-                            },
-                            "op": {
-                              "text": "+",
-                              "plus": true
                             }
                           }
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "matched"
-                        }
-                      },
-                      "op": "="
-                    }
-                  },
-                  "pattern": {
-                    "pattern": {
-                      "patterns": [
-                        {
-                          "name": "a"
                         },
-                        {
-                          "name": "b"
-                        }
-                      ],
-                      "tuple": true
+                        "left": {
+                          "expression": {
+                            "name": "matched"
+                          }
+                        },
+                        "op": "="
+                      }
+                    ]
+                  },
+                  "pattern": {
+                    "$children": [
+                      {
+                        "$type": "path",
+                        "names": [
+                          "b"
+                        ]
+                      }
+                    ],
+                    "tuple": true,
+                    "path": {
+                      "names": [
+                        "a"
+                      ]
                     }
                   }
                 },
                 {
-                  "then": {
-                    "assign": {
-                      "right": {
-                        "expression": {
-                          "unary": {
-                            "int": "1",
-                            "op": {
-                              "text": "-",
-                              "minus": true
+                  "body": {
+                    "assigns": [
+                      {
+                        "right": {
+                          "expression": {
+                            "unary": {
+                              "int": "1",
+                              "op": {
+                                "text": "-",
+                                "minus": true
+                              }
                             }
                           }
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "matched"
-                        }
-                      },
-                      "op": "="
-                    }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "matched"
+                          }
+                        },
+                        "op": "="
+                      }
+                    ]
                   },
                   "pattern": {
-                    "pattern": {
-                      "ints": [
-                        "1",
-                        "2j"
-                      ],
-                      "complex": true
-                    }
+                    "ints": [
+                      "1",
+                      "2j"
+                    ]
                   }
                 },
                 {
-                  "then": {
-                    "assign": {
-                      "right": {
-                        "expression": {
-                          "int": "0"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "matched"
-                        }
-                      },
-                      "op": "="
-                    }
-                  },
-                  "pattern": {
-                    "wildcard": true
+                  "body": {
+                    "assigns": [
+                      {
+                        "right": {
+                          "expression": {
+                            "int": "0"
+                          }
+                        },
+                        "left": {
+                          "expression": {
+                            "name": "matched"
+                          }
+                        },
+                        "op": "="
+                      }
+                    ]
                   }
                 }
               ]
@@ -2611,12 +2481,17 @@
             "name": "values"
           }
         ],
+        "comments": [
+          {
+            "text": "# Set literal: another kind the IR pipeline supports. Slice /\n    # ellipsis additions await Python's IR migration (their <slice>\n    # / <ellipsis> elements aren't in the imperative pipeline's\n    # TractorNodeSpec yet).",
+            "leading": true
+          }
+        ],
         "assigns": [
           {
             "type": {
               "name": "int"
             },
-            "op": "=",
             "left": {
               "expression": {
                 "name": "matched"
@@ -2671,14 +2546,33 @@
                     "\"first \"",
                     "\"second \"",
                     "\"third\""
-                  ],
-                  "concatenated": true
+                  ]
                 }
               }
             },
             "left": {
               "expression": {
                 "name": "banner"
+              }
+            },
+            "op": "="
+          },
+          {
+            "right": {
+              "expression": {
+                "set": {
+                  "$children": [
+                    "2",
+                    "3"
+                  ],
+                  "literal": true,
+                  "int": "1"
+                }
+              }
+            },
+            "left": {
+              "expression": {
+                "name": "s"
               }
             },
             "op": "="

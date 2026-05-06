@@ -4,11 +4,11 @@ class[public]/
   ├─ name = "Calculator"
   └─ body/
       ├─ method[public]/
-      │   └─ ... (26 children)
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   └─ ... (26 children)
+      │   └─ ... (23 children)
       └─ method[public]/
-          └─ ... (26 children)
+          └─ ... (23 children)
 
 tests/integration/sample.cs:9
 class[public]/
@@ -16,8 +16,8 @@ class[public]/
   ├─ name = "Greeter"
   └─ body/
       ├─ method[public]/
-      │   └─ ... (22 children)
+      │   └─ ... (19 children)
       ├─ method[public]/
-      │   └─ ... (22 children)
+      │   └─ ... (19 children)
       └─ method[public]/
-          └─ ... (5 children)
+          └─ ... (4 children)

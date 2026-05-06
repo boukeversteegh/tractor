@@ -38,11 +38,6 @@
               ]
             },
             "public": true,
-            "returns": {
-              "type": {
-                "name": "int"
-              }
-            },
             "name": "Add",
             "parameters": [
               {
@@ -89,11 +84,6 @@
               ]
             },
             "public": true,
-            "returns": {
-              "type": {
-                "name": "int"
-              }
-            },
             "name": "Subtract",
             "parameters": [
               {
@@ -140,11 +130,6 @@
               ]
             },
             "public": true,
-            "returns": {
-              "type": {
-                "name": "int"
-              }
-            },
             "name": "Multiply",
             "parameters": [
               {
@@ -205,20 +190,13 @@
               ]
             },
             "public": true,
-            "returns": {
+            "name": "Hello",
+            "parameter": {
+              "name": "name",
               "type": {
                 "name": "string"
               }
-            },
-            "name": "Hello",
-            "parameters": [
-              {
-                "name": "name",
-                "type": {
-                  "name": "string"
-                }
-              }
-            ]
+            }
           },
           {
             "body": {
@@ -250,29 +228,22 @@
               ]
             },
             "public": true,
-            "returns": {
+            "name": "Goodbye",
+            "parameter": {
+              "name": "name",
               "type": {
                 "name": "string"
               }
-            },
-            "name": "Goodbye",
-            "parameters": [
-              {
-                "name": "name",
-                "type": {
-                  "name": "string"
-                }
-              }
-            ]
+            }
           },
           {
-            "name": "Reset",
+            "body": {
+              "blocks": [
+                "{ }"
+              ]
+            },
             "public": true,
-            "returns": {
-              "type": {
-                "name": "void"
-              }
-            }
+            "name": "Reset"
           }
         ]
       }

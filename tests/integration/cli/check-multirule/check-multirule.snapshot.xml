@@ -3,10 +3,9 @@
   <summary>
     <success>false</success>
     <totals>
-      <results>3</results>
+      <results>2</results>
       <files>1</files>
       <errors>2</errors>
-      <warnings>1</warnings>
     </totals>
   </summary>
   <group-by>file</group-by>
@@ -37,14 +36,6 @@
           <line>}</line>
         </lines>
         <rule-id>no-class</rule-id>
-      </match>
-      <match line="13" column="5" end_line="13" end_column="28">
-        <reason>void method found</reason>
-        <severity>warning</severity>
-        <lines>
-          <line>    public void Reset() { }</line>
-        </lines>
-        <rule-id>no-void-method</rule-id>
       </match>
     </group>
   </results>

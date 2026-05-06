@@ -10,29 +10,23 @@
                 {
                   "name": "path_vis",
                   "pub": {
-                    "in": "crate::outer"
+                    "in": "pub(in crate::outer)"
                   }
                 }
               ],
               "consts": [
                 {
-                  "value": {
-                    "expression": {
-                      "int": "7"
-                    }
-                  },
-                  "pub": {
-                    "super": true
-                  },
-                  "name": "INNER_CONST",
-                  "type": {
-                    "name": "u32"
-                  }
+                  "int": "7",
+                  "pub": true,
+                  "names": [
+                    "INNER_CONST",
+                    "u32"
+                  ]
                 }
               ]
             },
             "pub": {
-              "crate": true
+              "crate": "pub(crate)"
             },
             "name": "inner"
           }
@@ -42,31 +36,25 @@
       "name": "outer"
     },
     {
-      "body": {
-        "signatures": [
+      "function": {
+        "parameters": [
           {
-            "parameters": [
-              {
-                "type": {
-                  "type": {
-                    "name": "u8"
-                  },
-                  "pointer": true
-                },
-                "name": "fmt"
-              },
-              {
-                "text": "...",
-                "variadic": true
-              }
-            ],
-            "pub": true,
-            "name": "printf"
+            "type": {
+              "name": "u8",
+              "pointer": true
+            },
+            "name": "fmt"
+          },
+          {
+            "text": "...",
+            "variadic": true
           }
-        ]
+        ],
+        "pub": true,
+        "name": "printf"
       },
-      "extern": true,
       "foreign": true,
+      "extern": true,
       "string": "\"C\""
     }
   ],
@@ -85,9 +73,7 @@
             "type": {
               "name": "T"
             },
-            "pub": {
-              "crate": true
-            },
+            "pub": true,
             "name": "y"
           },
           {
@@ -106,58 +92,47 @@
       },
       "pub": true,
       "name": "Point",
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
         },
         {
+          "$type": "generic",
           "name": "T"
         }
       ],
       "where": {
         "bound": {
-          "extends": [
-            {
-              "type": {
-                "name": "Clone"
-              }
+          "extends": {
+            "lifetime": {
+              "name": "static"
             },
-            {
-              "type": {
+            "types": [
+              {
+                "name": "Clone"
+              },
+              {
                 "name": "Send"
               }
-            },
-            {
-              "lifetime": {
-                "name": "static"
-              }
-            }
-          ],
-          "left": {
-            "type": {
-              "name": "T"
-            }
-          }
+            ]
+          },
+          "name": "T"
         }
       }
     },
     {
       "body": {
-        "types": [
-          {
-            "name": "T"
-          },
-          {
-            "name": "T"
-          }
-        ],
-        "pub": true
+        "names": [
+          "T",
+          "T"
+        ]
       },
       "pub": true,
       "name": "Pair",
-      "generics": [
+      "arguments": [
         {
+          "$type": "generic",
           "name": "T"
         }
       ]
@@ -171,11 +146,11 @@
         "fields": [
           {
             "type": {
-              "name": "N",
-              "array": true,
-              "type": {
-                "name": "u32"
-              }
+              "names": [
+                "u32",
+                "N"
+              ],
+              "array": true
             },
             "name": "items"
           }
@@ -183,14 +158,14 @@
       },
       "pub": true,
       "name": "FixedArray",
-      "generics": [
+      "arguments": [
         {
           "$type": "parameter",
           "const": true,
-          "name": "N",
-          "type": {
-            "name": "usize"
-          }
+          "names": [
+            "N",
+            "usize"
+          ]
         }
       ]
     }
@@ -220,13 +195,13 @@
     {
       "uses": [
         {
+          "name": "self"
+        },
+        {
           "name": "Debug"
         },
         {
           "name": "Display"
-        },
-        {
-          "self": true
         }
       ],
       "group": true,
@@ -299,7 +274,15 @@
       "wildcard": true
     },
     {
-      "name": "alloc",
+      "uses": [
+        {
+          "name": "crate"
+        },
+        {
+          "name": "alloc"
+        }
+      ],
+      "group": true,
       "extern": true
     }
   ],
@@ -307,58 +290,38 @@
     {
       "arms": [
         {
-          "right": {
-            "expressions": [
+          "$children": [
+            "$(,)?",
+            {
+              "$type": "repetition",
+              "names": [
+                "stringify",
+                "$key",
+                "$value"
+              ]
+            }
+          ],
+          "name": "vec",
+          "repetition": {
+            "patterns": [
               {
-                "name": "vec"
+                "fragment": "ident",
+                "binding": true,
+                "name": "$key"
               },
               {
-                "repetition": {
-                  "names": [
-                    "stringify",
-                    "$key",
-                    "$value"
-                  ]
-                }
-              }
-            ]
-          },
-          "left": {
-            "expressions": [
-              {
-                "repetition": {
-                  "patterns": [
-                    {
-                      "fragment": "ident",
-                      "binding": true,
-                      "name": "$key"
-                    },
-                    {
-                      "fragment": "expr",
-                      "binding": true,
-                      "name": "$value"
-                    }
-                  ]
-                }
-              },
-              {
-                "repetition": "$(,)?"
+                "fragment": "expr",
+                "binding": true,
+                "name": "$value"
               }
             ]
           }
         },
         {
-          "right": {
-            "expressions": [
-              {
-                "name": "Vec"
-              },
-              {
-                "name": "new"
-              }
-            ]
-          },
-          "left": "()"
+          "$children": [
+            "new"
+          ],
+          "name": "Vec"
         }
       ],
       "definition": true,
@@ -367,94 +330,84 @@
   ],
   "attributes": [
     {
-      "$children": [
+      "names": [
+        "allow",
         "dead_code",
         "unused_variables",
         "unused_imports",
         "unused_mut"
       ],
-      "inner": true,
-      "name": "allow"
+      "inner": true
     },
     {
-      "$children": [
+      "names": [
+        "derive",
         "Debug",
         "Clone"
-      ],
-      "name": "derive"
+      ]
     },
     {
-      "$children": [
+      "names": [
+        "derive",
         "Debug"
-      ],
-      "name": "derive"
+      ]
     }
   ],
   "enums": [
     {
-      "body": {
-        "variants": [
-          {
-            "name": "Nothing"
+      "variants": [
+        {
+          "name": "Nothing"
+        },
+        {
+          "body": {
+            "names": [
+              "i32",
+              "i32"
+            ]
           },
-          {
-            "body": {
-              "types": [
-                {
-                  "name": "i32"
+          "name": "Dot"
+        },
+        {
+          "body": {
+            "fields": [
+              {
+                "type": {
+                  "name": "u32"
                 },
-                {
-                  "name": "i32"
-                }
-              ]
-            },
-            "name": "Dot"
-          },
-          {
-            "body": {
-              "fields": [
-                {
-                  "type": {
-                    "name": "u32"
-                  },
-                  "name": "w"
+                "name": "w"
+              },
+              {
+                "type": {
+                  "name": "u32"
                 },
-                {
-                  "type": {
-                    "name": "u32"
-                  },
-                  "name": "h"
-                }
-              ]
-            },
-            "name": "Rect"
-          },
-          {
-            "value": {
-              "expression": {
-                "int": "10"
+                "name": "h"
               }
-            },
-            "name": "Labeled",
-            "body": {
-              "types": [
-                {
-                  "type": {
-                    "name": "str"
-                  },
-                  "borrowed": true,
-                  "lifetime": {
-                    "name": "a"
-                  }
+            ]
+          },
+          "name": "Rect"
+        },
+        {
+          "int": "10",
+          "name": "Labeled",
+          "body": {
+            "types": [
+              {
+                "type": {
+                  "name": "str"
+                },
+                "borrowed": true,
+                "lifetime": {
+                  "name": "a"
                 }
-              ]
-            }
+              }
+            ]
           }
-        ]
-      },
+        }
+      ],
       "pub": true,
       "name": "Shape",
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
@@ -467,12 +420,33 @@
       "body": {
         "functions": [
           {
+            "parameters": [
+              {
+                "name": "self",
+                "self": true
+              },
+              {
+                "type": {
+                  "path": {
+                    "names": [
+                      "Self",
+                      "Canvas"
+                    ]
+                  },
+                  "borrowed": true,
+                  "mut": true
+                },
+                "name": "c"
+              }
+            ],
+            "private": true,
+            "name": "draw"
+          },
+          {
             "body": {
               "calls": [
                 {
-                  "arguments": [
-                    "\"drawable\""
-                  ],
+                  "string": "\"drawable\"",
                   "path": {
                     "names": [
                       "String",
@@ -486,7 +460,7 @@
             "name": "name",
             "parameters": [
               {
-                "borrowed": true,
+                "name": "self",
                 "self": true
               }
             ],
@@ -505,52 +479,22 @@
         ],
         "consts": [
           {
-            "value": {
-              "expression": {
-                "int": "64"
-              }
-            },
+            "int": "64",
             "private": true,
-            "name": "MAX",
-            "type": {
-              "name": "usize"
-            }
-          }
-        ],
-        "signatures": [
-          {
-            "parameters": [
-              {
-                "borrowed": true,
-                "self": true
-              },
-              {
-                "type": {
-                  "path": {
-                    "names": [
-                      "Self",
-                      "Canvas"
-                    ]
-                  },
-                  "borrowed": true,
-                  "mut": true
-                },
-                "name": "c"
-              }
-            ],
-            "name": "draw"
+            "names": [
+              "MAX",
+              "usize"
+            ]
           }
         ]
       },
       "pub": true,
       "name": "Drawable",
-      "extends": [
-        {
-          "type": {
-            "name": "Debug"
-          }
+      "extends": {
+        "type": {
+          "name": "Debug"
         }
-      ]
+      }
     }
   ],
   "impls": [
@@ -620,16 +564,15 @@
                     "name": "clone"
                   },
                   "access": true,
-                  "self": "self"
+                  "name": "self"
                 }
               ]
             },
             "pub": true,
-            "async": true,
             "name": "async_clone",
             "parameters": [
               {
-                "borrowed": true,
+                "name": "self",
                 "self": true
               }
             ],
@@ -646,7 +589,6 @@
               ]
             },
             "pub": true,
-            "const": true,
             "name": "const_fn",
             "returns": {
               "type": {
@@ -663,24 +605,17 @@
                   },
                   "access": true,
                   "unary": {
-                    "name": "ptr",
-                    "op": {
-                      "text": "*",
-                      "multiply": true
-                    }
+                    "name": "ptr"
                   }
                 }
               ]
             },
             "pub": true,
-            "unsafe": true,
             "name": "unsafe_read",
             "parameters": [
               {
                 "type": {
-                  "type": {
-                    "name": "T"
-                  },
+                  "name": "T",
                   "pointer": true
                 },
                 "name": "ptr"
@@ -695,11 +630,7 @@
         ],
         "consts": [
           {
-            "value": {
-              "expression": {
-                "string": "\"origin\""
-              }
-            },
+            "string": "\"origin\"",
             "pub": true,
             "name": "ORIGIN_LABEL",
             "type": {
@@ -714,45 +645,38 @@
           }
         ]
       },
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
         },
         {
-          "extends": [
-            {
-              "type": {
-                "name": "Clone"
-              }
+          "$type": "generic",
+          "name": "T",
+          "extends": {
+            "lifetime": {
+              "name": "static"
             },
-            {
-              "type": {
+            "types": [
+              {
+                "name": "Clone"
+              },
+              {
                 "name": "Send"
               }
-            },
-            {
-              "lifetime": {
-                "name": "static"
-              }
-            }
-          ],
-          "name": "T"
+            ]
+          }
         }
       ],
       "type": {
-        "arguments": [
-          {
-            "$type": "lifetime",
-            "name": "a"
-          },
-          {
-            "$type": "type",
-            "name": "T"
-          }
-        ],
+        "type": {
+          "name": "T"
+        },
         "generic": true,
-        "name": "Point"
+        "name": "Point",
+        "lifetime": {
+          "name": "a"
+        }
       }
     },
     {
@@ -761,7 +685,7 @@
           {
             "parameters": [
               {
-                "borrowed": true,
+                "name": "self",
                 "self": true
               },
               {
@@ -785,12 +709,9 @@
         "aliases": [
           {
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "name": "u8"
-                }
-              ],
+              "type": {
+                "name": "u8"
+              },
               "generic": true,
               "name": "Vec"
             },
@@ -799,12 +720,13 @@
           }
         ]
       },
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
         },
         {
+          "$type": "generic",
           "name": "T"
         }
       ],
@@ -814,48 +736,34 @@
         }
       },
       "type": {
-        "arguments": [
-          {
-            "$type": "lifetime",
-            "name": "a"
-          },
-          {
-            "$type": "type",
-            "name": "T"
-          }
-        ],
+        "type": {
+          "name": "T"
+        },
         "generic": true,
-        "name": "Point"
+        "name": "Point",
+        "lifetime": {
+          "name": "a"
+        }
       },
       "where": {
         "bound": {
-          "extends": [
-            {
-              "type": {
+          "extends": {
+            "lifetime": {
+              "name": "static"
+            },
+            "types": [
+              {
                 "name": "Clone"
-              }
-            },
-            {
-              "type": {
+              },
+              {
                 "name": "Send"
-              }
-            },
-            {
-              "type": {
+              },
+              {
                 "name": "Debug"
               }
-            },
-            {
-              "lifetime": {
-                "name": "static"
-              }
-            }
-          ],
-          "left": {
-            "type": {
-              "name": "T"
-            }
-          }
+            ]
+          },
+          "name": "T"
         }
       }
     }
@@ -863,45 +771,36 @@
   "aliases": [
     {
       "type": {
-        "arguments": [
-          {
-            "$type": "type",
-            "bounded": true,
+        "type": {
+          "lifetime": {
+            "name": "a"
+          },
+          "bounded": true,
+          "type": {
             "type": {
               "type": {
-                "arguments": [
-                  {
-                    "$type": "type",
-                    "associated": true,
-                    "name": "Canvas",
-                    "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "u8"
-                        }
-                      ],
-                      "generic": true,
-                      "name": "Vec"
-                    }
-                  }
-                ],
-                "generic": true,
-                "name": "Drawable"
+                "type": {
+                  "type": {
+                    "name": "u8"
+                  },
+                  "generic": true,
+                  "name": "Vec"
+                },
+                "associated": true,
+                "name": "Canvas"
               },
-              "dynamic": true
+              "generic": true,
+              "name": "Drawable"
             },
-            "lifetime": {
-              "name": "a"
-            }
+            "dynamic": true
           }
-        ],
+        },
         "generic": true,
         "name": "Box"
       },
       "pub": true,
       "name": "BoxedDraw",
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
@@ -910,17 +809,12 @@
     },
     {
       "type": {
-        "returns": {
-          "type": {
-            "name": "i32"
-          }
-        },
+        "names": [
+          "i32"
+        ],
         "function": true,
         "parameters": [
-          {
-            "$type": "type",
-            "name": "i32"
-          }
+          "i32"
         ]
       },
       "pub": true,
@@ -929,25 +823,17 @@
   ],
   "consts": [
     {
-      "value": {
-        "expression": {
-          "float": "3.141_592_653_589f64"
-        }
-      },
+      "float": "3.141_592_653_589f64",
       "pub": true,
-      "name": "PI",
-      "type": {
-        "name": "f64"
-      }
+      "names": [
+        "PI",
+        "f64"
+      ]
     }
   ],
   "statics": [
     {
-      "value": {
-        "expression": {
-          "string": "\"hello\""
-        }
-      },
+      "string": "\"hello\"",
       "pub": true,
       "name": "GREETING",
       "type": {
@@ -958,17 +844,13 @@
       }
     },
     {
-      "value": {
-        "expression": {
-          "int": "0"
-        }
-      },
-      "mut": true,
+      "int": "0",
       "private": true,
-      "name": "COUNTER",
-      "type": {
-        "name": "u32"
-      }
+      "mut": true,
+      "names": [
+        "COUNTER",
+        "u32"
+      ]
     }
   ],
   "unions": [
@@ -997,7 +879,7 @@
   ],
   "comments": [
     {
-      "text": "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n\n//! by tractor's snapshot tests to catch design-principle regressions.",
+      "text": "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n//! by tractor's snapshot tests to catch design-principle regressions.",
       "leading": true
     },
     {
@@ -1036,8 +918,9 @@
       "text": "// Const generic parameter — `<const N: usize>`.",
       "leading": true
     },
+    "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /",
     {
-      "text": "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /\n// token_binding_pattern / fragment_specifier / token_repetition.",
+      "text": "// token_binding_pattern / fragment_specifier / token_repetition.",
       "leading": true
     }
   ],
@@ -1062,22 +945,12 @@
       "name": "numeric_zoo",
       "returns": {
         "type": {
-          "types": [
-            {
-              "name": "u32"
-            },
-            {
-              "name": "f64"
-            },
-            {
-              "name": "i32"
-            },
-            {
-              "name": "i32"
-            },
-            {
-              "name": "i32"
-            }
+          "names": [
+            "u32",
+            "f64",
+            "i32",
+            "i32",
+            "i32"
           ],
           "tuple": true
         }
@@ -1144,15 +1017,9 @@
             "value": {
               "expression": {
                 "closure": {
-                  "value": {
-                    "expression": {
-                      "name": "x"
-                    }
-                  },
+                  "name": "x",
                   "parameters": [
-                    {
-                      "name": "x"
-                    }
+                    "x"
                   ]
                 }
               }
@@ -1163,54 +1030,38 @@
             "value": {
               "expression": {
                 "closure": {
-                  "value": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "name": "b"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "a"
-                          }
-                        },
-                        "op": {
-                          "text": "+",
-                          "plus": true
-                        }
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
                       }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    },
+                    "op": {
+                      "text": "+",
+                      "plus": true
                     }
                   },
                   "parameters": [
-                    {
-                      "name": "a"
-                    },
-                    {
-                      "name": "b"
-                    }
+                    "a",
+                    "b"
                   ]
                 }
               }
             },
             "name": "add",
             "type": {
-              "returns": {
-                "type": {
-                  "name": "i32"
-                }
-              },
+              "names": [
+                "i32"
+              ],
               "function": true,
               "parameters": [
-                {
-                  "$type": "type",
-                  "name": "i32"
-                },
-                {
-                  "$type": "type",
-                  "name": "i32"
-                }
+                "i32",
+                "i32"
               ]
             }
           },
@@ -1218,9 +1069,7 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    "\"owned\""
-                  ],
+                  "string": "\"owned\"",
                   "path": {
                     "names": [
                       "String",
@@ -1236,7 +1085,7 @@
             "value": {
               "expression": {
                 "closure": {
-                  "body": {
+                  "block": {
                     "macros": [
                       {
                         "names": [
@@ -1256,11 +1105,7 @@
                       "name": "x"
                     }
                   ],
-                  "returns": {
-                    "type": {
-                      "name": "String"
-                    }
-                  }
+                  "name": "String"
                 }
               }
             },
@@ -1270,11 +1115,7 @@
             "value": {
               "expression": {
                 "ref": {
-                  "value": {
-                    "expression": {
-                      "int": "5"
-                    }
-                  }
+                  "int": "5"
                 }
               }
             },
@@ -1298,9 +1139,7 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    "1"
-                  ],
+                  "int": "1",
                   "path": {
                     "names": [
                       "Box",
@@ -1312,12 +1151,9 @@
             },
             "name": "b",
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "name": "i32"
-                }
-              ],
+              "type": {
+                "name": "i32"
+              },
               "generic": true,
               "name": "Box"
             }
@@ -1326,20 +1162,15 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "$type": "call",
-                      "path": {
-                        "names": [
-                          "String",
-                          "from"
-                        ]
-                      },
-                      "arguments": [
-                        "\"rc\""
+                  "call": {
+                    "string": "\"rc\"",
+                    "path": {
+                      "names": [
+                        "String",
+                        "from"
                       ]
                     }
-                  ],
+                  },
                   "path": {
                     "names": [
                       "Rc",
@@ -1351,12 +1182,9 @@
             },
             "name": "rc",
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "name": "String"
-                }
-              ],
+              "type": {
+                "name": "String"
+              },
               "generic": true,
               "name": "Rc"
             }
@@ -1365,9 +1193,7 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    "9"
-                  ],
+                  "int": "9",
                   "path": {
                     "names": [
                       "Arc",
@@ -1379,12 +1205,9 @@
             },
             "name": "arc",
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "name": "u32"
-                }
-              ],
+              "type": {
+                "name": "u32"
+              },
               "generic": true,
               "name": "Arc"
             }
@@ -1393,17 +1216,14 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "$type": "macro",
-                      "name": "vec",
-                      "ints": [
-                        "1",
-                        "2",
-                        "3"
-                      ]
-                    }
-                  ],
+                  "macro": {
+                    "ints": [
+                      "1",
+                      "2",
+                      "3"
+                    ],
+                    "name": "vec"
+                  },
                   "path": {
                     "names": [
                       "RefCell",
@@ -1415,19 +1235,13 @@
             },
             "name": "cell",
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "generic": true,
-                  "name": "Vec",
-                  "arguments": [
-                    {
-                      "$type": "type",
-                      "name": "i32"
-                    }
-                  ]
-                }
-              ],
+              "type": {
+                "type": {
+                  "name": "i32"
+                },
+                "generic": true,
+                "name": "Vec"
+              },
               "generic": true,
               "name": "RefCell"
             }
@@ -1436,26 +1250,28 @@
             "value": {
               "expression": {
                 "object": {
-                  "call": {
-                    "call": {
+                  "calls": [
+                    {
                       "call": {
                         "arguments": [
-                          "0"
+                          "i32"
                         ],
-                        "name": "unwrap_or"
+                        "generic": true,
+                        "object": {
+                          "member": {
+                            "name": "parse"
+                          },
+                          "access": true,
+                          "string": "\"42\""
+                        }
                       }
                     },
-                    "generic": true,
-                    "name": "parse",
-                    "arguments": [
-                      {
-                        "$type": "type",
-                        "name": "i32"
-                      }
-                    ]
-                  },
-                  "access": true,
-                  "string": "\"42\""
+                    {
+                      "int": "0",
+                      "name": "unwrap_or"
+                    }
+                  ],
+                  "access": true
                 }
               }
             },
@@ -1474,12 +1290,20 @@
         "ifs": [
           {
             "then": {
-              "let": {
-                "value": {
-                  "expression": {
-                    "name": "v"
+              "block": {
+                "lets": [
+                  {
+                    "value": {
+                      "expression": {
+                        "name": "v"
+                      }
+                    },
+                    "pattern": {
+                      "text": "_",
+                      "wildcard": true
+                    }
                   }
-                }
+                ]
               }
             },
             "condition": {
@@ -1491,15 +1315,9 @@
                   "name": "v"
                 },
                 {
-                  "value": {
-                    "expression": {
-                      "call": {
-                        "arguments": [
-                          "10"
-                        ],
-                        "name": "Some"
-                      }
-                    }
+                  "call": {
+                    "int": "10",
+                    "name": "Some"
                   }
                 }
               ]
@@ -1511,17 +1329,17 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    "1",
-                    "2",
-                    "\"p\""
-                  ],
+                  "string": "\"p\"",
                   "path": {
                     "names": [
                       "Point",
                       "new"
                     ]
-                  }
+                  },
+                  "ints": [
+                    "1",
+                    "2"
+                  ]
                 }
               }
             },
@@ -1787,11 +1605,7 @@
                         "value": {
                           "expression": {
                             "unary": {
-                              "int": "99",
-                              "op": {
-                                "text": "-",
-                                "minus": true
-                              }
+                              "int": "99"
                             }
                           }
                         },
@@ -1926,27 +1740,19 @@
               ]
             },
             "condition": {
-              "expressions": [
-                {
-                  "name": "Some"
+              "expression": {
+                "object": {
+                  "call": {
+                    "name": "next"
+                  },
+                  "access": true,
+                  "name": "it"
                 },
-                {
-                  "name": "x"
-                },
-                {
-                  "value": {
-                    "expression": {
-                      "object": {
-                        "call": {
-                          "name": "next"
-                        },
-                        "access": true,
-                        "name": "it"
-                      }
-                    }
-                  }
-                }
-              ]
+                "names": [
+                  "Some",
+                  "x"
+                ]
+              }
             }
           }
         ]
@@ -1981,10 +1787,14 @@
                     "ifs": [
                       {
                         "then": {
-                          "break": {
-                            "label": {
-                              "name": "outer"
-                            }
+                          "block": {
+                            "expressions": [
+                              {
+                                "break": {
+                                  "name": "'outer"
+                                }
+                              }
+                            ]
                           }
                         },
                         "condition": {
@@ -2043,10 +1853,10 @@
                 }
               ]
             },
-            "label": {
-              "name": "outer"
-            },
-            "name": "i",
+            "names": [
+              "'outer",
+              "i"
+            ],
             "value": {
               "expression": {
                 "range": {
@@ -2068,16 +1878,8 @@
               "expressions": [
                 {
                   "assign": {
-                    "right": {
-                      "expression": {
-                        "int": "1"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "n"
-                      }
-                    }
+                    "int": "1",
+                    "name": "n"
                   }
                 }
               ]
@@ -2120,9 +1922,11 @@
               "expression": {
                 "loop": {
                   "body": {
-                    "breaks": [
+                    "expressions": [
                       {
-                        "int": "42"
+                        "break": {
+                          "int": "42"
+                        }
                       }
                     ]
                   }
@@ -2145,24 +1949,25 @@
       "body": {
         "calls": [
           {
-            "arguments": [
+            "names": [
+              "Ok",
               "casted"
-            ],
-            "name": "Ok"
+            ]
           }
         ],
         "lets": [
           {
             "value": {
               "expression": {
-                "object": {
-                  "call": {
-                    "name": "parse"
-                  },
-                  "access": true,
-                  "string": "\"10\""
-                },
-                "try": true
+                "try": {
+                  "object": {
+                    "call": {
+                      "name": "parse"
+                    },
+                    "access": true,
+                    "string": "\"10\""
+                  }
+                }
               }
             },
             "name": "parsed",
@@ -2202,22 +2007,18 @@
       "name": "try_and_cast",
       "returns": {
         "type": {
-          "arguments": [
-            {
-              "$type": "type",
-              "name": "i32"
-            },
-            {
-              "$type": "path",
-              "names": [
-                "std",
-                "num",
-                "ParseIntError"
-              ]
-            }
-          ],
+          "path": {
+            "names": [
+              "std",
+              "num",
+              "ParseIntError"
+            ]
+          },
           "generic": true,
-          "name": "Result"
+          "name": "Result",
+          "type": {
+            "name": "i32"
+          }
         }
       }
     },
@@ -2236,7 +2037,7 @@
       },
       "pub": true,
       "name": "trait_object_and_impl",
-      "generics": [
+      "arguments": [
         {
           "$type": "lifetime",
           "name": "a"
@@ -2247,23 +2048,17 @@
           "type": {
             "type": {
               "type": {
-                "arguments": [
-                  {
-                    "$type": "type",
-                    "associated": true,
-                    "name": "Canvas",
+                "type": {
+                  "type": {
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "u8"
-                        }
-                      ],
-                      "generic": true,
-                      "name": "Vec"
-                    }
-                  }
-                ],
+                      "name": "u8"
+                    },
+                    "generic": true,
+                    "name": "Vec"
+                  },
+                  "associated": true,
+                  "name": "Canvas"
+                },
                 "generic": true,
                 "name": "Drawable"
               },
@@ -2284,9 +2079,7 @@
           },
           "bounded": true,
           "type": {
-            "type": {
-              "name": "Display"
-            },
+            "name": "Display",
             "abstract": true
           }
         }
@@ -2294,12 +2087,10 @@
     },
     {
       "body": {
-        "expressions": [
+        "macros": [
           {
-            "macro": {
-              "string": "\"never returns\"",
-              "name": "panic"
-            }
+            "string": "\"never returns\"",
+            "name": "panic"
           }
         ]
       },
@@ -2314,10 +2105,9 @@
     },
     {
       "body": {
-        "expressions": [
+        "awaits": [
           {
-            "name": "block",
-            "await": true
+            "name": "block"
           }
         ],
         "lets": [
@@ -2352,7 +2142,6 @@
         ]
       },
       "pub": true,
-      "async": true,
       "name": "async_demo",
       "returns": {
         "type": {
@@ -2364,32 +2153,30 @@
       "body": {
         "unsafes": [
           {
-            "expression": {
-              "assign": {
-                "right": {
-                  "expression": {
-                    "int": "1"
-                  }
-                },
-                "left": {
-                  "expression": {
+            "block": {
+              "expressions": [
+                {
+                  "assign": {
+                    "int": "1",
                     "name": "COUNTER"
                   }
                 }
-              }
-            },
-            "let": {
-              "value": {
-                "expression": {
-                  "unary": {
-                    "name": "r",
-                    "op": {
-                      "text": "*",
-                      "multiply": true
+              ],
+              "lets": [
+                {
+                  "value": {
+                    "expression": {
+                      "unary": {
+                        "name": "r"
+                      }
                     }
+                  },
+                  "pattern": {
+                    "text": "_",
+                    "wildcard": true
                   }
                 }
-              }
+              ]
             }
           }
         ],
@@ -2407,19 +2194,13 @@
               "expression": {
                 "cast": {
                   "type": {
-                    "type": {
-                      "name": "i32"
-                    },
+                    "name": "i32",
                     "pointer": true
                   },
                   "value": {
                     "expression": {
                       "ref": {
-                        "value": {
-                          "expression": {
-                            "name": "x"
-                          }
-                        }
+                        "name": "x"
                       }
                     }
                   }
@@ -2436,11 +2217,11 @@
     {
       "where": {
         "bound": {
-          "extends": [
-            {
+          "extends": {
+            "bound": {
               "type": {
-                "returns": {
-                  "type": {
+                "types": [
+                  {
                     "type": {
                       "name": "i32"
                     },
@@ -2449,13 +2230,9 @@
                       "name": "a"
                     }
                   }
-                },
-                "function": true,
-                "types": [
-                  {
-                    "name": "Fn"
-                  }
                 ],
+                "function": true,
+                "name": "Fn",
                 "parameters": [
                   {
                     "$type": "type",
@@ -2470,37 +2247,33 @@
                 ]
               },
               "higher": true,
-              "generics": [
+              "arguments": [
                 {
                   "$type": "lifetime",
                   "name": "a"
                 }
               ]
             }
-          ],
-          "left": {
-            "type": {
-              "name": "F"
-            }
-          }
+          },
+          "name": "F"
         }
       },
       "pub": true,
       "name": "hrtb_demo",
-      "generics": [
+      "arguments": [
         {
+          "$type": "generic",
           "name": "F"
         },
         {
-          "extends": [
-            {
-              "type": {
-                "name": "Sized"
-              },
+          "$type": "generic",
+          "name": "T",
+          "extends": {
+            "bound": {
+              "name": "Sized",
               "optional": true
             }
-          ],
-          "name": "T"
+          }
         }
       ],
       "parameters": [
@@ -2565,32 +2338,23 @@
         "expressions": [
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "head_tail"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    }
+              "binary": {
+                "right": {
+                  "expression": {
+                    "name": "head_tail"
                   }
+                },
+                "left": {
+                  "expression": {
+                    "name": "total"
+                  }
+                },
+                "op": {
+                  "text": "+",
+                  "plus": true
                 }
               },
-              "left": {
-                "expression": {
-                  "name": "counter"
-                }
-              },
-              "op": "="
+              "name": "counter"
             }
           }
         ],
@@ -2627,33 +2391,41 @@
             "text": "// negative_literal in pattern position.",
             "leading": true
           },
+          "// turbofish expression — `parse::<i32>` is generic_function but",
+          "// type-position turbofish like `Vec::<i32>::new` exercises",
           {
-            "text": "// turbofish expression — `parse::<i32>` is generic_function but\n// type-position turbofish like `Vec::<i32>::new` exercises\n// generic_type_with_turbofish.",
+            "text": "// generic_type_with_turbofish.",
             "leading": true
           }
         ],
         "ifs": [
           {
             "then": {
-              "return": {
-                "expression": {
-                  "binary": {
-                    "right": {
+              "block": {
+                "expressions": [
+                  {
+                    "return": {
                       "expression": {
-                        "name": "x"
+                        "binary": {
+                          "right": {
+                            "expression": {
+                              "name": "x"
+                            }
+                          },
+                          "left": {
+                            "expression": {
+                              "name": "ix"
+                            }
+                          },
+                          "op": {
+                            "text": "+",
+                            "plus": true
+                          }
+                        }
                       }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "ix"
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
                     }
                   }
-                }
+                ]
               }
             },
             "condition": {
@@ -2665,11 +2437,7 @@
                   "name": "inner"
                 },
                 {
-                  "value": {
-                    "expression": {
-                      "name": "opt"
-                    }
-                  }
+                  "name": "opt"
                 },
                 {
                   "pattern": {
@@ -2687,17 +2455,11 @@
                       }
                     ],
                     "struct": true,
-                    "type": {
-                      "name": "Point"
-                    }
+                    "name": "Point"
                   }
                 },
                 {
-                  "value": {
-                    "expression": {
-                      "name": "inner"
-                    }
-                  }
+                  "name": "inner"
                 },
                 {
                   "binary": {
@@ -2741,9 +2503,7 @@
                 }
               ],
               "struct": true,
-              "type": {
-                "name": "Point"
-              }
+              "name": "Point"
             }
           },
           {
@@ -2865,11 +2625,7 @@
                   "value": {
                     "expression": {
                       "ref": {
-                        "value": {
-                          "expression": {
-                            "name": "tuple"
-                          }
-                        }
+                        "name": "tuple"
                       }
                     }
                   }
@@ -2939,11 +2695,7 @@
                         "value": {
                           "expression": {
                             "unary": {
-                              "name": "only",
-                              "op": {
-                                "text": "*",
-                                "multiply": true
-                              }
+                              "name": "only"
                             }
                           }
                         },
@@ -2972,19 +2724,15 @@
                   "value": {
                     "expression": {
                       "ref": {
-                        "value": {
-                          "expression": {
-                            "object": {
-                              "index": {
-                                "range": {
-                                  "text": "..",
-                                  "exclusive": true
-                                }
-                              },
-                              "access": true,
-                              "name": "arr"
+                        "object": {
+                          "index": {
+                            "range": {
+                              "text": "..",
+                              "exclusive": true
                             }
-                          }
+                          },
+                          "access": true,
+                          "name": "arr"
                         }
                       }
                     }
@@ -3063,6 +2811,10 @@
               "expression": {
                 "name": "unit_val"
               }
+            },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
             }
           },
           {
@@ -3107,11 +2859,7 @@
                   "value": {
                     "expression": {
                       "unary": {
-                        "int": "1i32",
-                        "op": {
-                          "text": "-",
-                          "minus": true
-                        }
+                        "int": "1i32"
                       }
                     }
                   }
@@ -3125,6 +2873,10 @@
               "expression": {
                 "name": "signed"
               }
+            },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
             }
           },
           {
@@ -3136,12 +2888,9 @@
                       "new"
                     ],
                     "type": {
-                      "arguments": [
-                        {
-                          "$type": "type",
-                          "name": "i32"
-                        }
-                      ],
+                      "type": {
+                        "name": "i32"
+                      },
                       "generic": true,
                       "name": "Vec"
                     }
@@ -3158,40 +2907,29 @@
       "parameters": [
         {
           "type": {
-            "arguments": [
-              {
-                "$type": "lifetime",
-                "name": "_"
-              },
-              {
-                "$type": "type",
-                "name": "i32"
-              }
-            ],
+            "type": {
+              "name": "i32"
+            },
             "generic": true,
-            "name": "Point"
+            "name": "Point",
+            "lifetime": {
+              "name": "_"
+            }
           },
           "name": "p"
         },
         {
           "type": {
-            "arguments": [
-              {
-                "$type": "type",
-                "generic": true,
-                "name": "Point",
-                "arguments": [
-                  {
-                    "$type": "lifetime",
-                    "name": "_"
-                  },
-                  {
-                    "$type": "type",
-                    "name": "i32"
-                  }
-                ]
+            "type": {
+              "type": {
+                "name": "i32"
+              },
+              "generic": true,
+              "name": "Point",
+              "lifetime": {
+                "name": "_"
               }
-            ],
+            },
             "generic": true,
             "name": "Option"
           },
@@ -3226,24 +2964,25 @@
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "$type": "call",
-                      "path": {
-                        "names": [
-                          "Shape",
-                          "Dot"
-                        ]
-                      },
-                      "arguments": [
-                        "1",
-                        "1"
+                  "call": {
+                    "ints": [
+                      "1",
+                      "1"
+                    ],
+                    "path": {
+                      "names": [
+                        "Shape",
+                        "Dot"
                       ]
                     }
-                  ],
+                  },
                   "name": "patterns"
                 }
               }
+            },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
             }
           },
           {
@@ -3253,32 +2992,39 @@
                   "name": "loops_and_flow"
                 }
               }
+            },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
             }
           },
           {
             "value": {
               "expression": {
                 "call": {
-                  "arguments": [
-                    {
-                      "$type": "call",
-                      "path": {
-                        "names": [
-                          "Point",
-                          "new"
-                        ]
-                      },
-                      "arguments": [
-                        "1",
-                        "2",
-                        "\"p\""
-                      ]
-                    },
+                  "names": [
+                    "pattern_zoo",
                     "None"
                   ],
-                  "name": "pattern_zoo"
+                  "call": {
+                    "string": "\"p\"",
+                    "path": {
+                      "names": [
+                        "Point",
+                        "new"
+                      ]
+                    },
+                    "ints": [
+                      "1",
+                      "2"
+                    ]
+                  }
                 }
               }
+            },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
             }
           },
           {
@@ -3297,38 +3043,33 @@
                 }
               }
             },
+            "pattern": {
+              "text": "_",
+              "wildcard": true
+            },
             "type": {
-              "arguments": [
-                {
-                  "$type": "type",
-                  "tuple": true,
-                  "types": [
-                    {
-                      "type": {
-                        "name": "str"
-                      },
-                      "borrowed": true
-                    },
-                    {
-                      "name": "i32"
-                    }
-                  ]
+              "type": {
+                "name": "i32",
+                "tuple": true,
+                "type": {
+                  "type": {
+                    "name": "str"
+                  },
+                  "borrowed": true
                 }
-              ],
+              },
               "generic": true,
               "name": "Vec"
             }
           }
         ],
-        "expressions": [
+        "macros": [
           {
-            "macro": {
-              "names": [
-                "println",
-                "GREETING"
-              ],
-              "string": "\"hello, {}\""
-            }
+            "names": [
+              "println",
+              "GREETING"
+            ],
+            "string": "\"hello, {}\""
           }
         ]
       },

@@ -3,8 +3,8 @@ class[public]/
   ├─ name = "Calculator"
   └─ body/
       ├─ method[public]/
-      │   └─ ... (26 children)
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   └─ ... (26 children)
+      │   └─ ... (23 children)
       └─ method[public]/
-          └─ ... (26 children)
+          └─ ... (23 children)

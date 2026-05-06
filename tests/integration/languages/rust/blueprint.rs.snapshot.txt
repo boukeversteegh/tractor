@@ -1,5 +1,5 @@
 file/
-  ├─ comment[leading] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n\n//! by tractor's snapshot tests to catch design-principle regressions."
+  ├─ comment[leading] = "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n//! by tractor's snapshot tests to catch design-principle regressions."
   ├─ attribute[inner]/
   │   ├─ name = "allow"
   │   ├─ name = "dead_code"
@@ -18,9 +18,9 @@ file/
   │   ├─ path/
   │   │   ├─ name = "std"
   │   │   └─ name = "fmt"
+  │   ├─ use/name = "self"
   │   ├─ use/name = "Debug"
-  │   ├─ use/name = "Display"
-  │   └─ use[self]
+  │   └─ use/name = "Display"
   ├─ use/
   │   ├─ path/
   │   │   ├─ name = "std"
@@ -52,16 +52,15 @@ file/
   ├─ mod[pub]/
   │   ├─ name = "outer"
   │   └─ body/mod/
-  │       ├─ pub[crate]
+  │       ├─ pub/crate = "pub(crate)"
   │       ├─ name = "inner"
   │       └─ body/
-  │           ├─ const/
-  │           │   ├─ pub[super]
+  │           ├─ const[pub]/
   │           │   ├─ name = "INNER_CONST"
-  │           │   ├─ type/name = "u32"
-  │           │   └─ value/expression/int = "7"
+  │           │   ├─ name = "u32"
+  │           │   └─ int = "7"
   │           └─ function/
-  │               ├─ pub/in = "crate::outer"
+  │               ├─ pub/in = "pub(in crate::outer)"
   │               └─ name = "path_vis"
   ├─ comment[leading] = "/// A named-field struct with generics, lifetimes, and a where clause."
   ├─ attribute/
@@ -73,16 +72,16 @@ file/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/type/name = "T"
-  │   │   ├─ extends/type/name = "Clone"
-  │   │   ├─ extends/type/name = "Send"
-  │   │   └─ extends/lifetime/name = "static"
+  │   │   ├─ name = "T"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
   │   └─ body/
   │       ├─ field[pub]/
   │       │   ├─ name = "x"
   │       │   └─ type/name = "T"
-  │       ├─ field/
-  │       │   ├─ pub[crate]
+  │       ├─ field[pub]/
   │       │   ├─ name = "y"
   │       │   └─ type/name = "T"
   │       └─ field/
@@ -94,9 +93,9 @@ file/
   ├─ struct[pub]/
   │   ├─ name = "Pair"
   │   ├─ generic/name = "T"
-  │   └─ body[pub]/
-  │       ├─ type/name = "T"
-  │       └─ type/name = "T"
+  │   └─ body/
+  │       ├─ name = "T"
+  │       └─ name = "T"
   ├─ comment[leading] = "/// A unit struct."
   ├─ struct[pub]/name = "Marker"
   ├─ comment[leading] = "/// An enum with every variant flavor and explicit discriminants."
@@ -106,28 +105,27 @@ file/
   ├─ enum[pub]/
   │   ├─ name = "Shape"
   │   ├─ lifetime/name = "a"
-  │   └─ body/
-  │       ├─ variant/name = "Nothing"
-  │       ├─ variant/
-  │       │   ├─ name = "Dot"
-  │       │   └─ body/
-  │       │       ├─ type/name = "i32"
-  │       │       └─ type/name = "i32"
-  │       ├─ variant/
-  │       │   ├─ name = "Rect"
-  │       │   └─ body/
-  │       │       ├─ field/
-  │       │       │   ├─ name = "w"
-  │       │       │   └─ type/name = "u32"
-  │       │       └─ field/
-  │       │           ├─ name = "h"
-  │       │           └─ type/name = "u32"
-  │       └─ variant/
-  │           ├─ name = "Labeled"
-  │           ├─ body/type[borrowed]/
-  │           │   ├─ lifetime/name = "a"
-  │           │   └─ type/name = "str"
-  │           └─ value/expression/int = "10"
+  │   ├─ variant/name = "Nothing"
+  │   ├─ variant/
+  │   │   ├─ name = "Dot"
+  │   │   └─ body/
+  │   │       ├─ name = "i32"
+  │   │       └─ name = "i32"
+  │   ├─ variant/
+  │   │   ├─ name = "Rect"
+  │   │   └─ body/
+  │   │       ├─ field/
+  │   │       │   ├─ name = "w"
+  │   │       │   └─ type/name = "u32"
+  │   │       └─ field/
+  │   │           ├─ name = "h"
+  │   │           └─ type/name = "u32"
+  │   └─ variant/
+  │       ├─ name = "Labeled"
+  │       ├─ body/type[borrowed]/
+  │       │   ├─ lifetime/name = "a"
+  │       │   └─ type/name = "str"
+  │       └─ int = "10"
   ├─ trait[pub]/
   │   ├─ name = "Drawable"
   │   ├─ extends/type/name = "Debug"
@@ -135,11 +133,11 @@ file/
   │       ├─ type[associated]/name = "Canvas"
   │       ├─ const[private]/
   │       │   ├─ name = "MAX"
-  │       │   ├─ type/name = "usize"
-  │       │   └─ value/expression/int = "64"
-  │       ├─ signature/
+  │       │   ├─ name = "usize"
+  │       │   └─ int = "64"
+  │       ├─ function[private]/
   │       │   ├─ name = "draw"
-  │       │   ├─ parameter[self and borrowed]
+  │       │   ├─ parameter[self]/name = "self"
   │       │   └─ parameter/
   │       │       ├─ name = "c"
   │       │       └─ type[borrowed and mut]/path/
@@ -147,7 +145,7 @@ file/
   │       │           └─ name = "Canvas"
   │       └─ function[private]/
   │           ├─ name = "name"
-  │           ├─ parameter[self and borrowed]
+  │           ├─ parameter[self]/name = "self"
   │           ├─ returns/type/name = "String"
   │           └─ body/call/
   │               ├─ path/
@@ -158,9 +156,10 @@ file/
   │   ├─ lifetime/name = "a"
   │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   ├─ extends/type/name = "Clone"
-  │   │   ├─ extends/type/name = "Send"
-  │   │   └─ extends/lifetime/name = "static"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       └─ lifetime/name = "static"
   │   ├─ type[generic]/
   │   │   ├─ name = "Point"
   │   │   ├─ lifetime/name = "a"
@@ -171,7 +170,7 @@ file/
   │       │   ├─ type[borrowed]/
   │       │   │   ├─ lifetime/name = "static"
   │       │   │   └─ type/name = "str"
-  │       │   └─ value/expression/string = "\"origin\""
+  │       │   └─ string = "\"origin\""
   │       ├─ function[pub]/
   │       │   ├─ name = "new"
   │       │   ├─ parameter/
@@ -192,27 +191,25 @@ file/
   │       │           ├─ field/name = "x"
   │       │           ├─ field/name = "y"
   │       │           └─ field/name = "label"
-  │       ├─ function[pub and async]/
+  │       ├─ function[pub]/
   │       │   ├─ name = "async_clone"
-  │       │   ├─ parameter[self and borrowed]
+  │       │   ├─ parameter[self]/name = "self"
   │       │   ├─ returns/type/name = "Self"
   │       │   └─ body/object[access]/
-  │       │       ├─ self = "self"
+  │       │       ├─ name = "self"
   │       │       └─ call/name = "clone"
-  │       ├─ function[pub and const]/
+  │       ├─ function[pub]/
   │       │   ├─ name = "const_fn"
   │       │   ├─ returns/type/name = "u32"
   │       │   └─ body/int = "42"
-  │       └─ function[pub and unsafe]/
+  │       └─ function[pub]/
   │           ├─ name = "unsafe_read"
   │           ├─ parameter/
   │           │   ├─ name = "ptr"
-  │           │   └─ type[pointer]/type/name = "T"
+  │           │   └─ type[pointer]/name = "T"
   │           ├─ returns/type/name = "T"
   │           └─ body/object[access]/
-  │               ├─ unary/
-  │               │   ├─ op[multiply] = "*"
-  │               │   └─ name = "ptr"
+  │               ├─ unary/name = "ptr"
   │               └─ call/name = "clone"
   ├─ impl/
   │   ├─ lifetime/name = "a"
@@ -223,11 +220,12 @@ file/
   │   │   ├─ lifetime/name = "a"
   │   │   └─ type/name = "T"
   │   ├─ where/bound/
-  │   │   ├─ left/type/name = "T"
-  │   │   ├─ extends/type/name = "Clone"
-  │   │   ├─ extends/type/name = "Send"
-  │   │   ├─ extends/type/name = "Debug"
-  │   │   └─ extends/lifetime/name = "static"
+  │   │   ├─ name = "T"
+  │   │   └─ extends/
+  │   │       ├─ type/name = "Clone"
+  │   │       ├─ type/name = "Send"
+  │   │       ├─ type/name = "Debug"
+  │   │       └─ lifetime/name = "static"
   │   └─ body/
   │       ├─ alias[private]/
   │       │   ├─ name = "Canvas"
@@ -236,7 +234,7 @@ file/
   │       │       └─ type/name = "u8"
   │       └─ function[private]/
   │           ├─ name = "draw"
-  │           ├─ parameter[self and borrowed]
+  │           ├─ parameter[self]/name = "self"
   │           └─ parameter/
   │               ├─ name = "_c"
   │               └─ type[borrowed and mut]/path/
@@ -259,28 +257,28 @@ file/
   ├─ alias[pub]/
   │   ├─ name = "Callback"
   │   └─ type[function]/
-  │       ├─ type/name = "i32"
-  │       └─ returns/type/name = "i32"
+  │       ├─ name = "i32"
+  │       └─ name = "i32"
   ├─ const[pub]/
   │   ├─ name = "PI"
-  │   ├─ type/name = "f64"
-  │   └─ value/expression/float = "3.141_592_653_589f64"
+  │   ├─ name = "f64"
+  │   └─ float = "3.141_592_653_589f64"
   ├─ static[pub]/
   │   ├─ name = "GREETING"
   │   ├─ type[borrowed]/type/name = "str"
-  │   └─ value/expression/string = "\"hello\""
-  ├─ static[mut and private]/
+  │   └─ string = "\"hello\""
+  ├─ static[private and mut]/
   │   ├─ name = "COUNTER"
-  │   ├─ type/name = "u32"
-  │   └─ value/expression/int = "0"
+  │   ├─ name = "u32"
+  │   └─ int = "0"
   ├─ function[private]/
   │   ├─ name = "numeric_zoo"
   │   ├─ returns/type[tuple]/
-  │   │   ├─ type/name = "u32"
-  │   │   ├─ type/name = "f64"
-  │   │   ├─ type/name = "i32"
-  │   │   ├─ type/name = "i32"
-  │   │   └─ type/name = "i32"
+  │   │   ├─ name = "u32"
+  │   │   ├─ name = "f64"
+  │   │   ├─ name = "i32"
+  │   │   ├─ name = "i32"
+  │   │   └─ name = "i32"
   │   └─ body/tuple/
   │       ├─ int = "1u32"
   │       ├─ float = "1.0f64"
@@ -311,18 +309,18 @@ file/
   │       ├─ let/
   │       │   ├─ name = "id"
   │       │   └─ value/expression/closure/
-  │       │       ├─ parameter/name = "x"
-  │       │       └─ value/expression/name = "x"
+  │       │       ├─ name = "x"
+  │       │       └─ name = "x"
   │       ├─ let/
   │       │   ├─ name = "add"
   │       │   ├─ type[function]/
-  │       │   │   ├─ type/name = "i32"
-  │       │   │   ├─ type/name = "i32"
-  │       │   │   └─ returns/type/name = "i32"
+  │       │   │   ├─ name = "i32"
+  │       │   │   ├─ name = "i32"
+  │       │   │   └─ name = "i32"
   │       │   └─ value/expression/closure/
-  │       │       ├─ parameter/name = "a"
-  │       │       ├─ parameter/name = "b"
-  │       │       └─ value/expression/binary/
+  │       │       ├─ name = "a"
+  │       │       ├─ name = "b"
+  │       │       └─ binary/
   │       │           ├─ left/expression/name = "a"
   │       │           ├─ op[plus] = "+"
   │       │           └─ right/expression/name = "b"
@@ -339,8 +337,8 @@ file/
   │       │       ├─ parameter/
   │       │       │   ├─ name = "x"
   │       │       │   └─ type/name = "i32"
-  │       │       ├─ returns/type/name = "String"
-  │       │       └─ body/macro/
+  │       │       ├─ name = "String"
+  │       │       └─ block/macro/
   │       │           ├─ name = "format"
   │       │           ├─ string = "\"{}-{}\""
   │       │           ├─ name = "s"
@@ -348,7 +346,7 @@ file/
   │       └─ let/
   │           ├─ name = "r"
   │           ├─ type[borrowed]/type/name = "i32"
-  │           └─ value/expression/ref/value/expression/int = "5"
+  │           └─ value/expression/ref/int = "5"
   ├─ function[pub]/
   │   ├─ name = "smart_pointers"
   │   └─ body/
@@ -405,13 +403,14 @@ file/
   │       └─ let/
   │           ├─ name = "parsed"
   │           └─ value/expression/object[access]/
-  │               ├─ string = "\"42\""
-  │               └─ call[generic]/
-  │                   ├─ name = "parse"
-  │                   ├─ type/name = "i32"
-  │                   └─ call/call/
-  │                       ├─ name = "unwrap_or"
-  │                       └─ int = "0"
+  │               ├─ call/call[generic]/
+  │               │   ├─ object[access]/
+  │               │   │   ├─ string = "\"42\""
+  │               │   │   └─ member/name = "parse"
+  │               │   └─ name = "i32"
+  │               └─ call/
+  │                   ├─ name = "unwrap_or"
+  │                   └─ int = "0"
   ├─ function[pub]/
   │   ├─ name = "patterns"
   │   ├─ parameter/
@@ -511,9 +510,7 @@ file/
   │       │           │       └─ type/name = "i32"
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
-  │       │               └─ value/expression/unary/
-  │       │                   ├─ op[minus] = "-"
-  │       │                   └─ int = "99"
+  │       │               └─ value/expression/unary/int = "99"
   │       ├─ let/
   │       │   ├─ name = "bucket"
   │       │   └─ value/expression/match/
@@ -536,10 +533,12 @@ file/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "v"
-  │       │   │   └─ expression/value/expression/call/
+  │       │   │   └─ expression/call/
   │       │   │       ├─ name = "Some"
   │       │   │       └─ int = "10"
-  │       │   └─ then/let/value/expression/name = "v"
+  │       │   └─ then/block/let/
+  │       │       ├─ pattern[wildcard] = "_"
+  │       │       └─ value/expression/name = "v"
   │       ├─ let[mut]/
   │       │   ├─ name = "it"
   │       │   └─ value/expression/object[access]/
@@ -550,10 +549,10 @@ file/
   │       │       │   └─ int = "3"
   │       │       └─ call/name = "into_iter"
   │       ├─ while/
-  │       │   ├─ condition/
-  │       │   │   ├─ expression/name = "Some"
-  │       │   │   ├─ expression/name = "x"
-  │       │   │   └─ expression/value/expression/object[access]/
+  │       │   ├─ condition/expression/
+  │       │   │   ├─ name = "Some"
+  │       │   │   ├─ name = "x"
+  │       │   │   └─ object[access]/
   │       │   │       ├─ name = "it"
   │       │   │       └─ call/name = "next"
   │       │   └─ body/
@@ -571,7 +570,7 @@ file/
   │   ├─ returns/type/name = "i32"
   │   └─ body/
   │       ├─ for/
-  │       │   ├─ label/name = "outer"
+  │       │   ├─ name = "'outer"
   │       │   ├─ name = "i"
   │       │   ├─ value/expression/range[exclusive]/
   │       │   │   ├─ from/int = "0"
@@ -589,7 +588,7 @@ file/
   │       │           │   │   └─ right/expression/name = "j"
   │       │           │   ├─ op[compare and greater] = ">"
   │       │           │   └─ right/expression/int = "20"
-  │       │           └─ then/break/label/name = "outer"
+  │       │           └─ then/block/expression/break/name = "'outer"
   │       ├─ let[mut]/
   │       │   ├─ name = "n"
   │       │   └─ value/expression/int = "0"
@@ -599,11 +598,11 @@ file/
   │       │   │   ├─ op[compare and less] = "<"
   │       │   │   └─ right/expression/int = "3"
   │       │   └─ body/expression/assign/
-  │       │       ├─ left/expression/name = "n"
-  │       │       └─ right/expression/int = "1"
+  │       │       ├─ name = "n"
+  │       │       └─ int = "1"
   │       ├─ let/
   │       │   ├─ name = "found"
-  │       │   └─ value/expression/loop/body/break/int = "42"
+  │       │   └─ value/expression/loop/body/expression/break/int = "42"
   │       └─ name = "found"
   ├─ function[pub]/
   │   ├─ name = "try_and_cast"
@@ -618,7 +617,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "parsed"
   │       │   ├─ type/name = "i32"
-  │       │   └─ value/expression[try]/object[access]/
+  │       │   └─ value/expression/try/object[access]/
   │       │       ├─ string = "\"10\""
   │       │       └─ call/name = "parse"
   │       ├─ let/
@@ -646,7 +645,7 @@ file/
   │   │                   ├─ name = "Vec"
   │   │                   └─ type/name = "u8"
   │   ├─ returns/type[bounded]/
-  │   │   ├─ type[abstract]/type/name = "Display"
+  │   │   ├─ type[abstract]/name = "Display"
   │   │   └─ lifetime/name = "a"
   │   └─ body/macro/
   │       ├─ name = "format"
@@ -656,10 +655,10 @@ file/
   ├─ function[pub]/
   │   ├─ name = "diverges"
   │   ├─ returns/type[never] = "!"
-  │   └─ body/expression/macro/
+  │   └─ body/macro/
   │       ├─ name = "panic"
   │       └─ string = "\"never returns\""
-  ├─ function[pub and async]/
+  ├─ function[pub]/
   │   ├─ name = "async_demo"
   │   ├─ returns/type/name = "u32"
   │   └─ body/
@@ -669,7 +668,7 @@ file/
   │       │       ├─ left/expression/int = "1u32"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/int = "2"
-  │       └─ expression[await]/name = "block"
+  │       └─ await/name = "block"
   ├─ function[pub]/
   │   ├─ name = "unsafe_block"
   │   └─ body/
@@ -679,25 +678,27 @@ file/
   │       ├─ let/
   │       │   ├─ name = "r"
   │       │   └─ value/expression/cast/
-  │       │       ├─ value/expression/ref/value/expression/name = "x"
-  │       │       └─ type[pointer]/type/name = "i32"
-  │       └─ unsafe/
-  │           ├─ let/value/expression/unary/
-  │           │   ├─ op[multiply] = "*"
-  │           │   └─ name = "r"
+  │       │       ├─ value/expression/ref/name = "x"
+  │       │       └─ type[pointer]/name = "i32"
+  │       └─ unsafe/block/
+  │           ├─ let/
+  │           │   ├─ pattern[wildcard] = "_"
+  │           │   └─ value/expression/unary/name = "r"
   │           └─ expression/assign/
-  │               ├─ left/expression/name = "COUNTER"
-  │               └─ right/expression/int = "1"
+  │               ├─ name = "COUNTER"
+  │               └─ int = "1"
   ├─ comment[leading] = "// `extern crate` declaration — legacy import form for the 2015 edition."
-  ├─ use[extern]/name = "alloc"
+  ├─ use[group and extern]/
+  │   ├─ use/name = "crate"
+  │   └─ use/name = "alloc"
   ├─ comment[leading] = "// Foreign module / extern modifier — FFI block with variadic parameter."
-  ├─ mod[extern and foreign]/
+  ├─ mod[foreign and extern]/
   │   ├─ string = "\"C\""
-  │   └─ body/signature[pub]/
+  │   └─ function[pub]/
   │       ├─ name = "printf"
   │       ├─ parameter/
   │       │   ├─ name = "fmt"
-  │       │   └─ type[pointer]/type/name = "u8"
+  │       │   └─ type[pointer]/name = "u8"
   │       └─ parameter[variadic] = "..."
   ├─ comment[leading] = "// Union — same shape family as struct/enum."
   ├─ union[pub]/
@@ -715,7 +716,7 @@ file/
   │   ├─ generic/name = "F"
   │   ├─ generic/
   │   │   ├─ name = "T"
-  │   │   └─ extends[optional]/type/name = "Sized"
+  │   │   └─ extends/bound[optional]/name = "Sized"
   │   ├─ parameter/
   │   │   ├─ name = "_f"
   │   │   └─ type/name = "F"
@@ -723,15 +724,15 @@ file/
   │   │   ├─ name = "_t"
   │   │   └─ type[borrowed]/type/name = "T"
   │   └─ where/bound/
-  │       ├─ left/type/name = "F"
-  │       └─ extends[higher]/
+  │       ├─ name = "F"
+  │       └─ extends/bound[higher]/
   │           ├─ lifetime/name = "a"
   │           └─ type[function]/
-  │               ├─ type/name = "Fn"
+  │               ├─ name = "Fn"
   │               ├─ type[borrowed]/
   │               │   ├─ lifetime/name = "a"
   │               │   └─ type/name = "i32"
-  │               └─ returns/type[borrowed]/
+  │               └─ type[borrowed]/
   │                   ├─ lifetime/name = "a"
   │                   └─ type/name = "i32"
   ├─ comment[leading] = "// Const generic parameter — `<const N: usize>`."
@@ -739,36 +740,33 @@ file/
   │   ├─ name = "FixedArray"
   │   ├─ parameter[const]/
   │   │   ├─ name = "N"
-  │   │   └─ type/name = "usize"
+  │   │   └─ name = "usize"
   │   └─ body/field/
   │       ├─ name = "items"
   │       └─ type[array]/
-  │           ├─ type/name = "u32"
+  │           ├─ name = "u32"
   │           └─ name = "N"
-  ├─ comment[leading] = "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /\n// token_binding_pattern / fragment_specifier / token_repetition."
+  ├─ comment = "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /"
+  ├─ comment[leading] = "// token_binding_pattern / fragment_specifier / token_repetition."
   ├─ macro[definition]/
   │   ├─ name = "collect_pairs"
   │   ├─ arm/
-  │   │   ├─ left/
-  │   │   │   ├─ expression/repetition/
-  │   │   │   │   ├─ pattern[binding]/
-  │   │   │   │   │   ├─ name = "$key"
-  │   │   │   │   │   └─ fragment = "ident"
-  │   │   │   │   └─ pattern[binding]/
-  │   │   │   │       ├─ name = "$value"
-  │   │   │   │       └─ fragment = "expr"
-  │   │   │   └─ expression/repetition = "$(,)?"
-  │   │   └─ right/
-  │   │       ├─ expression/name = "vec"
-  │   │       └─ expression/repetition/
-  │   │           ├─ name = "stringify"
-  │   │           ├─ name = "$key"
-  │   │           └─ name = "$value"
+  │   │   ├─ repetition/
+  │   │   │   ├─ pattern[binding]/
+  │   │   │   │   ├─ name = "$key"
+  │   │   │   │   └─ fragment = "ident"
+  │   │   │   └─ pattern[binding]/
+  │   │   │       ├─ name = "$value"
+  │   │   │       └─ fragment = "expr"
+  │   │   ├─ repetition = "$(,)?"
+  │   │   ├─ name = "vec"
+  │   │   └─ repetition/
+  │   │       ├─ name = "stringify"
+  │   │       ├─ name = "$key"
+  │   │       └─ name = "$value"
   │   └─ arm/
-  │       ├─ left = "()"
-  │       └─ right/
-  │           ├─ expression/name = "Vec"
-  │           └─ expression/name = "new"
+  │       ├─ name = "Vec"
+  │       └─ name = "new"
   ├─ function[pub]/
   │   ├─ name = "pattern_zoo"
   │   ├─ parameter/
@@ -790,7 +788,7 @@ file/
   │       ├─ comment[leading] = "// remaining_field_pattern — `..`."
   │       ├─ let/
   │       │   ├─ pattern[struct]/
-  │       │   │   ├─ type/name = "Point"
+  │       │   │   ├─ name = "Point"
   │       │   │   ├─ pattern[field]/name = "x"
   │       │   │   └─ pattern[rest] = ".."
   │       │   └─ value/expression/name = "p"
@@ -804,7 +802,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "total"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/ref/value/expression/name = "tuple"
+  │       │       ├─ value/expression/ref/name = "tuple"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[ref]/pattern[tuple]/
@@ -843,7 +841,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "head_tail"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/ref/value/expression/object[access]/
+  │       │       ├─ value/expression/ref/object[access]/
   │       │       │   ├─ name = "arr"
   │       │       │   └─ index/range[exclusive] = ".."
   │       │       └─ body/
@@ -858,9 +856,7 @@ file/
   │       │           │       └─ right/expression/name = "last"
   │       │           ├─ arm/
   │       │           │   ├─ pattern/pattern[slice]/name = "only"
-  │       │           │   └─ value/expression/unary/
-  │       │           │       ├─ op[multiply] = "*"
-  │       │           │       └─ name = "only"
+  │       │           │   └─ value/expression/unary/name = "only"
   │       │           └─ arm/
   │       │               ├─ pattern/pattern[slice] = "[]"
   │       │               └─ value/expression/int = "0"
@@ -869,9 +865,8 @@ file/
   │       │   ├─ name = "counter"
   │       │   └─ value/expression/int = "0"
   │       ├─ expression/assign/
-  │       │   ├─ left/expression/name = "counter"
-  │       │   ├─ op = "="
-  │       │   └─ right/expression/binary/
+  │       │   ├─ name = "counter"
+  │       │   └─ binary/
   │       │       ├─ left/expression/name = "total"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "head_tail"
@@ -892,25 +887,27 @@ file/
   │       ├─ let/
   │       │   ├─ name = "unit_val"
   │       │   └─ value/expression/literal[unit] = "()"
-  │       ├─ let/value/expression/name = "unit_val"
+  │       ├─ let/
+  │       │   ├─ pattern[wildcard] = "_"
+  │       │   └─ value/expression/name = "unit_val"
   │       ├─ comment[leading] = "// let-chain."
   │       ├─ if/
   │       │   ├─ condition/
   │       │   │   ├─ expression/name = "Some"
   │       │   │   ├─ expression/name = "inner"
-  │       │   │   ├─ expression/value/expression/name = "opt"
+  │       │   │   ├─ expression/name = "opt"
   │       │   │   ├─ expression/pattern[struct]/
-  │       │   │   │   ├─ type/name = "Point"
+  │       │   │   │   ├─ name = "Point"
   │       │   │   │   ├─ pattern[field]/
   │       │   │   │   │   ├─ name = "x"
   │       │   │   │   │   └─ name = "ix"
   │       │   │   │   └─ pattern[rest] = ".."
-  │       │   │   ├─ expression/value/expression/name = "inner"
+  │       │   │   ├─ expression/name = "inner"
   │       │   │   └─ expression/binary/
   │       │   │       ├─ left/expression/name = "ix"
   │       │   │       ├─ op[compare and greater] = ">"
   │       │   │       └─ right/expression/int = "0"
-  │       │   └─ then/return/expression/binary/
+  │       │   └─ then/block/expression/return/expression/binary/
   │       │       ├─ left/expression/name = "ix"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/name = "x"
@@ -918,9 +915,7 @@ file/
   │       ├─ let/
   │       │   ├─ name = "signed"
   │       │   └─ value/expression/match/
-  │       │       ├─ value/expression/unary/
-  │       │       │   ├─ op[minus] = "-"
-  │       │       │   └─ int = "1i32"
+  │       │       ├─ value/expression/unary/int = "1i32"
   │       │       └─ body/
   │       │           ├─ arm/
   │       │           │   ├─ pattern/literal[negative]/int = "1"
@@ -931,8 +926,12 @@ file/
   │       │           └─ arm/
   │       │               ├─ pattern = "_"
   │       │               └─ value/expression/string = "\"pos\""
-  │       ├─ let/value/expression/name = "signed"
-  │       ├─ comment[leading] = "// turbofish expression — `parse::<i32>` is generic_function but\n// type-position turbofish like `Vec::<i32>::new` exercises\n// generic_type_with_turbofish."
+  │       ├─ let/
+  │       │   ├─ pattern[wildcard] = "_"
+  │       │   └─ value/expression/name = "signed"
+  │       ├─ comment = "// turbofish expression — `parse::<i32>` is generic_function but"
+  │       ├─ comment = "// type-position turbofish like `Vec::<i32>::new` exercises"
+  │       ├─ comment[leading] = "// generic_type_with_turbofish."
   │       ├─ let/
   │       │   ├─ name = "v"
   │       │   └─ value/expression/call/path/
@@ -953,7 +952,7 @@ file/
   └─ function[private]/
       ├─ name = "main"
       └─ body/
-          ├─ expression/macro/
+          ├─ macro/
           │   ├─ name = "println"
           │   ├─ string = "\"hello, {}\""
           │   └─ name = "GREETING"
@@ -964,31 +963,38 @@ file/
           │       ├─ int = "1"
           │       ├─ int = "2"
           │       └─ int = "3"
-          ├─ let/value/expression/call/
-          │   ├─ name = "patterns"
-          │   └─ call/
-          │       ├─ path/
-          │       │   ├─ name = "Shape"
-          │       │   └─ name = "Dot"
-          │       ├─ int = "1"
-          │       └─ int = "1"
-          ├─ let/value/expression/call/name = "loops_and_flow"
-          ├─ let/value/expression/call/
-          │   ├─ name = "pattern_zoo"
-          │   ├─ call/
-          │   │   ├─ path/
-          │   │   │   ├─ name = "Point"
-          │   │   │   └─ name = "new"
-          │   │   ├─ int = "1"
-          │   │   ├─ int = "2"
-          │   │   └─ string = "\"p\""
-          │   └─ name = "None"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/
+          │       ├─ name = "patterns"
+          │       └─ call/
+          │           ├─ path/
+          │           │   ├─ name = "Shape"
+          │           │   └─ name = "Dot"
+          │           ├─ int = "1"
+          │           └─ int = "1"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/name = "loops_and_flow"
+          ├─ let/
+          │   ├─ pattern[wildcard] = "_"
+          │   └─ value/expression/call/
+          │       ├─ name = "pattern_zoo"
+          │       ├─ call/
+          │       │   ├─ path/
+          │       │   │   ├─ name = "Point"
+          │       │   │   └─ name = "new"
+          │       │   ├─ int = "1"
+          │       │   ├─ int = "2"
+          │       │   └─ string = "\"p\""
+          │       └─ name = "None"
           └─ let/
+              ├─ pattern[wildcard] = "_"
               ├─ type[generic]/
               │   ├─ name = "Vec"
               │   └─ type[tuple]/
               │       ├─ type[borrowed]/type/name = "str"
-              │       └─ type/name = "i32"
+              │       └─ name = "i32"
               └─ value/expression/macro/
                   ├─ name = "collect_pairs"
                   ├─ name = "a"

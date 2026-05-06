@@ -2,10 +2,9 @@
   "summary": {
     "success": false,
     "totals": {
-      "results": 5,
+      "results": 4,
       "files": 1,
-      "errors": 2,
-      "warnings": 1
+      "errors": 2
     }
   },
   "group": "command",
@@ -28,7 +27,7 @@
                 "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Calculator\npublic int Add(int a, int b) a + b;public int Subtract(int a, int b) a - b;public int Multiply(int a, int b) a * b;",
+              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;",
               "rule_id": "no-class"
             },
             {
@@ -42,17 +41,8 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) \"Hello, \" + name;public string Goodbye(string name) \"Goodbye, \" + name;public void Reset() ",
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }",
               "rule_id": "no-class"
-            },
-            {
-              "reason": "void method found",
-              "severity": "warning",
-              "lines": [
-                "    public void Reset() { }"
-              ],
-              "value": "public void Reset() ",
-              "rule_id": "no-void-method"
             }
           ]
         }
@@ -74,7 +64,7 @@
                 "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Calculator\npublic int Add(int a, int b) a + b;public int Subtract(int a, int b) a - b;public int Multiply(int a, int b) a * b;"
+              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;"
             },
             {
               "lines": [
@@ -85,7 +75,7 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) \"Hello, \" + name;public string Goodbye(string name) \"Goodbye, \" + name;public void Reset() "
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }"
             }
           ]
         }

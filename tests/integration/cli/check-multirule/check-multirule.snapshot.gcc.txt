@@ -14,8 +14,4 @@ tests/integration/sample.cs:9:1: error: class declaration found
 13  |     public void Reset() { }
 14 >| }
 
-tests/integration/sample.cs:13:5: warning: void method found
-13 |     public void Reset() { }
-         ^~~~~~~~~~~~~~~~~~~~~~~
-
 2 errors in 1 file

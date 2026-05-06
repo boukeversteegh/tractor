@@ -1,1 +1,1 @@
-"class[public] (2)/ = \"public class\"\n  ├─ body (2)/\n  │   └─ … (26 children)\n  └─ name (2) = \"Calculator\", \"Greeter\"\n\n(use -d to increase depth, or -x to query specific elements)\n"
+"class[public] (2)/ = \"public class\"\n  ├─ body (2)/\n  │   └─ … (23 children)\n  └─ name (2) = \"Calculator\", \"Greeter\"\n\n(use -d to increase depth, or -x to query specific elements)\n"
