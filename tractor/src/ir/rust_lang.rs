@@ -61,7 +61,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // Literals.
         "integer_literal" => Ir::Int { range, span },
         "float_literal" => Ir::Float { range, span },
-        "string_literal" | "raw_string_literal" => Ir::String { range, span },
+        "string_literal" => Ir::String { range, span },
+        "raw_string_literal" => simple_statement_marked(node, "string", &["raw"], source),
         "char_literal" => simple_statement(node, "char", source),
         "byte_literal" => Ir::String { range, span },
         "boolean_literal" => Ir::SimpleStatement {
@@ -199,30 +200,122 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Field declarations / initializers -----------------------
-        "field_declaration" => simple_statement(node, "field", source),
-        "field_declaration_list" | "ordered_field_declaration_list" => {
+        "field_declaration" => {
+            // `pub x: T` — emit `<field>` with optional `<pub/>`/<private/>
+            // marker, name, type wrapped in `<type>` if leaf.
+            let name_node = node.child_by_field_name("name");
+            let type_node = node.child_by_field_name("type");
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node
-                .named_children(&mut cursor)
-                .map(|c| lower_node(c, source))
-                .collect();
-            Ir::Inline { children, list_name: None, range, span }
+            let mut is_pub = false;
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub") {
+                    is_pub = true;
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            let mut cursor2 = node.walk();
+            for c in node.named_children(&mut cursor2) {
+                match c.kind() {
+                    "visibility_modifier" => {} // skipped — marker on parent
+                    _ => {
+                        if let Some(n) = name_node {
+                            if c.id() == n.id() {
+                                children.push(Ir::Name { range: range_of(c), span: span_of(c) });
+                                continue;
+                            }
+                        }
+                        if let Some(t) = type_node {
+                            if c.id() == t.id() {
+                                let inner = lower_node(c, source);
+                                children.push(wrap_in_type_if_leaf(inner, range_of(c), span_of(c)));
+                                continue;
+                            }
+                        }
+                        children.push(lower_node(c, source));
+                    }
+                }
+            }
+            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &[] };
+            Ir::SimpleStatement {
+                element_name: "field",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
         }
-        "field_initializer" | "shorthand_field_initializer" => {
-            simple_statement(node, "field", source)
+        "field_declaration_list" => simple_statement(node, "body", source),
+        "ordered_field_declaration_list" => simple_statement(node, "body", source),
+        "field_initializer" => {
+            // `name: value` — emit `<field><name>name</name><value><expression>value</expression></value></field>`.
+            // tree-sitter rust uses `field` as the name field.
+            let name_node = node.child_by_field_name("field");
+            let value_node = node.child_by_field_name("value");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(v),
+                        span: span_of(v),
+                    }],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "field",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
         }
-        "field_initializer_list" => {
-            let mut cursor = node.walk();
-            let children: Vec<Ir> = node
-                .named_children(&mut cursor)
-                .map(|c| lower_node(c, source))
-                .collect();
-            Ir::Inline { children, list_name: None, range, span }
-        }
+        "shorthand_field_initializer" => simple_statement(node, "field", source),
+        "field_initializer_list" => simple_statement(node, "body", source),
         "base_field_initializer" => simple_statement_marked(node, "field", &["base"], source),
 
         // ----- Parameters ----------------------------------------------
-        "parameter" => simple_statement(node, "parameter", source),
+        "parameter" => {
+            // `name: T` — emit `<parameter><name>name</name><type><name>T</name></type></parameter>`.
+            let pattern_node = node.child_by_field_name("pattern");
+            let type_node = node.child_by_field_name("type");
+            let mut children: Vec<Ir> = Vec::new();
+            let mut cursor = node.walk();
+            for c in node.named_children(&mut cursor) {
+                if let Some(t) = type_node {
+                    if c.id() == t.id() {
+                        let inner = lower_node(c, source);
+                        children.push(wrap_in_type_if_leaf(inner, range_of(c), span_of(c)));
+                        continue;
+                    }
+                }
+                if let Some(p) = pattern_node {
+                    if c.id() == p.id() {
+                        children.push(lower_node(c, source));
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "parameter",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "self_parameter" => simple_statement_marked(node, "parameter", &["self"], source),
         "variadic_parameter" => simple_statement_marked(node, "parameter", &["variadic"], source),
         "const_parameter" => simple_statement_marked(node, "parameter", &["const"], source),
@@ -244,7 +337,26 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
         "where_clause" => simple_statement(node, "where", source),
         "where_predicate" => simple_statement(node, "bound", source),
-        "trait_bounds" => simple_statement(node, "extends", source),
+        "trait_bounds" => {
+            // `: Trait1 + Trait2 + 'a` — emit `<extends>` with each
+            // bound wrapped in `<type>` if leaf-shaped so XPath sees
+            // `extends/type[name='Trait1']`.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| {
+                    let inner = lower_node(c, source);
+                    wrap_in_type_if_leaf(inner, range_of(c), span_of(c))
+                })
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "extends",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "higher_ranked_trait_bound" => simple_statement_marked(node, "bound", &["higher"], source),
         "removed_trait_bound" => simple_statement_marked(node, "bound", &["optional"], source),
         "constrained_type_parameter" => simple_statement(node, "generic", source),
@@ -649,7 +761,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "index_expression" => simple_statement(node, "index", source),
         "tuple_expression" => simple_statement(node, "tuple", source),
         "array_expression" => simple_statement(node, "array", source),
-        "struct_expression" => simple_statement(node, "struct", source),
+        "struct_expression" => simple_statement(node, "literal", source),
         "binary_expression" => {
             let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
             let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
