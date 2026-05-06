@@ -207,27 +207,34 @@ Foundation done in this session:
 Estimate: 4–8 hours to close the remaining 13 + add language-
 specific modifier markers + delete imperative Java.
 
-### Rust / Go / Ruby / PHP / TSQL — IR scaffolds exist (switch off)
-Each has a `src/ir/<lang>.rs` file with `lower_<lang>_root` and
-`lower_<lang>_node` entry points + atom-level lowering for
-identifiers, literals, comments. Everything else falls through to
-`Ir::Unknown`. The production parser does NOT route any of these
-through the IR pipeline yet; coverage of the imperative path
-remains 100% per `tests/coverage_report.rs`.
+### Rust / Go / Ruby / PHP / TSQL — IR layer 100% covered (switch off)
+Each has a comprehensive `src/ir/<lang>.rs` lowering with full
+per-kind coverage of the respective blueprint:
 
-Each requires per-iteration work to:
-1. Build out per-kind arms (function/class/control flow/expressions).
-2. Hard-switch in `parse_with_ir_pipeline`.
+| Language | Kinds | CST nodes | Roundtrip | Switch |
+|----------|-------|-----------|-----------|--------|
+| Rust     | 144   | 1348      | ✅        | OFF    |
+| Go       | 99    | 1063      | ✅        | OFF    |
+| Ruby     | 105   | 740       | ✅        | OFF    |
+| PHP      | 120   | 921       | ✅        | OFF    |
+| TSQL     | 128   | 799       | ✅        | OFF    |
+
+All 5 produce `0 dropped` + `0 untyped` against their blueprints
+(`tests/ir_<lang>_missing_kinds.rs`). Roundtrip identity
+(`to_source(ir, source) == source`) holds.
+
+**To complete each migration, the next iteration must:**
+1. Hard-switch in `parse_with_ir_pipeline`'s allowlist.
+2. Resolve transform-test divergences (TypeScript took 21 → 0).
 3. Resolve shape-contract violations on each blueprint.
-4. Delete the imperative `<lang>/{input,rules,transformations,
+4. Add per-language post-pass tag-pairs (list= attributes) for
+   JSON $children no-overflow.
+5. Delete imperative `<lang>/{input,rules,transformations,
    transform}.rs`.
 
-Each programming language is comparable in scope to TypeScript
-(~2090 LOC of typed lowering, ~13 transform-test divergences to
-close). Data languages (JSON/YAML/TOML/INI/Markdown) don't have
-blueprint files yet and need the `--set` mutation surface kept
-working via XPath; IR mutation semantics must be carved out
-before deletion.
+Data languages (JSON/YAML/TOML/INI/Markdown) don't have blueprint
+files yet and need the `--set` mutation surface kept working via
+XPath; IR mutation semantics must be carved out before deletion.
 
 ## Suggested next steps (priority)
 1. **Wire IR→JSON for C#** (1–2 h): plumb Ir through ReportMatch
