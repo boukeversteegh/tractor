@@ -418,11 +418,14 @@ impl<'a> Renderer<'a> {
             Ir::Body { children, .. } => {
                 self.add_children(shape, children);
             }
-            Ir::Parameter { kind, extra_markers, name, type_ann, default, .. } => {
+            Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, .. } => {
                 match kind {
                     ParamKind::Args => shape.flag("args"),
                     ParamKind::Kwargs => shape.flag("kwargs"),
                     _ => {}
+                }
+                for m in modifiers.marker_names() {
+                    shape.flag(m);
                 }
                 for m in *extra_markers {
                     shape.flag(m);

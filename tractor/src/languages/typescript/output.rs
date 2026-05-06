@@ -28,7 +28,17 @@ pub enum TractorNode {
     Break, Continue, Body, Do, With, Debugger, Label,
     // Expressions (Rest, This dual-use)
     Call, New, Member, Assign, Binary, Unary, Ternary, Await, Yield, As, Satisfies, Index, Subscript, Pattern,
-    Spread, Rest, Expression, NonNull,
+    Spread, Rest, Expression,
+    #[strum(serialize = "nonnull")]
+    NonNull,
+    Cast, Arm,
+    // Bool literals — unique elements rather than `<bool>true</bool>`.
+    True, False,
+    // Type-shape markers continued
+    Mapped,
+    // Indexer / property signature — already-declared `Indexer` covers index_signature.
+    // Property covered by `Property`.
+    // Sequence_expression already lowered as Inline (no element).
     // Imports / exports (Export dual-use)
     Import, Export, Imports, Spec, Clause, Namespace, Declare,
     // Templates (Template dual-use)
@@ -58,8 +68,10 @@ pub enum TractorNode {
     Keyof,
     // Iter 18: more type / declaration markers
     Existential, Typeof, Static, Asserts,
-    // Unary-shape marker
-    Prefix,
+    // Unary-shape markers
+    Prefix, Postfix,
+    // Collection containers
+    List,
     // Misc structural
     Signature, Hashbang, Attribute,
     // Import-shape markers
@@ -92,20 +104,26 @@ impl TractorNode {
             | Self::Generator | Self::Get | Self::Set
             | Self::Union | Self::Intersection | Self::Literal | Self::Tuple
             | Self::Parenthesized | Self::Conditional | Self::Infer | Self::Lookup
-            | Self::Keyof | Self::Prefix
+            | Self::Keyof | Self::Prefix | Self::Postfix
             | Self::Existential | Self::Typeof | Self::Static | Self::Asserts
             | Self::Group | Self::Sideeffect | Self::Reexport
             | Self::Access                                                          => (true, false, Default),
             Self::Public | Self::Private | Self::Protected | Self::Override
             | Self::Readonly | Self::Abstract | Self::Optional | Self::Required
             | Self::Async
-            | Self::Let | Self::Const | Self::Var
-            | Self::Await                                                          => (true, false, Keyword),
-            Self::NonNull                                                          => (true, false, Operator),
+            | Self::Let | Self::Const | Self::Var                                  => (true, false, Keyword),
+            // `Await` is dual-use: marker on the unary form `await x`
+            // surfaces in `<unary[await]>`, AND structural container
+            // `<await><call>...</call></await>` for the IR-pipeline form.
+            Self::Await                                                            => (true, true, Keyword),
+            Self::NonNull                                                          => (true, true, Operator),
+            Self::Cast | Self::Arm                                                 => (false, true, Default),
+            Self::True | Self::False                                               => (false, true, Keyword),
+            Self::Mapped                                                           => (true, false, Default),
 
             // ---- Dual-use (marker AND container) -----------------------------
             Self::Function | Self::Export | Self::Default                          => (true, true, Keyword),
-            Self::Template | Self::Array | Self::Object                            => (true, true, Default),
+            Self::Template | Self::Array | Self::Object | Self::List               => (true, true, Default),
             // Iter 18: dual-use additions — marker on `<type>` / `<import>`
             // for shape variants while remaining a container in their own
             // declarative role.

@@ -194,6 +194,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Parameter {
                 kind: ParamKind::Regular,
                 extra_markers,
+                modifiers: Modifiers::default(),
                 name: Box::new(match name_node {
                     Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
                     None => Ir::Unknown {
@@ -1334,6 +1335,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         vec![Ir::Parameter {
                             kind: ParamKind::Regular,
                             extra_markers: &[],
+                            modifiers: Modifiers::default(),
                             name: Box::new(Ir::Name { range: pr, span: ps }),
                             type_ann: None,
                             default: None,

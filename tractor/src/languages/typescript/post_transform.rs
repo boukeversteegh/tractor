@@ -82,6 +82,33 @@ pub fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot
             // element types in the blueprint (spread/number).
             ("array", "spread"),
             ("array", "number"),
+            // IR-pipeline additions for TS (cover multi-cardinality
+            // children that overflow $children otherwise):
+            ("import", "spec"),
+            ("spec", "name"),
+            ("type", "name"),
+            ("type", "type"),
+            ("indexer", "type"),
+            ("method", "parameter"),
+            ("function", "parameter"),
+            ("constructor", "parameter"),
+            ("call", "name"),
+            ("class", "extends"),
+            ("class", "method"),
+            ("class", "field"),
+            ("interface", "method"),
+            ("interface", "property"),
+            ("template", "interpolation"),
+            ("template", "string"),
+            ("template", "unknown"),
+            ("as", "name"),
+            ("arrow", "parameter"),
+            ("object", "call"),
+            ("object", "name"),
+            ("call", "interpolation"),
+            ("call", "string"),
+            ("switch", "arm"),
+            ("pair", "name"),
         ],
     )?;
     typescript_restructure_import(xot, root)?;

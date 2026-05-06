@@ -588,9 +588,12 @@ pub enum Ir {
     /// `Args` adds `<args/>`, `Kwargs` adds `<kwargs/>`.
     /// `extra_markers` carries C#-style parameter modifiers
     /// (`<ref/>`, `<out/>`, `<in/>`, `<params/>`, `<this/>`).
+    /// `modifiers` carries TS constructor-parameter access markers
+    /// (`<public/>`, `<private/>`, `<readonly/>`, `<override/>`).
     Parameter {
         kind: ParamKind,
         extra_markers: &'static [&'static str],
+        modifiers: Modifiers,
         name: Box<Ir>,                  // Ir::Name
         type_ann: Option<Box<Ir>>,      // <type>...</type>
         default: Option<Box<Ir>>,       // <value><expression>...</expression></value>

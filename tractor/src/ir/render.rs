@@ -1038,7 +1038,7 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Parameter { kind, extra_markers, name, type_ann, default, range, span } => {
+        Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, range, span } => {
             let node = element(xot, "parameter", *span);
             xot.append(parent, node)?;
             // Marker for *args / **kwargs — first child, empty.
@@ -1052,6 +1052,12 @@ pub fn render_to_xot(
                     xot.append(node, m)?;
                 }
                 ParamKind::Regular => {}
+            }
+            // Access / modifier markers (TS constructor parameter shorthand:
+            // `private readonly id: number`, etc.).
+            for marker in modifiers.marker_names() {
+                let m = element(xot, marker, *span);
+                xot.append(node, m)?;
             }
             for marker in *extra_markers {
                 let m = element(xot, marker, *span);

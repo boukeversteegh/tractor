@@ -333,6 +333,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     children.push(Ir::Parameter {
                         kind: ParamKind::Regular,
                         extra_markers: &["required"],
+                        modifiers: Modifiers::default(),
                         name: Box::new(Ir::Name { range: range_of(p), span: span_of(p) }),
                         type_ann: None,
                         default: None,
@@ -394,11 +395,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 &["required"]
             };
             let modifiers = lower_ts_modifiers(node, source, None);
-            let _ = modifiers;
+            // Tree-sitter labeled-tuple elements (`[head: number]`) emit
+            // a required/optional parameter without a `pattern` field —
+            // the label-identifier becomes the FIRST named child instead.
+            // Fall back to the first named identifier child for the name.
+            let name_fallback = if pattern.is_none() {
+                let mut cursor = node.walk();
+                let found = node.named_children(&mut cursor)
+                    .find(|c| matches!(c.kind(), "identifier" | "type_identifier" | "property_identifier"));
+                found
+            } else {
+                None
+            };
             Ir::Parameter {
                 kind: ParamKind::Regular,
                 extra_markers,
-                name: Box::new(match pattern {
+                modifiers,
+                name: Box::new(match pattern.or(name_fallback) {
                     Some(p) => lower_node(p, source),
                     None => Ir::Unknown {
                         kind: "parameter(missing pattern)".to_string(),
@@ -727,6 +740,41 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // Imports / exports.
         "import_statement" => simple_statement(node, "import", source),
         "export_statement" => simple_statement(node, "export", source),
+        // Import-clause / export-clause / namespace-import / named-imports
+        // are wrapper grammar nodes — flatten their children into the
+        // parent <import>/<export>. The post-pass `typescript_restructure_import`
+        // restructures the resulting flat children into the canonical
+        // shape (default/spec/path).
+        "import_clause" | "export_clause" | "named_imports" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `* as ns` namespace-import — emit as `<namespace><name>ns</name></namespace>`.
+        "namespace_import" => simple_statement(node, "namespace", source),
+        // `import_specifier` / `export_specifier` — `{ namedA }` or `{ namedA as aliasedB }`.
+        "import_specifier" | "export_specifier" => {
+            let name_node = node.child_by_field_name("name");
+            let alias_node = node.child_by_field_name("alias");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            if let Some(a) = alias_node {
+                children.push(Ir::Name { range: range_of(a), span: span_of(a) });
+            }
+            Ir::SimpleStatement {
+                element_name: "spec",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
 
         // Decorators.
         "decorator" => {
@@ -1200,6 +1248,257 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // (predefined_type / type_identifier) so XPath can address
         // `alias/type[name='Y']`. Already-typed inner (generic_type,
         // SimpleStatement<type>) passes through unchanged.
+        // Interface property: `readonly id: string`, `label?: string`,
+        // `value: T`. Lower as `<property>` with markers.
+        "property_signature" => {
+            let name_node = node.child_by_field_name("name");
+            let type_node = node.child_by_field_name("type");
+            // Detect `readonly` and `?` (optional) markers via unnamed children.
+            let mut readonly = false;
+            let mut optional = false;
+            let mut tcursor = node.walk();
+            for c in node.children(&mut tcursor) {
+                if !c.is_named() {
+                    let txt = text_of(c, source);
+                    match txt.as_str() {
+                        "readonly" => readonly = true,
+                        "?" => optional = true,
+                        _ => {}
+                    }
+                }
+            }
+            let mut markers: Vec<&'static str> = Vec::new();
+            if readonly { markers.push("readonly"); }
+            if optional { markers.push("optional"); }
+            let extra_markers: &'static [&'static str] = match markers.as_slice() {
+                [] => &[],
+                ["readonly"] => &["readonly"],
+                ["optional"] => &["optional"],
+                ["readonly", "optional"] => &["readonly", "optional"],
+                _ => &[],
+            };
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(n) = name_node {
+                children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+            }
+            if let Some(t) = type_node {
+                let mut tc = t.walk();
+                let inner = t.named_children(&mut tc).next().unwrap_or(t);
+                let inner_ir = lower_node(inner, source);
+                let already_typed = matches!(
+                    &inner_ir,
+                    Ir::GenericType { .. }
+                        | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    children.push(inner_ir);
+                } else {
+                    let r = inner_ir.range();
+                    let s = inner_ir.span();
+                    children.push(Ir::SimpleStatement {
+                        element_name: "type",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner_ir],
+                        range: r,
+                        span: s,
+                    });
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "property",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range,
+                span,
+            }
+        }
+        // `[K in keyof T]: T[K]` — index signature. Lower as `<indexer>`.
+        "index_signature" => simple_statement(node, "indexer", source),
+        // `await x` — emits `<await>x</await>`.
+        "await_expression" => simple_statement(node, "await", source),
+        // `Foo<T>` as expression position (instantiation_expression).
+        "instantiation_expression" => {
+            let function_node = node.child_by_field_name("function");
+            let type_args_node = node.child_by_field_name("type_arguments");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(f) = function_node { children.push(lower_node(f, source)); }
+            if let Some(ta) = type_args_node {
+                let mut tc = ta.walk();
+                for c in ta.named_children(&mut tc) {
+                    let inner_ir = lower_node(c, source);
+                    let already_typed = matches!(
+                        &inner_ir,
+                        Ir::GenericType { .. }
+                            | Ir::SimpleStatement { element_name: "type", .. }
+                    );
+                    if already_typed {
+                        children.push(inner_ir);
+                    } else {
+                        let r = inner_ir.range();
+                        let s = inner_ir.span();
+                        children.push(Ir::SimpleStatement {
+                            element_name: "type",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![inner_ir],
+                            range: r,
+                            span: s,
+                        });
+                    }
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "type",
+                modifiers: Modifiers::default(),
+                extra_markers: &["generic"],
+                children,
+                range,
+                span,
+            }
+        }
+        // `<T>` after a function/instantiation — flatten as type-children
+        // siblings into the parent.
+        "type_arguments" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| {
+                    let inner_ir = lower_node(c, source);
+                    let already_typed = matches!(
+                        &inner_ir,
+                        Ir::GenericType { .. }
+                            | Ir::SimpleStatement { element_name: "type", .. }
+                    );
+                    if already_typed {
+                        inner_ir
+                    } else {
+                        let r = inner_ir.range();
+                        let s = inner_ir.span();
+                        Ir::SimpleStatement {
+                            element_name: "type",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![inner_ir],
+                            range: r,
+                            span: s,
+                        }
+                    }
+                })
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `label: stmt` — labeled statement.
+        "labeled_statement" => simple_statement(node, "label", source),
+        // `module M { ... }` (TS namespace module body).
+        "internal_module" => simple_statement(node, "namespace", source),
+        // `import M = require(...)`.
+        "import_require_clause" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `class { static { ... } }`.
+        "class_static_block" => simple_statement_marked(node, "block", &["static"], source),
+        // `[a, b = 1]` / `{ a = 1 }` — assignment-pattern with default
+        // value. Inline the children into the parent (the parent
+        // pair_pattern / array_pattern provides the role-element);
+        // wrap the right side in `<value><expression>...` so XPath
+        // can address the default consistently.
+        "assignment_pattern" => {
+            let left = node.child_by_field_name("left");
+            let right = node.child_by_field_name("right");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(l) = left {
+                children.push(lower_node(l, source));
+            }
+            if let Some(r) = right {
+                let inner = lower_node(r, source);
+                let r_range = range_of(r);
+                let r_span = span_of(r);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: r_range,
+                        span: r_span,
+                    }],
+                    range: r_range,
+                    span: r_span,
+                });
+            }
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `{ a: aa = 1 }` in a pattern — `object_assignment_pattern` has a
+        // pair-with-default. Inline to flatten.
+        "object_assignment_pattern_unused" => simple_statement(node, "pair", source),
+        // Regex literal.
+        "regex" => Ir::String { range, span },
+        // Label name in `outer: for (...) { break outer; }`.
+        "statement_identifier" => Ir::Name { range, span },
+        // `yield x` / `yield* x` — emits `<yield>x</yield>`.
+        "yield_expression" => simple_statement(node, "yield", source),
+        // `T?` short-form optional — emit as `<type>` with `optional` marker
+        // wrapping the inner type.
+        "opting_type_annotation" => simple_statement_marked(node, "type", &["optional"], source),
+        // `{ x = 1 }` in destructure — assignment pattern; emit as `<pair>` with the inner.
+        "object_assignment_pattern" => simple_statement(node, "pair", source),
+        // `x!` — non-null assertion, render as `<nonnull>x</nonnull>`.
+        "non_null_expression" => {
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            let children: Vec<Ir> = match inner {
+                Some(i) => vec![lower_node(i, source)],
+                None => Vec::new(),
+            };
+            Ir::SimpleStatement {
+                element_name: "nonnull",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range,
+                span,
+            }
+        }
+        // `this` as a type expression. Render as `<type><name>this</name></type>` shape.
+        "this_type" => Ir::Name { range, span },
+        // `...string[]` rest type — lower as `<type><rest/><type[array]>...` shape.
+        "rest_type" => simple_statement_marked(node, "type", &["rest"], source),
+        // Template literal type segments — lower transparent.
+        "template_type" => Ir::Name { range, span },
+        "string_fragment" => Ir::String { range, span },
+        // `enum E { A = "a" }` — `enum_assignment` is `name = value`.
+        "enum_assignment" => simple_statement(node, "constant", source),
+        // `(x: T)` — formal_parameters used in function-type RHS. Inline.
+        "formal_parameters" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `declare` ambient declarations.
+        "ambient_declaration" => simple_statement(node, "declare", source),
+        // Switch body wraps the cases — lower transparent.
+        "switch_body" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+
         "type_alias_declaration" => {
             let name_node = node.child_by_field_name("name");
             let value_node = node.child_by_field_name("value");
@@ -1266,9 +1565,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
 
-        // Type assertion / as expression.
+        // Type assertion / as expression / satisfies — use `<as>` to match
+        // the imperative pipeline shape (allows nested `<as>` for stacked
+        // assertions like `<T><U>x` — old-style cast inside another).
         "as_expression" | "type_assertion" | "satisfies_expression" => {
-            simple_statement(node, "cast", source)
+            simple_statement(node, "as", source)
         }
 
         // Ternary.
@@ -1610,7 +1911,7 @@ fn lower_ts_modifiers(
             "abstract" => m.abstract_ = true,
             "readonly" => m.readonly = true,
             "async" => m.async_ = true,
-            "override" => m.override_ = true,
+            "override" | "override_modifier" => m.override_ = true,
             _ => {
                 // Token-level keyword detection (some modifiers are unnamed children).
                 if !c.is_named() {
