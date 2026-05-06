@@ -4,9 +4,10 @@
 //! recursively lowers children; unhandled kinds fall through to
 //! `Ir::Unknown`. The renderer in `crate::ir::render` is shared.
 //!
-//! **Status: under construction.** Many kinds typed but NOT yet
-//! production-routed. `parse_with_ir_pipeline`'s allowlist is
-//! unchanged for Go.
+//! Production parser routes Go through this lowering end-to-end
+//! (see `parser::use_ir_pipeline`). The legacy imperative
+//! `languages/go/{rules,transformations,transform}.rs` modules
+//! were retired alongside this migration.
 
 #![cfg(feature = "native")]
 

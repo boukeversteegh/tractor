@@ -5,11 +5,10 @@
 //! `Ir::Unknown`. The renderer in `crate::ir::render` is shared with
 //! the other IR languages.
 //!
-//! **Status: under construction.** Many kinds typed but NOT yet
-//! production-routed. `parse_with_ir_pipeline`'s allowlist is
-//! unchanged for Rust — flipping it requires shape parity with the
-//! existing imperative pipeline (round-trip + XPath text recovery
-//! + 0 unknowns + transform tests + shape contracts).
+//! Production parser routes Rust through this lowering end-to-end
+//! (see `parser::use_ir_pipeline`). The legacy imperative
+//! `languages/rust_lang/{rules,transformations,transform}.rs`
+//! modules were retired alongside this migration.
 
 #![cfg(feature = "native")]
 

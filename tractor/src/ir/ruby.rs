@@ -1,7 +1,9 @@
 //! Ruby tree-sitter CST → IR lowering.
 //!
-//! **Status: under construction.** Production parser does NOT yet
-//! route Ruby through this lowering.
+//! Production parser routes Ruby through this lowering end-to-end
+//! (see `parser::use_ir_pipeline`). The legacy imperative
+//! `languages/ruby/{rules,transformations,transform}.rs` modules
+//! were retired alongside this migration.
 
 #![cfg(feature = "native")]
 
