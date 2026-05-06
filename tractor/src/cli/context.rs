@@ -126,12 +126,11 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
-        // Rayon worker threads default to ~2 MiB stacks. Even with
-        // many `render_to_xot` arms extracted into per-arm helpers,
-        // the dispatcher still needs more than 2 MiB on real-world
-        // workloads. Bump worker stacks to 16 MiB to match the
-        // Windows main-thread reservation (.cargo/config.toml).
-        // Tracked alongside task #85.
+        // Rayon worker threads default to ~2 MiB stacks. The
+        // `render_to_xot` dispatcher's match still has many arms
+        // not yet extracted into per-arm helpers (task #85), so
+        // recursive IR walks on real workloads can exceed 2 MiB.
+        // 16 MiB matches the Windows main-thread reservation.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
             .stack_size(16 * 1024 * 1024)

@@ -344,39 +344,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Try { try_body, handlers, else_body, finally_body, range, span } => {
-            let node = element(xot, "try", *span);
-            xot.append(parent, node)?;
-            // Source-order: try_body, handlers in source order,
-            // else_body (Python only, optional), finally_body (optional).
-            let mut order: Vec<&Ir> = vec![try_body.as_ref()];
-            for h in handlers { order.push(h); }
-            if let Some(e) = else_body { order.push(e.as_ref()); }
-            if let Some(f) = finally_body { order.push(f.as_ref()); }
-            order.sort_by_key(|c| c.range().start);
-            let mut cursor = range.start;
-            for child in &order {
-                let cr = child.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                if std::ptr::eq(*child, try_body.as_ref()) {
-                    render_to_xot(xot, node, child, source)?;
-                } else if else_body.as_ref().map_or(false, |e| std::ptr::eq(*child, e.as_ref())) {
-                    let el = element(xot, "else", child.span());
-                    xot.append(node, el)?;
-                    render_to_xot(xot, el, child, source)?;
-                } else if finally_body.as_ref().map_or(false, |f| std::ptr::eq(*child, f.as_ref())) {
-                    let fin = element(xot, "finally", child.span());
-                    xot.append(node, fin)?;
-                    render_to_xot(xot, fin, child, source)?;
-                } else {
-                    // Handler — already self-rendered as <except>/<catch>.
-                    render_to_xot(xot, node, child, source)?;
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Try { .. } => render_ir_try(xot, parent, ir, source),
         Ir::ExceptHandler { .. } => render_ir_except_handler(xot, parent, ir, source),
         Ir::TypeAlias { name, type_params, value, range, span } => {
             let node = element(xot, "alias", *span);
@@ -460,60 +428,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, ir_range.end, range.end)?;
             Ok(node)
         }
-        Ir::Ternary { condition, if_true, if_false, range, span } => {
-            let node = element(xot, "ternary", *span);
-            xot.append(parent, node)?;
-            // Slot layout: <condition><expression>{cond}</expression></condition>
-            // {if_true wrapped in <expression>}
-            // <else><expression>{if_false}</expression></else>
-            // The slot wrapper element is determined by *which* child
-            // we're emitting, regardless of source order.
-            #[derive(Clone, Copy)]
-            enum Slot<'a> { Cond(&'a Ir), True(&'a Ir), False(&'a Ir) }
-            let mut order: Vec<Slot> = vec![
-                Slot::Cond(condition),
-                Slot::True(if_true),
-                Slot::False(if_false),
-            ];
-            order.sort_by_key(|s| match s {
-                Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i.range().start,
-            });
-            let mut cursor = range.start;
-            for slot in &order {
-                let inner: &Ir = match slot {
-                    Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i,
-                };
-                let cr = inner.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                match slot {
-                    Slot::Cond(_) => {
-                        let cs = element(xot, "condition", inner.span());
-                        xot.append(node, cs)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(cs, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
-                    }
-                    Slot::True(_) => {
-                        let then = element(xot, "then", inner.span());
-                        xot.append(node, then)?;
-                        // No `<expression>` wrapper — Python's
-                        // imperative pipeline emits the inner directly
-                        // as a `<then>` child. C# tests use the same
-                        // flat shape (`<then>` directly contains the
-                        // value or expression-shaped element).
-                        render_to_xot(xot, then, inner, source)?;
-                    }
-                    Slot::False(_) => {
-                        let el = element(xot, "else", inner.span());
-                        xot.append(node, el)?;
-                        render_to_xot(xot, el, inner, source)?;
-                    }
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Ternary { .. } => render_ir_ternary(xot, parent, ir, source),
         Ir::ObjectCreation { type_target, arguments, initializer, range, span } => {
             let node = element(xot, "new", *span);
             xot.append(parent, node)?;
@@ -529,46 +444,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Lambda { modifiers, parameters, body, range, span } => {
-            let node = element(xot, "lambda", *span);
-            xot.append(parent, node)?;
-            for marker in modifiers.marker_names() {
-                let m = element(xot, marker, *span);
-                xot.append(node, m)?;
-            }
-            // Source-order children: parameters then body. The `=>`
-            // token + parens (when present) live in gap text.
-            let mut order: Vec<&Ir> = Vec::new();
-            for p in parameters { order.push(p); }
-            order.push(body.as_ref());
-            order.sort_by_key(|c| c.range().start);
-
-            let is_block_body = matches!(body.as_ref(), Ir::Body { .. });
-            let mut cursor = range.start;
-            for child in &order {
-                let cr = child.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                if std::ptr::eq(*child, body.as_ref()) {
-                    if is_block_body {
-                        // Block-bodied — render as <body> directly.
-                        render_to_xot(xot, node, child, source)?;
-                    } else {
-                        // Expression-bodied — wrap in <value><expression>.
-                        let val = element(xot, "value", child.span());
-                        xot.append(node, val)?;
-                        let expr = element(xot, "expression", child.span());
-                        xot.append(val, expr)?;
-                        render_to_xot(xot, expr, child, source)?;
-                    }
-                } else {
-                    // Parameter — render as-is (Ir::Parameter handles its own wrapping).
-                    render_to_xot(xot, node, child, source)?;
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Lambda { .. } => render_ir_lambda(xot, parent, ir, source),
         Ir::Break { range, span } => {
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;
@@ -581,35 +457,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } => {
-            let node = element(xot, element_name, *span);
-            xot.append(parent, node)?;
-            for marker in modifiers.marker_names() {
-                let m = element(xot, marker, Span::point(span.line, span.column));
-                xot.append(node, m)?;
-            }
-            // Generics expand to flat `<generic>` siblings (not wrapped
-            // in an outer `<generic>` container) — matches the
-            // imperative pipeline's flat-list shape (Principle #12).
-            let mut order: Vec<&Ir> = Vec::new();
-            for d in decorators { order.push(d); }
-            order.push(name.as_ref());
-            if let Some(g) = generics {
-                if let Ir::Generic { items, .. } = g.as_ref() {
-                    for it in items { order.push(it); }
-                } else {
-                    order.push(g.as_ref());
-                }
-            }
-            for p in parameters { order.push(p); }
-            if let Some(r) = returns { order.push(r.as_ref()); }
-            if let Some(b) = body { order.push(b.as_ref()); }
-            order.sort_by_key(|c| c.range().start);
-            render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
-                render_to_xot(xot, parent, child, source).map(|_| ())
-            })?;
-            Ok(node)
-        }
+        Ir::Function { .. } => render_ir_function(xot, parent, ir, source),
         Ir::Class { .. } => render_ir_class(xot, parent, ir, source),
         Ir::Body { children, pass_only, block_wrap, range, span } => {
             let node = element(xot, "body", *span);
@@ -634,73 +482,7 @@ pub fn render_to_xot(
             }
             Ok(node)
         }
-        Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, range, span } => {
-            let node = element(xot, "parameter", *span);
-            xot.append(parent, node)?;
-            // Marker for *args / **kwargs — first child, empty.
-            match kind {
-                ParamKind::Args => {
-                    let m = element(xot, "args", *span);
-                    xot.append(node, m)?;
-                }
-                ParamKind::Kwargs => {
-                    let m = element(xot, "kwargs", *span);
-                    xot.append(node, m)?;
-                }
-                ParamKind::Regular => {}
-            }
-            // Access / modifier markers (TS constructor parameter shorthand:
-            // `private readonly id: number`, etc.).
-            for marker in modifiers.marker_names() {
-                let m = element(xot, marker, *span);
-                xot.append(node, m)?;
-            }
-            for marker in *extra_markers {
-                let m = element(xot, marker, *span);
-                xot.append(node, m)?;
-            }
-            // Source-ordered children: type / name / default. Python
-            // and C# put these in different orders (`x: int = 5` vs
-            // `int x = 5`); sorting by range avoids duplicating bytes
-            // in gap text.
-            #[derive(Clone, Copy)]
-            enum Slot<'a> { Name(&'a Ir), Type(&'a Ir), Default(&'a Ir) }
-            let mut order: Vec<Slot> = vec![Slot::Name(name)];
-            if let Some(t) = type_ann { order.push(Slot::Type(t)); }
-            if let Some(d) = default { order.push(Slot::Default(d)); }
-            order.sort_by_key(|s| match s {
-                Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i.range().start,
-            });
-
-            let mut cursor = range.start;
-            for slot in &order {
-                let inner: &Ir = match slot {
-                    Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i,
-                };
-                let ir_range = inner.range();
-                emit_gap(xot, node, source, cursor, ir_range.start)?;
-                match slot {
-                    Slot::Name(_) => {
-                        render_to_xot(xot, node, inner, source)?;
-                    }
-                    Slot::Type(_) => {
-                        let type_el = element(xot, "type", inner.span());
-                        xot.append(node, type_el)?;
-                        render_to_xot(xot, type_el, inner, source)?;
-                    }
-                    Slot::Default(_) => {
-                        let val = element(xot, "value", inner.span());
-                        xot.append(node, val)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(val, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
-                    }
-                }
-                cursor = ir_range.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Parameter { .. } => render_ir_parameter(xot, parent, ir, source),
         Ir::PositionalSeparator { range, span } => {
             leaf(xot, parent, "positional", source, *range, *span)
         }
@@ -1106,53 +888,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } => {
-            let node = element(xot, element_name, *span);
-            for marker in modifiers.marker_names() {
-                let m = element(xot, marker, *span);
-                xot.append(node, m)?;
-            }
-            xot.append(parent, node)?;
-            // Source order: decorators, type (optional), name, value (optional).
-            let mut order: Vec<&Ir> = Vec::new();
-            for d in decorators { order.push(d); }
-            if let Some(t) = type_ann { order.push(t.as_ref()); }
-            order.push(name.as_ref());
-            if let Some(v) = value { order.push(v.as_ref()); }
-            order.sort_by_key(|c| c.range().start);
-            // Wrap type_ann in <type> when present, but only if the
-            // inner doesn't already produce its own <type> outer
-            // (e.g. Ir::GenericType, or a SimpleStatement with
-            // element_name == "type"). Otherwise we'd render
-            // <type><type>...</type></type> which breaks XPath text
-            // queries like `//type[.='List<string>']`.
-            let mut cursor = range.start;
-            for c in &order {
-                let cr = c.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                if let Some(t) = type_ann {
-                    if std::ptr::eq(*c, t.as_ref()) {
-                        let already_typed = matches!(*c,
-                            Ir::GenericType { .. }
-                                | Ir::SimpleStatement { element_name: "type", .. }
-                        );
-                        if already_typed {
-                            render_to_xot(xot, node, *c, source)?;
-                        } else {
-                            let type_el = element(xot, "type", c.span());
-                            xot.append(node, type_el)?;
-                            render_to_xot(xot, type_el, c, source)?;
-                        }
-                        cursor = cr.end;
-                        continue;
-                    }
-                }
-                render_to_xot(xot, node, *c, source)?;
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Variable { .. } => render_ir_variable(xot, parent, ir, source),
         Ir::Is { value, type_target, range, span } => {
             let node = element(xot, "is", *span);
             xot.append(parent, node)?;
@@ -1811,6 +1547,295 @@ fn render_ir_field_wrap(
     };
     render_to_xot(xot, target, inner, source)?;
     emit_gap(xot, node, source, ir_range.end, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_ternary(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Ternary { condition, if_true, if_false, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "ternary", *span);
+    xot.append(parent, node)?;
+    #[derive(Clone, Copy)]
+    enum Slot<'a> { Cond(&'a Ir), True(&'a Ir), False(&'a Ir) }
+    let mut order: Vec<Slot> = vec![
+        Slot::Cond(condition),
+        Slot::True(if_true),
+        Slot::False(if_false),
+    ];
+    order.sort_by_key(|s| match s {
+        Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i.range().start,
+    });
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i,
+        };
+        let cr = inner.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        match slot {
+            Slot::Cond(_) => {
+                let cs = element(xot, "condition", inner.span());
+                xot.append(node, cs)?;
+                let expr = element(xot, "expression", inner.span());
+                xot.append(cs, expr)?;
+                render_to_xot(xot, expr, inner, source)?;
+            }
+            Slot::True(_) => {
+                let then = element(xot, "then", inner.span());
+                xot.append(node, then)?;
+                render_to_xot(xot, then, inner, source)?;
+            }
+            Slot::False(_) => {
+                let el = element(xot, "else", inner.span());
+                xot.append(node, el)?;
+                render_to_xot(xot, el, inner, source)?;
+            }
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_try(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Try { try_body, handlers, else_body, finally_body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "try", *span);
+    xot.append(parent, node)?;
+    let mut order: Vec<&Ir> = vec![try_body.as_ref()];
+    for h in handlers { order.push(h); }
+    if let Some(e) = else_body { order.push(e.as_ref()); }
+    if let Some(f) = finally_body { order.push(f.as_ref()); }
+    order.sort_by_key(|c| c.range().start);
+    let mut cursor = range.start;
+    for child in &order {
+        let cr = child.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        if std::ptr::eq(*child, try_body.as_ref()) {
+            render_to_xot(xot, node, child, source)?;
+        } else if else_body.as_ref().map_or(false, |e| std::ptr::eq(*child, e.as_ref())) {
+            let el = element(xot, "else", child.span());
+            xot.append(node, el)?;
+            render_to_xot(xot, el, child, source)?;
+        } else if finally_body.as_ref().map_or(false, |f| std::ptr::eq(*child, f.as_ref())) {
+            let fin = element(xot, "finally", child.span());
+            xot.append(node, fin)?;
+            render_to_xot(xot, fin, child, source)?;
+        } else {
+            render_to_xot(xot, node, child, source)?;
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_lambda(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Lambda { modifiers, parameters, body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "lambda", *span);
+    xot.append(parent, node)?;
+    for marker in modifiers.marker_names() {
+        let m = element(xot, marker, *span);
+        xot.append(node, m)?;
+    }
+    let mut order: Vec<&Ir> = Vec::new();
+    for p in parameters { order.push(p); }
+    order.push(body.as_ref());
+    order.sort_by_key(|c| c.range().start);
+
+    let is_block_body = matches!(body.as_ref(), Ir::Body { .. });
+    let mut cursor = range.start;
+    for child in &order {
+        let cr = child.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        if std::ptr::eq(*child, body.as_ref()) {
+            if is_block_body {
+                render_to_xot(xot, node, child, source)?;
+            } else {
+                let val = element(xot, "value", child.span());
+                xot.append(node, val)?;
+                let expr = element(xot, "expression", child.span());
+                xot.append(val, expr)?;
+                render_to_xot(xot, expr, child, source)?;
+            }
+        } else {
+            render_to_xot(xot, node, child, source)?;
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_function(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, element_name, *span);
+    xot.append(parent, node)?;
+    for marker in modifiers.marker_names() {
+        let m = element(xot, marker, Span::point(span.line, span.column));
+        xot.append(node, m)?;
+    }
+    let mut order: Vec<&Ir> = Vec::new();
+    for d in decorators { order.push(d); }
+    order.push(name.as_ref());
+    if let Some(g) = generics {
+        if let Ir::Generic { items, .. } = g.as_ref() {
+            for it in items { order.push(it); }
+        } else {
+            order.push(g.as_ref());
+        }
+    }
+    for p in parameters { order.push(p); }
+    if let Some(r) = returns { order.push(r.as_ref()); }
+    if let Some(b) = body { order.push(b.as_ref()); }
+    order.sort_by_key(|c| c.range().start);
+    render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
+        render_to_xot(xot, parent, child, source).map(|_| ())
+    })?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_parameter(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "parameter", *span);
+    xot.append(parent, node)?;
+    match kind {
+        ParamKind::Args => {
+            let m = element(xot, "args", *span);
+            xot.append(node, m)?;
+        }
+        ParamKind::Kwargs => {
+            let m = element(xot, "kwargs", *span);
+            xot.append(node, m)?;
+        }
+        ParamKind::Regular => {}
+    }
+    for marker in modifiers.marker_names() {
+        let m = element(xot, marker, *span);
+        xot.append(node, m)?;
+    }
+    for marker in *extra_markers {
+        let m = element(xot, marker, *span);
+        xot.append(node, m)?;
+    }
+    #[derive(Clone, Copy)]
+    enum Slot<'a> { Name(&'a Ir), Type(&'a Ir), Default(&'a Ir) }
+    let mut order: Vec<Slot> = vec![Slot::Name(name)];
+    if let Some(t) = type_ann { order.push(Slot::Type(t)); }
+    if let Some(d) = default { order.push(Slot::Default(d)); }
+    order.sort_by_key(|s| match s {
+        Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i.range().start,
+    });
+
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i,
+        };
+        let ir_range = inner.range();
+        emit_gap(xot, node, source, cursor, ir_range.start)?;
+        match slot {
+            Slot::Name(_) => {
+                render_to_xot(xot, node, inner, source)?;
+            }
+            Slot::Type(_) => {
+                let type_el = element(xot, "type", inner.span());
+                xot.append(node, type_el)?;
+                render_to_xot(xot, type_el, inner, source)?;
+            }
+            Slot::Default(_) => {
+                let val = element(xot, "value", inner.span());
+                xot.append(node, val)?;
+                let expr = element(xot, "expression", inner.span());
+                xot.append(val, expr)?;
+                render_to_xot(xot, expr, inner, source)?;
+            }
+        }
+        cursor = ir_range.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_variable(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, element_name, *span);
+    for marker in modifiers.marker_names() {
+        let m = element(xot, marker, *span);
+        xot.append(node, m)?;
+    }
+    xot.append(parent, node)?;
+    let mut order: Vec<&Ir> = Vec::new();
+    for d in decorators { order.push(d); }
+    if let Some(t) = type_ann { order.push(t.as_ref()); }
+    order.push(name.as_ref());
+    if let Some(v) = value { order.push(v.as_ref()); }
+    order.sort_by_key(|c| c.range().start);
+    let mut cursor = range.start;
+    for c in &order {
+        let cr = c.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        if let Some(t) = type_ann {
+            if std::ptr::eq(*c, t.as_ref()) {
+                let already_typed = matches!(*c,
+                    Ir::GenericType { .. }
+                        | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    render_to_xot(xot, node, *c, source)?;
+                } else {
+                    let type_el = element(xot, "type", c.span());
+                    xot.append(node, type_el)?;
+                    render_to_xot(xot, type_el, c, source)?;
+                }
+                cursor = cr.end;
+                continue;
+            }
+        }
+        render_to_xot(xot, node, *c, source)?;
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
     Ok(node)
 }
 
