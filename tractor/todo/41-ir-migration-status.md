@@ -16,10 +16,20 @@ Modifiers struct gained `final_`/`synchronized_`/`transient`/`native`/
 bodies are `Option<Box<Ir>>` so abstract / interface methods skip
 the `<body>` element.
 
-### TypeScript IR scaffold ⚠️ (switch off)
-`src/ir/typescript.rs` (~900 LOC) covers core constructs but a trial
-hard-switch shows 21 transform-test divergences. Foundation done;
-parity work pending.
+### TypeScript IR-only end-to-end ✅
+All 274 transform tests + shape contracts + lib tests pass with
+TypeScript on the IR pipeline. `src/ir/typescript.rs` (~2090 LOC)
+covers the full TS surface including constructor parameter
+shorthand (Modifiers field added to Ir::Parameter), arrow
+expression bodies, type predicates / asserts, accessor get/set,
+import/export clauses, property/index signatures, generators,
+template literals, type assertions, switch expressions, and
+destructuring patterns.
+
+Imperative TS still present (`src/languages/typescript/{input,
+rules,transformations,transform}.rs`) — the IR pipeline takes the
+production path via `parse_with_ir_pipeline`, so the imperative
+files are dead code awaiting deletion.
 
 ### Python IR-only end-to-end ✅
 All 274 transform tests + lib + integration suites pass with Python on
