@@ -207,19 +207,27 @@ Foundation done in this session:
 Estimate: 4–8 hours to close the remaining 13 + add language-
 specific modifier markers + delete imperative Java.
 
-### Other languages (TypeScript/Rust/Go/Ruby/PHP/data) — pending
-None have a `lower_<lang>_root` yet. Each requires:
-1. Build per-language IR lowering (one match arm per CST kind).
+### Rust / Go / Ruby / PHP / TSQL — IR scaffolds exist (switch off)
+Each has a `src/ir/<lang>.rs` file with `lower_<lang>_root` and
+`lower_<lang>_node` entry points + atom-level lowering for
+identifiers, literals, comments. Everything else falls through to
+`Ir::Unknown`. The production parser does NOT route any of these
+through the IR pipeline yet; coverage of the imperative path
+remains 100% per `tests/coverage_report.rs`.
+
+Each requires per-iteration work to:
+1. Build out per-kind arms (function/class/control flow/expressions).
 2. Hard-switch in `parse_with_ir_pipeline`.
 3. Resolve shape-contract violations on each blueprint.
-4. Delete the imperative `<lang>/input.rs`, `rules.rs`,
-   `transformations.rs`, `transform.rs`.
-5. For data languages (JSON/YAML/TOML/INI/Markdown): the `--set`
-   mutation surface MUST keep working via XPath; IR mutation
-   semantics must be carved out before deletion.
+4. Delete the imperative `<lang>/{input,rules,transformations,
+   transform}.rs`.
 
-Each programming language is comparable in scope to C# (~2–4 days
-of focused work). Data languages are smaller but more constrained.
+Each programming language is comparable in scope to TypeScript
+(~2090 LOC of typed lowering, ~13 transform-test divergences to
+close). Data languages (JSON/YAML/TOML/INI/Markdown) don't have
+blueprint files yet and need the `--set` mutation surface kept
+working via XPath; IR mutation semantics must be carved out
+before deletion.
 
 ## Suggested next steps (priority)
 1. **Wire IR→JSON for C#** (1–2 h): plumb Ir through ReportMatch
