@@ -186,7 +186,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["go"],
-        transform: go::transform,
+        transform: passthrough_transform,
         post_transform: Some(go::go_post_transform),
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
@@ -198,7 +198,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["rust", "rs"],
-        transform: rust_lang::transform,
+        transform: passthrough_transform,
         post_transform: Some(rust_lang::rust_post_transform),
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
@@ -222,7 +222,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["ruby", "rb"],
-        transform: ruby::transform,
+        transform: passthrough_transform,
         post_transform: Some(ruby::ruby_post_transform),
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
