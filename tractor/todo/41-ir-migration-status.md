@@ -225,13 +225,27 @@ apply when raw kind names are explicitly requested).
 Imperative `src/languages/rust_lang/{input,rules,transformations,
 transform}.rs` files are now dead code awaiting deletion.
 
-### Go / Ruby / PHP / TSQL — IR layer 100% covered (switch off)
+### Go IR-only end-to-end ✅
+All 274 transform tests + shape contracts + lib tests pass with
+Go on the IR pipeline. `src/ir/go_lang.rs` covers the full Go
+surface including chain inversion (selector_expression / call /
+slice_expression with chain-fold + bounds slots), switch+case
+(both expression and type forms with proper value/type slot
+wrapping), if-elseif chain collapse, struct/interface hoisting
+out of type_spec, method signatures with returns, const/var
+spec value-list flattening, exported/unexported markers, nil →
+`<nil>`, comment classification.
+
+`use_ir_pipeline` allowlist for `go` is ON. Imperative
+`src/languages/go/{input,rules,transformations,transform}.rs`
+files are now dead code awaiting deletion.
+
+### Ruby / PHP / TSQL — IR layer 100% covered (switch off)
 Each has a comprehensive `src/ir/<lang>.rs` lowering with full
 per-kind coverage of the respective blueprint:
 
 | Language | Kinds | CST nodes | Roundtrip | Switch |
 |----------|-------|-----------|-----------|--------|
-| Go       | 99    | 1063      | ✅        | OFF    |
 | Ruby     | 105   | 740       | ✅        | OFF    |
 | PHP      | 120   | 921       | ✅        | OFF    |
 | TSQL     | 128   | 799       | ✅        | OFF    |
