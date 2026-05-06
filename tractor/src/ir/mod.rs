@@ -47,6 +47,10 @@ pub mod csharp;
 pub mod java;
 pub mod typescript;
 pub mod rust_lang;
+pub mod go_lang;
+pub mod ruby;
+pub mod php;
+pub mod tsql;
 #[cfg(feature = "native")]
 pub mod coverage;
 
@@ -63,5 +67,13 @@ pub use java::{lower_java_root, lower_java_node};
 pub use typescript::{lower_typescript_root, lower_typescript_node};
 #[cfg(feature = "native")]
 pub use rust_lang::{lower_rust_root, lower_rust_node};
+#[cfg(feature = "native")]
+pub use go_lang::{lower_go_root, lower_go_node};
+#[cfg(feature = "native")]
+pub use ruby::{lower_ruby_root, lower_ruby_node};
+#[cfg(feature = "native")]
+pub use php::{lower_php_root, lower_php_node};
+#[cfg(feature = "native")]
+pub use tsql::{lower_tsql_root, lower_tsql_node};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};
