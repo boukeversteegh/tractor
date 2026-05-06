@@ -1,17 +1,6 @@
 [build]
 rustc-wrapper = "sccache"
 
-# Test threads (and any worker thread spawned without an explicit
-# stack size) default to 2 MiB. Walkers over the C# blueprint —
-# both the IR `Ir::children()` recursion and the legacy xot tree
-# walks in `transform/` — recurse deep enough to overflow that, on
-# CI Linux + Windows runners and locally. Reserve 16 MiB to match
-# the Windows main-thread stack reserved via `link-arg=/STACK:…`
-# below, so `cargo test` and `cargo run` both work without
-# per-invocation RUST_MIN_STACK env-var incantations.
-[env]
-RUST_MIN_STACK = "16777216"
-
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
 

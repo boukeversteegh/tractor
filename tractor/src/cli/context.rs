@@ -126,13 +126,13 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
-        // Rayon worker threads default to ~2 MiB stacks. The IR walker
-        // and xee evaluator recurse deep enough on the C# blueprint
-        // and large XPath constructors to overflow that. Match the
-        // 16 MiB Windows main-thread stack (set in .cargo/config.toml)
-        // so behavior is consistent across main-thread and worker-thread
-        // execution paths. Linux defaults to 8 MiB main but worker
-        // threads default smaller; this normalizes both.
+        // Rayon worker threads default to ~2 MiB stacks. `render_to_xot`
+        // is a 72-arm match that recurses, and the per-arm locals make
+        // each frame fat enough to overflow 2 MiB after ~30 levels of
+        // C# blueprint nesting — even at release opt-level=3. Bumping
+        // worker stacks to 16 MiB matches the Windows main-thread stack
+        // (set in .cargo/config.toml). Per-arm extraction is the proper
+        // fix; this bandaid stays until that lands.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
             .stack_size(16 * 1024 * 1024)

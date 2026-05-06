@@ -4,6 +4,19 @@ members = [
     "tractor",
 ]
 
+# Bump opt-level for dev/test profiles. Debug builds reserve stack
+# space worst-case across all match arms; the IR renderer's
+# `render_to_xot` is one giant 72-arm match that recurses, so
+# debug-build frames grew large enough to overflow default 2 MiB
+# thread stacks on the C# blueprint. opt-level = 1 enables stack-
+# slot reuse and basic inlining without paying for full release-
+# build time.
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 1
+
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
