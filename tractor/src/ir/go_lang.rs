@@ -120,7 +120,56 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             list_name: None,
             range, span,
         },
-        "short_var_declaration" => simple_statement(node, "variable", source),
+        "short_var_declaration" => {
+            // `i, j := 0, 1` — emit `<variable[short]>` with `<left>` /
+            // `<right>` slot wrappers.
+            let left_node = node.child_by_field_name("left");
+            let right_node = node.child_by_field_name("right");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(l) = left_node {
+                let inner = lower_node(l, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "left",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(l),
+                        span: span_of(l),
+                    }],
+                    range: range_of(l),
+                    span: span_of(l),
+                });
+            }
+            if let Some(r) = right_node {
+                let inner = lower_node(r, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "right",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(r),
+                        span: span_of(r),
+                    }],
+                    range: range_of(r),
+                    span: span_of(r),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "variable",
+                modifiers: Modifiers::default(),
+                extra_markers: &["short"],
+                children,
+                range, span,
+            }
+        }
 
         // ----- Functions / methods -------------------------------------
         "function_declaration" => go_decl_with_export(node, "function", source),
@@ -142,14 +191,82 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "variadic_parameter_declaration" => simple_statement_marked(node, "parameter", &["variadic"], source),
 
         // ----- Control flow --------------------------------------------
-        "if_statement" => simple_statement(node, "if", source),
-        "for_statement" => simple_statement(node, "for", source),
+        "if_statement" => go_if_statement(node, source),
+        "for_statement" => go_for_statement(node, source),
         "for_clause" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
         },
-        "range_clause" => simple_statement(node, "range", source),
+        "range_clause" => {
+            // `k, v := range items` — emit `<range>` with `<left>` and
+            // `<right>` slot wrappers. tree-sitter Go uses fields
+            // `left` and `right` (right being the iterable).
+            let left_node = node.child_by_field_name("left");
+            let right_node = node.child_by_field_name("right");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(l) = left_node {
+                // The left can be an expression_list with multiple items.
+                let mut left_children: Vec<Ir> = Vec::new();
+                if l.kind() == "expression_list" {
+                    let mut lc = l.walk();
+                    for e in l.named_children(&mut lc) {
+                        let inner = lower_node(e, source);
+                        left_children.push(Ir::SimpleStatement {
+                            element_name: "expression",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![inner],
+                            range: range_of(e),
+                            span: span_of(e),
+                        });
+                    }
+                } else {
+                    let inner = lower_node(l, source);
+                    left_children.push(Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(l),
+                        span: span_of(l),
+                    });
+                }
+                children.push(Ir::SimpleStatement {
+                    element_name: "left",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: left_children,
+                    range: range_of(l),
+                    span: span_of(l),
+                });
+            }
+            if let Some(r) = right_node {
+                let inner = lower_node(r, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "right",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(r),
+                        span: span_of(r),
+                    }],
+                    range: range_of(r),
+                    span: span_of(r),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "range",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "expression_switch_statement" => simple_statement(node, "switch", source),
         "type_switch_statement" => simple_statement_marked(node, "switch", &["type"], source),
         "expression_case" | "type_case" | "communication_case" => simple_statement(node, "case", source),
@@ -201,7 +318,47 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         "unary_expression" => simple_statement(node, "unary", source),
-        "assignment_statement" => simple_statement(node, "assign", source),
+        "assignment_statement" => {
+            // `lhs = rhs` / `lhs += rhs` — emit `<assign>` with `<op>`
+            // marker and `<left><expression>` / `<right><expression>`
+            // slots. tree-sitter Go uses fields `left`, `right`,
+            // `operator`.
+            let left_node = node.child_by_field_name("left");
+            let right_node = node.child_by_field_name("right");
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            let op_marker_text = match op_text.as_str() {
+                "=" => "assign",
+                "+=" => "plus",
+                "-=" => "minus",
+                "*=" => "multiply",
+                "/=" => "divide",
+                "%=" => "modulo",
+                "&=" => "bitwise_and",
+                "|=" => "bitwise_or",
+                "^=" => "bitwise_xor",
+                "<<=" => "shift_left",
+                ">>=" => "shift_right",
+                "&^=" => "bitwise_clear",
+                _ => "assign",
+            };
+            match (left_node, right_node) {
+                (Some(l), Some(r)) => Ir::Assign {
+                    targets: vec![lower_node(l, source)],
+                    type_annotation: None,
+                    op_text,
+                    op_range,
+                    op_markers: vec![op_marker_text],
+                    values: vec![lower_node(r, source)],
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "assignment_statement(missing)".to_string(),
+                    range, span,
+                },
+            }
+        }
         "inc_statement" => simple_statement(node, "unary", source),
         "dec_statement" => simple_statement(node, "unary", source),
         // Chain inversion for Go: selector_expression (`obj.field`) +
@@ -431,6 +588,242 @@ fn go_wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
     }
 }
 
+/// Lower a Go for_statement covering all 4 forms (C-style, while,
+/// infinite, range). The body block field renames to `<body>`. A bare
+/// condition expression (while-form) wraps in `<condition><expression>`.
+/// for_clause children are inlined with init slot bare, condition
+/// wrapped in `<condition><expression>`, update bare.
+fn go_for_statement(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let body_node = node.child_by_field_name("body");
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    for c in node.named_children(&mut cursor) {
+        if let Some(b) = body_node {
+            if c.id() == b.id() {
+                let mut bc = c.walk();
+                let body_children: Vec<Ir> = c
+                    .named_children(&mut bc)
+                    .map(|s| lower_node(s, source))
+                    .collect();
+                children.push(Ir::SimpleStatement {
+                    element_name: "body",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: body_children,
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+                continue;
+            }
+        }
+        if c.kind() == "for_clause" {
+            // Inline: each of init/cond/update lifted with proper wrap.
+            let init_node = c.child_by_field_name("initializer");
+            let cond_node = c.child_by_field_name("condition");
+            let upd_node = c.child_by_field_name("update");
+            if let Some(i) = init_node {
+                children.push(lower_node(i, source));
+            }
+            if let Some(cn) = cond_node {
+                let inner = lower_node(cn, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "condition",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(cn),
+                        span: span_of(cn),
+                    }],
+                    range: range_of(cn),
+                    span: span_of(cn),
+                });
+            }
+            if let Some(u) = upd_node {
+                children.push(lower_node(u, source));
+            }
+            continue;
+        }
+        // Wrap a bare expression (while-cond form) in
+        // `<condition><expression>...`.
+        if matches!(
+            c.kind(),
+            "binary_expression" | "unary_expression" | "call_expression"
+                | "selector_expression" | "identifier" | "true" | "false"
+        ) {
+            let inner = lower_node(c, source);
+            children.push(Ir::SimpleStatement {
+                element_name: "condition",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![Ir::SimpleStatement {
+                    element_name: "expression",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(c),
+                    span: span_of(c),
+                }],
+                range: range_of(c),
+                span: span_of(c),
+            });
+            continue;
+        }
+        children.push(lower_node(c, source));
+    }
+    Ir::SimpleStatement {
+        element_name: "for",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower a Go if_statement to canonical `<if>` shape with
+/// condition/then/else slots. Else-if chains collapse to flat
+/// `<else_if>`/`<else>` siblings.
+fn go_if_statement(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let init_node = node.child_by_field_name("initializer");
+    let cond_node = node.child_by_field_name("condition");
+    let consequence_node = node.child_by_field_name("consequence");
+    let alternative_node = node.child_by_field_name("alternative");
+    let mut children: Vec<Ir> = Vec::new();
+    if let Some(i) = init_node {
+        children.push(lower_node(i, source));
+    }
+    if let Some(c) = cond_node {
+        let inner = lower_node(c, source);
+        children.push(Ir::SimpleStatement {
+            element_name: "condition",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![Ir::SimpleStatement {
+                element_name: "expression",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: range_of(c),
+                span: span_of(c),
+            }],
+            range: range_of(c),
+            span: span_of(c),
+        });
+    }
+    if let Some(c) = consequence_node {
+        let mut bc = c.walk();
+        let body_children: Vec<Ir> = c
+            .named_children(&mut bc)
+            .map(|s| lower_node(s, source))
+            .collect();
+        children.push(Ir::SimpleStatement {
+            element_name: "then",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![Ir::SimpleStatement {
+                element_name: "body",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: body_children,
+                range: range_of(c),
+                span: span_of(c),
+            }],
+            range: range_of(c),
+            span: span_of(c),
+        });
+    }
+    let mut cur_alt = alternative_node;
+    while let Some(a) = cur_alt {
+        if a.kind() == "if_statement" {
+            // else-if chain — flatten as <else_if>.
+            let inner_cond = a.child_by_field_name("condition");
+            let inner_cons = a.child_by_field_name("consequence");
+            let inner_alt = a.child_by_field_name("alternative");
+            let mut else_if_children: Vec<Ir> = Vec::new();
+            if let Some(c) = inner_cond {
+                let inner = lower_node(c, source);
+                else_if_children.push(Ir::SimpleStatement {
+                    element_name: "condition",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(c),
+                        span: span_of(c),
+                    }],
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+            }
+            if let Some(c) = inner_cons {
+                let mut bc = c.walk();
+                let body_children: Vec<Ir> = c
+                    .named_children(&mut bc)
+                    .map(|s| lower_node(s, source))
+                    .collect();
+                else_if_children.push(Ir::SimpleStatement {
+                    element_name: "body",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: body_children,
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+            }
+            children.push(Ir::SimpleStatement {
+                element_name: "else_if",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: else_if_children,
+                range: range_of(a),
+                span: span_of(a),
+            });
+            cur_alt = inner_alt;
+        } else {
+            // Plain else block.
+            let mut bc = a.walk();
+            let body_children: Vec<Ir> = a
+                .named_children(&mut bc)
+                .map(|s| lower_node(s, source))
+                .collect();
+            children.push(Ir::SimpleStatement {
+                element_name: "else",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![Ir::SimpleStatement {
+                    element_name: "body",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: body_children,
+                    range: range_of(a),
+                    span: span_of(a),
+                }],
+                range: range_of(a),
+                span: span_of(a),
+            });
+            cur_alt = None;
+        }
+    }
+    Ir::SimpleStatement {
+        element_name: "if",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range, span,
+    }
+}
+
 /// Lower a declaration whose name child uses field name "name", and
 /// add `<exported/>`/`<unexported/>` marker by case of first
 /// character. `_` (blank identifier) emits no marker.
@@ -468,9 +861,11 @@ fn go_decl_with_export_first_name(node: TsNode<'_>, element_name: &'static str, 
 }
 
 /// Lower a Go function/method declaration with `<exported/>`/`<unexported/>`
-/// marker derived from the name's first-character capitalisation.
+/// marker. The body block field renames to `<body>` with inner
+/// statements lowered directly.
 fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let name_node = node.child_by_field_name("name");
+    let body_node = node.child_by_field_name("body");
     let name_text = name_node.map(|n| text_of(n, source)).unwrap_or_default();
     let extra_markers: &'static [&'static str] = if is_exported(&name_text) {
         &["exported"]
@@ -478,10 +873,28 @@ fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &st
         &["unexported"]
     };
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node
-        .named_children(&mut cursor)
-        .map(|c| lower_node(c, source))
-        .collect();
+    let mut children: Vec<Ir> = Vec::new();
+    for c in node.named_children(&mut cursor) {
+        if let Some(b) = body_node {
+            if c.id() == b.id() {
+                let mut bc = c.walk();
+                let body_children: Vec<Ir> = c
+                    .named_children(&mut bc)
+                    .map(|s| lower_node(s, source))
+                    .collect();
+                children.push(Ir::SimpleStatement {
+                    element_name: "body",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: body_children,
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+                continue;
+            }
+        }
+        children.push(lower_node(c, source));
+    }
     Ir::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
