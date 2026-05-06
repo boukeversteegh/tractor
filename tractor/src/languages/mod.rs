@@ -140,10 +140,12 @@ pub struct LanguageOps {
 /// fan-out collapses to simple `iter().find()` calls below.
 pub const LANGUAGES: &[LanguageOps] = &[
     LanguageOps {
-        ids: &["typescript", "ts"],
-        // TS flows entirely through `crate::ir::typescript`. The
-        // imperative walker is no longer reachable; passthrough
+        // TS + JS both flow through `crate::ir::typescript` —
+        // tree-sitter's TS / JS grammars share most node kinds and
+        // TS is a superset, so a single lower function handles both.
+        // The imperative walker is no longer reachable; passthrough
         // satisfies the registry contract.
+        ids: &["typescript", "ts", "javascript", "js"],
         transform: passthrough_transform,
         post_transform: Some(typescript::typescript_post_transform),
         syntax_category: typescript::syntax_category,
@@ -155,11 +157,10 @@ pub const LANGUAGES: &[LanguageOps] = &[
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
-        // JS / TSX still go through the imperative walker. JS has
-        // no IR yet (no `lower_javascript_root`); TSX has JSX-only
-        // node kinds that the TS IR doesn't lower. Both share TS's
-        // post_transform / output vocabulary.
-        ids: &["javascript", "js", "jsx", "tsx"],
+        // TSX / JSX still go through the imperative walker — JSX
+        // node kinds (jsx_element, jsx_attribute, …) aren't lowered
+        // by the TS IR yet.
+        ids: &["jsx", "tsx"],
         transform: typescript::transform,
         post_transform: Some(typescript::typescript_post_transform),
         syntax_category: typescript::syntax_category,

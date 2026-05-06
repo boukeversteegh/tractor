@@ -343,7 +343,21 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
 /// imperative `transform/` path is no longer exercised for that
 /// language. Adding a language here is the production-rollout flip.
 fn use_ir_pipeline(lang: &str) -> bool {
-    matches!(lang, "csharp" | "python" | "java" | "typescript" | "rust" | "go" | "ruby" | "php")
+    // Accept canonical names and common aliases — config files / rules
+    // often use the alias (e.g. `language: js`) before language detection
+    // resolves it to the canonical id.
+    matches!(
+        lang,
+        "csharp" | "cs"
+        | "python" | "py"
+        | "java"
+        | "typescript" | "ts"
+        | "javascript" | "js"
+        | "rust" | "rs"
+        | "go"
+        | "ruby" | "rb"
+        | "php"
+    )
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)
@@ -432,13 +446,18 @@ fn parse_with_ir_pipeline(
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
     let ir_tree = match lang {
-        "csharp" => ir::lower_csharp_root(tree.root_node(), source),
-        "python" => ir::lower_python_root(tree.root_node(), source),
+        "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
+        "python" | "py" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
-        "typescript" => ir::lower_typescript_root(tree.root_node(), source),
-        "rust" => ir::lower_rust_root(tree.root_node(), source),
+        // JavaScript shares the TS IR — TS is a strict superset and
+        // tree-sitter's TS/JS grammars share most node kinds. JS-only
+        // shapes fall through to `Ir::Unknown` and surface in the
+        // missing-kinds audit until added.
+        "typescript" | "ts" | "javascript" | "js"
+            => ir::lower_typescript_root(tree.root_node(), source),
+        "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
         "go" => ir::lower_go_root(tree.root_node(), source),
-        "ruby" => ir::lower_ruby_root(tree.root_node(), source),
+        "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
         "php" => ir::lower_php_root(tree.root_node(), source),
         "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
@@ -506,13 +525,14 @@ fn parse_with_ir_pipeline_to_xee(
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
     let ir_tree = match lang {
-        "csharp" => ir::lower_csharp_root(tree.root_node(), source),
-        "python" => ir::lower_python_root(tree.root_node(), source),
+        "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
+        "python" | "py" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
-        "typescript" => ir::lower_typescript_root(tree.root_node(), source),
-        "rust" => ir::lower_rust_root(tree.root_node(), source),
+        "typescript" | "ts" | "javascript" | "js"
+            => ir::lower_typescript_root(tree.root_node(), source),
+        "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
         "go" => ir::lower_go_root(tree.root_node(), source),
-        "ruby" => ir::lower_ruby_root(tree.root_node(), source),
+        "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
         "php" => ir::lower_php_root(tree.root_node(), source),
         "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
