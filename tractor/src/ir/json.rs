@@ -171,7 +171,11 @@ impl<'a> Renderer<'a> {
             Ir::Property { .. } => "property",
             Ir::Accessor { kind, .. } => kind,
             Ir::Constructor { .. } => "constructor",
-            Ir::Using { .. } => "using",
+            // C# `using_directive` is exposed in the imperative
+            // pipeline (and JSON snapshots) as `<import>` — keep
+            // ir_to_json on that name. Block-scoped `using_statement`
+            // is a different kind (handled via SimpleStatement "using").
+            Ir::Using { .. } => "import",
             Ir::Namespace { .. } => "namespace",
             Ir::Variable { element_name, .. } => element_name,
             Ir::Is { .. } => "is",
