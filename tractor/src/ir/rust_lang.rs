@@ -122,8 +122,105 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             Ir::Inline { children, list_name: None, range, span }
         }
         "union_item" => rust_decl(node, "union", source),
-        "trait_item" => rust_decl(node, "trait", source),
-        "impl_item" => simple_statement(node, "impl", source),
+        "trait_item" => {
+            // `trait Foo { ... }` — wrap declaration_list body in `<body>`.
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut is_pub = false;
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "visibility_modifier" {
+                    if text_of(c, source).starts_with("pub") { is_pub = true; }
+                    continue;
+                }
+                if let Some(b) = body_node {
+                    if c.id() == b.id() {
+                        let mut bc = c.walk();
+                        let body_children: Vec<Ir> = c
+                            .named_children(&mut bc)
+                            .map(|s| lower_node(s, source))
+                            .collect();
+                        children.push(Ir::SimpleStatement {
+                            element_name: "body",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: body_children,
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+            Ir::SimpleStatement {
+                element_name: "trait",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
+        "impl_item" => {
+            // `impl Trait for Type { ... }` — wrap trait in `<implements>`,
+            // wrap target type in `<type>` if leaf, body block to `<body>`.
+            let trait_node = node.child_by_field_name("trait");
+            let type_node = node.child_by_field_name("type");
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if let Some(t) = trait_node {
+                    if c.id() == t.id() {
+                        let inner = lower_node(c, source);
+                        let typed = wrap_in_type_if_leaf(inner, range_of(c), span_of(c));
+                        children.push(Ir::SimpleStatement {
+                            element_name: "implements",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![typed],
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                if let Some(t) = type_node {
+                    if c.id() == t.id() {
+                        let inner = lower_node(c, source);
+                        children.push(wrap_in_type_if_leaf(inner, range_of(c), span_of(c)));
+                        continue;
+                    }
+                }
+                if let Some(b) = body_node {
+                    if c.id() == b.id() {
+                        let mut bc = c.walk();
+                        let body_children: Vec<Ir> = c
+                            .named_children(&mut bc)
+                            .map(|s| lower_node(s, source))
+                            .collect();
+                        children.push(Ir::SimpleStatement {
+                            element_name: "body",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: body_children,
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "impl",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "type_item" => {
             // `type Id = u32;` — alias. Detect visibility, wrap target type in `<type>`.
             let name_node = node.child_by_field_name("name");
@@ -471,6 +568,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // siblings of the parent <body>/<block> (no <expression>
             // host). Other expressions wrap in `<expression>` to host
             // the inner expression.
+            //
+            // try_expression (`expr?`) gets special treatment: the `?`
+            // marker rides as `<try/>` on the surrounding expression
+            // host instead of producing a nested `<try><inner/></try>`
+            // element (avoids double-wrap per the imperative shape).
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
@@ -484,19 +586,33 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                             | "macro_invocation"
                     );
                     if bare {
-                        Ir::Inline {
+                        return Ir::Inline {
                             children: vec![lower_node(i, source)],
                             list_name: None,
                             range, span,
+                        };
+                    }
+                    // Detect try_expression: pull the `?` operand up
+                    // and put `<try/>` marker on the expression host.
+                    if i.kind() == "try_expression" {
+                        let mut tcursor = i.walk();
+                        let operand = i.named_children(&mut tcursor).next();
+                        if let Some(o) = operand {
+                            return Ir::SimpleStatement {
+                                element_name: "expression",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &["try"],
+                                children: vec![lower_node(o, source)],
+                                range, span,
+                            };
                         }
-                    } else {
-                        Ir::SimpleStatement {
-                            element_name: "expression",
-                            modifiers: Modifiers::default(),
-                            extra_markers: &[],
-                            children: vec![lower_node(i, source)],
-                            range, span,
-                        }
+                    }
+                    Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![lower_node(i, source)],
+                        range, span,
                     }
                 }
                 None => Ir::Inline {
@@ -758,7 +874,33 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         "generic_function" => simple_statement_marked(node, "call", &["generic"], source),
-        "index_expression" => simple_statement(node, "index", source),
+        "index_expression" => {
+            // `expr[index]` — fold into Ir::Access if expr is a chain.
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            if let (Some(obj), Some(idx)) = (kids.first(), kids.get(1)) {
+                let object_ir = lower_node(*obj, source);
+                let index_ir = lower_node(*idx, source);
+                let segment_range = ByteRange::new(object_ir.range().end, range.end);
+                let segment = AccessSegment::Index {
+                    indices: vec![index_ir],
+                    range: segment_range,
+                    span,
+                };
+                return match object_ir {
+                    Ir::Access { receiver, mut segments, .. } => {
+                        segments.push(segment);
+                        Ir::Access { receiver, segments, range, span }
+                    }
+                    other => Ir::Access {
+                        receiver: Box::new(other),
+                        segments: vec![segment],
+                        range, span,
+                    },
+                };
+            }
+            simple_statement(node, "index", source)
+        }
         "tuple_expression" => simple_statement(node, "tuple", source),
         "array_expression" => simple_statement(node, "array", source),
         "struct_expression" => simple_statement(node, "literal", source),
