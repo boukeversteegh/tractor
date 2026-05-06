@@ -5,18 +5,17 @@
 //! `Ir::Unknown`. The renderer in `crate::ir::render` is shared with
 //! the other IR languages.
 //!
-//! **Status: scaffold.** Most CST kinds still fall through to
-//! `Ir::Unknown`. The production parser does NOT yet route Rust
-//! through this lowering — `parse_with_ir_pipeline`'s allowlist
-//! must add `"rust"` once round-trip + XPath text recovery hold and
-//! the major construct shapes are typed. Diagnostic via
-//! `tests/coverage_report.rs`.
+//! **Status: under construction.** Many kinds typed but NOT yet
+//! production-routed. `parse_with_ir_pipeline`'s allowlist is
+//! unchanged for Rust — flipping it requires shape parity with the
+//! existing imperative pipeline (round-trip + XPath text recovery
+//! + 0 unknowns + transform tests + shape contracts).
 
 #![cfg(feature = "native")]
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{ByteRange, Ir, Modifiers, Span};
+use super::types::{Access, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`Ir`].
 pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -24,7 +23,7 @@ pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> Ir {
     let range = range_of(root);
     match root.kind() {
         "source_file" => Ir::Module {
-            element_name: "program",
+            element_name: "file",
             children: lower_children(root, source),
             range,
             span,
@@ -48,28 +47,40 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     match node.kind() {
         // ----- Atoms ---------------------------------------------------
         "identifier" | "type_identifier" | "field_identifier"
-        | "shorthand_field_identifier" | "primitive_type" | "scoped_identifier"
-        | "scoped_type_identifier" | "self" | "super"
-        | "metavariable" | "lifetime" | "label" => Ir::Name { range, span },
+        | "shorthand_field_identifier" | "primitive_type" | "self"
+        | "super" | "super_" | "metavariable" | "label" => Ir::Name { range, span },
 
+        // `'a` lifetime — leaf name (text includes the apostrophe).
+        "lifetime" => simple_statement(node, "lifetime", source),
+
+        // Path-form identifiers (`std::collections::HashMap`).
+        "scoped_identifier" | "scoped_type_identifier" => {
+            simple_statement(node, "path", source)
+        }
+
+        // Literals.
         "integer_literal" => Ir::Int { range, span },
         "float_literal" => Ir::Float { range, span },
-        "string_literal" | "raw_string_literal" | "char_literal"
-        | "byte_literal" | "string_content" => Ir::String { range, span },
-        "boolean_literal" => {
-            // Tree-sitter boolean_literal — text is "true" or "false".
-            // Use simple_statement with an "true"/"false" element name; the
-            // existing IR doesn't have True/False variants for Rust so we
-            // emit `<bool>true|false</bool>` as a leaf.
-            Ir::SimpleStatement {
-                element_name: "bool",
-                modifiers: Modifiers::default(),
-                extra_markers: &[],
-                children: Vec::new(),
-                range,
-                span,
-            }
-        }
+        "string_literal" | "raw_string_literal" => Ir::String { range, span },
+        "char_literal" => simple_statement(node, "char", source),
+        "byte_literal" => Ir::String { range, span },
+        "boolean_literal" => Ir::SimpleStatement {
+            element_name: "bool",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range,
+            span,
+        },
+        "negative_literal" => simple_statement_marked(node, "literal", &["negative"], source),
+        "unit_expression" => Ir::SimpleStatement {
+            element_name: "literal",
+            modifiers: Modifiers::default(),
+            extra_markers: &["unit"],
+            children: Vec::new(),
+            range,
+            span,
+        },
 
         // ----- Comments ------------------------------------------------
         "line_comment" | "block_comment" | "doc_comment" => Ir::Comment {
@@ -79,15 +90,334 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
 
-        // ----- Source-file children fall through to Inline -------------
-        // Most top-level items remain as Unknown until each is typed.
-        // The fallback below preserves source bytes via gap text.
+        // ----- Module / file structure ---------------------------------
+        // `mod name { ... }` — a Rust module.
+        "mod_item" => simple_statement(node, "mod", source),
 
+        // `use std::collections::HashMap;` — use declaration.
+        "use_declaration" => simple_statement(node, "use", source),
+        "use_as_clause" | "use_list" | "scoped_use_list" | "use_wildcard"
+        | "use_bounds" => {
+            // Wrapper grammar — flatten children into the parent.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        // `extern crate alloc;`.
+        "extern_crate_declaration" => simple_statement_marked(node, "use", &["extern"], source),
+
+        // ----- Items: struct / enum / trait / impl / function / type --
+        "struct_item" => simple_statement(node, "struct", source),
+        "enum_item" => simple_statement(node, "enum", source),
+        "enum_variant" => simple_statement(node, "variant", source),
+        "enum_variant_list" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        "union_item" => simple_statement(node, "union", source),
+        "trait_item" => simple_statement(node, "trait", source),
+        "impl_item" => simple_statement(node, "impl", source),
+        "type_item" => simple_statement(node, "alias", source),
+        "const_item" => simple_statement(node, "const", source),
+        "static_item" => simple_statement(node, "static", source),
+        "function_item" | "function_signature_item" => {
+            simple_statement(node, "function", source)
+        }
+        "macro_definition" => simple_statement_marked(node, "macro", &["definition"], source),
+        "macro_rule" => simple_statement(node, "arm", source),
+        "macro_invocation" => simple_statement(node, "macro", source),
+        "associated_type" => simple_statement_marked(node, "type", &["associated"], source),
+        "type_binding" => simple_statement_marked(node, "type", &["associated"], source),
+
+        // Visibility modifier (`pub`, `pub(crate)`, etc.) — surfaces as
+        // a marker child via the parent item's modifier handling. For
+        // now, return as a marker-only SimpleStatement.
+        "visibility_modifier" => simple_statement(node, "public", source),
+        // `mut` / `const` modifiers.
+        "mutable_specifier" => Ir::Inline {
+            children: Vec::new(),
+            list_name: None,
+            range,
+            span,
+        },
+        "function_modifiers" | "extern_modifier" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Field declarations / initializers -----------------------
+        "field_declaration" => simple_statement(node, "field", source),
+        "field_declaration_list" | "ordered_field_declaration_list" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        "field_initializer" | "shorthand_field_initializer" => {
+            simple_statement(node, "field", source)
+        }
+        "field_initializer_list" => {
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::Inline { children, list_name: None, range, span }
+        }
+        "base_field_initializer" => simple_statement_marked(node, "field", &["base"], source),
+
+        // ----- Parameters ----------------------------------------------
+        "parameter" => simple_statement(node, "parameter", source),
+        "self_parameter" => simple_statement_marked(node, "parameter", &["self"], source),
+        "variadic_parameter" => simple_statement_marked(node, "parameter", &["variadic"], source),
+        "const_parameter" => simple_statement_marked(node, "parameter", &["const"], source),
+        "parameters" | "closure_parameters" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: Some("parameters"),
+            range,
+            span,
+        },
+
+        // ----- Generics ------------------------------------------------
+        "type_parameter" => simple_statement(node, "generic", source),
+        "lifetime_parameter" => simple_statement(node, "lifetime", source),
+        "type_parameters" | "type_arguments" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: Some("arguments"),
+            range,
+            span,
+        },
+        "where_clause" => simple_statement(node, "where", source),
+        "where_predicate" => simple_statement(node, "bound", source),
+        "trait_bounds" => simple_statement(node, "extends", source),
+        "higher_ranked_trait_bound" => simple_statement_marked(node, "bound", &["higher"], source),
+        "removed_trait_bound" => simple_statement_marked(node, "bound", &["optional"], source),
+        "constrained_type_parameter" => simple_statement(node, "generic", source),
+        "optional_type_parameter" => simple_statement(node, "generic", source),
+
+        // ----- Type-shape grammar --------------------------------------
+        "abstract_type" => simple_statement_marked(node, "type", &["abstract"], source),
+        "array_type" => simple_statement_marked(node, "type", &["array"], source),
+        "tuple_type" => simple_statement_marked(node, "type", &["tuple"], source),
+        "unit_type" => simple_statement_marked(node, "type", &["unit"], source),
+        "never_type" => simple_statement_marked(node, "type", &["never"], source),
+        "function_type" => simple_statement_marked(node, "type", &["function"], source),
+        "dynamic_type" => simple_statement_marked(node, "type", &["dynamic"], source),
+        "pointer_type" => simple_statement_marked(node, "type", &["pointer"], source),
+        "reference_type" => simple_statement_marked(node, "type", &["reference"], source),
+        "bounded_type" => simple_statement_marked(node, "type", &["bounded"], source),
+        "generic_type" => simple_statement_marked(node, "type", &["generic"], source),
+        "generic_type_with_turbofish" => {
+            simple_statement_marked(node, "type", &["turbofish"], source)
+        }
+        "qualified_type" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+        "bracketed_type" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Statements ----------------------------------------------
+        "let_declaration" => simple_statement(node, "variable", source),
+        "expression_statement" => simple_statement(node, "expression", source),
+        "empty_statement" => Ir::Inline {
+            children: Vec::new(),
+            list_name: None,
+            range,
+            span,
+        },
+        "block" => simple_statement(node, "block", source),
+        "async_block" => simple_statement_marked(node, "block", &["async"], source),
+        "const_block" => simple_statement_marked(node, "block", &["const"], source),
+        "try_block" => simple_statement_marked(node, "block", &["try"], source),
+        "gen_block" => simple_statement_marked(node, "block", &["gen"], source),
+        "unsafe_block" => simple_statement(node, "unsafe", source),
+        "declaration_list" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Control flow --------------------------------------------
+        "if_expression" => simple_statement(node, "if", source),
+        "else_clause" => simple_statement(node, "else", source),
+        "let_chain" | "let_condition" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+        "match_expression" => simple_statement(node, "match", source),
+        "match_arm" => simple_statement(node, "arm", source),
+        "match_block" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+        "match_pattern" => simple_statement(node, "pattern", source),
+        "for_expression" => simple_statement(node, "for", source),
+        "while_expression" => simple_statement(node, "while", source),
+        "loop_expression" => simple_statement(node, "loop", source),
+        "return_expression" => simple_statement(node, "return", source),
+        "break_expression" => simple_statement(node, "break", source),
+        "continue_expression" => simple_statement(node, "continue", source),
+        "yield_expression" => simple_statement(node, "yield", source),
+
+        // ----- Expressions ---------------------------------------------
+        "call_expression" => simple_statement(node, "call", source),
+        "generic_function" => simple_statement_marked(node, "call", &["generic"], source),
+        "field_expression" => simple_statement(node, "field", source),
+        "index_expression" => simple_statement(node, "index", source),
+        "tuple_expression" => simple_statement(node, "tuple", source),
+        "array_expression" => simple_statement(node, "array", source),
+        "struct_expression" => simple_statement(node, "struct", source),
+        "binary_expression" => simple_statement(node, "binary", source),
+        "unary_expression" => simple_statement(node, "unary", source),
+        "assignment_expression" => simple_statement(node, "assign", source),
+        "compound_assignment_expr" => simple_statement(node, "assign", source),
+        "type_cast_expression" => simple_statement(node, "cast", source),
+        "reference_expression" => simple_statement(node, "ref", source),
+        "await_expression" => simple_statement(node, "await", source),
+        "try_expression" => simple_statement(node, "try", source),
+        "range_expression" => simple_statement(node, "range", source),
+        "closure_expression" => simple_statement(node, "closure", source),
+        "parenthesized_expression" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Patterns ------------------------------------------------
+        "captured_pattern" => simple_statement_marked(node, "pattern", &["capture"], source),
+        "generic_pattern" => simple_statement_marked(node, "pattern", &["generic"], source),
+        "reference_pattern" => simple_statement_marked(node, "pattern", &["ref"], source),
+        "remaining_field_pattern" => simple_statement_marked(node, "pattern", &["rest"], source),
+        "slice_pattern" => simple_statement_marked(node, "pattern", &["slice"], source),
+        "tuple_pattern" => simple_statement_marked(node, "pattern", &["tuple"], source),
+        "tuple_struct_pattern" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+        "token_binding_pattern" => simple_statement_marked(node, "pattern", &["binding"], source),
+        "field_pattern" => simple_statement_marked(node, "pattern", &["field"], source),
+        "or_pattern" => simple_statement_marked(node, "pattern", &["or"], source),
+        "mut_pattern" => simple_statement_marked(node, "pattern", &["mut"], source),
+        "ref_pattern" => simple_statement_marked(node, "pattern", &["ref"], source),
+        "struct_pattern" => simple_statement_marked(node, "pattern", &["struct"], source),
+        "range_pattern" => simple_statement(node, "range", source),
+
+        // ----- Argument / parameter wrappers ---------------------------
+        "arguments" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: Some("arguments"),
+            range,
+            span,
+        },
+        "fragment_specifier" => simple_statement(node, "fragment", source),
+        "token_repetition" | "token_repetition_pattern" => {
+            simple_statement(node, "repetition", source)
+        }
+        "token_tree" | "token_tree_pattern" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+        "string_content" => Ir::Inline {
+            children: Vec::new(),
+            list_name: None,
+            range,
+            span,
+        },
+        "escape_sequence" => Ir::Inline {
+            children: Vec::new(),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Attributes ----------------------------------------------
+        "attribute_item" | "inner_attribute_item" => {
+            simple_statement(node, "attribute", source)
+        }
+        "attribute" => Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range,
+            span,
+        },
+
+        // ----- Foreign / extern blocks ---------------------------------
+        "foreign_mod_item" => simple_statement_marked(node, "mod", &["foreign", "extern"], source),
+
+        // ----- Crate marker --------------------------------------------
+        "crate" => Ir::Name { range, span },
+
+        // Default: surface as <unknown> so coverage diagnostics show it.
         other => Ir::Unknown {
             kind: other.to_string(),
             range,
             span,
         },
+    }
+}
+
+fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+fn simple_statement_marked(
+    node: TsNode<'_>,
+    element_name: &'static str,
+    extra_markers: &'static [&'static str],
+    source: &str,
+) -> Ir {
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range: range_of(node),
+        span: span_of(node),
     }
 }
 
@@ -111,4 +441,16 @@ fn span_of(node: TsNode<'_>) -> Span {
         end_line: end.row as u32 + 1,
         end_column: end.column as u32 + 1,
     }
+}
+
+#[allow(dead_code)]
+fn unused_modifiers() -> Modifiers {
+    let mut m = Modifiers::default();
+    m.access = Some(Access::Private);
+    m
+}
+
+#[allow(dead_code)]
+fn unused_param_kind() -> ParamKind {
+    ParamKind::Regular
 }
