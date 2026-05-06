@@ -91,8 +91,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Module / file structure ---------------------------------
-        // `mod name { ... }` — a Rust module.
-        "mod_item" => simple_statement(node, "mod", source),
+        // mod_item handled below in declaration block (rust_decl)
 
         // `use std::collections::HashMap;` — use declaration.
         "use_declaration" => simple_statement(node, "use", source),
@@ -110,8 +109,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "extern_crate_declaration" => simple_statement_marked(node, "use", &["extern"], source),
 
         // ----- Items: struct / enum / trait / impl / function / type --
-        "struct_item" => simple_statement(node, "struct", source),
-        "enum_item" => simple_statement(node, "enum", source),
+        "struct_item" => rust_decl(node, "struct", source),
+        "enum_item" => rust_decl(node, "enum", source),
         "enum_variant" => simple_statement(node, "variant", source),
         "enum_variant_list" => {
             let mut cursor = node.walk();
@@ -121,25 +120,29 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .collect();
             Ir::Inline { children, list_name: None, range, span }
         }
-        "union_item" => simple_statement(node, "union", source),
-        "trait_item" => simple_statement(node, "trait", source),
+        "union_item" => rust_decl(node, "union", source),
+        "trait_item" => rust_decl(node, "trait", source),
         "impl_item" => simple_statement(node, "impl", source),
-        "type_item" => simple_statement(node, "alias", source),
-        "const_item" => simple_statement(node, "const", source),
-        "static_item" => simple_statement(node, "static", source),
+        "type_item" => rust_decl(node, "alias", source),
+        "const_item" => rust_decl(node, "const", source),
+        "static_item" => rust_decl(node, "static", source),
         "function_item" | "function_signature_item" => {
-            simple_statement(node, "function", source)
+            rust_decl(node, "function", source)
         }
+        "mod_item" => rust_decl(node, "mod", source),
         "macro_definition" => simple_statement_marked(node, "macro", &["definition"], source),
         "macro_rule" => simple_statement(node, "arm", source),
         "macro_invocation" => simple_statement(node, "macro", source),
         "associated_type" => simple_statement_marked(node, "type", &["associated"], source),
         "type_binding" => simple_statement_marked(node, "type", &["associated"], source),
 
-        // Visibility modifier (`pub`, `pub(crate)`, etc.) — surfaces as
-        // a marker child via the parent item's modifier handling. For
-        // now, return as a marker-only SimpleStatement.
-        "visibility_modifier" => simple_statement(node, "public", source),
+        // Visibility modifier — handled inside rust_decl. If we see one
+        // standalone (orphaned), emit Inline so source bytes survive.
+        "visibility_modifier" => Ir::Inline {
+            children: Vec::new(),
+            list_name: None,
+            range, span,
+        },
         // `mut` / `const` modifiers.
         "mutable_specifier" => Ir::Inline {
             children: Vec::new(),
@@ -368,7 +371,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "tuple_expression" => simple_statement(node, "tuple", source),
         "array_expression" => simple_statement(node, "array", source),
         "struct_expression" => simple_statement(node, "struct", source),
-        "binary_expression" => simple_statement(node, "binary", source),
+        "binary_expression" => {
+            let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
+            let right = node.child_by_field_name("right").map(|n| lower_node(n, source));
+            let op_node = node.child_by_field_name("operator");
+            let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
+            let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
+            match (left, right, op_marker(&op_text)) {
+                (Some(l), Some(r), Some(marker)) => Ir::Binary {
+                    element_name: if matches!(op_text.as_str(), "&&" | "||") { "logical" } else { "binary" },
+                    op_text,
+                    op_marker: marker,
+                    op_range,
+                    left: Box::new(l),
+                    right: Box::new(r),
+                    range, span,
+                },
+                _ => Ir::Unknown {
+                    kind: "binary_expression(missing)".to_string(),
+                    range, span,
+                },
+            }
+        }
         "unary_expression" => simple_statement(node, "unary", source),
         "assignment_expression" => simple_statement(node, "assign", source),
         "compound_assignment_expr" => simple_statement(node, "assign", source),
@@ -504,6 +528,67 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect()
+}
+
+fn text_of(node: TsNode<'_>, source: &str) -> String {
+    source[node.start_byte()..node.end_byte()].to_string()
+}
+
+/// Rust uses `<pub/>` / `<private/>` markers (not `<public/>`).
+/// Detect visibility and emit appropriate extra_markers.
+fn rust_decl(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let mut cursor = node.walk();
+    let mut is_pub = false;
+    for c in node.named_children(&mut cursor) {
+        if c.kind() == "visibility_modifier" {
+            let txt = text_of(c, source);
+            if txt.starts_with("pub") {
+                is_pub = true;
+            }
+        }
+    }
+    let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+    let mut cursor2 = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor2)
+        // Visibility_modifier's semantic content is on extra_markers,
+        // but we still need it lowered if pub(crate) etc. has internal
+        // structure. For now, keep it as Inline so source bytes survive.
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range: range_of(node),
+        span: span_of(node),
+    }
+}
+
+fn op_marker(op: &str) -> Option<&'static str> {
+    Some(match op {
+        "+" => "plus",
+        "-" => "minus",
+        "*" => "multiply",
+        "/" => "divide",
+        "%" => "modulo",
+        "==" => "equal",
+        "!=" => "not_equal",
+        "<" => "less",
+        "<=" => "less_or_equal",
+        ">" => "greater",
+        ">=" => "greater_or_equal",
+        "&&" => "and",
+        "||" => "or",
+        "!" => "not",
+        "&" => "bitwise_and",
+        "|" => "bitwise_or",
+        "^" => "bitwise_xor",
+        "<<" => "shift_left",
+        ">>" => "shift_right",
+        _ => return None,
+    })
 }
 
 fn range_of(node: TsNode<'_>) -> ByteRange {
