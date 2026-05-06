@@ -24,7 +24,7 @@ pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> Ir {
     match root.kind() {
         "source_file" => Ir::Module {
             element_name: "file",
-            children: lower_children(root, source),
+            children: merge_rust_line_comments(lower_children(root, source), source),
             range,
             span,
         },
@@ -34,6 +34,110 @@ pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> Ir {
             span,
         },
     }
+}
+
+/// Detect the comment prefix (`//!`, `///`, `//`). Used to decide
+/// whether two adjacent line comments should merge — only same-prefix
+/// runs merge.
+fn comment_prefix(trimmed: &str) -> Option<&'static str> {
+    if trimmed.starts_with("//!") {
+        Some("//!")
+    } else if trimmed.starts_with("///") {
+        Some("///")
+    } else if trimmed.starts_with("//") {
+        Some("//")
+    } else {
+        None
+    }
+}
+
+/// Classify Rust comments into leading/trailing/floating. Mirrors
+/// merge_java_line_comments — same `//` line-comment grammar applies.
+fn merge_rust_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
+    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+    for child in children {
+        if let Ir::Comment {
+            leading,
+            trailing,
+            range,
+            span,
+        } = child
+        {
+            let prev_non_comment = out.iter().rev().find(|c| !matches!(c, Ir::Comment { .. }));
+            let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
+                let prev_end = prev.range().end as usize;
+                let between = &source[prev_end..range.start as usize];
+                !between.contains('\n')
+            });
+            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+                let gap = &source[prev_range.end as usize..range.start as usize];
+                // Tree-sitter rust line_comment ranges include the
+                // line-terminator, so a "blank line" gap is just
+                // 1 \n (the blank line's own char). Treat zero-newline
+                // gap as adjacency only.
+                let no_newline = !gap.contains('\n') && gap.chars().all(|c| c.is_whitespace());
+                let prev_text = &source[prev_range.start as usize..prev_range.end as usize];
+                let curr_text = &source[range.start as usize..range.end as usize];
+                let prev_trim = prev_text.trim_start();
+                let curr_trim = curr_text.trim_start();
+                let prev_prefix = comment_prefix(prev_trim);
+                let curr_prefix = comment_prefix(curr_trim);
+                let same_prefix = prev_prefix == curr_prefix && prev_prefix.is_some();
+                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                if no_newline
+                    && same_prefix
+                    && !prev_was_trailing
+                    && !curr_is_trailing
+                {
+                    if let Some(Ir::Comment {
+                        range: r,
+                        span: s,
+                        ..
+                    }) = out.last_mut()
+                    {
+                        r.end = range.end;
+                        s.end_line = span.end_line;
+                        s.end_column = span.end_column;
+                    }
+                    continue;
+                }
+            }
+            let trailing = trailing || curr_is_trailing;
+            out.push(Ir::Comment {
+                leading,
+                trailing,
+                range,
+                span,
+            });
+        } else {
+            out.push(child);
+        }
+    }
+    let n = out.len();
+    for i in 0..n {
+        if let Ir::Comment { trailing, range, .. } = &out[i] {
+            if *trailing {
+                continue;
+            }
+            let comment_end = range.end as usize;
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            if let Some(next_ir) = next {
+                let next_start = next_ir.range().start as usize;
+                let between = &source[comment_end..next_start];
+                let newlines = between.chars().filter(|&c| c == '\n').count();
+                // tree-sitter rust line_comment includes trailing \n,
+                // so adjacency to the next item can have 0 or 1
+                // newline in the gap (not the strict 1 used by C#/Java
+                // where line_comment excludes the \n).
+                if newlines <= 1 && between.chars().all(|c| c.is_whitespace()) {
+                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                        *leading = true;
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 /// Public entry for lowering a single Rust CST node — useful for tests.
@@ -144,7 +248,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                             element_name: "body",
                             modifiers: Modifiers::default(),
                             extra_markers: &[],
-                            children: body_children,
+                            children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
                         });
@@ -204,7 +308,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                             element_name: "body",
                             modifiers: Modifiers::default(),
                             extra_markers: &[],
-                            children: body_children,
+                            children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
                         });
@@ -341,8 +445,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 range, span,
             }
         }
-        "field_declaration_list" => simple_statement(node, "body", source),
-        "ordered_field_declaration_list" => simple_statement(node, "body", source),
+        "field_declaration_list" | "ordered_field_declaration_list" => {
+            let mut cursor = node.walk();
+            let body_children: Vec<Ir> = node
+                .named_children(&mut cursor)
+                .map(|c| lower_node(c, source))
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "body",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: merge_rust_line_comments(body_children, source),
+                range, span,
+            }
+        }
         "field_initializer" => {
             // `name: value` — emit `<field><name>name</name><value><expression>value</expression></value></field>`.
             // tree-sitter rust uses `field` as the name field.
@@ -1283,7 +1399,8 @@ fn wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
 }
 
 /// Rename a `block` node to `<body>`, lowering its inner statements
-/// directly into the body (no nested `<block>` wrapper).
+/// directly into the body (no nested `<block>` wrapper). Comments
+/// inside the body are classified via `merge_rust_line_comments`.
 fn rename_block_as_body(block: TsNode<'_>, source: &str) -> Ir {
     let mut cursor = block.walk();
     let children: Vec<Ir> = block
@@ -1294,7 +1411,7 @@ fn rename_block_as_body(block: TsNode<'_>, source: &str) -> Ir {
         element_name: "body",
         modifiers: Modifiers::default(),
         extra_markers: &[],
-        children,
+        children: merge_rust_line_comments(children, source),
         range: range_of(block),
         span: span_of(block),
     }
@@ -1533,7 +1650,7 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
                             element_name: "body",
                             modifiers: Modifiers::default(),
                             extra_markers: &[],
-                            children: body_children,
+                            children: merge_rust_line_comments(body_children, source),
                             range: range_of(c),
                             span: span_of(c),
                         });
