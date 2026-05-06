@@ -7,7 +7,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{ByteRange, Ir, Modifiers, Span};
+use super::types::{AccessSegment, ByteRange, Ir, Modifiers, Span};
 
 pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(root);
@@ -112,7 +112,59 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "operator_assignment" => simple_statement(node, "assign", source),
         "binary" => simple_statement(node, "binary", source),
         "unary" => simple_statement(node, "unary", source),
-        "call" => simple_statement(node, "call", source),
+        // Ruby `.foo` and `&.foo` (safe-nav) — every member access is a
+        // call. Fold into Ir::Access mirroring TS/Rust/Go/PHP.
+        "call" => {
+            let receiver_node = node.child_by_field_name("receiver");
+            let method_node = node.child_by_field_name("method");
+            let args_node = node.child_by_field_name("arguments");
+            let arguments: Vec<Ir> = match args_node {
+                Some(a) => {
+                    let mut ac = a.walk();
+                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                }
+                None => Vec::new(),
+            };
+            // `obj&.method` — safe nav optional marker.
+            let optional = source[range.start as usize..range.end as usize].contains("&.");
+            match (receiver_node, method_node) {
+                (Some(recv), Some(m)) => {
+                    let object_ir = lower_node(recv, source);
+                    let method_range = range_of(m);
+                    let method_span = span_of(m);
+                    let segment = if !arguments.is_empty()
+                        || source[range.start as usize..range.end as usize].contains('(') {
+                        AccessSegment::Call {
+                            name: Some(method_range),
+                            name_span: Some(method_span),
+                            arguments,
+                            range: ByteRange::new(method_range.start, range.end),
+                            span,
+                        }
+                    } else {
+                        AccessSegment::Member {
+                            property_range: method_range,
+                            property_span: method_span,
+                            optional,
+                            range: ByteRange::new(method_range.start, method_range.end),
+                            span,
+                        }
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range, span,
+                        },
+                    }
+                }
+                _ => simple_statement(node, "call", source),
+            }
+        }
         "conditional" => simple_statement(node, "ternary", source),
         "range" => simple_statement(node, "range", source),
         "array" => simple_statement(node, "array", source),
