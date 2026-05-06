@@ -791,7 +791,60 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "reference_expression" => simple_statement(node, "ref", source),
         "await_expression" => simple_statement(node, "await", source),
         "try_expression" => simple_statement(node, "try", source),
-        "range_expression" => simple_statement(node, "range", source),
+        "range_expression" => {
+            // `a..b` (exclusive) / `a..=b` (inclusive). Text-detect the
+            // operator. Wrap LHS in <from>, RHS in <to>.
+            let text = &source[range.start as usize..range.end as usize];
+            let inclusive = text.contains("..=");
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let mut children: Vec<Ir> = Vec::new();
+            // Find the operator position to split lhs/rhs.
+            let mut op_byte: Option<u32> = None;
+            let mut cursor2 = node.walk();
+            for c in node.children(&mut cursor2) {
+                if !c.is_named() {
+                    let t = text_of(c, source);
+                    if t == ".." || t == "..=" {
+                        op_byte = Some(c.start_byte() as u32);
+                        break;
+                    }
+                }
+            }
+            for c in &kids {
+                let inner = lower_node(*c, source);
+                let ir = match op_byte {
+                    Some(op) if (c.start_byte() as u32) < op => {
+                        Ir::SimpleStatement {
+                            element_name: "from",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![inner],
+                            range: range_of(*c),
+                            span: span_of(*c),
+                        }
+                    }
+                    Some(_) => Ir::SimpleStatement {
+                        element_name: "to",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(*c),
+                        span: span_of(*c),
+                    },
+                    None => inner,
+                };
+                children.push(ir);
+            }
+            let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
+            Ir::SimpleStatement {
+                element_name: "range",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
         "closure_expression" => simple_statement(node, "closure", source),
         "parenthesized_expression" => Ir::Inline {
             children: lower_children(node, source),
@@ -819,7 +872,56 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "mut_pattern" => simple_statement_marked(node, "pattern", &["mut"], source),
         "ref_pattern" => simple_statement_marked(node, "pattern", &["ref"], source),
         "struct_pattern" => simple_statement_marked(node, "pattern", &["struct"], source),
-        "range_pattern" => simple_statement(node, "range", source),
+        "range_pattern" => {
+            // `0..=9` / `0..9` inside a pattern.
+            let text = &source[range.start as usize..range.end as usize];
+            let inclusive = text.contains("..=");
+            let mut cursor = node.walk();
+            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let mut op_byte: Option<u32> = None;
+            let mut cursor2 = node.walk();
+            for c in node.children(&mut cursor2) {
+                if !c.is_named() {
+                    let t = text_of(c, source);
+                    if t == ".." || t == "..=" || t == "..." {
+                        op_byte = Some(c.start_byte() as u32);
+                        break;
+                    }
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            for c in &kids {
+                let inner = lower_node(*c, source);
+                let ir = match op_byte {
+                    Some(op) if (c.start_byte() as u32) < op => Ir::SimpleStatement {
+                        element_name: "from",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(*c),
+                        span: span_of(*c),
+                    },
+                    Some(_) => Ir::SimpleStatement {
+                        element_name: "to",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(*c),
+                        span: span_of(*c),
+                    },
+                    None => inner,
+                };
+                children.push(ir);
+            }
+            let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
+            Ir::SimpleStatement {
+                element_name: "range",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
 
         // ----- Argument / parameter wrappers ---------------------------
         "arguments" => Ir::Inline {
@@ -852,9 +954,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Attributes ----------------------------------------------
-        "attribute_item" | "inner_attribute_item" => {
-            simple_statement(node, "attribute", source)
-        }
+        "attribute_item" => simple_statement(node, "attribute", source),
+        "inner_attribute_item" => simple_statement_marked(node, "attribute", &["inner"], source),
         "attribute" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
