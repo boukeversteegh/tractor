@@ -214,66 +214,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, rr.end, range.end)?;
             Ok(node)
         }
-        Ir::If { condition, body, else_branch, range, span } => {
-            let node = element(xot, "if", *span);
-            xot.append(parent, node)?;
-            let cr = condition.range();
-            emit_gap(xot, node, source, range.start, cr.start)?;
-            let cond_slot = element(xot, "condition", condition.span());
-            xot.append(node, cond_slot)?;
-            let cond_expr = element(xot, "expression", condition.span());
-            xot.append(cond_slot, cond_expr)?;
-            render_to_xot(xot, cond_expr, condition, source)?;
-            let br = body.range();
-            emit_gap(xot, node, source, cr.end, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            // Flatten the else-if chain: emit `<else_if>` / `<else>`
-            // siblings under the same `<if>` parent rather than
-            // recursively nesting them. Matches the imperative
-            // pipeline's `collapse_else_if_chain` post-pass.
-            let mut cursor = br.end;
-            let mut next = else_branch.as_ref().map(|b| b.as_ref());
-            while let Some(branch) = next {
-                let br_range = branch.range();
-                emit_gap(xot, node, source, cursor, br_range.start)?;
-                match branch {
-                    Ir::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
-                        let elseif = element(xot, "else_if", *es);
-                        xot.append(node, elseif)?;
-                        let ecr = ec.range();
-                        emit_gap(xot, elseif, source, er.start, ecr.start)?;
-                        let cs = element(xot, "condition", ec.span());
-                        xot.append(elseif, cs)?;
-                        let ce = element(xot, "expression", ec.span());
-                        xot.append(cs, ce)?;
-                        render_to_xot(xot, ce, ec, source)?;
-                        let ebr = eb.range();
-                        emit_gap(xot, elseif, source, ecr.end, ebr.start)?;
-                        render_to_xot(xot, elseif, eb, source)?;
-                        emit_gap(xot, elseif, source, ebr.end, er.end)?;
-                        cursor = er.end;
-                        next = deeper.as_ref().map(|b| b.as_ref());
-                    }
-                    Ir::Else { body: eb, span: es, range: er } => {
-                        let el = element(xot, "else", *es);
-                        xot.append(node, el)?;
-                        let ebr = eb.range();
-                        emit_gap(xot, el, source, er.start, ebr.start)?;
-                        render_to_xot(xot, el, eb, source)?;
-                        emit_gap(xot, el, source, ebr.end, er.end)?;
-                        cursor = er.end;
-                        next = None;
-                    }
-                    _ => {
-                        render_to_xot(xot, node, branch, source)?;
-                        cursor = br_range.end;
-                        next = None;
-                    }
-                }
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::If { .. } => render_ir_if(xot, parent, ir, source),
         Ir::ElseIf { condition, body, else_branch, range, span } => {
             let node = element(xot, "else_if", *span);
             xot.append(parent, node)?;
@@ -306,69 +247,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, br.end, range.end)?;
             Ok(node)
         }
-        Ir::For { is_async, targets, iterables, body, else_body, range, span } => {
-            let node = element(xot, "for", *span);
-            xot.append(parent, node)?;
-            if *is_async {
-                let m = element(xot, "async", *span);
-                xot.append(node, m)?;
-            }
-            // Source-order: <left>{targets}</left>, <right>{iters}</right>, body, else?
-            let left_range = if let (Some(f), Some(l)) = (targets.first(), targets.last()) {
-                ByteRange::new(f.range().start, l.range().end)
-            } else {
-                ByteRange::empty_at(range.start)
-            };
-            let right_range = if let (Some(f), Some(l)) = (iterables.first(), iterables.last()) {
-                ByteRange::new(f.range().start, l.range().end)
-            } else {
-                ByteRange::empty_at(range.start)
-            };
-            // Pre-left gap
-            emit_gap(xot, node, source, range.start, left_range.start)?;
-            let left_slot = element(xot, "left", *span);
-            xot.append(node, left_slot)?;
-            let mut cursor = left_range.start;
-            for t in targets {
-                let tr = t.range();
-                emit_gap(xot, left_slot, source, cursor, tr.start)?;
-                let expr = element(xot, "expression", t.span());
-                xot.append(left_slot, expr)?;
-                render_to_xot(xot, expr, t, source)?;
-                cursor = tr.end;
-            }
-            emit_gap(xot, left_slot, source, cursor, left_range.end)?;
-            // Gap between left and right
-            emit_gap(xot, node, source, left_range.end, right_range.start)?;
-            // Right slot
-            let right_slot = element(xot, "right", *span);
-            xot.append(node, right_slot)?;
-            let mut cursor = right_range.start;
-            for i in iterables {
-                let ir2 = i.range();
-                emit_gap(xot, right_slot, source, cursor, ir2.start)?;
-                let expr = element(xot, "expression", i.span());
-                xot.append(right_slot, expr)?;
-                render_to_xot(xot, expr, i, source)?;
-                cursor = ir2.end;
-            }
-            emit_gap(xot, right_slot, source, cursor, right_range.end)?;
-            // Body + else
-            let br = body.range();
-            emit_gap(xot, node, source, right_range.end, br.start)?;
-            render_to_xot(xot, node, body, source)?;
-            if let Some(e) = else_body {
-                let er = e.range();
-                emit_gap(xot, node, source, br.end, er.start)?;
-                let else_node = element(xot, "else", e.span());
-                xot.append(node, else_node)?;
-                render_to_xot(xot, else_node, e, source)?;
-                emit_gap(xot, node, source, er.end, range.end)?;
-            } else {
-                emit_gap(xot, node, source, br.end, range.end)?;
-            }
-            Ok(node)
-        }
+        Ir::For { .. } => render_ir_for(xot, parent, ir, source),
         Ir::While { condition, body, else_body, range, span } => {
             let node = element(xot, "while", *span);
             xot.append(parent, node)?;
@@ -607,99 +486,7 @@ pub fn render_to_xot(
             emit_gap(xot, node, source, cursor, range.end)?;
             Ok(node)
         }
-        Ir::ExceptHandler { kind, type_target, binding, filter, body, range, span } => {
-            let node = element(xot, kind, *span);
-            xot.append(parent, node)?;
-            // Python's `except [Type [as Name]]:` renders the
-            // type+binding pair as `<value><expression>[<as>]...`,
-            // with `<as>` wrapping ONLY when a binding is present.
-            // Detect the python shape by element name "except" and
-            // wrap accordingly. Other languages (C# catch) keep the
-            // older slot layout: `<type>` + bare binding name.
-            let python_shape = *kind == "except";
-            #[derive(Clone, Copy)]
-            enum Slot<'a> { Type(&'a Ir), Bind(&'a Ir), Filter(&'a Ir), Body(&'a Ir) }
-            let mut order: Vec<Slot> = Vec::new();
-            if let Some(t) = type_target { order.push(Slot::Type(t)); }
-            if let Some(b) = binding { order.push(Slot::Bind(b)); }
-            if let Some(f) = filter { order.push(Slot::Filter(f)); }
-            order.push(Slot::Body(body));
-            order.sort_by_key(|s| match s {
-                Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i.range().start,
-            });
-            // Python: if both type and binding present, wrap them
-            // together in <value><expression><as>...</as></expression></value>.
-            // If only type (no binding), wrap in <value><expression>.
-            // Otherwise fall back to the slot-style layout.
-            if python_shape {
-                if let Some(t) = type_target {
-                    let cr = t.range();
-                    emit_gap(xot, node, source, range.start, cr.start)?;
-                    let outer_end = binding.as_ref().map(|b| b.range().end).unwrap_or(cr.end);
-                    let value = element(xot, "value", t.span());
-                    xot.append(node, value)?;
-                    let expr = element(xot, "expression", t.span());
-                    xot.append(value, expr)?;
-                    if let Some(b) = binding {
-                        let as_el = element(xot, "as", t.span());
-                        xot.append(expr, as_el)?;
-                        render_to_xot(xot, as_el, t, source)?;
-                        emit_gap(xot, as_el, source, cr.end, b.range().start)?;
-                        render_to_xot(xot, as_el, b, source)?;
-                    } else {
-                        render_to_xot(xot, expr, t, source)?;
-                    }
-                    let mut cursor = outer_end;
-                    if let Some(f) = filter {
-                        let fr = f.range();
-                        emit_gap(xot, node, source, cursor, fr.start)?;
-                        let fil = element(xot, "filter", f.span());
-                        xot.append(node, fil)?;
-                        let fexpr = element(xot, "expression", f.span());
-                        xot.append(fil, fexpr)?;
-                        render_to_xot(xot, fexpr, f, source)?;
-                        cursor = fr.end;
-                    }
-                    let br = body.range();
-                    emit_gap(xot, node, source, cursor, br.start)?;
-                    render_to_xot(xot, node, body, source)?;
-                    emit_gap(xot, node, source, br.end, range.end)?;
-                    return Ok(node);
-                }
-                // No type — fall through to slot-style (bare except).
-            }
-            let mut cursor = range.start;
-            for slot in &order {
-                let inner: &Ir = match slot {
-                    Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i,
-                };
-                let cr = inner.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                match slot {
-                    Slot::Type(_) => {
-                        let t = element(xot, "type", inner.span());
-                        xot.append(node, t)?;
-                        render_to_xot(xot, t, inner, source)?;
-                    }
-                    Slot::Bind(_) => {
-                        render_to_xot(xot, node, inner, source)?;
-                    }
-                    Slot::Filter(_) => {
-                        let f = element(xot, "filter", inner.span());
-                        xot.append(node, f)?;
-                        let expr = element(xot, "expression", inner.span());
-                        xot.append(f, expr)?;
-                        render_to_xot(xot, expr, inner, source)?;
-                    }
-                    Slot::Body(_) => {
-                        render_to_xot(xot, node, inner, source)?;
-                    }
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::ExceptHandler { .. } => render_ir_except_handler(xot, parent, ir, source),
         Ir::TypeAlias { name, type_params, value, range, span } => {
             let node = element(xot, "alias", *span);
             xot.append(parent, node)?;
@@ -932,89 +719,7 @@ pub fn render_to_xot(
             })?;
             Ok(node)
         }
-        Ir::Class { kind, modifiers, decorators, name, generics, bases, where_clauses, body, range, span } => {
-            let node = element(xot, kind, *span);
-            xot.append(parent, node)?;
-            for marker in modifiers.marker_names() {
-                let m = element(xot, marker, *span);
-                xot.append(node, m)?;
-            }
-            // Source-order children: decorators, name, generic items
-            // (flat siblings, not wrapped in outer `<generic>`),
-            // bases (wrapped in `<extends><type>...`), where clauses,
-            // body.
-            #[derive(Clone, Copy)]
-            enum CSlot<'a> {
-                Decor(&'a Ir),
-                Name(&'a Ir),
-                Generics(&'a Ir),
-                Base(&'a Ir),
-                Where(&'a Ir),
-                Body(&'a Ir),
-            }
-            let mut order: Vec<CSlot> = Vec::new();
-            for d in decorators { order.push(CSlot::Decor(d)); }
-            order.push(CSlot::Name(name));
-            if let Some(g) = generics {
-                if let Ir::Generic { items, .. } = g.as_ref() {
-                    for it in items { order.push(CSlot::Generics(it)); }
-                } else {
-                    order.push(CSlot::Generics(g));
-                }
-            }
-            for b in bases { order.push(CSlot::Base(b)); }
-            for w in where_clauses { order.push(CSlot::Where(w)); }
-            order.push(CSlot::Body(body));
-            order.sort_by_key(|s| match s {
-                CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
-                | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i.range().start,
-            });
-            let mut cursor = range.start;
-            for slot in &order {
-                let inner: &Ir = match slot {
-                    CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
-                    | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i,
-                };
-                let cr = inner.range();
-                emit_gap(xot, node, source, cursor, cr.start)?;
-                if matches!(slot, CSlot::Base(_)) {
-                    // Bases wrap in `<extends><type>...</type></extends>`
-                    // — when the inner is already a type-shaped IR
-                    // (GenericType produces its own `<type>`), don't
-                    // double-wrap. When the inner is itself an
-                    // `<implements>` SimpleStatement (Java's
-                    // interface base), emit it as-is without the
-                    // `<extends>` wrap.
-                    let inner_already_wrapped = matches!(
-                        inner,
-                        Ir::SimpleStatement { element_name: "implements", .. }
-                            | Ir::SimpleStatement { element_name: "extends", .. }
-                    );
-                    if inner_already_wrapped {
-                        render_to_xot(xot, node, inner, source)?;
-                    } else {
-                        let ext = element(xot, "extends", inner.span());
-                        xot.append(node, ext)?;
-                        let already_typed = matches!(inner,
-                            Ir::GenericType { .. }
-                                | Ir::SimpleStatement { element_name: "type", .. }
-                        );
-                        if already_typed {
-                            render_to_xot(xot, ext, inner, source)?;
-                        } else {
-                            let t = element(xot, "type", inner.span());
-                            xot.append(ext, t)?;
-                            render_to_xot(xot, t, inner, source)?;
-                        }
-                    }
-                } else {
-                    render_to_xot(xot, node, inner, source)?;
-                }
-                cursor = cr.end;
-            }
-            emit_gap(xot, node, source, cursor, range.end)?;
-            Ok(node)
-        }
+        Ir::Class { .. } => render_ir_class(xot, parent, ir, source),
         Ir::Body { children, pass_only, block_wrap, range, span } => {
             let node = element(xot, "body", *span);
             xot.append(parent, node)?;
@@ -1762,6 +1467,341 @@ fn render_ir_assign(
         let after = if !op_text.is_empty() { op_range.end } else { post_type_end };
         emit_gap(xot, node, source, after, range.end)?;
     }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_class(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::Class { kind, modifiers, decorators, name, generics, bases, where_clauses, body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, kind, *span);
+    xot.append(parent, node)?;
+    for marker in modifiers.marker_names() {
+        let m = element(xot, marker, *span);
+        xot.append(node, m)?;
+    }
+    // Source-order children: decorators, name, generic items
+    // (flat siblings, not wrapped in outer `<generic>`),
+    // bases (wrapped in `<extends><type>...`), where clauses,
+    // body.
+    #[derive(Clone, Copy)]
+    enum CSlot<'a> {
+        Decor(&'a Ir),
+        Name(&'a Ir),
+        Generics(&'a Ir),
+        Base(&'a Ir),
+        Where(&'a Ir),
+        Body(&'a Ir),
+    }
+    let mut order: Vec<CSlot> = Vec::new();
+    for d in decorators { order.push(CSlot::Decor(d)); }
+    order.push(CSlot::Name(name));
+    if let Some(g) = generics {
+        if let Ir::Generic { items, .. } = g.as_ref() {
+            for it in items { order.push(CSlot::Generics(it)); }
+        } else {
+            order.push(CSlot::Generics(g));
+        }
+    }
+    for b in bases { order.push(CSlot::Base(b)); }
+    for w in where_clauses { order.push(CSlot::Where(w)); }
+    order.push(CSlot::Body(body));
+    order.sort_by_key(|s| match s {
+        CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
+        | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i.range().start,
+    });
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
+            | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i,
+        };
+        let cr = inner.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        if matches!(slot, CSlot::Base(_)) {
+            // Bases wrap in `<extends><type>...</type></extends>`
+            // — when the inner is already a type-shaped IR
+            // (GenericType produces its own `<type>`), don't
+            // double-wrap. When the inner is itself an
+            // `<implements>` SimpleStatement (Java's
+            // interface base), emit it as-is without the
+            // `<extends>` wrap.
+            let inner_already_wrapped = matches!(
+                inner,
+                Ir::SimpleStatement { element_name: "implements", .. }
+                    | Ir::SimpleStatement { element_name: "extends", .. }
+            );
+            if inner_already_wrapped {
+                render_to_xot(xot, node, inner, source)?;
+            } else {
+                let ext = element(xot, "extends", inner.span());
+                xot.append(node, ext)?;
+                let already_typed = matches!(inner,
+                    Ir::GenericType { .. }
+                        | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    render_to_xot(xot, ext, inner, source)?;
+                } else {
+                    let t = element(xot, "type", inner.span());
+                    xot.append(ext, t)?;
+                    render_to_xot(xot, t, inner, source)?;
+                }
+            }
+        } else {
+            render_to_xot(xot, node, inner, source)?;
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_except_handler(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::ExceptHandler { kind, type_target, binding, filter, body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, kind, *span);
+    xot.append(parent, node)?;
+    // Python's `except [Type [as Name]]:` renders the
+    // type+binding pair as `<value><expression>[<as>]...`,
+    // with `<as>` wrapping ONLY when a binding is present.
+    // Detect the python shape by element name "except" and
+    // wrap accordingly. Other languages (C# catch) keep the
+    // older slot layout: `<type>` + bare binding name.
+    let python_shape = *kind == "except";
+    #[derive(Clone, Copy)]
+    enum Slot<'a> { Type(&'a Ir), Bind(&'a Ir), Filter(&'a Ir), Body(&'a Ir) }
+    let mut order: Vec<Slot> = Vec::new();
+    if let Some(t) = type_target { order.push(Slot::Type(t)); }
+    if let Some(b) = binding { order.push(Slot::Bind(b)); }
+    if let Some(f) = filter { order.push(Slot::Filter(f)); }
+    order.push(Slot::Body(body));
+    order.sort_by_key(|s| match s {
+        Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i.range().start,
+    });
+    // Python: if both type and binding present, wrap them
+    // together in <value><expression><as>...</as></expression></value>.
+    // If only type (no binding), wrap in <value><expression>.
+    // Otherwise fall back to the slot-style layout.
+    if python_shape {
+        if let Some(t) = type_target {
+            let cr = t.range();
+            emit_gap(xot, node, source, range.start, cr.start)?;
+            let outer_end = binding.as_ref().map(|b| b.range().end).unwrap_or(cr.end);
+            let value = element(xot, "value", t.span());
+            xot.append(node, value)?;
+            let expr = element(xot, "expression", t.span());
+            xot.append(value, expr)?;
+            if let Some(b) = binding {
+                let as_el = element(xot, "as", t.span());
+                xot.append(expr, as_el)?;
+                render_to_xot(xot, as_el, t, source)?;
+                emit_gap(xot, as_el, source, cr.end, b.range().start)?;
+                render_to_xot(xot, as_el, b, source)?;
+            } else {
+                render_to_xot(xot, expr, t, source)?;
+            }
+            let mut cursor = outer_end;
+            if let Some(f) = filter {
+                let fr = f.range();
+                emit_gap(xot, node, source, cursor, fr.start)?;
+                let fil = element(xot, "filter", f.span());
+                xot.append(node, fil)?;
+                let fexpr = element(xot, "expression", f.span());
+                xot.append(fil, fexpr)?;
+                render_to_xot(xot, fexpr, f, source)?;
+                cursor = fr.end;
+            }
+            let br = body.range();
+            emit_gap(xot, node, source, cursor, br.start)?;
+            render_to_xot(xot, node, body, source)?;
+            emit_gap(xot, node, source, br.end, range.end)?;
+            return Ok(node);
+        }
+        // No type — fall through to slot-style (bare except).
+    }
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i,
+        };
+        let cr = inner.range();
+        emit_gap(xot, node, source, cursor, cr.start)?;
+        match slot {
+            Slot::Type(_) => {
+                let t = element(xot, "type", inner.span());
+                xot.append(node, t)?;
+                render_to_xot(xot, t, inner, source)?;
+            }
+            Slot::Bind(_) => {
+                render_to_xot(xot, node, inner, source)?;
+            }
+            Slot::Filter(_) => {
+                let f = element(xot, "filter", inner.span());
+                xot.append(node, f)?;
+                let expr = element(xot, "expression", inner.span());
+                xot.append(f, expr)?;
+                render_to_xot(xot, expr, inner, source)?;
+            }
+            Slot::Body(_) => {
+                render_to_xot(xot, node, inner, source)?;
+            }
+        }
+        cursor = cr.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_for(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::For { is_async, targets, iterables, body, else_body, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "for", *span);
+    xot.append(parent, node)?;
+    if *is_async {
+        let m = element(xot, "async", *span);
+        xot.append(node, m)?;
+    }
+    // Source-order: <left>{targets}</left>, <right>{iters}</right>, body, else?
+    let left_range = if let (Some(f), Some(l)) = (targets.first(), targets.last()) {
+        ByteRange::new(f.range().start, l.range().end)
+    } else {
+        ByteRange::empty_at(range.start)
+    };
+    let right_range = if let (Some(f), Some(l)) = (iterables.first(), iterables.last()) {
+        ByteRange::new(f.range().start, l.range().end)
+    } else {
+        ByteRange::empty_at(range.start)
+    };
+    // Pre-left gap
+    emit_gap(xot, node, source, range.start, left_range.start)?;
+    let left_slot = element(xot, "left", *span);
+    xot.append(node, left_slot)?;
+    let mut cursor = left_range.start;
+    for t in targets {
+        let tr = t.range();
+        emit_gap(xot, left_slot, source, cursor, tr.start)?;
+        let expr = element(xot, "expression", t.span());
+        xot.append(left_slot, expr)?;
+        render_to_xot(xot, expr, t, source)?;
+        cursor = tr.end;
+    }
+    emit_gap(xot, left_slot, source, cursor, left_range.end)?;
+    // Gap between left and right
+    emit_gap(xot, node, source, left_range.end, right_range.start)?;
+    // Right slot
+    let right_slot = element(xot, "right", *span);
+    xot.append(node, right_slot)?;
+    let mut cursor = right_range.start;
+    for i in iterables {
+        let ir2 = i.range();
+        emit_gap(xot, right_slot, source, cursor, ir2.start)?;
+        let expr = element(xot, "expression", i.span());
+        xot.append(right_slot, expr)?;
+        render_to_xot(xot, expr, i, source)?;
+        cursor = ir2.end;
+    }
+    emit_gap(xot, right_slot, source, cursor, right_range.end)?;
+    // Body + else
+    let br = body.range();
+    emit_gap(xot, node, source, right_range.end, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    if let Some(e) = else_body {
+        let er = e.range();
+        emit_gap(xot, node, source, br.end, er.start)?;
+        let else_node = element(xot, "else", e.span());
+        xot.append(node, else_node)?;
+        render_to_xot(xot, else_node, e, source)?;
+        emit_gap(xot, node, source, er.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, br.end, range.end)?;
+    }
+    Ok(node)
+}
+
+#[inline(never)]
+fn render_ir_if(
+    xot: &mut Xot,
+    parent: XotNode,
+    ir: &Ir,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let Ir::If { condition, body, else_branch, range, span } = ir
+        else { unreachable!() };
+    let node = element(xot, "if", *span);
+    xot.append(parent, node)?;
+    let cr = condition.range();
+    emit_gap(xot, node, source, range.start, cr.start)?;
+    let cond_slot = element(xot, "condition", condition.span());
+    xot.append(node, cond_slot)?;
+    let cond_expr = element(xot, "expression", condition.span());
+    xot.append(cond_slot, cond_expr)?;
+    render_to_xot(xot, cond_expr, condition, source)?;
+    let br = body.range();
+    emit_gap(xot, node, source, cr.end, br.start)?;
+    render_to_xot(xot, node, body, source)?;
+    // Flatten the else-if chain: emit `<else_if>` / `<else>`
+    // siblings under the same `<if>` parent rather than
+    // recursively nesting them. Matches the imperative
+    // pipeline's `collapse_else_if_chain` post-pass.
+    let mut cursor = br.end;
+    let mut next = else_branch.as_ref().map(|b| b.as_ref());
+    while let Some(branch) = next {
+        let br_range = branch.range();
+        emit_gap(xot, node, source, cursor, br_range.start)?;
+        match branch {
+            Ir::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
+                let elseif = element(xot, "else_if", *es);
+                xot.append(node, elseif)?;
+                let ecr = ec.range();
+                emit_gap(xot, elseif, source, er.start, ecr.start)?;
+                let cs = element(xot, "condition", ec.span());
+                xot.append(elseif, cs)?;
+                let ce = element(xot, "expression", ec.span());
+                xot.append(cs, ce)?;
+                render_to_xot(xot, ce, ec, source)?;
+                let ebr = eb.range();
+                emit_gap(xot, elseif, source, ecr.end, ebr.start)?;
+                render_to_xot(xot, elseif, eb, source)?;
+                emit_gap(xot, elseif, source, ebr.end, er.end)?;
+                cursor = er.end;
+                next = deeper.as_ref().map(|b| b.as_ref());
+            }
+            Ir::Else { body: eb, span: es, range: er } => {
+                let el = element(xot, "else", *es);
+                xot.append(node, el)?;
+                let ebr = eb.range();
+                emit_gap(xot, el, source, er.start, ebr.start)?;
+                render_to_xot(xot, el, eb, source)?;
+                emit_gap(xot, el, source, ebr.end, er.end)?;
+                cursor = er.end;
+                next = None;
+            }
+            _ => {
+                render_to_xot(xot, node, branch, source)?;
+                cursor = br_range.end;
+                next = None;
+            }
+        }
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
     Ok(node)
 }
 

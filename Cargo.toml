@@ -4,13 +4,12 @@ members = [
     "tractor",
 ]
 
-# Bump opt-level for dev/test profiles. Debug builds reserve stack
-# space worst-case across all match arms; the IR renderer's
-# `render_to_xot` is one giant 72-arm match that recurses, so
-# debug-build frames grew large enough to overflow default 2 MiB
-# thread stacks on the C# blueprint. opt-level = 1 enables stack-
-# slot reuse and basic inlining without paying for full release-
-# build time.
+# Bump opt-level for dev/test. Debug builds otherwise reserve stack
+# space worst-case across all 72 arms of `render_to_xot` (which
+# recurses), and walk the C# blueprint deeply enough to overflow
+# the default 2 MiB thread stack. opt-level=1 enables stack-slot
+# reuse. Will be removed as more `render_to_xot` arms are extracted
+# into per-arm `#[inline(never)]` helpers (task #85).
 [profile.dev]
 opt-level = 1
 
