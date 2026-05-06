@@ -46,6 +46,7 @@ pub mod python;
 pub mod csharp;
 pub mod java;
 pub mod typescript;
+pub mod rust_lang;
 #[cfg(feature = "native")]
 pub mod coverage;
 
@@ -60,5 +61,7 @@ pub use csharp::{lower_csharp_root, lower_csharp_node};
 pub use java::{lower_java_root, lower_java_node};
 #[cfg(feature = "native")]
 pub use typescript::{lower_typescript_root, lower_typescript_node};
+#[cfg(feature = "native")]
+pub use rust_lang::{lower_rust_root, lower_rust_node};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};
