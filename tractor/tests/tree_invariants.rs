@@ -311,7 +311,8 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
         // `Ir::Unknown` fall-through covers the same diagnostic.
         ("go",         passthrough_kinds(go::rules::rule)),
         ("rust",       passthrough_kinds(rust_lang::rules::rule)),
-        ("java",       passthrough_kinds(java::rules::rule)),
+        // Java moved off the imperative pipeline: rule table no
+        // longer exists. `Ir::Unknown` covers the diagnostic.
         ("ruby",       passthrough_kinds(ruby::rules::rule)),
         ("php",        passthrough_kinds(php::rules::rule)),
         ("tsql",       passthrough_kinds(tsql::rules::rule)),

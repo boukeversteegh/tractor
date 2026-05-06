@@ -1,17 +1,15 @@
-//! Java language transform pipeline.
+//! Java language module.
 //!
-//!   - [`input`]    — generated `JavaKind` enum (the input vocabulary).
-//!   - [`output`]   — semantic-name constants and `NODES`.
-//!   - [`rules`]    — `rule(JavaKind) -> Rule`, the input→output table.
-//!   - [`transformations`] — named functions for Rule::Custom + wrappers.
-//!   - [`transform`]      — orchestrator.
+//! As of the IR migration, the imperative pipeline (`rules.rs` /
+//! `transformations.rs` / `transform.rs` / `input.rs` (`JavaKind`))
+//! has been retired — Java now flows through `crate::ir::java` and
+//! is rendered via `crate::ir::render_to_xot`.
+//!
+//!   - [`output`] — semantic-name vocabulary (`TractorNode` enum).
+//!   - [`post_transform`] — IR-pipeline post-passes.
 
-pub mod input;
 pub mod output;
 pub mod post_transform;
-pub mod rules;
-pub mod transform;
-pub mod transformations;
 
+pub use output::syntax_category;
 pub use post_transform::java_post_transform;
-pub use transform::{transform, syntax_category};

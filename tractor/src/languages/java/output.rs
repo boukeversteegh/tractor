@@ -183,5 +183,19 @@ pub fn is_declared(name: &str) -> bool {
     spec(name).is_some()
 }
 
+/// Map a transformed element name to a syntax-highlight category.
+/// Used by the language registration table.
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = spec(element) {
+        return spec.syntax;
+    }
+    match element {
+        "parameters" => SyntaxCategory::Keyword,
+        "do" | "break" | "continue" => SyntaxCategory::Keyword,
+        _ if crate::transform::operators::is_operator_marker(element) => SyntaxCategory::Operator,
+        _ => SyntaxCategory::Default,
+    }
+}
+
 #[allow(dead_code)]
 const _SYNTAX_CATEGORY_USED: Option<SyntaxCategory> = None;

@@ -210,7 +210,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["java"],
-        transform: java::transform,
+        transform: passthrough_transform,
         post_transform: Some(java::java_post_transform),
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
