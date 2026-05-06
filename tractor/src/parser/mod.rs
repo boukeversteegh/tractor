@@ -351,8 +351,8 @@ fn use_ir_pipeline(lang: &str) -> bool {
         "csharp" | "cs"
         | "python" | "py"
         | "java"
-        | "typescript" | "ts"
-        | "javascript" | "js"
+        | "typescript" | "ts" | "tsx"
+        | "javascript" | "js" | "jsx"
         | "rust" | "rs"
         | "go"
         | "ruby" | "rb"
@@ -453,7 +453,7 @@ fn parse_with_ir_pipeline(
         // tree-sitter's TS/JS grammars share most node kinds. JS-only
         // shapes fall through to `Ir::Unknown` and surface in the
         // missing-kinds audit until added.
-        "typescript" | "ts" | "javascript" | "js"
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
             => ir::lower_typescript_root(tree.root_node(), source),
         "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
         "go" => ir::lower_go_root(tree.root_node(), source),
@@ -528,7 +528,7 @@ fn parse_with_ir_pipeline_to_xee(
         "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
         "python" | "py" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
-        "typescript" | "ts" | "javascript" | "js"
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
             => ir::lower_typescript_root(tree.root_node(), source),
         "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
         "go" => ir::lower_go_root(tree.root_node(), source),

@@ -301,14 +301,10 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
     }
 
     vec![
-        ("typescript", passthrough_kinds(typescript::rules::rule)),
-        // C# moved off the imperative pipeline: rule table no longer
-        // exists. The IR pipeline owns its own dispatch table; there's
-        // no equivalent passthrough catalogue (and the
-        // `Ir::Unknown` fall-through covers the same diagnostic).
-        // Python moved off the imperative pipeline: rule table no
-        // longer exists. The IR pipeline owns its dispatch; the
-        // `Ir::Unknown` fall-through covers the same diagnostic.
+        // TS / JS / TSX / JSX / C# / Python moved off the imperative
+        // pipeline: rule tables no longer exist. The IR pipeline owns
+        // its own dispatch; the `Ir::Unknown` fall-through covers the
+        // same diagnostic.
         // Go moved off the imperative pipeline: rule table no longer
         // exists. `Ir::Unknown` covers the diagnostic.
         // Rust / Java / Ruby moved off the imperative pipeline: rule

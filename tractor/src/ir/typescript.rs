@@ -1,9 +1,14 @@
-//! TypeScript tree-sitter CST → IR lowering.
+//! TypeScript / JavaScript / TSX / JSX tree-sitter CST → IR lowering.
 //!
-//! Mirrors the C# / Java IRs closely. TypeScript shares most CST
-//! shapes (class/function/method/field declarations, type
-//! annotations, generics, arrow chains). Per-kind arms recursively
-//! lower children; the renderer in `crate::ir::render` is shared.
+//! Single lower function handles all four flavours — the TS / JS / TSX
+//! grammars share most node kinds (TS is a superset, TSX adds JSX-only
+//! kinds). Per-kind arms recursively lower children; the renderer in
+//! `crate::ir::render` is shared.
+//!
+//! Production parser routes ts/js/tsx/jsx through this lowering
+//! end-to-end (see `parser::use_ir_pipeline`). The legacy imperative
+//! `languages/typescript/{rules,transformations,transform}.rs`
+//! modules were retired alongside this migration.
 //!
 //! Coverage is incremental: each unhandled kind falls through to
 //! `Ir::Unknown`. Diagnostic test
@@ -736,6 +741,28 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "catch_clause" => simple_statement(node, "catch", source),
         "finally_clause" => simple_statement(node, "finally", source),
         "throw_statement" => simple_statement(node, "throw", source),
+
+        // JSX / TSX. The imperative pipeline mapped these as plain
+        // renames (no Custom handlers); SimpleStatement is enough.
+        // - jsx_element / jsx_self_closing_element → <element>
+        // - jsx_opening_element → <opening>
+        // - jsx_closing_element → <closing>
+        // - jsx_attribute → <prop>
+        // - jsx_expression → <value>
+        // - jsx_text → <text>
+        // The opening/closing element nodes hold the tag name as their
+        // own child (an identifier), which lowers to <name>; queries
+        // like `//element[opening/name='div']` therefore work without
+        // any extra rewiring.
+        "jsx_element" => simple_statement(node, "element", source),
+        "jsx_self_closing_element" => simple_statement(node, "element", source),
+        "jsx_opening_element" => simple_statement(node, "opening", source),
+        "jsx_closing_element" => simple_statement(node, "closing", source),
+        "jsx_attribute" => simple_statement(node, "prop", source),
+        "jsx_expression" => simple_statement(node, "value", source),
+        "jsx_text" => simple_statement(node, "text", source),
+        "jsx_fragment" => simple_statement(node, "element", source),
+        "jsx_namespace_name" => simple_statement(node, "name", source),
 
         // Imports / exports.
         "import_statement" => simple_statement(node, "import", source),

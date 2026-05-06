@@ -39,7 +39,6 @@ const LANGUAGE_FILES: &[&[&str]] = &[
     // strings; on the IR side every element name is wired via `Ir`
     // variant fields and doesn't need a string-keyed match arm. Skip
     // those languages here.
-    &["tractor/src/languages/typescript/transform.rs", "tractor/src/languages/typescript.rs"],
     &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],
 ];
 
