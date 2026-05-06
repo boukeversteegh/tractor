@@ -354,7 +354,46 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         // ----- Statements ----------------------------------------------
         "let_declaration" => simple_statement(node, "variable", source),
-        "expression_statement" => simple_statement(node, "expression", source),
+        "expression_statement" => {
+            // Control-flow and declaration expressions surface as direct
+            // siblings of the parent <body>/<block> (no <expression>
+            // host). Other expressions wrap in `<expression>` to host
+            // the inner expression.
+            let mut cursor = node.walk();
+            let inner = node.named_children(&mut cursor).next();
+            match inner {
+                Some(i) => {
+                    let bare = matches!(
+                        i.kind(),
+                        "for_expression" | "while_expression" | "loop_expression"
+                            | "if_expression" | "match_expression" | "block"
+                            | "async_block" | "const_block" | "try_block"
+                            | "gen_block" | "unsafe_block" | "labeled_expression"
+                            | "macro_invocation"
+                    );
+                    if bare {
+                        Ir::Inline {
+                            children: vec![lower_node(i, source)],
+                            list_name: None,
+                            range, span,
+                        }
+                    } else {
+                        Ir::SimpleStatement {
+                            element_name: "expression",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![lower_node(i, source)],
+                            range, span,
+                        }
+                    }
+                }
+                None => Ir::Inline {
+                    children: Vec::new(),
+                    list_name: None,
+                    range, span,
+                },
+            }
+        }
         "empty_statement" => Ir::Inline {
             children: Vec::new(),
             list_name: None,
@@ -375,7 +414,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
 
         // ----- Control flow --------------------------------------------
-        "if_expression" => simple_statement(node, "if", source),
+        "if_expression" => rust_if_expression(node, source),
         "else_clause" => simple_statement(node, "else", source),
         "let_chain" | "let_condition" => Ir::Inline {
             children: lower_children(node, source),
@@ -392,9 +431,134 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
         "match_pattern" => simple_statement(node, "pattern", source),
-        "for_expression" => simple_statement(node, "for", source),
-        "while_expression" => simple_statement(node, "while", source),
-        "loop_expression" => simple_statement(node, "loop", source),
+        "for_expression" => {
+            // `for pat in iter { body }` — emit
+            // `<for>{label?} <name>pat</name> <value><expression>iter</expression></value> <body>{block}</body></for>`.
+            let pattern_node = node.child_by_field_name("pattern");
+            let value_node = node.child_by_field_name("value");
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                let mut handled = false;
+                if let Some(p) = pattern_node {
+                    if c.id() == p.id() {
+                        children.push(lower_node(c, source));
+                        handled = true;
+                    }
+                }
+                if !handled {
+                    if let Some(v) = value_node {
+                        if c.id() == v.id() {
+                            let inner = lower_node(c, source);
+                            children.push(Ir::SimpleStatement {
+                                element_name: "value",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &[],
+                                children: vec![Ir::SimpleStatement {
+                                    element_name: "expression",
+                                    modifiers: Modifiers::default(),
+                                    extra_markers: &[],
+                                    children: vec![inner],
+                                    range: range_of(c),
+                                    span: span_of(c),
+                                }],
+                                range: range_of(c),
+                                span: span_of(c),
+                            });
+                            handled = true;
+                        }
+                    }
+                }
+                if !handled {
+                    if let Some(b) = body_node {
+                        if c.id() == b.id() {
+                            children.push(rename_block_as_body(c, source));
+                            handled = true;
+                        }
+                    }
+                }
+                if !handled {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "for",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "while_expression" => {
+            let cond_node = node.child_by_field_name("condition");
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                let mut handled = false;
+                if let Some(cn) = cond_node {
+                    if c.id() == cn.id() {
+                        let inner = lower_node(c, source);
+                        children.push(Ir::SimpleStatement {
+                            element_name: "condition",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![Ir::SimpleStatement {
+                                element_name: "expression",
+                                modifiers: Modifiers::default(),
+                                extra_markers: &[],
+                                children: vec![inner],
+                                range: range_of(c),
+                                span: span_of(c),
+                            }],
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        handled = true;
+                    }
+                }
+                if !handled {
+                    if let Some(b) = body_node {
+                        if c.id() == b.id() {
+                            children.push(rename_block_as_body(c, source));
+                            handled = true;
+                        }
+                    }
+                }
+                if !handled {
+                    children.push(lower_node(c, source));
+                }
+            }
+            Ir::SimpleStatement {
+                element_name: "while",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "loop_expression" => {
+            let body_node = node.child_by_field_name("body");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if let Some(b) = body_node {
+                    if c.id() == b.id() {
+                        children.push(rename_block_as_body(c, source));
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "loop",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "return_expression" => simple_statement(node, "return", source),
         "break_expression" => simple_statement(node, "break", source),
         "continue_expression" => simple_statement(node, "continue", source),
@@ -666,14 +830,136 @@ fn wrap_in_type_if_leaf(inner: Ir, range: ByteRange, span: Span) -> Ir {
     }
 }
 
+/// Rename a `block` node to `<body>`, lowering its inner statements
+/// directly into the body (no nested `<block>` wrapper).
+fn rename_block_as_body(block: TsNode<'_>, source: &str) -> Ir {
+    let mut cursor = block.walk();
+    let children: Vec<Ir> = block
+        .named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    Ir::SimpleStatement {
+        element_name: "body",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range: range_of(block),
+        span: span_of(block),
+    }
+}
+
+/// Lower a Rust if_expression to the canonical `<if>` shape:
+/// `<if><condition>...</condition><then>{block}</then><else>...</else></if>`.
+/// `<else>` becomes `<else_if>` when its body is itself an if_expression
+/// (chain collapse, matching the imperative pipeline shape).
+fn rust_if_expression(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let cond_node = node.child_by_field_name("condition");
+    let consequence_node = node.child_by_field_name("consequence");
+    let alternative_node = node.child_by_field_name("alternative");
+    let mut children: Vec<Ir> = Vec::new();
+
+    if let Some(c) = cond_node {
+        children.push(Ir::SimpleStatement {
+            element_name: "condition",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![lower_node(c, source)],
+            range: range_of(c),
+            span: span_of(c),
+        });
+    }
+    if let Some(c) = consequence_node {
+        children.push(Ir::SimpleStatement {
+            element_name: "then",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![lower_node(c, source)],
+            range: range_of(c),
+            span: span_of(c),
+        });
+    }
+    // Collapse else-if chain into flat <else_if>/<else> siblings.
+    let mut cur_alt = alternative_node;
+    while let Some(a) = cur_alt {
+        let mut cursor = a.walk();
+        let inner = a.named_children(&mut cursor).next();
+        match inner {
+            Some(i) if i.kind() == "if_expression" => {
+                // Inner if_expression — render as <else_if> with its
+                // own condition/then, then continue chain.
+                let inner_cond = i.child_by_field_name("condition");
+                let inner_cons = i.child_by_field_name("consequence");
+                let inner_alt = i.child_by_field_name("alternative");
+                let mut else_if_children: Vec<Ir> = Vec::new();
+                if let Some(c) = inner_cond {
+                    else_if_children.push(Ir::SimpleStatement {
+                        element_name: "condition",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![lower_node(c, source)],
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                }
+                if let Some(c) = inner_cons {
+                    else_if_children.push(Ir::SimpleStatement {
+                        element_name: "then",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![lower_node(c, source)],
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                }
+                children.push(Ir::SimpleStatement {
+                    element_name: "else_if",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: else_if_children,
+                    range: range_of(a),
+                    span: span_of(a),
+                });
+                cur_alt = inner_alt;
+            }
+            Some(i) => {
+                children.push(Ir::SimpleStatement {
+                    element_name: "else",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![lower_node(i, source)],
+                    range: range_of(a),
+                    span: span_of(a),
+                });
+                cur_alt = None;
+            }
+            None => {
+                cur_alt = None;
+            }
+        }
+    }
+
+    Ir::SimpleStatement {
+        element_name: "if",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
 /// Lower a Rust function_item with proper <returns> wrapping.
 /// Tree-sitter rust uses `return_type` as a FIELD on function_item
 /// pointing at the type child (no wrapper element). We detect it via
-/// child_by_field_name and wrap in Ir::Returns.
+/// child_by_field_name and wrap in Ir::Returns. The body block is
+/// renamed to `<body>` so XPath sees `function/body/...`.
 fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     let return_type_node = node.child_by_field_name("return_type");
+    let body_node = node.child_by_field_name("body");
     let mut cursor = node.walk();
     let mut is_pub = false;
     let mut children: Vec<Ir> = Vec::new();
@@ -691,6 +977,27 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
                         // Wrap in Ir::Returns instead of lowering inline.
                         children.push(Ir::Returns {
                             type_ann: Box::new(lower_node(c, source)),
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                if let Some(b) = body_node {
+                    if c.id() == b.id() {
+                        // Rename block → body, inline its inner statements
+                        // directly (each lower_node on a child handles
+                        // expression_statement wrapping).
+                        let mut bc = c.walk();
+                        let body_children: Vec<Ir> = c
+                            .named_children(&mut bc)
+                            .map(|s| lower_node(s, source))
+                            .collect();
+                        children.push(Ir::SimpleStatement {
+                            element_name: "body",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: body_children,
                             range: range_of(c),
                             span: span_of(c),
                         });
