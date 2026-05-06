@@ -432,6 +432,11 @@ fn parse_with_ir_pipeline(
         "python" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
         "typescript" => ir::lower_typescript_root(tree.root_node(), source),
+        "rust" => ir::lower_rust_root(tree.root_node(), source),
+        "go" => ir::lower_go_root(tree.root_node(), source),
+        "ruby" => ir::lower_ruby_root(tree.root_node(), source),
+        "php" => ir::lower_php_root(tree.root_node(), source),
+        "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
@@ -501,6 +506,11 @@ fn parse_with_ir_pipeline_to_xee(
         "python" => ir::lower_python_root(tree.root_node(), source),
         "java" => ir::lower_java_root(tree.root_node(), source),
         "typescript" => ir::lower_typescript_root(tree.root_node(), source),
+        "rust" => ir::lower_rust_root(tree.root_node(), source),
+        "go" => ir::lower_go_root(tree.root_node(), source),
+        "ruby" => ir::lower_ruby_root(tree.root_node(), source),
+        "php" => ir::lower_php_root(tree.root_node(), source),
+        "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
