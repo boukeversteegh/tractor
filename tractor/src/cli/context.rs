@@ -126,8 +126,16 @@ impl RunContext {
         };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
+        // Rayon worker threads default to ~2 MiB stacks. The IR walker
+        // and xee evaluator recurse deep enough on the C# blueprint
+        // and large XPath constructors to overflow that. Match the
+        // 16 MiB Windows main-thread stack (set in .cargo/config.toml)
+        // so behavior is consistent across main-thread and worker-thread
+        // execution paths. Linux defaults to 8 MiB main but worker
+        // threads default smaller; this normalizes both.
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
+            .stack_size(16 * 1024 * 1024)
             .build_global()
             .ok();
 
