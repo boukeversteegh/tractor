@@ -123,7 +123,50 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "union_item" => rust_decl(node, "union", source),
         "trait_item" => rust_decl(node, "trait", source),
         "impl_item" => simple_statement(node, "impl", source),
-        "type_item" => rust_decl(node, "alias", source),
+        "type_item" => {
+            // `type Id = u32;` — alias. Detect visibility, wrap target type in `<type>`.
+            let name_node = node.child_by_field_name("name");
+            let type_node = node.child_by_field_name("type");
+            let mut cursor = node.walk();
+            let mut is_pub = false;
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub") {
+                    is_pub = true;
+                }
+            }
+            let mut children: Vec<Ir> = Vec::new();
+            // Iterate in source order: name, type_parameters, type.
+            let mut cursor2 = node.walk();
+            for c in node.named_children(&mut cursor2) {
+                match c.kind() {
+                    "visibility_modifier" => {} // skip
+                    _ => {
+                        if let Some(t) = type_node {
+                            if c.id() == t.id() {
+                                let inner_ir = lower_node(c, source);
+                                children.push(wrap_in_type_if_leaf(inner_ir, range_of(c), span_of(c)));
+                                continue;
+                            }
+                        }
+                        if let Some(n) = name_node {
+                            if c.id() == n.id() {
+                                children.push(Ir::Name { range: range_of(c), span: span_of(c) });
+                                continue;
+                            }
+                        }
+                        children.push(lower_node(c, source));
+                    }
+                }
+            }
+            let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+            Ir::SimpleStatement {
+                element_name: "alias",
+                modifiers: Modifiers::default(),
+                extra_markers,
+                children,
+                range, span,
+            }
+        }
         "const_item" => rust_decl(node, "const", source),
         "static_item" => rust_decl(node, "static", source),
         "function_item" | "function_signature_item" => rust_function(node, source),
@@ -251,30 +294,37 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "bounded_type" => simple_statement_marked(node, "type", &["bounded"], source),
         "generic_type" => {
-            // `Foo<T, U>` — wrap each type argument's content in `<type>`
-            // so XPath sees `type[generic]/type[name='T']`.
+            // `Foo<T, U>` / `std::collections::HashMap<String, T>` —
+            // collapse the type name into a single `<name>full text</name>`
+            // (matches imperative `rewrite_generic_type` behavior). Inline
+            // type_arguments with each leaf wrapped in `<type>`.
             let mut cursor = node.walk();
             let children: Vec<Ir> = node
                 .named_children(&mut cursor)
                 .map(|c| {
-                    if c.kind() == "type_arguments" {
-                        // Inline its children, wrapping each in <type> if leaf.
-                        let mut tc = c.walk();
-                        let typed: Vec<Ir> = c
-                            .named_children(&mut tc)
-                            .map(|t| {
-                                let inner = lower_node(t, source);
-                                wrap_in_type_if_leaf(inner, range_of(t), span_of(t))
-                            })
-                            .collect();
-                        Ir::Inline {
-                            children: typed,
-                            list_name: None,
-                            range: range_of(c),
-                            span: span_of(c),
+                    match c.kind() {
+                        "type_identifier" | "identifier" | "scoped_type_identifier"
+                        | "scoped_identifier" => {
+                            // Collapse to single <name>FULL_TEXT</name>.
+                            Ir::Name { range: range_of(c), span: span_of(c) }
                         }
-                    } else {
-                        lower_node(c, source)
+                        "type_arguments" => {
+                            let mut tc = c.walk();
+                            let typed: Vec<Ir> = c
+                                .named_children(&mut tc)
+                                .map(|t| {
+                                    let inner = lower_node(t, source);
+                                    wrap_in_type_if_leaf(inner, range_of(t), span_of(t))
+                                })
+                                .collect();
+                            Ir::Inline {
+                                children: typed,
+                                list_name: None,
+                                range: range_of(c),
+                                span: span_of(c),
+                            }
+                        }
+                        _ => lower_node(c, source),
                     }
                 })
                 .collect();
