@@ -344,8 +344,47 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         "scoped_call_expression" => simple_statement_marked(node, "call", &["static"], source),
-        "member_call_expression" => simple_statement(node, "call", source),
-        "nullsafe_member_call_expression" => simple_statement_marked(node, "call", &["nullsafe"], source),
+        // `$obj->method(args)` — fold into Ir::Access with a Call
+        // segment carrying the method name. tree-sitter PHP fields:
+        // object, name, arguments.
+        "member_call_expression" | "nullsafe_member_call_expression" => {
+            let object_node = node.child_by_field_name("object");
+            let name_node = node.child_by_field_name("name");
+            let args_node = node.child_by_field_name("arguments");
+            let arguments: Vec<Ir> = match args_node {
+                Some(a) => {
+                    let mut ac = a.walk();
+                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                }
+                None => Vec::new(),
+            };
+            match (object_node, name_node) {
+                (Some(obj), Some(name)) => {
+                    let object_ir = lower_node(obj, source);
+                    let name_range = range_of(name);
+                    let name_span = span_of(name);
+                    let segment = AccessSegment::Call {
+                        name: Some(name_range),
+                        name_span: Some(name_span),
+                        arguments,
+                        range: ByteRange::new(object_ir.range().end, range.end),
+                        span,
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range, span,
+                        },
+                    }
+                }
+                _ => simple_statement(node, "call", source),
+            }
+        }
         "member_access_expression" => {
             let object_node = node.child_by_field_name("object");
             let name_node = node.child_by_field_name("name");
@@ -893,11 +932,14 @@ fn php_do_statement(node: TsNode<'_>, source: &str) -> Ir {
 }
 
 /// Lower `for_statement`. Tree-sitter PHP exposes initialize/condition/
-/// update fields and a body. Wrap condition + render body.
+/// update fields and a body. Wrap the condition in
+/// `<condition><expression>...` and the body in `<body>`. Init and
+/// update stay bare.
 fn php_for_statement(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
+    let condition_node = node.child_by_field_name("condition");
     let mut children: Vec<Ir> = Vec::new();
     let mut cursor = node.walk();
     for c in node.named_children(&mut cursor) {
@@ -905,9 +947,25 @@ fn php_for_statement(node: TsNode<'_>, source: &str) -> Ir {
             children.push(body_of(c, source));
             continue;
         }
-        // Skip wrapper kinds and lower; they are typically expressions
-        // (initial / condition / update). Wrap them as <condition> if
-        // the field name is "condition", else lower bare.
+        if Some(c.id()) == condition_node.map(|cn| cn.id()) {
+            let inner = lower_node(c, source);
+            children.push(Ir::SimpleStatement {
+                element_name: "condition",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![Ir::SimpleStatement {
+                    element_name: "expression",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(c),
+                    span: span_of(c),
+                }],
+                range: range_of(c),
+                span: span_of(c),
+            });
+            continue;
+        }
         children.push(lower_node(c, source));
     }
     Ir::SimpleStatement {
@@ -919,21 +977,64 @@ fn php_for_statement(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-/// Lower `foreach_statement`. Body wraps in `<body>`. Other children
-/// stay positional (the post_transform wraps the iterable in `<right>`
-/// and the binding in `<left>`).
+/// Lower `foreach_statement`. tree-sitter PHP exposes the iterable
+/// and the binding as positional children (no field names) — first
+/// expression is the iterable, last (before body) is the binding.
+/// Wrap the iterable in `<right><expression>...</expression></right>`,
+/// the binding in `<left><expression>...</expression></left>`, and
+/// the body in `<body>`.
 fn php_foreach_statement(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
-    let mut children: Vec<Ir> = Vec::new();
+    // Collect non-body named children — should be 2 (iterable + binding).
     let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
-        if Some(c.id()) == body_node.map(|b| b.id()) {
-            children.push(body_of(c, source));
-            continue;
-        }
-        children.push(lower_node(c, source));
+    let kids: Vec<_> = node
+        .named_children(&mut cursor)
+        .filter(|c| Some(c.id()) != body_node.map(|b| b.id()))
+        .collect();
+    let mut children: Vec<Ir> = Vec::new();
+    if kids.len() >= 2 {
+        // First is iterable → <right>, second is binding → <left>.
+        let iter_node = kids[0];
+        let bind_node = kids[kids.len() - 1];
+        let iter_inner = lower_node(iter_node, source);
+        children.push(Ir::SimpleStatement {
+            element_name: "right",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![Ir::SimpleStatement {
+                element_name: "expression",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![iter_inner],
+                range: range_of(iter_node),
+                span: span_of(iter_node),
+            }],
+            range: range_of(iter_node),
+            span: span_of(iter_node),
+        });
+        let bind_inner = lower_node(bind_node, source);
+        children.push(Ir::SimpleStatement {
+            element_name: "left",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![Ir::SimpleStatement {
+                element_name: "expression",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![bind_inner],
+                range: range_of(bind_node),
+                span: span_of(bind_node),
+            }],
+            range: range_of(bind_node),
+            span: span_of(bind_node),
+        });
+    } else {
+        for c in &kids { children.push(lower_node(*c, source)); }
+    }
+    if let Some(b) = body_node {
+        children.push(body_of(b, source));
     }
     Ir::SimpleStatement {
         element_name: "foreach",
@@ -1100,7 +1201,10 @@ fn php_method_declaration(node: TsNode<'_>, source: &str) -> Ir {
 }
 
 /// Lower `property_declaration` — extract modifiers, default
-/// visibility to public.
+/// visibility to public. The property variable name (e.g. `$count`)
+/// is emitted as a flat `<name>$count</name>` directly under
+/// `<field>` (matching the imperative shape) instead of the
+/// expression-form `<variable><name>count</name></variable>`.
 fn php_property_declaration(node: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);
@@ -1109,7 +1213,20 @@ fn php_property_declaration(node: TsNode<'_>, source: &str) -> Ir {
     let mut cursor = node.walk();
     for c in node.named_children(&mut cursor) {
         if is_php_modifier(c.kind()) { continue; }
-        children.push(lower_node(c, source));
+        // property_element wraps the variable name. Emit the inner
+        // variable_name as a flat `<name>$x</name>` leaf.
+        if c.kind() == "property_element" {
+            let mut pc = c.walk();
+            for inner in c.named_children(&mut pc) {
+                if inner.kind() == "variable_name" {
+                    children.push(Ir::Name { range: range_of(inner), span: span_of(inner) });
+                } else {
+                    children.push(lower_node(inner, source));
+                }
+            }
+        } else {
+            children.push(lower_node(c, source));
+        }
     }
     Ir::SimpleStatement {
         element_name: "field",
