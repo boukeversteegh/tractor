@@ -650,15 +650,112 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             range,
             span,
         },
-        "match_expression" => simple_statement(node, "match", source),
-        "match_arm" => simple_statement(node, "arm", source),
+        "match_expression" => {
+            let value_node = node.child_by_field_name("value");
+            let body_node = node.child_by_field_name("body");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![Ir::SimpleStatement {
+                        element_name: "expression",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: vec![inner],
+                        range: range_of(v),
+                        span: span_of(v),
+                    }],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            if let Some(b) = body_node {
+                let mut bc = b.walk();
+                let body_children: Vec<Ir> = b
+                    .named_children(&mut bc)
+                    .map(|s| lower_node(s, source))
+                    .collect();
+                children.push(Ir::SimpleStatement {
+                    element_name: "body",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: body_children,
+                    range: range_of(b),
+                    span: span_of(b),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "match",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
+        "match_arm" => {
+            let pattern_node = node.child_by_field_name("pattern");
+            let value_node = node.child_by_field_name("value");
+            let mut children: Vec<Ir> = Vec::new();
+            if let Some(p) = pattern_node {
+                children.push(lower_node(p, source));
+            }
+            if let Some(v) = value_node {
+                let inner = lower_node(v, source);
+                children.push(Ir::SimpleStatement {
+                    element_name: "value",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: range_of(v),
+                    span: span_of(v),
+                });
+            }
+            Ir::SimpleStatement {
+                element_name: "arm",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "match_block" => Ir::Inline {
             children: lower_children(node, source),
             list_name: None,
             range,
             span,
         },
-        "match_pattern" => simple_statement(node, "pattern", source),
+        "match_pattern" => {
+            // Wraps inner pattern + optional `if cond` guard.
+            let cond_node = node.child_by_field_name("condition");
+            let mut cursor = node.walk();
+            let mut children: Vec<Ir> = Vec::new();
+            for c in node.named_children(&mut cursor) {
+                if let Some(cn) = cond_node {
+                    if c.id() == cn.id() {
+                        children.push(Ir::SimpleStatement {
+                            element_name: "condition",
+                            modifiers: Modifiers::default(),
+                            extra_markers: &[],
+                            children: vec![lower_node(c, source)],
+                            range: range_of(c),
+                            span: span_of(c),
+                        });
+                        continue;
+                    }
+                }
+                children.push(lower_node(c, source));
+            }
+            Ir::SimpleStatement {
+                element_name: "pattern",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range, span,
+            }
+        }
         "for_expression" => {
             // `for pat in iter { body }` — emit
             // `<for>{label?} <name>pat</name> <value><expression>iter</expression></value> <body>{block}</body></for>`.
@@ -1305,6 +1402,85 @@ fn rust_if_expression(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
+/// Classify a Rust visibility_modifier text:
+/// - `pub` → simple marker; emit `<pub/>` on parent
+/// - `pub(crate)` → `<pub><crate/></pub>` element child
+/// - `pub(super)` → `<pub><super/></pub>`
+/// - `pub(self)` → `<pub><self/></pub>`
+/// - `pub(in path)` → `<pub><in>path</in></pub>`
+/// - missing → `<private/>` marker
+enum RustVis {
+    /// No modifier — emit `<private/>` extra-marker.
+    Private,
+    /// Simple `pub` — emit `<pub/>` extra-marker.
+    Pub,
+    /// `pub(qualifier)` — emit a `<pub>` child element containing the
+    /// qualifier element. No marker.
+    PubQualified(Ir),
+}
+
+fn classify_rust_visibility(node: TsNode<'_>, source: &str) -> RustVis {
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        if c.kind() == "visibility_modifier" {
+            let txt = text_of(c, source);
+            if !txt.starts_with("pub") {
+                continue;
+            }
+            // Look at unnamed children for `(`, qualifier, `)`.
+            let mut tcursor = c.walk();
+            let mut qualifier: Option<TsNode<'_>> = None;
+            for ch in c.children(&mut tcursor) {
+                if !ch.is_named() {
+                    continue;
+                }
+                qualifier = Some(ch);
+                break;
+            }
+            if qualifier.is_none() && !txt.contains('(') {
+                return RustVis::Pub;
+            }
+            // Look for the qualifier kind: `crate` / `super` / `self` / `scoped_identifier`.
+            // tree-sitter rust gives `crate`, `super`, `self` as named atoms.
+            let qual_text = txt.trim_start_matches("pub").trim().trim_start_matches('(').trim_end_matches(')').trim();
+            let q_inner = if qual_text.starts_with("in ") {
+                // `pub(in path)` — emit `<in>path</in>` element.
+                let path_text = qual_text["in ".len()..].trim();
+                let _ = path_text;
+                // Use a SimpleStatement<in> with a name leaf for path text.
+                // Source-bytes-preserving fallback.
+                Ir::SimpleStatement {
+                    element_name: "in",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![],
+                    range: range_of(c),
+                    span: span_of(c),
+                }
+            } else {
+                // Render the qualifier as a marker-only element
+                // (`<crate/>`, `<super/>`, `<self/>`).
+                let element_name: &'static str = match qual_text {
+                    "crate" => "crate",
+                    "super" => "super",
+                    "self" => "self",
+                    _ => "crate",
+                };
+                Ir::SimpleStatement {
+                    element_name,
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![],
+                    range: range_of(c),
+                    span: span_of(c),
+                }
+            };
+            return RustVis::PubQualified(q_inner);
+        }
+    }
+    RustVis::Private
+}
+
 /// Lower a Rust function_item with proper <returns> wrapping.
 /// Tree-sitter rust uses `return_type` as a FIELD on function_item
 /// pointing at the type child (no wrapper element). We detect it via
@@ -1315,21 +1491,29 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
     let range = range_of(node);
     let return_type_node = node.child_by_field_name("return_type");
     let body_node = node.child_by_field_name("body");
+    let vis = classify_rust_visibility(node, source);
     let mut cursor = node.walk();
-    let mut is_pub = false;
     let mut children: Vec<Ir> = Vec::new();
+    // For PubQualified, push `<pub>` element first.
+    if let RustVis::PubQualified(q) = &vis {
+        let pub_inner = q.clone();
+        children.push(Ir::SimpleStatement {
+            element_name: "pub",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![pub_inner],
+            range,
+            span,
+        });
+    }
     for c in node.named_children(&mut cursor) {
         match c.kind() {
             "visibility_modifier" => {
-                let txt = text_of(c, source);
-                if txt.starts_with("pub") {
-                    is_pub = true;
-                }
+                // Already handled by extra_markers/PubQualified.
             }
             _ => {
                 if let Some(rt) = return_type_node {
                     if c.id() == rt.id() {
-                        // Wrap in Ir::Returns instead of lowering inline.
                         children.push(Ir::Returns {
                             type_ann: Box::new(lower_node(c, source)),
                             range: range_of(c),
@@ -1340,9 +1524,6 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
-                        // Rename block → body, inline its inner statements
-                        // directly (each lower_node on a child handles
-                        // expression_statement wrapping).
                         let mut bc = c.walk();
                         let body_children: Vec<Ir> = c
                             .named_children(&mut bc)
@@ -1363,7 +1544,11 @@ fn rust_function(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
     }
-    let extra_markers: &'static [&'static str] = if is_pub { &["pub"] } else { &["private"] };
+    let extra_markers: &'static [&'static str] = match &vis {
+        RustVis::Private => &["private"],
+        RustVis::Pub => &["pub"],
+        RustVis::PubQualified(_) => &[],
+    };
     Ir::SimpleStatement {
         element_name: "function",
         modifiers: Modifiers::default(),
