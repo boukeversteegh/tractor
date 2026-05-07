@@ -2031,16 +2031,59 @@ fn render_ir_property(
         let m = element(xot, marker, *span);
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
-    for d in decorators { order.push(d); }
-    if let Some(t) = type_ann { order.push(t.as_ref()); }
-    order.push(name.as_ref());
-    for a in accessors { order.push(a); }
-    if let Some(v) = value { order.push(v.as_ref()); }
-    order.sort_by_key(|c| c.range().start);
-    render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
-        render_to_xot(xot, parent, child, source).map(|_| ())
-    })?;
+    // Slot-tagged ordering mirrors `render_ir_parameter` /
+    // `render_ir_variable`: `type_ann` wraps in `<type>`, `value`
+    // wraps in `<value>`, decorators / accessors / name render as
+    // themselves. Without these wrappers the type leaked as a bare
+    // `<name>` sibling and the initializer expression was rendered
+    // unwrapped — both are Principle #5 / #15 violations.
+    #[derive(Clone, Copy)]
+    enum Slot<'a> { Decorator(&'a Ir), Type(&'a Ir), Name(&'a Ir), Accessor(&'a Ir), Value(&'a Ir) }
+    let mut order: Vec<Slot> = Vec::new();
+    for d in decorators { order.push(Slot::Decorator(d)); }
+    if let Some(t) = type_ann { order.push(Slot::Type(t.as_ref())); }
+    order.push(Slot::Name(name.as_ref()));
+    for a in accessors { order.push(Slot::Accessor(a)); }
+    if let Some(v) = value { order.push(Slot::Value(v.as_ref())); }
+    order.sort_by_key(|s| match s {
+        Slot::Decorator(i) | Slot::Type(i) | Slot::Name(i)
+        | Slot::Accessor(i) | Slot::Value(i) => i.range().start,
+    });
+
+    let mut cursor = range.start;
+    for slot in &order {
+        let inner: &Ir = match slot {
+            Slot::Decorator(i) | Slot::Type(i) | Slot::Name(i)
+            | Slot::Accessor(i) | Slot::Value(i) => i,
+        };
+        let ir_range = inner.range();
+        emit_gap(xot, node, source, cursor, ir_range.start)?;
+        match slot {
+            Slot::Decorator(_) | Slot::Name(_) | Slot::Accessor(_) => {
+                render_to_xot(xot, node, inner, source)?;
+            }
+            Slot::Type(_) => {
+                let already_typed = matches!(inner,
+                    Ir::GenericType { .. }
+                        | Ir::SimpleStatement { element_name: "type", .. }
+                );
+                if already_typed {
+                    render_to_xot(xot, node, inner, source)?;
+                } else {
+                    let type_el = element(xot, "type", inner.span());
+                    xot.append(node, type_el)?;
+                    render_to_xot(xot, type_el, inner, source)?;
+                }
+            }
+            Slot::Value(_) => {
+                let val = element(xot, "value", inner.span());
+                xot.append(node, val)?;
+                render_to_xot(xot, val, inner, source)?;
+            }
+        }
+        cursor = ir_range.end;
+    }
+    emit_gap(xot, node, source, cursor, range.end)?;
     Ok(node)
 }
 

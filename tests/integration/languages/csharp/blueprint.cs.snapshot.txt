@@ -63,15 +63,15 @@ unit/
   │   │   ├─ name = "Point"
   │   │   └─ body/
   │   │       ├─ property[public]/
-  │   │       │   ├─ name = "double"
+  │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ name = "x"
+  │   │       │   └─ value/expression/name = "x"
   │   │       ├─ property[public]/
-  │   │       │   ├─ name = "double"
+  │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ name = "y"
+  │   │       │   └─ value/expression/name = "y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "Point"
   │   │       │   ├─ parameter/
@@ -191,22 +191,22 @@ unit/
   │   │       │   ├─ type/name = "int"
   │   │       │   └─ name = "_version"
   │   │       ├─ property[public]/
-  │   │       │   ├─ name = "int"
+  │   │       │   ├─ type/name = "int"
   │   │       │   ├─ name = "Id"
   │   │       │   ├─ get = "get;"
   │   │       │   └─ init = "init;"
   │   │       ├─ property[public]/
-  │   │       │   ├─ name = "string"
+  │   │       │   ├─ type/name = "string"
   │   │       │   ├─ name = "Name"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set = "set;"
-  │   │       │   └─ string = "\"\""
+  │   │       │   └─ value/expression/string = "\"\""
   │   │       ├─ property[public and virtual]/
-  │   │       │   ├─ name = "Priority"
+  │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set[protected] = "protected set;"
-  │   │       │   └─ object[access]/
+  │   │       │   └─ value/expression/object[access]/
   │   │       │       ├─ name = "Priority"
   │   │       │       └─ member/name = "Low"
   │   │       ├─ indexer[public]/
@@ -271,7 +271,7 @@ unit/
   │   │       │       ├─ op = "="
   │   │       │       └─ right/expression/name = "name"
   │   │       ├─ property[public and override]/
-  │   │       │   ├─ name = "Priority"
+  │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get/object[access and base]/
   │   │       │   │   ├─ name = "base"
@@ -762,7 +762,7 @@ unit/
       ├─ class[file and sealed]/
       │   ├─ name = "Hidden"
       │   └─ body/property[public and static]/
-      │       ├─ name = "int"
+      │       ├─ type/name = "int"
       │       ├─ name = "Answer"
       │       └─ get/int = "42"
       ├─ class[public and static]/
@@ -945,11 +945,11 @@ unit/
       │       │   ├─ generic[class and new]/name = "T"
       │       │   └─ body/
       │       │       ├─ property[public]/
-      │       │       │   ├─ name = "T"
+      │       │       │   ├─ type/name = "T"
       │       │       │   ├─ name = "Value"
       │       │       │   ├─ get = "get;"
       │       │       │   ├─ set = "set;"
-      │       │       │   └─ new/name = "T"
+      │       │       │   └─ value/expression/new/name = "T"
       │       │       ├─ indexer[public]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ parameter/

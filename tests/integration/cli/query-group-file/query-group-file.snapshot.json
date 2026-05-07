@@ -38,7 +38,7 @@
             "public": true,
             "name": "Alpha",
             "body": {
-              "$truncated": 6
+              "$truncated": 7
             }
           }
         }
