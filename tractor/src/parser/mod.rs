@@ -383,11 +383,7 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
         | "go"
         | "ruby" | "rb"
         | "php"
-        // TSQL has IR scaffolding (`src/ir/tsql.rs`) — all 26 transform
-        // shape tests pass under IR, but the kitchen-sink blueprint
-        // snapshot still diverges (bracket stripping, op-marker class
-        // attributes, column/ref wrapping). Kept on the imperative
-        // path until those remaining gaps close.
+        | "tsql" | "sql" | "mssql"
     );
     if programming {
         // Programming languages don't have a Data mode (TreeMode::resolve
