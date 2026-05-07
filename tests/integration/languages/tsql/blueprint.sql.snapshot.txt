@@ -93,7 +93,7 @@ file/
   │       │       └─ right/expression/
   │       │           ├─ name = "u"
   │       │           └─ name = "ID"
-  │       ├─ join/
+  │       ├─ join[left]/
   │       │   ├─ relation/
   │       │   │   ├─ name = "Addresses"
   │       │   │   └─ alias = "a"

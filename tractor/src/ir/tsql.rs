@@ -142,7 +142,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "order_by" => simple_statement(node, "order", source),
         "order_target" => simple_statement(node, "target", source),
         "partition_by" => simple_statement(node, "partition", source),
-        "join" => simple_statement(node, "join", source),
+        "join" => lower_tsql_join(node, source),
         "insert" => simple_statement(node, "insert", source),
         "update" => simple_statement(node, "update", source),
         "delete" => simple_statement(node, "delete", source),
@@ -365,6 +365,67 @@ fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
             _ => lower_node(c, source),
         })
         .collect()
+}
+
+/// `join` — emit direction markers (`[left]`, `[right]`, `[full]`,
+/// `[outer]`, `[cross]`) for the LEFT / RIGHT / FULL / OUTER /
+/// CROSS keywords in the source. INNER is the default and emits
+/// no marker. Without these, `LEFT JOIN` rendered identically to
+/// plain `JOIN`.
+fn lower_tsql_join(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    for c in node.children(&mut cursor) {
+        if c.is_named() {
+            let kind = c.kind();
+            let marker_name = match kind {
+                "keyword_left"  => Some("left"),
+                "keyword_right" => Some("right"),
+                "keyword_full"  => Some("full"),
+                "keyword_outer" => Some("outer"),
+                "keyword_cross" => Some("cross"),
+                _ => None,
+            };
+            if let Some(m) = marker_name {
+                // Two children for one keyword: a Skip that consumes
+                // the keyword's source bytes (so they don't leak as
+                // gap text), and an empty SimpleStatement at the
+                // keyword's end position that renders as `<{m}/>`
+                // — the empty-element pass folds it into the
+                // parent join's `[…]` marker chip.
+                let kw_range = range_of(c);
+                children.push(Ir::Skip { range: kw_range, span: span_of(c) });
+                let zero = super::types::ByteRange::empty_at(kw_range.end);
+                children.push(Ir::SimpleStatement {
+                    element_name: m,
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: Vec::new(),
+                    range: zero,
+                    span: span_of(c),
+                });
+                continue;
+            }
+            // Other keyword/op kinds → Skip (consume their bytes).
+            if kind.starts_with("keyword_") || kind.starts_with("op_") {
+                children.push(Ir::Skip { range: range_of(c), span: span_of(c) });
+                continue;
+            }
+            children.push(lower_node(c, source));
+        } else {
+            children.push(Ir::Skip { range: range_of(c), span: span_of(c) });
+        }
+    }
+    Ir::SimpleStatement {
+        element_name: "join",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
 }
 
 /// `assignment` (`x = expr`) — lower as `Ir::Binary` with

@@ -318,6 +318,7 @@
             }
           },
           {
+            "left": {},
             "$skips": [
               null,
               null,
