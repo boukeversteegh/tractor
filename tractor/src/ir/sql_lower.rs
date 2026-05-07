@@ -16,7 +16,48 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of};
-use super::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlIr};
+use super::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlIr};
+
+/// Detect `QuoteStyle` from raw source text and return the parsed
+/// (unquoted) identifier value alongside it. Bracket / double-quote /
+/// backtick quoting strips one character from each end; bare
+/// identifiers pass through unchanged.
+fn parse_id_quoting(text: &str) -> (String, QuoteStyle) {
+    if text.len() >= 2 {
+        if text.starts_with('[') && text.ends_with(']') {
+            return (text[1..text.len() - 1].to_string(), QuoteStyle::Brackets);
+        }
+        if text.starts_with('"') && text.ends_with('"') {
+            return (text[1..text.len() - 1].to_string(), QuoteStyle::DoubleQuote);
+        }
+        if text.starts_with('`') && text.ends_with('`') {
+            return (text[1..text.len() - 1].to_string(), QuoteStyle::Backtick);
+        }
+    }
+    (text.to_string(), QuoteStyle::None)
+}
+
+/// Build `SqlIr::Identifier` from a CST node, parsing quoting style
+/// out of the source text.
+fn ident_at(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let (value, quoting) = parse_id_quoting(range.slice(source));
+    SqlIr::Identifier { value, quoting, range, span: span_of(node) }
+}
+
+/// Build `SqlIr::Schema` from a CST node.
+fn schema_at(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let (value, quoting) = parse_id_quoting(range.slice(source));
+    SqlIr::Schema { value, quoting, range, span: span_of(node) }
+}
+
+/// Build `SqlIr::Alias` from a CST node.
+fn alias_at(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let (value, quoting) = parse_id_quoting(range.slice(source));
+    SqlIr::Alias { value, quoting, range, span: span_of(node) }
+}
 
 /// Lower a T-SQL `program` CST root to [`SqlIr::File`].
 pub fn lower_sql_root(root: TsNode<'_>, source: &str) -> SqlIr {
@@ -58,7 +99,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
             if text.starts_with('@') {
                 SqlIr::Variable { range, span }
             } else {
-                SqlIr::Identifier { range, span }
+                ident_at(node, source)
             }
         }
         "literal" => SqlIr::Literal { range, span },
@@ -103,7 +144,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
             if let Some(c) = inner {
                 lower_node(c, source)
             } else {
-                SqlIr::Identifier { range, span }
+                ident_at(node, source)
             }
         }
 
@@ -688,7 +729,7 @@ fn lower_column_reference(node: TsNode<'_>, source: &str) -> SqlIr {
     let mut cur = node.walk();
     let named: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
     if named.len() == 1 && named[0].kind() == "identifier" {
-        return SqlIr::Identifier { range, span };
+        return ident_at(node, source);
     }
     let parts: Vec<SqlIr> = named.into_iter().map(|c| lower_node(c, source)).collect();
     SqlIr::Reference { parts, range, span }
@@ -727,10 +768,7 @@ fn lower_term(node: TsNode<'_>, source: &str) -> SqlIr {
         // when needed.
         let last = named.last().unwrap();
         if last.kind() == "identifier" {
-            alias = Some(Box::new(SqlIr::Alias {
-                range: range_of(*last),
-                span: span_of(*last),
-            }));
+            alias = Some(Box::new(alias_at(*last, source)));
             expression = Some(lower_node(named[0], source));
         }
     }
@@ -765,23 +803,9 @@ fn lower_relation(node: TsNode<'_>, source: &str) -> SqlIr {
             // it's a qualified name; the second is alias.
             let first = named[0];
             if first.kind() == "object_reference" {
-                let mut fc = first.walk();
-                let parts = first.named_children(&mut fc).count();
-                if parts > 1 {
-                    // Qualified name; second is alias.
-                    alias = Some(Box::new(SqlIr::Alias {
-                        range: range_of(named[1]),
-                        span: span_of(named[1]),
-                    }));
-                    0
-                } else {
-                    // Bare name; second is alias.
-                    alias = Some(Box::new(SqlIr::Alias {
-                        range: range_of(named[1]),
-                        span: span_of(named[1]),
-                    }));
-                    0
-                }
+                // Qualified or bare name in first position; second is alias.
+                alias = Some(Box::new(alias_at(named[1], source)));
+                0
             } else {
                 0
             }
@@ -796,30 +820,15 @@ fn lower_relation(node: TsNode<'_>, source: &str) -> SqlIr {
         let mut nc = name_node.walk();
         let parts: Vec<TsNode<'_>> = name_node.named_children(&mut nc).collect();
         if parts.len() >= 2 {
-            schema = Some(Box::new(SqlIr::Schema {
-                range: range_of(parts[0]),
-                span: span_of(parts[0]),
-            }));
-            Box::new(SqlIr::Identifier {
-                range: range_of(parts[1]),
-                span: span_of(parts[1]),
-            })
+            schema = Some(Box::new(schema_at(parts[0], source)));
+            Box::new(ident_at(parts[1], source))
         } else if let Some(only) = parts.first() {
-            Box::new(SqlIr::Identifier {
-                range: range_of(*only),
-                span: span_of(*only),
-            })
+            Box::new(ident_at(*only, source))
         } else {
-            Box::new(SqlIr::Identifier {
-                range: range_of(name_node),
-                span: span_of(name_node),
-            })
+            Box::new(ident_at(name_node, source))
         }
     } else {
-        Box::new(SqlIr::Identifier {
-            range: range_of(name_node),
-            span: span_of(name_node),
-        })
+        Box::new(ident_at(name_node, source))
     };
 
     SqlIr::Relation { schema, name, alias, range, span }
@@ -942,12 +951,12 @@ fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlIr {
                 let mut sub = c.walk();
                 let inner_first = c.named_children(&mut sub).next();
                 if let Some(id) = inner_first {
-                    SqlIr::Identifier { range: range_of(id), span: span_of(id) }
+                    ident_at(id, source)
                 } else {
-                    SqlIr::Identifier { range: range_of(c), span: span_of(c) }
+                    ident_at(c, source)
                 }
             } else {
-                SqlIr::Identifier { range: range_of(c), span: span_of(c) }
+                ident_at(c, source)
             }
         } else {
             SqlIr::Unknown {
@@ -1150,15 +1159,9 @@ fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
         let mut nc = c.walk();
         let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
         if let Some(only) = inner.first() {
-            SqlIr::Identifier {
-                range: range_of(*only),
-                span: span_of(*only),
-            }
+            ident_at(*only, source)
         } else {
-            SqlIr::Identifier {
-                range: range_of(*c),
-                span: span_of(*c),
-            }
+            ident_at(*c, source)
         }
     }).unwrap_or(SqlIr::Unknown { kind: "missing_create_name".into(), range, span });
     // Body collects the substantive children. For CREATE TABLE the
@@ -1199,9 +1202,9 @@ fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlIr {
         let mut nc = c.walk();
         let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
         if let Some(only) = inner.first() {
-            SqlIr::Identifier { range: range_of(*only), span: span_of(*only) }
+            ident_at(*only, source)
         } else {
-            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+            ident_at(*c, source)
         }
     }).unwrap_or(SqlIr::Unknown { kind: "missing_drop_name".into(), range, span });
     let _ = source;
@@ -1226,9 +1229,9 @@ fn lower_alter(node: TsNode<'_>, source: &str) -> SqlIr {
         let mut nc = c.walk();
         let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
         if let Some(only) = inner.first() {
-            SqlIr::Identifier { range: range_of(*only), span: span_of(*only) }
+            ident_at(*only, source)
         } else {
-            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+            ident_at(*c, source)
         }
     }).unwrap_or(SqlIr::Unknown { kind: "missing_alter_name".into(), range, span });
     let operation = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
@@ -1269,10 +1272,7 @@ fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlIr {
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
-    let name = named.first().map(|c| SqlIr::Identifier {
-        range: range_of(*c),
-        span: span_of(*c),
-    }).unwrap_or(SqlIr::Unknown { kind: "missing_column_name".into(), range, span });
+    let name = named.first().map(|c| ident_at(*c, source)).unwrap_or(SqlIr::Unknown { kind: "missing_column_name".into(), range, span });
     let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
         SqlIr::Unknown { kind: "missing_column_type".into(), range, span },
     );
@@ -1573,10 +1573,7 @@ fn lower_exec(node: TsNode<'_>, source: &str) -> SqlIr {
                 let mut nc = c.walk();
                 let parts: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
                 if let Some(only) = parts.first() {
-                    return SqlIr::Identifier {
-                        range: range_of(*only),
-                        span: span_of(*only),
-                    };
+                    return ident_at(*only, source);
                 }
             }
             lower_node(c, source)
@@ -1616,10 +1613,7 @@ fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
                         span: span_of(*only),
                     };
                 }
-                return SqlIr::Identifier {
-                    range: range_of(*only),
-                    span: span_of(*only),
-                };
+                return ident_at(*only, source);
             }
         }
         lower_node(*c, source)
@@ -1682,19 +1676,10 @@ fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlIr {
                 let mut nc = c.walk();
                 let parts: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
                 if parts.len() >= 2 {
-                    schema = Some(Box::new(SqlIr::Schema {
-                        range: range_of(parts[0]),
-                        span: span_of(parts[0]),
-                    }));
-                    name_ir = Some(SqlIr::Identifier {
-                        range: range_of(parts[1]),
-                        span: span_of(parts[1]),
-                    });
+                    schema = Some(Box::new(schema_at(parts[0], source)));
+                    name_ir = Some(ident_at(parts[1], source));
                 } else if let Some(only) = parts.first() {
-                    name_ir = Some(SqlIr::Identifier {
-                        range: range_of(*only),
-                        span: span_of(*only),
-                    });
+                    name_ir = Some(ident_at(*only, source));
                 }
             }
             "function_arguments" => {
@@ -1750,7 +1735,7 @@ fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlIr {
         if text.starts_with('@') {
             SqlIr::Variable { range: range_of(*c), span: span_of(*c) }
         } else {
-            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+            ident_at(*c, source)
         }
     }).unwrap_or(SqlIr::Unknown {
         kind: "missing_arg_name".into(),
@@ -1829,10 +1814,7 @@ fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
                 last_was_as = false;
             }
             "identifier" if last_was_as => {
-                let alias = SqlIr::Alias {
-                    range: range_of(c),
-                    span: span_of(c),
-                };
+                let alias = alias_at(c, source);
                 match state {
                     State::AfterInto => {
                         if let Some(SqlIr::Relation { schema, name, alias: _, range, span }) = target.take() {
@@ -1890,30 +1872,18 @@ fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
 }
 
 /// Build a `SqlIr::Relation` from an object_reference CST node.
-fn build_relation_from_object_reference(node: TsNode<'_>, _source: &str) -> SqlIr {
+fn build_relation_from_object_reference(node: TsNode<'_>, source: &str) -> SqlIr {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
     let parts: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
     let (schema, name) = if parts.len() >= 2 {
         (
-            Some(Box::new(SqlIr::Schema {
-                range: range_of(parts[0]),
-                span: span_of(parts[0]),
-            })),
-            Box::new(SqlIr::Identifier {
-                range: range_of(parts[1]),
-                span: span_of(parts[1]),
-            }),
+            Some(Box::new(schema_at(parts[0], source))),
+            Box::new(ident_at(parts[1], source)),
         )
     } else if let Some(only) = parts.first() {
-        (
-            None,
-            Box::new(SqlIr::Identifier {
-                range: range_of(*only),
-                span: span_of(*only),
-            }),
-        )
+        (None, Box::new(ident_at(*only, source)))
     } else {
         return SqlIr::Unknown {
             kind: "empty_object_reference".into(),

@@ -90,23 +90,23 @@
             "names": [
               {
                 "names": [
-                  "[dbo]",
-                  "[Users]"
+                  "dbo",
+                  "Users"
                 ]
               },
-              "[Name]"
+              "Name"
             ],
             "alias": "UserName"
           },
           "@StartDate"
         ],
         "from": {
-          "schema": "[dbo]",
-          "name": "[Users]"
+          "schema": "dbo",
+          "name": "Users"
         },
         "where": {
           "between": {
-            "value": "[Age]",
+            "value": "Age",
             "low": "18",
             "high": "65"
           }
@@ -130,7 +130,7 @@
         ],
         "where": {
           "compare": {
-            "left": "[Key]",
+            "left": "Key",
             "op": {
               "text": "="
             },

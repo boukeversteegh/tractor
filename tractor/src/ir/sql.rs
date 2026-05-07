@@ -27,11 +27,18 @@
 //!
 //! ## Invariants
 //!
-//! Same three as `Ir` and `DataIr`:
 //! 1. **Round-trip identity** — `to_source(sql_ir, source) == source`.
 //! 2. **XPath text recovery** — `string(rendered_root) == source`.
 //! 3. **No silent drops** — un-handled CST kinds fall through to
 //!    [`SqlIr::Unknown`].
+//! 4. **Canonical reconstruction without source** —
+//!    `parse(canonical_source(parse(s))) == parse(s)`. The IR carries
+//!    every semantic distinction needed to regenerate equivalent
+//!    source from scratch, without consulting source byte ranges.
+//!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
+//!    is captured by [`QuoteStyle`] on the atom variant; `value` is
+//!    the parsed unquoted text. Implemented in
+//!    `sql_canonical::canonical_source`.
 
 #![cfg(feature = "native")]
 
@@ -434,14 +441,23 @@ pub enum SqlIr {
 
     // ----- Atoms ---------------------------------------------------------
 
-    /// `<name>` — bare identifier text.
-    Identifier { range: ByteRange, span: Span },
+    /// `<name>` — identifier text leaf. Always rendered as a text-only
+    /// `<name>` element (per the cross-language `name-is-text-leaf`
+    /// shape contract). Quoting style (T-SQL `[name]`, ANSI `"name"`,
+    /// MySQL `` `name` ``) is captured in `quoting` so the IR carries
+    /// the syntactic distinction without relying on the source range.
+    /// The `value` field carries the parsed (unquoted) identifier text;
+    /// renderers read this directly rather than slicing source.
+    Identifier { value: String, quoting: QuoteStyle, range: ByteRange, span: Span },
 
-    /// `<schema>` — schema qualifier in `dbo.Table`.
-    Schema { range: ByteRange, span: Span },
+    /// `<schema>` — schema qualifier in `dbo.Table`. Renders as a
+    /// container holding an inner `<name>` leaf and any quoting
+    /// markers (so that markers stay off the text-only `<name>`).
+    Schema { value: String, quoting: QuoteStyle, range: ByteRange, span: Span },
 
     /// `<alias>` — alias position identifier (`t` in `Users t`).
-    Alias { range: ByteRange, span: Span },
+    /// Renders as a container holding an inner `<name>` leaf.
+    Alias { value: String, quoting: QuoteStyle, range: ByteRange, span: Span },
 
     /// `<temp>` — temp-table qualifier `#name` / `##name`.
     Temp { name: Box<SqlIr>, range: ByteRange, span: Span },
@@ -472,6 +488,51 @@ pub enum SqlIr {
 pub enum SortDirection {
     Asc,
     Desc,
+}
+
+/// Quoting style for identifier-class atoms (`Identifier`, `Schema`,
+/// `Alias`). Captures the syntactic distinction explicitly in the IR
+/// so that a fully semantically equivalent source can be reconstructed
+/// from the IR alone — without relying on byte ranges into the
+/// original source string. (See module-level invariant 4.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuoteStyle {
+    /// Bare identifier — `Users`, `dbo`. No quoting.
+    None,
+    /// T-SQL bracket quoting — `[Users]`. Allows reserved words and
+    /// special characters in identifier names.
+    Brackets,
+    /// ANSI / Postgres double quotes — `"Users"`. Same role as
+    /// brackets; T-SQL accepts both via `QUOTED_IDENTIFIER` setting.
+    DoubleQuote,
+    /// MySQL backticks — `` `Users` ``. Same role; included for
+    /// future cross-dialect coverage.
+    Backtick,
+}
+
+impl QuoteStyle {
+    /// Marker element name to emit on the wrapping element when
+    /// rendering this quoting style — empty for `None`.
+    pub const fn marker_name(self) -> Option<&'static str> {
+        match self {
+            QuoteStyle::None => None,
+            QuoteStyle::Brackets => Some("bracketed"),
+            QuoteStyle::DoubleQuote => Some("quoted"),
+            QuoteStyle::Backtick => Some("backticked"),
+        }
+    }
+
+    /// Wrap a parsed identifier value in this quoting style for
+    /// canonical-source reconstruction. `None` returns the value
+    /// unchanged.
+    pub fn wrap(self, value: &str) -> String {
+        match self {
+            QuoteStyle::None => value.to_string(),
+            QuoteStyle::Brackets => format!("[{value}]"),
+            QuoteStyle::DoubleQuote => format!("\"{value}\""),
+            QuoteStyle::Backtick => format!("`{value}`"),
+        }
+    }
 }
 
 /// Comparison operator for `<compare>`. `Op` is the canonical

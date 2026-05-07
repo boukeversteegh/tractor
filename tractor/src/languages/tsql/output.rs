@@ -83,6 +83,15 @@ pub enum TractorNode {
     Reset,
     // Identifiers and their variants
     Name, Alias, Schema, Var, Temp, Comment,
+    // `<part>` — wrapper for an identifier segment that holds
+    // quoting markers (e.g. `<part><bracketed/><name>dbo</name></part>`).
+    // Used in Reference (anonymous parts of qualified column refs)
+    // and as the wrapper for a Relation's table name.
+    Part,
+    // Identifier quoting style markers (T-SQL `[name]` / ANSI `"name"` /
+    // MySQL `` `name` ``). Empty `<marker/>` children of `<part>` /
+    // `<schema>` / `<alias>` wrappers.
+    Bracketed, Quoted, Backticked,
     // Operator child
     Op,
     // Generic fallback for unmodeled CST kinds
@@ -123,10 +132,11 @@ impl TractorNode {
             | Self::Reset                                                        => (false, true, Keyword),
             // `<star/>` — empty marker for `SELECT *`. Has no children.
             Self::Star                                                           => (true, false, Keyword),
-            // Direction / DDL kind / MERGE markers — empty `<marker/>` elements.
+            // Direction / DDL kind / MERGE / quoting markers — empty `<marker/>` elements.
             Self::Asc | Self::Desc | Self::Table | Self::View | Self::Index
             | Self::Add | Self::Full | Self::Outer | Self::Cross | Self::Inner
-            | Self::Matched | Self::Not                                          => (true, false, Keyword),
+            | Self::Matched | Self::Not
+            | Self::Bracketed | Self::Quoted | Self::Backticked                  => (true, false, Keyword),
             // `<left>` / `<right>` are dual-use — Compare operand
             // wrappers (containers carrying expressions) AND JOIN
             // direction markers (empty `<left/>` on `<join>`).

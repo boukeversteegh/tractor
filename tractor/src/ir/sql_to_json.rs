@@ -468,9 +468,14 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         }
 
         // ----- Atoms ----------------------------------------------------
-        SqlIr::Identifier { range, .. } => Value::String(range.slice(source).to_string()),
-        SqlIr::Schema { range, .. } => Value::String(range.slice(source).to_string()),
-        SqlIr::Alias { range, .. } => Value::String(range.slice(source).to_string()),
+        // Identifier-class atoms use the parsed `value`. Quoting is
+        // captured as a sibling-level marker in object-context shapes
+        // (Relation/Reference/Column.alias) but flattens to a plain
+        // string when rendered standalone — JSON consumers querying
+        // by identity see `"dbo"`, not `"[dbo]"`.
+        SqlIr::Identifier { value, .. } => Value::String(value.clone()),
+        SqlIr::Schema { value, .. } => Value::String(value.clone()),
+        SqlIr::Alias { value, .. } => Value::String(value.clone()),
         SqlIr::Temp { name, .. } => json_obj([("temp", sql_to_json(name, source))]),
         SqlIr::Variable { range, .. } => Value::String(range.slice(source).to_string()),
         SqlIr::Literal { range, .. } => Value::String(range.slice(source).to_string()),
@@ -495,13 +500,15 @@ where
     Value::Object(m)
 }
 
-/// Render an atom node as a plain string scalar.
+/// Render an atom node as a plain string scalar. Identifier-class
+/// atoms use the parsed `value` (quoting stripped); literals/variables
+/// keep the raw source slice.
 fn scalar_text(ir: &SqlIr, source: &str) -> Value {
     match ir {
-        SqlIr::Identifier { range, .. }
-        | SqlIr::Schema { range, .. }
-        | SqlIr::Alias { range, .. }
-        | SqlIr::Variable { range, .. }
+        SqlIr::Identifier { value, .. }
+        | SqlIr::Schema { value, .. }
+        | SqlIr::Alias { value, .. } => Value::String(value.clone()),
+        SqlIr::Variable { range, .. }
         | SqlIr::Literal { range, .. } => Value::String(range.slice(source).to_string()),
         other => sql_to_json(other, source),
     }

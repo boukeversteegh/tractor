@@ -286,29 +286,51 @@ pub fn render_sql_to_xot(
         SqlIr::Relation { schema, name, alias, .. } => {
             let node = element(xot, "relation")?;
             xot.append(parent, node)?;
+            // Schema (when present): <schema><bracketed/><name>dbo</name></schema>
             if let Some(s) = schema {
-                let sn = element(xot, "schema")?;
-                xot.append(node, sn)?;
-                if let SqlIr::Schema { range, .. } = s.as_ref() {
-                    let text = xot.new_text(range.slice(source));
-                    xot.append(sn, text)?;
+                if let SqlIr::Schema { value, quoting, .. } = s.as_ref() {
+                    let sn = element(xot, "schema")?;
+                    xot.append(node, sn)?;
+                    if let Some(marker) = quoting.marker_name() {
+                        let m = element(xot, marker)?;
+                        xot.append(sn, m)?;
+                    }
+                    let nn = element(xot, "name")?;
+                    xot.append(sn, nn)?;
+                    let t = xot.new_text(value);
+                    xot.append(nn, t)?;
                 }
             }
-            // Name renders as <name>text</name>
-            if let SqlIr::Identifier { range, .. } = name.as_ref() {
+            // Name (always): <part><bracketed?/><name>Users</name></part>
+            // — wrapping in <part> so quoting markers can attach
+            // without violating name-is-text-leaf.
+            if let SqlIr::Identifier { value, quoting, .. } = name.as_ref() {
+                let pn = element(xot, "part")?;
+                xot.append(node, pn)?;
+                if let Some(marker) = quoting.marker_name() {
+                    let m = element(xot, marker)?;
+                    xot.append(pn, m)?;
+                }
                 let nn = element(xot, "name")?;
-                xot.append(node, nn)?;
-                let text = xot.new_text(range.slice(source));
-                xot.append(nn, text)?;
+                xot.append(pn, nn)?;
+                let t = xot.new_text(value);
+                xot.append(nn, t)?;
             } else {
                 render_sql_to_xot(xot, node, name, source)?;
             }
+            // Alias: <alias><bracketed?/><name>u</name></alias>
             if let Some(a) = alias {
-                let an = element(xot, "alias")?;
-                xot.append(node, an)?;
-                if let SqlIr::Alias { range, .. } = a.as_ref() {
-                    let text = xot.new_text(range.slice(source));
-                    xot.append(an, text)?;
+                if let SqlIr::Alias { value, quoting, .. } = a.as_ref() {
+                    let an = element(xot, "alias")?;
+                    xot.append(node, an)?;
+                    if let Some(marker) = quoting.marker_name() {
+                        let m = element(xot, marker)?;
+                        xot.append(an, m)?;
+                    }
+                    let nn = element(xot, "name")?;
+                    xot.append(an, nn)?;
+                    let t = xot.new_text(value);
+                    xot.append(nn, t)?;
                 }
             }
             Ok(node)
@@ -318,11 +340,17 @@ pub fn render_sql_to_xot(
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, expression, source)?;
             if let Some(a) = alias {
-                let an = element(xot, "alias")?;
-                xot.append(node, an)?;
-                if let SqlIr::Alias { range, .. } = a.as_ref() {
-                    let text = xot.new_text(range.slice(source));
-                    xot.append(an, text)?;
+                if let SqlIr::Alias { value, quoting, .. } = a.as_ref() {
+                    let an = element(xot, "alias")?;
+                    xot.append(node, an)?;
+                    if let Some(marker) = quoting.marker_name() {
+                        let m = element(xot, marker)?;
+                        xot.append(an, m)?;
+                    }
+                    let nn = element(xot, "name")?;
+                    xot.append(an, nn)?;
+                    let t = xot.new_text(value);
+                    xot.append(nn, t)?;
                 }
             }
             Ok(node)
@@ -336,15 +364,24 @@ pub fn render_sql_to_xot(
             Ok(node)
         }
         SqlIr::Reference { parts, .. } => {
-            // Render each part as `<name>text</name>` siblings under
-            // the parent. Mirrors the cross-language IR shape where
-            // qualified column refs surface as a list of <name>s.
+            // Render each part as <part><bracketed?/><name>text</name></part>
+            // — uniform wrapper so quoting markers attach without
+            // violating name-is-text-leaf. Roles aren't determinable
+            // from syntax for qualified column refs (e.g.
+            // dbo.SomeTable.SomeColumn could be schema.table.column
+            // OR alias.table.column), so parts stay anonymous.
             for p in parts {
-                if let SqlIr::Identifier { range, .. } = p {
-                    let n = element(xot, "name")?;
-                    xot.append(parent, n)?;
-                    let text = xot.new_text(range.slice(source));
-                    xot.append(n, text)?;
+                if let SqlIr::Identifier { value, quoting, .. } = p {
+                    let pn = element(xot, "part")?;
+                    xot.append(parent, pn)?;
+                    if let Some(marker) = quoting.marker_name() {
+                        let m = element(xot, marker)?;
+                        xot.append(pn, m)?;
+                    }
+                    let nn = element(xot, "name")?;
+                    xot.append(pn, nn)?;
+                    let t = xot.new_text(value);
+                    xot.append(nn, t)?;
                 } else {
                     render_sql_to_xot(xot, parent, p, source)?;
                 }
@@ -608,11 +645,55 @@ pub fn render_sql_to_xot(
         }
 
         // ----- Atoms ----------------------------------------------------
-        SqlIr::Identifier { range, .. } => {
-            leaf(xot, parent, "name", range.slice(source))
+        // Standalone atom rendering — when an Identifier/Schema/Alias
+        // is rendered without a wrapping context (Relation / Reference /
+        // Column.alias). Wrap with the role-named element to hold any
+        // quoting markers; <name> always stays a text-only leaf.
+        SqlIr::Identifier { value, quoting, .. } => {
+            // Bare identifier — emit <name>value</name>; if quoted,
+            // wrap in <part><bracketed/>...</part> to give markers a
+            // home. Standalone bare identifier with no quoting is a
+            // pure leaf (no part wrapper needed).
+            if let Some(marker) = quoting.marker_name() {
+                let pn = element(xot, "part")?;
+                xot.append(parent, pn)?;
+                let m = element(xot, marker)?;
+                xot.append(pn, m)?;
+                let nn = element(xot, "name")?;
+                xot.append(pn, nn)?;
+                let t = xot.new_text(value);
+                xot.append(nn, t)?;
+                Ok(pn)
+            } else {
+                leaf(xot, parent, "name", value)
+            }
         }
-        SqlIr::Schema { range, .. } => leaf(xot, parent, "schema", range.slice(source)),
-        SqlIr::Alias { range, .. } => leaf(xot, parent, "alias", range.slice(source)),
+        SqlIr::Schema { value, quoting, .. } => {
+            let sn = element(xot, "schema")?;
+            xot.append(parent, sn)?;
+            if let Some(marker) = quoting.marker_name() {
+                let m = element(xot, marker)?;
+                xot.append(sn, m)?;
+            }
+            let nn = element(xot, "name")?;
+            xot.append(sn, nn)?;
+            let t = xot.new_text(value);
+            xot.append(nn, t)?;
+            Ok(sn)
+        }
+        SqlIr::Alias { value, quoting, .. } => {
+            let an = element(xot, "alias")?;
+            xot.append(parent, an)?;
+            if let Some(marker) = quoting.marker_name() {
+                let m = element(xot, marker)?;
+                xot.append(an, m)?;
+            }
+            let nn = element(xot, "name")?;
+            xot.append(an, nn)?;
+            let t = xot.new_text(value);
+            xot.append(nn, t)?;
+            Ok(an)
+        }
         SqlIr::Temp { name, .. } => {
             let node = element(xot, "temp")?;
             xot.append(parent, node)?;
