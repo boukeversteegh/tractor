@@ -85,6 +85,9 @@ pub mod to_data;
 // See module doc-comment for rationale.
 #[cfg(feature = "native")]
 pub mod sql;
+// TSQL CST → SqlIr lowering.
+#[cfg(feature = "native")]
+pub mod sql_lower;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
