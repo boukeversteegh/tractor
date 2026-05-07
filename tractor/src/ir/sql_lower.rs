@@ -44,6 +44,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         // ----- Top-level wrapping ------------------------------------
         "statement" => lower_statement(node, source),
         "go_statement" => SqlIr::Go { range, span },
+        "execute_statement" => lower_exec(node, source),
+        "set_statement" => lower_set(node, source),
+        "transaction" => lower_transaction(node, source),
+        "create_function" => lower_create_function(node, source),
+        "function_argument" => lower_function_argument(node, source),
+        "function_body" => lower_function_body(node, source),
+        "when_clause" => lower_merge_when(node, source),
 
         // ----- Atoms --------------------------------------------------
         "identifier" => {
@@ -149,6 +156,17 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
     // DELETE statement: aggregate `delete` + `from` (where nested).
     if kinds.iter().any(|k| *k == "delete") {
         let inner = aggregate_delete(node, source);
+        return SqlIr::Statement { inner: Box::new(inner), range, span };
+    }
+    // MERGE statement: detected by a `keyword_merge` child. The
+    // `<statement>` itself holds all the merge body (target/source
+    // /on/when_clause as siblings).
+    let mut kw_cur = node.walk();
+    let has_merge_keyword = node
+        .children(&mut kw_cur)
+        .any(|c| c.kind() == "keyword_merge");
+    if has_merge_keyword {
+        let inner = aggregate_merge(node, source);
         return SqlIr::Statement { inner: Box::new(inner), range, span };
     }
     // INSERT statement: a single `insert` child does the work.
@@ -1443,6 +1461,441 @@ fn lower_over(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
+/// `execute_statement` CST → `SqlIr::Exec { target }`.
+fn lower_exec(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let target = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .next()
+        .map(|c| {
+            // Unwrap object_reference to its single identifier.
+            if c.kind() == "object_reference" {
+                let mut nc = c.walk();
+                let parts: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+                if let Some(only) = parts.first() {
+                    return SqlIr::Identifier {
+                        range: range_of(*only),
+                        span: span_of(*only),
+                    };
+                }
+            }
+            lower_node(c, source)
+        })
+        .unwrap_or(SqlIr::Unknown {
+            kind: "missing_exec_target".into(),
+            range,
+            span,
+        });
+    SqlIr::Exec {
+        target: Box::new(target),
+        range,
+        span,
+    }
+}
+
+/// `set_statement` CST → `SqlIr::Set { target, value }`.
+fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_"))
+        .collect();
+    let target = named.first().map(|c| {
+        // The set target is usually an object_reference holding a
+        // single @-prefixed identifier — unwrap to Variable.
+        if c.kind() == "object_reference" {
+            let mut nc = c.walk();
+            let parts: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+            if let Some(only) = parts.first() {
+                let text = range_of(*only).slice(source);
+                if text.starts_with('@') {
+                    return SqlIr::Variable {
+                        range: range_of(*only),
+                        span: span_of(*only),
+                    };
+                }
+                return SqlIr::Identifier {
+                    range: range_of(*only),
+                    span: span_of(*only),
+                };
+            }
+        }
+        lower_node(*c, source)
+    }).unwrap_or(SqlIr::Unknown {
+        kind: "missing_set_target".into(),
+        range,
+        span,
+    });
+    let value = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+        kind: "missing_set_value".into(),
+        range,
+        span,
+    });
+    SqlIr::Set {
+        target: Box::new(target),
+        value: Box::new(value),
+        range,
+        span,
+    }
+}
+
+/// `transaction` CST → `SqlIr::Transaction { statements }`. Walks
+/// inner statements, dropping BEGIN / COMMIT / ROLLBACK keywords.
+fn lower_transaction(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let statements: Vec<SqlIr> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .map(|c| lower_node(c, source))
+        .collect();
+    SqlIr::Transaction {
+        statements,
+        range,
+        span,
+    }
+}
+
+/// `create_function` CST → `SqlIr::Function`. Children: optional
+/// schema-qualified name, function_arguments, RETURNS type,
+/// function_body.
+fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut schema: Option<Box<SqlIr>> = None;
+    let mut name_ir: Option<SqlIr> = None;
+    let mut parameters: Vec<SqlIr> = Vec::new();
+    let mut return_type: Option<Box<SqlIr>> = None;
+    let mut body: Option<SqlIr> = None;
+
+    let mut cur = node.walk();
+    for c in node.named_children(&mut cur) {
+        let kind = c.kind();
+        if kind.starts_with("keyword_") || kind.starts_with("op_") {
+            continue;
+        }
+        match kind {
+            "object_reference" => {
+                let mut nc = c.walk();
+                let parts: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+                if parts.len() >= 2 {
+                    schema = Some(Box::new(SqlIr::Schema {
+                        range: range_of(parts[0]),
+                        span: span_of(parts[0]),
+                    }));
+                    name_ir = Some(SqlIr::Identifier {
+                        range: range_of(parts[1]),
+                        span: span_of(parts[1]),
+                    });
+                } else if let Some(only) = parts.first() {
+                    name_ir = Some(SqlIr::Identifier {
+                        range: range_of(*only),
+                        span: span_of(*only),
+                    });
+                }
+            }
+            "function_arguments" => {
+                let mut sub = c.walk();
+                for arg in c.named_children(&mut sub) {
+                    if !arg.kind().starts_with("keyword_") {
+                        parameters.push(lower_node(arg, source));
+                    }
+                }
+            }
+            "function_body" => body = Some(lower_function_body(c, source)),
+            // Anything else after RETURNS is the return type.
+            _ if return_type.is_none() && body.is_none() => {
+                return_type = Some(Box::new(lower_node(c, source)));
+            }
+            _ => {}
+        }
+    }
+
+    let name = Box::new(name_ir.unwrap_or(SqlIr::Unknown {
+        kind: "missing_function_name".into(),
+        range,
+        span,
+    }));
+    let body = Box::new(body.unwrap_or(SqlIr::Unknown {
+        kind: "missing_function_body".into(),
+        range,
+        span,
+    }));
+    SqlIr::Function {
+        schema,
+        name,
+        parameters,
+        return_type,
+        body,
+        range,
+        span,
+    }
+}
+
+/// `function_argument` CST → reuse the cross-language `Column` /
+/// `ColumnDef` shape — emit `ColumnDef { name, type_ }`.
+fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let name = named.first().map(|c| {
+        let text = range_of(*c).slice(source);
+        if text.starts_with('@') {
+            SqlIr::Variable { range: range_of(*c), span: span_of(*c) }
+        } else {
+            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+        }
+    }).unwrap_or(SqlIr::Unknown {
+        kind: "missing_arg_name".into(),
+        range,
+        span,
+    });
+    let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+        kind: "missing_arg_type".into(),
+        range,
+        span,
+    });
+    SqlIr::ColumnDef {
+        name: Box::new(name),
+        type_: Box::new(type_),
+        constraints: Vec::new(),
+        range,
+        span,
+    }
+}
+
+/// `function_body` CST → wrap the inner expression(s) as a typed
+/// body. For now, just collect non-keyword children into a Tuple
+/// (or single child unwrapped).
+fn lower_function_body(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let inner: Vec<SqlIr> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .map(|c| lower_node(c, source))
+        .collect();
+    if inner.len() == 1 {
+        inner.into_iter().next().unwrap()
+    } else {
+        SqlIr::Tuple { items: inner, range, span }
+    }
+}
+
+/// Aggregate a MERGE statement from siblings under `<statement>`.
+/// Children: keyword_merge, keyword_into, object_reference (target),
+/// keyword_as, identifier (target alias), keyword_using,
+/// object_reference (source), keyword_as, identifier (source alias),
+/// keyword_on, binary_expression (ON condition), when_clause(s).
+fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(stmt);
+    let span = span_of(stmt);
+    #[derive(Copy, Clone, PartialEq)]
+    enum State { Initial, AfterInto, AfterUsing, AfterOn }
+    let mut state = State::Initial;
+    let mut target: Option<SqlIr> = None;
+    let mut source_rel: Option<SqlIr> = None;
+    let mut on: Option<SqlIr> = None;
+    let mut whens: Vec<SqlIr> = Vec::new();
+
+    // Track whether we've consumed the `<as> <identifier>` alias for
+    // the current relation context.
+    let mut last_was_as = false;
+
+    let mut cur = stmt.walk();
+    for c in stmt.named_children(&mut cur) {
+        let kind = c.kind();
+        match kind {
+            "keyword_into" => { state = State::AfterInto; last_was_as = false; }
+            "keyword_using" => { state = State::AfterUsing; last_was_as = false; }
+            "keyword_on" => { state = State::AfterOn; last_was_as = false; }
+            "keyword_as" => { last_was_as = true; }
+            "when_clause" => whens.push(lower_merge_when(c, source)),
+            "object_reference" => {
+                let rel = build_relation_from_object_reference(c, source);
+                match state {
+                    State::AfterInto if target.is_none() => target = Some(rel),
+                    State::AfterUsing if source_rel.is_none() => source_rel = Some(rel),
+                    _ => {}
+                }
+                last_was_as = false;
+            }
+            "identifier" if last_was_as => {
+                let alias = SqlIr::Alias {
+                    range: range_of(c),
+                    span: span_of(c),
+                };
+                match state {
+                    State::AfterInto => {
+                        if let Some(SqlIr::Relation { schema, name, alias: _, range, span }) = target.take() {
+                            target = Some(SqlIr::Relation {
+                                schema, name, alias: Some(Box::new(alias)),
+                                range, span,
+                            });
+                        }
+                    }
+                    State::AfterUsing => {
+                        if let Some(SqlIr::Relation { schema, name, alias: _, range, span }) = source_rel.take() {
+                            source_rel = Some(SqlIr::Relation {
+                                schema, name, alias: Some(Box::new(alias)),
+                                range, span,
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+                last_was_as = false;
+            }
+            _ if state == State::AfterOn && on.is_none()
+                && !kind.starts_with("keyword_") => {
+                on = Some(lower_node(c, source));
+                last_was_as = false;
+            }
+            k if k.starts_with("keyword_") || k.starts_with("op_") => {}
+            _ => { last_was_as = false; }
+        }
+    }
+
+    let target = Box::new(target.unwrap_or(SqlIr::Unknown {
+        kind: "missing_merge_target".into(),
+        range,
+        span,
+    }));
+    let source_rel = Box::new(source_rel.unwrap_or(SqlIr::Unknown {
+        kind: "missing_merge_source".into(),
+        range,
+        span,
+    }));
+    let on = Box::new(on.unwrap_or(SqlIr::Unknown {
+        kind: "missing_merge_on".into(),
+        range,
+        span,
+    }));
+    SqlIr::Merge {
+        target,
+        source: source_rel,
+        on,
+        whens,
+        range,
+        span,
+    }
+}
+
+/// Build a `SqlIr::Relation` from an object_reference CST node.
+fn build_relation_from_object_reference(node: TsNode<'_>, _source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let parts: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
+    let (schema, name) = if parts.len() >= 2 {
+        (
+            Some(Box::new(SqlIr::Schema {
+                range: range_of(parts[0]),
+                span: span_of(parts[0]),
+            })),
+            Box::new(SqlIr::Identifier {
+                range: range_of(parts[1]),
+                span: span_of(parts[1]),
+            }),
+        )
+    } else if let Some(only) = parts.first() {
+        (
+            None,
+            Box::new(SqlIr::Identifier {
+                range: range_of(*only),
+                span: span_of(*only),
+            }),
+        )
+    } else {
+        return SqlIr::Unknown {
+            kind: "empty_object_reference".into(),
+            range,
+            span,
+        };
+    };
+    SqlIr::Relation {
+        schema,
+        name,
+        alias: None,
+        range,
+        span,
+    }
+}
+
+/// `when_clause` (in MERGE) → `SqlIr::MergeWhen { matched, action }`.
+fn lower_merge_when(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut matched = true;
+    let mut action: Option<SqlIr> = None;
+
+    let mut cur = node.walk();
+    for c in node.named_children(&mut cur) {
+        match c.kind() {
+            "keyword_not" => matched = false,
+            "keyword_matched" => {}
+            "keyword_when" | "keyword_then" => {}
+            // Action is one of: UPDATE / INSERT / DELETE
+            "keyword_update" | "keyword_insert" | "keyword_delete" => {
+                // Action body follows; we'll capture below.
+            }
+            "assignment" => {
+                // For `WHEN MATCHED THEN UPDATE SET ...`, this is the
+                // assignment. Wrap in an Update without table.
+                if action.is_none() {
+                    action = Some(SqlIr::Update {
+                        table: Box::new(SqlIr::Unknown {
+                            kind: "merge_update_no_explicit_table".into(),
+                            range: range_of(c),
+                            span: span_of(c),
+                        }),
+                        assignments: vec![lower_assignment(c, source)],
+                        where_: None,
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                }
+            }
+            "list" => {
+                // For INSERT: a list child holds columns or values.
+                // Defer detailed shape to later iter.
+                if action.is_none() {
+                    action = Some(lower_node(c, source));
+                }
+            }
+            k if k.starts_with("keyword_") || k.starts_with("op_") => {}
+            _ => {
+                if action.is_none() {
+                    action = Some(lower_node(c, source));
+                }
+            }
+        }
+    }
+
+    let action = Box::new(action.unwrap_or(SqlIr::Unknown {
+        kind: "merge_when_no_action".into(),
+        range,
+        span,
+    }));
+    SqlIr::MergeWhen {
+        matched,
+        action,
+        range,
+        span,
+    }
+}
+
 fn comparison_op_from_text(text: &str) -> Option<ComparisonOp> {
     Some(match text {
         "=" => ComparisonOp::Equal,
@@ -1569,6 +2022,72 @@ mod tests {
             Some(SqlIr::Between { .. }) => {}
             other => panic!("unexpected column: {other:?}"),
         }
+    }
+
+    #[test]
+    fn exec_lowers_to_typed_exec() {
+        let source = "EXEC sp_helpdb";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Exec { target, .. } = inner.as_ref() else {
+            panic!("expected Exec, got {inner:?}");
+        };
+        assert!(matches!(target.as_ref(), SqlIr::Identifier { .. }));
+    }
+
+    #[test]
+    fn set_variable_lowers_to_typed_set() {
+        let source = "SET @x = 1";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Set { target, .. } = inner.as_ref() else {
+            panic!("expected Set, got {inner:?}");
+        };
+        assert!(matches!(target.as_ref(), SqlIr::Variable { .. }));
+    }
+
+    #[test]
+    fn transaction_lowers_to_typed_transaction() {
+        let source = "BEGIN TRANSACTION; UPDATE T SET v = 1; COMMIT";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Transaction { statements: inner, .. } = &statements[0] else {
+            panic!("expected Transaction, got {:?}", statements[0]);
+        };
+        assert!(!inner.is_empty(), "transaction has no inner statements");
+    }
+
+    #[test]
+    fn merge_lowers_to_typed_merge() {
+        let source = "MERGE INTO T AS t USING S AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Merge { whens, .. } = inner.as_ref() else {
+            panic!("expected Merge, got {inner:?}");
+        };
+        assert!(!whens.is_empty());
+        assert!(matches!(&whens[0], SqlIr::MergeWhen { .. }));
+    }
+
+    #[test]
+    fn create_function_lowers_to_typed_function() {
+        let source = "CREATE FUNCTION dbo.GetAge(@b DATE) RETURNS INT AS BEGIN RETURN 1 END";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Function { schema, name: _, parameters, .. } = inner.as_ref() else {
+            panic!("expected Function, got {inner:?}");
+        };
+        assert!(schema.is_some(), "schema missing");
+        assert_eq!(parameters.len(), 1);
     }
 
     #[test]
