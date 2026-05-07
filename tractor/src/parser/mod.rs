@@ -12,42 +12,23 @@ pub use crate::languages;
 use std::path::Path;
 use std::fs;
 use thiserror::Error;
+use once_cell::sync::Lazy;
 use crate::tree_mode::TreeMode;
 
-/// Supported languages and their extensions
-pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
-    ("csharp", &["cs"]),
-    ("rust", &["rs"]),
-    ("javascript", &["js", "mjs", "cjs", "jsx"]),
-    ("typescript", &["ts"]),
-    ("tsx", &["tsx"]),
-    ("python", &["py", "pyw", "pyi"]),
-    ("go", &["go"]),
-    ("java", &["java"]),
-    ("ruby", &["rb", "rake", "gemspec"]),
-    ("cpp", &["cpp", "cc", "cxx", "hpp", "hxx", "hh"]),
-    ("c", &["c", "h"]),
-    ("json", &["json"]),
-    ("html", &["html", "htm"]),
-    ("css", &["css"]),
-    ("bash", &["sh", "bash"]),
-    ("yaml", &["yml", "yaml"]),
-    ("toml", &["toml"]),
-    ("ini", &["ini", "cfg", "inf"]),
-    ("env", &["env"]),
-    ("php", &["php"]),
-    ("scala", &["scala", "sc"]),
-    ("lua", &["lua"]),
-    ("haskell", &["hs", "lhs"]),
-    ("ocaml", &["ml", "mli"]),
-    ("r", &["r"]),
-    ("julia", &["jl"]),
-    ("markdown", &["md", "markdown", "mdx"]),
-    // XML pass-through (not parsed, queried directly)
-    ("xml", &["xml"]),
-    // SQL dialects
-    ("tsql", &["sql"]),
-];
+/// Supported languages and their extensions, derived from
+/// [`crate::languages::LANGUAGES`] plus the XML passthrough entry.
+///
+/// XML isn't a tree-sitter language — it's loaded directly into xee
+/// `Documents` via [`load_xml_file_to_documents`] — so it has no row
+/// in `LANGUAGES`, but it still claims `.xml` here.
+pub static SUPPORTED_LANGUAGES: Lazy<Vec<(&'static str, &'static [&'static str])>> = Lazy::new(|| {
+    let mut out: Vec<(&'static str, &'static [&'static str])> = crate::languages::LANGUAGES
+        .iter()
+        .map(|l| (l.ids[0], l.extensions))
+        .collect();
+    out.push(("xml", &["xml"]));
+    out
+});
 
 /// Parse result with xot document
 pub struct XotParseResult {
@@ -114,76 +95,30 @@ pub enum ParseError {
     TreeSitter(String),
 }
 
-/// Detect language from file path extension
+/// Detect language from file path extension. Returns the canonical
+/// name (the first entry of [`crate::languages::LanguageOps::ids`])
+/// of the registry row whose `extensions` claim the path. `"xml"` is
+/// the only special case (passthrough; not in `LANGUAGES`). Returns
+/// `"unknown"` when no row matches.
 pub fn detect_language(path: &str) -> &'static str {
-    let ext = path.rsplit('.').next().unwrap_or("");
-    match ext.to_lowercase().as_str() {
-        "cs" => "csharp",
-        "rs" => "rust",
-        "js" | "mjs" | "cjs" | "jsx" => "javascript",
-        "ts" => "typescript",
-        "tsx" => "tsx",
-        "py" | "pyw" | "pyi" => "python",
-        "go" => "go",
-        "java" => "java",
-        "rb" | "rake" | "gemspec" => "ruby",
-        "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "hh" => "cpp",
-        "c" | "h" => "c",
-        "json" => "json",
-        "html" | "htm" => "html",
-        "css" => "css",
-        "sh" | "bash" => "bash",
-        "yml" | "yaml" => "yaml",
-        "toml" => "toml",
-        "ini" | "cfg" | "inf" => "ini",
-        "env" => "env",
-        "php" => "php",
-        "scala" | "sc" => "scala",
-        "lua" => "lua",
-        "hs" | "lhs" => "haskell",
-        "ml" | "mli" => "ocaml",
-        "r" => "r",
-        "jl" => "julia",
-        "md" | "markdown" | "mdx" => "markdown",
-        "xml" => "xml",
-        "sql" => "tsql",
-        _ => "unknown",
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    if ext == "xml" {
+        return "xml";
     }
+    crate::languages::LANGUAGES
+        .iter()
+        .find(|l| l.extensions.iter().any(|e| *e == ext))
+        .map(|l| l.ids[0])
+        .unwrap_or("unknown")
 }
 
-/// Get TreeSitter language for a language name
+/// Get the tree-sitter [`Language`](tree_sitter::Language) for a
+/// language name (canonical or alias). Reads from the registry's
+/// `grammar` field — see [`crate::languages::LanguageOps::grammar`].
 fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseError> {
-    match lang {
-        "csharp" | "cs" => Ok(tree_sitter_c_sharp::LANGUAGE.into()),
-        "rust" | "rs" => Ok(tree_sitter_rust::LANGUAGE.into()),
-        "javascript" | "js" => Ok(tree_sitter_javascript::LANGUAGE.into()),
-        "typescript" | "ts" => Ok(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()),
-        "tsx" => Ok(tree_sitter_typescript::LANGUAGE_TSX.into()),
-        "python" | "py" => Ok(tree_sitter_python::LANGUAGE.into()),
-        "go" => Ok(tree_sitter_go::LANGUAGE.into()),
-        "java" => Ok(tree_sitter_java::LANGUAGE.into()),
-        "ruby" | "rb" => Ok(tree_sitter_ruby::LANGUAGE.into()),
-        "cpp" | "c++" => Ok(tree_sitter_cpp::LANGUAGE.into()),
-        "c" => Ok(tree_sitter_c::LANGUAGE.into()),
-        "json" => Ok(tree_sitter_json::LANGUAGE.into()),
-        "html" | "htm" => Ok(tree_sitter_html::LANGUAGE.into()),
-        "css" => Ok(tree_sitter_css::LANGUAGE.into()),
-        "bash" | "sh" => Ok(tree_sitter_bash::LANGUAGE.into()),
-        "yaml" | "yml" => Ok(tree_sitter_yaml::LANGUAGE.into()),
-        "toml" => Ok(tree_sitter_toml_ng::LANGUAGE.into()),
-        "ini" => Ok(tree_sitter_ini::LANGUAGE.into()),
-        "env" => Ok(tree_sitter_bash::LANGUAGE.into()),
-        "php" => Ok(tree_sitter_php::LANGUAGE_PHP.into()),
-        "scala" => Ok(tree_sitter_scala::LANGUAGE.into()),
-        "lua" => Ok(tree_sitter_lua::LANGUAGE.into()),
-        "haskell" | "hs" => Ok(tree_sitter_haskell::LANGUAGE.into()),
-        "ocaml" | "ml" => Ok(tree_sitter_ocaml::LANGUAGE_OCAML.into()),
-        "r" => Ok(tree_sitter_r::LANGUAGE.into()),
-        "julia" | "jl" => Ok(tree_sitter_julia::LANGUAGE.into()),
-        "markdown" | "md" | "mdx" => Ok(tree_sitter_md::LANGUAGE.into()),
-        "tsql" | "mssql" => Ok(tree_sitter_sequel_tsql::LANGUAGE.into()),
-        _ => Err(ParseError::UnsupportedLanguage(lang.to_string())),
-    }
+    crate::languages::get_language(lang)
+        .map(|l| (l.grammar)())
+        .ok_or_else(|| ParseError::UnsupportedLanguage(lang.to_string()))
 }
 
 /// Language ABI version info
@@ -195,125 +130,20 @@ pub struct LanguageAbiInfo {
     pub abi_version: usize,
 }
 
-/// Get ABI versions for all supported tree-sitter languages
+/// Get ABI versions for every supported tree-sitter language.
 ///
-/// Returns a list of (language_name, abi_version) for all languages.
-/// The ABI version indicates tree-sitter parser compatibility.
+/// Derived from [`crate::languages::LANGUAGES`]: one entry per row,
+/// using `ids[0]` as the canonical name and `(grammar)().abi_version()`
+/// for the version. The ABI version indicates tree-sitter parser
+/// compatibility.
 pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
-    vec![
-        LanguageAbiInfo {
-            name: "bash",
-            abi_version: tree_sitter::Language::from(tree_sitter_bash::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "c",
-            abi_version: tree_sitter::Language::from(tree_sitter_c::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "csharp",
-            abi_version: tree_sitter::Language::from(tree_sitter_c_sharp::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "cpp",
-            abi_version: tree_sitter::Language::from(tree_sitter_cpp::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "css",
-            abi_version: tree_sitter::Language::from(tree_sitter_css::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "env",
-            abi_version: tree_sitter::Language::from(tree_sitter_bash::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "go",
-            abi_version: tree_sitter::Language::from(tree_sitter_go::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "haskell",
-            abi_version: tree_sitter::Language::from(tree_sitter_haskell::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "html",
-            abi_version: tree_sitter::Language::from(tree_sitter_html::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "java",
-            abi_version: tree_sitter::Language::from(tree_sitter_java::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "javascript",
-            abi_version: tree_sitter::Language::from(tree_sitter_javascript::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "json",
-            abi_version: tree_sitter::Language::from(tree_sitter_json::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "julia",
-            abi_version: tree_sitter::Language::from(tree_sitter_julia::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "lua",
-            abi_version: tree_sitter::Language::from(tree_sitter_lua::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "markdown",
-            abi_version: tree_sitter::Language::from(tree_sitter_md::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "ocaml",
-            abi_version: tree_sitter::Language::from(tree_sitter_ocaml::LANGUAGE_OCAML).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "php",
-            abi_version: tree_sitter::Language::from(tree_sitter_php::LANGUAGE_PHP).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "python",
-            abi_version: tree_sitter::Language::from(tree_sitter_python::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "r",
-            abi_version: tree_sitter::Language::from(tree_sitter_r::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "ruby",
-            abi_version: tree_sitter::Language::from(tree_sitter_ruby::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "rust",
-            abi_version: tree_sitter::Language::from(tree_sitter_rust::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "scala",
-            abi_version: tree_sitter::Language::from(tree_sitter_scala::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "tsx",
-            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TSX).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "typescript",
-            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TYPESCRIPT).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "toml",
-            abi_version: tree_sitter::Language::from(tree_sitter_toml_ng::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "ini",
-            abi_version: tree_sitter::Language::from(tree_sitter_ini::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "yaml",
-            abi_version: tree_sitter::Language::from(tree_sitter_yaml::LANGUAGE).abi_version(),
-        },
-        LanguageAbiInfo {
-            name: "tsql",
-            abi_version: tree_sitter::Language::from(tree_sitter_sequel_tsql::LANGUAGE).abi_version(),
-        },
-    ]
+    crate::languages::LANGUAGES
+        .iter()
+        .map(|l| LanguageAbiInfo {
+            name: l.ids[0],
+            abi_version: (l.grammar)().abi_version(),
+        })
+        .collect()
 }
 
 // ============================================================================
@@ -370,55 +200,6 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mod
     parse_string_to_xot_with_options(source, lang, file_path, tree_mode, false)
 }
 
-/// True when the typed-IR pipeline should handle this language under
-/// the given tree mode. Languages are migrated one at a time.
-/// Adding an entry here is the production-rollout flip.
-///
-/// `tree_mode` is taken into account because data languages have a
-/// `Data` mode (key-as-element-name) whose IR renderer may not be
-/// ready yet — `Structure` mode (syntax shape) is the first to land.
-fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
-    // Accept canonical names and common aliases — config files / rules
-    // often use the alias (e.g. `language: js`) before language detection
-    // resolves it to the canonical id.
-    let programming = matches!(
-        lang,
-        "csharp" | "cs"
-        | "python" | "py"
-        | "java"
-        | "typescript" | "ts" | "tsx"
-        | "javascript" | "js" | "jsx"
-        | "rust" | "rs"
-        | "go"
-        | "ruby" | "rb"
-        | "php"
-        | "tsql" | "sql" | "mssql"
-    );
-    if programming {
-        // Programming languages don't have a Data mode (TreeMode::resolve
-        // rejects it), so any non-Raw mode means Structure.
-        return tree_mode != TreeMode::Raw;
-    }
-    // Data languages — IR-pipeline support is per-format and
-    // per-mode.
-    //
-    //   - JSON / YAML's Structure mode (syntax shape) routes
-    //     through the JSON-style data renderer.
-    //   - TOML / INI's Structure mode (the only mode they have, and
-    //     by convention key-as-element-name) routes through the
-    //     keyed data renderer.
-    //   - JSON / YAML's Data mode (key-as-element-name default for
-    //     these languages) is not yet wired — it falls back to the
-    //     imperative path.
-    match (lang, tree_mode) {
-        ("json", TreeMode::Structure) => true,
-        ("yaml" | "yml", TreeMode::Structure) => true,
-        ("toml", TreeMode::Structure) => true,
-        ("ini" | "env", TreeMode::Structure) => true,
-        ("markdown" | "md" | "mdx", TreeMode::Structure) => true,
-        _ => false,
-    }
-}
 
 /// Parse a source string and return an xot document with options (new pipeline)
 ///
@@ -438,7 +219,7 @@ pub fn parse_string_to_xot_with_options(
     // pipeline. Raw mode emits raw tree-sitter kind names (e.g.
     // `let_declaration`) — the IR pipeline replaces those with the
     // semantic vocabulary (`<let>`).
-    if use_ir_pipeline(lang, resolved) {
+    if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline(source, lang, file_path);
     }
 
@@ -915,7 +696,7 @@ pub fn parse_string_to_xee_with_options(
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
 
-    if use_ir_pipeline(lang, resolved) {
+    if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline_to_xee(source, lang, file_path);
     }
     let language = get_tree_sitter_language(lang)?;

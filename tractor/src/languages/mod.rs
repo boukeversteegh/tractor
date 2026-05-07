@@ -105,6 +105,83 @@ pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
 /// Type alias for per-language TractorNodeSpec lookup.
 pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 
+// --- Tree-sitter and IR metadata (native only) -------------------------------
+
+/// Function pointer that produces a tree-sitter [`Language`](tree_sitter::Language)
+/// for a row in [`LANGUAGES`]. One thin shim per language wraps the
+/// corresponding `tree_sitter_<lang>::LANGUAGE` constant — the
+/// constant itself isn't stable enough to embed in a `const` literal
+/// (it carries an `Arc`-like state), so we go through a `fn()` indirection.
+#[cfg(feature = "native")]
+pub type GrammarFn = fn() -> tree_sitter::Language;
+
+/// CST → [`Ir`](crate::ir::Ir) lowering function pointer (programming languages).
+#[cfg(feature = "native")]
+pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::Ir;
+
+/// CST → [`DataIr`](crate::ir::DataIr) lowering function pointer (data languages).
+#[cfg(feature = "native")]
+pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::DataIr;
+
+/// CST → [`SqlIr`](crate::ir::sql::SqlIr) lowering function pointer (SQL family).
+#[cfg(feature = "native")]
+pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::sql::SqlIr;
+
+/// Which IR family a language lowers to. The variant carries the
+/// per-language CST→IR lower fn so dispatch never needs a separate
+/// match by language name. `None` means the language is on the legacy
+/// imperative path.
+#[cfg(feature = "native")]
+#[derive(Copy, Clone)]
+pub enum IrFamily {
+    None,
+    Programming(LowerToIr),
+    Data(LowerToDataIr),
+    Sql(LowerToSqlIr),
+}
+
+#[cfg(feature = "native")]
+impl LanguageOps {
+    /// True iff this language should run through the typed-IR pipeline
+    /// at the given tree mode. Reads `ir_family` from the registry —
+    /// no per-language match needed at the call site.
+    ///
+    /// - `IrFamily::None` → never; the legacy imperative path handles it.
+    /// - `IrFamily::Programming` / `IrFamily::Sql` → any non-Raw mode.
+    /// - `IrFamily::Data` → only `TreeMode::Structure`. Data-mode
+    ///   (key-as-element-name) for json/yaml is not yet wired through
+    ///   the IR pipeline and still falls back to the imperative path.
+    pub fn uses_ir(&self, tree_mode: crate::tree_mode::TreeMode) -> bool {
+        use crate::tree_mode::TreeMode;
+        match self.ir_family {
+            IrFamily::None => false,
+            IrFamily::Programming(_) | IrFamily::Sql(_) => tree_mode != TreeMode::Raw,
+            IrFamily::Data(_) => matches!(tree_mode, TreeMode::Structure),
+        }
+    }
+}
+
+// Per-language tree-sitter grammar shims. Each fn coerces a language
+// crate's `LANGUAGE` constant into a `tree_sitter::Language` so it can
+// sit in [`LanguageOps::grammar`] as a `fn()` pointer.
+#[cfg(feature = "native")] fn ts_typescript() -> tree_sitter::Language { tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into() }
+#[cfg(feature = "native")] fn ts_tsx()        -> tree_sitter::Language { tree_sitter_typescript::LANGUAGE_TSX.into() }
+#[cfg(feature = "native")] fn ts_javascript() -> tree_sitter::Language { tree_sitter_javascript::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_csharp()     -> tree_sitter::Language { tree_sitter_c_sharp::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_python()     -> tree_sitter::Language { tree_sitter_python::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_go()         -> tree_sitter::Language { tree_sitter_go::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_rust()       -> tree_sitter::Language { tree_sitter_rust::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_java()       -> tree_sitter::Language { tree_sitter_java::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_ruby()       -> tree_sitter::Language { tree_sitter_ruby::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_php()        -> tree_sitter::Language { tree_sitter_php::LANGUAGE_PHP.into() }
+#[cfg(feature = "native")] fn ts_tsql()       -> tree_sitter::Language { tree_sitter_sequel_tsql::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_json()       -> tree_sitter::Language { tree_sitter_json::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_yaml()       -> tree_sitter::Language { tree_sitter_yaml::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_toml()       -> tree_sitter::Language { tree_sitter_toml_ng::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_ini()        -> tree_sitter::Language { tree_sitter_ini::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_env()        -> tree_sitter::Language { tree_sitter_bash::LANGUAGE.into() }
+#[cfg(feature = "native")] fn ts_markdown()   -> tree_sitter::Language { tree_sitter_md::LANGUAGE.into() }
+
 /// Declarative per-language operations table.
 ///
 /// One entry per language registers all of its dispatch targets so
@@ -118,6 +195,19 @@ pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 /// not (yet) declared a semantic vocabulary.
 pub struct LanguageOps {
     pub ids: &'static [&'static str],
+    /// File extensions (no leading dot) this language claims. Each
+    /// entry must be unique across `LANGUAGES`; ambiguous extensions
+    /// are surfaced by `parser::check_ambiguous_extension`.
+    #[cfg(feature = "native")]
+    pub extensions: &'static [&'static str],
+    /// Tree-sitter grammar producer. See [`GrammarFn`].
+    #[cfg(feature = "native")]
+    pub grammar: GrammarFn,
+    /// Which IR family this language lowers to (and the lower fn). See
+    /// [`IrFamily`]. `None` means the language stays on the legacy
+    /// imperative path.
+    #[cfg(feature = "native")]
+    pub ir_family: IrFamily,
     pub transform: TransformFn,
     pub post_transform: Option<PostTransformFn>,
     pub syntax_category: SyntaxCategoryFn,
@@ -139,14 +229,22 @@ pub struct LanguageOps {
 /// Adding a new language is one entry here. The old seven-way `match`
 /// fan-out collapses to simple `iter().find()` calls below.
 pub const LANGUAGES: &[LanguageOps] = &[
+    // ----- TypeScript / JSX / JavaScript family -----------------------------
+    // TS / JS / TSX / JSX all flow through `crate::ir::typescript` —
+    // tree-sitter's TS / JS / TSX grammars share most node kinds and
+    // TS is a superset; the IR's lower_node arms handle the JSX-only
+    // kinds (jsx_element, jsx_attribute, jsx_text, …) too. They share
+    // every transform/post-transform/vocabulary; only the grammar and
+    // canonical name differ, which is why the family is three rows
+    // rather than one.
     LanguageOps {
-        // TS / JS / TSX / JSX all flow through `crate::ir::typescript` —
-        // tree-sitter's TS / JS / TSX grammars share most node kinds and
-        // TS is a superset; the IR's lower_node arms handle the JSX-only
-        // kinds (jsx_element, jsx_attribute, jsx_text, …) too. The
-        // imperative walker is no longer reachable; passthrough
-        // satisfies the registry contract.
-        ids: &["typescript", "ts", "javascript", "js", "tsx", "jsx"],
+        ids: &["typescript", "ts"],
+        #[cfg(feature = "native")]
+        extensions: &["ts"],
+        #[cfg(feature = "native")]
+        grammar: ts_typescript,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
         post_transform: Some(typescript::typescript_post_transform),
         syntax_category: typescript::syntax_category,
@@ -158,9 +256,51 @@ pub const LANGUAGES: &[LanguageOps] = &[
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
+        ids: &["tsx"],
+        #[cfg(feature = "native")]
+        extensions: &["tsx"],
+        #[cfg(feature = "native")]
+        grammar: ts_tsx,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
+        transform: passthrough_transform,
+        post_transform: Some(typescript::typescript_post_transform),
+        syntax_category: typescript::syntax_category,
+        field_wrappings: TS_FIELD_WRAPPINGS,
+        node_spec: Some(typescript::output::spec),
+        is_programming: true,
+        supports_data_tree: false,
+        data_transforms: None,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
+    },
+    LanguageOps {
+        ids: &["javascript", "js", "jsx"],
+        #[cfg(feature = "native")]
+        extensions: &["js", "mjs", "cjs", "jsx"],
+        #[cfg(feature = "native")]
+        grammar: ts_javascript,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
+        transform: passthrough_transform,
+        post_transform: Some(typescript::typescript_post_transform),
+        syntax_category: typescript::syntax_category,
+        field_wrappings: TS_FIELD_WRAPPINGS,
+        node_spec: Some(typescript::output::spec),
+        is_programming: true,
+        supports_data_tree: false,
+        data_transforms: None,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
+    },
+    // ----- Other programming languages --------------------------------------
+    LanguageOps {
         ids: &["csharp", "cs"],
-        // C# now flows entirely through `crate::ir::csharp` (parser
-        // dispatches to `parse_with_ir_pipeline`). The imperative
+        #[cfg(feature = "native")]
+        extensions: &["cs"],
+        #[cfg(feature = "native")]
+        grammar: ts_csharp,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_csharp_root),
+        // C# flows entirely through `crate::ir::csharp`. The imperative
         // walker is no longer reachable for C#; `passthrough_transform`
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.
@@ -176,10 +316,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["python", "py"],
-        // Python flows entirely through `crate::ir::python` (parser
-        // dispatches to `parse_with_ir_pipeline`). The imperative
-        // walker is no longer reachable for Python; passthrough
-        // satisfies the registry contract.
+        #[cfg(feature = "native")]
+        extensions: &["py", "pyw", "pyi"],
+        #[cfg(feature = "native")]
+        grammar: ts_python,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_python_root),
         transform: passthrough_transform,
         post_transform: Some(python::python_post_transform),
         syntax_category: python::syntax_category,
@@ -192,6 +334,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["go"],
+        #[cfg(feature = "native")]
+        extensions: &["go"],
+        #[cfg(feature = "native")]
+        grammar: ts_go,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_go_root),
         transform: passthrough_transform,
         post_transform: Some(go::go_post_transform),
         syntax_category: go::syntax_category,
@@ -204,6 +352,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["rust", "rs"],
+        #[cfg(feature = "native")]
+        extensions: &["rs"],
+        #[cfg(feature = "native")]
+        grammar: ts_rust,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_rust_root),
         transform: passthrough_transform,
         post_transform: Some(rust_lang::rust_post_transform),
         syntax_category: rust_lang::syntax_category,
@@ -216,6 +370,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["java"],
+        #[cfg(feature = "native")]
+        extensions: &["java"],
+        #[cfg(feature = "native")]
+        grammar: ts_java,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_java_root),
         transform: passthrough_transform,
         post_transform: Some(java::java_post_transform),
         syntax_category: java::syntax_category,
@@ -228,6 +388,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["ruby", "rb"],
+        #[cfg(feature = "native")]
+        extensions: &["rb", "rake", "gemspec"],
+        #[cfg(feature = "native")]
+        grammar: ts_ruby,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_ruby_root),
         transform: passthrough_transform,
         post_transform: Some(ruby::ruby_post_transform),
         syntax_category: ruby::syntax_category,
@@ -240,6 +406,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["php"],
+        #[cfg(feature = "native")]
+        extensions: &["php"],
+        #[cfg(feature = "native")]
+        grammar: ts_php,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Programming(crate::ir::lower_php_root),
         // PHP flows entirely through `crate::ir::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
@@ -255,6 +427,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["tsql", "mssql", "sql"],
+        #[cfg(feature = "native")]
+        extensions: &["sql"],
+        #[cfg(feature = "native")]
+        grammar: ts_tsql,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Sql(crate::ir::sql_lower::lower_sql_root),
         transform: tsql::transform,
         post_transform: Some(tsql::tsql_post_transform),
         syntax_category: tsql::syntax_category,
@@ -265,8 +443,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
         data_transforms: None,
         singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
+    // ----- Data / config languages ------------------------------------------
     LanguageOps {
         ids: &["json"],
+        #[cfg(feature = "native")]
+        extensions: &["json"],
+        #[cfg(feature = "native")]
+        grammar: ts_json,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_json_data_root),
         transform: json::data_transform,
         post_transform: None,
         syntax_category: json::syntax_category,
@@ -279,6 +464,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["yaml", "yml"],
+        #[cfg(feature = "native")]
+        extensions: &["yml", "yaml"],
+        #[cfg(feature = "native")]
+        grammar: ts_yaml,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_yaml_data_root),
         transform: yaml::data_transform,
         post_transform: None,
         syntax_category: yaml::syntax_category,
@@ -291,6 +482,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["toml"],
+        #[cfg(feature = "native")]
+        extensions: &["toml"],
+        #[cfg(feature = "native")]
+        grammar: ts_toml,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_toml_data_root),
         // TOML flows entirely through `crate::ir::toml_data` (parser
         // dispatches to `parse_with_ir_pipeline`). The IR's data
         // lowering already collapses array-of-tables; no post-pass
@@ -307,6 +504,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["ini"],
+        #[cfg(feature = "native")]
+        extensions: &["ini", "cfg", "inf"],
+        #[cfg(feature = "native")]
+        grammar: ts_ini,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_ini_data_root),
         // INI flows entirely through `crate::ir::ini_data`.
         transform: passthrough_transform,
         post_transform: None,
@@ -320,8 +523,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["env"],
+        #[cfg(feature = "native")]
+        extensions: &["env"],
+        #[cfg(feature = "native")]
+        grammar: ts_env,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_ini_data_root),
         // .env flows entirely through `crate::ir::ini_data` (shares
-        // INI's data lowering — same shape).
+        // INI's data lowering — same shape). Grammar is bash because
+        // the .env shell-style syntax overlaps closely.
         transform: passthrough_transform,
         post_transform: None,
         syntax_category: env::syntax_category,
@@ -334,10 +544,13 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["markdown", "md", "mdx"],
-        // Markdown flows entirely through `crate::ir::markdown_data`
-        // (parser dispatches to `parse_with_ir_pipeline`). The
-        // imperative walker is no longer reachable; passthrough
-        // satisfies the registry contract.
+        #[cfg(feature = "native")]
+        extensions: &["md", "markdown", "mdx"],
+        #[cfg(feature = "native")]
+        grammar: ts_markdown,
+        #[cfg(feature = "native")]
+        ir_family: IrFamily::Data(crate::ir::lower_markdown_data_root),
+        // Markdown flows entirely through `crate::ir::markdown_data`.
         transform: passthrough_transform,
         post_transform: None,
         syntax_category: markdown::syntax_category,
