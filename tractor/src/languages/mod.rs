@@ -291,8 +291,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["toml"],
-        transform: toml::transform,
-        post_transform: Some(toml_post_transform),
+        // TOML flows entirely through `crate::ir::toml_data` (parser
+        // dispatches to `parse_with_ir_pipeline`). The IR's data
+        // lowering already collapses array-of-tables; no post-pass
+        // needed.
+        transform: passthrough_transform,
+        post_transform: None,
         syntax_category: toml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -303,7 +307,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["ini"],
-        transform: ini::transform,
+        // INI flows entirely through `crate::ir::ini_data`.
+        transform: passthrough_transform,
         post_transform: None,
         syntax_category: ini::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -315,7 +320,9 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["env"],
-        transform: env::transform,
+        // .env flows entirely through `crate::ir::ini_data` (shares
+        // INI's data lowering — same shape).
+        transform: passthrough_transform,
         post_transform: None,
         syntax_category: env::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -327,7 +334,11 @@ pub const LANGUAGES: &[LanguageOps] = &[
     },
     LanguageOps {
         ids: &["markdown", "md", "mdx"],
-        transform: markdown::transform,
+        // Markdown flows entirely through `crate::ir::markdown_data`
+        // (parser dispatches to `parse_with_ir_pipeline`). The
+        // imperative walker is no longer reachable; passthrough
+        // satisfies the registry contract.
+        transform: passthrough_transform,
         post_transform: None,
         syntax_category: markdown::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -372,74 +383,9 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
 // The LanguageOps::post_transform registration above references
 // csharp::csharp_post_transform.
 
-/// TOML `[[arrays-of-tables]]` collapse (closes todo/35).
-///
-/// Each `[[servers]]` entry produces a separate `<servers><item>...`
-/// from the per-element transform. Multiple `[[servers]]` blocks
-/// thus emit sibling `<servers>` elements, each with one `<item>`.
-/// This contradicts every other array shape in tractor (one parent
-/// `<key>` with many `<item>` children) and breaks intuitive
-/// queries like `count(//servers) = 1`.
-///
-/// Walk every container; for each pair of adjacent same-named
-/// element children, merge the second into the first by moving its
-/// children over and detaching the now-empty second wrapper.
-fn toml_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // Skip xot's document wrapper if present.
-    let root = if xot.is_document(root) {
-        xot.document_element(root).unwrap_or(root)
-    } else {
-        root
-    };
-    // Only merge same-named adjacent SIBLINGS at the top-level
-    // `<document>` (the AOT collapse case). Don't recurse — that
-    // would merge legitimate `<item>` siblings that represent
-    // distinct array elements. If multi-level AOT becomes a real
-    // case (`[[a.b]]` repeating where the inner `<b>` siblings
-    // should also merge), revisit and apply this recursively only
-    // for non-`<item>` names.
-    merge_adjacent_same_named(xot, root)?;
-    Ok(())
-}
-
-fn merge_adjacent_same_named(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::helpers::get_element_name;
-    if xot.element(parent).is_none() {
-        return Ok(());
-    }
-    loop {
-        let children: Vec<XotNode> = xot.children(parent).collect();
-        let mut merged = false;
-        for i in 0..children.len().saturating_sub(1) {
-            let first = children[i];
-            let second = children[i + 1];
-            if xot.element(first).is_none() || xot.element(second).is_none() {
-                continue;
-            }
-            // Don't merge `<item>` siblings — they're distinct
-            // array elements.
-            if get_element_name(xot, first).as_deref() == Some("item") {
-                continue;
-            }
-            let n1 = get_element_name(xot, first);
-            let n2 = get_element_name(xot, second);
-            if n1.is_some() && n1 == n2 {
-                let to_move: Vec<XotNode> = xot.children(second).collect();
-                for c in to_move {
-                    xot.detach(c)?;
-                    xot.append(first, c)?;
-                }
-                xot.detach(second)?;
-                merged = true;
-                break;
-            }
-        }
-        if !merged {
-            break;
-        }
-    }
-    Ok(())
-}
+// TOML's array-of-tables collapse used to live here as
+// `toml_post_transform`. Now handled natively by the IR's data
+// lowering (`crate::ir::toml_data::collapse_array_of_tables`).
 // C# helpers (csharp_normalize_conditional_access,
 // unify_file_scoped_namespace, attach_where_clause_constraints,
 // append_constraint_to_generic) moved iter 330 to

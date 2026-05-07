@@ -1,33 +1,15 @@
-//! Markdown transform logic.
+//! Markdown language module.
 //!
-//! Per-language pipeline ownership:
+//! Markdown runs through `crate::ir::markdown_data` end-to-end. The
+//! legacy imperative `rules.rs` / `transformations.rs` /
+//! `transform.rs` modules have been retired.
 //!
-//! ```text
-//! input → rules → output
-//!         ↑
-//!         transformations (Custom handlers)
-//! ```
-//!
-//! - [`input`]    — generated `MdKind` enum (the input vocabulary).
-//!                  Union of the markdown block + inline grammars
-//!                  (TS+TSX pattern). Regenerate via `task gen:kinds`.
-//! - [`output`]   — output element-name constants (closed
-//!                  vocabulary: `<heading>`, `<list>`, `<link>`, …).
-//! - [`rules`]    — `rule(MdKind) -> Rule` exhaustive match. Most
-//!                  kinds are `Rename` or `Detach`; only a handful
-//!                  need `Custom`.
-//! - [`transformations`] — `Custom` handlers (heading-level
-//!                          detection, list-type detection, language
-//!                          extraction).
-//! - [`transform`] — thin orchestrator.
+//!   - [`input`]   — generated `MdKind` enum, kept as a kind-coverage
+//!                   catalogue.
+//!   - [`output`]  — element-name vocabulary used by syntax_category.
 
 pub mod input;
 pub mod output;
-pub mod rules;
-pub mod transformations;
-pub mod transform;
-
-pub use transform::transform;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 

@@ -1,49 +1,12 @@
-//! .env file transform logic.
+//! .env file language module.
 //!
-//! Per-language pipeline ownership:
-//!
-//! ```text
-//! input → rules → output
-//!         ↑
-//!         transformations (Custom handlers)
-//! ```
-//!
-//! - [`input`]    — hand-curated `EnvKind` enum (NOT generated). .env
-//!                  files are parsed by tree-sitter-bash, but the
-//!                  transform handles only ~15 of bash's 59 kinds; the
-//!                  rest fall through the orchestrator as no-ops.
-//! - [`output`]   — output element-name constants. Variable names
-//!                  become user-driven, so only `<document>` and
-//!                  `<comment>` are closed names.
-//! - [`rules`]    — `rule(EnvKind) -> Rule` exhaustive match.
-//! - [`transformations`] — `Rule::Custom` handlers + value-extraction
-//!                          helpers (`collect_value_text` walks the
-//!                          bash subtree to reassemble concatenated /
-//!                          quoted / expanded values).
-//! - [`transform`] — thin orchestrator.
-//!
-//! Example transform:
-//! ```env
-//! # Database config
-//! DB_HOST=localhost
-//! export API_URL=https://example.com
-//! ```
-//! becomes:
-//! ```xml
-//! <document>
-//!   <comment>Database config</comment>
-//!   <DB_HOST>localhost</DB_HOST>
-//!   <API_URL>https://example.com</API_URL>
-//! </document>
-//! ```
+//! .env runs through `crate::ir::ini_data` end-to-end (it shares the
+//! INI data lower since the shapes overlap). The legacy imperative
+//! `rules.rs` / `transformations.rs` / `transform.rs` modules have
+//! been retired.
 
 pub mod input;
 pub mod output;
-pub mod rules;
-pub mod transformations;
-pub mod transform;
-
-pub use transform::transform;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 

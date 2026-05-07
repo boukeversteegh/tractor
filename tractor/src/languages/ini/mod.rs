@@ -1,42 +1,11 @@
-//! INI transform logic.
+//! INI language module.
 //!
-//! Per-language pipeline ownership:
-//!
-//! ```text
-//! input → rules → output
-//!         ↑
-//!         transformations (Custom handlers)
-//! ```
-//!
-//! - [`input`]    — generated `IniKind` enum (the input vocabulary).
-//!                  Regenerate via `task gen:kinds`.
-//! - [`output`]   — output element-name constants. Section/setting
-//!                  names are user-driven (open vocabulary), so only
-//!                  `<comment>` is named here.
-//! - [`rules`]    — `rule(IniKind) -> Rule` exhaustive match.
-//! - [`transformations`] — `Rule::Custom` handlers.
-//! - [`transform`] — thin orchestrator.
-//!
-//! Maps the INI data structure to XML elements:
-//! ```ini
-//! [database]
-//! host = localhost
-//! ```
-//! becomes:
-//! ```xml
-//! <database>
-//!   <host>localhost</host>
-//! </database>
-//! ```
-//! Queryable as: `//database/host[.='localhost']`.
+//! INI runs through `crate::ir::ini_data` end-to-end. The legacy
+//! imperative `rules.rs` / `transformations.rs` / `transform.rs`
+//! modules have been retired.
 
 pub mod input;
 pub mod output;
-pub mod rules;
-pub mod transformations;
-pub mod transform;
-
-pub use transform::transform;
 
 use crate::output::syntax_highlight::SyntaxCategory;
 
