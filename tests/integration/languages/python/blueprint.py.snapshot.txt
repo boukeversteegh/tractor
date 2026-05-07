@@ -181,7 +181,7 @@ module/
   │           ├─ for[async]/
   │           │   ├─ left/expression/name = "chunk"
   │           │   ├─ right/expression/name = "conn"
-  │           │   └─ body/yield/name = "chunk"
+  │           │   └─ body/yield/expression/name = "chunk"
   │           ├─ assign/
   │           │   ├─ left/expression/name = "data"
   │           │   ├─ op = "="
@@ -198,8 +198,8 @@ module/
   │       │   ├─ right/expression/call/
   │       │   │   ├─ name = "range"
   │       │   │   └─ name = "n"
-  │       │   └─ body/yield/name = "i"
-  │       └─ yield/call/
+  │       │   └─ body/yield/expression/name = "i"
+  │       └─ yield/expression/call/
   │           ├─ name = "range"
   │           ├─ name = "n"
   │           └─ binary/

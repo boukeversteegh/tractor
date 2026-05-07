@@ -388,7 +388,9 @@
               "right": "conn",
               "body": {
                 "yield": {
-                  "name": "chunk"
+                  "expression": {
+                    "name": "chunk"
+                  }
                 }
               }
             },
@@ -425,20 +427,24 @@
           },
           "body": {
             "yield": {
-              "name": "i"
+              "expression": {
+                "name": "i"
+              }
             }
           }
         },
         "yield": {
-          "call": {
-            "name": "n",
-            "binary": {
-              "left": "n",
-              "op": {
-                "text": "*",
-                "multiply": true
-              },
-              "right": "2"
+          "expression": {
+            "call": {
+              "name": "n",
+              "binary": {
+                "left": "n",
+                "op": {
+                  "text": "*",
+                  "multiply": true
+                },
+                "right": "2"
+              }
             }
           }
         }

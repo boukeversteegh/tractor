@@ -478,7 +478,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "delete_statement"  => simple_statement(node, "delete",   source),
         "global_statement"  => simple_statement(node, "global",   source),
         "nonlocal_statement"=> simple_statement(node, "nonlocal", source),
-        "yield"             => simple_statement(node, "yield",    source),
+        "yield"             => lower_python_yield(node, source),
         "concatenated_string" => simple_statement(node, "string", source),
 
         // Python `lambda`: `lambda x, y: expr`. tree-sitter exposes
@@ -1382,6 +1382,50 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         .map(|c| lower_node(c, source))
         .collect();
     Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
+}
+
+/// Lower a Python `yield expr` / `yield from expr` so the yielded
+/// expression sits under an `<expression>` host (matching `<return>`
+/// — Principle #5). Without the wrap, `<yield><name>x</name></yield>`
+/// diverges from the equivalent return shape
+/// `<return><expression><name>x</name></expression></return>`.
+///
+/// The bare keyword form (`yield`, no operand) emits an empty
+/// `<yield>` with no expression child — the empty-element pass
+/// folds it into a marker on the parent statement.
+fn lower_python_yield(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    let children: Vec<Ir> = if inner.is_empty() {
+        Vec::new()
+    } else {
+        // Wrap the operand(s) in `<expression>` (mirrors `<return>`'s
+        // post-pass-driven shape). The combined range covers all
+        // operands so source-text reconstruction stays accurate.
+        let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
+        let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
+        let expr_range = ByteRange::new(expr_start, expr_end);
+        vec![Ir::SimpleStatement {
+            element_name: "expression",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: inner,
+            range: expr_range,
+            span,
+        }]
+    };
+    Ir::SimpleStatement {
+        element_name: "yield",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
 }
 
 /// Same as `simple_statement` but adds explicit `<marker/>` siblings
