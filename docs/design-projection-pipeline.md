@@ -88,32 +88,43 @@ Typed IR makes JSON projection trivial; the projection module
 exists to share serialization across formats. Both wins. More
 work overall.
 
-### Recommendation
+### Recommendation (revised after second-pass thinking)
 
-Pursue (II) first — finish typing the TSQL IR (and any other
-languages still using `SimpleStatement` heavily for typed
-constructs). Each typed variant added removes the conditions
-that made the JSON heuristics necessary. Once typing is mostly
-done, re-evaluate whether the projection module
-(`to_data.rs`) is still wanted — it may be unnecessary.
+The iter 41 commit recommended (II) (type all of TSQL). On
+reflection that's wrong:
 
-Concrete next iters:
+- TSQL has 45+ `simple_statement(...)` calls. Typing them as
+  cross-language IR variants pollutes the enum — INSERT,
+  SELECT, WHERE aren't cross-language concepts. They belong to
+  SQL only.
+- A separate `SqlIr` enum would be one alternative but adds a
+  whole parallel rendering pipeline.
+- The projection rules for `SimpleStatement → JSON` are
+  well-defined. They're not "symptoms of bad IR design"; they're
+  the projection contract for a deliberately-generic IR variant.
 
-- 41+: Replace `simple_statement(node, "insert", ...)` with
-  `Ir::Insert { columns, values }` typed variant; update
-  `to_xot.rs` and `to_json.rs` arms accordingly.
-- Continue per construct: `Ir::Update`, `Ir::Delete`,
-  `Ir::Select`, `Ir::From`, `Ir::Where`, `Ir::Compare`,
-  `Ir::Subquery`, etc.
-- After TSQL converted to typed variants, audit other
-  languages' remaining `simple_statement` usage and decide
-  per-construct.
+Pragmatic split:
 
-The slice-1 work landed in iter 39 (`to_data.rs` skeleton +
-`Ir::Class` arm) is **not wasted** — once TSQL is typed, the
-projection module is a natural place to host IR-to-JSON
-projection if it's still needed for cross-format consolidation.
-But it's not the next iter target.
+- **Typed IR** for cross-language constructs (already in place
+  — Class, Function, Binary, If, etc.). Each has a clean
+  XML and JSON projection by virtue of typed slots.
+- **`SimpleStatement` + projection** for language-specific
+  constructs (TSQL clauses). The projection layer handles
+  generic SimpleStatement; rules live in `to_data.rs` once,
+  consumed by JSON / YAML / JSONL / TOML output.
+
+So the original recommendation (hybrid C) stands: continue
+slice 2 of the projection plan. Wire `--projection=v2` flag,
+build out `to_data.rs` to cover all reachable variants, parity-
+test, flip default, retire `to_json.rs`.
+
+The iter 41 framing about "type the IR" was an over-correction
+in response to the premise mistake. The premise mistake (that
+"post-passes" exist) is real and acknowledged; the projection-
+layer architecture is still right.
+
+Slice 1 (`to_data.rs` + `Ir::Class`, iter 39) remains the
+foundation. Slice 2 next.
 
 ---
 
