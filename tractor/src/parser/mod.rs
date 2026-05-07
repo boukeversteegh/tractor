@@ -367,10 +367,27 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
         return tree_mode != TreeMode::Raw;
     }
     // Data languages — IR-pipeline support is per-format and
-    // per-mode. Structure (syntax shape) is the first to land for
-    // each. Data mode (key-as-element-name) follows once a
-    // data-branch renderer is available.
-    matches!(lang, "json") && tree_mode == TreeMode::Structure
+    // per-mode.
+    //
+    //   - JSON / YAML's Structure mode (syntax shape) routes
+    //     through the JSON-style data renderer.
+    //   - TOML / INI's Structure mode (the only mode they have, and
+    //     by convention key-as-element-name) routes through the
+    //     keyed data renderer.
+    //   - JSON / YAML's Data mode (key-as-element-name default for
+    //     these languages) is not yet wired — it falls back to the
+    //     imperative path.
+    match (lang, tree_mode) {
+        ("json", TreeMode::Structure) => true,
+        ("ini" | "env", TreeMode::Structure) => true,
+        // YAML / TOML structure mode have edge cases (YAML
+        // directives, TOML dotted-table nesting + array-of-tables
+        // + quoted-key sanitization with @key attr) that the
+        // imperative pipeline handles via Custom handlers but the
+        // current DataIr lowering doesn't yet replicate. Keep these
+        // on the imperative path until the lowering catches up.
+        _ => false,
+    }
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)
@@ -460,13 +477,29 @@ fn parse_with_ir_pipeline(
 
     // Data-language branch — the data IR is structurally simpler
     // (mappings / sequences / scalars) and uses a separate type
-    // (`DataIr`) and renderer (`render_data_to_xot_json`).
-    if lang == "json" {
-        let data_ir = ir::lower_json_data_root(tree.root_node(), source);
+    // (`DataIr`). Two renderers:
+    //   - `render_data_to_xot_json`  — JSON / YAML structure shape
+    //     (`<object><property><key>...</key><value>...</value>...`)
+    //   - `render_data_to_xot_keyed` — TOML / INI shape with keys as
+    //     element names (`<sectionname><key>v</key>...`)
+    let data_lower: Option<fn(_, &str) -> ir::DataIr> = match lang {
+        "json" => Some(ir::lower_json_data_root),
+        "yaml" | "yml" => Some(ir::lower_yaml_data_root),
+        "toml" => Some(ir::lower_toml_data_root),
+        "ini" | "env" => Some(ir::lower_ini_data_root),
+        _ => None,
+    };
+    if let Some(lower) = data_lower {
+        let data_ir = lower(tree.root_node(), source);
         let mut xot = xot::Xot::new();
         let doc = xot.new_document();
-        ir::render_data_to_xot_json(&mut xot, doc, &data_ir, source)
-            .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+        let render_keyed = matches!(lang, "toml" | "ini" | "env");
+        if render_keyed {
+            ir::render_data_to_xot_keyed(&mut xot, doc, &data_ir, source)
+        } else {
+            ir::render_data_to_xot_json(&mut xot, doc, &data_ir, source)
+        }
+        .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
         return Ok(XotParseResult {
             xot,
             root: doc,
@@ -555,13 +588,27 @@ fn parse_with_ir_pipeline_to_xee(
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
-    // Data-language branch — uses `DataIr` + JSON-style renderer.
-    if lang == "json" {
-        let data_ir = ir::lower_json_data_root(tree.root_node(), source);
+    // Data-language branch — uses `DataIr` + format-appropriate
+    // renderer (JSON-style for json/yaml, key-as-element-name for
+    // toml/ini).
+    let data_lower: Option<fn(_, &str) -> ir::DataIr> = match lang {
+        "json" => Some(ir::lower_json_data_root),
+        "yaml" | "yml" => Some(ir::lower_yaml_data_root),
+        "toml" => Some(ir::lower_toml_data_root),
+        "ini" | "env" => Some(ir::lower_ini_data_root),
+        _ => None,
+    };
+    if let Some(lower) = data_lower {
+        let data_ir = lower(tree.root_node(), source);
         let mut xot = xot::Xot::new();
         let holding = xot.new_document();
-        ir::render_data_to_xot_json(&mut xot, holding, &data_ir, source)
-            .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+        let render_keyed = matches!(lang, "toml" | "ini" | "env");
+        if render_keyed {
+            ir::render_data_to_xot_keyed(&mut xot, holding, &data_ir, source)
+        } else {
+            ir::render_data_to_xot_json(&mut xot, holding, &data_ir, source)
+        }
+        .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
         let xml = xot.to_string(holding)
             .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
         let mut documents = Documents::new();

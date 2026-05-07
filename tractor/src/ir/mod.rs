@@ -64,6 +64,12 @@ pub mod data;
 #[cfg(feature = "native")]
 pub mod json_data;
 #[cfg(feature = "native")]
+pub mod yaml_data;
+#[cfg(feature = "native")]
+pub mod toml_data;
+#[cfg(feature = "native")]
+pub mod ini_data;
+#[cfg(feature = "native")]
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod source;
@@ -96,6 +102,12 @@ pub use data::DataIr;
 #[cfg(feature = "native")]
 pub use json_data::lower_json_data_root;
 #[cfg(feature = "native")]
-pub use data_to_xot::render_data_to_xot_json;
+pub use yaml_data::lower_yaml_data_root;
+#[cfg(feature = "native")]
+pub use toml_data::lower_toml_data_root;
+#[cfg(feature = "native")]
+pub use ini_data::lower_ini_data_root;
+#[cfg(feature = "native")]
+pub use data_to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};
