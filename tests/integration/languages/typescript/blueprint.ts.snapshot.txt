@@ -133,9 +133,10 @@ program/
   │       │   ├─ parameter[public and required]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   └─ parameter[private and readonly and optional]/
-  │       │       ├─ name = "seed"
-  │       │       └─ type/name = "number"
+  │       │   ├─ parameter[private and readonly and optional]/
+  │       │   │   ├─ name = "seed"
+  │       │   │   └─ type/name = "number"
+  │       │   └─ body/block = "{}"
   │       ├─ method[public and abstract]/
   │       │   ├─ name = "render"
   │       │   └─ returns/type/name = "string"
@@ -455,13 +456,17 @@ program/
   │       │       └─ right/expression/string = "\"ready\""
   │       ├─ switch/
   │       │   ├─ name = "status"
-  │       │   ├─ arm[break]/string = "\"ready\""
+  │       │   ├─ arm/
+  │       │   │   ├─ string = "\"ready\""
+  │       │   │   └─ break = "break;"
   │       │   ├─ arm/
   │       │   │   ├─ string = "\"error\""
   │       │   │   └─ throw/expression/new/
   │       │   │       ├─ name = "Error"
   │       │   │       └─ string = "\"bad\""
-  │       │   └─ arm[break]/comment = "/* fallthrough */"
+  │       │   └─ arm/
+  │       │       ├─ comment = "/* fallthrough */"
+  │       │       └─ break = "break;"
   │       ├─ variable[const]/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Record"

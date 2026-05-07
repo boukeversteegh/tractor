@@ -41,7 +41,7 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() ",
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }",
               "rule_id": "no-class"
             }
           ]
@@ -75,7 +75,7 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() "
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }"
             }
           ]
         }

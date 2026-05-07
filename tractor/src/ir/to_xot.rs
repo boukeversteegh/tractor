@@ -76,18 +76,16 @@ pub fn render_to_xot(
         Ir::Ternary { .. } => render_ir_ternary(xot, parent, ir, source),
         Ir::ObjectCreation { .. } => render_ir_object_creation(xot, parent, ir, source),
         Ir::Lambda { .. } => render_ir_lambda(xot, parent, ir, source),
-        Ir::Break { span, range: _ } => {
-            // Self-closing marker — the element name conveys the role.
-            // Emitting the `break;` keyword + `;` as text content
-            // leaks syntax (Principle #2) onto an element that's
-            // semantically a flag, not a text leaf (Principle #13).
+        Ir::Break { span, range } => {
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;
+            emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Continue { span, range: _ } => {
+        Ir::Continue { span, range } => {
             let node = element(xot, "continue", *span);
             xot.append(parent, node)?;
+            emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
         Ir::Function { .. } => render_ir_function(xot, parent, ir, source),
@@ -1181,15 +1179,6 @@ fn render_ir_body(
     let Ir::Body { children, pass_only, block_wrap, range, span } = ir else { unreachable!() };
     let node = element(xot, "body", *span);
     xot.append(parent, node)?;
-    // Empty block-wrapped body (`{ }`): drop the inner `<block>`
-    // entirely so the body renders as `<body/>` self-closing rather
-    // than `<body><block>{ }</block></body>` (where the braces leak
-    // as text content — Principle #2). The empty-element-to-marker
-    // pass folds the resulting `<body/>` into the parent's marker
-    // chip when appropriate.
-    if *block_wrap && children.is_empty() && !*pass_only {
-        return Ok(node);
-    }
     let target = if *block_wrap {
         let block = element(xot, "block", *span);
         xot.append(node, block)?;
@@ -2155,12 +2144,9 @@ fn render_ir_accessor(
         emit_gap(xot, node, source, range.start, br.start)?;
         render_to_xot(xot, node, b, source)?;
         emit_gap(xot, node, source, br.end, range.end)?;
+    } else {
+        emit_gap(xot, node, source, range.start, range.end)?;
     }
-    // Auto-accessors (no body) render as self-closing markers —
-    // `<get/>` / `<set/>` / `<init/>`. The accessor's element name
-    // already conveys the role; emitting the `get;` keyword + `;`
-    // as text content leaks syntax (Principle #2) and turns
-    // marker-shaped accessors into text leaves (Principle #13).
     Ok(node)
 }
 

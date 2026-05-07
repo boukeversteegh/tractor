@@ -50,8 +50,8 @@ file/
   │       │   └─ name = "Users"
   │       └─ where/between/
   │           ├─ value/name = "Age"
-  │           ├─ lower/literal = "18"
-  │           └─ upper/literal = "65"
+  │           ├─ low/literal = "18"
+  │           └─ high/literal = "65"
   ├─ comment = "-- UPDATE with variables and schema-qualified table"
   ├─ statement/update/
   │   ├─ relation/

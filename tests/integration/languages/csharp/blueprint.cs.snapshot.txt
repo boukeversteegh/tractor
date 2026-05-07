@@ -62,13 +62,15 @@ unit/
   │   ├─ struct[public and readonly]/
   │   │   ├─ name = "Point"
   │   │   └─ body/
-  │   │       ├─ property[public and get]/
+  │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
+  │   │       │   ├─ get = "get;"
   │   │       │   └─ value/expression/name = "x"
-  │   │       ├─ property[public and get]/
+  │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
+  │   │       │   ├─ get = "get;"
   │   │       │   └─ value/expression/name = "y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "Point"
@@ -188,17 +190,22 @@ unit/
   │   │       ├─ field[private]/
   │   │       │   ├─ type/name = "int"
   │   │       │   └─ name = "_version"
-  │   │       ├─ property[public and get and init]/
+  │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "int"
-  │   │       │   └─ name = "Id"
-  │   │       ├─ property[public and get and set]/
+  │   │       │   ├─ name = "Id"
+  │   │       │   ├─ get = "get;"
+  │   │       │   └─ init = "init;"
+  │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "string"
   │   │       │   ├─ name = "Name"
+  │   │       │   ├─ get = "get;"
+  │   │       │   ├─ set = "set;"
   │   │       │   └─ value/expression/string = "\"\""
-  │   │       ├─ property[public and virtual and get]/
+  │   │       ├─ property[public and virtual]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ set[protected]
+  │   │       │   ├─ get = "get;"
+  │   │       │   ├─ set[protected] = "protected set;"
   │   │       │   └─ value/expression/object[access]/
   │   │       │       ├─ name = "Priority"
   │   │       │       └─ member/name = "Low"
@@ -215,7 +222,9 @@ unit/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ type/name = "EntityBase"
   │   │       │   └─ name = "Changed"
-  │   │       ├─ constructor[protected]/name = "EntityBase"
+  │   │       ├─ constructor[protected]/
+  │   │       │   ├─ name = "EntityBase"
+  │   │       │   └─ body/block = "{ }"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   ├─ parameter/
@@ -246,7 +255,9 @@ unit/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ type/name = "Widget"
   │   │       │   └─ name = "Added"
-  │   │       ├─ constructor[public]/name = "Widget"
+  │   │       ├─ constructor[public]/
+  │   │       │   ├─ name = "Widget"
+  │   │       │   └─ body/block = "{ }"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
   │   │       │   ├─ parameter/
@@ -408,21 +419,22 @@ unit/
   │               ├─ switch/
   │               │   ├─ value/expression/name = "token"
   │               │   └─ body/
-  │               │       ├─ arm[break]/
+  │               │       ├─ arm/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   └─ expression/object[access]/
-  │               │       │       ├─ name = "Console"
-  │               │       │       └─ call/
-  │               │       │           ├─ name = "WriteLine"
-  │               │       │           └─ object[access]/
-  │               │       │               ├─ name = "w"
-  │               │       │               └─ call/name = "Describe"
+  │               │       │   ├─ expression/object[access]/
+  │               │       │   │   ├─ name = "Console"
+  │               │       │   │   └─ call/
+  │               │       │   │       ├─ name = "WriteLine"
+  │               │       │   │       └─ object[access]/
+  │               │       │   │           ├─ name = "w"
+  │               │       │   │           └─ call/name = "Describe"
+  │               │       │   └─ break = "break;"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[constant]/null = "null"
   │               │       │   └─ throw/expression/new/name = "InvalidOperationException"
-  │               │       └─ arm[break] = "default:"
+  │               │       └─ arm/break = "break;"
   │               ├─ if/
   │               │   ├─ condition/expression/is/
   │               │   │   ├─ name = "token"
@@ -560,12 +572,14 @@ unit/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "j"
   │               │   └─ value/expression/int = "0"
-  │               ├─ while/condition/expression/binary/
-  │               │   ├─ left/expression/unary[postfix]/
-  │               │   │   ├─ name = "j"
-  │               │   │   └─ op[increment] = "++"
-  │               │   ├─ op[compare and less] = "<"
-  │               │   └─ right/expression/int = "2"
+  │               ├─ while/
+  │               │   ├─ condition/expression/binary/
+  │               │   │   ├─ left/expression/unary[postfix]/
+  │               │   │   │   ├─ name = "j"
+  │               │   │   │   └─ op[increment] = "++"
+  │               │   │   ├─ op[compare and less] = "<"
+  │               │   │   └─ right/expression/int = "2"
+  │               │   └─ body/block = "{ }"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "k"
@@ -931,9 +945,11 @@ unit/
       │       │   ├─ name = "Container"
       │       │   ├─ generic[class and new]/name = "T"
       │       │   └─ body/
-      │       │       ├─ property[public and get and set]/
+      │       │       ├─ property[public]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ name = "Value"
+      │       │       │   ├─ get = "get;"
+      │       │       │   ├─ set = "set;"
       │       │       │   └─ value/expression/new/name = "T"
       │       │       ├─ indexer[public]/
       │       │       │   ├─ type/name = "T"
@@ -944,7 +960,9 @@ unit/
       │       │       ├─ destructor/
       │       │       │   ├─ name = "Container"
       │       │       │   └─ body/block/comment = "/* finalizer */"
-      │       │       └─ constructor[public]/name = "Container"
+      │       │       └─ constructor[public]/
+      │       │           ├─ name = "Container"
+      │       │           └─ body/block = "{ }"
       │       ├─ comment[leading] = "// Delegate + event."
       │       ├─ delegate[public]/
       │       │   ├─ type/name = "void"
@@ -1168,13 +1186,13 @@ unit/
       │       │       │       │   │   ├─ left/expression/name = "i"
       │       │       │       │   │   ├─ op[equals] = "=="
       │       │       │       │   │   └─ right/expression/int = "1"
-      │       │       │       │   └─ body[continue]
+      │       │       │       │   └─ body/continue = "continue;"
       │       │       │       └─ if/
       │       │       │           ├─ condition/expression/binary/
       │       │       │           │   ├─ left/expression/name = "i"
       │       │       │           │   ├─ op[equals] = "=="
       │       │       │           │   └─ right/expression/int = "2"
-      │       │       │           └─ body[break]
+      │       │       │           └─ body/break = "break;"
       │       │       └─ return/expression/int = "0"
       │       ├─ comment[leading] = "// Interpolation with alignment + format specifier."
       │       ├─ method[public and static]/

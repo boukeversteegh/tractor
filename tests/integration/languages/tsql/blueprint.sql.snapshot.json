@@ -203,14 +203,14 @@
                 null
               ]
             },
-            "lower": {
+            "low": {
               "literal": {}
             },
             "$skips": [
               null,
               null
             ],
-            "upper": {
+            "high": {
               "literal": {}
             }
           }

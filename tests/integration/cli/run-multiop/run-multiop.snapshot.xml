@@ -40,7 +40,7 @@ public int Add(int a, int b) return a + b;public int Subtract(int a, int b) retu
             <line>}</line>
           </lines>
           <value>public class Greeter
-public string Hello(string name) return "Hello, " + name;public string Goodbye(string name) return "Goodbye, " + name;public void Reset() </value>
+public string Hello(string name) return "Hello, " + name;public string Goodbye(string name) return "Goodbye, " + name;public void Reset() { }</value>
           <rule-id>no-class</rule-id>
         </match>
       </group>
@@ -70,7 +70,7 @@ public int Add(int a, int b) return a + b;public int Subtract(int a, int b) retu
             <line>}</line>
           </lines>
           <value>public class Greeter
-public string Hello(string name) return "Hello, " + name;public string Goodbye(string name) return "Goodbye, " + name;public void Reset() </value>
+public string Hello(string name) return "Hello, " + name;public string Goodbye(string name) return "Goodbye, " + name;public void Reset() { }</value>
         </match>
       </group>
     </group>

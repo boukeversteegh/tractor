@@ -333,13 +333,13 @@ module/
   │       │   │   │   ├─ name = "v"
   │       │   │   │   ├─ op[compare and less] = "<"
   │       │   │   │   └─ int = "0"
-  │       │   │   ├─ body[continue]
+  │       │   │   ├─ body/continue = "continue"
   │       │   │   ├─ else_if/
   │       │   │   │   ├─ condition/expression/compare/
   │       │   │   │   │   ├─ name = "v"
   │       │   │   │   │   ├─ op[equals] = "=="
   │       │   │   │   │   └─ int = "0"
-  │       │   │   │   └─ body[break]
+  │       │   │   │   └─ body/break = "break"
   │       │   │   └─ else/body/assign/
   │       │   │       ├─ left/expression/name = "total"
   │       │   │       ├─ op[assign and plus] = "+="
