@@ -56,7 +56,6 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         }
         "literal" => SqlIr::Literal { range, span },
         "string" | "national_string" => SqlIr::Literal { range, span },
-        "int" => SqlIr::Literal { range, span },
         "comment" | "line_comment" | "block_comment" => SqlIr::Comment { range, span },
 
         // ----- DML statements ----------------------------------------
