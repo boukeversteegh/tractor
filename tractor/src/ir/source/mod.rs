@@ -13,16 +13,32 @@
 //!    output should `lower_<lang>_root(parse(.))` back to a
 //!    structurally-equivalent IR.
 //!
-//! ## Status
+//! ## Status — pending wiring (TODO slice **S4**)
 //!
-//! **Scaffold only.** This module is not yet wired into the production
-//! pipeline. The per-language emitters cover the major IR variants but
+//! This module is the IR-side reverse renderer, but it is **not yet
+//! reachable from the CLI**. While it sits unwired, `tractor render`,
+//! `tractor set`, and `tractor update` are stuck on the legacy
+//! `crate::render` (XmlNode + `TreeMode::Data`) path, which only
+//! supports 3 languages (csharp, json, yaml). Wiring this module is
+//! what lifts those commands to every IR-supported language (csharp,
+//! python, java, ts/js/tsx/jsx, rust, go, ruby, php, plus tsql via
+//! [`render_sql`]).
+//!
+//! Concrete work items (see `TODO.md`):
+//! - **S4A** — `cli/render.rs` calls [`render`] with parsed IR.
+//! - **S4B** — `mutation/xpath_upsert.rs` switches its
+//!   re-render/span-tracking to anchored IR rendering.
+//! - **S4C** — retire `crate::render::{parse_xml, parse_json}` once
+//!   no caller reads XmlNode-from-text.
+//! - **S4D** — delete `crate::render::{csharp,json,yaml}` once their
+//!   callers are gone.
+//!
+//! The per-language emitters cover the major IR variants today but
 //! are not yet exhaustive — atoms (`Name`/`Int`/`String`/...) emit
-//! placeholders in canonical mode because their text is only available
-//! via the source-anchor (their byte range). The structural
-//! scaffolding is the foundation for IR-driven source mutation
-//! (`tractor modify --set …`) where structural edits will be combined
-//! with anchored byte slicing for unchanged regions.
+//! placeholders in canonical mode because their text is only
+//! available via the source-anchor (their byte range). Anchored mode
+//! is already complete (it slices the original source); canonical
+//! mode is the work that remains for from-scratch source generation.
 
 #![cfg(feature = "native")]
 #![allow(dead_code)]

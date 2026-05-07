@@ -1,13 +1,37 @@
 //! Typed semantic-tree IR (experimental).
 //!
 //! ## Status
-//! Parallel implementation under exploration. See
-//! `docs/design-transform-redesign-exploration.md` § 11 for the design
-//! rationale. The existing `crate::transform` pipeline (in-place Xot
-//! mutation) is the production path; this module is a *parity-target*
-//! sketch on a small slice (initially: a fragment of Python). When/if it
-//! reaches full parity for a language, that language switches to it and
-//! the imperative path retires.
+//! Production path for the languages listed below. The legacy
+//! `crate::transform::walk_transform` pipeline (in-place Xot
+//! mutation) is unreachable for these languages — their
+//! `LanguageOps::transform` is `passthrough_transform`; dispatch
+//! happens in `crate::parser::parse_with_ir_pipeline_to_xee` (and
+//! its `_to_xot` sibling).
+//! See `docs/design-transform-redesign-exploration.md` § 11 for the
+//! original design rationale.
+//!
+//! Languages on this IR (`Ir`):
+//! - C# (`csharp` / `cs`)
+//! - Python (`python` / `py`)
+//! - Java (`java`)
+//! - TypeScript / JavaScript (`typescript` / `ts` / `tsx` /
+//!   `javascript` / `js` / `jsx`)
+//! - Rust (`rust` / `rs`)
+//! - Go (`go`)
+//! - Ruby (`ruby` / `rb`)
+//! - PHP (`php`)
+//!
+//! Languages on the parallel `DataIr` (see [`data`]):
+//! JSON, YAML, TOML, INI, `.env`, Markdown — in their default
+//! `Structure` mode.
+//!
+//! Languages on the parallel `SqlIr` (see [`sql`]):
+//! T-SQL (`tsql` / `mssql` / `sql`).
+//!
+//! Raw tree-sitter mode (`TreeMode::Raw`) bypasses every IR and
+//! returns the bare CST through the legacy builder. Languages without
+//! an IR family registered (c, cpp, html, css, bash, scala, lua,
+//! haskell, ocaml, r, julia) also flow through the legacy builder.
 //!
 //! ## Architecture
 //! ```text
@@ -20,8 +44,19 @@
 //! - `render` is mechanical: walks the IR and emits the corresponding
 //!   XML. No decisions live here.
 //! - Cross-cutting normalisations (chain inversion, expression-host
-//!   wrapping, marker placement) are pure `Ir → Ir` rewrites that fit
-//!   between lowering and rendering. None are imperative tree mutations.
+//!   wrapping, marker placement) are *target* `Ir → Ir` rewrites that
+//!   fit between lowering and rendering.
+//!
+//!   **Current reality (deviation from target):** chain inversion
+//!   still lives in `crate::transform::chain_inversion` (1826 LOC of
+//!   imperative xot mutation) and is invoked from each language's
+//!   `post_transform` after `render_to_xot`. Per-language
+//!   `post_transform` passes (`languages/{lang}/post_transform.rs`)
+//!   likewise still mutate the rendered xot tree. This is acceptable
+//!   *only* as a transitional state; the design intent is that none
+//!   of these be imperative.
+//!
+//!   Tracked in `TODO.md` slice **S3**.
 //!
 //! ## Why not in-place mutation
 //! See § 4 of the exploration doc — most accidental costs (custom-handler
