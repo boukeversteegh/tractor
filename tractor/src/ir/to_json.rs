@@ -957,14 +957,30 @@ impl Shape {
         let plural = pluralize_list_name(element_name);
         let count = self.counts.entry(plural.clone()).or_insert(0);
         *count += 1;
-        if *count == 1 {
+        // Element names that the imperative pipeline always tags with
+        // `list="X"` even for singletons (so xml_to_json emits a plural
+        // array) — when ir_to_json sees one of these, skip the
+        // singleton-shape branch and go directly to the plural array
+        // even on first occurrence. Mirrors the post_transform's
+        // `tag_multi_role_children` + `distribute_member_list_attrs`
+        // tagging for known multi-cardinality children, so the JSON
+        // output stays consistent with the existing snapshot
+        // convention regardless of how many occurrences a given
+        // source actually has.
+        let always_plural = matches!(element_name, "comment");
+        if *count == 1 && !always_plural {
             // First occurrence — use singular key (the singleton form).
             // Singleton entries DROP their $type since the key already
             // conveys it.
             let value = strip_top_level_type(value);
             self.obj.insert(element_name.to_string(), value);
-        } else if *count == 2 {
-            // Second occurrence — promote to plural array.
+        } else if *count == 1 {
+            // Always-plural element with one occurrence — emit as
+            // single-element array directly.
+            let value = strip_top_level_type(value);
+            self.obj.insert(plural, Value::Array(vec![value]));
+        } else if *count == 2 && !always_plural {
+            // Second occurrence — promote singular to plural array.
             let existing = self.obj.remove(element_name).unwrap_or(Value::Null);
             let value = strip_top_level_type(value);
             self.obj.insert(plural, Value::Array(vec![existing, value]));
