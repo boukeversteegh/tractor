@@ -55,7 +55,6 @@ pub mod rust_lang;
 pub mod go_lang;
 pub mod ruby;
 pub mod php;
-pub mod tsql;
 // Data-language IR — a separate, simpler typed shape for JSON /
 // YAML / TOML / INI. Format-agnostic: a single `DataIr` tree can
 // be rendered to any of XML / JSON / YAML / TOML.
@@ -124,7 +123,6 @@ pub use ruby::{lower_ruby_root, lower_ruby_node};
 #[cfg(feature = "native")]
 pub use php::{lower_php_root, lower_php_node};
 #[cfg(feature = "native")]
-pub use tsql::{lower_tsql_root, lower_tsql_node};
 #[cfg(feature = "native")]
 pub use data::DataIr;
 #[cfg(feature = "native")]
