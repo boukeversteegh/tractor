@@ -80,6 +80,11 @@ pub mod data_to_json;
 // `docs/design-projection-pipeline.md`.
 #[cfg(feature = "native")]
 pub mod to_data;
+// SQL-language IR — typed variants per construct. Parallel to
+// `Ir` (programming languages) and `DataIr` (data languages).
+// See module doc-comment for rationale.
+#[cfg(feature = "native")]
+pub mod sql;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
