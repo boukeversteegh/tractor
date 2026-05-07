@@ -1,4 +1,6 @@
-//! [`SqlIr`] → canonical source string.
+//! [`SqlIr`] → canonical SQL source string. Sibling renderer to
+//! `sql_to_xot` (XML) and `sql_to_json` (JSON) — the output format
+//! is just SQL text.
 //!
 //! Reconstructs syntactically valid SQL source from a `SqlIr` tree
 //! WITHOUT consulting the original `source: &str` byte ranges. This
@@ -12,7 +14,7 @@
 //! Per the project principle (added 2026-05-07): if the IR loses any
 //! syntactic distinction (e.g. `[dbo]` vs `dbo`, single-quoted vs
 //! double-quoted strings) by relying on the source range to
-//! reconstruct text, the IR is incomplete. `canonical_source`
+//! reconstruct text, the IR is incomplete. `sql_to_canonical`
 //! exercises this — its output may differ in whitespace / comment
 //! placement / case from the input but must be *semantically
 //! equivalent* (parses to the same `SqlIr`).
@@ -28,13 +30,13 @@
 
 use super::sql::{QuoteStyle, SqlIr};
 
-/// Reconstruct canonical SQL source from a [`SqlIr`] tree.
+/// Render a [`SqlIr`] tree as canonical SQL source text.
 ///
-/// **Invariant:** `parse(canonical_source(parse(s))) == parse(s)` —
+/// **Invariant:** `parse(sql_to_canonical(parse(s))) == parse(s)` —
 /// the canonical text re-parses to the same IR. This is weaker than
-/// `canonical_source(parse(s)) == s` (byte-identical round-trip) but
+/// `sql_to_canonical(parse(s)) == s` (byte-identical round-trip) but
 /// stronger than just-not-crashing.
-pub fn canonical_source(ir: &SqlIr) -> String {
+pub fn sql_to_canonical(ir: &SqlIr) -> String {
     match ir {
         // ----- Atoms with quoting --------------------------------------
         SqlIr::Identifier { value, quoting, .. } => quoting.wrap(value),
@@ -100,25 +102,25 @@ mod tests {
     #[test]
     fn bare_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::None);
-        assert_eq!(canonical_source(&ir), "dbo");
+        assert_eq!(sql_to_canonical(&ir), "dbo");
     }
 
     #[test]
     fn bracketed_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::Brackets);
-        assert_eq!(canonical_source(&ir), "[dbo]");
+        assert_eq!(sql_to_canonical(&ir), "[dbo]");
     }
 
     #[test]
     fn double_quoted_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::DoubleQuote);
-        assert_eq!(canonical_source(&ir), "\"dbo\"");
+        assert_eq!(sql_to_canonical(&ir), "\"dbo\"");
     }
 
     #[test]
     fn backticked_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::Backtick);
-        assert_eq!(canonical_source(&ir), "`dbo`");
+        assert_eq!(sql_to_canonical(&ir), "`dbo`");
     }
 
     #[test]
@@ -129,7 +131,7 @@ mod tests {
             range: ByteRange::new(0, 5),
             span: Span::point(1, 1),
         };
-        assert_eq!(canonical_source(&ir), "[dbo]");
+        assert_eq!(sql_to_canonical(&ir), "[dbo]");
     }
 
     #[test]
@@ -140,6 +142,6 @@ mod tests {
             range: ByteRange::new(0, 1),
             span: Span::point(1, 1),
         };
-        assert_eq!(canonical_source(&ir), "u");
+        assert_eq!(sql_to_canonical(&ir), "u");
     }
 }

@@ -32,13 +32,15 @@
 //! 3. **No silent drops** — un-handled CST kinds fall through to
 //!    [`SqlIr::Unknown`].
 //! 4. **Canonical reconstruction without source** —
-//!    `parse(canonical_source(parse(s))) == parse(s)`. The IR carries
+//!    `parse(sql_to_canonical(parse(s))) == parse(s)`. The IR carries
 //!    every semantic distinction needed to regenerate equivalent
 //!    source from scratch, without consulting source byte ranges.
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
 //!    is captured by [`QuoteStyle`] on the atom variant; `value` is
 //!    the parsed unquoted text. Implemented in
-//!    `sql_canonical::canonical_source`.
+//!    `sql_to_canonical::sql_to_canonical` (sibling renderer to
+//!    `sql_to_xot` and `sql_to_json` — different output format,
+//!    same architectural slot).
 
 #![cfg(feature = "native")]
 
