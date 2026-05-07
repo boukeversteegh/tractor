@@ -1277,6 +1277,19 @@
                   },
                   {
                     "type": {
+                      "name": "var"
+                    },
+                    "pattern": {
+                      "tuple": true,
+                      "names": [
+                        "cnt",
+                        "tg"
+                      ]
+                    },
+                    "value": "pair"
+                  },
+                  {
+                    "type": {
                       "generic": true,
                       "name": "List",
                       "type": "int"
@@ -1717,17 +1730,6 @@
                     }
                   }
                 },
-                "pattern": {
-                  "tuple": true,
-                  "names": [
-                    "cnt",
-                    "tg"
-                  ]
-                },
-                "names": [
-                  "var",
-                  "pair"
-                ],
                 "return": {
                   "expression": {
                     "left": {

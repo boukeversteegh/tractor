@@ -650,11 +650,12 @@ unit/
   │               │       │   ├─ name = "odds"
   │               │       │   └─ member/name = "Count"
   │               │       └─ string = "\"odd\""
-  │               ├─ name = "var"
-  │               ├─ pattern[tuple]/
-  │               │   ├─ name = "cnt"
-  │               │   └─ name = "tg"
-  │               ├─ name = "pair"
+  │               ├─ variable/
+  │               │   ├─ type/name = "var"
+  │               │   ├─ pattern[tuple]/
+  │               │   │   ├─ name = "cnt"
+  │               │   │   └─ name = "tg"
+  │               │   └─ value/expression/name = "pair"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "List"

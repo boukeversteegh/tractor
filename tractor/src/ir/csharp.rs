@@ -2600,22 +2600,51 @@ fn lower_variable_declarator(
         })
     });
 
-    // For tuple deconstruction (`var (a, b) = pair;`) and other
-    // forms without a `name` field, lower as Inline whose children
-    // are the type (if present) followed by the declarator's named
-    // CST children (the tuple_pattern and the value). Including the
-    // type ensures the `var` token renders as `<name>var</name>`
-    // rather than leaking into gap text — the imperative pipeline's
-    // `wrap_text_in_name` on `implicit_type` produces the same
-    // shape.
+    // For tuple deconstruction (`var (a, b) = pair;`) the declarator
+    // has no `name` field — the binding side is the `tuple_pattern`
+    // child. Lower as Ir::Variable with the pattern in the `name`
+    // slot so the whole declaration is one statement-level element
+    // (`<variable><type>…</type><pattern>…</pattern><value>…</value>`)
+    // instead of the previous Inline-flatten that scattered the
+    // `<name>var</name>` / `<pattern>` / value siblings directly
+    // under the enclosing block (Principle #5 — deconstructed and
+    // named declarations are the same conceptual role).
     let Some(n) = name_node else {
-        let mut children: Vec<Ir> = Vec::new();
-        if let Some(t) = type_node {
-            children.push(lower_node(t, source));
-        }
         let mut cursor = declarator.walk();
-        children.extend(declarator.named_children(&mut cursor).map(|c| lower_node(c, source)));
-        return Ir::Inline { children, list_name: None, range, span };
+        let pattern_node = declarator.named_children(&mut cursor)
+            .find(|c| matches!(
+                c.kind(),
+                "tuple_pattern" | "declaration_pattern" | "list_pattern"
+                    | "var_pattern" | "discard_pattern"
+            ));
+        match pattern_node {
+            Some(p) => {
+                let pattern_ir = Box::new(lower_node(p, source));
+                let value_ir = value_node
+                    .filter(|v| v.id() != p.id())
+                    .map(|v| Box::new(lower_node(v, source)));
+                let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
+                return Ir::Variable {
+                    element_name,
+                    modifiers,
+                    decorators,
+                    type_ann: type_ir,
+                    name: pattern_ir,
+                    value: value_ir,
+                    range,
+                    span,
+                };
+            }
+            None => {
+                let mut children: Vec<Ir> = Vec::new();
+                if let Some(t) = type_node {
+                    children.push(lower_node(t, source));
+                }
+                let mut cursor = declarator.walk();
+                children.extend(declarator.named_children(&mut cursor).map(|c| lower_node(c, source)));
+                return Ir::Inline { children, list_name: None, range, span };
+            }
+        }
     };
     if let Some(t) = type_node {
         if n.byte_range().start < t.byte_range().end {
