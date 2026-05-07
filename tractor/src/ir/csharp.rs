@@ -872,7 +872,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "delegate_declaration"          => simple_statement(node, "delegate",   source),
         "destructor_declaration"        => simple_statement(node, "destructor", source),
         "indexer_declaration"           => simple_statement(node, "indexer",    source),
-        "event_field_declaration"       => simple_statement(node, "event",      source),
+        "event_field_declaration"       => lower_event_field_declaration(node, source),
         "event_declaration"             => simple_statement(node, "event",      source),
         "conversion_operator_declaration" => simple_statement(node, "operator", source),
         // `namespace Foo.Bar;` (file-scoped) — same as block-scoped:
@@ -2256,6 +2256,62 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         }
     }
     Ir::SimpleStatement { element_name, modifiers, extra_markers: &[], children, range, span }
+}
+
+/// Lower `event_field_declaration` as `Ir::Variable` with
+/// `element_name: "event"` so the event's type + name render as
+/// direct children of `<event>` (just like `<field>` /
+/// `<property>` / `<parameter>` do). Without this, the CST's
+/// nested `variable_declaration` leaks as
+/// `<event><variable><type>…</type><name>…</name></variable></event>`
+/// — the inner `<variable>` is an abstract supertype wrapper the
+/// developer never queries for (Principle #11), and the shape
+/// diverges from `<field>` for the same conceptual role
+/// (Principle #5).
+fn lower_event_field_declaration(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let modifiers = lower_csharp_modifiers(node, source, Some(Access::Private));
+    // Pull type + name out of the nested `variable_declaration`.
+    let mut type_ir: Option<Box<Ir>> = None;
+    let mut name_ir: Option<Box<Ir>> = None;
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        if c.kind() != "variable_declaration" { continue; }
+        let mut vc = c.walk();
+        for sub in c.named_children(&mut vc) {
+            match sub.kind() {
+                "variable_declarator" => {
+                    if let Some(n) = sub.child_by_field_name("name") {
+                        name_ir = Some(Box::new(Ir::Name {
+                            range: range_of(n),
+                            span: span_of(n),
+                        }));
+                    }
+                }
+                _ => {
+                    // First non-declarator child is the type.
+                    if type_ir.is_none() {
+                        type_ir = Some(Box::new(lower_node(sub, source)));
+                    }
+                }
+            }
+        }
+    }
+    let name = name_ir.unwrap_or_else(|| Box::new(Ir::Unknown {
+        kind: "event(missing name)".to_string(),
+        range, span,
+    }));
+    Ir::Variable {
+        element_name: "event",
+        modifiers,
+        decorators: Vec::new(),
+        type_ann: type_ir,
+        name,
+        value: None,
+        range,
+        span,
+    }
 }
 
 /// Like `simple_statement` but adds explicit `<marker/>` siblings.

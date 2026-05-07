@@ -141,19 +141,18 @@
             }
           ],
           "event": {
-            "variable": {
+            "private": true,
+            "type": {
+              "nullable": true,
               "type": {
-                "nullable": true,
                 "type": {
-                  "type": {
-                    "generic": true,
-                    "name": "EventHandler",
-                    "type": "T"
-                  }
+                  "generic": true,
+                  "name": "EventHandler",
+                  "type": "T"
                 }
-              },
-              "name": "Added"
-            }
+              }
+            },
+            "name": "Added"
           }
         }
       },
@@ -567,19 +566,17 @@
             },
             "event": {
               "public": true,
-              "variable": {
+              "type": {
+                "nullable": true,
                 "type": {
-                  "nullable": true,
                   "type": {
-                    "type": {
-                      "generic": true,
-                      "name": "Action",
-                      "type": "EntityBase"
-                    }
+                    "generic": true,
+                    "name": "Action",
+                    "type": "EntityBase"
                   }
-                },
-                "name": "Changed"
-              }
+                }
+              },
+              "name": "Changed"
             },
             "constructors": [
               {
@@ -665,19 +662,17 @@
           "body": {
             "event": {
               "public": true,
-              "variable": {
+              "type": {
+                "nullable": true,
                 "type": {
-                  "nullable": true,
                   "type": {
-                    "type": {
-                      "generic": true,
-                      "name": "EventHandler",
-                      "type": "Widget"
-                    }
+                    "generic": true,
+                    "name": "EventHandler",
+                    "type": "Widget"
                   }
-                },
-                "name": "Added"
-              }
+                }
+              },
+              "name": "Added"
             },
             "constructors": [
               {
@@ -3534,21 +3529,17 @@
             "events": [
               {
                 "public": true,
-                "variable": {
-                  "type": {
-                    "name": "OnChanged"
-                  },
-                  "name": "Changed"
-                }
+                "type": {
+                  "name": "OnChanged"
+                },
+                "name": "Changed"
               },
               {
                 "private": true,
-                "variable": {
-                  "type": {
-                    "name": "OnChanged"
-                  },
-                  "name": "_changed"
-                }
+                "type": {
+                  "name": "OnChanged"
+                },
+                "name": "_changed"
               },
               {
                 "public": true,

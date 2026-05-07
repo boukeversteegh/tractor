@@ -54,7 +54,7 @@ unit/
   │   │       │       ├─ type/name = "int"
   │   │       │       └─ name = "id"
   │   │       ├─ method[public]/name = "AllAsync"
-  │   │       └─ event/variable/
+  │   │       └─ event[private]/
   │   │           ├─ type[nullable]/type[generic]/
   │   │           │   ├─ name = "EventHandler"
   │   │           │   └─ type/name = "T"
@@ -210,7 +210,7 @@ unit/
   │   │       │   └─ value/expression/object[access]/
   │   │       │       ├─ name = "key"
   │   │       │       └─ member/name = "Length"
-  │   │       ├─ event[public]/variable/
+  │   │       ├─ event[public]/
   │   │       │   ├─ type[nullable]/type[generic]/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ type/name = "EntityBase"
@@ -243,7 +243,7 @@ unit/
   │   │   │   ├─ name = "IRepository"
   │   │   │   └─ type/name = "Widget"
   │   │   └─ body/
-  │   │       ├─ event[public]/variable/
+  │   │       ├─ event[public]/
   │   │       │   ├─ type[nullable]/type[generic]/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ type/name = "Widget"
@@ -960,7 +960,7 @@ unit/
       │       │   └─ parameter/
       │       │       ├─ type/name = "int"
       │       │       └─ name = "newValue"
-      │       ├─ event[public]/variable/
+      │       ├─ event[public]/
       │       │   ├─ type/name = "OnChanged"
       │       │   └─ name = "Changed"
       │       ├─ comment[leading] = "// Alias-qualified name + extern alias forms."
@@ -995,7 +995,7 @@ unit/
       │       │   │   └─ name = "c"
       │       │   └─ body/int = "0"
       │       ├─ comment[leading] = "// Event with explicit add/remove accessors."
-      │       ├─ event[private]/variable/
+      │       ├─ event[private]/
       │       │   ├─ type/name = "OnChanged"
       │       │   └─ name = "_changed"
       │       ├─ event[public]/
