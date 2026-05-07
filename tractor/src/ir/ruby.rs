@@ -9,7 +9,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{AccessSegment, ByteRange, Ir, Modifiers, Span};
+use super::lower_helpers::{range_of, span_of};
+use super::types::{AccessSegment, ByteRange, Ir, Modifiers};
 
 pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(root);
@@ -687,17 +688,4 @@ fn text_of(node: TsNode<'_>, source: &str) -> String {
     source[node.start_byte()..node.end_byte()].to_string()
 }
 
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    ByteRange::new(node.start_byte() as u32, node.end_byte() as u32)
-}
 
-fn span_of(node: TsNode<'_>) -> Span {
-    let start = node.start_position();
-    let end = node.end_position();
-    Span {
-        line: start.row as u32 + 1,
-        column: start.column as u32 + 1,
-        end_line: end.row as u32 + 1,
-        end_column: end.column as u32 + 1,
-    }
-}

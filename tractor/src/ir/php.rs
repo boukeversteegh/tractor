@@ -9,6 +9,7 @@
 
 use tree_sitter::Node as TsNode;
 
+use super::lower_helpers::{range_of, span_of};
 use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, Span};
 
 pub fn lower_php_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -1526,17 +1527,4 @@ fn php_arrow_function(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    ByteRange::new(node.start_byte() as u32, node.end_byte() as u32)
-}
 
-fn span_of(node: TsNode<'_>) -> Span {
-    let start = node.start_position();
-    let end = node.end_position();
-    Span {
-        line: start.row as u32 + 1,
-        column: start.column as u32 + 1,
-        end_line: end.row as u32 + 1,
-        end_column: end.column as u32 + 1,
-    }
-}

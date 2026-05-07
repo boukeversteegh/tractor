@@ -19,7 +19,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
+use super::lower_helpers::{range_of, span_of};
+use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind};
 
 /// Lower a TypeScript tree-sitter root node to [`Ir`].
 pub fn lower_typescript_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -2038,21 +2039,7 @@ fn op_marker(op: &str) -> Option<&'static str> {
     })
 }
 
-fn span_of(node: TsNode<'_>) -> Span {
-    let start = node.start_position();
-    let end = node.end_position();
-    Span {
-        line: start.row as u32 + 1,
-        column: start.column as u32 + 1,
-        end_line: end.row as u32 + 1,
-        end_column: end.column as u32 + 1,
-    }
-}
 
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    let r = node.byte_range();
-    ByteRange::new(r.start as u32, r.end as u32)
-}
 
 fn text_of(node: TsNode<'_>, source: &str) -> String {
     node.utf8_text(source.as_bytes())

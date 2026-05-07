@@ -11,7 +11,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::types::{ByteRange, Ir, Modifiers, Span};
+use super::lower_helpers::{range_of, span_of};
+use super::types::{Ir, Modifiers};
 
 pub fn lower_tsql_root(root: TsNode<'_>, source: &str) -> Ir {
     let span = span_of(root);
@@ -152,17 +153,3 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
 }
 
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    ByteRange::new(node.start_byte() as u32, node.end_byte() as u32)
-}
-
-fn span_of(node: TsNode<'_>) -> Span {
-    let start = node.start_position();
-    let end = node.end_position();
-    Span {
-        line: start.row as u32 + 1,
-        column: start.column as u32 + 1,
-        end_line: end.row as u32 + 1,
-        end_column: end.column as u32 + 1,
-    }
-}

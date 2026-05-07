@@ -19,6 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
+use super::lower_helpers::{range_of, span_of};
 use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a C# tree-sitter root node to [`Ir`].
@@ -2710,21 +2711,7 @@ fn lower_children(parent: TsNode<'_>, source: &str) -> Vec<Ir> {
         .collect()
 }
 
-fn span_of(node: TsNode<'_>) -> Span {
-    let s = node.start_position();
-    let e = node.end_position();
-    Span {
-        line: (s.row + 1) as u32,
-        column: (s.column + 1) as u32,
-        end_line: (e.row + 1) as u32,
-        end_column: (e.column + 1) as u32,
-    }
-}
 
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    let r = node.byte_range();
-    ByteRange::new(r.start as u32, r.end as u32)
-}
 
 fn text_of(node: TsNode<'_>, source: &str) -> String {
     node.utf8_text(source.as_bytes())
