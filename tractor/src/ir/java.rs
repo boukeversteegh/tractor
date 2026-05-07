@@ -1244,24 +1244,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             };
             // Walk the argument_list children directly so they sit as
             // call args (matches the imperative `<call>` shape).
+            // Skip the leading `this` / `super` keyword child — the
+            // `[this]` / `[super]` marker on `<call>` already conveys
+            // that fact; keeping the `<this>this</this>` /
+            // `<super>super</super>` text leaf duplicates the marker
+            // and leaks the keyword as text (Principle #2).
             let mut cursor = node.walk();
             let mut children: Vec<Ir> = Vec::new();
+            // Track the end of the keyword child so we can shrink
+            // the SimpleStatement's `range` past it. Without this
+            // shrink, an empty `super();` ends up rendering as
+            // `<call[super]>super();</call>` — gap text covers the
+            // whole source range because there are no children to
+            // anchor the gap calculation.
+            let mut start = range.start;
             for c in node.named_children(&mut cursor) {
                 if c.kind() == "argument_list" {
                     let mut ac = c.walk();
                     for a in c.named_children(&mut ac) {
                         children.push(lower_node(a, source));
                     }
+                } else if matches!(c.kind(), "this" | "super") {
+                    let kw_end = c.end_byte() as u32;
+                    if kw_end > start {
+                        start = kw_end;
+                    }
+                    continue;
                 } else {
                     children.push(lower_node(c, source));
                 }
             }
+            let trimmed_range = ByteRange::new(start, range.end);
             Ir::SimpleStatement {
                 element_name: "call",
                 modifiers: Modifiers::default(),
                 extra_markers: marker,
                 children,
-                range,
+                range: trimmed_range,
                 span,
             }
         }

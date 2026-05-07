@@ -165,7 +165,7 @@
             "name": "Demo",
             "body": {
               "call": {
-                "this": {},
+                "this": true,
                 "null": "null"
               }
             }
@@ -181,7 +181,7 @@
             },
             "body": {
               "call": {
-                "super": {}
+                "super": true
               },
               "expression": {
                 "assign": {

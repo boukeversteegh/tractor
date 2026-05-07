@@ -64,16 +64,14 @@ program/
   │       │   └─ name = "ready"
   │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
-  │       │   └─ body/call[this]/
-  │       │       ├─ this = "this"
-  │       │       └─ null = "null"
+  │       │   └─ body/call[this]/null = "null"
   │       ├─ constructor[public]/
   │       │   ├─ name = "Demo"
   │       │   ├─ parameter/
   │       │   │   ├─ type/name = "String"
   │       │   │   └─ name = "name"
   │       │   └─ body/
-  │       │       ├─ call[super]/super = "super"
+  │       │       ├─ call[super]
   │       │       └─ expression/assign/
   │       │           ├─ left/expression/object[access]/
   │       │           │   ├─ this = "this"
