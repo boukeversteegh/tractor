@@ -169,6 +169,18 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
+        DataIr::Element { name, markers, children, span, .. } => {
+            let node = element(xot, name, *span);
+            xot.append(parent, node)?;
+            for m in markers {
+                let mn = element(xot, m, *span);
+                xot.append(node, mn)?;
+            }
+            for c in children {
+                render_data_to_xot_json(xot, node, c, source)?;
+            }
+            Ok(node)
+        }
         DataIr::Unknown { kind, range, span } => {
             let node = element(xot, "unknown", *span);
             let kind_attr = xot.add_name("kind");
@@ -340,6 +352,18 @@ pub fn render_data_to_xot_keyed(
                         }
                     }
                 }
+            }
+            Ok(node)
+        }
+        DataIr::Element { name, markers, children, span, .. } => {
+            let node = element(xot, name, *span);
+            xot.append(parent, node)?;
+            for m in markers {
+                let mn = element(xot, m, *span);
+                xot.append(node, mn)?;
+            }
+            for c in children {
+                render_data_to_xot_keyed(xot, node, c, source)?;
             }
             Ok(node)
         }

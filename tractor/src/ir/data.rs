@@ -151,6 +151,24 @@ pub enum DataIr {
         span: Span,
     },
 
+    /// Generic element with a fixed name plus optional empty
+    /// `<marker/>` children and content children. Used for shapes
+    /// that don't fit the structural variants above — Markdown's
+    /// `<heading[h1]>` / `<list[ordered]>` / `<codeblock>` etc.,
+    /// for example.
+    ///
+    /// Renders as `<{name}><{m1}/><{m2}/>…children…</{name}>`.
+    /// Element names are static (declared by the lower fn for the
+    /// language) — *not* user-keyed; the keyed renderer's
+    /// sanitization rules don't apply.
+    Element {
+        name: &'static str,
+        markers: Vec<&'static str>,
+        children: Vec<DataIr>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// Last-resort hatch for unhandled kinds. Renders as
     /// `<unknown kind="…">…</unknown>` so XPath queries can still
     /// traverse and source-text recovery still holds.
@@ -176,6 +194,7 @@ impl DataIr {
             | DataIr::Null { range, .. }
             | DataIr::Comment { range, .. }
             | DataIr::Directive { range, .. }
+            | DataIr::Element { range, .. }
             | DataIr::Unknown { range, .. } => *range,
         }
     }
@@ -194,6 +213,7 @@ impl DataIr {
             | DataIr::Null { span, .. }
             | DataIr::Comment { span, .. }
             | DataIr::Directive { span, .. }
+            | DataIr::Element { span, .. }
             | DataIr::Unknown { span, .. } => *span,
         }
     }

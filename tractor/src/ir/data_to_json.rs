@@ -102,6 +102,37 @@ pub fn data_to_json(ir: &DataIr) -> Value {
         DataIr::Null { .. } => Value::Null,
         DataIr::Comment { .. } => Value::Null, // dropped — not data
         DataIr::Directive { .. } => Value::Null, // metadata, not data
+        DataIr::Element { name, children, .. } => {
+            // Generic element → object keyed by name with content
+            // children rendered as the value. Markers (empty
+            // `<marker/>` children) are dropped from JSON.
+            let mut inner = Map::new();
+            collect_pairs(&mut inner, children);
+            if inner.is_empty() {
+                // No structured content — emit a string of the
+                // concatenated child text values, or null.
+                let text: String = children
+                    .iter()
+                    .filter_map(|c| match c {
+                        DataIr::String { value, .. } => Some(value.clone()),
+                        DataIr::Number { text, .. } => Some(text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("");
+                let mut o = Map::new();
+                if text.is_empty() {
+                    o.insert((*name).to_string(), Value::Null);
+                } else {
+                    o.insert((*name).to_string(), Value::String(text));
+                }
+                Value::Object(o)
+            } else {
+                let mut outer = Map::new();
+                outer.insert((*name).to_string(), Value::Object(inner));
+                Value::Object(outer)
+            }
+        }
         DataIr::Unknown { kind, .. } => {
             let mut o = Map::new();
             o.insert("$unknown".to_string(), Value::String(kind.clone()));

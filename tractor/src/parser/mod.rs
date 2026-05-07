@@ -385,6 +385,7 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
         ("yaml" | "yml", TreeMode::Structure) => true,
         ("toml", TreeMode::Structure) => true,
         ("ini" | "env", TreeMode::Structure) => true,
+        ("markdown" | "md" | "mdx", TreeMode::Structure) => true,
         _ => false,
     }
 }
@@ -486,6 +487,7 @@ fn parse_with_ir_pipeline(
         "yaml" | "yml" => Some(ir::lower_yaml_data_root),
         "toml" => Some(ir::lower_toml_data_root),
         "ini" | "env" => Some(ir::lower_ini_data_root),
+        "markdown" | "md" | "mdx" => Some(ir::lower_markdown_data_root),
         _ => None,
     };
     if let Some(lower) = data_lower {
@@ -595,6 +597,7 @@ fn parse_with_ir_pipeline_to_xee(
         "yaml" | "yml" => Some(ir::lower_yaml_data_root),
         "toml" => Some(ir::lower_toml_data_root),
         "ini" | "env" => Some(ir::lower_ini_data_root),
+        "markdown" | "md" | "mdx" => Some(ir::lower_markdown_data_root),
         _ => None,
     };
     if let Some(lower) = data_lower {

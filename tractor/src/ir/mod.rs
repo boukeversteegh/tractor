@@ -70,6 +70,8 @@ pub mod toml_data;
 #[cfg(feature = "native")]
 pub mod ini_data;
 #[cfg(feature = "native")]
+pub mod markdown_data;
+#[cfg(feature = "native")]
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
@@ -114,6 +116,8 @@ pub use yaml_data::lower_yaml_data_root;
 pub use toml_data::lower_toml_data_root;
 #[cfg(feature = "native")]
 pub use ini_data::lower_ini_data_root;
+#[cfg(feature = "native")]
+pub use markdown_data::lower_markdown_data_root;
 #[cfg(feature = "native")]
 pub use data_to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 #[cfg(feature = "native")]
