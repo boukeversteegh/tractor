@@ -13,7 +13,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of};
+use super::lower_helpers::{range_of, span_of, text_of};
 use super::types::{AccessSegment, ByteRange, Ir, Modifiers, Span};
 
 pub fn lower_go_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -809,9 +809,6 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
         .collect()
 }
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
-    source[node.start_byte()..node.end_byte()].to_string()
-}
 
 /// Go convention: name starting with uppercase → exported; lowercase → unexported.
 fn is_exported(name: &str) -> bool {

@@ -19,7 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of};
+use super::lower_helpers::{range_of, span_of, text_of};
 use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind};
 
 /// Lower a TypeScript tree-sitter root node to [`Ir`].
@@ -2041,8 +2041,3 @@ fn op_marker(op: &str) -> Option<&'static str> {
 
 
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
-    node.utf8_text(source.as_bytes())
-        .map(|s| s.to_string())
-        .unwrap_or_default()
-}

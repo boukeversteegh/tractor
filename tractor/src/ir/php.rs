@@ -9,7 +9,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of};
+use super::lower_helpers::{range_of, span_of, text_of};
 use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, Span};
 
 pub fn lower_php_root(root: TsNode<'_>, source: &str) -> Ir {
@@ -702,9 +702,6 @@ fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
 }
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
-    source[node.start_byte()..node.end_byte()].to_string()
-}
 
 /// Wrap a single Ir in `<condition><expression>...</expression></condition>`
 /// for control-flow shapes that demand the condition slot host.

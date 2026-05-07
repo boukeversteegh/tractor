@@ -19,7 +19,7 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of};
+use super::lower_helpers::{range_of, span_of, text_of};
 use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span};
 
 /// Lower a C# tree-sitter root node to [`Ir`].
@@ -2713,11 +2713,6 @@ fn lower_children(parent: TsNode<'_>, source: &str) -> Vec<Ir> {
 
 
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
-    node.utf8_text(source.as_bytes())
-        .map(|s| s.to_string())
-        .unwrap_or_default()
-}
 
 /// Operator-marker map. Same names as Python's where the operators
 /// match (Principle #5: same concept → same marker name); language-

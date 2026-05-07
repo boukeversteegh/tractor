@@ -15,16 +15,20 @@ use tree_sitter::Node as TsNode;
 
 use super::types::{ByteRange, Span};
 
-/// Source bytes covered by `node` as an owned [`String`].
+/// Source bytes covered by `node` as an owned [`String`]. Uses
+/// `node.utf8_text()` rather than byte-slicing so an invalid
+/// byte range (shouldn't happen for tree-sitter output, but
+/// defensively) returns an empty string instead of panicking.
 pub fn text_of(node: TsNode<'_>, source: &str) -> String {
-    text_borrow(node, source).to_string()
+    node.utf8_text(source.as_bytes())
+        .map(|s| s.to_string())
+        .unwrap_or_default()
 }
 
 /// Source bytes covered by `node` as a borrowed `&str`. Useful when
 /// the caller will hash / compare without allocating.
 pub fn text_borrow<'s>(node: TsNode<'_>, source: &'s str) -> &'s str {
-    let r = node.byte_range();
-    &source[r]
+    node.utf8_text(source.as_bytes()).unwrap_or("")
 }
 
 /// `node`'s byte range as the IR's compact [`ByteRange`] (u32 pair).
