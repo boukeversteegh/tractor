@@ -93,13 +93,6 @@ pub mod sql_to_xot;
 // SqlIr → JSON rendering.
 #[cfg(feature = "native")]
 pub mod sql_to_json;
-// SqlIr → canonical SQL source string. Sibling renderer to
-// `sql_to_xot` and `sql_to_json` — output format is SQL text.
-// Reconstructs syntactically valid SQL from the IR alone, no source
-// byte ranges consulted. Locks down the principle that the IR
-// captures every semantic distinction.
-#[cfg(feature = "native")]
-pub mod sql_to_canonical;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.

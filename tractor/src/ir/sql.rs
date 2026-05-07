@@ -32,15 +32,15 @@
 //! 3. **No silent drops** — un-handled CST kinds fall through to
 //!    [`SqlIr::Unknown`].
 //! 4. **Canonical reconstruction without source** —
-//!    `parse(sql_to_canonical(parse(s))) == parse(s)`. The IR carries
-//!    every semantic distinction needed to regenerate equivalent
-//!    source from scratch, without consulting source byte ranges.
+//!    `parse(render_sql(ir, None)) == parse(s)` where
+//!    `ir = lower_sql_root(parse(s), &s)`. The IR carries every
+//!    semantic distinction needed to regenerate equivalent source
+//!    from scratch, without consulting source byte ranges.
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
 //!    is captured by [`QuoteStyle`] on the atom variant; `value` is
-//!    the parsed unquoted text. Implemented in
-//!    `sql_to_canonical::sql_to_canonical` (sibling renderer to
-//!    `sql_to_xot` and `sql_to_json` — different output format,
-//!    same architectural slot).
+//!    the parsed unquoted text. Implemented as the canonical-mode
+//!    arm of [`crate::ir::source::render_sql`] in `source/sql.rs`,
+//!    fitting the existing per-language source-rendering convention.
 
 #![cfg(feature = "native")]
 

@@ -1,42 +1,42 @@
-//! [`SqlIr`] → canonical SQL source string. Sibling renderer to
-//! `sql_to_xot` (XML) and `sql_to_json` (JSON) — the output format
-//! is just SQL text.
+//! T-SQL: SqlIr → source code (canonical, no-anchor).
+//!
+//! Per-language entry under `crate::ir::source` for SQL-family
+//! languages. Called via [`crate::ir::source::render_sql`] which
+//! handles both anchored mode (uses `SqlIr.to_source(s)` for byte-
+//! identical output) and from-scratch canonical mode (this module).
 //!
 //! Reconstructs syntactically valid SQL source from a `SqlIr` tree
 //! WITHOUT consulting the original `source: &str` byte ranges. This
-//! is a stronger statement than round-trip identity (`to_source(ir,
-//! source) == source`) — it asserts that the IR carries every
-//! semantic distinction needed to regenerate equivalent source from
-//! scratch.
+//! is a stronger statement than round-trip identity — it asserts
+//! that the IR carries every semantic distinction needed to
+//! regenerate equivalent source from scratch.
 //!
 //! ## Why
 //!
-//! Per the project principle (added 2026-05-07): if the IR loses any
-//! syntactic distinction (e.g. `[dbo]` vs `dbo`, single-quoted vs
-//! double-quoted strings) by relying on the source range to
-//! reconstruct text, the IR is incomplete. `sql_to_canonical`
-//! exercises this — its output may differ in whitespace / comment
-//! placement / case from the input but must be *semantically
+//! Per the project principle (sql.rs invariant 4): if the IR loses
+//! any syntactic distinction (e.g. `[dbo]` vs `dbo`) by relying on
+//! the source range to reconstruct text, the IR is incomplete. This
+//! renderer exercises that — its output may differ in whitespace /
+//! comment placement / case from the input but must be *semantically
 //! equivalent* (parses to the same `SqlIr`).
 //!
 //! ## Status
 //!
 //! Initial slice covers the identifier-class atoms whose quoting
-//! style is captured by `QuoteStyle`. Other variants are stubbed —
-//! they emit a deterministic but possibly non-roundtripping
-//! placeholder. Subsequent iters will fill them in.
+//! style is captured by `QuoteStyle`. Composite-shape variants are
+//! stubbed — they emit a deterministic but possibly non-
+//! roundtripping placeholder. Subsequent iters will fill them in.
 
 #![cfg(feature = "native")]
 
-use super::sql::{QuoteStyle, SqlIr};
+use crate::ir::sql::{QuoteStyle, SqlIr};
 
 /// Render a [`SqlIr`] tree as canonical SQL source text.
 ///
-/// **Invariant:** `parse(sql_to_canonical(parse(s))) == parse(s)` —
-/// the canonical text re-parses to the same IR. This is weaker than
-/// `sql_to_canonical(parse(s)) == s` (byte-identical round-trip) but
-/// stronger than just-not-crashing.
-pub fn sql_to_canonical(ir: &SqlIr) -> String {
+/// **Invariant:** `parse(render(parse(s))) == parse(s)` — the
+/// canonical text re-parses to the same IR. Weaker than byte-
+/// identical round-trip but stronger than just-not-crashing.
+pub fn render(ir: &SqlIr) -> String {
     match ir {
         // ----- Atoms with quoting --------------------------------------
         SqlIr::Identifier { value, quoting, .. } => quoting.wrap(value),
@@ -62,7 +62,7 @@ pub fn sql_to_canonical(ir: &SqlIr) -> String {
 /// Placeholder for atoms whose canonical form isn't yet derivable
 /// without source. Returns a marker that distinguishes from real
 /// content; once full canonical-source support lands these go away.
-fn range_placeholder(_range: &super::types::ByteRange) -> String {
+fn range_placeholder(_range: &crate::ir::types::ByteRange) -> String {
     "/*range*/".to_string()
 }
 
@@ -88,7 +88,7 @@ fn variant_name(ir: &SqlIr) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::types::{ByteRange, Span};
+    use crate::ir::types::{ByteRange, Span};
 
     fn ident(value: &str, q: QuoteStyle) -> SqlIr {
         SqlIr::Identifier {
@@ -102,25 +102,25 @@ mod tests {
     #[test]
     fn bare_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::None);
-        assert_eq!(sql_to_canonical(&ir), "dbo");
+        assert_eq!(render(&ir), "dbo");
     }
 
     #[test]
     fn bracketed_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::Brackets);
-        assert_eq!(sql_to_canonical(&ir), "[dbo]");
+        assert_eq!(render(&ir), "[dbo]");
     }
 
     #[test]
     fn double_quoted_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::DoubleQuote);
-        assert_eq!(sql_to_canonical(&ir), "\"dbo\"");
+        assert_eq!(render(&ir), "\"dbo\"");
     }
 
     #[test]
     fn backticked_identifier_canonical() {
         let ir = ident("dbo", QuoteStyle::Backtick);
-        assert_eq!(sql_to_canonical(&ir), "`dbo`");
+        assert_eq!(render(&ir), "`dbo`");
     }
 
     #[test]
@@ -131,7 +131,7 @@ mod tests {
             range: ByteRange::new(0, 5),
             span: Span::point(1, 1),
         };
-        assert_eq!(sql_to_canonical(&ir), "[dbo]");
+        assert_eq!(render(&ir), "[dbo]");
     }
 
     #[test]
@@ -142,6 +142,6 @@ mod tests {
             range: ByteRange::new(0, 1),
             span: Span::point(1, 1),
         };
-        assert_eq!(sql_to_canonical(&ir), "u");
+        assert_eq!(render(&ir), "u");
     }
 }
