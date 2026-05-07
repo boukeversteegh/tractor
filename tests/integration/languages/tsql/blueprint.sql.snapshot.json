@@ -30,8 +30,10 @@
       "select": {
         "$skip": null,
         "names": [
-          "u.Name",
-          "u.Age"
+          "u",
+          "Name",
+          "u",
+          "Age"
         ]
       },
       "from": {
@@ -43,7 +45,10 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "u.Age",
+            "names": [
+              "u",
+              "Age"
+            ],
             "op": ">",
             "literal": {}
           }
@@ -54,7 +59,10 @@
             null
           ],
           "target": {
-            "name": "u.Name"
+            "names": [
+              "u",
+              "Name"
+            ]
           }
         }
       }
@@ -106,10 +114,20 @@
     },
     {
       "select": {
-        "name": "[dbo].[Users].[Name]",
         "$skips": [
           null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
           null
+        ],
+        "schema": "dbo",
+        "names": [
+          "Users",
+          "Name"
         ],
         "alias": "UserName",
         "var": "@StartDate"
@@ -117,14 +135,22 @@
       "from": {
         "$skip": null,
         "relation": {
-          "schema": "[dbo]",
-          "name": "[Users]"
+          "schema": "dbo",
+          "$skips": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "name": "Users"
         },
         "where": {
           "$skip": null,
           "between": {
-            "name": "[Age]",
+            "name": "Age",
             "$skips": [
+              null,
+              null,
               null,
               null
             ],
@@ -153,7 +179,11 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "[Key]",
+            "name": "Key",
+            "$skips": [
+              null,
+              null
+            ],
             "op": "=",
             "var": "@KeyName"
           }
@@ -164,9 +194,12 @@
       "select": {
         "$skip": null,
         "names": [
-          "o.ID",
-          "u.Name",
-          "a.City"
+          "o",
+          "ID",
+          "u",
+          "Name",
+          "a",
+          "City"
         ]
       },
       "from": {
@@ -186,11 +219,13 @@
               null
             ],
             "compare": {
-              "op": "=",
               "names": [
-                "o.UserID",
-                "u.ID"
-              ]
+                "o",
+                "UserID",
+                "u",
+                "ID"
+              ],
+              "op": "="
             }
           },
           {
@@ -204,18 +239,23 @@
               "alias": "a"
             },
             "compare": {
-              "op": "=",
               "names": [
-                "u.ID",
-                "a.UserID"
-              ]
+                "u",
+                "ID",
+                "a",
+                "UserID"
+              ],
+              "op": "="
             }
           }
         ],
         "where": {
           "$skip": null,
           "compare": {
-            "name": "o.Total",
+            "names": [
+              "o",
+              "Total"
+            ],
             "op": ">",
             "literal": {}
           }
@@ -264,7 +304,10 @@
     {
       "select": {
         "$skip": null,
-        "name": "u.Name"
+        "names": [
+          "u",
+          "Name"
+        ]
       },
       "from": {
         "$skip": null,
@@ -290,11 +333,13 @@
                 "where": {
                   "$skip": null,
                   "compare": {
-                    "op": "=",
                     "names": [
-                      "o.UserID",
-                      "u.ID"
-                    ]
+                      "o",
+                      "UserID",
+                      "u",
+                      "ID"
+                    ],
+                    "op": "="
                   }
                 }
               }
@@ -667,11 +712,13 @@
         "s"
       ],
       "compare": {
-        "op": "=",
         "names": [
-          "t.ID",
-          "s.ID"
-        ]
+          "t",
+          "ID",
+          "s",
+          "ID"
+        ],
+        "op": "="
       },
       "whens": [
         {
@@ -684,8 +731,10 @@
           ],
           "assign": {
             "names": [
-              "t.Name",
-              "s.Name"
+              "t",
+              "Name",
+              "s",
+              "Name"
             ]
           }
         },
@@ -711,8 +760,10 @@
             },
             {
               "names": [
-                "s.ID",
-                "s.Name"
+                "s",
+                "ID",
+                "s",
+                "Name"
               ]
             }
           ]

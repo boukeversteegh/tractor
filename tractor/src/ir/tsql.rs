@@ -49,7 +49,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- Atoms ---------------------------------------------------
         "identifier" => {
             // T-SQL classifies identifier text by sigil:
-            //   `@StartDate` → <var>     (T-SQL variable)
+            //   `@StartDate` → <var>      (T-SQL variable)
+            //   `[bracketed]` → emit `<name>bracketed</name>` and
+            //                   `Ir::Skip` the `[`/`]` delimiters so
+            //                   they don't leak as gap text under
+            //                   the parent (Principle #2 — the
+            //                   brackets are quoting syntax, not
+            //                   part of the identifier name).
             // The plain identifier renders as <name>; the role-based
             // alias / schema rename happens in the `term` and
             // `object_reference` arms below (they re-lower the
@@ -58,19 +64,32 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             if text.starts_with('@') {
                 Ir::Atom { element_name: "var", range, span }
             } else {
-                Ir::Name { range, span }
+                bracket_stripped_name(range, span, source, "name")
             }
         }
         "object_reference" => lower_object_reference(node, source),
         "column_reference" | "field" => {
-            // T-SQL wraps a bare identifier reference in `field` —
-            // detect `@var` here too, since the parent's text covers
-            // exactly the identifier bytes.
+            // `field` and `column_reference` can be either a bare
+            // identifier (`Name`) or a dot-chain of qualifiers
+            // (`[dbo].[Users].[Name]`). For the bare case, lower
+            // as a single Name (with `@var` sigil-detection); for
+            // the chain case, recurse into children so each
+            // `identifier` / `object_reference` segment goes
+            // through its own bracket-stripping path.
             let text = range.slice(source);
             if text.starts_with('@') {
-                Ir::Atom { element_name: "var", range, span }
+                return Ir::Atom { element_name: "var", range, span };
+            }
+            let mut cursor = node.walk();
+            let named: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            if named.len() == 1 && named[0].kind() == "identifier" {
+                bracket_stripped_name(range, span, source, "name")
             } else {
-                Ir::Name { range, span }
+                Ir::Inline {
+                    children: named.into_iter().map(|c| lower_node(c, source)).collect(),
+                    list_name: None,
+                    range, span,
+                }
             }
         }
         "int" => Ir::Int { range, span },
@@ -161,6 +180,55 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
+/// Lower a bracket-quoted T-SQL identifier (`[dbo]` /
+/// `[Users]`) as `Ir::Inline { Skip("["), Atom(<name>dbo), Skip("]") }`
+/// — the inner Atom carries the bare identifier text, the
+/// flanking Skips consume the bracket bytes so the parent's gap
+/// rendering doesn't leak them as text. Plain identifiers (no
+/// brackets) skip the wrap and lower to a bare Atom.
+///
+/// `element_name` controls the inner Atom's tag (`name` for plain
+/// identifiers, `schema` / `alias` for role-classified ones — see
+/// the call sites in `lower_object_reference` and
+/// `lower_term_children`).
+fn bracket_stripped_name(
+    range: super::types::ByteRange,
+    span: super::types::Span,
+    source: &str,
+    element_name: &'static str,
+) -> Ir {
+    let bytes = source.as_bytes();
+    let len = (range.end - range.start) as usize;
+    let is_bracketed = len >= 2
+        && bytes.get(range.start as usize) == Some(&b'[')
+        && bytes.get((range.end - 1) as usize) == Some(&b']');
+    if !is_bracketed {
+        return if element_name == "name" {
+            Ir::Name { range, span }
+        } else {
+            Ir::Atom { element_name, range, span }
+        };
+    }
+    let inner = super::types::ByteRange::new(range.start + 1, range.end - 1);
+    let lbracket = super::types::ByteRange::new(range.start, range.start + 1);
+    let rbracket = super::types::ByteRange::new(range.end - 1, range.end);
+    let inner_atom = if element_name == "name" {
+        Ir::Name { range: inner, span }
+    } else {
+        Ir::Atom { element_name, range: inner, span }
+    };
+    Ir::Inline {
+        children: vec![
+            Ir::Skip { range: lbracket, span },
+            inner_atom,
+            Ir::Skip { range: rbracket, span },
+        ],
+        list_name: None,
+        range,
+        span,
+    }
+}
+
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let mut cursor = node.walk();
     let children: Vec<Ir> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
@@ -211,11 +279,7 @@ fn lower_object_reference(node: TsNode<'_>, source: &str) -> Ir {
         .named_children(&mut cursor2)
         .map(|c| {
             if c.kind() == "identifier" && c.start_byte() != last_id_byte {
-                Ir::Atom {
-                    element_name: "schema",
-                    range: range_of(c),
-                    span: span_of(c),
-                }
+                bracket_stripped_name(range_of(c), span_of(c), source, "schema")
             } else {
                 lower_node(c, source)
             }
@@ -246,11 +310,9 @@ fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     named
         .into_iter()
         .map(|c| match alias_id {
-            Some(a) if c.kind() == "identifier" && c.start_byte() == a => Ir::Atom {
-                element_name: "alias",
-                range: range_of(c),
-                span: span_of(c),
-            },
+            Some(a) if c.kind() == "identifier" && c.start_byte() == a => {
+                bracket_stripped_name(range_of(c), span_of(c), source, "alias")
+            }
             _ => lower_node(c, source),
         })
         .collect()

@@ -2,17 +2,22 @@ file/
   ├─ comment = "-- Simple T-SQL example"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "u.Name"
-  │   │   └─ name = "u.Age"
+  │   │   ├─ name = "u"
+  │   │   ├─ name = "Name"
+  │   │   ├─ name = "u"
+  │   │   └─ name = "Age"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ name = "Users"
   │       │   └─ alias = "u"
   │       ├─ where/compare/
-  │       │   ├─ name = "u.Age"
+  │       │   ├─ name = "u"
+  │       │   ├─ name = "Age"
   │       │   ├─ op = ">"
   │       │   └─ literal = "18"
-  │       └─ order/target/name = "u.Name"
+  │       └─ order/target/
+  │           ├─ name = "u"
+  │           └─ name = "Name"
   ├─ statement/insert/
   │   ├─ name = "AuditLog"
   │   ├─ list/
@@ -30,15 +35,17 @@ file/
   ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "[dbo].[Users].[Name]"
+  │   │   ├─ schema = "dbo"
+  │   │   ├─ name = "Users"
+  │   │   ├─ name = "Name"
   │   │   ├─ alias = "UserName"
   │   │   └─ var = "@StartDate"
   │   └─ from/
   │       ├─ relation/
-  │       │   ├─ schema = "[dbo]"
-  │       │   └─ name = "[Users]"
+  │       │   ├─ schema = "dbo"
+  │       │   └─ name = "Users"
   │       └─ where/between/
-  │           ├─ name = "[Age]"
+  │           ├─ name = "Age"
   │           ├─ literal = "18"
   │           └─ literal = "65"
   ├─ comment = "-- UPDATE with variables and schema-qualified table"
@@ -50,15 +57,18 @@ file/
   │   │   ├─ name = "Value"
   │   │   └─ var = "@NewValue"
   │   └─ where/compare/
-  │       ├─ name = "[Key]"
+  │       ├─ name = "Key"
   │       ├─ op = "="
   │       └─ var = "@KeyName"
   ├─ comment = "-- JOINs"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "o.ID"
-  │   │   ├─ name = "u.Name"
-  │   │   └─ name = "a.City"
+  │   │   ├─ name = "o"
+  │   │   ├─ name = "ID"
+  │   │   ├─ name = "u"
+  │   │   ├─ name = "Name"
+  │   │   ├─ name = "a"
+  │   │   └─ name = "City"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ name = "Orders"
@@ -68,19 +78,24 @@ file/
   │       │   │   ├─ name = "Users"
   │       │   │   └─ alias = "u"
   │       │   └─ compare/
-  │       │       ├─ name = "o.UserID"
+  │       │       ├─ name = "o"
+  │       │       ├─ name = "UserID"
   │       │       ├─ op = "="
-  │       │       └─ name = "u.ID"
+  │       │       ├─ name = "u"
+  │       │       └─ name = "ID"
   │       ├─ join/
   │       │   ├─ relation/
   │       │   │   ├─ name = "Addresses"
   │       │   │   └─ alias = "a"
   │       │   └─ compare/
-  │       │       ├─ name = "u.ID"
+  │       │       ├─ name = "u"
+  │       │       ├─ name = "ID"
   │       │       ├─ op = "="
-  │       │       └─ name = "a.UserID"
+  │       │       ├─ name = "a"
+  │       │       └─ name = "UserID"
   │       └─ where/compare/
-  │           ├─ name = "o.Total"
+  │           ├─ name = "o"
+  │           ├─ name = "Total"
   │           ├─ op = ">"
   │           └─ literal = "100"
   ├─ comment = "-- Subquery with IN"
@@ -100,7 +115,9 @@ file/
   │                       └─ literal = "50"
   ├─ comment = "-- EXISTS"
   ├─ statement/
-  │   ├─ select/name = "u.Name"
+  │   ├─ select/
+  │   │   ├─ name = "u"
+  │   │   └─ name = "Name"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ name = "Users"
@@ -112,9 +129,11 @@ file/
   │               │   ├─ name = "Orders"
   │               │   └─ alias = "o"
   │               └─ where/compare/
-  │                   ├─ name = "o.UserID"
+  │                   ├─ name = "o"
+  │                   ├─ name = "UserID"
   │                   ├─ op = "="
-  │                   └─ name = "u.ID"
+  │                   ├─ name = "u"
+  │                   └─ name = "ID"
   ├─ comment = "-- GROUP BY, HAVING, aggregate functions"
   ├─ statement/
   │   ├─ select/
@@ -239,19 +258,25 @@ file/
   │   ├─ name = "Source"
   │   ├─ name = "s"
   │   ├─ compare/
-  │   │   ├─ name = "t.ID"
+  │   │   ├─ name = "t"
+  │   │   ├─ name = "ID"
   │   │   ├─ op = "="
-  │   │   └─ name = "s.ID"
+  │   │   ├─ name = "s"
+  │   │   └─ name = "ID"
   │   ├─ when/assign/
-  │   │   ├─ name = "t.Name"
-  │   │   └─ name = "s.Name"
+  │   │   ├─ name = "t"
+  │   │   ├─ name = "Name"
+  │   │   ├─ name = "s"
+  │   │   └─ name = "Name"
   │   └─ when/
   │       ├─ list/
   │       │   ├─ column/name = "ID"
   │       │   └─ column/name = "Name"
   │       └─ list/
-  │           ├─ name = "s.ID"
-  │           └─ name = "s.Name"
+  │           ├─ name = "s"
+  │           ├─ name = "ID"
+  │           ├─ name = "s"
+  │           └─ name = "Name"
   ├─ comment = "-- SELECT INTO temp table"
   ├─ statement/
   │   ├─ select/
