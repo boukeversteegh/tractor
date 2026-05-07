@@ -29,23 +29,6 @@ const MAX_SHOWN_PER_KIND: usize = 10;
 
 const DATA_LANG_EXTS: &[&str] = &["json", "yaml", "yml", "toml", "ini", "env"];
 
-/// Map a file extension to the canonical language id used by the
-/// per-language registry in `tractor::languages`.
-fn lang_from_ext(ext: &str) -> Option<&'static str> {
-    match ext {
-        "cs" => Some("csharp"),
-        "ts" | "tsx" | "js" | "jsx" => Some("typescript"),
-        "py" => Some("python"),
-        "rs" => Some("rust"),
-        "go" => Some("go"),
-        "java" => Some("java"),
-        "php" => Some("php"),
-        "rb" => Some("ruby"),
-        "sql" => Some("tsql"),
-        _ => None,
-    }
-}
-
 /// Node names allowed to contain an underscore. Everything else
 /// with an underscore is almost certainly a tree-sitter grammar
 /// kind leaking through (e.g. `if_statement`, `variable_declarator`,
@@ -311,11 +294,11 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
         // tables no longer exist. `Ir::Unknown` covers the diagnostic.
         // PHP moved off the imperative pipeline: rule table no longer
         // exists. `Ir::Unknown` covers the diagnostic.
+        // TOML / INI / env / markdown moved off the imperative
+        // pipeline: rule tables no longer exist. The IR pipeline
+        // (crate::ir::{toml_data, ini_data, markdown_data}) owns
+        // their dispatch; `DataIr::Unknown` covers the diagnostic.
         ("tsql",       passthrough_kinds(tsql::rules::rule)),
-        ("toml",       passthrough_kinds(toml::rules::rule)),
-        ("ini",        passthrough_kinds(ini::rules::rule)),
-        ("env",        passthrough_kinds(env::rules::rule)),
-        ("markdown",   passthrough_kinds(markdown::rules::rule)),
         ("json", dedupe({
             let mut v = passthrough_kinds(json::rules::syntax_rule);
             v.extend(passthrough_kinds(json::rules::data_rule));
