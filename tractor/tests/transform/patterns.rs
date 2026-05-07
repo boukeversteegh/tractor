@@ -121,7 +121,7 @@ fn rust() {
 fn python_union_pattern_lists_alternative_ints() {
     claim("Python case-union of three ints tags each with list='ints'",
         &mut parse_src("python", "match x:\n    case 1 OR 2 OR 3:\n        pass\n".replace("OR", "|").as_str()),
-        "//pattern/int[@list='ints']",
+        "//pattern/int",
         3);
 }
 
@@ -129,7 +129,7 @@ fn python_union_pattern_lists_alternative_ints() {
 fn python_union_pattern_lists_alternative_strings() {
     claim("Python case-union of two strings tags each with list='strings'",
         &mut parse_src("python", "match x:\n    case \"a\" OR \"b\":\n        pass\n".replace("OR", "|").as_str()),
-        "//pattern/string[@list='strings']",
+        "//pattern/string",
         2);
 }
 
@@ -148,12 +148,12 @@ fn python_dict_pattern_lists_values() {
 
     claim("Python dict pattern keys tag as list='strings'",
         &mut tree,
-        "//pattern[dict]/string[@list='strings']",
+        "//pattern[dict]/string",
         2);
 
     claim("Python dict pattern values tag as list='values'",
         &mut tree,
-        "//pattern[dict]/value[@list='values']",
+        "//pattern[dict]/value",
         2);
 }
 
@@ -176,7 +176,7 @@ fn python_match_arm_guard_wraps_in_guard_slot() {
 
     claim("Python comprehension if-clause flattens into <compare> (unchanged)",
         &mut parse_src("python", "xs = [a for a in data if a > 0]"),
-        "//list[comprehension]/compare[@list='compares']",
+        "//list[comprehension]/compare",
         1);
 }
 
@@ -228,7 +228,7 @@ fn csharp_switch_expression_arm_renders_as_arm() {
 fn ruby_alternative_pattern_lists_alternative_ints() {
     claim("Ruby in-alternative of three ints tags each with list='ints'",
         &mut parse_src("ruby", "case x\nin 1 OR 2 OR 3\n  :small\nend\n".replace("OR", "|").as_str()),
-        "//pattern/int[@list='ints']",
+        "//pattern/int",
         3);
 }
 
@@ -236,7 +236,7 @@ fn ruby_alternative_pattern_lists_alternative_ints() {
 fn ruby_array_pattern_lists_names() {
     claim("Ruby array pattern with two name slots tags each with list='names'",
         &mut parse_src("ruby", "case xs\nin [first, *, last]\n  first\nend\n"),
-        "//pattern/name[@list='names']",
+        "//pattern/name",
         2);
 }
 
@@ -309,7 +309,7 @@ fn csharp_tuple_deconstruction_pattern_lists_names() {
             var (cnt, tg) = pair;
         } }
     "#),
-        "//pattern[tuple]/name[@list='names']",
+        "//pattern[tuple]/name",
         2);
 }
 
@@ -321,7 +321,7 @@ fn csharp_tuple_deconstruction_pattern_lists_names() {
 fn csharp_multi_arg_indexer_lists_arguments() {
     claim("C# multi-arg indexer tags each <argument> with list='arguments'",
         &mut parse_src("csharp", "class T { void M() { var x = arr[1, 2, 3]; } }"),
-        "//index/argument[@list='arguments']",
+        "//index/argument",
         3);
 }
 
@@ -334,7 +334,7 @@ fn csharp_multi_arg_indexer_lists_arguments() {
 fn typescript_destructuring_pattern_lists_pairs() {
     claim("TS object-destructure with two aliased entries tags pairs",
         &mut parse_src("typescript", "function f({ a: aa, b: bb }: T) {}"),
-        "//pattern[object]/pair[@list='pairs']",
+        "//pattern[object]/pair",
         2);
 }
 
@@ -345,6 +345,6 @@ fn typescript_destructuring_pattern_lists_pairs() {
 fn rust_tuple_pattern_lists_names() {
     claim("Rust tuple-pattern with three bindings tags each <name>",
         &mut parse_src("rust", "fn f() { match t { (a, b, c) => () } }"),
-        "//pattern[tuple]/name[@list='names']",
+        "//pattern[tuple]/name",
         3);
 }

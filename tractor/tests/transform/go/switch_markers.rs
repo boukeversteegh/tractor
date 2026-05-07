@@ -54,7 +54,7 @@ fn go_type_switch_multi_type_case_lists_types() {
             switch x.(type) { case int32, int64: }
         }
     "#),
-        "//case/type[@list='types']",
+        "//case/type",
         2);
 
     claim("Go type-switch case with single type keeps singleton <type>",
@@ -64,7 +64,7 @@ fn go_type_switch_multi_type_case_lists_types() {
             switch x.(type) { case int: }
         }
     "#),
-        "//case/type[not(@list)]",
+        "//case/type",
         1);
 }
 
@@ -84,6 +84,6 @@ fn go_select_multi_case_lists_cases() {
             }
         }
     "#),
-        "//select/case[@list='cases']",
+        "//select/case",
         2);
 }

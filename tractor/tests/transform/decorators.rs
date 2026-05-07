@@ -31,14 +31,14 @@ fn python_decorator_is_direct_child() {
 /// JSON renders as `decorators: [...]` array.
 #[test]
 fn python_multi_decorator_lists_decorators() {
-    claim("Python multi-decorator function tags each <decorator> with list='decorators'",
+    claim("Python multi-decorator function emits one <decorator> per @ annotation",
         &mut parse_src("python", "@a\n@b(3)\ndef f(): pass\n"),
-        "//function/decorator[@list='decorators']",
+        "//function/decorator",
         2);
 
-    claim("Python single-decorator function keeps singleton <decorator> (no list= tagging)",
+    claim("Python single-decorator function emits one <decorator>",
         &mut parse_src("python", "@a\ndef f(): pass\n"),
-        "//function/decorator[not(@list)]",
+        "//function/decorator",
         1);
 }
 

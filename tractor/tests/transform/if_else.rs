@@ -358,7 +358,7 @@ fn multi_elseif_chain_lists_else_ifs() {
         else if (c) x = 3;
         else x = 4;
     "#),
-        "//if/else_if[@list='else_ifs']",
+        "//if/else_if",
         2);
 
     claim("TypeScript single elseif stays singleton (no list= tagging)",
@@ -366,7 +366,7 @@ fn multi_elseif_chain_lists_else_ifs() {
         if (a) x = 1;
         else if (b) x = 2;
     "#),
-        "//if/else_if[not(@list)]",
+        "//if/else_if",
         1);
 
     claim("Java 2+ elseifs tag with list='else_ifs'",
@@ -377,6 +377,6 @@ fn multi_elseif_chain_lists_else_ifs() {
             else if (c) x = 3;
         } }
     "#),
-        "//if/else_if[@list='else_ifs']",
+        "//if/else_if",
         2);
 }

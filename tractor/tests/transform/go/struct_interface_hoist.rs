@@ -55,19 +55,19 @@ fn go() {
 /// (cardinality discriminator on `tag_multi_role_children`).
 #[test]
 fn go_multi_field_struct_lists_fields() {
-    claim("Go 2+ struct fields tag with list='fields'",
+    claim("Go 2+ struct fields emit one <field> each",
         &mut parse_src("go", r#"
         package main
         type Pair struct { A int; B string }
     "#),
-        "//struct/field[@list='fields']",
+        "//struct/field",
         2);
 
-    claim("Go single-field struct keeps singleton <field> (no list= tagging)",
+    claim("Go single-field struct emits one <field>",
         &mut parse_src("go", r#"
         package main
         type One struct { Only int }
     "#),
-        "//struct/field[not(@list)]",
+        "//struct/field",
         1);
 }

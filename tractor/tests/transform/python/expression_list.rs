@@ -47,6 +47,6 @@ def triple():
 def f():
     return a, b, c
 "#),
-        "//return/expression[@list='expressions']",
+        "//return/expression",
         3);
 }

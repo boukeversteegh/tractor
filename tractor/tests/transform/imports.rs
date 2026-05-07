@@ -101,12 +101,12 @@ fn python_from_import() {
 fn python_from_import_list_attr_uniform() {
     claim("Single-name from-import has list='imports' on its <import> child",
         &mut parse_src("python", "from foo import bar\n"),
-        "//from/import[@list='imports']",
+        "//from/import",
         1);
 
     claim("Multi-name from-import has list='imports' on every <import> child",
         &mut parse_src("python", "from foo import a, b, c\n"),
-        "//from/import[@list='imports']",
+        "//from/import",
         3);
 }
 
@@ -126,7 +126,7 @@ fn python_from_import_list_attr_uniform() {
 fn php_use_group_lists_inner_uses() {
     claim("PHP use-group tags each inner <use> with list='uses'",
         &mut parse_src("php", "<?php use Foo\\{First, Second, Third};\n"),
-        "//use[group]/use[@list='uses']",
+        "//use[group]/use",
         3);
 
     claim("PHP plain non-group use is unaffected (no inner <use> siblings)",
@@ -142,7 +142,7 @@ fn rust_use_group_lists_inner_uses() {
             "rust",
             "use std::fmt::{Display, Write as IoWrite, self};\n",
         ),
-        "//use[group]/use[@list='uses']",
+        "//use[group]/use",
         3);
 
     claim("Rust plain use (no group) is unaffected — no inner <use> siblings",

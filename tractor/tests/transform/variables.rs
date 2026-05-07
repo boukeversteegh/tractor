@@ -113,9 +113,9 @@ fn typescript_multi_declarator_keeps_wrappers() {
         "#),
         1);
 
-    claim("TS multi-declarator declarators carry list='declarators' for JSON array shape",
+    claim("TS multi-declarator emits one <declarator> per binding",
         &mut tree,
-        "//variable/declarator[@list='declarators']",
+        "//variable/declarator",
         2);
 }
 

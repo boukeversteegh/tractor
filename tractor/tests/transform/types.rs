@@ -90,7 +90,7 @@ fn csharp_tuple_type_lists_elements() {
         &mut parse_src("csharp", r#"
         class T { void M() { (int count, string tag) p = (1, "x"); } }
     "#),
-        "//type[tuple]/element[@list='elements']",
+        "//type[tuple]/element",
         2);
 }
 

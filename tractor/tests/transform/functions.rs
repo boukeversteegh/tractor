@@ -142,14 +142,14 @@ fn go_multi_value_return_lists_expressions() {
         func g() int { return 42 }
     "#);
 
-    claim("Go multi-value return tags each <expression> with list='expressions'",
+    claim("Go multi-value return emits one <expression> per returned value",
         &mut tree,
-        "//return/expression[@list='expressions']",
+        "//return[count(expression)>=2]/expression",
         2);
 
-    claim("Go single-value return keeps singleton <expression> (no list= tagging)",
+    claim("Go single-value return emits one <expression>",
         &mut tree,
-        "//return[count(expression)=1]/expression[not(@list)]",
+        "//return[count(expression)=1]/expression",
         1);
 }
 
@@ -158,8 +158,8 @@ fn python_multi_value_return_lists_expressions() {
     // Companion to iter 265 — pinned here cross-language alongside
     // Go for the same archetype. Detail-level pin already in
     // transform/python/expression_list.rs.
-    claim("Python multi-value return tags each <expression> with list='expressions'",
+    claim("Python multi-value return emits one <expression> per returned value",
         &mut parse_src("python", "def f():\n    return a, b, c\n"),
-        "//return/expression[@list='expressions']",
+        "//return/expression",
         3);
 }

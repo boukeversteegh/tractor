@@ -7,146 +7,139 @@
       "public": true,
       "name": "Calculator",
       "body": {
-        "methods": [
+        "$children": [
           {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "b"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "a"
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            "public": true,
-            "name": "Add",
-            "parameters": [
-              {
-                "name": "a",
-                "type": {
-                  "name": "int"
-                }
-              },
-              {
-                "name": "b",
-                "type": {
-                  "name": "int"
-                }
-              }
-            ]
-          },
-          {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "b"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "a"
-                            }
-                          },
-                          "op": {
-                            "text": "-",
-                            "minus": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
+            "$type": "method",
             "public": true,
             "name": "Subtract",
-            "parameters": [
+            "parameter": {
+              "name": "a",
+              "type": {
+                "name": "int"
+              }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "b"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "text": "-",
+                        "minus": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "$children": [
               {
-                "name": "a",
+                "$type": "parameter",
                 "type": {
                   "name": "int"
-                }
-              },
-              {
-                "name": "b",
-                "type": {
-                  "name": "int"
-                }
+                },
+                "name": "b"
               }
             ]
           },
           {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "b"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "a"
-                            }
-                          },
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
+            "$type": "method",
             "public": true,
             "name": "Multiply",
-            "parameters": [
+            "parameter": {
+              "name": "a",
+              "type": {
+                "name": "int"
+              }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "b"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "$children": [
               {
-                "name": "a",
+                "$type": "parameter",
                 "type": {
                   "name": "int"
-                }
-              },
-              {
-                "name": "b",
-                "type": {
-                  "name": "int"
-                }
+                },
+                "name": "b"
               }
             ]
           }
-        ]
+        ],
+        "method": {
+          "$children": [
+            {
+              "$type": "parameter",
+              "type": {
+                "name": "int"
+              },
+              "name": "b"
+            }
+          ],
+          "public": true,
+          "name": "Add",
+          "parameter": {
+            "name": "a",
+            "type": {
+              "name": "int"
+            }
+          },
+          "body": {
+            "block": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    },
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "message": "hit"
@@ -159,74 +152,9 @@
       "public": true,
       "name": "Greeter",
       "body": {
-        "methods": [
+        "$children": [
           {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "name"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "string": "\"Hello, \""
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            "public": true,
-            "name": "Hello",
-            "parameter": {
-              "name": "name",
-              "type": {
-                "name": "string"
-              }
-            }
-          },
-          {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "name"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "string": "\"Goodbye, \""
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
+            "$type": "method",
             "public": true,
             "name": "Goodbye",
             "parameter": {
@@ -234,18 +162,75 @@
               "type": {
                 "name": "string"
               }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "name"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "string": "\"Goodbye, \""
+                        }
+                      },
+                      "op": {
+                        "text": "+",
+                        "plus": true
+                      }
+                    }
+                  }
+                }
+              }
             }
           },
           {
-            "body": {
-              "blocks": [
-                "{ }"
-              ]
-            },
+            "$type": "method",
             "public": true,
-            "name": "Reset"
+            "name": "Reset",
+            "body": {
+              "block": "{ }"
+            }
           }
-        ]
+        ],
+        "method": {
+          "body": {
+            "block": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "name"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "string": "\"Hello, \""
+                      }
+                    },
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "public": true,
+          "name": "Hello",
+          "parameter": {
+            "name": "name",
+            "type": {
+              "name": "string"
+            }
+          }
+        }
       }
     },
     "message": "hit"

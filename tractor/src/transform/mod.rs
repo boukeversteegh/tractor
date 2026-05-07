@@ -553,76 +553,15 @@ pub const ROLE_MIXED_PARENTS: &[&str] = &[
 ];
 
 pub fn distribute_member_list_attrs(
-    xot: &mut Xot,
-    root: XotNode,
-    container_names: &[&str],
+    _xot: &mut Xot,
+    _root: XotNode,
+    _container_names: &[&str],
 ) -> Result<(), xot::Error> {
-    use helpers::*;
-    // Block reintroduction of role-mixed parents (iter-213 archetype).
-    // Caught at first transform invocation via the debug-build
-    // assertion; production builds skip the check via
-    // `cfg(debug_assertions)`.
-    #[cfg(debug_assertions)]
-    {
-        let bad: Vec<&&str> = container_names.iter()
-            .filter(|n| ROLE_MIXED_PARENTS.contains(n))
-            .collect();
-        if !bad.is_empty() {
-            panic!(
-                "distribute_member_list_attrs called on known role-mixed parent(s): {:?}\n\
-                These names are in ROLE_MIXED_PARENTS because bulk distribute on \n\
-                them creates silent 1-element JSON arrays on singleton role-slots \n\
-                (iter-213 archetype). Use targeted `tag_multi_role_children` \n\
-                entries for the multi-cardinality children instead.",
-                bad
-            );
-        }
-    }
-    let root = find_content_root(xot, root);
-    let mut targets: Vec<XotNode> = Vec::new();
-    fn collect(
-        xot: &Xot,
-        node: XotNode,
-        container_names: &[&str],
-        out: &mut Vec<XotNode>,
-    ) {
-        if xot.element(node).is_some() {
-            if let Some(name) = get_element_name(xot, node) {
-                if container_names.contains(&name.as_str()) {
-                    out.push(node);
-                }
-            }
-        }
-        for c in xot.children(node) {
-            collect(xot, c, container_names, out);
-        }
-    }
-    collect(xot, root, container_names, &mut targets);
-    for container in targets {
-        let elem_children: Vec<XotNode> = xot.children(container)
-            .filter(|&c| xot.element(c).is_some())
-            .collect();
-        for child in elem_children {
-            // Skip if already tagged.
-            if get_attr(xot, child, "list").is_some() {
-                continue;
-            }
-            // Skip self-closing markers — they're presence flags, not
-            // list members. JSON serializes them as boolean properties
-            // regardless of `list=`. Tagging them adds attribute noise
-            // and produces misleading XPath signals like
-            // `static[@list="static"]`.
-            if !xot.children(child).any(|c| xot.element(c).is_some() || xot.text_str(c).is_some()) {
-                continue;
-            }
-            let element_name = match get_element_name(xot, child) {
-                Some(n) => n,
-                None => continue,
-            };
-            let list_name = helpers::pluralize_list_name(&element_name);
-            xot.with_attr(child, "list", &list_name);
-        }
-    }
+    // No-op. The `list=` attribute scaffolding existed to drive
+    // `xml_to_json`'s array-vs-singleton inference. With JSON now
+    // rendered through `ir_to_json` (typed cardinality from
+    // `Vec<Ir>` vs `Box<Ir>`) this pass is dead. Per-language
+    // callers can stay until they're swept in a follow-up.
     Ok(())
 }
 
@@ -639,41 +578,11 @@ pub fn distribute_member_list_attrs(
 ///
 /// Idempotent: skips children already tagged.
 pub fn tag_multi_target_expressions(
-    xot: &mut Xot,
-    root: XotNode,
+    _xot: &mut Xot,
+    _root: XotNode,
 ) -> Result<(), xot::Error> {
-    use helpers::*;
-    let root = find_content_root(xot, root);
-    let mut targets: Vec<XotNode> = Vec::new();
-    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-        if xot.element(node).is_some() {
-            if let Some(name) = get_element_name(xot, node) {
-                if matches!(name.as_str(), "left" | "right") {
-                    out.push(node);
-                }
-            }
-        }
-        for c in xot.children(node) {
-            collect(xot, c, out);
-        }
-    }
-    collect(xot, root, &mut targets);
-
-    for slot in targets {
-        let exprs: Vec<XotNode> = xot.children(slot)
-            .filter(|&c| {
-                xot.element(c).is_some()
-                    && get_element_name(xot, c).as_deref() == Some("expression")
-            })
-            .collect();
-        if exprs.len() < 2 { continue; }
-        let list_name = helpers::pluralize_list_name("expression");
-        for e in exprs {
-            if get_attr(xot, e, "list").is_none() {
-                xot.with_attr(e, "list", &list_name);
-            }
-        }
-    }
+    // No-op (see `distribute_member_list_attrs` for context — same
+    // reason: JSON cardinality is now derived from IR types).
     Ok(())
 }
 
@@ -691,49 +600,11 @@ pub fn tag_multi_target_expressions(
 /// 2+ direct children sharing that name. The cardinality test
 /// keeps singleton wrappers untouched. Idempotent.
 pub fn tag_multi_same_name_children(
-    xot: &mut Xot,
-    root: XotNode,
-    names: &[&str],
+    _xot: &mut Xot,
+    _root: XotNode,
+    _names: &[&str],
 ) -> Result<(), xot::Error> {
-    use helpers::*;
-    if names.is_empty() {
-        return Ok(());
-    }
-    let root = find_content_root(xot, root);
-    let mut targets: Vec<XotNode> = Vec::new();
-    fn collect(xot: &Xot, node: XotNode, names: &[&str], out: &mut Vec<XotNode>) {
-        if xot.element(node).is_some() {
-            if let Some(name) = get_element_name(xot, node) {
-                if names.contains(&name.as_str()) {
-                    out.push(node);
-                }
-            }
-        }
-        for c in xot.children(node) {
-            collect(xot, c, names, out);
-        }
-    }
-    collect(xot, root, names, &mut targets);
-
-    for parent in targets {
-        let parent_name = match get_element_name(xot, parent) {
-            Some(n) => n,
-            None => continue,
-        };
-        let same_name_kids: Vec<XotNode> = xot.children(parent)
-            .filter(|&c| {
-                xot.element(c).is_some()
-                    && get_element_name(xot, c).as_deref() == Some(parent_name.as_str())
-            })
-            .collect();
-        if same_name_kids.len() < 2 { continue; }
-        let list_name = helpers::pluralize_list_name(&parent_name);
-        for k in same_name_kids {
-            if get_attr(xot, k, "list").is_none() {
-                xot.with_attr(k, "list", &list_name);
-            }
-        }
-    }
+    // No-op (see `distribute_member_list_attrs`).
     Ok(())
 }
 
@@ -749,53 +620,11 @@ pub fn tag_multi_same_name_children(
 ///
 /// Each tuple is (parent_name, child_name). Idempotent.
 pub fn tag_multi_role_children(
-    xot: &mut Xot,
-    root: XotNode,
-    pairs: &[(&str, &str)],
+    _xot: &mut Xot,
+    _root: XotNode,
+    _pairs: &[(&str, &str)],
 ) -> Result<(), xot::Error> {
-    use helpers::*;
-    if pairs.is_empty() {
-        return Ok(());
-    }
-    let root = find_content_root(xot, root);
-    // Collect parent_name → list of (parent_node, child_name) targets.
-    let mut targets: Vec<(XotNode, &str)> = Vec::new();
-    fn collect<'a>(
-        xot: &Xot,
-        node: XotNode,
-        pairs: &'a [(&'a str, &'a str)],
-        out: &mut Vec<(XotNode, &'a str)>,
-    ) {
-        if xot.element(node).is_some() {
-            if let Some(name) = get_element_name(xot, node) {
-                for (parent_name, child_name) in pairs {
-                    if name.as_str() == *parent_name {
-                        out.push((node, *child_name));
-                    }
-                }
-            }
-        }
-        for c in xot.children(node) {
-            collect(xot, c, pairs, out);
-        }
-    }
-    collect(xot, root, pairs, &mut targets);
-
-    for (parent, child_name) in targets {
-        let kids: Vec<XotNode> = xot.children(parent)
-            .filter(|&c| {
-                xot.element(c).is_some()
-                    && get_element_name(xot, c).as_deref() == Some(child_name)
-            })
-            .collect();
-        if kids.len() < 2 { continue; }
-        let list_name = helpers::pluralize_list_name(child_name);
-        for k in kids {
-            if get_attr(xot, k, "list").is_none() {
-                xot.with_attr(k, "list", &list_name);
-            }
-        }
-    }
+    // No-op (see `distribute_member_list_attrs`).
     Ok(())
 }
 

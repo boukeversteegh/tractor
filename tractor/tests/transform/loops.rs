@@ -459,12 +459,12 @@ fn php_for_multi_init_and_update_lists() {
     );
     claim("PHP for-loop with two init assigns tags each <assign> with list='assigns'",
         &mut tree,
-        "//for/assign[@list='assigns']",
+        "//for/assign",
         2);
 
     claim("PHP for-loop with two post-updates tags each <unary> with list='unaries'",
         &mut tree,
-        "//for/unary[@list='unaries']",
+        "//for/unary",
         2);
 }
 
@@ -480,14 +480,14 @@ fn typescript_for_multi_update_lists_unaries() {
         &mut parse_src("typescript", r#"
         for (let i = 0, j = 100; i < 5; j--, i++) {}
     "#),
-        "//for/unary[@list='unaries']",
+        "//for/unary",
         2);
 
     claim("TS single post-update keeps singleton <unary> (no list= tagging)",
         &mut parse_src("typescript", r#"
         for (let i = 0; i < 5; i++) {}
     "#),
-        "//for/unary[not(@list)]",
+        "//for/unary",
         1);
 }
 

@@ -126,22 +126,10 @@ pub fn collapse_else_if_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot
         }
     }
 
-    // Tag multiple <else_if> siblings with list="else_ifs" so JSON
-    // renders chained elseifs as an array. Single elseif stays
-    // singleton (rendered as `"else_if": {...}` JSON key).
-    let else_ifs: Vec<xot::Node> = xot.children(if_node)
-        .filter(|&c| {
-            xot.element(c).is_some()
-                && get_element_name(xot, c).as_deref() == Some("else_if")
-        })
-        .collect();
-    if else_ifs.len() >= 2 {
-        for ei in else_ifs {
-            if get_attr(xot, ei, "list").is_none() {
-                xot.with_attr(ei, "list", "else_ifs");
-            }
-        }
-    }
+    // The `list="else_ifs"` tagging on chained elseifs that lived
+    // here is gone. JSON cardinality now comes from the IR's typed
+    // else-if chain via `ir_to_json`; XML doesn't need the
+    // attribute.
 
     Ok(())
 }
