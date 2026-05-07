@@ -595,13 +595,25 @@ impl<'a> Renderer<'a> {
                 shape.singleton("body", self.render(body, true));
             }
             Ir::Using { is_static, alias, path, .. } => {
-                if *is_static {
-                    shape.flag("static");
-                }
+                // Note: `is_static` is preserved on the IR for mutation
+                // surface, but the imperative pipeline emits the
+                // `static` keyword as gap text only — JSON projection
+                // doesn't surface a `"static": true` flag. Stay
+                // consistent with that for snapshot parity.
+                let _ = is_static;
                 if let Some(a) = alias {
                     shape.singleton("alias", self.render(a, true));
                 }
-                shape.singleton("path", self.render(path, true));
+                // Single-segment using like `using System;` renders as
+                // `name: "System"` rather than `path: "System"`. Multi-
+                // segment (`using System.Collections.Generic;`) renders
+                // as `path: { names: [...] }`. Mirrors the imperative
+                // pipeline's `restructure_csharp_using`-style output.
+                if matches!(path.as_ref(), Ir::Name { .. }) {
+                    shape.singleton("name", self.render(path, true));
+                } else {
+                    shape.singleton("path", self.render(path, true));
+                }
             }
             Ir::Namespace { file_scoped, name, children, .. } => {
                 if *file_scoped {
