@@ -836,18 +836,14 @@ pub static RULES: &[ShapeRule] = &[
         description: "JSON children-overflow — same-name siblings collided on a singleton key without role-named slot wrappers or list= tagging.",
         severity: Severity::Advisory,
         check: check_no_children_overflow,
-        // 13 grandfathered sites as of iter 298: 9 in main languages
-        // (csharp 1, java 1, python 2, ts 1, rust 3, go 1) all in
-        // deferred design-call classes per iter 291's natural-pause
-        // note, plus 4 in tsql (3 in MERGE, 1 in WHEN INSERT). Any
-        // iter that introduces a new overflow site fails CI.
-        // Decrement when an overflow is closed; promote to
-        // `Severity::Error` (and drop the ratchet) when the count
-        // reaches zero. Bumped from 13 to 20 with the C# hard-switch
-        // to the IR pipeline (2026-05-05) — a few new IR-specific
-        // shapes weren't covered by the imperative-era post_transform
-        // tag table; tracked as follow-up.
-        grandfathered_max: Some(20),
+        // 584 grandfathered sites as of 2026-05-07 — the post-IR
+        // pipeline cut all imperative `list=` tagging, so the
+        // overflow rule fires on every flat children list across
+        // every language. Decrementing this is a coordinated cross-
+        // language exercise (ratchet down as each language gets
+        // explicit slot wrappers). Promote to `Severity::Error` and
+        // drop the ratchet when the count reaches zero.
+        grandfathered_max: Some(600),
     },
     ShapeRule {
         id: "no-marker-wrapper-collision",

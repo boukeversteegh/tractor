@@ -409,8 +409,8 @@ fn lower_tsql_between(node: TsNode<'_>, source: &str) -> Ir {
         .map(|c| {
             let cid = c.id();
             let slot = if Some(cid) == value_id { Some("value") }
-                       else if Some(cid) == low_id { Some("lower") }
-                       else if Some(cid) == high_id { Some("upper") }
+                       else if Some(cid) == low_id { Some("low") }
+                       else if Some(cid) == high_id { Some("high") }
                        else { None };
             if let Some(slot_name) = slot {
                 return Ir::SimpleStatement {

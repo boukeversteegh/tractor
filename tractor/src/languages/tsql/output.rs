@@ -55,7 +55,7 @@ pub enum TractorNode {
     // Data types
     Int, Varchar, Nvarchar, Datetime,
     // Expressions
-    Compare, Between, Assign,
+    Compare, Between, Assign, Expression, Value,
     // DDL — generic containers
     Alter, Drop, Constraint,
     // Control flow
@@ -72,6 +72,8 @@ pub enum TractorNode {
     Name, Alias, Schema, Var, Temp, Comment,
     // Operator child
     Op,
+    // Generic fallback for unmodeled CST kinds
+    Unknown,
 }
 
 impl TractorNode {
@@ -101,11 +103,13 @@ impl TractorNode {
             // ---- Containers with non-default syntax --------------------------
             Self::Statement | Self::Select | Self::Insert | Self::Update
             | Self::From | Self::Where | Self::Having | Self::Join
-            | Self::Star | Self::Cte | Self::Union | Self::Exists
+            | Self::Cte | Self::Union | Self::Exists
             | Self::Case | Self::When
             | Self::Merge | Self::Transaction | Self::Set | Self::Go | Self::Exec
             | Self::Alter | Self::Drop | Self::While | Self::Filter | Self::Declare
             | Self::Reset                                                        => (false, true, Keyword),
+            // `<star/>` — empty marker for `SELECT *`. Has no children.
+            Self::Star                                                           => (true, false, Keyword),
             Self::Ref                                                           => (false, true, Type),
             Self::Call | Self::Window | Self::Cast                              => (false, true, Function),
             Self::Compare | Self::Between | Self::Assign | Self::Op             => (false, true, Operator),
