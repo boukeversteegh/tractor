@@ -412,22 +412,21 @@ unit/
   │               ├─ switch/
   │               │   ├─ value/expression/name = "token"
   │               │   └─ body/
-  │               │       ├─ arm/
+  │               │       ├─ arm[break]/
   │               │       │   ├─ pattern[declaration]/
   │               │       │   │   ├─ type/name = "Widget"
   │               │       │   │   └─ name = "w"
-  │               │       │   ├─ expression/object[access]/
-  │               │       │   │   ├─ name = "Console"
-  │               │       │   │   └─ call/
-  │               │       │   │       ├─ name = "WriteLine"
-  │               │       │   │       └─ object[access]/
-  │               │       │   │           ├─ name = "w"
-  │               │       │   │           └─ call/name = "Describe"
-  │               │       │   └─ break = "break;"
+  │               │       │   └─ expression/object[access]/
+  │               │       │       ├─ name = "Console"
+  │               │       │       └─ call/
+  │               │       │           ├─ name = "WriteLine"
+  │               │       │           └─ object[access]/
+  │               │       │               ├─ name = "w"
+  │               │       │               └─ call/name = "Describe"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[constant]/null = "null"
   │               │       │   └─ throw/new/name = "InvalidOperationException"
-  │               │       └─ arm/break = "break;"
+  │               │       └─ arm[break] = "default:"
   │               ├─ if/
   │               │   ├─ condition/expression/is/
   │               │   │   ├─ name = "token"
@@ -1176,13 +1175,13 @@ unit/
       │       │       │       │   │   ├─ left/expression/name = "i"
       │       │       │       │   │   ├─ op[equals] = "=="
       │       │       │       │   │   └─ right/expression/int = "1"
-      │       │       │       │   └─ body/continue = "continue;"
+      │       │       │       │   └─ body[continue]
       │       │       │       └─ if/
       │       │       │           ├─ condition/expression/binary/
       │       │       │           │   ├─ left/expression/name = "i"
       │       │       │           │   ├─ op[equals] = "=="
       │       │       │           │   └─ right/expression/int = "2"
-      │       │       │           └─ body/break = "break;"
+      │       │       │           └─ body[break]
       │       │       └─ return/expression/int = "0"
       │       ├─ comment[leading] = "// Interpolation with alignment + format specifier."
       │       ├─ method[public and static]/

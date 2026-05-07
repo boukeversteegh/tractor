@@ -76,16 +76,18 @@ pub fn render_to_xot(
         Ir::Ternary { .. } => render_ir_ternary(xot, parent, ir, source),
         Ir::ObjectCreation { .. } => render_ir_object_creation(xot, parent, ir, source),
         Ir::Lambda { .. } => render_ir_lambda(xot, parent, ir, source),
-        Ir::Break { range, span } => {
+        Ir::Break { span, range: _ } => {
+            // Self-closing marker — the element name conveys the role.
+            // Emitting the `break;` keyword + `;` as text content
+            // leaks syntax (Principle #2) onto an element that's
+            // semantically a flag, not a text leaf (Principle #13).
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;
-            emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Continue { range, span } => {
+        Ir::Continue { span, range: _ } => {
             let node = element(xot, "continue", *span);
             xot.append(parent, node)?;
-            emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
         Ir::Function { .. } => render_ir_function(xot, parent, ir, source),

@@ -456,17 +456,13 @@ program/
   │       │       └─ right/expression/string = "\"ready\""
   │       ├─ switch/
   │       │   ├─ name = "status"
-  │       │   ├─ arm/
-  │       │   │   ├─ string = "\"ready\""
-  │       │   │   └─ break = "break;"
+  │       │   ├─ arm[break]/string = "\"ready\""
   │       │   ├─ arm/
   │       │   │   ├─ string = "\"error\""
   │       │   │   └─ throw/new/
   │       │   │       ├─ name = "Error"
   │       │   │       └─ string = "\"bad\""
-  │       │   └─ arm/
-  │       │       ├─ comment = "/* fallthrough */"
-  │       │       └─ break = "break;"
+  │       │   └─ arm[break]/comment = "/* fallthrough */"
   │       ├─ variable[const]/
   │       │   ├─ type[generic]/
   │       │   │   ├─ name = "Record"
