@@ -2362,6 +2362,21 @@ fn maybe_wrap_field(field_name: Option<&str>, inner: Ir) -> Ir {
         "type"        => "type",
         _             => return inner,
     };
+    // Skip the wrap when it would produce nested same-name elements
+    // (e.g. `<name><name>Foo</name></name>` for a `name=identifier`
+    // field). The inner IR already renders as the wrapper name, so
+    // wrapping again is pure noise — appears in JSON as the
+    // `"name": {"name": "Foo"}` shape that the user explicitly
+    // flagged as forbidden.
+    let already_wrapped = matches!(
+        (wrapper, &inner),
+        ("name", Ir::Name { .. })
+            | ("type", Ir::SimpleStatement { element_name: "type", .. })
+            | ("type", Ir::GenericType { .. })
+    );
+    if already_wrapped {
+        return inner;
+    }
     let r = inner.range();
     let s = inner.span();
     Ir::FieldWrap { wrapper, inner: Box::new(inner), range: r, span: s }
