@@ -994,6 +994,35 @@ fn render_ir_variable(
                 continue;
             }
         }
+        if let Some(v) = value {
+            if std::ptr::eq(*c, v.as_ref()) {
+                // Wrap initializer in `<value>` so the value slot is
+                // queryable consistently with properties / parameters
+                // (Principle #5 / #15). The `<expression>` host is
+                // added by `wrap_expression_positions` post-pass.
+                //
+                // Skip the wrap when the IR is already a
+                // `SimpleStatement{ element_name: "value" }` —
+                // several per-language lowerings construct that
+                // shape directly so the post-pass would find it
+                // without the renderer's help. Re-wrapping would
+                // produce nested `<value><value>` (Principle #5
+                // violation in the other direction).
+                let already_wrapped = matches!(
+                    *c,
+                    Ir::SimpleStatement { element_name: "value", .. }
+                );
+                if already_wrapped {
+                    render_to_xot(xot, node, *c, source)?;
+                } else {
+                    let val = element(xot, "value", c.span());
+                    xot.append(node, val)?;
+                    render_to_xot(xot, val, *c, source)?;
+                }
+                cursor = cr.end;
+                continue;
+            }
+        }
         render_to_xot(xot, node, *c, source)?;
         cursor = cr.end;
     }

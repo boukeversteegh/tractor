@@ -492,7 +492,7 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree,
         &multi_xpath(r#"
             //variable[name='simple']
-                /object[access]
+                /value/expression/object[access]
                     [expression[non_null]/name='nullable']
                     [member/name='Length']
         "#),
@@ -502,7 +502,7 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree,
         &multi_xpath(r#"
             //variable[name='chained']
-                /object[access]
+                /value/expression/object[access]
                     [expression[non_null]/name='nullable']
                     [.//call/name='ToUpper']
                     [.//member/name='Length']
@@ -513,7 +513,7 @@ fn csharp_null_forgiving_postfix_unary() {
         &mut tree,
         &multi_xpath(r#"
             //variable[name='combined']
-                /binary
+                /value/expression/binary
                     [op[plus]]
                     [left/expression/object[access][expression[non_null]/name='first'][member/name='Length']]
                     [right/expression/object[access][expression[non_null]/name='second'][member/name='Length']]
