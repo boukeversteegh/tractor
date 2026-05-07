@@ -167,9 +167,43 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- DDL -----------------------------------------------------
         "create_table" => simple_statement(node, "create", source),
         "create_index" => simple_statement(node, "create", source),
+        "create_view" => simple_statement(node, "create", source),
         "create_function" => simple_statement(node, "function", source),
+        "create_query" => Ir::Inline {
+            // `CREATE VIEW … AS <query>` — the query CST wraps
+            // select/from/where, but we want them as direct
+            // children of `<create>` (no opaque wrapper). Inline
+            // its children up.
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        },
+        "drop_table" => simple_statement(node, "drop", source),
+        "drop_index" => simple_statement(node, "drop", source),
         "alter_table" => simple_statement(node, "alter", source),
         "add_column" => simple_statement(node, "column", source),
+        "add_constraint" => simple_statement(node, "constraint", source),
+        // The grammar nests `constraint` inside `add_constraint`;
+        // inline the inner so its body (FOREIGN KEY ..., REFERENCES
+        // ...) surfaces as direct children of the outer
+        // `<constraint>` instead of `<constraint>/<constraint>/...`.
+        // Walk all children (not just named) so anonymous parens
+        // around the referenced PK column get `Ir::Skip`'d
+        // (otherwise they leak as gap text under the parent).
+        "constraint" => {
+            let mut cur = node.walk();
+            let kids: Vec<Ir> = node.children(&mut cur)
+                .map(|c| {
+                    if c.is_named() {
+                        lower_node(c, source)
+                    } else {
+                        Ir::Skip { range: range_of(c), span: span_of(c) }
+                    }
+                })
+                .collect();
+            Ir::Inline { children: kids, list_name: None, range, span }
+        },
+        "ordered_columns" => simple_statement(node, "columns", source),
         "column_definition" => simple_statement(node, "definition", source),
         "column_definitions" => simple_statement(node, "columns", source),
         "column" => simple_statement(node, "column", source),

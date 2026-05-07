@@ -374,12 +374,26 @@ file/
   ├─ statement/exec/name = "sp_helpdb"
   ├─ comment = "-- Iter 21: new shapes — DDL variants."
   ├─ comment = "-- CREATE VIEW, DROP TABLE"
-  ├─ statement/unknown = "CREATE VIEW ActiveUsers AS SELECT ID, Name FROM Users WHERE Active = 1"
-  ├─ statement/unknown = "DROP TABLE TempData"
+  ├─ statement/create/
+  │   ├─ name = "ActiveUsers"
+  │   ├─ select/
+  │   │   ├─ column/name = "ID"
+  │   │   └─ column/name = "Name"
+  │   └─ from/
+  │       ├─ relation/name = "Users"
+  │       └─ where/compare/
+  │           ├─ left/expression/name = "Active"
+  │           ├─ op = "="
+  │           └─ right/expression/literal = "1"
+  ├─ statement/drop/name = "TempData"
   ├─ comment = "-- ALTER TABLE: add constraint, drop constraint"
   ├─ statement/alter/
   │   ├─ name = "Orders"
-  │   └─ unknown = "ADD CONSTRAINT fk_customer FOREIGN KEY (CustomerID) REFERENCES Customers(ID)"
+  │   └─ constraint/
+  │       ├─ name = "fk_customer"
+  │       ├─ columns/column/name = "CustomerID"
+  │       ├─ name = "Customers"
+  │       └─ name = "ID"
   └─ statement/alter/
       ├─ name = "Orders"
       └─ unknown = "DROP CONSTRAINT fk_customer"

@@ -1198,10 +1198,54 @@
       }
     },
     {
-      "unknown": "CREATE VIEW ActiveUsers AS SELECT ID, Name FROM Users WHERE Active = 1"
+      "create": {
+        "$skips": [
+          null,
+          null,
+          null
+        ],
+        "name": "ActiveUsers",
+        "select": {
+          "$skips": [
+            null,
+            null
+          ],
+          "columns": [
+            {
+              "name": "ID"
+            },
+            {
+              "name": "Name"
+            }
+          ]
+        },
+        "from": {
+          "$skip": null,
+          "relation": {
+            "name": "Users"
+          },
+          "where": {
+            "$skip": null,
+            "compare": {
+              "left": "Active",
+              "op": {
+                "text": "=",
+                "": true
+              },
+              "right": {}
+            }
+          }
+        }
+      }
     },
     {
-      "unknown": "DROP TABLE TempData"
+      "drop": {
+        "$skips": [
+          null,
+          null
+        ],
+        "name": "TempData"
+      }
     },
     {
       "alter": {
@@ -1210,7 +1254,31 @@
           null
         ],
         "name": "Orders",
-        "unknown": "ADD CONSTRAINT fk_customer FOREIGN KEY (CustomerID) REFERENCES Customers(ID)"
+        "constraint": {
+          "$skips": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "columns": {
+            "column": {
+              "name": "CustomerID"
+            },
+            "$skips": [
+              null,
+              null
+            ]
+          },
+          "names": [
+            "fk_customer",
+            "Customers",
+            "ID"
+          ]
+        }
       }
     },
     {
