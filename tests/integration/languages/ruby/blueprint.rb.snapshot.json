@@ -764,9 +764,7 @@
                         "text": "defined?",
                         "defined": true
                       },
-                      "$inline": {
-                        "name": "items"
-                      }
+                      "name": "items"
                     },
                     "op": {
                       "text": "&&",

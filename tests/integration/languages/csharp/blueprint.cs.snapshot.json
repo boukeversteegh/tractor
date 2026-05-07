@@ -334,15 +334,13 @@
                     "text": "!",
                     "not": true
                   },
-                  "$inline": {
-                    "binary": {
-                      "left": "a",
-                      "op": {
-                        "text": "==",
-                        "equal": true
-                      },
-                      "right": "b"
-                    }
+                  "binary": {
+                    "left": "a",
+                    "op": {
+                      "text": "==",
+                      "equal": true
+                    },
+                    "right": "b"
                   }
                 }
               }
@@ -1412,52 +1410,50 @@
                     "name": "token"
                   },
                   "body": {
-                    "$inline": {
-                      "arms": [
-                        {
-                          "pattern": {
-                            "declaration": true,
-                            "type": {
-                              "name": "Widget"
-                            },
-                            "name": "w"
+                    "arm": [
+                      {
+                        "pattern": {
+                          "declaration": true,
+                          "type": {
+                            "name": "Widget"
                           },
-                          "expression": {
-                            "object": {
-                              "access": true,
-                              "call": {
-                                "argument": {
-                                  "access": true,
-                                  "call": {
-                                    "name": "Describe"
-                                  },
-                                  "text": "w"
-                                },
-                                "name": "WriteLine"
-                              },
-                              "text": "Console"
-                            }
-                          },
-                          "break": true
+                          "name": "w"
                         },
-                        {
-                          "pattern": {
-                            "constant": true,
-                            "null": "null"
-                          },
-                          "throw": {
-                            "expression": {
-                              "new": {
-                                "name": "InvalidOperationException"
-                              }
-                            }
+                        "expression": {
+                          "object": {
+                            "access": true,
+                            "call": {
+                              "argument": {
+                                "access": true,
+                                "call": {
+                                  "name": "Describe"
+                                },
+                                "text": "w"
+                              },
+                              "name": "WriteLine"
+                            },
+                            "text": "Console"
                           }
                         },
-                        {
-                          "break": true
+                        "break": true
+                      },
+                      {
+                        "pattern": {
+                          "constant": true,
+                          "null": "null"
+                        },
+                        "throw": {
+                          "expression": {
+                            "new": {
+                              "name": "InvalidOperationException"
+                            }
+                          }
                         }
-                      ]
-                    }
+                      },
+                      {
+                        "break": true
+                      }
+                    ]
                   }
                 },
                 "if": {

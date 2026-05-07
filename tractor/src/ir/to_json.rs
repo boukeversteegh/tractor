@@ -786,6 +786,20 @@ impl<'a> Renderer<'a> {
     /// text-only-leaves collapse to scalars under their parent's chosen
     /// key.
     fn add_singleton_or_text(&self, shape: &mut Shape, ir: &Ir) {
+        // `Ir::Inline` is a transparent wrapper — recurse into its
+        // children so they surface as direct keys on the parent
+        // shape (otherwise we'd emit a `"\$inline": …` key, which
+        // is meant for the rare case where an Inline is rendered
+        // standalone, not as a sub-shape under a parent slot).
+        if let Ir::Inline { children, list_name, .. } = ir {
+            if list_name.is_none() {
+                for c in children {
+                    if matches!(c, Ir::Skip { .. }) { continue; }
+                    self.add_singleton_or_text(shape, c);
+                }
+                return;
+            }
+        }
         let key = self.element_name(ir);
         let val = self.render(ir, true);
         shape.singleton(key, val);
