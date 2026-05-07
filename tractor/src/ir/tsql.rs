@@ -367,44 +367,76 @@ fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
         .collect()
 }
 
-/// `binary_expression` — extract the operator (an anonymous child
-/// like `>` / `>=` / `=`) into an explicit `<op>` element so XPath
-/// queries `//compare[op='>']` resolve. The named children (left
-/// and right operands) lower normally.
+/// `binary_expression` — lower as `Ir::Binary` so the rendered shape
+/// is `<compare><left><expression>{lhs}</expression></left><op>{op}<{marker}/>…</op><right><expression>{rhs}</expression></right></compare>`,
+/// matching the cross-language compare/binary shape (and getting
+/// the `OPERATOR_MARKERS` table's marker structure for free —
+/// `<compare/><greater/>`, `<compare/><less and equal/>`, etc.).
 fn lower_binary_expression(node: TsNode<'_>, source: &str) -> Ir {
     let range = range_of(node);
     let span = span_of(node);
     let mut cursor = node.walk();
-    let mut children: Vec<Ir> = Vec::new();
-    // Find the operator: it's an anonymous child between the two
-    // named operands. `node.children` walks both named and anonymous
-    // in source order. We splice in an Atom("op") at the operator's
-    // position to render as `<op>{op_text}</op>` between operands.
+    let mut left: Option<Ir> = None;
+    let mut right: Option<Ir> = None;
+    let mut op_text = String::new();
+    let mut op_range: Option<super::types::ByteRange> = None;
     for c in node.children(&mut cursor) {
         if c.is_named() {
-            children.push(lower_node(c, source));
+            // Treat named keyword/op children (`keyword_in`, etc.)
+            // as operators, not operands. They lower to `Ir::Skip`
+            // through `lower_node`, but we want to capture their
+            // text and range here for the `Ir::Binary` op slot.
+            let kind = c.kind();
+            if kind.starts_with("keyword_") || kind.starts_with("op_") {
+                if op_range.is_none() {
+                    if let Ok(text) = c.utf8_text(source.as_bytes()) {
+                        op_text = text.trim().to_string();
+                        op_range = Some(range_of(c));
+                    }
+                }
+                continue;
+            }
+            let ir = lower_node(c, source);
+            if left.is_none() {
+                left = Some(ir);
+            } else if right.is_none() {
+                right = Some(ir);
+            }
         } else {
-            // Anonymous child — typically the operator. Skip
-            // punctuation-only children (parens won't appear here in
-            // a binary_expression but guard anyway).
+            // Anonymous child — typically the operator (`>`, `=`, …).
             if let Ok(text) = c.utf8_text(source.as_bytes()) {
                 let trimmed = text.trim();
-                if !trimmed.is_empty() && !trimmed.chars().all(|ch| ch.is_alphanumeric() || ch == '_') {
-                    children.push(Ir::Atom {
-                        element_name: "op",
-                        range: range_of(c),
-                        span: span_of(c),
-                    });
+                if !trimmed.is_empty()
+                    && !trimmed.chars().all(|ch| ch.is_alphanumeric() || ch == '_')
+                    && op_range.is_none()
+                {
+                    op_text = trimmed.to_string();
+                    op_range = Some(range_of(c));
                 }
             }
         }
     }
-    Ir::SimpleStatement {
+    let (Some(l), Some(r), Some(opr)) = (left, right, op_range) else {
+        // Fall back to flat shape if we couldn't extract operands —
+        // shouldn't happen for well-formed CSTs but keeps the
+        // function total.
+        return Ir::SimpleStatement {
+            element_name: "compare",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range, span,
+        };
+    };
+    Ir::Binary {
         element_name: "compare",
-        modifiers: Modifiers::default(),
-        extra_markers: &[],
-        children,
-        range, span,
+        op_text,
+        op_marker: "",
+        op_range: opr,
+        left: Box::new(l),
+        right: Box::new(r),
+        range,
+        span,
     }
 }
 

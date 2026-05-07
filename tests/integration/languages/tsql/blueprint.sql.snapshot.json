@@ -58,13 +58,18 @@
         "where": {
           "$skip": null,
           "compare": {
-            "$skip": null,
-            "names": [
-              "u",
-              "Age"
-            ],
-            "op": ">",
-            "literal": {}
+            "left": {
+              "$skip": null,
+              "names": [
+                "u",
+                "Age"
+              ]
+            },
+            "op": {
+              "text": ">",
+              "": true
+            },
+            "right": {}
           }
         },
         "order": {
@@ -134,9 +139,12 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "CreatedAt",
-            "op": "<",
-            "literal": {}
+            "left": "CreatedAt",
+            "op": {
+              "text": "<",
+              "": true
+            },
+            "right": {}
           }
         }
       }
@@ -222,13 +230,18 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "Key",
-            "$skips": [
-              null,
-              null
-            ],
-            "op": "=",
-            "var": "@KeyName"
+            "left": {
+              "name": "Key",
+              "$skips": [
+                null,
+                null
+              ]
+            },
+            "op": {
+              "text": "=",
+              "": true
+            },
+            "right": "@KeyName"
           }
         }
       }
@@ -281,17 +294,24 @@
               null
             ],
             "compare": {
-              "op": "=",
-              "names": [
-                "o",
-                "UserID",
-                "u",
-                "ID"
-              ],
-              "$skips": [
-                null,
-                null
-              ]
+              "left": {
+                "$skip": null,
+                "names": [
+                  "o",
+                  "UserID"
+                ]
+              },
+              "op": {
+                "text": "=",
+                "": true
+              },
+              "right": {
+                "$skip": null,
+                "names": [
+                  "u",
+                  "ID"
+                ]
+              }
             }
           },
           {
@@ -305,30 +325,42 @@
               "alias": "a"
             },
             "compare": {
-              "op": "=",
-              "names": [
-                "u",
-                "ID",
-                "a",
-                "UserID"
-              ],
-              "$skips": [
-                null,
-                null
-              ]
+              "left": {
+                "$skip": null,
+                "names": [
+                  "u",
+                  "ID"
+                ]
+              },
+              "op": {
+                "text": "=",
+                "": true
+              },
+              "right": {
+                "$skip": null,
+                "names": [
+                  "a",
+                  "UserID"
+                ]
+              }
             }
           }
         ],
         "where": {
           "$skip": null,
           "compare": {
-            "$skip": null,
-            "names": [
-              "o",
-              "Total"
-            ],
-            "op": ">",
-            "literal": {}
+            "left": {
+              "$skip": null,
+              "names": [
+                "o",
+                "Total"
+              ]
+            },
+            "op": {
+              "text": ">",
+              "": true
+            },
+            "right": {}
           }
         }
       }
@@ -348,9 +380,12 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "ID",
-            "$skip": null,
-            "subquery": {
+            "left": "ID",
+            "op": {
+              "text": "IN",
+              "": true
+            },
+            "right": {
               "from": {
                 "$skip": null,
                 "relation": {
@@ -359,9 +394,12 @@
                 "where": {
                   "$skip": null,
                   "compare": {
-                    "name": "Total",
-                    "op": ">",
-                    "literal": {}
+                    "left": "Total",
+                    "op": {
+                      "text": ">",
+                      "": true
+                    },
+                    "right": {}
                   }
                 }
               },
@@ -411,17 +449,24 @@
                 "where": {
                   "$skip": null,
                   "compare": {
-                    "op": "=",
-                    "names": [
-                      "o",
-                      "UserID",
-                      "u",
-                      "ID"
-                    ],
-                    "$skips": [
-                      null,
-                      null
-                    ]
+                    "left": {
+                      "$skip": null,
+                      "names": [
+                        "o",
+                        "UserID"
+                      ]
+                    },
+                    "op": {
+                      "text": "=",
+                      "": true
+                    },
+                    "right": {
+                      "$skip": null,
+                      "names": [
+                        "u",
+                        "ID"
+                      ]
+                    }
                   }
                 }
               },
@@ -498,7 +543,7 @@
         "having": {
           "$skip": null,
           "compare": {
-            "call": {
+            "left": {
               "name": "COUNT",
               "column": {
                 "star": {
@@ -510,8 +555,11 @@
                 null
               ]
             },
-            "op": ">",
-            "literal": {}
+            "op": {
+              "text": ">",
+              "": true
+            },
+            "right": {}
           }
         }
       }
@@ -536,9 +584,12 @@
                 null
               ],
               "compare": {
-                "name": "Age",
-                "op": ">=",
-                "literal": {}
+                "left": "Age",
+                "op": {
+                  "text": ">=",
+                  "": true
+                },
+                "right": {}
               },
               "literals": [
                 {},
@@ -589,9 +640,12 @@
             "where": {
               "$skip": null,
               "compare": {
-                "name": "Active",
-                "op": "=",
-                "literal": {}
+                "left": "Active",
+                "op": {
+                  "text": "=",
+                  "": true
+                },
+                "right": {}
               }
             }
           }
@@ -782,41 +836,52 @@
         "where": {
           "$skip": null,
           "compare": {
-            "$skip": null,
-            "compares": [
-              {
-                "$skip": null,
-                "compares": [
-                  {
-                    "name": "Email",
-                    "$skip": null,
-                    "literal": {}
-                  },
-                  {
-                    "name": "DeletedAt",
-                    "$skip": null,
-                    "literal": {
-                      "$skip": null
-                    }
-                  }
-                ]
+            "left": {
+              "left": {
+                "left": "Email",
+                "op": {
+                  "text": "LIKE",
+                  "": true
+                },
+                "right": {}
               },
-              {
-                "name": "Role",
-                "$skip": null,
-                "list": {
-                  "$skips": [
-                    null,
-                    null,
-                    null
-                  ],
-                  "literals": [
-                    {},
-                    {}
-                  ]
+              "op": {
+                "text": "AND",
+                "": true
+              },
+              "right": {
+                "left": "DeletedAt",
+                "op": {
+                  "text": "IS",
+                  "": true
+                },
+                "right": {
+                  "$skip": null
                 }
               }
-            ]
+            },
+            "op": {
+              "text": "AND",
+              "": true
+            },
+            "right": {
+              "left": "Role",
+              "op": {
+                "text": "IN",
+                "": true
+              },
+              "right": {
+                "$skips": [
+                  null,
+                  null,
+                  null
+                ],
+                "literals": [
+                  {},
+                  {}
+                ]
+              }
+            }
           }
         }
       }
@@ -920,17 +985,24 @@
         "s"
       ],
       "compare": {
-        "op": "=",
-        "names": [
-          "t",
-          "ID",
-          "s",
-          "ID"
-        ],
-        "$skips": [
-          null,
-          null
-        ]
+        "left": {
+          "$skip": null,
+          "names": [
+            "t",
+            "ID"
+          ]
+        },
+        "op": {
+          "text": "=",
+          "": true
+        },
+        "right": {
+          "$skip": null,
+          "names": [
+            "s",
+            "ID"
+          ]
+        }
       },
       "whens": [
         {
@@ -1029,9 +1101,12 @@
         "where": {
           "$skip": null,
           "compare": {
-            "name": "Active",
-            "op": "=",
-            "literal": {}
+            "left": "Active",
+            "op": {
+              "text": "=",
+              "": true
+            },
+            "right": {}
           }
         }
       }
@@ -1153,17 +1228,23 @@
             "name": "Balance",
             "$skip": null,
             "compare": {
-              "name": "Balance",
-              "op": "-",
-              "literal": {}
+              "left": "Balance",
+              "op": {
+                "text": "-",
+                "": true
+              },
+              "right": {}
             }
           },
           "where": {
             "$skip": null,
             "compare": {
-              "name": "ID",
-              "op": "=",
-              "literal": {}
+              "left": "ID",
+              "op": {
+                "text": "=",
+                "": true
+              },
+              "right": {}
             }
           }
         }
@@ -1181,17 +1262,23 @@
             "name": "Balance",
             "$skip": null,
             "compare": {
-              "name": "Balance",
-              "op": "+",
-              "literal": {}
+              "left": "Balance",
+              "op": {
+                "text": "+",
+                "": true
+              },
+              "right": {}
             }
           },
           "where": {
             "$skip": null,
             "compare": {
-              "name": "ID",
-              "op": "=",
-              "literal": {}
+              "left": "ID",
+              "op": {
+                "text": "=",
+                "": true
+              },
+              "right": {}
             }
           }
         }
