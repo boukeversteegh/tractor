@@ -360,6 +360,9 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
         | "go"
         | "ruby" | "rb"
         | "php"
+        // TSQL has IR scaffolding (`src/ir/tsql.rs`) but 5 transform
+        // tests still fail under IR — kept on imperative until those
+        // are addressed.
     );
     if programming {
         // Programming languages don't have a Data mode (TreeMode::resolve
