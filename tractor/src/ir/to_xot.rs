@@ -116,6 +116,7 @@ pub fn render_to_xot(
 
         // ----- Atoms — emit source[range] as the leaf text. ---------
         Ir::Name { range, span } => leaf(xot, parent, "name", source, *range, *span),
+        Ir::Atom { element_name, range, span } => leaf(xot, parent, element_name, source, *range, *span),
         Ir::Int { range, span } => leaf(xot, parent, "int", source, *range, *span),
         Ir::Float { range, span } => leaf(xot, parent, "float", source, *range, *span),
         Ir::String { range, span } => leaf(xot, parent, "string", source, *range, *span),

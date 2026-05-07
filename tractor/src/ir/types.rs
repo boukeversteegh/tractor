@@ -784,6 +784,19 @@ pub enum Ir {
     True   { range: ByteRange, span: Span },
     False  { range: ByteRange, span: Span },
     None   { range: ByteRange, span: Span },
+
+    /// `<{element_name}>text</{element_name}>` — generic per-language
+    /// classified atom. Used when a language emits the same source-
+    /// text leaf under different XML element names depending on its
+    /// CST role: e.g. T-SQL classifies `identifier` text as `<var>`
+    /// when it starts with `@`, `<schema>` for the qualifier in
+    /// `dbo.Users`, `<alias>` for trailing `AS`-position identifiers,
+    /// and `<name>` otherwise. Text is `source[range]` at render time.
+    Atom {
+        element_name: &'static str,
+        range: ByteRange,
+        span: Span,
+    },
     /// `<enum>` — `enum Name { Member1, Member2 = 5, ... }`. Members
     /// are `Ir::EnumMember`. C# enums also accept an optional
     /// underlying type (`enum Trait : uint`).
@@ -1322,6 +1335,7 @@ impl Ir {
             | Ir::True { span, .. }
             | Ir::False { span, .. }
             | Ir::None { span, .. }
+            | Ir::Atom { span, .. }
             | Ir::Enum { span, .. }
             | Ir::EnumMember { span, .. }
             | Ir::Property { span, .. }
@@ -1402,6 +1416,7 @@ impl Ir {
             | Ir::True { range, .. }
             | Ir::False { range, .. }
             | Ir::None { range, .. }
+            | Ir::Atom { range, .. }
             | Ir::Enum { range, .. }
             | Ir::EnumMember { range, .. }
             | Ir::Property { range, .. }
@@ -1652,6 +1667,7 @@ impl Ir {
             // Leaves and markers — no Ir children.
             Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
             | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }
+            | Ir::Atom { .. }
             | Ir::Comment { .. } | Ir::PositionalSeparator { .. }
             | Ir::KeywordSeparator { .. } | Ir::Break { .. } | Ir::Continue { .. }
             | Ir::Unknown { .. } => {}

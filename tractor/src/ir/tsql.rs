@@ -50,8 +50,31 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
     match kind {
         // ----- Atoms ---------------------------------------------------
-        "identifier" | "object_reference" | "column_reference" | "field" => {
-            Ir::Name { range, span }
+        "identifier" => {
+            // T-SQL classifies identifier text by sigil:
+            //   `@StartDate` → <var>     (T-SQL variable)
+            // The plain identifier renders as <name>; the role-based
+            // alias / schema rename happens in the `term` and
+            // `object_reference` arms below (they re-lower the
+            // child as Atom("alias") / Atom("schema")).
+            let text = range.slice(source);
+            if text.starts_with('@') {
+                Ir::Atom { element_name: "var", range, span }
+            } else {
+                Ir::Name { range, span }
+            }
+        }
+        "object_reference" => lower_object_reference(node, source),
+        "column_reference" | "field" => {
+            // T-SQL wraps a bare identifier reference in `field` —
+            // detect `@var` here too, since the parent's text covers
+            // exactly the identifier bytes.
+            let text = range.slice(source);
+            if text.starts_with('@') {
+                Ir::Atom { element_name: "var", range, span }
+            } else {
+                Ir::Name { range, span }
+            }
         }
         "int" => Ir::Int { range, span },
         "literal" => simple_statement(node, "literal", source),
@@ -100,8 +123,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "function_body" => simple_statement(node, "body", source),
 
         // ----- Expressions ---------------------------------------------
-        "binary_expression" => simple_statement(node, "compare", source),
-        "unary_expression" => simple_statement(node, "unary", source),
+        "binary_expression" => lower_binary_expression(node, source),
+        "unary_expression" => lower_unary_expression(node, source),
         "assignment" => simple_statement(node, "assign", source),
         "between_expression" => simple_statement(node, "between", source),
         "exists" => simple_statement(node, "exists", source),
@@ -118,11 +141,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "all_fields" => simple_statement(node, "star", source),
         "list" => simple_statement(node, "list", source),
         "term" => Ir::Inline {
-            children: lower_children(node, source),
+            children: lower_term_children(node, source),
             list_name: None,
             range, span,
         },
-        "relation" => simple_statement(node, "relation", source),
+        "relation" => Ir::SimpleStatement {
+            element_name: "relation",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: lower_term_children(node, source),
+            range, span,
+        },
         "direction" => simple_statement(node, "direction", source),
         "window_function" => simple_statement(node, "window", source),
         "window_specification" => simple_statement(node, "over", source),
@@ -151,5 +180,153 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
+}
+
+/// `object_reference` is one or more dot-separated identifiers —
+/// `dbo.Users`, `srv.db.dbo.Users`. The leading qualifiers are
+/// schemas/databases/servers; the *last* identifier is the object
+/// itself. Per the imperative pipeline's behavior, mark the leading
+/// qualifier(s) as `<schema>`. The single-identifier case stays
+/// as a plain `<name>`.
+fn lower_object_reference(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cursor = node.walk();
+    let id_children: Vec<TsNode<'_>> = node
+        .named_children(&mut cursor)
+        .filter(|c| c.kind() == "identifier")
+        .collect();
+    if id_children.len() < 2 {
+        // Plain `Users` — re-lower children normally.
+        return Ir::Inline {
+            children: lower_children(node, source),
+            list_name: None,
+            range, span,
+        };
+    }
+    // Qualified — leading identifiers become <schema>, last one
+    // stays as <name>. Re-walk all named children (preserving
+    // non-identifier children like dots / brackets via gap text).
+    let last_idx = id_children.len() - 1;
+    let last_id_byte = id_children[last_idx].start_byte();
+    let mut cursor2 = node.walk();
+    let children: Vec<Ir> = node
+        .named_children(&mut cursor2)
+        .map(|c| {
+            if c.kind() == "identifier" && c.start_byte() != last_id_byte {
+                Ir::Atom {
+                    element_name: "schema",
+                    range: range_of(c),
+                    span: span_of(c),
+                }
+            } else {
+                lower_node(c, source)
+            }
+        })
+        .collect();
+    Ir::Inline {
+        children,
+        list_name: None,
+        range, span,
+    }
+}
+
+/// In a `term`, an optional alias appears as the trailing `identifier`
+/// after the value-bearing first child (`field` / `invocation` /
+/// literal / etc.). The alias may be preceded by `keyword_as` (an
+/// anonymous keyword child); we only inspect the named-child sequence.
+fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+    let mut cursor = node.walk();
+    let named: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+    // An alias only exists when there's MORE than one named child *and*
+    // the last one is a bare `identifier`. Single-child terms are just
+    // their value (`*`, `field/...`, ...).
+    let alias_id = if named.len() >= 2 && named.last().map(|n| n.kind()) == Some("identifier") {
+        named.last().map(|n| n.start_byte())
+    } else {
+        None
+    };
+    named
+        .into_iter()
+        .map(|c| match alias_id {
+            Some(a) if c.kind() == "identifier" && c.start_byte() == a => Ir::Atom {
+                element_name: "alias",
+                range: range_of(c),
+                span: span_of(c),
+            },
+            _ => lower_node(c, source),
+        })
+        .collect()
+}
+
+/// `binary_expression` — extract the operator (an anonymous child
+/// like `>` / `>=` / `=`) into an explicit `<op>` element so XPath
+/// queries `//compare[op='>']` resolve. The named children (left
+/// and right operands) lower normally.
+fn lower_binary_expression(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    // Find the operator: it's an anonymous child between the two
+    // named operands. `node.children` walks both named and anonymous
+    // in source order. We splice in an Atom("op") at the operator's
+    // position to render as `<op>{op_text}</op>` between operands.
+    for c in node.children(&mut cursor) {
+        if c.is_named() {
+            children.push(lower_node(c, source));
+        } else {
+            // Anonymous child — typically the operator. Skip
+            // punctuation-only children (parens won't appear here in
+            // a binary_expression but guard anyway).
+            if let Ok(text) = c.utf8_text(source.as_bytes()) {
+                let trimmed = text.trim();
+                if !trimmed.is_empty() && !trimmed.chars().all(|ch| ch.is_alphanumeric() || ch == '_') {
+                    children.push(Ir::Atom {
+                        element_name: "op",
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                }
+            }
+        }
+    }
+    Ir::SimpleStatement {
+        element_name: "compare",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range, span,
+    }
+}
+
+/// `unary_expression` — when the operator is `#`, this is a T-SQL
+/// local-temp-table reference (`#TempUsers`). Render as a `<temp>`
+/// element rather than the generic `<unary>`.
+fn lower_unary_expression(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cursor = node.walk();
+    let mut is_temp = false;
+    for c in node.named_children(&mut cursor) {
+        if c.kind() == "op_unary_other" {
+            if let Ok(text) = c.utf8_text(source.as_bytes()) {
+                if text.trim() == "#" {
+                    is_temp = true;
+                    break;
+                }
+            }
+        }
+    }
+    let element_name = if is_temp { "temp" } else { "unary" };
+    let mut cursor2 = node.walk();
+    let children: Vec<Ir> = node.named_children(&mut cursor2).map(|c| lower_node(c, source)).collect();
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range, span,
+    }
 }
 

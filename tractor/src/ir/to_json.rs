@@ -87,6 +87,7 @@ impl<'a> Renderer<'a> {
         };
         match ir {
             Ir::Name { .. }
+            | Ir::Atom { .. }
             | Ir::Int { .. }
             | Ir::Float { .. }
             | Ir::String { .. }
@@ -160,6 +161,7 @@ impl<'a> Renderer<'a> {
             Ir::Path { .. } => "path",
             Ir::Aliased { .. } => "aliased",
             Ir::Name { .. } => "name",
+            Ir::Atom { element_name, .. } => element_name,
             Ir::Int { .. } => "int",
             Ir::Float { .. } => "float",
             Ir::String { .. } => "string",
@@ -674,6 +676,7 @@ impl<'a> Renderer<'a> {
             // Scalar leaves are short-circuited in `try_render_scalar`
             // before reaching `populate` — guard the match exhaustively.
             Ir::Name { .. }
+            | Ir::Atom { .. }
             | Ir::Int { .. }
             | Ir::Float { .. }
             | Ir::String { .. }
