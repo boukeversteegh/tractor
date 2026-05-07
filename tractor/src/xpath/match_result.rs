@@ -111,6 +111,14 @@ pub enum Tree {
         source: Arc<String>,
         xml: XmlNode,
     },
+    /// SQL-language IR (root-document match). Native-only.
+    /// Renders via `sql_to_xot` for XML and `sql_to_json` for JSON.
+    #[cfg(feature = "native")]
+    Sql {
+        ir: Arc<crate::ir::sql::SqlIr>,
+        source: Arc<String>,
+        xml: XmlNode,
+    },
     /// Raw XML / XPath structured data — used for partial matches
     /// (XPath returning an inner subtree) and for XPath
     /// atomic/map/array results that have no direct IR analogue.
@@ -131,6 +139,8 @@ impl Tree {
             Tree::Ir { ir, source, .. } => crate::ir::ir_to_json(ir, source),
             #[cfg(feature = "native")]
             Tree::DataIr { ir, .. } => crate::ir::data_to_json(ir),
+            #[cfg(feature = "native")]
+            Tree::Sql { ir, source, .. } => crate::ir::sql_to_json::sql_to_json(ir, source),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
         }
     }
@@ -146,6 +156,8 @@ impl Tree {
             Tree::Ir { xml, .. } => xml,
             #[cfg(feature = "native")]
             Tree::DataIr { xml, .. } => xml,
+            #[cfg(feature = "native")]
+            Tree::Sql { xml, .. } => xml,
         }
     }
 }

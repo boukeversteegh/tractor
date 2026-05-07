@@ -37,10 +37,19 @@ pub enum TractorNode {
     // CASE expression — When holds `WHEN cond THEN val`; Else
     // holds the trailing `ELSE val` slot.
     Case, When, Else,
+    // ORDER BY direction markers (`<asc/>`/`<desc/>` on
+    // `<target>`).
+    Asc, Desc,
+    // JOIN direction markers — `Left`, `Right`, `Star` are already
+    // declared above; `Full`, `Outer`, `Cross`, `Inner` are new.
+    Full, Outer, Cross, Inner,
+    // SELECT INTO temp-table marker.
+    Into,
     // CAST
     Cast,
-    // DDL
-    Create, Columns, Definition,
+    // DDL — `Table`/`View`/`Index` are kind markers on `<create>` /
+    // `<drop>`. `Add` is the operation marker on `<alter>`.
+    Create, Columns, Definition, Table, View, Index, Add,
     // MERGE
     Merge,
     // Transactions
@@ -111,6 +120,13 @@ impl TractorNode {
             | Self::Reset                                                        => (false, true, Keyword),
             // `<star/>` — empty marker for `SELECT *`. Has no children.
             Self::Star                                                           => (true, false, Keyword),
+            // Direction / DDL kind markers — empty `<marker/>` elements.
+            Self::Asc | Self::Desc | Self::Table | Self::View | Self::Index
+            | Self::Add | Self::Full | Self::Outer | Self::Cross | Self::Inner  => (true, false, Keyword),
+            // `<left>` / `<right>` are dual-use — Compare operand
+            // wrappers (containers carrying expressions) AND JOIN
+            // direction markers (empty `<left/>` on `<join>`).
+            Self::Left | Self::Right                                             => (true, true, Keyword),
             Self::Ref                                                           => (false, true, Type),
             Self::Call | Self::Window | Self::Cast                              => (false, true, Function),
             Self::Compare | Self::Between | Self::Assign | Self::Op             => (false, true, Operator),

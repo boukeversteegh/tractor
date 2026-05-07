@@ -79,6 +79,15 @@ pub struct XotParseResult {
     /// the data-language branch.
     pub data_ir: Option<Box<crate::ir::DataIr>>,
 
+    /// Typed `SqlIr` root for SQL-family languages (TSQL today).
+    /// `Some` only when the IR pipeline took the SQL branch. SQL has
+    /// its own typed IR per-construct (Select/Insert/Update/...) so
+    /// JSON / XML output reads typed slots directly without the
+    /// projection heuristics that the cross-language `Ir` requires
+    /// for generic SimpleStatement wrappers.
+    #[cfg(feature = "native")]
+    pub sql_ir: Option<Box<crate::ir::sql::SqlIr>>,
+
     /// The original source text. Needed alongside `ir` / `data_ir`
     /// because both reference source byte ranges for leaf text
     /// reconstruction; the IR-to-JSON renderers slice into this at
@@ -476,6 +485,8 @@ pub fn parse_string_to_xot_with_options(
         language: lang.to_string(),
         ir: None,
         data_ir: None,
+        #[cfg(feature = "native")]
+        sql_ir: None,
         source: source.to_string(),
     })
 }
@@ -533,6 +544,8 @@ fn parse_with_ir_pipeline(
             language: lang.to_string(),
             ir: None,
             data_ir: Some(Box::new(data_ir)),
+            #[cfg(feature = "native")]
+            sql_ir: None,
             source: source.to_string(),
         });
     }
@@ -584,6 +597,8 @@ fn parse_with_ir_pipeline(
         language: lang.to_string(),
         ir: Some(Box::new(ir_tree)),
         data_ir: None,
+        #[cfg(feature = "native")]
+        sql_ir: None,
         source: source.to_string(),
     })
 }
