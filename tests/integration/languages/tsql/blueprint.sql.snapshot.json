@@ -54,12 +54,8 @@
           "name": "AuditLog"
         },
         "columns": [
-          {
-            "unknown": "column"
-          },
-          {
-            "unknown": "column"
-          }
+          "Action",
+          "Timestamp"
         ],
         "values": [
           "'UserQuery'",

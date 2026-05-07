@@ -23,8 +23,8 @@ file/
   ├─ statement/insert/
   │   ├─ relation/name = "AuditLog"
   │   ├─ columns/
-  │   │   ├─ unknown = "column"
-  │   │   └─ unknown = "column"
+  │   │   ├─ name = "Action"
+  │   │   └─ name = "Timestamp"
   │   └─ values/
   │       ├─ literal = "'UserQuery'"
   │       └─ call/name = "GETDATE"

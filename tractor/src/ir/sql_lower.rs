@@ -92,6 +92,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         "all_fields" => SqlIr::Star { qualifier: None, range, span },
         "term" => lower_term(node, source),
         "relation" => lower_relation(node, source),
+        // `column` (CST) — appears inside INSERT column lists,
+        // `ordered_columns` (FK), etc. Wraps a single inner
+        // identifier or field. Unwrap to the typed inner.
+        "column" => {
+            let mut sub = node.walk();
+            let inner = node.named_children(&mut sub)
+                .filter(|c| !c.kind().starts_with("keyword_"))
+                .next();
+            if let Some(c) = inner {
+                lower_node(c, source)
+            } else {
+                SqlIr::Identifier { range, span }
+            }
+        }
 
         // ----- Expressions -------------------------------------------
         "binary_expression" => lower_binary_or_compare(node, source),
