@@ -1,8 +1,12 @@
 # Output Pipeline Architecture — Design
 
-**Status:** Active design under review. Supersedes the
-"projection pipeline" iter-37/38 notes. Written under the
-architecture skill; refines the design in response to user
+**Status:** Re-evaluated 2026-05-07 after user pushback exposed a
+flawed premise. See "Premise correction" section below — the
+"post-passes" framing was incorrect. No multi-pass IR
+transformation exists. The real lever is IR shape, not
+projection layering.
+
+Original design (kept below for reference) addressed user
 question:
 
 > If Data is the universal in-between step, then logically XML
@@ -13,6 +17,109 @@ question:
 This doc compares architectures, articulates the constraint
 ranking, and recommends a path. **No implementation should follow
 from this doc until the user approves the recommendation.**
+
+---
+
+## Premise correction (2026-05-07)
+
+User asked: "does this only happen for XML? if it transforms the
+IR, it would still be OK because json gets the same benefits, but
+in general i thought we had gotten rid of multi pass processing".
+
+Investigation: **there is no multi-pass IR processing.** Parse
+builds the IR once; each renderer reads it independently.
+
+- `Modifiers` struct on declarations is the typed canonical
+  form. `to_xot.rs` expands it into `<public/>` empty marker
+  children. `to_json.rs` projects it into flag pairs. The
+  expansion happens AT RENDER TIME, not as an IR pass.
+- "Marker collapse" only exists in tree-text rendering
+  (`query_tree_renderer.rs`) where empty `<public/>` children
+  fold into `class[public]` chip syntax. Render-time formatting,
+  not an IR transform.
+- Plural grouping in JSON output is a JSON-projection rule, not
+  an IR transform.
+
+The earlier framing in this doc ("IR shaped for XML rendering
+needs where post-passes handle marker collapse and slot lifting")
+was wrong. **There are no IR post-passes.** Apologies — sloppy
+analysis on my part.
+
+### What's actually happening
+
+The iter 29-36 JSON heuristics trace to one root cause:
+
+`Ir::SimpleStatement { element_name, children, modifiers,
+extra_markers }` is a **generic catch-all** where `element_name`
+doubles as a slot label. When you see `SimpleStatement{name="columns",
+children=[<column>×N]}`:
+- XML rendering loves it: `<columns><column/>...</columns>` is
+  the natural shape.
+- JSON projection sees the slot key "columns" outer AND the
+  pluralization "columns" inner — hence the double-wrap and the
+  iter-35 collapse heuristic.
+
+Other JSON heuristics (synthetic-marker collapse, Skip-only
+collapse, Inline transparency in singleton slots) trace the
+same way: SimpleStatement is over-general and the renderer has
+to disambiguate.
+
+### Architectural lever options
+
+**(I)** **Move JSON projection to `to_data.rs` (the original
+proposal in this doc).** Heuristics survive but consolidate to
+one file. JSON, YAML, JSONL share the projection. Cheap;
+addresses the symptom; doesn't address the root cause.
+
+**(II)** **Replace `SimpleStatement` with explicit typed IR
+variants per construct.** `Ir::Insert { name, columns:
+Vec<Ir>, values: Vec<Ir> }` instead of `SimpleStatement{
+name="insert", children=[name_atom, columns_wrapper,
+values_wrapper] }`. Both XML and JSON read typed slots directly.
+Heuristics evaporate at the source. Cost: every construct
+gets a typed IR variant; IR enum grows. Aligns with Principle
+#11 ("specific names over abstract supertypes") which the non-
+TSQL languages already follow (`Ir::Class`, `Ir::Function`,
+`Ir::Property` are typed; `Ir::SimpleStatement` is the catch-all
+for things not yet typed).
+
+**(III)** **Both — type the IR AND build the projection.**
+Typed IR makes JSON projection trivial; the projection module
+exists to share serialization across formats. Both wins. More
+work overall.
+
+### Recommendation
+
+Pursue (II) first — finish typing the TSQL IR (and any other
+languages still using `SimpleStatement` heavily for typed
+constructs). Each typed variant added removes the conditions
+that made the JSON heuristics necessary. Once typing is mostly
+done, re-evaluate whether the projection module
+(`to_data.rs`) is still wanted — it may be unnecessary.
+
+Concrete next iters:
+
+- 41+: Replace `simple_statement(node, "insert", ...)` with
+  `Ir::Insert { columns, values }` typed variant; update
+  `to_xot.rs` and `to_json.rs` arms accordingly.
+- Continue per construct: `Ir::Update`, `Ir::Delete`,
+  `Ir::Select`, `Ir::From`, `Ir::Where`, `Ir::Compare`,
+  `Ir::Subquery`, etc.
+- After TSQL converted to typed variants, audit other
+  languages' remaining `simple_statement` usage and decide
+  per-construct.
+
+The slice-1 work landed in iter 39 (`to_data.rs` skeleton +
+`Ir::Class` arm) is **not wasted** — once TSQL is typed, the
+projection module is a natural place to host IR-to-JSON
+projection if it's still needed for cross-format consolidation.
+But it's not the next iter target.
+
+---
+
+## Original design (kept for reference)
+
+[continued below]
 
 ---
 
