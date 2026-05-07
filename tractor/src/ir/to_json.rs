@@ -858,6 +858,14 @@ impl<'a> Renderer<'a> {
     /// the XML render behaviour).
     fn add_children(&self, shape: &mut Shape, children: &[Ir]) {
         for c in children {
+            // `Ir::Skip` is an XML-render helper that consumes
+            // source bytes without emitting an element. It carries
+            // no semantic content, so it must not contribute to
+            // JSON output (Principle #2 — keyword/punctuation
+            // bytes don't surface as `$skip` keys / `$skips` lists).
+            if matches!(c, Ir::Skip { .. }) {
+                continue;
+            }
             // Markers (Break/Continue) collapse to flags when bare.
             if matches!(c, Ir::Break { .. } | Ir::Continue { .. }) {
                 shape.flag(self.element_name(c));
