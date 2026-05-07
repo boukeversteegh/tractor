@@ -1446,8 +1446,10 @@
                             "null": "null"
                           },
                           "throw": {
-                            "new": {
-                              "name": "InvalidOperationException"
+                            "expression": {
+                              "new": {
+                                "name": "InvalidOperationException"
+                              }
                             }
                           }
                         },
@@ -1663,9 +1665,11 @@
                       }
                     },
                     "throw": {
-                      "new": {
-                        "name": "InvalidOperationException",
-                        "string": "\"boom\""
+                      "expression": {
+                        "new": {
+                          "name": "InvalidOperationException",
+                          "string": "\"boom\""
+                        }
                       }
                     }
                   },
@@ -2108,10 +2112,12 @@
                           "null_coalesce": true
                         },
                         "right": {
-                          "new": {
-                            "name": "ArgumentNullException",
-                            "call": {
-                              "name": "s"
+                          "expression": {
+                            "new": {
+                              "name": "ArgumentNullException",
+                              "call": {
+                                "name": "s"
+                              }
                             }
                           }
                         }

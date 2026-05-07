@@ -924,8 +924,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         "using_statement"               => simple_statement(node, "using",      source),
-        "throw_statement"               => simple_statement(node, "throw",      source),
-        "throw_expression"              => simple_statement(node, "throw",      source),
+        "throw_statement"               => lower_csharp_throw(node, source),
+        "throw_expression"              => lower_csharp_throw(node, source),
         "with_expression"               => simple_statement(node, "with",       source),
         "range_expression"              => simple_statement(node, "range",      source),
         "tuple_expression"              => simple_statement(node, "tuple",      source),
@@ -2236,6 +2236,44 @@ fn enclosing_type_kind<'a>(node: TsNode<'a>) -> Option<&'a str> {
 /// Modifiers are extracted from any `modifier` child nodes —
 /// declaration-shaped kinds (delegate/event/indexer/destructor)
 /// need them; statement kinds simply have none.
+/// Lower C# `throw expr;` / `throw expr` (expression form) so the
+/// thrown expression sits under an `<expression>` host
+/// (Principle #5 — matches return/raise/yield/throw across
+/// languages). Bare `throw;` (rethrow inside a catch) keeps an
+/// empty `<throw/>` so the empty-element pass folds it to a
+/// marker.
+fn lower_csharp_throw(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    let children: Vec<Ir> = if inner.is_empty() {
+        Vec::new()
+    } else {
+        let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
+        let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
+        let expr_range = ByteRange::new(expr_start, expr_end);
+        vec![Ir::SimpleStatement {
+            element_name: "expression",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: inner,
+            range: expr_range,
+            span,
+        }]
+    };
+    Ir::SimpleStatement {
+        element_name: "throw",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
     let span = span_of(node);
     let range = range_of(node);

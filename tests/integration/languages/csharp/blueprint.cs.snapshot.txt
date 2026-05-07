@@ -421,7 +421,7 @@ unit/
   │               │       │               └─ call/name = "Describe"
   │               │       ├─ arm/
   │               │       │   ├─ pattern[constant]/null = "null"
-  │               │       │   └─ throw/new/name = "InvalidOperationException"
+  │               │       │   └─ throw/expression/new/name = "InvalidOperationException"
   │               │       └─ arm[break] = "default:"
   │               ├─ if/
   │               │   ├─ condition/expression/is/
@@ -610,7 +610,7 @@ unit/
   │               │   │   │       └─ call/
   │               │   │   │           ├─ name = "WriteByte"
   │               │   │   │           └─ int = "1"
-  │               │   │   └─ throw/new/
+  │               │   │   └─ throw/expression/new/
   │               │   │       ├─ name = "InvalidOperationException"
   │               │   │       └─ string = "\"boom\""
   │               │   ├─ catch/
@@ -874,7 +874,7 @@ unit/
       │       │           └─ value/expression/binary/
       │       │               ├─ left/expression/name = "s"
       │       │               ├─ op[nullish] = "??"
-      │       │               └─ right/expression/throw/new/
+      │       │               └─ right/expression/throw/expression/new/
       │       │                   ├─ name = "ArgumentNullException"
       │       │                   └─ call/
       │       │                       ├─ name = "nameof"
