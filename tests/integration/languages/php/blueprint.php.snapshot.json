@@ -1510,13 +1510,15 @@
       "body": {
         "expression": {
           "throw": {
-            "new": {
-              "name": "RuntimeException",
-              "arguments": [
-                {
-                  "string": {}
-                }
-              ]
+            "expression": {
+              "new": {
+                "name": "RuntimeException",
+                "arguments": [
+                  {
+                    "string": {}
+                  }
+                ]
+              }
             }
           }
         }

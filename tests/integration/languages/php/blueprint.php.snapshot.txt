@@ -551,7 +551,7 @@ program/
   ├─ function/
   │   ├─ name = "never_returns"
   │   ├─ type[bottom] = "never"
-  │   └─ body/expression/throw/new/
+  │   └─ body/expression/throw/expression/new/
   │       ├─ name = "RuntimeException"
   │       └─ argument/string = "\"boom\""
   └─ echo/binary/

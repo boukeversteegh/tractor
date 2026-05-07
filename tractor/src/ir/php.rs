@@ -401,7 +401,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 range, span,
             }
         }
-        "throw_expression" => simple_statement(node, "throw", source),
+        "throw_expression" => lower_php_throw(node, source),
         "return_statement" => simple_statement(node, "return", source),
         "break_statement" => simple_statement(node, "break", source),
         "continue_statement" => simple_statement(node, "continue", source),
@@ -676,6 +676,42 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         children,
         range: range_of(node),
         span: span_of(node),
+    }
+}
+
+/// Lower PHP `throw expr` so the thrown expression sits under an
+/// `<expression>` host (Principle #5 — matches the throw shapes
+/// across Java / C# / TypeScript and the equivalent yield / raise
+/// / return shapes).
+fn lower_php_throw(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    let children: Vec<Ir> = if inner.is_empty() {
+        Vec::new()
+    } else {
+        let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
+        let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
+        let expr_range = ByteRange::new(expr_start, expr_end);
+        vec![Ir::SimpleStatement {
+            element_name: "expression",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: inner,
+            range: expr_range,
+            span,
+        }]
+    };
+    Ir::SimpleStatement {
+        element_name: "throw",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
     }
 }
 
