@@ -21,7 +21,7 @@
         "public": true,
         "name": "Greeter",
         "body": {
-          "$truncated": 45
+          "$truncated": 43
         }
       },
       "message": "tests/integration/sample.cs:9"

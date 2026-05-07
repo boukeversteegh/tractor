@@ -10,4 +10,4 @@ class[public]/
   ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
-      └─ ... (45 children)
+      └─ ... (43 children)

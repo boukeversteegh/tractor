@@ -133,10 +133,9 @@ program/
   │       │   ├─ parameter[public and required]/
   │       │   │   ├─ name = "name"
   │       │   │   └─ type/name = "string"
-  │       │   ├─ parameter[private and readonly and optional]/
-  │       │   │   ├─ name = "seed"
-  │       │   │   └─ type/name = "number"
-  │       │   └─ body/block = "{}"
+  │       │   └─ parameter[private and readonly and optional]/
+  │       │       ├─ name = "seed"
+  │       │       └─ type/name = "number"
   │       ├─ method[public and abstract]/
   │       │   ├─ name = "render"
   │       │   └─ returns/type/name = "string"

@@ -1172,6 +1172,15 @@ fn render_ir_body(
     let Ir::Body { children, pass_only, block_wrap, range, span } = ir else { unreachable!() };
     let node = element(xot, "body", *span);
     xot.append(parent, node)?;
+    // Empty block-wrapped body (`{ }`): drop the inner `<block>`
+    // entirely so the body renders as `<body/>` self-closing rather
+    // than `<body><block>{ }</block></body>` (where the braces leak
+    // as text content — Principle #2). The empty-element-to-marker
+    // pass folds the resulting `<body/>` into the parent's marker
+    // chip when appropriate.
+    if *block_wrap && children.is_empty() && !*pass_only {
+        return Ok(node);
+    }
     let target = if *block_wrap {
         let block = element(xot, "block", *span);
         xot.append(node, block)?;

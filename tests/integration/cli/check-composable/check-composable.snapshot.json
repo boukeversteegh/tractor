@@ -30,7 +30,7 @@
             "public": true,
             "name": "Greeter",
             "body": {
-              "$truncated": 45
+              "$truncated": 43
             }
           },
           "reason": "class found",

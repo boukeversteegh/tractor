@@ -191,10 +191,7 @@
           {
             "$type": "method",
             "public": true,
-            "name": "Reset",
-            "body": {
-              "block": "{ }"
-            }
+            "name": "Reset"
           }
         ],
         "method": {

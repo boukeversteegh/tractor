@@ -215,9 +215,7 @@ unit/
   │   │       │   │   ├─ name = "Action"
   │   │       │   │   └─ type/name = "EntityBase"
   │   │       │   └─ name = "Changed"
-  │   │       ├─ constructor[protected]/
-  │   │       │   ├─ name = "EntityBase"
-  │   │       │   └─ body/block = "{ }"
+  │   │       ├─ constructor[protected]/name = "EntityBase"
   │   │       ├─ constructor[protected]/
   │   │       │   ├─ name = "EntityBase"
   │   │       │   ├─ parameter/
@@ -248,9 +246,7 @@ unit/
   │   │       │   │   ├─ name = "EventHandler"
   │   │       │   │   └─ type/name = "Widget"
   │   │       │   └─ name = "Added"
-  │   │       ├─ constructor[public]/
-  │   │       │   ├─ name = "Widget"
-  │   │       │   └─ body/block = "{ }"
+  │   │       ├─ constructor[public]/name = "Widget"
   │   │       ├─ constructor[public]/
   │   │       │   ├─ name = "Widget"
   │   │       │   ├─ parameter/
@@ -564,14 +560,12 @@ unit/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "j"
   │               │   └─ value/expression/int = "0"
-  │               ├─ while/
-  │               │   ├─ condition/expression/binary/
-  │               │   │   ├─ left/expression/unary[postfix]/
-  │               │   │   │   ├─ name = "j"
-  │               │   │   │   └─ op[increment] = "++"
-  │               │   │   ├─ op[compare and less] = "<"
-  │               │   │   └─ right/expression/int = "2"
-  │               │   └─ body/block = "{ }"
+  │               ├─ while/condition/expression/binary/
+  │               │   ├─ left/expression/unary[postfix]/
+  │               │   │   ├─ name = "j"
+  │               │   │   └─ op[increment] = "++"
+  │               │   ├─ op[compare and less] = "<"
+  │               │   └─ right/expression/int = "2"
   │               ├─ variable/
   │               │   ├─ type/name = "int"
   │               │   ├─ name = "k"
@@ -949,9 +943,7 @@ unit/
       │       │       ├─ destructor/
       │       │       │   ├─ name = "Container"
       │       │       │   └─ body/block/comment = "/* finalizer */"
-      │       │       └─ constructor[public]/
-      │       │           ├─ name = "Container"
-      │       │           └─ body/block = "{ }"
+      │       │       └─ constructor[public]/name = "Container"
       │       ├─ comment[leading] = "// Delegate + event."
       │       ├─ delegate[public]/
       │       │   ├─ type/name = "void"

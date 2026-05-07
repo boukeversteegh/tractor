@@ -14,4 +14,4 @@ results:
     public: true
     name: Greeter
     body:
-      $truncated: 45
+      $truncated: 43
