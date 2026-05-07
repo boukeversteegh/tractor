@@ -1073,7 +1073,7 @@
                     "to": {
                       "int": "3"
                     },
-                    "slice": {},
+                    "slice": true,
                     "from": {
                       "int": "1"
                     }

@@ -223,7 +223,7 @@
             }
           },
           {
-            "left": {},
+            "left": true,
             "relation": {
               "name": "Addresses",
               "alias": "a"

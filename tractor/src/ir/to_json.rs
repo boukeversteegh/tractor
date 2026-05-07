@@ -882,6 +882,21 @@ impl<'a> Renderer<'a> {
                 shape.flag(self.element_name(c));
                 continue;
             }
+            // Empty zero-width `Ir::SimpleStatement` is a synthetic
+            // marker (e.g. T-SQL JOIN direction `<left/>` /
+            // `<outer/>`). It folds to an XML marker chip via the
+            // empty-element pass; in JSON, surface as a boolean
+            // flag rather than `"\<name\>": {}`.
+            if let Ir::SimpleStatement { children: kids, modifiers, extra_markers, range, .. } = c {
+                if kids.is_empty()
+                    && range.is_empty()
+                    && modifiers.marker_names().is_empty()
+                    && extra_markers.is_empty()
+                {
+                    shape.flag(self.element_name(c));
+                    continue;
+                }
+            }
             // Inline: transparent — recurse with its children. If
             // `list_name` is set, treat it as a flat list under that
             // key (matching the XML render's `list="X"` distribution).
