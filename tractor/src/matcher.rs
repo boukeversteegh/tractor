@@ -515,11 +515,11 @@ mod tests {
             end_line: 1,
             end_column: 1,
             command: "query".to_string(),
-            tree: Some(tractor::xpath::XmlNode::Element {
+            tree: Some(tractor::xpath::Tree::Xml(tractor::xpath::XmlNode::Element {
                 name: "a".to_string(),
                 attributes: vec![],
                 children: vec![],
-            }),
+            })),
             value: Some("1".to_string()),
             source: Some("<a>1</a>".to_string()),
             lines: Some(vec!["<a>1</a>".to_string()]),

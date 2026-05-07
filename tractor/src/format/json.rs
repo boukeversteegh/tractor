@@ -376,7 +376,7 @@ mod tests {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
             command: String::new(),
-            tree: Some(tree),
+            tree: Some(tractor::xpath::Tree::Xml(tree)),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
             message: None, origin: None, rule_id: None, status: None, output: None,
