@@ -118,20 +118,14 @@
       "right": "3.14159"
     },
     {
-      "left": {
-        "$type": "left",
-        "expressions": [
-          "RAW_PATH",
-          "BYTES_BLOB"
-        ]
-      },
-      "right": {
-        "$type": "right",
-        "expressions": [
-          "r\"C:\\Users\\foo\\bar\"",
-          "b\"\\x00\\x01\\x02\""
-        ]
-      }
+      "left": [
+        "RAW_PATH",
+        "BYTES_BLOB"
+      ],
+      "right": [
+        "r\"C:\\Users\\foo\\bar\"",
+        "b\"\\x00\\x01\\x02\""
+      ]
     },
     {
       "left": "TRIPLE",
@@ -1074,16 +1068,13 @@
             }
           },
           {
-            "left": {
-              "$type": "left",
-              "expressions": [
-                "head",
-                {
-                  "name": "mid"
-                },
-                "tail"
-              ]
-            },
+            "left": [
+              "head",
+              {
+                "name": "mid"
+              },
+              "tail"
+            ],
             "right": "items"
           },
           {

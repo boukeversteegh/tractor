@@ -491,10 +491,7 @@ impl<'a> Renderer<'a> {
                 if left_arr.len() == 1 {
                     shape.singleton("left", left_arr.into_iter().next().unwrap());
                 } else if !left_arr.is_empty() {
-                    let mut left_obj = Map::new();
-                    left_obj.insert("$type".into(), Value::String("left".into()));
-                    left_obj.insert("expressions".into(), Value::Array(left_arr));
-                    shape.singleton("left", Value::Object(left_obj));
+                    shape.singleton("left", Value::Array(left_arr));
                 }
                 if let Some(ty) = type_annotation {
                     shape.singleton("type", self.render_as_type(ty));
@@ -506,10 +503,7 @@ impl<'a> Renderer<'a> {
                 if right_arr.len() == 1 {
                     shape.singleton("right", right_arr.into_iter().next().unwrap());
                 } else if !right_arr.is_empty() {
-                    let mut right_obj = Map::new();
-                    right_obj.insert("$type".into(), Value::String("right".into()));
-                    right_obj.insert("expressions".into(), Value::Array(right_arr));
-                    shape.singleton("right", Value::Object(right_obj));
+                    shape.singleton("right", Value::Array(right_arr));
                 }
             }
             Ir::Import { children, .. } => {
@@ -641,10 +635,7 @@ impl<'a> Renderer<'a> {
             }
             Ir::Is { value, type_target, .. } => {
                 shape.singleton("left", self.wrap_expression_host(value));
-                let mut right_inner = Map::new();
-                right_inner.insert("$type".into(), Value::String("expression".into()));
-                right_inner.insert("type".into(), self.render_as_type(type_target));
-                shape.singleton("right", Value::Object(right_inner));
+                shape.singleton("right", self.render_as_type(type_target));
             }
             Ir::Cast { type_ann, value, .. } => {
                 shape.singleton("type", self.render_as_type(type_ann));

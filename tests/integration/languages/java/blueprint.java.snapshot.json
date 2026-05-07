@@ -834,10 +834,7 @@
                     "is": {
                       "left": "o",
                       "right": {
-                        "$type": "expression",
-                        "type": {
-                          "name": "String"
-                        }
+                        "name": "String"
                       }
                     }
                   }

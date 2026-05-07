@@ -2944,10 +2944,7 @@
                   "is": {
                     "left": "o",
                     "right": {
-                      "$type": "expression",
-                      "type": {
-                        "name": "int"
-                      }
+                      "name": "int"
                     }
                   }
                 }
@@ -3116,10 +3113,7 @@
                             "is": {
                               "left": "v",
                               "right": {
-                                "$type": "expression",
-                                "type": {
-                                  "name": "string"
-                                }
+                                "name": "string"
                               }
                             }
                           },
