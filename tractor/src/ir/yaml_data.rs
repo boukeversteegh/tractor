@@ -140,6 +140,71 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
             DataIr::Comment { text, leading: true, trailing: false, range, span }
         }
 
+        // YAML directives. `%YAML 1.2`, `%TAG !! …` —
+        // tree-sitter-yaml exposes these as separate kinds.
+        "yaml_directive" => {
+            // Children: `yaml_version`. Wrap in `<version>` text
+            // leaf so XPath `[version='1.2']` works.
+            let mut children: Vec<DataIr> = Vec::new();
+            let mut cursor = node.walk();
+            for c in node.named_children(&mut cursor) {
+                if c.kind() == "yaml_version" {
+                    children.push(DataIr::Pair {
+                        key: Box::new(DataIr::String {
+                            value: "version".to_string(),
+                            range: range_of(c),
+                            span: span_of(c),
+                        }),
+                        value: Box::new(DataIr::String {
+                            value: text_of(c, source).trim().to_string(),
+                            range: range_of(c),
+                            span: span_of(c),
+                        }),
+                        range: range_of(c),
+                        span: span_of(c),
+                    });
+                }
+            }
+            DataIr::Directive { flavor: "yaml", children, range, span }
+        }
+        "tag_directive" => {
+            // Children: `tag_handle` + `tag_prefix`. Wrap each in
+            // its own pair so XPath sees `<handle>` / `<prefix>`
+            // text-children of `<directive[tag]>`.
+            let mut children: Vec<DataIr> = Vec::new();
+            let mut cursor = node.walk();
+            for c in node.named_children(&mut cursor) {
+                let key = match c.kind() {
+                    "tag_handle" => "handle",
+                    "tag_prefix" => "prefix",
+                    _ => continue,
+                };
+                children.push(DataIr::Pair {
+                    key: Box::new(DataIr::String {
+                        value: key.to_string(),
+                        range: range_of(c),
+                        span: span_of(c),
+                    }),
+                    value: Box::new(DataIr::String {
+                        value: text_of(c, source).trim().to_string(),
+                        range: range_of(c),
+                        span: span_of(c),
+                    }),
+                    range: range_of(c),
+                    span: span_of(c),
+                });
+            }
+            DataIr::Directive { flavor: "tag", children, range, span }
+        }
+        "reserved_directive" => {
+            DataIr::Directive {
+                flavor: "reserved",
+                children: lower_named_children(node, source),
+                range,
+                span,
+            }
+        }
+
         // Unhandled — alias / anchor / tag / directive etc. Pass
         // through to Unknown so XPath text-recovery still holds.
         other => DataIr::Unknown {

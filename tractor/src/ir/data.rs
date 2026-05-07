@@ -139,6 +139,18 @@ pub enum DataIr {
         span: Span,
     },
 
+    /// YAML / TOML processing directive (e.g. `%YAML 1.2`,
+    /// `%TAG !! tag:…`). `flavor` becomes a marker child of the
+    /// rendered `<directive>` element so XPath queries can
+    /// distinguish: `<directive[yaml]><version>1.2</version></directive>`,
+    /// `<directive[tag]><handle>!!</handle><prefix>…</prefix></directive>`.
+    Directive {
+        flavor: &'static str, // "yaml", "tag", "reserved"
+        children: Vec<DataIr>,
+        range: ByteRange,
+        span: Span,
+    },
+
     /// Last-resort hatch for unhandled kinds. Renders as
     /// `<unknown kind="…">…</unknown>` so XPath queries can still
     /// traverse and source-text recovery still holds.
@@ -163,6 +175,7 @@ impl DataIr {
             | DataIr::Bool { range, .. }
             | DataIr::Null { range, .. }
             | DataIr::Comment { range, .. }
+            | DataIr::Directive { range, .. }
             | DataIr::Unknown { range, .. } => *range,
         }
     }
@@ -180,6 +193,7 @@ impl DataIr {
             | DataIr::Bool { span, .. }
             | DataIr::Null { span, .. }
             | DataIr::Comment { span, .. }
+            | DataIr::Directive { span, .. }
             | DataIr::Unknown { span, .. } => *span,
         }
     }

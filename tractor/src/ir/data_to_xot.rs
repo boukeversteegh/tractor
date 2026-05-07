@@ -147,6 +147,28 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
+        DataIr::Directive { flavor, children, span, .. } => {
+            let node = element(xot, "directive", *span);
+            xot.append(parent, node)?;
+            // Marker child for the flavor (`<yaml/>` / `<tag/>` / `<reserved/>`).
+            let m = element(xot, flavor, *span);
+            xot.append(node, m)?;
+            // Each pair `key=value` renders as `<key>value</key>`.
+            for c in children {
+                if let DataIr::Pair { key, value, .. } = c {
+                    if let Some(k) = scalar_text(key, source) {
+                        let safe = sanitize_xml_name(k);
+                        let kn = element(xot, &safe, key.span());
+                        xot.append(node, kn)?;
+                        if let Some(v) = scalar_text(value, source) {
+                            let t = xot.new_text(&v);
+                            xot.append(kn, t)?;
+                        }
+                    }
+                }
+            }
+            Ok(node)
+        }
         DataIr::Unknown { kind, range, span } => {
             let node = element(xot, "unknown", *span);
             let kind_attr = xot.add_name("kind");
@@ -275,6 +297,28 @@ pub fn render_data_to_xot_keyed(
             if !text.is_empty() {
                 let t = xot.new_text(text);
                 xot.append(node, t)?;
+            }
+            Ok(node)
+        }
+        DataIr::Directive { flavor, children, span, .. } => {
+            let node = element(xot, "directive", *span);
+            xot.append(parent, node)?;
+            // Marker child for the flavor (`<yaml/>` / `<tag/>` / `<reserved/>`).
+            let m = element(xot, flavor, *span);
+            xot.append(node, m)?;
+            // Each pair `key=value` renders as `<key>value</key>`.
+            for c in children {
+                if let DataIr::Pair { key, value, .. } = c {
+                    if let Some(k) = scalar_text(key, source) {
+                        let safe = sanitize_xml_name(k);
+                        let kn = element(xot, &safe, key.span());
+                        xot.append(node, kn)?;
+                        if let Some(v) = scalar_text(value, source) {
+                            let t = xot.new_text(&v);
+                            xot.append(kn, t)?;
+                        }
+                    }
+                }
             }
             Ok(node)
         }

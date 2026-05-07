@@ -101,6 +101,7 @@ pub fn data_to_json(ir: &DataIr) -> Value {
         DataIr::Bool { value, .. } => Value::Bool(*value),
         DataIr::Null { .. } => Value::Null,
         DataIr::Comment { .. } => Value::Null, // dropped — not data
+        DataIr::Directive { .. } => Value::Null, // metadata, not data
         DataIr::Unknown { kind, .. } => {
             let mut o = Map::new();
             o.insert("$unknown".to_string(), Value::String(kind.clone()));

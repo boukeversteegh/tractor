@@ -382,13 +382,12 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
     //     imperative path.
     match (lang, tree_mode) {
         ("json", TreeMode::Structure) => true,
+        ("yaml" | "yml", TreeMode::Structure) => true,
         ("ini" | "env", TreeMode::Structure) => true,
-        // YAML / TOML structure mode have edge cases (YAML
-        // directives, TOML dotted-table nesting + array-of-tables
-        // + quoted-key sanitization with @key attr) that the
-        // imperative pipeline handles via Custom handlers but the
-        // current DataIr lowering doesn't yet replicate. Keep these
-        // on the imperative path until the lowering catches up.
+        // TOML structure mode has edge cases (dotted-table nesting,
+        // array-of-tables collapse, quoted-key sanitization with
+        // @key attr) the lowering doesn't replicate yet. Keeping on
+        // imperative until those land.
         _ => false,
     }
 }
