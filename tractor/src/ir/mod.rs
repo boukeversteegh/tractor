@@ -91,6 +91,9 @@ pub mod sql_lower;
 // SqlIr → Xot rendering.
 #[cfg(feature = "native")]
 pub mod sql_to_xot;
+// SqlIr → JSON rendering.
+#[cfg(feature = "native")]
+pub mod sql_to_json;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
