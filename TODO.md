@@ -95,6 +95,7 @@ Aliasing (`csharp`/`cs`, `python`/`py`, `typescript`/`ts`/`tsx`/`jsx`, …) is i
     - Each `match lang { "csharp" => lower_csharp_root, ... }` collapses to `match get_language(lang)?.ir_family { IrFamily::Programming(f) => f(node, source), ... }`.
     - Outcome: dispatch reads from the registry. Adding/removing a language no longer edits `parser/mod.rs`.
     - Status: half done. `use_ir_pipeline` is gone (handled by S2C); the four match arms in `parse_with_ir_pipeline*` still pattern-match on language id and need to collapse to a single `match l.ir_family` lookup.
+    - Note: the `match lang { ... }` in `ir/source/mod.rs::render` (canonical reverse-render dispatch) is a sibling of these four arms. Tracked under S10B (which adds `render_canonical: Option<RenderCanonicalFn>` to `LanguageOps`) — collapse it the same way as part of that work.
   - [x] [S2-Z5] Run `cargo build --release` and `cargo test`; resolve any fallout.
     - Outcome: green build, all tests pass; the language-registry consolidation lands as a single behaviour-preserving refactor.
     - Done: `cargo check --features native` clean (only pre-existing warnings); `cargo check --no-default-features --features wasm --target wasm32-unknown-unknown` clean; `cargo test --lib` 373/373 pass after S2-Z1, S2C, S2-Z3.
@@ -117,12 +118,13 @@ Aliasing (`csharp`/`cs`, `python`/`py`, `typescript`/`ts`/`tsx`/`jsx`, …) is i
 
 **Target state (user direction 2026-05-08):** there is **no** chain-inversion transform step at all. Every `lower_<lang>_root` constructs `Ir::Access` directly when it encounters chained member/index/call expressions. The `transform::chain_inversion` module is deleted, not relocated; nothing replaces it.
 
-- [ ] [WGWS0] [S3A] Make every language's CST→IR lowering construct `Ir::Access` natively for chained access; delete `transform::chain_inversion`.
+- [x] [WGWS0] [S3A] Make every language's CST→IR lowering construct `Ir::Access` natively for chained access; delete `transform::chain_inversion`.
   - Audit each `lower_<lang>_root` (`ir/{csharp,python,java,typescript,rust_lang,go_lang,ruby,php}.rs`) for any chain shape that currently relies on the post-walk to invert. Rewrite the lowering to produce a left-deep `Ir::Access { receiver, segments }` directly.
   - Languages that already do this (csharp, parts of typescript): verify completeness against the current corpus; their `post_transform` chain-inversion call becomes a no-op and is removed.
   - Languages that currently lean on the post-walk (per existing call sites): `languages/{csharp,go,rust_lang,ruby,typescript,php}/post_transform.rs` each invokes `chain_inversion::invert_chains_in_tree`. Replace each call site with the native lowering, then delete the call.
   - Once no caller remains, delete `tractor/src/transform/chain_inversion.rs` (1826 LOC) and remove the module from `transform/mod.rs`.
   - Outcome: chain inversion exists nowhere as a step. Right-deep CST → left-deep IR is the lowering contract for every language.
+  - Done: all 8 `chain_inversion::*` callsites removed (csharp/go/typescript/rust_lang plus ruby×2 and php×2). Two genuine gaps surfaced when the post-walk was disabled — Go's `index_expression` and PHP's `subscript_expression` produced flat `Ir::SimpleStatement` for single-step `arr[0]`; both rewritten to fold into `Ir::Access` (mirroring the existing TS / C# / Rust pattern). `tractor/src/transform/chain_inversion.rs` (1826 LOC) and `tractor/tests/chain_inversion_emits.rs` deleted; `pub mod chain_inversion;` removed from `transform/mod.rs`. All 26 test binaries (~1100 tests including the 7-language `cross_language_index_access_chain_inverts` loop) pass; native + WASM builds clean.
 - [ ] [XZ64] [S3B] Eliminate every remaining per-language `post_transform` pass; encode the same shapes natively in the IR variants and the lowering, the same way S3A does for `Ir::Access`.
   - The remaining xot post-passes today: flat conditional shape (`<if>...<else_if/>...<else/>`), `<member>`/`<call>` slot wrapping (PHP), singleton closure body re-tagging (Go), TSQL binary-operand wrapping, identifier-role marking, etc. Each is currently a walk over rendered xot.
   - For each pass, choose the natural home in the IR rather than carry it as a separate step. Examples: flat conditionals — `Ir::If { condition, body, else_branch: Option<Box<Ir::ElseIf | Ir::Else>> }` already encodes the chain; either flatten it during `lower_<lang>_root` or during `to_xot`, never as a post-walk on xot. Identifier-role marking — encode declaration vs reference on the `Ir::Name` variant directly so the lowering decides it once. Slot wrappers — produce the right `Ir::*` shape from the lowering, no rewrap.
@@ -139,6 +141,7 @@ Aliasing (`csharp`/`cs`, `python`/`py`, `typescript`/`ts`/`tsx`/`jsx`, …) is i
   - [ ] [S3B-Z9] Ruby — fold `ruby_tag_case_when_lists`, `ruby_retag_singleton_block_body`, `ruby_collapse_lambda_body`, `ruby_extract_pair_keys` from `languages/ruby/post_transform.rs` into the lowering. `post_transform: None`; delete the file.
   - [ ] [S3B-Z10] Cross-cutting `collapse_conditionals` (`languages/mod.rs:443`): pick a single home — either flatten the `<if><else_if/><else/>` chain inside `lower_<lang>_root` for each language that exercises it, or do it once in `to_xot` driven by the typed `Ir::If { else_branch: Option<Box<Ir>> }` shape. Whichever home wins, the standalone xot-walk in `languages/mod.rs` retires.
   - [ ] [S3B-Z11] Once every `post_transform.rs` is gone (Z1–Z9 plus S3A's chain-inversion deletions), drop the `post_transform: Option<PostTransformFn>` field from `LanguageOps` entirely; remove `get_post_transform` and the `post_transform` invocation block in `parse_with_ir_pipeline*` (the latter is also tracked by S3C).
+    - After this, `languages/<lang>/` contains: `mod.rs`, `input.rs` (kinds catalogue), `output.rs` (vocabulary). S10A then adds `lower.rs` and S10B adds `render_source.rs` to each — at which point each language directory holds one self-contained set of language-specific code. Order is flexible: S10 can land before S3B (with `post_transform.rs` still present for now) or after (clean directory).
 - [ ] [3C72S] [S3C] Delete the post-transform invocation on rendered xot in `parse_with_ir_pipeline_to_xee` (`parser/mod.rs:602–609`) and the matching block in `parse_with_ir_pipeline`.
   - Depends on S3A + S3B.
   - Outcome: the IR pipeline no longer mixes paradigms.
@@ -236,6 +239,83 @@ Aliasing (`csharp`/`cs`, `python`/`py`, `typescript`/`ts`/`tsx`/`jsx`, …) is i
 - [ ] [TR47] [S9C] Delete the `parse_*_with_options` functions from `parser/mod.rs`, keeping only the unified `parse()`.
   - Depends on S9B.
   - Outcome: one parse function in the library, end to end.
+
+## S10 — Per-language directory consolidation (move IR-side code into `languages/<lang>/`)
+
+**Problem:** language-specific code lives in two parallel trees. Today, for one programming language, the language-owned files are split:
+
+| File | Today | What it is |
+|---|---|---|
+| Kind catalogue | `languages/<lang>/input.rs` | generated CST-kind enum (e.g. `CsKind`) |
+| Vocabulary | `languages/<lang>/output.rs` | `TractorNode` enum + `NODES_TABLE` |
+| Xot post-pass | `languages/<lang>/post_transform.rs` | scheduled to disappear in S3B |
+| **CST → IR lowering** | **`ir/<lang>.rs`** | the big file (1.5–3K LOC) — sits next to `ir/types.rs` instead of next to its sibling per-language files |
+| **IR → canonical source** | **`ir/source/<lang>.rs`** | small `Syntax` config (~30 LOC) — same split |
+
+The split reflects the IR migration history (the new pipeline grew sideways under `ir/`), not current ownership. A reader looking for "everything csharp-specific" has to consult two top-level directories. The user's stated principle — "languages decide what transformations they use, nothing forced top-down" — survives if and only if the per-language code physically clusters.
+
+**Out of scope (intentionally shared):** `ir/types.rs` (the unified `Ir` enum), `ir/to_xot.rs`, `ir/to_json.rs`, `ir/to_data.rs`, `ir/coverage.rs`, `ir/lower_helpers.rs`, and `ir/source/common.rs` (the `Syntax` + `write_ir` engine). These are language-agnostic by design — the cross-language unification at the IR layer is the architectural commitment of the design and isn't undone by this reorg. What changes is *where the per-language code physically lives*.
+
+**Interactions:** S10A and S10B are independent of S3 and S4 — file moves don't depend on the post-transform retirement or the reverse-render unification, but they're cleaner to land *after* S3B (which deletes `post_transform.rs` from each language). S10C and S10D (data/sql grouping) are independent of everything else. S10E–G are small renames and can interleave anywhere.
+
+- [ ] [LZ8K] [S10A] Move each programming-language CST→IR lowering from `ir/<lang>.rs` to `languages/<lang>/lower.rs`.
+  - Each move is mechanical: `git mv ir/<lang>.rs languages/<lang>/lower.rs`, add `pub mod lower;` to `languages/<lang>/mod.rs`, drop the `pub mod <lang>;` line from `ir/mod.rs`, update the `ir_family: Programming(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry (S2-Z1 already routes lowering through this field), and re-aim the `pub use ir::lower_<lang>_root` re-export site.
+  - Per-language sub-tasks:
+    - [ ] [S10A-Z1] csharp — `ir/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
+    - [ ] [S10A-Z2] python — `ir/python.rs` (2238 LOC) → `languages/python/lower.rs`.
+    - [ ] [S10A-Z3] java — `ir/java.rs` (2053 LOC) → `languages/java/lower.rs`.
+    - [ ] [S10A-Z4] typescript — `ir/typescript.rs` (2079 LOC) → `languages/typescript/lower.rs`. Covers ts/tsx/js/jsx (all four `LANGUAGES` rows point at the same lowering fn).
+    - [ ] [S10A-Z5] rust_lang — `ir/rust_lang.rs` (1967 LOC) → `languages/rust_lang/lower.rs`.
+    - [ ] [S10A-Z6] go — `ir/go_lang.rs` (1507 LOC) → `languages/go/lower.rs`. Note the rename: directory is `go/`, file becomes `lower.rs` (not `lower_go.rs`).
+    - [ ] [S10A-Z7] ruby — `ir/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
+    - [ ] [S10A-Z8] php — `ir/php.rs` (1563 LOC) → `languages/php/lower.rs`.
+  - Outcome: `ir/` no longer holds any programming-language-specific lowering. The `pub use ir::lower_<lang>_root` block in `ir/mod.rs` collapses (callers go through the registry per S2-Z4).
+
+- [ ] [M3VR] [S10B] Move each programming-language IR→canonical-source emitter from `ir/source/<lang>.rs` to `languages/<lang>/render_source.rs`.
+  - Each per-language emitter is small (~26–31 LOC): a `Syntax` struct + a `render` fn calling `super::common::write_ir`. The shared `write_ir` engine in `ir/source/common.rs` stays put.
+  - Per-language sub-tasks:
+    - [ ] [S10B-Z1] csharp — `ir/source/csharp.rs` → `languages/csharp/render_source.rs`.
+    - [ ] [S10B-Z2] java
+    - [ ] [S10B-Z3] python
+    - [ ] [S10B-Z4] typescript
+    - [ ] [S10B-Z5] rust_lang
+    - [ ] [S10B-Z6] go
+    - [ ] [S10B-Z7] ruby
+    - [ ] [S10B-Z8] php
+  - SQL is its own IR family (`SqlIr`, distinct `Syntax`-equivalent); handled by S10D, not here.
+  - Add a `render_canonical: Option<RenderCanonicalFn>` field to `LanguageOps` so the `match lang` in `ir/source/mod.rs::render` collapses to a registry lookup (parallels the S2-Z4 dispatch consolidation).
+  - Outcome: `ir/source/` (post-S10G: `ir/render/`) holds only `common.rs` + `mod.rs`; per-language source-rendering knowledge lives next to per-language lowering knowledge.
+
+- [ ] [N7TH] [S10C] Group the data-IR module into `ir/data/`.
+  - Today's flat layout in `ir/`: `data.rs` (DataIr types, 226 LOC), `data_to_xot.rs` (501), `data_to_json.rs` (222), `to_data.rs` (Ir→DataIr projection, 465), `json_data.rs` (lowering, 187), `yaml_data.rs` (265), `toml_data.rs` (367), `ini_data.rs` (152), `markdown_data.rs` (324). Nine top-level files all about one IR family.
+  - Target: `ir/data/{types.rs, to_xot.rs, to_json.rs, lower_json.rs, lower_yaml.rs, lower_toml.rs, lower_ini.rs, lower_markdown.rs}`. The `to_data.rs` projection (Ir → DataIr) stays at the IR root since it crosses two IR shapes.
+  - Update the dispatch arms in `parser/mod.rs::parse_with_ir_pipeline*` for the data-IR fan-out (S2-Z4 work).
+  - Outcome: data IR is a self-contained subtree, parallel to `ir/sql/` (S10D); `ir/` top level shrinks from 27 files to ~10.
+
+- [ ] [P2QX] [S10D] Group the SQL-IR module into `ir/sql/`.
+  - Today's flat layout in `ir/`: `sql.rs` (SqlIr types, 741), `sql_lower.rs` (2243), `sql_to_xot.rs` (908), `sql_to_json.rs` (684), plus `ir/source/sql.rs` (147).
+  - Decision point: SQL is a single language (T-SQL); does its lowering belong in `ir/sql/lower.rs` (consistent with the data-IR grouping) or in `languages/tsql/lower.rs` (consistent with S10A)? Given there's only one SQL flavour, pick one — proposal: `languages/tsql/lower.rs` for the lowering (consistent with S10A) and `ir/sql/{types.rs, to_xot.rs, to_json.rs, render_source.rs}` for the IR machinery.
+  - Outcome: SQL IR is a self-contained subtree.
+
+- [ ] [Q4WB] [S10E] Rename per-language `input.rs` → `kinds.rs`.
+  - Today these files contain only the generated `CsKind` / `PyKind` / `JavaKind` / etc. enum (the CST-kind catalogue), used by `tests/kind_catalogue.rs` and the IR's `Ir::Unknown` audit. The "input" name dates from the old `input → rules → output` imperative pipeline that no longer exists in any of the migrated languages.
+  - Update `task gen:kinds` codegen to write `kinds.rs`. Update test imports.
+  - Outcome: file name describes its contents.
+
+- [ ] [R5DM] [S10F] Rename per-language `output.rs` → `vocabulary.rs` (or fold into `mod.rs`).
+  - Companion to S10E. Today these files declare the per-language semantic-name vocabulary (`TractorNode` enum + `NODES_TABLE`); "output" is opaque without context.
+  - Cross-reference C2: if C2 picks (a) "drive shape contracts off `Ir` variants alone and delete `TractorNode`", S10F is moot — delete the files instead.
+
+- [ ] [W9KS] [S10G] Rename `ir/source/` → `ir/render/` (post S10B).
+  - After S10B moves the per-language emitters out, `ir/source/` contains only `common.rs` + `mod.rs`. The directory name "source" is ambiguous (does it mean "renders IR back to source code" or "source files for the IR"?). `ir/render/` is unambiguous.
+  - Skip if S10B's `render_canonical` registry field deletes `ir/source/mod.rs::render` entirely (and `common.rs` migrates to `ir/canonical_render.rs` or similar).
+  - Outcome: directory name unambiguous.
+
+- [ ] [V3QM] [S10H] Audit `transform/` after S3 lands; collapse what survives.
+  - After S3A (chain_inversion deleted), S3B (per-language post-transforms deleted), S3D (list-tagging deleted), and S3E (shape contracts at type level), the surviving content of `transform/` is: `walk_transform`, `apply_field_wrappings`, `builder.rs`, possibly `singletons.rs`, and the `helpers` module re-exports. These are used only by the legacy `XeeBuilder` path (data languages JSON/YAML's syntax branch + Raw mode + WASM until S6).
+  - Decide based on what's left: keep `transform/` as the legacy walker (rename to `legacy_xot/` or `xot_walk/` to mark non-IR); move `builder.rs` if it's the only thing left to a clearer home; delete what's actually dead (C3 already targets `XotBuilder`).
+  - Depends on S3, S6, C3.
+  - Outcome: `transform/` either has a clear sole-purpose role or is gone.
 
 ## Side cleanups (smaller, can interleave)
 

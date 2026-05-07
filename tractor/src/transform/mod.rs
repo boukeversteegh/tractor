@@ -9,7 +9,6 @@
 //! ```
 
 pub mod builder;
-pub mod chain_inversion;
 pub mod conditionals;
 pub mod data_keys;
 pub mod generic_type;
@@ -29,8 +28,7 @@ use xot::{Xot, Node as XotNode, NameId};
 /// statically across all languages, even those whose blueprint
 /// doesn't currently exercise the shape.
 ///
-/// Mirrors the [`chain_inversion::EMITTED_NAMES`] pattern (iter 335)
-/// for `crate::transform` shared helpers:
+/// Names emitted by `crate::transform` shared helpers:
 ///
 /// - `<expression>` — emitted by [`wrap_expression_positions`] and
 ///   [`wrap_body_value_children`] as the Principle #15 stable

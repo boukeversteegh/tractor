@@ -28,12 +28,9 @@ pub enum TractorNode {
     Import, From, Assert, Delete, Global, Nonlocal,
     // Python 2 leftovers (kept as own elements; rare in modern code)
     Exec, Print,
-    // Expressions
-    // Iter 345: `Index` added — chain inversion emits `<index>` for
-    // bracket-access chain steps (renamed from previously emitted
-    // `<subscript>` to match developer mental model). `Subscript`
-    // stays declared as input synonym (chain_inversion's walk_chain
-    // recognizes both as chainable input).
+    // Expressions. Both `Index` and `Subscript` stay declared:
+    // `<index>` is the canonical bracket-access step name; `<subscript>`
+    // remains as a synonym some lowering paths still emit.
     Call, Member, Object, Access, Property, Index, Subscript, Assign, Binary, Unary, Compare, Logical, Await,
     Yield, Generator, Ternary, Cast, As, Spread, Format, Tuple, Generic, Pair, Interpolation,
     Expression,

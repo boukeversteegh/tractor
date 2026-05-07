@@ -31,7 +31,6 @@ pub fn rust_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
     // pre-pass converts the field-expression flavor to canonical
     // first.
     rust_normalize_field_expression(xot, root)?;
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

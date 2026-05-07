@@ -53,11 +53,10 @@ pub enum TractorNode {
     Negative,
     // Import-shape markers (Group, Wildcard, Reexport on `<use>`)
     Group, Wildcard, Reexport,
-    // Chain inversion (iter 248): canonical member-access shape.
-    // Member element + object/property slot wrappers + access marker.
-    // Subscript: chain step for `arr[0].field` shape, emitted by
-    // `transform/chain_inversion.rs`. Surfaced iter 321 by the
-    // `name-declared-in-semantic-module` migration attempt.
+    // Member-access chain vocabulary: `<member>` step element,
+    // `<object>` receiver host, `<property>` name slot, `[access]`
+    // marker, `<subscript>` step (synonym for `<index>` retained for
+    // some lowering paths).
     Member, Object, Property, Access, Subscript,
 }
 

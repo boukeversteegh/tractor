@@ -576,7 +576,37 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
         "type_conversion_expression" => simple_statement_marked(node, "call", &["type"], source),
         "type_instantiation_expression" => simple_statement_marked(node, "type", &["generic"], source),
-        "index_expression" => simple_statement(node, "index", source),
+        "index_expression" => {
+            // `arr[i]` — fold into `Ir::Access { receiver, segments: [Index] }`
+            // so single-step bracket access produces the same
+            // `<object[access]><index>...</index></object>` shape as a
+            // multi-step chain. Mirrors TypeScript / C# / Rust.
+            let operand_node = node.child_by_field_name("operand");
+            let index_node = node.child_by_field_name("index");
+            match (operand_node, index_node) {
+                (Some(operand), Some(idx)) => {
+                    let object_ir = lower_node(operand, source);
+                    let segment = AccessSegment::Index {
+                        indices: vec![lower_node(idx, source)],
+                        range: ByteRange::new(object_ir.range().end, range.end),
+                        span,
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range,
+                            span,
+                        },
+                    }
+                }
+                _ => simple_statement(node, "index", source),
+            }
+        }
         "slice_expression" => {
             // `s[i:j]` / `s[i:j:k]` — chain-fold into Ir::Access only
             // when bounds exist. Full-slice `s[:]` stays un-inverted

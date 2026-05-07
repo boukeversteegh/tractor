@@ -21,8 +21,6 @@ pub fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error
     // (legacy `<member>` / `<call>` slots) still need wrapping +
     // inversion via the post-pass.
     php_wrap_member_call_slots(xot, root)?;
-    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

@@ -30,8 +30,6 @@ pub fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Erro
     // Ruby's IR mostly uses `Ir::Access`, but a few CST shapes
     // (call_expression with bare-name property + chain shapes
     // unique to Ruby's grammar) still need wrapping + inversion.
-    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

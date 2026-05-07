@@ -17,13 +17,7 @@ use crate::languages::{collapse_conditionals, collect_named_elements};
 /// TypeScript post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 pub fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // Normalise the call shape so it matches the canonical right-deep
-    // input expected by chain_inversion::extract_chain. TS wraps the
-    // call's callee in `<callee>` (via FIELD_WRAPPINGS); unwrap it so
-    // `<call>` directly contains the callee element (a `<member>` or
-    // bare `<name>`/`<call>`/etc.). Same shape as Python/Go.
     typescript_unwrap_callee(xot, root)?;
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,
@@ -132,17 +126,12 @@ pub fn typescript_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot
 }
 
 /// Unwrap `<callee>` field-wrapper inside `<call>` so the call's
-/// first element child is the actual callee (matching the canonical
-/// right-deep input that `chain_inversion::extract_chain` expects).
+/// first element child is the actual callee.
 ///
 /// FIELD_WRAPPINGS routes tree-sitter `field="function"` to
 /// `<callee>X</callee>`, exposing the call target as a named slot.
-/// For chain inversion this wrapper is in the way: the extractor
-/// looks for the callee as the first non-marker child of `<call>`,
-/// not nested under `<callee>`. Unwrapping post-build (and pre-
-/// inversion) preserves the FIELD_WRAPPINGS contract for languages
-/// that don't run chain inversion while letting TS adopt the
-/// canonical shape.
+/// Downstream consumers expect the callee as the first non-marker
+/// child of `<call>`, not nested under `<callee>`.
 fn typescript_unwrap_callee(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     use crate::transform::helpers::{get_element_name, XotWithExt};
     let root = if xot.is_document(root) {

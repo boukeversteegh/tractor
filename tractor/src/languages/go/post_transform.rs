@@ -16,11 +16,6 @@ use crate::languages::collapse_conditionals;
 /// Go post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 pub fn go_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // Invert right-deep `<member>`/`<call>` chains. Go's IR
-    // mostly emits via `Ir::Access`, but a few CST kinds (slice /
-    // index / type-assertion variants) still produce flat shapes
-    // that this pass wraps.
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     go_retag_singleton_closure_body(xot, root)?;
     crate::transform::wrap_expression_positions(

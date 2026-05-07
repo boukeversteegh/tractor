@@ -61,19 +61,12 @@ pub enum TractorNode {
     // Call role wrapper for `obj.method(...)` receiver
     // (Principle #19: distinguish receiver from method name).
     Object,
-    // Chain inversion (iter 246): `[access]` distinguishes
-    // member-access chains from object literals.
+    // `[access]` marker on `<object>` distinguishes member-access
+    // chains from object literals.
     Access,
-    // Chain inversion intermediate slot (iter 335): emitted by
-    // `chain_inversion::wrap_flat_call_member` as the property-name
-    // wrapper inside `<member>`. The current Ruby blueprint
-    // doesn't surface it (the intermediate is consumed by the
-    // subsequent inversion step), but the contract in
-    // `chain_inversion::EMITTED_NAMES` requires every chain-
-    // inverting language to declare it — guards against future
-    // code paths that surface the intermediate, and matches the
-    // declaration in every other chain-inverting language
-    // (cs/go/java/php/python/rust/ts).
+    // Property-name wrapper inside `<member>` for languages that
+    // surface a separate property slot. Declared for parity with the
+    // other chain-bearing languages (cs/go/java/php/python/rust/ts).
     Property,
 }
 

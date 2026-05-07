@@ -43,20 +43,16 @@
 //!   (every language lowers to the *same* IR variants).
 //! - `render` is mechanical: walks the IR and emits the corresponding
 //!   XML. No decisions live here.
-//! - Cross-cutting normalisations (chain inversion, expression-host
-//!   wrapping, marker placement) are *target* `Ir → Ir` rewrites that
-//!   fit between lowering and rendering.
-//!
-//!   **Current reality (deviation from target):** chain inversion
-//!   still lives in `crate::transform::chain_inversion` (1826 LOC of
-//!   imperative xot mutation) and is invoked from each language's
-//!   `post_transform` after `render_to_xot`. Per-language
-//!   `post_transform` passes (`languages/{lang}/post_transform.rs`)
-//!   likewise still mutate the rendered xot tree. This is acceptable
-//!   *only* as a transitional state; the design intent is that none
-//!   of these be imperative.
-//!
-//!   Tracked in `TODO.md` slice **S3**.
+//! - Chain inversion is part of the lowering: every
+//!   `lower_<lang>_root` constructs left-deep [`Ir::Access`] directly
+//!   when it encounters chained member / index / call expressions —
+//!   no separate post-walk step exists.
+//! - Other cross-cutting normalisations (expression-host wrapping,
+//!   marker placement) are *target* `Ir → Ir` rewrites that fit
+//!   between lowering and rendering. Per-language `post_transform`
+//!   passes (`languages/{lang}/post_transform.rs`) still mutate the
+//!   rendered xot tree for these — acceptable *only* as a
+//!   transitional state. Tracked in `TODO.md` slice **S3B**.
 //!
 //! ## Why not in-place mutation
 //! See § 4 of the exploration doc — most accidental costs (custom-handler

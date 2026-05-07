@@ -571,7 +571,46 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "scoped_property_access_expression" => simple_statement_marked(node, "member", &["static"], source),
         "nullsafe_member_access_expression" => simple_statement_marked(node, "member", &["nullsafe"], source),
         "class_constant_access_expression" => simple_statement_marked(node, "member", &["static"], source),
-        "subscript_expression" => simple_statement(node, "index", source),
+        "subscript_expression" => {
+            // `$arr[0]` — fold into `Ir::Access { receiver, segments: [Index] }`
+            // so single-step bracket access produces the same
+            // `<object[access]><index>...</index></object>` shape as a
+            // multi-step chain. Mirrors TypeScript / C# / Go.
+            //
+            // tree-sitter-php's `subscript_expression` exposes the
+            // dereferenced expression and the index as positional
+            // named children rather than fields, so walk them in
+            // order.
+            let mut cursor = node.walk();
+            let mut named = node.named_children(&mut cursor);
+            let object_node = named.next();
+            let index_node = named.next();
+            match object_node {
+                Some(obj) => {
+                    let object_ir = lower_node(obj, source);
+                    let indices: Vec<Ir> = index_node
+                        .map(|i| vec![lower_node(i, source)])
+                        .unwrap_or_default();
+                    let segment = AccessSegment::Index {
+                        indices,
+                        range: ByteRange::new(object_ir.range().end, range.end),
+                        span,
+                    };
+                    match object_ir {
+                        Ir::Access { receiver, mut segments, .. } => {
+                            segments.push(segment);
+                            Ir::Access { receiver, segments, range, span }
+                        }
+                        other => Ir::Access {
+                            receiver: Box::new(other),
+                            segments: vec![segment],
+                            range, span,
+                        },
+                    }
+                }
+                None => simple_statement(node, "index", source),
+            }
+        }
         "object_creation_expression" => simple_statement(node, "new", source),
         "cast_expression" => simple_statement(node, "cast", source),
         "clone_expression" => simple_statement(node, "clone", source),
