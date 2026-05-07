@@ -75,6 +75,11 @@ pub mod markdown_data;
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
+// Programming-language `Ir` → `DataIr` projection. Replacing the
+// ad-hoc projection in `to_json.rs` per
+// `docs/design-projection-pipeline.md`.
+#[cfg(feature = "native")]
+pub mod to_data;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
