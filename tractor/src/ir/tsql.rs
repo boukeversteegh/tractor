@@ -20,7 +20,20 @@ pub fn lower_tsql_root(root: TsNode<'_>, source: &str) -> Ir {
     match root.kind() {
         "program" => Ir::Module {
             element_name: "file",
-            children: lower_children(root, source),
+            // Walk all children to swallow trailing `;` separators
+            // between statements via `Ir::Skip`.
+            children: {
+                let mut cur = root.walk();
+                root.children(&mut cur)
+                    .map(|c| {
+                        if c.is_named() {
+                            lower_node(c, source)
+                        } else {
+                            Ir::Skip { range: range_of(c), span: span_of(c) }
+                        }
+                    })
+                    .collect()
+            },
             range, span,
         },
         other => Ir::Unknown { kind: other.to_string(), range, span },
