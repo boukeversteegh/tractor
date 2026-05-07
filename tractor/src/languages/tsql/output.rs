@@ -34,8 +34,9 @@ pub enum TractorNode {
     Subquery, Cte, Union, Exists,
     // Window functions
     Window, Over, Partition,
-    // CASE expression
-    Case, When,
+    // CASE expression — When holds `WHEN cond THEN val`; Else
+    // holds the trailing `ELSE val` slot.
+    Case, When, Else,
     // CAST
     Cast,
     // DDL

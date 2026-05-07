@@ -182,7 +182,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "assignment" => lower_tsql_assignment(node, source),
         "between_expression" => lower_tsql_between(node, source),
         "exists" => simple_statement(node, "exists", source),
-        "case" => simple_statement(node, "case", source),
+        "case" => lower_tsql_case(node, source),
         "when_clause" => simple_statement(node, "when", source),
         "cast" => simple_statement(node, "cast", source),
         "invocation" => simple_statement(node, "call", source),
@@ -433,6 +433,122 @@ fn lower_tsql_between(node: TsNode<'_>, source: &str) -> Ir {
         .collect();
     Ir::SimpleStatement {
         element_name: "between",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// `case` — group `WHEN cond THEN val` clauses into `<when>` slot
+/// wrappers and the `ELSE val` clause into an `<else>` slot.
+///
+/// The CST is flat: `keyword_case`, `keyword_when`, condition_expr,
+/// `keyword_then`, then_value, (repeated), `keyword_else`,
+/// else_value, `keyword_end`. Without grouping, the IR rendered
+/// `case/{compare, literal, literal}` and queries couldn't tell the
+/// condition from the THEN/ELSE values, nor pair THENs to their
+/// WHEN conditions.
+fn lower_tsql_case(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let span_default = span;
+
+    #[derive(Copy, Clone, PartialEq)]
+    enum State { Before, AfterWhen, AfterThen, AfterElse, Done }
+    let mut state = State::Before;
+    let mut when_pending: Vec<Ir> = Vec::new();
+    let mut when_start: u32 = 0;
+    let mut else_pending: Vec<Ir> = Vec::new();
+    let mut else_start: u32 = 0;
+    let mut children: Vec<Ir> = Vec::new();
+
+    let flush_when = |children: &mut Vec<Ir>, pending: &mut Vec<Ir>, start: u32| {
+        if pending.is_empty() { return; }
+        let end = pending.last().map(|ir| ir.range().end).unwrap_or(start);
+        let drained: Vec<Ir> = pending.drain(..).collect();
+        children.push(Ir::SimpleStatement {
+            element_name: "when",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: drained,
+            range: super::types::ByteRange::new(start, end),
+            span: span_default,
+        });
+    };
+    let flush_else = |children: &mut Vec<Ir>, pending: &mut Vec<Ir>, start: u32| {
+        if pending.is_empty() { return; }
+        let end = pending.last().map(|ir| ir.range().end).unwrap_or(start);
+        let drained: Vec<Ir> = pending.drain(..).collect();
+        children.push(Ir::SimpleStatement {
+            element_name: "else",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: drained,
+            range: super::types::ByteRange::new(start, end),
+            span: span_default,
+        });
+    };
+
+    let mut cursor = node.walk();
+    for c in node.children(&mut cursor) {
+        let c_range = range_of(c);
+        let c_span = span_of(c);
+        let kind = c.kind();
+        let is_kw_when = kind == "keyword_when";
+        let is_kw_then = kind == "keyword_then";
+        let is_kw_else = kind == "keyword_else";
+        let is_kw_end  = kind == "keyword_end";
+
+        if is_kw_when {
+            flush_when(&mut children, &mut when_pending, when_start);
+            when_start = c_range.start;
+            when_pending.push(Ir::Skip { range: c_range, span: c_span });
+            state = State::AfterWhen;
+            continue;
+        }
+        if is_kw_then {
+            when_pending.push(Ir::Skip { range: c_range, span: c_span });
+            state = State::AfterThen;
+            continue;
+        }
+        if is_kw_else {
+            flush_when(&mut children, &mut when_pending, when_start);
+            else_start = c_range.start;
+            else_pending.push(Ir::Skip { range: c_range, span: c_span });
+            state = State::AfterElse;
+            continue;
+        }
+        if is_kw_end {
+            flush_when(&mut children, &mut when_pending, when_start);
+            flush_else(&mut children, &mut else_pending, else_start);
+            children.push(Ir::Skip { range: c_range, span: c_span });
+            state = State::Done;
+            continue;
+        }
+
+        let skip_kind = !c.is_named()
+            || kind.starts_with("keyword_")
+            || kind.starts_with("op_");
+        let ir = if skip_kind {
+            Ir::Skip { range: c_range, span: c_span }
+        } else {
+            lower_node(c, source)
+        };
+        match state {
+            State::AfterWhen | State::AfterThen => when_pending.push(ir),
+            State::AfterElse => else_pending.push(ir),
+            _ => children.push(ir),
+        }
+    }
+    // END keyword can be absent in some malformed parses — still flush.
+    flush_when(&mut children, &mut when_pending, when_start);
+    flush_else(&mut children, &mut else_pending, else_start);
+    let _ = state;
+
+    Ir::SimpleStatement {
+        element_name: "case",
         modifiers: Modifiers::default(),
         extra_markers: &[],
         children,

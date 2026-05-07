@@ -586,24 +586,28 @@
           },
           {
             "case": {
+              "else": {
+                "$skip": null,
+                "literal": {}
+              },
+              "when": {
+                "compare": {
+                  "left": "Age",
+                  "op": {
+                    "text": ">=",
+                    "": true
+                  },
+                  "right": {}
+                },
+                "$skips": [
+                  null,
+                  null
+                ],
+                "literal": {}
+              },
               "$skips": [
                 null,
-                null,
-                null,
-                null,
                 null
-              ],
-              "compare": {
-                "left": "Age",
-                "op": {
-                  "text": ">=",
-                  "": true
-                },
-                "right": {}
-              },
-              "literals": [
-                {},
-                {}
               ]
             },
             "$skip": null,

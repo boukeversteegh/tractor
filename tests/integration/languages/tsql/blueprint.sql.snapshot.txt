@@ -179,12 +179,13 @@ file/
   │   │   ├─ column/name = "Name"
   │   │   └─ column/
   │   │       ├─ case/
-  │   │       │   ├─ compare/
-  │   │       │   │   ├─ left/expression/name = "Age"
-  │   │       │   │   ├─ op[compare and greater and equal] = ">="
-  │   │       │   │   └─ right/expression/literal = "18"
-  │   │       │   ├─ literal = "'Adult'"
-  │   │       │   └─ literal = "'Minor'"
+  │   │       │   ├─ when/
+  │   │       │   │   ├─ compare/
+  │   │       │   │   │   ├─ left/expression/name = "Age"
+  │   │       │   │   │   ├─ op[compare and greater and equal] = ">="
+  │   │       │   │   │   └─ right/expression/literal = "18"
+  │   │       │   │   └─ literal = "'Adult'"
+  │   │       │   └─ else/literal = "'Minor'"
   │   │       └─ alias = "Category"
   │   └─ from/relation/name = "Users"
   ├─ comment = "-- CTE (Common Table Expression)"
