@@ -61,6 +61,15 @@ pub struct XotParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
+    /// Pre-computed JSON projection of the root, derived directly from
+    /// the typed IR (via `ir_to_json` / `data_to_json`) without going
+    /// through XML. `Some` only for languages that flow through the
+    /// IR pipeline; `None` for languages still on the imperative path.
+    /// The format layer prefers this over the XML→JSON projection
+    /// (`xml_to_json`) when the matched node is the document root,
+    /// which lets us drop the `list=` attribute scaffolding the
+    /// imperative pipeline relied on for cardinality decisions.
+    pub root_json: Option<serde_json::Value>,
 }
 
 /// Errors that can occur during parsing
@@ -455,6 +464,9 @@ pub fn parse_string_to_xot_with_options(
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
+        // Imperative path doesn't have an IR tree to derive JSON
+        // from; format layer falls back to xml_to_json.
+        root_json: None,
     })
 }
 
@@ -503,12 +515,18 @@ fn parse_with_ir_pipeline(
             ir::render_data_to_xot_json(&mut xot, doc, &data_ir, source)
         }
         .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+        // Pre-compute the typed JSON projection from DataIr — used by
+        // the format layer when the matched node is the document
+        // root (bypasses the XML→JSON projection's `list=`-driven
+        // cardinality inference).
+        let root_json = Some(ir::data_to_json(&data_ir));
         return Ok(XotParseResult {
             xot,
             root: doc,
             source_lines: source.lines().map(|s| s.to_string()).collect(),
             file_path,
             language: lang.to_string(),
+            root_json,
         });
     }
 
@@ -531,6 +549,10 @@ fn parse_with_ir_pipeline(
             "IR pipeline not yet wired for language {lang}"
         ))),
     };
+
+    // Pre-compute the typed JSON projection from the IR before we
+    // hand the IR off to the renderer (avoids cloning).
+    let root_json = Some(ir::ir_to_json(&ir_tree, source));
 
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
@@ -557,6 +579,7 @@ fn parse_with_ir_pipeline(
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
+        root_json,
     })
 }
 
