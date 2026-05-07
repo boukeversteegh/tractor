@@ -1,6 +1,11 @@
 # IR → DataIr projection — design note
 
-**Status:** Exploratory. Captures the architectural pattern user
+**Status:** SUPERSEDED by `docs/design-projection-pipeline.md`
+(written under the architecture skill, with rigorous invariants,
+ownership boundaries, and slice plan). Kept as the iter-37
+exploratory snapshot for history.
+
+Captures the architectural pattern user
 flagged in iter 36 review:
 > json rendering should just be straightforward. maybe the IR is
 > wrong? generic principles should determine how IR is converted
