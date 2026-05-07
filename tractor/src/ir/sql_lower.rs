@@ -62,6 +62,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         // ----- DML statements ----------------------------------------
         "select" => lower_select(node, source),
         "insert" => lower_insert(node, source),
+        "update" => lower_update(node, source),
+        "delete" => lower_delete(node, source),
+        "subquery" => lower_subquery(node, source),
 
         // ----- Clauses (when they appear as children of select) ------
         "from" => lower_from(node, source),
@@ -108,6 +111,26 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
         let inner = aggregate_select(node, source);
         return SqlIr::Statement { inner: Box::new(inner), range, span };
     }
+    // UPDATE statement: aggregate `update` + `from` (where lives nested).
+    if kinds.iter().any(|k| *k == "update") {
+        let inner = aggregate_update(node, source);
+        return SqlIr::Statement { inner: Box::new(inner), range, span };
+    }
+    // DELETE statement: aggregate `delete` + `from` (where nested).
+    if kinds.iter().any(|k| *k == "delete") {
+        let inner = aggregate_delete(node, source);
+        return SqlIr::Statement { inner: Box::new(inner), range, span };
+    }
+    // INSERT statement: a single `insert` child does the work.
+    if kinds.iter().any(|k| *k == "insert") {
+        if let Some(insert_node) = node
+            .named_children(&mut node.walk())
+            .find(|c| c.kind() == "insert")
+        {
+            let inner = lower_insert(insert_node, source);
+            return SqlIr::Statement { inner: Box::new(inner), range, span };
+        }
+    }
     // Fallback: lower the first named child as the statement body.
     let mut cur2 = node.walk();
     let first_named = node.named_children(&mut cur2).next();
@@ -119,6 +142,200 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
             span,
         });
     SqlIr::Statement { inner: Box::new(inner), range, span }
+}
+
+/// Aggregate `update` + nested `from`/`where` clauses into a
+/// `SqlIr::Update`. The TSQL grammar emits `update` as a sibling
+/// of `from` under `<statement>`, with `from` carrying `where` etc.
+fn aggregate_update(stmt: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(stmt);
+    let span = span_of(stmt);
+    let mut table: Option<SqlIr> = None;
+    let mut assignments: Vec<SqlIr> = Vec::new();
+    let mut where_: Option<Box<SqlIr>> = None;
+
+    let mut cur = stmt.walk();
+    for c in stmt.named_children(&mut cur) {
+        match c.kind() {
+            "update" => {
+                // Children: keyword_update, relation, keyword_set,
+                // assignment, [comma assignment]…, where.
+                // The TSQL grammar puts `where` INSIDE `update` here
+                // (unlike SELECT, where it's nested in `from`).
+                let mut sub = c.walk();
+                for inner in c.named_children(&mut sub) {
+                    let ik = inner.kind();
+                    if ik.starts_with("keyword_") || ik.starts_with("op_") {
+                        continue;
+                    }
+                    match ik {
+                        "relation" => {
+                            if table.is_none() {
+                                table = Some(lower_relation(inner, source));
+                            }
+                        }
+                        "assignment" => assignments.push(lower_assignment(inner, source)),
+                        "where" => where_ = Some(Box::new(lower_where(inner, source))),
+                        _ => {}
+                    }
+                }
+            }
+            "from" => {
+                // For UPDATE, `from` may carry `where`; the relations
+                // are usually empty (target is in `update`).
+                let mut sub = c.walk();
+                for inner in c.named_children(&mut sub) {
+                    let ik = inner.kind();
+                    if ik.starts_with("keyword_") || ik.starts_with("op_") {
+                        continue;
+                    }
+                    if ik == "where" {
+                        where_ = Some(Box::new(lower_where(inner, source)));
+                    }
+                }
+            }
+            "where" => where_ = Some(Box::new(lower_where(c, source))),
+            _ => {}
+        }
+    }
+
+    let table = Box::new(table.unwrap_or(SqlIr::Unknown {
+        kind: "missing_update_table".into(),
+        range,
+        span,
+    }));
+    SqlIr::Update {
+        table,
+        assignments,
+        where_,
+        range,
+        span,
+    }
+}
+
+/// Aggregate `delete` + nested `from`/`where` into `SqlIr::Delete`.
+fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(stmt);
+    let span = span_of(stmt);
+    let mut from: Option<Box<SqlIr>> = None;
+    let mut where_: Option<Box<SqlIr>> = None;
+
+    let mut cur = stmt.walk();
+    for c in stmt.named_children(&mut cur) {
+        match c.kind() {
+            "delete" => {
+                // Usually empty body — DELETE just sits as a marker.
+            }
+            "from" => {
+                let mut sub = c.walk();
+                let mut relation_nodes: Vec<TsNode<'_>> = Vec::new();
+                for inner in c.named_children(&mut sub) {
+                    let ik = inner.kind();
+                    if ik.starts_with("keyword_") || ik.starts_with("op_") {
+                        continue;
+                    }
+                    match ik {
+                        "where" => where_ = Some(Box::new(lower_where(inner, source))),
+                        _ => relation_nodes.push(inner),
+                    }
+                }
+                let relations: Vec<SqlIr> = relation_nodes
+                    .into_iter()
+                    .map(|n| lower_node(n, source))
+                    .collect();
+                from = Some(Box::new(SqlIr::From {
+                    relations,
+                    range: range_of(c),
+                    span: span_of(c),
+                }));
+            }
+            "where" => where_ = Some(Box::new(lower_where(c, source))),
+            _ => {}
+        }
+    }
+
+    SqlIr::Delete {
+        from,
+        where_,
+        range,
+        span,
+    }
+}
+
+/// `assignment` CST → `SqlIr::Assign { target, value }`. Used in
+/// UPDATE SET and SET @var = val.
+fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let operands: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| {
+            !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_")
+        })
+        .collect();
+    let target = operands
+        .first()
+        .map(|c| lower_node(*c, source))
+        .unwrap_or(SqlIr::Unknown {
+            kind: "missing_assign_target".into(),
+            range,
+            span,
+        });
+    let value = operands
+        .get(1)
+        .map(|c| lower_node(*c, source))
+        .unwrap_or(SqlIr::Unknown {
+            kind: "missing_assign_value".into(),
+            range,
+            span,
+        });
+    SqlIr::Assign {
+        target: Box::new(target),
+        value: Box::new(value),
+        range,
+        span,
+    }
+}
+
+/// `update` CST as a direct lowering target — fallback when called
+/// outside `aggregate_update`'s context.
+fn lower_update(node: TsNode<'_>, source: &str) -> SqlIr {
+    aggregate_update(node, source)
+}
+
+/// `delete` CST — fallback.
+fn lower_delete(node: TsNode<'_>, source: &str) -> SqlIr {
+    aggregate_delete(node, source)
+}
+
+/// `subquery` CST → `SqlIr::Subquery { select }`.
+fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    // A subquery's body is a Select. The CST may have it directly
+    // or wrapped in another statement node — we recurse.
+    let mut cur = node.walk();
+    let inner = node
+        .named_children(&mut cur)
+        .next()
+        .map(|c| {
+            if c.kind() == "select" || c.kind() == "select_expression" {
+                aggregate_select(node, source)
+            } else {
+                lower_node(c, source)
+            }
+        })
+        .unwrap_or(SqlIr::Unknown {
+            kind: "empty_subquery".into(),
+            range,
+            span,
+        });
+    SqlIr::Subquery {
+        select: Box::new(inner),
+        range,
+        span,
+    }
 }
 
 /// Aggregate `select`/`from`/`where`/`group_by`/`having`/`order_by`
@@ -656,6 +873,51 @@ mod tests {
         };
         assert!(matches!(columns.first(), Some(SqlIr::Column { .. }) | Some(SqlIr::Star { .. })));
         assert!(from.is_some());
+    }
+
+    #[test]
+    fn insert_lowers_with_typed_columns_and_values() {
+        let source = "INSERT INTO L (a, b) VALUES (1, 'x')";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Insert { table, columns, values, .. } = inner.as_ref() else {
+            panic!("expected Insert, got {inner:?}");
+        };
+        assert!(matches!(table.as_ref(), SqlIr::Relation { .. }));
+        assert_eq!(columns.len(), 2, "columns: {columns:?}");
+        assert_eq!(values.len(), 2, "values: {values:?}");
+    }
+
+    #[test]
+    fn update_with_set_and_where_lowers_to_typed_update() {
+        let source = "UPDATE Users SET Active = 0 WHERE ID = 1";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Update { table, assignments, where_, .. } = inner.as_ref() else {
+            panic!("expected Update, got {inner:?}");
+        };
+        assert!(matches!(table.as_ref(), SqlIr::Relation { .. }));
+        assert_eq!(assignments.len(), 1);
+        assert!(matches!(&assignments[0], SqlIr::Assign { .. }));
+        assert!(where_.is_some());
+    }
+
+    #[test]
+    fn delete_with_where_lowers_to_typed_delete() {
+        let source = "DELETE FROM Old WHERE Created < '2020'";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Delete { from, where_, .. } = inner.as_ref() else {
+            panic!("expected Delete, got {inner:?}");
+        };
+        assert!(from.is_some(), "from missing");
+        assert!(where_.is_some(), "where missing");
     }
 
     #[test]
