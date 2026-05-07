@@ -1,104 +1,79 @@
 {
   "$type": "program",
-  "aliases": [
+  "comments": [
+    "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
     {
-      "type": {
-        "name": "Status",
-        "constructor": true,
-        "parameter": {
-          "type": {
-            "name": "string"
-          },
-          "required": true,
-          "name": "input"
-        }
-      },
-      "name": "Builder"
+      "leading": true,
+      "text": "/** A shape with an optional label and readonly id. */"
     },
     {
-      "type": {
-        "names": [
-          "T",
-          "T",
-          "never"
-        ],
-        "conditional": true,
-        "type": {
-          "name": "globalThis",
-          "typeof": true
-        }
-      },
-      "name": "Identity",
-      "generic": {
-        "name": "T"
-      }
+      "leading": true,
+      "text": "/** Abstract base using visibility + readonly + static. */"
     },
     {
-      "type": {
-        "method": {
-          "returns": {
-            "type": {
-              "name": "this"
-            }
-          },
-          "public": true,
-          "name": "copy"
-        },
-        "object": true
-      },
-      "name": "Reflective"
+      "leading": true,
+      "text": "/* A block comment describing control flow demos. */"
+    },
+    "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
+    {
+      "leading": true,
+      "text": "// Ambient `declare` declarations."
     },
     {
-      "type": {
-        "type": {
-          "type": {
-            "name": "string",
-            "array": true
-          },
-          "rest": true
-        },
-        "tuple": true,
-        "name": "number"
-      },
-      "name": "RestArgs"
+      "leading": true,
+      "text": "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
     },
     {
-      "type": {
-        "parameters": [
-          {
-            "type": {
-              "name": "number"
-            },
-            "required": true,
-            "name": "head"
-          },
-          {
-            "type": {
-              "name": "string"
-            },
-            "optional": true,
-            "name": "tail"
-          }
-        ],
-        "tuple": true
-      },
-      "name": "OptionalSlot"
+      "leading": true,
+      "text": "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
     },
     {
-      "type": {
-        "type": {
-          "string": "\"counter\"",
-          "literal": true
-        },
-        "lookup": true,
-        "name": "StaticBlock"
-      },
-      "name": "NestedTy"
+      "leading": true,
+      "text": "// `T?` only appears inside tuple element annotations."
+    },
+    {
+      "leading": true,
+      "text": "// Old-style cast (`<T>expr`) — type assertion."
+    },
+    {
+      "leading": true,
+      "text": "// Class with static initializer block."
+    },
+    {
+      "leading": true,
+      "text": "// Asserts / type predicate annotations."
+    },
+    {
+      "leading": true,
+      "text": "// `Foo<T>` instantiation expression."
+    },
+    {
+      "leading": true,
+      "text": "// Old-style `import x = require(y)` form."
+    },
+    {
+      "leading": true,
+      "text": "// `import.meta` / `new.target` meta-properties."
+    },
+    {
+      "leading": true,
+      "text": "// Nested type / value identifiers."
+    },
+    {
+      "leading": true,
+      "text": "// Regex literal + flags."
+    },
+    {
+      "leading": true,
+      "text": "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
+    },
+    {
+      "leading": true,
+      "text": "// Pair pattern + assignment pattern in destructure with defaults."
     }
   ],
   "imports": [
     {
-      "path": "./barrel",
       "name": "defaultExport",
       "specs": [
         {
@@ -110,1489 +85,346 @@
             "aliasedB"
           ]
         }
-      ]
+      ],
+      "string": "\"./barrel\""
     },
     {
-      "path": "./namespace",
-      "sideeffect": true,
       "namespace": {
         "name": "ns"
-      }
+      },
+      "string": "\"./namespace\""
     },
     {
-      "path": "./types",
-      "sideeffect": true,
       "spec": {
         "name": "OnlyAtCompileTime"
-      }
+      },
+      "string": "\"./types\""
     },
     {
-      "path": "./legacy",
-      "name": "legacy"
-    }
-  ],
-  "functions": [
-    {
-      "body": {
-        "blocks": [
-          {
-            "returns": [
-              {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "v"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "string": "\"id\""
-                            }
-                          },
-                          "op": {
-                            "text": "in",
-                            "contains": true
-                          }
-                        }
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "null": "null"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "v"
-                                  }
-                                },
-                                "op": {
-                                  "text": "!==",
-                                  "inequality": true,
-                                  "strict": true
-                                }
-                              }
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "string": "\"object\""
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "unary": {
-                                      "name": "v",
-                                      "op": {
-                                        "text": "typeof",
-                                        "typeof": true
-                                      }
-                                    }
-                                  }
-                                },
-                                "op": {
-                                  "text": "===",
-                                  "equals": true,
-                                  "strict": true
-                                }
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "&&",
-                            "logical": true,
-                            "and": true
-                          }
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": "&&",
-                      "logical": true,
-                      "and": true
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "name": "isShape",
-      "parameter": {
-        "type": {
-          "name": "unknown"
-        },
-        "required": true,
-        "name": "v"
-      },
-      "returns": {
-        "predicate": {
-          "type": {
-            "name": "Shape"
-          },
-          "name": "v"
-        }
-      }
-    },
-    {
-      "body": {
-        "blocks": [
-          {
-            "returns": [
-              {
-                "expression": {
-                  "as": {
-                    "names": [
-                      "msg",
-                      "Greeting"
-                    ]
-                  }
-                }
-              }
-            ],
-            "comments": [
-              {
-                "text": "// array destructure + rest",
-                "trailing": true
-              }
-            ],
-            "variables": [
-              {
-                "value": {
-                  "expression": {
-                    "object": {
-                      "calls": [
-                        {
-                          "names": [
-                            "String",
-                            "input"
-                          ]
-                        },
-                        {
-                          "string": "\"\"",
-                          "name": "split"
-                        }
-                      ],
-                      "access": true
-                    }
-                  }
-                },
-                "const": true,
-                "pattern": {
-                  "rest": {
-                    "name": "rest"
-                  },
-                  "array": true,
-                  "name": "head"
-                }
-              },
-              {
-                "value": {
-                  "expression": {
-                    "object": {
-                      "names": [
-                        "label",
-                        "head",
-                        "rest"
-                      ],
-                      "literal": true,
-                      "spread": {
-                        "object": {
-                          "name": "scale",
-                          "literal": true
-                        },
-                        "list": true
-                      }
-                    }
-                  }
-                },
-                "const": true,
-                "name": "spread"
-              },
-              {
-                "value": {
-                  "expression": {
-                    "as": {
-                      "name": "Greeting",
-                      "call": {
-                        "strings": [
-                          "hello,",
-                          "(",
-                          ")"
-                        ],
-                        "name": "tag",
-                        "interpolations": [
-                          {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "string": "\"world\""
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "label"
-                                }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
-                              }
-                            }
-                          },
-                          {
-                            "object": {
-                              "member": {
-                                "name": "scale"
-                              },
-                              "access": true,
-                              "name": "spread"
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                },
-                "const": true,
-                "name": "msg"
-              }
-            ]
-          }
-        ]
-      },
-      "async": true,
-      "name": "compute",
-      "generic": {
-        "extends": {
-          "type": {
-            "names": [
-              "number",
-              "string"
-            ],
-            "union": true
-          }
-        },
-        "name": "T"
-      },
-      "parameters": [
-        {
-          "type": {
-            "name": "T"
-          },
-          "required": true,
-          "name": "input"
-        },
-        {
-          "value": {
-            "expression": {
-              "object": {
-                "text": "{}",
-                "literal": true
-              }
-            }
-          },
-          "required": true,
-          "pattern": {
-            "name": "label",
-            "object": true,
-            "pair": {
-              "number": "1",
-              "name": "scale"
-            }
-          },
-          "type": {
-            "type": {
-              "properties": [
-                {
-                  "type": {
-                    "name": "number"
-                  },
-                  "optional": true,
-                  "name": "scale"
-                },
-                {
-                  "type": {
-                    "name": "string"
-                  },
-                  "optional": true,
-                  "name": "label"
-                }
-              ],
-              "object": true
-            }
-          }
-        }
-      ],
-      "returns": {
-        "type": {
-          "type": {
-            "name": "Greeting"
-          },
-          "generic": true,
-          "name": "Promise"
-        }
-      }
-    },
-    {
-      "body": {
-        "blocks": [
-          {
-            "ifs": [
-              {
-                "body": {
-                  "news": [
-                    {
-                      "string": "\"not a number\"",
-                      "name": "Error"
-                    }
-                  ]
-                },
-                "condition": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "string": "\"number\""
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "unary": {
-                            "name": "x",
-                            "op": {
-                              "text": "typeof",
-                              "typeof": true
-                            }
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": "!==",
-                        "inequality": true,
-                        "strict": true
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "name": "isNumber",
-      "parameter": {
-        "type": {
-          "name": "unknown"
-        },
-        "required": true,
-        "name": "x"
-      },
-      "returns": {
-        "predicate": {
-          "type": {
-            "name": "number"
-          },
-          "asserts": true,
-          "name": "x"
-        }
-      }
-    },
-    {
-      "body": {
-        "blocks": [
-          {
-            "returns": [
-              {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "string": "\"\""
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "object": {
-                          "member": {
-                            "name": "name",
-                            "optional": true
-                          },
-                          "access": true,
-                          "name": "new.target"
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": "??",
-                      "nullish": true
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "name": "MetaCtor",
-      "parameter": {
-        "type": {
-          "name": "unknown"
-        },
-        "required": true,
-        "this": "this"
-      }
-    },
-    {
-      "body": {
-        "blocks": [
-          {
-            "returns": [
-              {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "name": "n"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "name": "total"
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    }
-                  }
-                }
-              }
-            ],
-            "labels": [
-              {
-                "for": {
-                  "body": {
-                    "blocks": [
-                      {
-                        "expressions": [
-                          {
-                            "assign": {
-                              "right": {
-                                "expression": {
-                                  "binary": {
-                                    "right": {
-                                      "expression": {
-                                        "number": "2"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "total"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "*",
-                                      "multiply": true
-                                    }
-                                  },
-                                  "assign": {
-                                    "right": {
-                                      "expression": {
-                                        "name": "i"
-                                      }
-                                    },
-                                    "left": {
-                                      "expression": {
-                                        "name": "total"
-                                      }
-                                    },
-                                    "op": {
-                                      "text": "+=",
-                                      "assign": true,
-                                      "plus": true
-                                    }
-                                  }
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "total"
-                                }
-                              }
-                            }
-                          }
-                        ],
-                        "ifs": [
-                          {
-                            "body": {
-                              "names": [
-                                "outer"
-                              ]
-                            },
-                            "condition": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "number": "2"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "i"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "===",
-                                    "equals": true,
-                                    "strict": true
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "body": {
-                              "names": [
-                                "outer"
-                              ]
-                            },
-                            "condition": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "number": "4"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "i"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "===",
-                                    "equals": true,
-                                    "strict": true
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "variable": {
-                    "declarators": [
-                      {
-                        "value": {
-                          "expression": {
-                            "number": "0"
-                          }
-                        },
-                        "name": "i"
-                      },
-                      {
-                        "value": {
-                          "expression": {
-                            "number": "100"
-                          }
-                        },
-                        "name": "j"
-                      }
-                    ],
-                    "let": true
-                  },
-                  "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "number": "5"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "i"
-                          }
-                        },
-                        "op": {
-                          "text": "<",
-                          "compare": true,
-                          "less": true
-                        }
-                      }
-                    }
-                  },
-                  "unaries": [
-                    {
-                      "op": {
-                        "text": "++",
-                        "increment": true
-                      },
-                      "postfix": true,
-                      "name": "i"
-                    },
-                    {
-                      "op": {
-                        "text": "--",
-                        "decrement": true
-                      },
-                      "postfix": true,
-                      "name": "j"
-                    }
-                  ]
-                },
-                "name": "outer"
-              }
-            ],
-            "variables": [
-              {
-                "value": {
-                  "expression": {
-                    "number": "0"
-                  }
-                },
-                "let": true,
-                "name": "total"
-              },
-              {
-                "value": {
-                  "expression": {
-                    "number": "0"
-                  }
-                },
-                "let": true,
-                "name": "n"
-              }
-            ],
-            "dos": [
-              {
-                "condition": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "number": "3"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "n"
-                        }
-                      },
-                      "op": {
-                        "text": "<",
-                        "compare": true,
-                        "less": true
-                      }
-                    }
-                  }
-                },
-                "body": {
-                  "blocks": [
-                    {
-                      "expressions": [
-                        {
-                          "unary": {
-                            "op": {
-                              "text": "++",
-                              "increment": true
-                            },
-                            "postfix": true,
-                            "name": "n"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ],
-            "ifs": [
-              {
-                "body": "debugger;",
-                "condition": {
-                  "expression": {
-                    "false": "false"
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "name": "controlOdds",
-      "parameter": {
-        "type": {
-          "name": "number"
-        },
-        "required": true,
-        "name": "value"
-      },
-      "returns": {
-        "type": {
-          "name": "number"
-        }
-      }
-    },
-    {
-      "body": {
-        "blocks": [
-          {
-            "returns": [
-              {
-                "expression": {
-                  "binary": {
-                    "right": {
-                      "expression": {
-                        "object": {
-                          "member": {
-                            "name": "length"
-                          },
-                          "access": true,
-                          "name": "rest"
-                        }
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "name": "c"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "name": "bb"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "name": "aa"
-                                  }
-                                },
-                                "op": {
-                                  "text": "+",
-                                  "plus": true
-                                }
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "+",
-                            "plus": true
-                          }
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": "+",
-                      "plus": true
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "name": "destructure",
-      "parameters": [
-        {
-          "type": {
-            "type": {
-              "properties": [
-                {
-                  "type": {
-                    "name": "number"
-                  },
-                  "optional": true,
-                  "name": "a"
-                },
-                {
-                  "type": {
-                    "name": "number"
-                  },
-                  "name": "b"
-                }
-              ],
-              "object": true
-            }
-          },
-          "required": true,
-          "pattern": {
-            "pairs": [
-              {
-                "value": {
-                  "expression": {
-                    "number": "1"
-                  }
-                },
-                "names": [
-                  "a",
-                  "aa"
-                ]
-              },
-              {
-                "names": [
-                  "b",
-                  "bb"
-                ]
-              }
-            ],
-            "object": true
-          }
-        },
-        {
-          "type": {
-            "type": {
-              "name": "number",
-              "array": true
-            }
-          },
-          "required": true,
-          "pattern": {
-            "rest": {
-              "name": "rest"
-            },
-            "array": true,
-            "name": "c",
-            "value": {
-              "expression": {
-                "number": "0"
-              }
-            }
-          }
-        }
-      ],
-      "returns": {
-        "type": {
-          "name": "number"
-        }
-      }
+      "name": "legacy",
+      "string": "\"./legacy\""
     }
   ],
   "exports": [
     {
-      "string": "\"./barrel\"",
       "spec": {
         "name": "namedA"
-      }
+      },
+      "string": "\"./barrel\""
     },
     {
       "alias": {
+        "name": "Re",
+        "generic": {
+          "name": "T"
+        },
         "type": {
+          "conditional": true,
+          "type": {
+            "generic": true,
+            "name": "Array",
+            "type": {
+              "infer": true,
+              "name": "U"
+            }
+          },
           "names": [
             "T",
             "U",
             "never"
-          ],
-          "conditional": true,
-          "type": {
-            "type": {
-              "type": {
-                "name": "U",
-                "infer": true
-              }
-            },
-            "generic": true,
-            "name": "Array"
-          }
-        },
-        "name": "Re",
-        "generic": {
-          "name": "T"
+          ]
         }
       }
     },
     {
       "interface": {
-        "body": {
-          "methods": [
-            {
-              "returns": {
-                "type": {
-                  "name": "string"
-                }
-              },
-              "public": true,
-              "name": "describe",
-              "parameter": {
-                "type": {
-                  "name": "string"
-                },
-                "required": true,
-                "name": "prefix"
-              }
-            }
-          ],
-          "properties": [
-            {
-              "type": {
-                "name": "string"
-              },
-              "readonly": true,
-              "name": "id"
-            },
-            {
-              "type": {
-                "name": "string"
-              },
-              "optional": true,
-              "name": "label"
-            },
-            {
-              "type": {
-                "name": "T"
-              },
-              "name": "value"
-            }
-          ]
-        },
         "name": "Shape",
         "generic": {
           "name": "T"
+        },
+        "body": {
+          "properties": [
+            {
+              "readonly": true,
+              "name": "id",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "optional": true,
+              "name": "label",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "name": "T"
+              }
+            }
+          ],
+          "method": {
+            "public": true,
+            "name": "describe",
+            "parameter": {
+              "required": true,
+              "type": {
+                "name": "string"
+              },
+              "name": "prefix"
+            },
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            }
+          }
         }
       }
     },
     {
       "alias": {
+        "name": "Point",
         "type": {
+          "object": true,
           "properties": [
             {
+              "name": "x",
               "type": {
                 "name": "number"
-              },
-              "name": "x"
+              }
             },
             {
+              "name": "y",
               "type": {
                 "name": "number"
-              },
-              "name": "y"
+              }
             }
-          ],
-          "object": true
-        },
-        "name": "Point"
+          ]
+        }
       }
     },
     {
       "alias": {
+        "name": "Pair",
         "type": {
+          "tuple": true,
           "names": [
             "string",
             "number"
-          ],
-          "tuple": true
-        },
-        "name": "Pair"
+          ]
+        }
       }
     },
     {
       "alias": {
+        "name": "Status",
         "type": {
+          "union": true,
           "types": [
             {
+              "union": true,
               "types": [
                 {
+                  "union": true,
                   "types": [
                     {
-                      "string": "\"idle\"",
-                      "literal": true
+                      "literal": true,
+                      "string": "\"idle\""
                     },
                     {
-                      "string": "\"loading\"",
-                      "literal": true
+                      "literal": true,
+                      "string": "\"loading\""
                     }
-                  ],
-                  "union": true
+                  ]
                 },
                 {
-                  "string": "\"ready\"",
-                  "literal": true
+                  "literal": true,
+                  "string": "\"ready\""
                 }
-              ],
-              "union": true
+              ]
             },
             {
-              "string": "\"error\"",
-              "literal": true
+              "literal": true,
+              "string": "\"error\""
             }
-          ],
-          "union": true
-        },
-        "name": "Status"
+          ]
+        }
       }
     },
     {
       "alias": {
-        "type": {
-          "name": "T",
-          "function": true,
-          "parameter": {
-            "type": {
-              "name": "T"
-            },
-            "required": true,
-            "name": "input"
-          }
-        },
         "name": "Mapper",
         "generic": {
           "name": "T"
-        }
-      }
-    },
-    {
-      "alias": {
-        "type": {
-          "indexer": {
-            "types": [
-              {
-                "type": {
-                  "name": "T",
-                  "keyof": true
-                },
-                "mapped": true,
-                "name": "K"
-              },
-              {
-                "type": {
-                  "names": [
-                    "T",
-                    "K"
-                  ],
-                  "lookup": true
-                },
-                "optional": true
-              }
-            ]
-          },
-          "object": true
         },
-        "name": "Partialized",
-        "generic": {
+        "type": {
+          "function": true,
+          "parameter": {
+            "required": true,
+            "type": {
+              "name": "T"
+            },
+            "name": "input"
+          },
           "name": "T"
         }
       }
     },
     {
       "alias": {
-        "type": {
-          "name": "${string}",
-          "template": true,
-          "string": "hello,"
+        "name": "Partialized",
+        "generic": {
+          "name": "T"
         },
-        "name": "Greeting"
+        "type": {
+          "object": true,
+          "indexer": {
+            "types": [
+              {
+                "mapped": true,
+                "name": "K",
+                "type": {
+                  "keyof": true,
+                  "name": "T"
+                }
+              },
+              {
+                "optional": true,
+                "type": {
+                  "lookup": true,
+                  "names": [
+                    "T",
+                    "K"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Greeting",
+        "type": {
+          "template": true,
+          "string": "hello, ",
+          "name": "${string}"
+        }
       }
     },
     {
       "enum": {
+        "name": "Color",
         "body": {
           "constants": [
             {
-              "string": "\"RED\"",
-              "name": "Red"
+              "name": "Red",
+              "string": "\"RED\""
             },
             {
-              "string": "\"GREEN\"",
-              "name": "Green"
+              "name": "Green",
+              "string": "\"GREEN\""
             },
             {
-              "string": "\"BLUE\"",
-              "name": "Blue"
+              "name": "Blue",
+              "string": "\"BLUE\""
             }
           ]
-        },
-        "name": "Color"
-      }
-    },
-    {
-      "class": {
-        "body": {
-          "methods": [
-            {
-              "body": {
-                "blocks": [
-                  "{}"
-                ]
-              },
-              "public": true,
-              "name": "constructor",
-              "parameters": [
-                {
-                  "type": {
-                    "name": "string"
-                  },
-                  "public": true,
-                  "required": true,
-                  "name": "name"
-                },
-                {
-                  "type": {
-                    "name": "number"
-                  },
-                  "private": true,
-                  "readonly": true,
-                  "optional": true,
-                  "name": "seed"
-                }
-              ]
-            },
-            {
-              "returns": {
-                "type": {
-                  "name": "string"
-                }
-              },
-              "public": true,
-              "abstract": true,
-              "name": "render"
-            },
-            {
-              "body": {
-                "blocks": [
-                  {
-                    "returns": [
-                      {
-                        "expression": {
-                          "object": {
-                            "member": {
-                              "member": {
-                                "name": "size"
-                              },
-                              "name": "_cache"
-                            },
-                            "access": true,
-                            "this": "this"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              "public": true,
-              "get": true,
-              "name": "cacheSize",
-              "returns": {
-                "type": {
-                  "name": "number"
-                }
-              }
-            },
-            {
-              "body": {
-                "blocks": [
-                  {
-                    "expressions": [
-                      {
-                        "object": {
-                          "member": {
-                            "call": {
-                              "names": [
-                                "set",
-                                "value"
-                              ],
-                              "string": "\"primary\""
-                            },
-                            "name": "_cache"
-                          },
-                          "access": true,
-                          "this": "this"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              "public": true,
-              "set": true,
-              "name": "primary",
-              "parameter": {
-                "type": {
-                  "name": "T"
-                },
-                "required": true,
-                "name": "value"
-              }
-            },
-            {
-              "body": {
-                "blocks": [
-                  {
-                    "expressions": [
-                      {
-                        "object": {
-                          "member": {
-                            "call": {
-                              "names": [
-                                "set",
-                                "key",
-                                "value"
-                              ]
-                            },
-                            "name": "_cache"
-                          },
-                          "access": true,
-                          "this": "this"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              "public": true,
-              "name": "store",
-              "parameters": [
-                {
-                  "type": {
-                    "name": "string"
-                  },
-                  "required": true,
-                  "name": "key"
-                },
-                {
-                  "type": {
-                    "name": "T"
-                  },
-                  "required": true,
-                  "name": "value"
-                }
-              ],
-              "returns": {
-                "type": {
-                  "name": "void"
-                }
-              }
-            }
-          ],
-          "fields": [
-            {
-              "value": {
-                "expression": {
-                  "string": "\"base\""
-                }
-              },
-              "public": true,
-              "static": true,
-              "name": "kind",
-              "type": {
-                "name": "string"
-              }
-            },
-            {
-              "value": {
-                "expression": {
-                  "object": {
-                    "call": {
-                      "name": "now"
-                    },
-                    "access": true,
-                    "name": "Date"
-                  }
-                }
-              },
-              "protected": true,
-              "readonly": true,
-              "name": "createdAt",
-              "type": {
-                "name": "number"
-              }
-            },
-            {
-              "value": {
-                "expression": {
-                  "new": {
-                    "name": "Map"
-                  }
-                }
-              },
-              "private": true,
-              "name": "_cache",
-              "type": {
-                "types": [
-                  {
-                    "name": "string"
-                  },
-                  {
-                    "name": "T"
-                  }
-                ],
-                "generic": true,
-                "name": "Map"
-              }
-            }
-          ]
-        },
-        "abstract": true,
-        "name": "Base",
-        "generic": {
-          "extends": {
-            "type": {
-              "name": "Shape"
-            }
-          },
-          "name": "T"
         }
       }
     },
     {
       "class": {
+        "abstract": true,
+        "name": "Base",
+        "generic": {
+          "name": "T",
+          "extends": {
+            "type": {
+              "name": "Shape"
+            }
+          }
+        },
         "body": {
-          "methods": [
+          "fields": [
             {
-              "body": {
-                "blocks": [
-                  {
-                    "expressions": [
-                      {
-                        "call": {
-                          "name": "name",
-                          "super": "super"
-                        }
-                      },
-                      {
-                        "unary": {
-                          "op": {
-                            "text": "++",
-                            "increment": true
-                          },
-                          "postfix": true,
-                          "object": {
-                            "member": {
-                              "name": "#counter"
-                            },
-                            "access": true,
-                            "name": "Widget"
-                          }
-                        }
-                      }
-                    ]
-                  }
+              "public": true,
+              "static": true,
+              "type": {
+                "name": "string"
+              },
+              "name": "kind",
+              "value": {
+                "string": "\"base\""
+              }
+            },
+            {
+              "protected": true,
+              "readonly": true,
+              "type": {
+                "name": "number"
+              },
+              "name": "createdAt",
+              "value": {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "now"
+                  },
+                  "text": "Date"
+                }
+              }
+            },
+            {
+              "private": true,
+              "type": {
+                "generic": true,
+                "name": "Map",
+                "types": [
+                  "string",
+                  "T"
                 ]
               },
+              "name": "_cache",
+              "value": {
+                "new": {
+                  "name": "Map"
+                }
+              }
+            }
+          ],
+          "methods": [
+            {
               "public": true,
               "name": "constructor",
               "parameters": [
                 {
+                  "public": true,
+                  "required": true,
                   "type": {
                     "name": "string"
                   },
-                  "required": true,
                   "name": "name"
                 },
                 {
-                  "value": {
-                    "expression": {
-                      "list": {
-                        "text": "[]",
-                        "literal": true
-                      }
-                    }
-                  },
                   "private": true,
-                  "required": true,
-                  "name": "items",
+                  "readonly": true,
+                  "optional": true,
                   "type": {
-                    "type": {
-                      "name": "T",
-                      "array": true
-                    }
-                  }
+                    "name": "number"
+                  },
+                  "name": "seed"
                 }
-              ]
+              ],
+              "body": {}
             },
             {
-              "body": {
-                "blocks": [
-                  {
-                    "returns": [
-                      {
-                        "expression": {
-                          "template": {
-                            "strings": [
-                              "Widget<",
-                              ">"
-                            ],
-                            "interpolation": {
-                              "nonnull": {
-                                "name": "first"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ],
-                    "variables": [
-                      {
-                        "value": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "string": "\"unnamed\""
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "object": {
-                                    "member": {
-                                      "object": {
-                                        "index": {
-                                          "member": {
-                                            "name": "label",
-                                            "optional": true
-                                          }
-                                        },
-                                        "access": true,
-                                        "number": "0"
-                                      },
-                                      "name": "items"
-                                    },
-                                    "access": true,
-                                    "this": "this"
-                                  }
-                                }
-                              },
-                              "op": {
-                                "text": "??",
-                                "nullish": true
-                              }
-                            }
-                          }
-                        },
-                        "const": true,
-                        "name": "first"
-                      }
-                    ]
-                  }
-                ]
-              },
               "public": true,
-              "override": true,
+              "abstract": true,
               "name": "render",
               "returns": {
                 "type": {
@@ -1601,294 +433,115 @@
               }
             },
             {
+              "public": true,
+              "get": true,
+              "name": "cacheSize",
+              "returns": {
+                "type": {
+                  "name": "number"
+                }
+              },
               "body": {
-                "blocks": [
-                  {
-                    "fors": [
+                "return": {
+                  "expression": {
+                    "access": true,
+                    "members": [
                       {
-                        "body": {
-                          "yields": [
-                            {
-                              "list": {
-                                "objects": [
-                                  {
-                                    "member": {
-                                      "index": {
-                                        "name": "i"
-                                      },
-                                      "name": "items"
-                                    },
-                                    "access": true,
-                                    "this": "this"
-                                  }
-                                ],
-                                "literal": true,
-                                "names": [
-                                  "i"
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        "variable": {
-                          "value": {
-                            "expression": {
-                              "number": "0"
-                            }
-                          },
-                          "let": true,
-                          "name": "i"
-                        },
-                        "condition": {
-                          "expression": {
-                            "binary": {
-                              "right": {
-                                "expression": {
-                                  "object": {
-                                    "member": {
-                                      "member": {
-                                        "name": "length"
-                                      },
-                                      "name": "items"
-                                    },
-                                    "access": true,
-                                    "this": "this"
-                                  }
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "name": "i"
-                                }
-                              },
-                              "op": {
-                                "text": "<",
-                                "compare": true,
-                                "less": true
-                              }
-                            }
-                          }
-                        },
-                        "unary": {
-                          "op": {
-                            "text": "++",
-                            "increment": true
-                          },
-                          "postfix": true,
-                          "name": "i"
-                        }
+                        "name": "_cache"
+                      },
+                      {
+                        "name": "size"
                       }
                     ]
                   }
-                ]
-              },
-              "public": true,
-              "generator": true,
-              "name": "entries",
-              "returns": {
-                "type": {
-                  "type": {
-                    "type": {
-                      "names": [
-                        "number",
-                        "T"
-                      ],
-                      "tuple": true
-                    }
-                  },
-                  "generic": true,
-                  "name": "Generator"
                 }
               }
             },
             {
-              "body": {
-                "blocks": [
-                  {
-                    "tries": [
-                      {
-                        "finally": {
-                          "body": {
-                            "blocks": [
-                              {
-                                "expressions": [
-                                  {
-                                    "object": {
-                                      "member": {
-                                        "member": {
-                                          "name": "length"
-                                        },
-                                        "name": "items"
-                                      },
-                                      "access": true,
-                                      "this": "this"
-                                    }
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        },
-                        "body": {
-                          "blocks": [
-                            {
-                              "returns": [
-                                {
-                                  "expression": {
-                                    "object": {
-                                      "member": {
-                                        "name": "items"
-                                      },
-                                      "access": true,
-                                      "this": "this"
-                                    }
-                                  }
-                                }
-                              ],
-                              "variables": [
-                                {
-                                  "value": {
-                                    "expression": {
-                                      "list": {
-                                        "spreads": [
-                                          {
-                                            "name": "urls",
-                                            "list": true
-                                          },
-                                          {
-                                            "name": "extra",
-                                            "list": true
-                                          }
-                                        ],
-                                        "literal": true
-                                      }
-                                    }
-                                  },
-                                  "const": true,
-                                  "name": "merged"
-                                }
-                              ],
-                              "fors": [
-                                {
-                                  "body": {
-                                    "blocks": [
-                                      {
-                                        "expressions": [
-                                          {
-                                            "await": {
-                                              "call": {
-                                                "names": [
-                                                  "fetch",
-                                                  "u"
-                                                ]
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "u"
-                                    }
-                                  },
-                                  "right": {
-                                    "expression": {
-                                      "name": "merged"
-                                    }
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        "catch": {
-                          "body": {
-                            "blocks": [
-                              {
-                                "throws": [
-                                  {
-                                    "as": {
-                                      "names": [
-                                        "e",
-                                        "Error"
-                                      ]
-                                    }
-                                  }
-                                ]
-                              }
-                            ]
-                          },
-                          "name": "e"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
               "public": true,
-              "async": true,
-              "name": "loadAll",
+              "set": true,
+              "name": "primary",
+              "parameter": {
+                "required": true,
+                "type": {
+                  "name": "T"
+                },
+                "name": "value"
+              },
+              "body": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "member": {
+                      "name": "_cache"
+                    },
+                    "call": {
+                      "arguments": [
+                        "\"primary\"",
+                        "value"
+                      ],
+                      "name": "set"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "name": "store",
               "parameters": [
                 {
-                  "type": {
-                    "type": {
-                      "name": "string",
-                      "array": true
-                    }
-                  },
                   "required": true,
-                  "name": "urls"
+                  "type": {
+                    "name": "string"
+                  },
+                  "name": "key"
                 },
                 {
-                  "type": {
-                    "type": {
-                      "name": "string",
-                      "array": true
-                    }
-                  },
                   "required": true,
-                  "rest": {
-                    "name": "extra"
-                  }
+                  "type": {
+                    "name": "T"
+                  },
+                  "name": "value"
                 }
               ],
               "returns": {
                 "type": {
-                  "type": {
-                    "type": {
-                      "name": "T",
-                      "array": true
+                  "name": "void"
+                }
+              },
+              "body": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "member": {
+                      "name": "_cache"
+                    },
+                    "call": {
+                      "arguments": [
+                        "key",
+                        "value"
+                      ],
+                      "name": "set"
                     }
-                  },
-                  "generic": true,
-                  "name": "Promise"
+                  }
                 }
               }
             }
-          ],
-          "fields": [
-            {
-              "value": {
-                "expression": {
-                  "number": "0"
-                }
-              },
-              "public": true,
-              "static": true,
-              "name": "#counter"
-            }
           ]
-        },
+        }
+      }
+    },
+    {
+      "class": {
         "name": "Widget",
         "generic": {
+          "name": "T",
           "extends": {
             "type": {
               "name": "Shape"
             }
-          },
-          "name": "T"
+          }
         },
         "extends": [
           {
@@ -1903,1115 +556,1735 @@
               }
             }
           }
-        ]
-      }
-    },
-    {
-      "function": {
+        ],
         "body": {
-          "blocks": [
+          "field": {
+            "public": true,
+            "static": true,
+            "name": "#counter",
+            "value": {
+              "number": {}
+            }
+          },
+          "methods": [
             {
-              "returns": [
+              "public": true,
+              "name": "constructor",
+              "parameters": [
                 {
-                  "expression": {
-                    "ternary": {
-                      "else": {
-                        "string": "\"idle\""
+                  "required": true,
+                  "type": {
+                    "name": "string"
+                  },
+                  "name": "name"
+                },
+                {
+                  "private": true,
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  },
+                  "name": "items",
+                  "value": {}
+                }
+              ],
+              "body": {
+                "expressions": [
+                  {
+                    "call": {
+                      "super": {},
+                      "name": "name"
+                    }
+                  },
+                  {
+                    "unary": {
+                      "postfix": true,
+                      "op": {
+                        "text": "++",
+                        "increment": true
                       },
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "number": "0"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": ">",
-                              "compare": true,
-                              "greater": true
-                            }
-                          }
-                        }
-                      },
-                      "then": {
-                        "name": "status"
+                      "object": {
+                        "access": true,
+                        "member": {
+                          "name": "#counter"
+                        },
+                        "text": "Widget"
                       }
                     }
                   }
+                ]
+              }
+            },
+            {
+              "public": true,
+              "override": true,
+              "name": "render",
+              "returns": {
+                "type": {
+                  "name": "string"
                 }
-              ],
-              "switches": [
-                {
-                  "arms": [
-                    {
-                      "break": "break;",
-                      "string": "\"ready\""
-                    },
-                    {
-                      "throw": {
-                        "new": {
-                          "string": "\"bad\"",
-                          "name": "Error"
-                        }
-                      },
-                      "string": "\"error\""
-                    },
-                    {
-                      "break": "break;",
-                      "comment": "/* fallthrough */"
-                    }
-                  ],
-                  "name": "status"
-                }
-              ],
-              "ifs": [
-                {
-                  "else": {
-                    "body": {
-                      "assigns": [
-                        {
-                          "right": {
-                            "expression": {
-                              "string": "\"ready\""
-                            }
+              },
+              "body": {
+                "variable": {
+                  "const": true,
+                  "name": "first",
+                  "value": {
+                    "binary": {
+                      "left": {
+                        "access": true,
+                        "index": {},
+                        "members": [
+                          {
+                            "name": "items"
                           },
-                          "left": {
-                            "expression": {
-                              "name": "status"
-                            }
+                          {
+                            "name": "label",
+                            "optional": true
                           }
+                        ]
+                      },
+                      "op": {
+                        "text": "??",
+                        "null_coalesce": true
+                      },
+                      "right": "\"unnamed\""
+                    }
+                  }
+                },
+                "return": {
+                  "expression": {
+                    "interpolation": {
+                      "nonnull": {
+                        "name": "first"
+                      }
+                    },
+                    "strings": [
+                      "Widget<",
+                      ">"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "generator": true,
+              "name": "entries",
+              "returns": {
+                "type": {
+                  "generic": true,
+                  "name": "Generator",
+                  "type": {
+                    "tuple": true,
+                    "names": [
+                      "number",
+                      "T"
+                    ]
+                  }
+                }
+              },
+              "body": {
+                "for": {
+                  "variable": {
+                    "let": true,
+                    "name": "i",
+                    "value": {
+                      "number": {}
+                    }
+                  },
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "access": true,
+                      "members": [
+                        {
+                          "name": "items"
+                        },
+                        {
+                          "name": "length"
                         }
                       ]
                     }
                   },
-                  "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "number": "0"
+                  "unary": {
+                    "postfix": true,
+                    "op": {
+                      "text": "++",
+                      "increment": true
+                    },
+                    "name": "i"
+                  },
+                  "body": {
+                    "yield": {
+                      "list": {
+                        "name": "i",
+                        "object": {
+                          "access": true,
+                          "member": {
+                            "name": "items"
+                          },
+                          "index": {
+                            "text": "i"
                           }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "n"
-                          }
-                        },
-                        "op": {
-                          "text": "<",
-                          "compare": true,
-                          "less": true
                         }
                       }
                     }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "async": true,
+              "name": "loadAll",
+              "parameters": [
+                {
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "string"
                   },
+                  "name": "urls"
+                },
+                {
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "string"
+                  },
+                  "rest": {
+                    "name": "extra"
+                  }
+                }
+              ],
+              "returns": {
+                "type": {
+                  "generic": true,
+                  "name": "Promise",
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  }
+                }
+              },
+              "body": {
+                "try": {
                   "body": {
-                    "assigns": [
-                      {
-                        "right": {
-                          "expression": {
-                            "string": "\"error\""
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "name": "status"
-                          }
+                    "variable": {
+                      "const": true,
+                      "name": "merged",
+                      "value": {
+                        "list": {
+                          "spreads": [
+                            {
+                              "name": "urls"
+                            },
+                            {
+                              "name": "extra"
+                            }
+                          ]
                         }
                       }
-                    ]
-                  },
-                  "else_ifs": [
-                    {
-                      "body": {
-                        "assigns": [
-                          {
-                            "right": {
-                              "expression": {
-                                "string": "\"idle\""
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "status"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      "condition": {
+                    },
+                    "for": {
+                      "left": {
                         "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "number": "0"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": "===",
-                              "equals": true,
-                              "strict": true
+                          "name": "u"
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "name": "merged"
+                        }
+                      },
+                      "body": {
+                        "expression": {
+                          "await": {
+                            "call": {
+                              "name": "u"
                             }
                           }
                         }
                       }
                     },
-                    {
-                      "body": {
-                        "assigns": [
-                          {
-                            "right": {
-                              "expression": {
-                                "string": "\"loading\""
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "status"
-                              }
-                            }
-                          }
-                        ]
-                      },
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "number": "10"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "name": "n"
-                              }
-                            },
-                            "op": {
-                              "text": "<",
-                              "compare": true,
-                              "less": true
-                            }
-                          }
+                    "return": {
+                      "expression": {
+                        "access": true,
+                        "member": {
+                          "name": "items"
                         }
                       }
                     }
-                  ]
-                }
-              ],
-              "variables": [
-                {
-                  "value": {
-                    "expression": {
-                      "string": "\"idle\""
-                    }
                   },
-                  "let": true,
-                  "type": {
-                    "name": "Status"
-                  },
-                  "name": "status"
-                },
-                {
-                  "value": {
-                    "expression": {
-                      "object": {
-                        "pairs": [
-                          {
-                            "number": "1",
-                            "name": "a"
-                          },
-                          {
-                            "number": "2",
-                            "name": "b"
-                          }
-                        ],
-                        "literal": true
-                      }
-                    }
-                  },
-                  "const": true,
-                  "type": {
-                    "types": [
-                      {
-                        "name": "string"
-                      },
-                      {
-                        "name": "number"
-                      }
-                    ],
-                    "generic": true,
-                    "name": "Record"
-                  },
-                  "name": "obj"
-                }
-              ],
-              "fors": [
-                {
-                  "body": {
-                    "blocks": [
-                      {
-                        "expressions": [
-                          {
-                            "assign": {
-                              "right": {
-                                "expression": {
-                                  "number": "1"
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "nonnull": {
-                                    "object": {
-                                      "index": {
-                                        "name": "k"
-                                      },
-                                      "access": true,
-                                      "name": "obj"
-                                    }
-                                  }
-                                }
-                              },
-                              "op": {
-                                "text": "+=",
-                                "assign": true,
-                                "plus": true
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "name": "k"
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "name": "obj"
-                    }
-                  }
-                },
-                {
-                  "body": {
-                    "blocks": [
-                      {
-                        "expressions": [
-                          {
-                            "unary": {
-                              "name": "v",
-                              "op": {
-                                "text": "void",
-                                "void": true
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "left": {
-                    "expression": {
-                      "pattern": {
-                        "name": "v",
-                        "array": true
-                      }
-                    }
-                  },
-                  "right": {
-                    "expression": {
-                      "object": {
-                        "call": {
+                  "catch": {
+                    "name": "e",
+                    "body": {
+                      "throw": {
+                        "as": {
                           "names": [
-                            "entries",
-                            "obj"
+                            "e",
+                            "Error"
                           ]
-                        },
-                        "access": true,
-                        "name": "Object"
+                        }
                       }
                     }
-                  }
-                }
-              ],
-              "whiles": [
-                {
-                  "body": {
-                    "blocks": [
-                      {
-                        "comments": [
-                          "/* never */"
-                        ]
-                      }
-                    ]
                   },
-                  "condition": {
-                    "expression": {
-                      "false": "false"
+                  "finally": {
+                    "body": {
+                      "expression": {
+                        "object": {
+                          "access": true,
+                          "members": [
+                            {
+                              "name": "items"
+                            },
+                            {
+                              "name": "length"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 }
-              ]
+              }
             }
           ]
-        },
+        }
+      }
+    },
+    {
+      "function": {
         "name": "controlFlow",
         "parameter": {
+          "required": true,
           "type": {
             "name": "number"
           },
-          "required": true,
           "name": "n"
         },
         "returns": {
           "type": {
             "name": "Status"
           }
-        }
-      }
-    }
-  ],
-  "comments": [
-    "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
-    {
-      "text": "/** A shape with an optional label and readonly id. */",
-      "leading": true
-    },
-    {
-      "text": "/** Abstract base using visibility + readonly + static. */",
-      "leading": true
-    },
-    {
-      "text": "/* A block comment describing control flow demos. */",
-      "leading": true
-    },
-    "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
-    {
-      "text": "// Ambient `declare` declarations.",
-      "leading": true
-    },
-    {
-      "text": "// Constructor / typeof / this / rest / optional-tuple / template-type shapes.",
-      "leading": true
-    },
-    {
-      "text": "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper.",
-      "leading": true
-    },
-    {
-      "text": "// `T?` only appears inside tuple element annotations.",
-      "leading": true
-    },
-    {
-      "text": "// Old-style cast (`<T>expr`) — type assertion.",
-      "leading": true
-    },
-    {
-      "text": "// Class with static initializer block.",
-      "leading": true
-    },
-    {
-      "text": "// Asserts / type predicate annotations.",
-      "leading": true
-    },
-    {
-      "text": "// `Foo<T>` instantiation expression.",
-      "leading": true
-    },
-    {
-      "text": "// Old-style `import x = require(y)` form.",
-      "leading": true
-    },
-    {
-      "text": "// `import.meta` / `new.target` meta-properties.",
-      "leading": true
-    },
-    {
-      "text": "// Nested type / value identifiers.",
-      "leading": true
-    },
-    {
-      "text": "// Regex literal + flags.",
-      "leading": true
-    },
-    {
-      "text": "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated).",
-      "leading": true
-    },
-    {
-      "text": "// Pair pattern + assignment pattern in destructure with defaults.",
-      "leading": true
-    }
-  ],
-  "declares": [
-    {
-      "variable": {
-        "name": "__DEV__",
-        "const": true,
-        "type": {
-          "name": "boolean"
-        }
-      }
-    },
-    {
-      "function": {
-        "returns": {
-          "type": {
-            "name": "void"
-          }
         },
-        "name": "externalThing",
-        "parameter": {
-          "type": {
-            "name": "string"
-          },
-          "required": true,
-          "name": "name"
-        }
-      }
-    },
-    {
-      "namespace": {
         "body": {
-          "blocks": [
-            {
-              "functions": [
-                {
-                  "returns": {
-                    "type": {
-                      "name": "void"
-                    }
-                  },
-                  "name": "init"
+          "switch": {
+            "name": "status",
+            "arms": [
+              {
+                "string": "\"ready\"",
+                "break": true
+              },
+              {
+                "string": "\"error\"",
+                "throw": {
+                  "new": {
+                    "name": "Error",
+                    "string": "\"bad\""
+                  }
                 }
+              },
+              {
+                "comments": [
+                  "/* fallthrough */"
+                ],
+                "break": true
+              }
+            ]
+          },
+          "if": {
+            "condition": {
+              "left": "n",
+              "op": {
+                "text": "<",
+                "less": true
+              },
+              "right": {}
+            },
+            "body": {
+              "assign": {
+                "left": "status",
+                "right": "\"error\""
+              }
+            },
+            "else_if": {
+              "condition": {
+                "left": "n",
+                "op": {
+                  "text": "===",
+                  "equal": true
+                },
+                "right": {}
+              },
+              "body": {
+                "assign": {
+                  "left": "status",
+                  "right": "\"idle\""
+                }
+              },
+              "else_if": {
+                "condition": {
+                  "left": "n",
+                  "op": {
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {}
+                },
+                "body": {
+                  "assign": {
+                    "left": "status",
+                    "right": "\"loading\""
+                  }
+                },
+                "else": {
+                  "body": {
+                    "assign": {
+                      "left": "status",
+                      "right": "\"ready\""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "variables": [
+            {
+              "let": true,
+              "type": {
+                "name": "Status"
+              },
+              "name": "status",
+              "value": {
+                "string": "\"idle\""
+              }
+            },
+            {
+              "const": true,
+              "type": {
+                "generic": true,
+                "name": "Record",
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "name": "obj",
+              "value": {
+                "object": {
+                  "literal": true,
+                  "pairs": [
+                    {
+                      "key": "a",
+                      "value": {}
+                    },
+                    {
+                      "key": "b",
+                      "value": {}
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "fors": [
+            {
+              "left": {
+                "expression": {
+                  "name": "k"
+                }
+              },
+              "right": {
+                "expression": {
+                  "name": "obj"
+                }
+              },
+              "body": {
+                "expression": {
+                  "assign": {
+                    "left": {
+                      "object": {
+                        "access": true,
+                        "index": {
+                          "text": "k"
+                        },
+                        "text": "obj"
+                      }
+                    },
+                    "right": {}
+                  }
+                }
+              }
+            },
+            {
+              "left": {
+                "expression": {
+                  "pattern": {
+                    "array": true,
+                    "name": "v"
+                  }
+                }
+              },
+              "right": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "call": {
+                      "argument": "obj",
+                      "name": "entries"
+                    },
+                    "text": "Object"
+                  }
+                }
+              },
+              "body": {
+                "expression": {
+                  "unary": {
+                    "op": {
+                      "text": "void",
+                      "void": true
+                    },
+                    "name": "v"
+                  }
+                }
+              }
+            }
+          ],
+          "while": {
+            "condition": "false",
+            "body": {
+              "comments": [
+                "/* never */"
               ]
             }
-          ]
+          },
+          "return": {
+            "expression": {
+              "condition": {
+                "left": "n",
+                "op": {
+                  "text": ">",
+                  "greater": true
+                },
+                "right": {}
+              },
+              "then": "status",
+              "else": "\"idle\""
+            }
+          }
+        }
+      }
+    }
+  ],
+  "functions": [
+    {
+      "name": "isShape",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
         },
-        "name": "SideEffect"
+        "name": "v"
+      },
+      "returns": {
+        "type": {
+          "name": "v",
+          "type": {
+            "name": "Shape"
+          }
+        }
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "left": {
+                "left": {
+                  "op": {
+                    "text": "typeof",
+                    "typeof": true
+                  },
+                  "name": "v"
+                },
+                "op": {
+                  "text": "===",
+                  "equal": true
+                },
+                "right": "\"object\""
+              },
+              "op": {
+                "text": "&&",
+                "and": true
+              },
+              "right": {
+                "left": "v",
+                "op": {
+                  "text": "!==",
+                  "not_equal": true
+                },
+                "right": "null"
+              }
+            },
+            "op": {
+              "text": "&&",
+              "and": true
+            },
+            "right": {
+              "left": "\"id\"",
+              "op": {
+                "text": "in",
+                "in": true
+              },
+              "right": "v"
+            }
+          }
+        }
+      }
+    },
+    {
+      "async": true,
+      "name": "compute",
+      "generic": {
+        "name": "T",
+        "extends": {
+          "type": {
+            "union": true,
+            "names": [
+              "number",
+              "string"
+            ]
+          }
+        }
+      },
+      "parameters": [
+        {
+          "required": true,
+          "type": {
+            "name": "T"
+          },
+          "name": "input"
+        },
+        {
+          "required": true,
+          "type": {
+            "object": true,
+            "properties": [
+              {
+                "optional": true,
+                "name": "scale",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "optional": true,
+                "name": "label",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ]
+          },
+          "pattern": {
+            "object": true,
+            "pair": {
+              "name": "scale",
+              "number": {}
+            },
+            "name": "label"
+          },
+          "value": {
+            "literal": true
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "generic": true,
+          "name": "Promise",
+          "type": "Greeting"
+        }
+      },
+      "body": {
+        "comments": [
+          {
+            "trailing": true,
+            "text": "// array destructure + rest"
+          }
+        ],
+        "variables": [
+          {
+            "const": true,
+            "pattern": {
+              "array": true,
+              "name": "head",
+              "rest": {
+                "name": "rest"
+              }
+            },
+            "value": {
+              "object": {
+                "access": true,
+                "name": "input",
+                "call": {
+                  "argument": "\"\"",
+                  "name": "split"
+                }
+              }
+            }
+          },
+          {
+            "const": true,
+            "name": "spread",
+            "value": {
+              "object": {
+                "literal": true,
+                "spread": {
+                  "object": {
+                    "literal": true,
+                    "name": "scale"
+                  }
+                },
+                "names": [
+                  "label",
+                  "head",
+                  "rest"
+                ]
+              }
+            }
+          },
+          {
+            "const": true,
+            "name": "msg",
+            "value": {
+              "as": {
+                "call": {
+                  "name": "tag",
+                  "strings": [
+                    "hello, ",
+                    " (",
+                    ")"
+                  ],
+                  "interpolations": [
+                    {
+                      "binary": {
+                        "left": "label",
+                        "op": {
+                          "text": "??",
+                          "null_coalesce": true
+                        },
+                        "right": "\"world\""
+                      }
+                    },
+                    {
+                      "object": {
+                        "access": true,
+                        "member": {
+                          "name": "scale"
+                        },
+                        "text": "spread"
+                      }
+                    }
+                  ]
+                },
+                "name": "Greeting"
+              }
+            }
+          }
+        ],
+        "return": {
+          "expression": {
+            "names": [
+              "msg",
+              "Greeting"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "isNumber",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
+        },
+        "name": "x"
+      },
+      "returns": {
+        "type": {
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "name": "number"
+          }
+        }
+      },
+      "body": {
+        "if": {
+          "condition": {
+            "left": {
+              "op": {
+                "text": "typeof",
+                "typeof": true
+              },
+              "name": "x"
+            },
+            "op": {
+              "text": "!==",
+              "not_equal": true
+            },
+            "right": "\"number\""
+          },
+          "body": {
+            "new": {
+              "name": "Error",
+              "string": "\"not a number\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "MetaCtor",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
+        },
+        "this": {}
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "access": true,
+              "member": {
+                "name": "name",
+                "optional": true
+              },
+              "text": "new.target"
+            },
+            "op": {
+              "text": "??",
+              "null_coalesce": true
+            },
+            "right": "\"\""
+          }
+        }
+      }
+    },
+    {
+      "name": "controlOdds",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "number"
+        },
+        "name": "value"
+      },
+      "returns": {
+        "type": {
+          "name": "number"
+        }
+      },
+      "body": {
+        "label": {
+          "name": "outer",
+          "for": {
+            "variable": {
+              "let": true,
+              "declarators": [
+                {
+                  "name": "i",
+                  "value": {
+                    "number": {}
+                  }
+                },
+                {
+                  "name": "j",
+                  "value": {
+                    "number": {}
+                  }
+                }
+              ]
+            },
+            "condition": {
+              "left": "i",
+              "op": {
+                "text": "<",
+                "less": true
+              },
+              "right": {}
+            },
+            "unaries": [
+              {
+                "postfix": true,
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "name": "i"
+              },
+              {
+                "postfix": true,
+                "op": {
+                  "text": "--",
+                  "decrement": true
+                },
+                "name": "j"
+              }
+            ],
+            "body": {
+              "ifs": [
+                {
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {}
+                  },
+                  "body": {
+                    "name": "outer"
+                  }
+                },
+                {
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {}
+                  },
+                  "body": {
+                    "name": "outer"
+                  }
+                }
+              ],
+              "expression": {
+                "assign": {
+                  "left": "total",
+                  "right": {
+                    "assign": {
+                      "left": "total",
+                      "right": "i"
+                    },
+                    "binary": {
+                      "left": "total",
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      },
+                      "right": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "variables": [
+          {
+            "let": true,
+            "name": "total",
+            "value": {
+              "number": {}
+            }
+          },
+          {
+            "let": true,
+            "name": "n",
+            "value": {
+              "number": {}
+            }
+          }
+        ],
+        "do": {
+          "body": {
+            "expression": {
+              "unary": {
+                "postfix": true,
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "name": "n"
+              }
+            }
+          },
+          "condition": {
+            "left": "n",
+            "op": {
+              "text": "<",
+              "less": true
+            },
+            "right": {}
+          }
+        },
+        "if": {
+          "condition": "false",
+          "body": {}
+        },
+        "return": {
+          "expression": {
+            "left": "total",
+            "op": {
+              "text": "+",
+              "plus": true
+            },
+            "right": "n"
+          }
+        }
+      }
+    },
+    {
+      "name": "destructure",
+      "parameters": [
+        {
+          "required": true,
+          "type": {
+            "object": true,
+            "properties": [
+              {
+                "optional": true,
+                "name": "a",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "number"
+                }
+              }
+            ]
+          },
+          "pattern": {
+            "object": true,
+            "pairs": [
+              {
+                "names": [
+                  "a",
+                  "aa"
+                ],
+                "value": {
+                  "expression": {
+                    "number": {}
+                  }
+                }
+              },
+              {
+                "names": [
+                  "b",
+                  "bb"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": true,
+          "type": {
+            "array": true,
+            "name": "number"
+          },
+          "pattern": {
+            "array": true,
+            "name": "c",
+            "value": {
+              "expression": {
+                "number": {}
+              }
+            },
+            "rest": {
+              "name": "rest"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "number"
+        }
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "left": {
+                "left": "aa",
+                "op": {
+                  "text": "+",
+                  "plus": true
+                },
+                "right": "bb"
+              },
+              "op": {
+                "text": "+",
+                "plus": true
+              },
+              "right": "c"
+            },
+            "op": {
+              "text": "+",
+              "plus": true
+            },
+            "right": {
+              "access": true,
+              "member": {
+                "name": "length"
+              },
+              "text": "rest"
+            }
+          }
+        }
       }
     }
   ],
   "variables": [
     {
+      "const": true,
+      "name": "tag",
       "value": {
-        "expression": {
-          "arrow": {
-            "value": {
-              "expression": {
-                "object": {
-                  "call": {
-                    "string": "\"\"",
-                    "name": "reduce",
-                    "arrow": {
+        "arrow": {
+          "parameters": [
+            {
+              "required": true,
+              "type": {
+                "name": "TemplateStringsArray"
+              },
+              "name": "parts"
+            },
+            {
+              "required": true,
+              "type": {
+                "array": true,
+                "name": "unknown"
+              },
+              "rest": {
+                "name": "vals"
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "object": {
+                "access": true,
+                "call": {
+                  "arguments": [
+                    {
+                      "parameters": [
+                        {
+                          "required": true,
+                          "name": "acc"
+                        },
+                        {
+                          "required": true,
+                          "name": "p"
+                        },
+                        {
+                          "required": true,
+                          "name": "i"
+                        }
+                      ],
                       "value": {
                         "expression": {
                           "binary": {
-                            "right": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "string": "\"\""
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "object": {
-                                        "index": {
-                                          "name": "i"
-                                        },
-                                        "access": true,
-                                        "name": "vals"
-                                      }
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "??",
-                                    "nullish": true
-                                  }
-                                }
-                              }
-                            },
                             "left": {
-                              "expression": {
-                                "binary": {
-                                  "right": {
-                                    "expression": {
-                                      "name": "p"
-                                    }
-                                  },
-                                  "left": {
-                                    "expression": {
-                                      "name": "acc"
-                                    }
-                                  },
-                                  "op": {
-                                    "text": "+",
-                                    "plus": true
-                                  }
-                                }
-                              }
+                              "left": "acc",
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              },
+                              "right": "p"
                             },
                             "op": {
                               "text": "+",
                               "plus": true
+                            },
+                            "right": {
+                              "left": {
+                                "access": true,
+                                "index": {
+                                  "text": "i"
+                                },
+                                "text": "vals"
+                              },
+                              "op": {
+                                "text": "??",
+                                "null_coalesce": true
+                              },
+                              "right": "\"\""
                             }
                           }
                         }
-                      },
-                      "parameters": [
-                        {
-                          "name": "acc",
-                          "required": true
-                        },
-                        {
-                          "name": "p",
-                          "required": true
-                        },
-                        {
-                          "name": "i",
-                          "required": true
-                        }
-                      ]
-                    }
-                  },
-                  "access": true,
-                  "name": "parts"
-                }
-              }
-            },
-            "parameters": [
-              {
-                "type": {
-                  "name": "TemplateStringsArray"
-                },
-                "required": true,
-                "name": "parts"
-              },
-              {
-                "type": {
-                  "type": {
-                    "name": "unknown",
-                    "array": true
-                  }
-                },
-                "required": true,
-                "rest": {
-                  "name": "vals"
-                }
-              }
-            ]
-          }
-        }
-      },
-      "const": true,
-      "name": "tag"
-    },
-    {
-      "value": {
-        "expression": {
-          "arrow": {
-            "value": {
-              "expression": {
-                "object": {
-                  "index": {
-                    "number": "0"
-                  },
-                  "access": true,
-                  "name": "xs"
-                }
-              }
-            },
-            "parameter": {
-              "type": {
-                "type": {
-                  "name": "U",
-                  "array": true
-                }
-              },
-              "required": true,
-              "name": "xs"
-            },
-            "returns": {
-              "type": {
-                "type": {
-                  "name": "undefined",
-                  "literal": true
-                },
-                "union": true,
-                "name": "U"
-              }
-            }
-          }
-        }
-      },
-      "const": true,
-      "name": "arrow"
-    },
-    {
-      "value": {
-        "expression": {
-          "object": {
-            "call": {
-              "arrow": {
-                "value": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "number": "2"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "name": "x"
-                        }
-                      },
-                      "op": {
-                        "text": "*",
-                        "multiply": true
                       }
-                    }
-                  }
+                    },
+                    "\"\""
+                  ],
+                  "name": "reduce"
                 },
-                "parameter": {
-                  "name": "x",
-                  "required": true
-                },
-                "returns": {
-                  "type": {
-                    "name": "number"
-                  }
-                }
-              },
-              "name": "map"
-            },
-            "access": true,
-            "list": {
-              "numbers": [
-                "1",
-                "2",
-                "3"
-              ],
-              "literal": true
+                "text": "parts"
+              }
             }
           }
         }
-      },
+      }
+    },
+    {
+      "const": true,
+      "name": "arrow",
+      "value": {
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "type": {
+              "array": true,
+              "name": "U"
+            },
+            "name": "xs"
+          },
+          "returns": {
+            "type": {
+              "union": true,
+              "name": "U",
+              "type": {
+                "literal": true,
+                "name": "undefined"
+              }
+            }
+          },
+          "value": {
+            "expression": {
+              "object": {
+                "access": true,
+                "index": {},
+                "text": "xs"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "const": true,
       "type": {
-        "name": "number",
-        "array": true
+        "array": true,
+        "name": "number"
       },
-      "name": "doubled"
+      "name": "doubled",
+      "value": {
+        "object": {
+          "access": true,
+          "numbers": [
+            {},
+            {},
+            {}
+          ],
+          "call": {
+            "argument": {
+              "parameter": {
+                "required": true,
+                "name": "x"
+              },
+              "returns": {
+                "type": {
+                  "name": "number"
+                }
+              },
+              "value": {
+                "expression": {
+                  "binary": {
+                    "left": "x",
+                    "op": {
+                      "text": "*",
+                      "multiply": true
+                    },
+                    "right": {}
+                  }
+                }
+              }
+            },
+            "name": "map"
+          }
+        }
+      }
     },
     {
+      "const": true,
+      "name": "arrowBlock",
       "value": {
-        "expression": {
-          "arrow": {
-            "body": {
-              "blocks": [
-                {
-                  "returns": [
-                    {
-                      "expression": {
-                        "binary": {
-                          "right": {
-                            "expression": {
-                              "number": "2"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "name": "x"
-                            }
-                          },
-                          "op": {
-                            "text": "*",
-                            "multiply": true
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "type": {
+              "name": "number"
             },
-            "parameter": {
-              "type": {
-                "name": "number"
-              },
-              "required": true,
-              "name": "x"
-            },
-            "returns": {
-              "type": {
-                "name": "number"
+            "name": "x"
+          },
+          "returns": {
+            "type": {
+              "name": "number"
+            }
+          },
+          "body": {
+            "return": {
+              "expression": {
+                "left": "x",
+                "op": {
+                  "text": "*",
+                  "multiply": true
+                },
+                "right": {}
               }
             }
           }
         }
-      },
-      "const": true,
-      "name": "arrowBlock"
+      }
     },
     {
-      "value": {
-        "expression": {
+      "const": true,
+      "type": {
+        "union": true,
+        "name": "string",
+        "type": {
+          "literal": true,
           "null": "null"
         }
       },
-      "const": true,
-      "type": {
-        "type": {
-          "null": "null",
-          "literal": true
-        },
-        "union": true,
-        "name": "string"
-      },
-      "name": "maybe"
+      "name": "maybe",
+      "value": {
+        "null": "null"
+      }
     },
     {
+      "const": true,
+      "name": "fallback",
       "value": {
-        "expression": {
-          "binary": {
-            "right": {
-              "expression": {
-                "string": "\"default\""
-              }
-            },
-            "left": {
-              "expression": {
-                "name": "maybe"
-              }
-            },
-            "op": {
-              "text": "??",
-              "nullish": true
-            }
-          }
+        "binary": {
+          "left": "maybe",
+          "op": {
+            "text": "??",
+            "null_coalesce": true
+          },
+          "right": "\"default\""
         }
-      },
-      "const": true,
-      "name": "fallback"
+      }
     },
     {
-      "value": {
-        "expression": {
-          "nonnull": {
-            "as": {
-              "type": {
-                "type": {
-                  "null": "null",
-                  "literal": true
-                },
-                "union": true,
-                "name": "string"
-              },
-              "name": "maybe"
-            }
-          }
-        }
-      },
       "const": true,
-      "name": "nonNull"
-    },
-    {
+      "name": "nonNull",
       "value": {
-        "expression": {
+        "nonnull": {
           "as": {
-            "as": {
-              "string": "\"42\"",
-              "type": {
-                "name": "unknown"
-              }
-            },
+            "name": "maybe",
             "type": {
-              "name": "number"
+              "union": true,
+              "name": "string",
+              "type": {
+                "literal": true,
+                "null": "null"
+              }
             }
           }
         }
-      },
-      "const": true,
-      "name": "asserted"
+      }
     },
     {
+      "const": true,
+      "name": "asserted",
       "value": {
-        "expression": {
+        "as": {
           "type": {
+            "name": "number"
+          },
+          "as": {
             "type": {
-              "name": "number"
+              "name": "unknown"
             },
-            "generic": true
+            "string": "\"42\""
           }
         }
-      },
-      "const": true,
-      "name": "arrayOf"
+      }
     },
     {
+      "const": true,
+      "name": "arrayOf",
       "value": {
-        "expression": {
-          "call": {
-            "name": "arrayOf"
+        "type": {
+          "generic": true,
+          "type": {
+            "name": "number"
           }
         }
-      },
-      "const": true,
-      "name": "fixed"
+      }
     },
     {
-      "value": {
-        "expression": {
-          "object": {
-            "member": {
-              "name": "url"
-            },
-            "access": true,
-            "name": "import.meta"
-          }
-        }
-      },
       "const": true,
-      "name": "url"
+      "name": "fixed",
+      "value": {
+        "call": {
+          "name": "arrayOf"
+        }
+      }
     },
     {
-      "value": {
-        "expression": {
-          "object": {
-            "member": {
-              "name": "counter"
-            },
-            "access": true,
-            "name": "StaticBlock"
-          }
-        }
-      },
       "const": true,
-      "name": "nestedVal"
+      "name": "url",
+      "value": {
+        "object": {
+          "access": true,
+          "member": {
+            "name": "url"
+          },
+          "text": "import.meta"
+        }
+      }
     },
     {
-      "value": {
-        "expression": {
-          "string": "/^foo(\\d+)bar$/giu"
-        }
-      },
       "const": true,
-      "name": "pattern"
-    }
-  ],
-  "classes": [
-    {
-      "body": {
-        "blocks": [
-          {
-            "bodies": [
-              {
-                "blocks": [
-                  {
-                    "expressions": [
-                      {
-                        "assign": {
-                          "right": {
-                            "expression": {
-                              "number": "7"
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "object": {
-                                "member": {
-                                  "name": "counter"
-                                },
-                                "access": true,
-                                "name": "StaticBlock"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ],
-            "static": true
-          }
-        ],
-        "fields": [
-          {
-            "value": {
-              "expression": {
-                "number": "0"
-              }
-            },
-            "public": true,
-            "static": true,
+      "name": "nestedVal",
+      "value": {
+        "object": {
+          "access": true,
+          "member": {
             "name": "counter"
-          }
-        ]
-      },
-      "name": "StaticBlock"
+          },
+          "text": "StaticBlock"
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "pattern",
+      "value": {
+        "string": "/^foo(\\d+)bar$/giu"
+      }
     }
   ],
   "expressions": [
     {
       "unary": {
-        "name": "arrow",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "arrow"
       }
     },
     {
       "unary": {
-        "name": "doubled",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "doubled"
       }
     },
     {
       "unary": {
-        "name": "fallback",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "fallback"
       }
     },
     {
       "unary": {
-        "name": "nonNull",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "nonNull"
       }
     },
     {
       "unary": {
-        "name": "ns",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "ns"
       }
     },
     {
       "unary": {
-        "name": "defaultExport",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "defaultExport"
       }
     },
     {
       "unary": {
-        "name": "aliasedB",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "aliasedB"
       }
     },
     {
       "unary": {
-        "name": "controlOdds",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "controlOdds"
       }
     },
     {
       "unary": {
-        "name": "destructure",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "destructure"
       }
     },
     {
       "unary": {
-        "name": "asserted",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "asserted"
       }
     },
     {
       "unary": {
-        "name": "fixed",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "fixed"
       }
     },
     {
       "unary": {
-        "name": "url",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "url"
       }
     },
     {
       "unary": {
-        "name": "nestedVal",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "nestedVal"
       }
     },
     {
       "unary": {
-        "name": "pattern",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "pattern"
       }
     },
     {
       "unary": {
-        "name": "MetaCtor",
         "op": {
           "text": "void",
           "void": true
-        }
+        },
+        "name": "MetaCtor"
       }
     },
     {
       "unary": {
-        "name": "legacy",
         "op": {
           "text": "void",
           "void": true
+        },
+        "name": "legacy"
+      }
+    }
+  ],
+  "declares": [
+    {
+      "variable": {
+        "const": true,
+        "type": {
+          "name": "boolean"
+        },
+        "name": "__DEV__"
+      }
+    },
+    {
+      "function": {
+        "name": "externalThing",
+        "parameter": {
+          "required": true,
+          "type": {
+            "name": "string"
+          },
+          "name": "name"
+        },
+        "returns": {
+          "type": {
+            "name": "void"
+          }
+        }
+      }
+    },
+    {
+      "namespace": {
+        "name": "SideEffect",
+        "body": {
+          "function": {
+            "name": "init",
+            "returns": {
+              "type": {
+                "name": "void"
+              }
+            }
+          }
         }
       }
     }
-  ]
+  ],
+  "aliases": [
+    {
+      "name": "Builder",
+      "type": {
+        "constructor": true,
+        "parameter": {
+          "required": true,
+          "type": {
+            "name": "string"
+          },
+          "name": "input"
+        },
+        "name": "Status"
+      }
+    },
+    {
+      "name": "Identity",
+      "generic": {
+        "name": "T"
+      },
+      "type": {
+        "conditional": true,
+        "type": {
+          "typeof": true,
+          "name": "globalThis"
+        },
+        "names": [
+          "T",
+          "T",
+          "never"
+        ]
+      }
+    },
+    {
+      "name": "Reflective",
+      "type": {
+        "object": true,
+        "method": {
+          "public": true,
+          "name": "copy",
+          "returns": {
+            "type": {
+              "name": "this"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RestArgs",
+      "type": {
+        "tuple": true,
+        "name": "number",
+        "type": {
+          "rest": true,
+          "type": {
+            "array": true,
+            "name": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "OptionalSlot",
+      "type": {
+        "tuple": true,
+        "parameters": [
+          {
+            "required": true,
+            "type": {
+              "name": "number"
+            },
+            "name": "head"
+          },
+          {
+            "optional": true,
+            "type": {
+              "name": "string"
+            },
+            "name": "tail"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NestedTy",
+      "type": {
+        "lookup": true,
+        "name": "StaticBlock",
+        "type": {
+          "literal": true,
+          "string": "\"counter\""
+        }
+      }
+    }
+  ],
+  "class": {
+    "name": "StaticBlock",
+    "body": {
+      "field": {
+        "public": true,
+        "static": true,
+        "name": "counter",
+        "value": {
+          "number": {}
+        }
+      },
+      "block": {
+        "static": true,
+        "body": {
+          "expression": {
+            "assign": {
+              "left": {
+                "access": true,
+                "member": {
+                  "name": "counter"
+                },
+                "text": "StaticBlock"
+              },
+              "right": {}
+            }
+          }
+        }
+      }
+    }
+  }
 }

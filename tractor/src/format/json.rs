@@ -193,7 +193,11 @@ fn project_match_field_to_json(
     render_opts: &RenderOptions,
 ) -> Option<Value> {
     match projection {
-        Projection::Tree => rm.tree.as_ref().map(|node| xml_node_to_json(node, render_opts.max_depth)),
+        // Tree projection: dispatch on the matched-tree variant. IR
+        // / DataIr → walk the typed renderers (type-driven shape);
+        // Xml → fall back to xml_to_json. JSON serialisation
+        // (string output) happens later in `render_json_output`.
+        Projection::Tree => rm.tree.as_ref().map(|tree| tree.to_json(render_opts.max_depth)),
         Projection::Value => rm.value.as_ref().map(|value| json!(value)),
         Projection::Source => rm.source.as_ref().map(|source| json!(source)),
         Projection::Lines => rm.lines.as_ref().map(|lines| json!(lines)),
@@ -319,8 +323,8 @@ pub fn match_to_value(
                 }
             }
             ViewField::Tree => {
-                if let Some(ref node) = rm.tree {
-                    obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
+                if let Some(ref tree) = rm.tree {
+                    obj.insert("tree".into(), tree.to_json(render_opts.max_depth));
                 }
             }
             ViewField::Origin => {

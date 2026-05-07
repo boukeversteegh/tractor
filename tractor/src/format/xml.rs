@@ -166,10 +166,7 @@ fn match_field_bare(
     projection: Projection,
 ) -> Option<String> {
     match projection {
-        Projection::Tree => rm
-            .tree
-            .as_ref()
-            .map(|node| ensure_xml_fragment_newline(render_xml_node(node, tree_opts))),
+        Projection::Tree => rm.tree.as_ref().map(|t| ensure_xml_fragment_newline(render_xml_node(t.as_xml_node(), tree_opts))),
         Projection::Value => rm
             .value
             .as_ref()
@@ -196,10 +193,7 @@ fn project_match_field_xml(
     projection: Projection,
 ) -> Option<String> {
     match projection {
-        Projection::Tree => rm
-            .tree
-            .as_ref()
-            .map(|node| wrap_projection_element("tree", &render_xml_node(node, tree_opts))),
+        Projection::Tree => rm.tree.as_ref().map(|t| wrap_projection_element("tree", &render_xml_node(t.as_xml_node(), tree_opts))),
         Projection::Value | Projection::Source | Projection::Lines => {
             match_field_bare(rm, tree_opts, projection)
         }
@@ -378,8 +372,8 @@ fn append_match(
                 }
             }
             ViewField::Tree => {
-                if let Some(ref node) = rm.tree {
-                    let rendered = render_xml_node(node, render_opts);
+                if let Some(t) = rm.tree.as_ref() {
+                    let rendered = render_xml_node(t.as_xml_node(), render_opts);
                     out.push_str(&format!("{inner}<tree>\n"));
                     for line in rendered.lines() {
                         out.push_str(&deep);

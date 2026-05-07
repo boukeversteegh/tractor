@@ -219,12 +219,12 @@ fn render_projected_field(
     render_opts: &RenderOptions,
 ) -> Option<String> {
     match projection {
-        Projection::Tree => rm.tree.as_ref().map(|node| render_query_tree_node(node, render_opts)),
+        Projection::Tree => rm.tree.as_ref().map(|t| render_query_tree_node(t.as_xml_node(), render_opts)),
         Projection::Value => rm.value.as_ref().map(|value| format!("{value}\n")),
         Projection::Source => rm.source.as_ref().map(|source| {
             render_source_precomputed(
                 source,
-                rm.tree.as_ref(),
+                rm.tree.as_ref().map(|t| t.as_xml_node()),
                 rm.line,
                 rm.column,
                 rm.end_line,
@@ -235,7 +235,7 @@ fn render_projected_field(
         Projection::Lines => rm.lines.as_ref().map(|lines| {
             render_lines(
                 lines,
-                rm.tree.as_ref(),
+                rm.tree.as_ref().map(|t| t.as_xml_node()),
                 rm.line,
                 rm.column,
                 rm.end_line,
@@ -334,7 +334,7 @@ fn render_combined_tree_source(
     render_opts: &RenderOptions,
     source_cache: &mut HashMap<String, Option<String>>,
 ) -> Option<String> {
-    let tree = rm.tree.as_ref()?;
+    let tree = rm.tree.as_ref().map(|t| t.as_xml_node())?;
     let source = load_source_for_match(rm, file, source_cache)?;
     render_query_tree_with_source(tree, &source, render_opts)
 }
@@ -368,8 +368,8 @@ fn render_field(
 ) {
     match field {
         ViewField::Tree => {
-            if let Some(ref node) = rm.tree {
-                out.push_str(&render_query_tree_node(node, render_opts));
+            if let Some(t) = rm.tree.as_ref() {
+                out.push_str(&render_query_tree_node(t.as_xml_node(), render_opts));
             }
         }
         ViewField::Value => {
@@ -382,7 +382,7 @@ fn render_field(
             if let Some(ref s) = rm.source {
                 out.push_str(&render_source_precomputed(
                     s,
-                    rm.tree.as_ref(),
+                    rm.tree.as_ref().map(|t| t.as_xml_node()),
                     rm.line, rm.column, rm.end_line, rm.end_column,
                     render_opts,
                 ));
@@ -392,7 +392,7 @@ fn render_field(
             if let Some(ref ls) = rm.lines {
                 out.push_str(&render_lines(
                     ls,
-                    rm.tree.as_ref(),
+                    rm.tree.as_ref().map(|t| t.as_xml_node()),
                     rm.line, rm.column, rm.end_line, rm.end_column,
                     render_opts,
                 ));

@@ -105,7 +105,7 @@ pub(crate) fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
         end_line: m.end_line,
         end_column: m.end_column,
         command: command.to_string(),
-        tree: m.xml_node.clone(),
+        tree: m.tree.clone(),
         value: Some(m.value.clone()),
         source: Some(m.extract_source_snippet()),
         lines: Some(

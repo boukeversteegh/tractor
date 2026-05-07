@@ -40,7 +40,7 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
     if rm.severity.is_some() {
         if let Some(ref ls) = rm.lines {
             out.push_str(&render_lines(
-                ls, rm.tree.as_ref(),
+                ls, rm.tree.as_ref().map(|t| t.as_xml_node()),
                 rm.line, rm.column, rm.end_line, rm.end_column,
                 opts,
             ));
@@ -84,7 +84,7 @@ pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, 
         ));
         if let Some(ref ls) = rm.lines {
             out.push_str(&render_lines(
-                ls, rm.tree.as_ref(),
+                ls, rm.tree.as_ref().map(|t| t.as_xml_node()),
                 rm.line, rm.column, rm.end_line, rm.end_column,
                 opts,
             ));

@@ -61,15 +61,29 @@ pub struct XotParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
-    /// Pre-computed JSON projection of the root, derived directly from
-    /// the typed IR (via `ir_to_json` / `data_to_json`) without going
-    /// through XML. `Some` only for languages that flow through the
-    /// IR pipeline; `None` for languages still on the imperative path.
-    /// The format layer prefers this over the XML→JSON projection
-    /// (`xml_to_json`) when the matched node is the document root,
-    /// which lets us drop the `list=` attribute scaffolding the
-    /// imperative pipeline relied on for cardinality decisions.
-    pub root_json: Option<serde_json::Value>,
+    /// Typed IR root retained through to render time. `Some` for
+    /// programming languages on the IR pipeline; `None` for the
+    /// imperative path (and for data languages — they keep their
+    /// `DataIr` separately, see `data_ir`).
+    ///
+    /// JSON / YAML / structured-format output renders from this
+    /// instead of going through `xml_to_json`. That lets us drop the
+    /// `list=` / `field=` XML scaffolding the imperative pipeline
+    /// relied on for cardinality inference: the IR's typed slots
+    /// (Vec<Ir> = list, Box<Ir> = singleton) carry the same
+    /// information at the right semantic layer.
+    pub ir: Option<Box<crate::ir::Ir>>,
+
+    /// Typed `DataIr` root for data languages (JSON / YAML / TOML /
+    /// INI / env / markdown). `Some` only when the IR pipeline took
+    /// the data-language branch.
+    pub data_ir: Option<Box<crate::ir::DataIr>>,
+
+    /// The original source text. Needed alongside `ir` / `data_ir`
+    /// because both reference source byte ranges for leaf text
+    /// reconstruction; the IR-to-JSON renderers slice into this at
+    /// format time.
+    pub source: String,
 }
 
 /// Errors that can occur during parsing
@@ -464,9 +478,9 @@ pub fn parse_string_to_xot_with_options(
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
-        // Imperative path doesn't have an IR tree to derive JSON
-        // from; format layer falls back to xml_to_json.
-        root_json: None,
+        ir: None,
+        data_ir: None,
+        source: source.to_string(),
     })
 }
 
@@ -515,18 +529,15 @@ fn parse_with_ir_pipeline(
             ir::render_data_to_xot_json(&mut xot, doc, &data_ir, source)
         }
         .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
-        // Pre-compute the typed JSON projection from DataIr — used by
-        // the format layer when the matched node is the document
-        // root (bypasses the XML→JSON projection's `list=`-driven
-        // cardinality inference).
-        let root_json = Some(ir::data_to_json(&data_ir));
         return Ok(XotParseResult {
             xot,
             root: doc,
             source_lines: source.lines().map(|s| s.to_string()).collect(),
             file_path,
             language: lang.to_string(),
-            root_json,
+            ir: None,
+            data_ir: Some(Box::new(data_ir)),
+            source: source.to_string(),
         });
     }
 
@@ -549,10 +560,6 @@ fn parse_with_ir_pipeline(
             "IR pipeline not yet wired for language {lang}"
         ))),
     };
-
-    // Pre-compute the typed JSON projection from the IR before we
-    // hand the IR off to the renderer (avoids cloning).
-    let root_json = Some(ir::ir_to_json(&ir_tree, source));
 
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
@@ -579,7 +586,9 @@ fn parse_with_ir_pipeline(
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
-        root_json,
+        ir: Some(Box::new(ir_tree)),
+        data_ir: None,
+        source: source.to_string(),
     })
 }
 
@@ -636,6 +645,10 @@ fn parse_with_ir_pipeline_to_xee(
             ir::render_data_to_xot_json(&mut xot, holding, &data_ir, source)
         }
         .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+        // Capture xot root as XmlNode for legacy XML/text renderers.
+        let xml_node = xot.children(holding)
+            .find(|&c| xot.element(c).is_some())
+            .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
         let xml = xot.to_string(holding)
             .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
         let mut documents = Documents::new();
@@ -644,12 +657,19 @@ fn parse_with_ir_pipeline_to_xee(
             &xml,
         ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
         let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
+        let source_arc = std::sync::Arc::new(source.to_string());
+        let root_tree = xml_node.map(|x| crate::xpath::Tree::DataIr {
+            ir: std::sync::Arc::new(data_ir),
+            source: source_arc,
+            xml: x,
+        });
         return Ok(XeeParseResult {
             documents,
             doc_handle,
             source_lines,
             file_path,
             language: lang.to_string(),
+            root_tree,
         });
     }
 
@@ -683,6 +703,12 @@ fn parse_with_ir_pipeline_to_xee(
                 .map_err(|e| ParseError::Parse(format!("post_transform failed: {e}")))?;
         }
     }
+    // Capture the post-transformed xot root as an XmlNode for legacy
+    // XML / text renderers — same shape XPath queries see.
+    let xml_node = xot.children(holding)
+        .find(|&c| xot.element(c).is_some())
+        .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
+
     let xml = xot.to_string(holding)
         .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
 
@@ -693,6 +719,12 @@ fn parse_with_ir_pipeline_to_xee(
     ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
 
     let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
+    let source_arc = std::sync::Arc::new(source.to_string());
+    let root_tree = xml_node.map(|x| crate::xpath::Tree::Ir {
+        ir: std::sync::Arc::new(ir_tree),
+        source: source_arc,
+        xml: x,
+    });
 
     Ok(XeeParseResult {
         documents,
@@ -700,6 +732,7 @@ fn parse_with_ir_pipeline_to_xee(
         source_lines,
         file_path,
         language: lang.to_string(),
+        root_tree,
     })
 }
 
@@ -726,21 +759,28 @@ pub struct XeeParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
+    /// Typed IR for the document root, retained from parse so the
+    /// format layer can render JSON / YAML / etc. directly from the
+    /// IR instead of going through `xml_to_json`. `Some` only when
+    /// the parser took the IR pipeline.
+    pub root_tree: Option<crate::xpath::Tree>,
 }
 
 impl XeeParseResult {
     /// Execute an XPath query on the parsed document.
     ///
-    /// This is a convenience method that creates an XPathEngine and calls
-    /// `query_documents`, avoiding the need to destructure the parse result.
+    /// Forwards `root_tree` to the engine so root-document matches
+    /// carry the typed IR for principled JSON / YAML rendering at
+    /// format time.
     pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
         let engine = crate::xpath::XPathEngine::new();
-        engine.query_documents(
+        engine.query_documents_with_root_tree(
             &mut self.documents,
             self.doc_handle,
             xpath,
             self.source_lines.clone(),
             &self.file_path,
+            self.root_tree.as_ref(),
         )
     }
 }
@@ -848,6 +888,8 @@ pub fn parse_string_to_xee_with_options(
         source_lines,
         file_path,
         language: lang.to_string(),
+        // Imperative path: no IR retained — root JSON falls back to xml_to_json.
+        root_tree: None,
     })
 }
 
@@ -897,6 +939,7 @@ pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeP
         source_lines: std::sync::Arc::new(Vec::new()), // XML passthrough doesn't have source lines
         file_path,
         language: "xml".to_string(),
+        root_tree: None,
     })
 }
 

@@ -13,7 +13,6 @@ use serde::ser::SerializeMap;
 
 use crate::normalized_xpath::NormalizedXpath;
 use crate::output::{normalize_path, xml_node_to_string, SchemaNode};
-use crate::xpath::XmlNode;
 
 // ---------------------------------------------------------------------------
 // Severity
@@ -130,8 +129,12 @@ pub struct ReportMatch {
     pub command: String,
 
     // Content fields — Some only if selected by resolved ViewSet
-    /// Native XML node tree; renderers convert directly (text → pretty-print, json → object).
-    pub tree:     Option<XmlNode>,
+    /// The matched subtree. Format renderers dispatch on the variant:
+    ///   - `Tree::Ir` / `Tree::DataIr` → walk the typed IR for
+    ///     principled JSON / YAML / etc. shape decisions.
+    ///   - `Tree::Xml` → fall back to the XML→JSON projection for
+    ///     partial matches and XPath atomic / map / array results.
+    pub tree:     Option<crate::xpath::Tree>,
     /// XPath string value of the matched node.
     pub value:    Option<String>,
     /// Pre-computed column-precise source snippet (plain text; coloring in renderer).
@@ -203,7 +206,13 @@ impl Serialize for ReportMatch {
             map.serialize_entry("command", &self.command)?;
         }
 
-        if let Some(ref v) = self.tree     { map.serialize_entry("tree", &xml_node_to_string(v))?; }
+        if let Some(ref v) = self.tree {
+            // Serialize the legacy XmlNode shape (the same shape
+            // queried against). Format-time renderers
+            // (`Tree::to_json` / `to_xml_node`) take precedence for
+            // user-facing output.
+            map.serialize_entry("tree", &xml_node_to_string(v.as_xml_node()))?;
+        }
         if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
         if let Some(ref v) = self.source   { map.serialize_entry("source", v)?; }
         if let Some(ref v) = self.lines    { map.serialize_entry("lines", v)?; }

@@ -1,33 +1,56 @@
 {
   "$type": "program",
-  "tags": [
+  "tag": {
+    "open": true
+  },
+  "comments": [
+    "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
     {
-      "text": "<?php",
-      "open": true
+      "leading": true,
+      "text": "/**\n * Demo class with various PHP features.\n */"
+    },
+    "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc.",
+    {
+      "leading": true,
+      "text": "// Intersection type in parameter position."
+    },
+    {
+      "leading": true,
+      "text": "// DNF type in parameter position."
+    },
+    {
+      "leading": true,
+      "text": "// Bottom type (`never`) in return position."
     }
   ],
+  "declare": {
+    "int": "1"
+  },
+  "namespace": {
+    "names": [
+      "App",
+      "Blueprint"
+    ]
+  },
   "uses": [
     {
-      "name": "Base",
-      "path": {
-        "names": [
-          "App"
-        ]
-      }
+      "names": [
+        "App",
+        "Base"
+      ]
     },
     {
-      "aliased": {
-        "name": "Log"
-      },
-      "alias": true,
-      "path": {
-        "names": [
-          "App"
-        ]
-      },
-      "name": "Logger"
+      "names": [
+        "App",
+        "Logger",
+        "Log"
+      ]
     },
     {
+      "group": true,
+      "path": {
+        "name": "App"
+      },
       "uses": [
         {
           "name": "First"
@@ -35,891 +58,278 @@
         {
           "name": "Second"
         }
-      ],
-      "group": true,
-      "path": {
-        "names": [
-          "App"
-        ]
-      }
-    }
-  ],
-  "declares": [
-    {
-      "int": "1"
-    }
-  ],
-  "namespaces": [
-    {
-      "names": [
-        "App",
-        "Blueprint"
       ]
     }
   ],
   "expressions": [
     {
       "assign": {
-        "right": {
-          "expression": {
-            "arrow": {
-              "body": {
-                "binaries": [
-                  {
-                    "right": {
-                      "expression": {
-                        "int": "2"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "variable": {
-                          "name": "x"
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": "*",
-                      "multiply": true
-                    }
-                  }
-                ]
-              },
-              "parameters": [
-                {
-                  "variable": {
-                    "name": "x"
-                  },
-                  "type": "int"
-                }
-              ],
-              "type": "int"
-            }
-          }
-        },
+        "assign": true,
         "left": {
-          "expression": {
-            "variable": {
-              "name": "pipeline"
-            }
-          }
+          "name": "pipeline"
         },
-        "op": "="
-      }
-    },
-    {
-      "assign": {
         "right": {
-          "expression": {
-            "call": {
-              "arguments": [
-                {
-                  "variable": {
-                    "name": "pipeline"
-                  }
-                },
-                {
-                  "array": {
-                    "ints": [
-                      "1",
-                      "2",
-                      "3"
-                    ]
-                  }
-                }
-              ],
-              "name": "array_map"
-            }
-          }
-        },
-        "left": {
-          "expression": {
-            "variable": {
-              "name": "doubled"
-            }
-          }
-        },
-        "op": "="
-      }
-    },
-    {
-      "assign": {
-        "right": {
-          "expression": {
-            "function": {
-              "body": {
-                "returns": [
-                  {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "1"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "call": {
-                              "argument": {
-                                "variable": {
-                                  "name": "x"
-                                }
-                              },
-                              "variable": {
-                                "name": "pipeline"
-                              }
-                            }
-                          }
-                        },
-                        "op": {
-                          "text": "+",
-                          "plus": true
-                        }
-                      }
-                    }
-                  }
-                ]
-              },
-              "anonymous": true,
-              "parameters": [
-                {
-                  "variable": {
-                    "name": "x"
-                  },
-                  "type": "int"
-                }
-              ],
-              "variable": {
-                "name": "pipeline"
-              },
-              "type": "int"
-            }
-          }
-        },
-        "left": {
-          "expression": {
-            "variable": {
-              "name": "closure"
-            }
-          }
-        },
-        "op": "="
-      }
-    }
-  ],
-  "comments": [
-    "// Blueprint fixture — exercises every major PHP construct so any\n// transform change shows up as a visible snapshot diff. Adjust\n// freely when real language features need to be represented.",
-    {
-      "text": "/**\n * Demo class with various PHP features.\n */",
-      "leading": true
-    },
-    "// Iter 17 shapes: nullsafe, anonymous class, intersection / DNF / bottom\n// type, function-static / global vars, dynamic var name, property\n// promotion, cast type, list-destructure, clone / unset / unique-label,\n// shell command, error suppression, augmented assignment, sequence /\n// reference assignment, first-class callable, heredoc / nowdoc.",
-    {
-      "text": "// Intersection type in parameter position.",
-      "leading": true
-    },
-    {
-      "text": "// DNF type in parameter position.",
-      "leading": true
-    },
-    {
-      "text": "// Bottom type (`never`) in return position.",
-      "leading": true
-    }
-  ],
-  "classes": [
-    {
-      "methods": [
-        {
-          "body": {
-            "expressions": [
-              {
-                "assign": {
-                  "right": {
-                    "expression": {
-                      "variable": {
-                        "name": "name"
-                      }
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "object": {
-                        "member": {
-                          "name": "name"
-                        },
-                        "access": true,
-                        "variable": {
-                          "name": "this"
-                        }
-                      }
-                    }
-                  },
-                  "op": "="
-                }
-              },
-              {
-                "assign": {
-                  "right": {
-                    "expression": {
-                      "variable": {
-                        "name": "count"
-                      }
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "object": {
-                        "member": {
-                          "name": "count"
-                        },
-                        "access": true,
-                        "variable": {
-                          "name": "this"
-                        }
-                      }
-                    }
-                  },
-                  "op": "="
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "__construct",
           "parameters": [
             {
+              "type": {},
               "variable": {
-                "name": "name"
+                "name": "x"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "binary": {
+              "left": {
+                "name": "x"
               },
-              "type": "string"
+              "op": {
+                "text": "*",
+                "multiply": true
+              },
+              "right": "2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "assign": {
+        "assign": true,
+        "left": {
+          "name": "doubled"
+        },
+        "right": {
+          "name": "array_map",
+          "arguments": [
+            {
+              "variable": {
+                "name": "pipeline"
+              }
             },
             {
-              "int": "0",
-              "type": "int",
-              "variable": {
-                "name": "count"
+              "array": {
+                "ints": [
+                  "1",
+                  "2",
+                  "3"
+                ]
               }
             }
           ]
-        },
-        {
-          "type": "string",
-          "public": true,
-          "abstract": true,
-          "name": "render"
-        },
-        {
-          "body": {
-            "returns": [
-              {
-                "expression": {
-                  "new": {
-                    "arguments": [
-                      {
-                        "variable": {
-                          "name": "name"
-                        }
-                      }
-                    ],
-                    "name": "static"
-                  }
-                }
-              }
-            ]
-          },
-          "public": true,
-          "static": true,
-          "final": true,
-          "name": "create",
-          "parameters": [
-            {
-              "variable": {
-                "name": "name"
-              },
-              "type": "string"
-            }
-          ],
-          "type": {
-            "name": "static"
-          }
-        },
-        {
-          "body": {
-            "ifs": [
-              {
-                "else": {
-                  "body": {
-                    "returns": [
-                      {
-                        "expression": {
-                          "string": {
-                            "interpolation": {
-                              "variable": {
-                                "name": "target"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  }
-                },
-                "condition": {
-                  "expression": {
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "int": "10"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "object": {
-                            "member": {
-                              "name": "count"
-                            },
-                            "access": true,
-                            "variable": {
-                              "name": "this"
-                            }
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": ">",
-                        "compare": true,
-                        "greater": true
-                      }
-                    }
-                  }
-                },
-                "then": {
-                  "body": {
-                    "returns": [
-                      {
-                        "expression": {
-                          "string": {
-                            "interpolation": {
-                              "variable": {
-                                "name": "target"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  }
-                },
-                "else_if": {
-                  "body": {
-                    "returns": [
-                      {
-                        "expression": {
-                          "string": {
-                            "interpolation": {
-                              "variable": {
-                                "name": "target"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "condition": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "0"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "object": {
-                              "member": {
-                                "name": "count"
-                              },
-                              "access": true,
-                              "variable": {
-                                "name": "this"
-                              }
-                            }
-                          }
-                        },
-                        "op": {
-                          "text": ">",
-                          "compare": true,
-                          "greater": true
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ],
-            "expressions": [
-              {
-                "assign": {
-                  "right": {
-                    "expression": {
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "object": {
-                              "member": {
-                                "name": "name"
-                              },
-                              "access": true,
-                              "variable": {
-                                "name": "this"
-                              }
-                            }
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "variable": {
-                              "name": "who"
-                            }
-                          }
-                        },
-                        "op": {
-                          "text": "??",
-                          "nullish": true
-                        }
-                      }
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "variable": {
-                        "name": "target"
-                      }
-                    }
-                  },
-                  "op": "="
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "greet",
-          "parameters": [
-            {
-              "null": "null",
-              "type": {
-                "type": "string",
-                "optional": true
-              },
-              "variable": {
-                "name": "who"
-              }
-            },
-            {
-              "variable": {
-                "name": "extras"
-              },
-              "variadic": true,
-              "type": "string"
-            }
-          ],
-          "type": "string"
-        },
-        {
-          "body": {
-            "returns": [
-              {
-                "expression": {
-                  "ternary": {
-                    "ternary": {
-                      "strings": [
-                        "\"negative\"",
-                        "\"zero\""
-                      ],
-                      "binary": {
-                        "right": {
-                          "expression": {
-                            "int": "0"
-                          }
-                        },
-                        "left": {
-                          "expression": {
-                            "variable": {
-                              "name": "n"
-                            }
-                          }
-                        },
-                        "op": {
-                          "text": "<",
-                          "compare": true,
-                          "less": true
-                        }
-                      }
-                    },
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "int": "0"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "variable": {
-                            "name": "n"
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": ">",
-                        "compare": true,
-                        "greater": true
-                      }
-                    },
-                    "string": "\"positive\""
-                  }
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "describe",
-          "parameters": [
-            {
-              "variable": {
-                "name": "n"
-              },
-              "type": "int"
-            }
-          ],
-          "type": "string"
-        },
-        {
-          "body": {
-            "returns": [
-              {
-                "expression": {
-                  "match": {
-                    "arms": [
-                      {
-                        "string": "\"int\"",
-                        "call": {
-                          "argument": {
-                            "variable": {
-                              "name": "value"
-                            }
-                          },
-                          "name": "is_int"
-                        }
-                      },
-                      {
-                        "string": "\"non-empty string\"",
-                        "logical": {
-                          "right": {
-                            "expression": {
-                              "binary": {
-                                "right": {
-                                  "expression": {
-                                    "int": "0"
-                                  }
-                                },
-                                "left": {
-                                  "expression": {
-                                    "call": {
-                                      "argument": {
-                                        "variable": {
-                                          "name": "value"
-                                        }
-                                      },
-                                      "name": "strlen"
-                                    }
-                                  }
-                                },
-                                "op": {
-                                  "text": ">",
-                                  "compare": true,
-                                  "greater": true
-                                }
-                              }
-                            }
-                          },
-                          "left": {
-                            "expression": {
-                              "call": {
-                                "argument": {
-                                  "variable": {
-                                    "name": "value"
-                                  }
-                                },
-                                "name": "is_string"
-                              }
-                            }
-                          },
-                          "op": {
-                            "text": "&&",
-                            "logical": true,
-                            "and": true
-                          }
-                        }
-                      },
-                      {
-                        "string": "\"array\"",
-                        "call": {
-                          "argument": {
-                            "variable": {
-                              "name": "value"
-                            }
-                          },
-                          "name": "is_array"
-                        }
-                      },
-                      {
-                        "string": "\"other\"",
-                        "default": true
-                      }
-                    ],
-                    "condition": {
-                      "expression": {
-                        "bool": "true"
-                      }
-                    }
-                  }
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "categorize",
-          "parameters": [
-            {
-              "variable": {
-                "name": "value"
-              },
-              "type": "mixed"
-            }
-          ],
-          "type": "string"
-        },
-        {
-          "body": {
-            "returns": [
-              {
-                "expression": {
-                  "variable": {
-                    "name": "results"
-                  }
-                }
-              }
-            ],
-            "expressions": [
-              {
-                "assign": {
-                  "right": {
-                    "expression": {
-                      "array": "[]"
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "variable": {
-                        "name": "results"
-                      }
-                    }
-                  },
-                  "op": "="
-                }
-              }
-            ],
-            "foreaches": [
-              {
-                "body": {
-                  "tries": [
-                    {
-                      "catch": {
-                        "body": {
-                          "continues": [
-                            "continue;"
-                          ]
-                        },
-                        "types": {
-                          "type": {
-                            "name": "Throwable"
-                          }
-                        },
-                        "variable": {
-                          "name": "e"
-                        }
-                      },
-                      "body": {
-                        "expressions": [
-                          {
-                            "assign": {
-                              "right": {
-                                "expression": {
-                                  "object": {
-                                    "call": {
-                                      "argument": {
-                                        "variable": {
-                                          "name": "item"
-                                        }
-                                      },
-                                      "name": "transform"
-                                    },
-                                    "access": true,
-                                    "variable": {
-                                      "name": "this"
-                                    }
-                                  }
-                                }
-                              },
-                              "left": {
-                                "expression": {
-                                  "object": {
-                                    "index": {
-                                      "variable": {
-                                        "name": "key"
-                                      }
-                                    },
-                                    "access": true,
-                                    "variable": {
-                                      "name": "results"
-                                    }
-                                  }
-                                }
-                              },
-                              "op": "="
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  ],
-                  "ifs": [
-                    {
-                      "then": {
-                        "body": {
-                          "continues": [
-                            "continue;"
-                          ]
-                        }
-                      },
-                      "condition": {
-                        "expression": {
-                          "binary": {
-                            "right": {
-                              "expression": {
-                                "null": "null"
-                              }
-                            },
-                            "left": {
-                              "expression": {
-                                "variable": {
-                                  "name": "item"
-                                }
-                              }
-                            },
-                            "op": {
-                              "text": "===",
-                              "equals": true,
-                              "strict": true
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                },
-                "right": {
-                  "expression": {
-                    "variable": {
-                      "name": "items"
-                    }
-                  }
-                },
-                "left": {
-                  "expression": {
-                    "pair": {
-                      "variables": [
-                        {
-                          "name": "key"
-                        },
-                        {
-                          "name": "item"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            ]
-          },
-          "public": true,
-          "name": "process",
-          "parameters": [
-            {
-              "variable": {
-                "name": "items"
-              },
-              "type": "iterable"
-            }
-          ],
-          "type": "array"
-        },
-        {
-          "body": {
-            "returns": [
-              {
-                "expression": {
-                  "variable": {
-                    "name": "item"
-                  }
-                }
-              }
-            ]
-          },
-          "private": true,
-          "name": "transform",
-          "parameters": [
-            {
-              "variable": {
-                "name": "item"
-              },
-              "type": "mixed"
-            }
-          ],
-          "type": "mixed"
         }
-      ],
-      "abstract": true,
-      "attribute": {
-        "arguments": [
+      }
+    },
+    {
+      "assign": {
+        "assign": true,
+        "left": {
+          "name": "closure"
+        },
+        "right": {
+          "anonymous": true,
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "x"
+              }
+            }
+          ],
+          "variable": {
+            "name": "pipeline"
+          },
+          "type": {},
+          "body": {
+            "return": {
+              "binary": {
+                "left": {
+                  "variable": {
+                    "name": "pipeline"
+                  },
+                  "argument": {
+                    "variable": {
+                      "name": "x"
+                    }
+                  }
+                },
+                "op": {
+                  "text": "+",
+                  "plus": true
+                },
+                "right": "1"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "Speaker",
+      "method": {
+        "public": true,
+        "name": "greet",
+        "parameters": [
           {
-            "member": {
-              "names": [
-                "Attribute",
-                "TARGET_CLASS"
-              ],
-              "static": true
+            "type": {
+              "optional": true,
+              "type": {}
+            },
+            "variable": {
+              "name": "who"
             }
           }
         ],
-        "name": "Attribute"
+        "type": {}
+      }
+    },
+    {
+      "name": "Countable",
+      "method": {
+        "public": true,
+        "name": "count",
+        "type": {}
+      }
+    },
+    {
+      "name": "Stringable",
+      "method": {
+        "public": true,
+        "name": "__toString",
+        "type": {}
+      }
+    },
+    {
+      "name": "Countable2",
+      "method": {
+        "public": true,
+        "name": "size",
+        "type": {}
+      }
+    }
+  ],
+  "trait": {
+    "name": "Loggable",
+    "method": {
+      "protected": true,
+      "name": "log",
+      "parameters": [
+        {
+          "type": {},
+          "variable": {
+            "name": "msg"
+          }
+        }
+      ],
+      "type": {},
+      "body": {
+        "echo": {
+          "string": {
+            "interpolation": {
+              "variable": {
+                "name": "msg"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "enum": {
+    "name": "Status",
+    "type": {},
+    "constants": [
+      {
+        "name": "Active",
+        "string": {}
+      },
+      {
+        "name": "Inactive",
+        "string": {}
+      },
+      {
+        "name": "Pending",
+        "string": {}
+      }
+    ],
+    "method": {
+      "public": true,
+      "name": "label",
+      "type": {},
+      "body": {
+        "return": {
+          "match": {
+            "condition": {
+              "expression": {
+                "variable": {
+                  "name": "this"
+                }
+              }
+            },
+            "arms": [
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Active"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Inactive"
+                  ]
+                },
+                "string": {}
+              },
+              {
+                "member": {
+                  "static": true,
+                  "names": [
+                    "Status",
+                    "Pending"
+                  ]
+                },
+                "string": {}
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "classes": [
+    {
+      "abstract": true,
+      "attribute": {
+        "name": "Attribute",
+        "arguments": [
+          {
+            "member": {
+              "static": true,
+              "names": [
+                "Attribute",
+                "TARGET_CLASS"
+              ]
+            }
+          }
+        ]
       },
       "name": "Demo",
       "extends": {
-        "type": {
-          "name": "Base"
-        }
+        "name": "Base"
       },
       "implements": {
-        "types": [
-          {
-            "name": "Speaker"
-          },
-          {
-            "name": "Countable"
-          }
+        "names": [
+          "Speaker",
+          "Countable"
         ]
       },
       "use": {
@@ -927,1029 +337,1102 @@
       },
       "consts": [
         {
+          "public": true,
           "constant": {
-            "int": "100",
-            "name": "MAX"
-          },
-          "public": true
+            "name": "MAX",
+            "int": "100"
+          }
         },
         {
+          "private": true,
           "constant": {
-            "string": "\"anonymous\"",
-            "name": "DEFAULT_NAME"
-          },
-          "private": true
+            "name": "DEFAULT_NAME",
+            "string": {}
+          }
         }
       ],
       "fields": [
         {
-          "name": "$name",
           "private": true,
-          "type": "string"
+          "type": {},
+          "name": "$name"
         },
         {
-          "name": "$count",
           "public": true,
           "readonly": true,
-          "type": "int"
+          "type": {},
+          "name": "$count"
         },
         {
-          "null": "null",
           "protected": true,
           "type": {
-            "type": "string",
-            "optional": true
+            "optional": true,
+            "type": {}
           },
-          "name": "$label"
+          "name": "$label",
+          "null": "null"
         },
         {
-          "int": "0",
           "public": true,
           "static": true,
-          "type": "int",
-          "name": "$registry"
+          "type": {},
+          "name": "$registry",
+          "int": "0"
+        }
+      ],
+      "methods": [
+        {
+          "public": true,
+          "name": "__construct",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "name"
+              }
+            },
+            {
+              "type": {},
+              "variable": {
+                "name": "count"
+              },
+              "int": "0"
+            }
+          ],
+          "body": {
+            "expressions": [
+              {
+                "assign": {
+                  "assign": true,
+                  "left": {
+                    "access": true,
+                    "name": "this",
+                    "member": {
+                      "name": "name"
+                    }
+                  },
+                  "right": {
+                    "name": "name"
+                  }
+                }
+              },
+              {
+                "assign": {
+                  "assign": true,
+                  "left": {
+                    "access": true,
+                    "name": "this",
+                    "member": {
+                      "name": "count"
+                    }
+                  },
+                  "right": {
+                    "name": "count"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "public": true,
+          "abstract": true,
+          "name": "render",
+          "type": {}
+        },
+        {
+          "public": true,
+          "static": true,
+          "final": true,
+          "name": "create",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "name"
+              }
+            }
+          ],
+          "type": {
+            "name": "static"
+          },
+          "body": {
+            "return": {
+              "new": {
+                "name": "static",
+                "arguments": [
+                  {
+                    "variable": {
+                      "name": "name"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "public": true,
+          "name": "greet",
+          "parameters": [
+            {
+              "type": {
+                "optional": true,
+                "type": {}
+              },
+              "variable": {
+                "name": "who"
+              },
+              "null": "null"
+            },
+            {
+              "variadic": true,
+              "type": {},
+              "variable": {
+                "name": "extras"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "expression": {
+              "assign": {
+                "assign": true,
+                "left": {
+                  "name": "target"
+                },
+                "right": {
+                  "left": {
+                    "name": "who"
+                  },
+                  "op": {
+                    "text": "??",
+                    "null_coalesce": true
+                  },
+                  "right": {
+                    "access": true,
+                    "name": "this",
+                    "member": {
+                      "name": "name"
+                    }
+                  }
+                }
+              }
+            },
+            "if": {
+              "condition": {
+                "expression": {
+                  "binary": {
+                    "left": {
+                      "access": true,
+                      "name": "this",
+                      "member": {
+                        "name": "count"
+                      }
+                    },
+                    "op": {
+                      "text": ">",
+                      "greater": true
+                    },
+                    "right": "10"
+                  }
+                }
+              },
+              "then": {
+                "body": {
+                  "return": {
+                    "string": {
+                      "interpolation": {
+                        "variable": {
+                          "name": "target"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else_if": {
+                "condition": {
+                  "expression": {
+                    "binary": {
+                      "left": {
+                        "access": true,
+                        "name": "this",
+                        "member": {
+                          "name": "count"
+                        }
+                      },
+                      "op": {
+                        "text": ">",
+                        "greater": true
+                      },
+                      "right": "0"
+                    }
+                  }
+                },
+                "body": {
+                  "return": {
+                    "string": {
+                      "interpolation": {
+                        "variable": {
+                          "name": "target"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "else": {
+                "body": {
+                  "return": {
+                    "string": {
+                      "interpolation": {
+                        "variable": {
+                          "name": "target"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "public": true,
+          "name": "describe",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "n"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "return": {
+              "ternary": {
+                "binary": {
+                  "left": {
+                    "name": "n"
+                  },
+                  "op": {
+                    "text": ">",
+                    "greater": true
+                  },
+                  "right": "0"
+                },
+                "string": {},
+                "ternary": {
+                  "binary": {
+                    "left": {
+                      "name": "n"
+                    },
+                    "op": {
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": "0"
+                  },
+                  "strings": [
+                    {},
+                    {}
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "public": true,
+          "name": "categorize",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "value"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "return": {
+              "match": {
+                "condition": {
+                  "expression": {
+                    "bool": {}
+                  }
+                },
+                "arms": [
+                  {
+                    "call": {
+                      "name": "is_int",
+                      "argument": {
+                        "variable": {
+                          "name": "value"
+                        }
+                      }
+                    },
+                    "string": {}
+                  },
+                  {
+                    "logical": {
+                      "left": {
+                        "name": "is_string",
+                        "argument": {
+                          "variable": {
+                            "name": "value"
+                          }
+                        }
+                      },
+                      "op": {
+                        "text": "&&",
+                        "and": true
+                      },
+                      "right": {
+                        "left": {
+                          "name": "strlen",
+                          "argument": {
+                            "variable": {
+                              "name": "value"
+                            }
+                          }
+                        },
+                        "op": {
+                          "text": ">",
+                          "greater": true
+                        },
+                        "right": "0"
+                      }
+                    },
+                    "string": {}
+                  },
+                  {
+                    "call": {
+                      "name": "is_array",
+                      "argument": {
+                        "variable": {
+                          "name": "value"
+                        }
+                      }
+                    },
+                    "string": {}
+                  },
+                  {
+                    "default": true,
+                    "string": {}
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "public": true,
+          "name": "process",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "items"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "expression": {
+              "assign": {
+                "assign": true,
+                "left": {
+                  "name": "results"
+                },
+                "right": {}
+              }
+            },
+            "foreach": {
+              "right": {
+                "expression": {
+                  "variable": {
+                    "name": "items"
+                  }
+                }
+              },
+              "left": {
+                "expression": {
+                  "pair": {
+                    "variables": [
+                      {
+                        "name": "key"
+                      },
+                      {
+                        "name": "item"
+                      }
+                    ]
+                  }
+                }
+              },
+              "body": {
+                "if": {
+                  "condition": {
+                    "expression": {
+                      "binary": {
+                        "left": {
+                          "name": "item"
+                        },
+                        "op": {
+                          "text": "===",
+                          "identical": true
+                        },
+                        "right": "null"
+                      }
+                    }
+                  },
+                  "then": {
+                    "body": {
+                      "continue": {}
+                    }
+                  }
+                },
+                "try": {
+                  "body": {
+                    "expression": {
+                      "assign": {
+                        "assign": true,
+                        "left": {
+                          "variables": [
+                            {
+                              "name": "results"
+                            },
+                            {
+                              "name": "key"
+                            }
+                          ]
+                        },
+                        "right": {
+                          "access": true,
+                          "name": "this",
+                          "call": {
+                            "argument": {
+                              "variable": {
+                                "name": "item"
+                              }
+                            },
+                            "name": "transform"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "catch": {
+                    "types": {
+                      "type": {
+                        "name": "Throwable"
+                      }
+                    },
+                    "variable": {
+                      "name": "e"
+                    },
+                    "body": {
+                      "continue": {}
+                    }
+                  }
+                }
+              }
+            },
+            "return": {
+              "variable": {
+                "name": "results"
+              }
+            }
+          }
+        },
+        {
+          "private": true,
+          "name": "transform",
+          "parameters": [
+            {
+              "type": {},
+              "variable": {
+                "name": "item"
+              }
+            }
+          ],
+          "type": {},
+          "body": {
+            "return": {
+              "variable": {
+                "name": "item"
+              }
+            }
+          }
         }
       ]
     },
     {
+      "name": "PromotedDemo",
       "method": {
+        "public": true,
+        "name": "__construct",
         "parameters": [
           {
-            "variable": {
-              "name": "name"
-            },
             "public": true,
             "readonly": true,
             "promoted": true,
-            "type": "string"
+            "type": {},
+            "variable": {
+              "name": "name"
+            }
           },
           {
-            "int": "0",
             "protected": true,
             "promoted": true,
-            "type": "int",
+            "type": {},
             "variable": {
               "name": "count"
-            }
+            },
+            "int": "0"
           }
         ],
-        "public": true,
-        "name": "__construct"
-      },
-      "name": "PromotedDemo"
-    }
-  ],
-  "traits": [
-    {
-      "method": {
-        "body": {
-          "echos": [
-            {
-              "string": {
-                "interpolation": {
-                  "variable": {
-                    "name": "msg"
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "protected": true,
-        "name": "log",
-        "parameters": [
-          {
-            "variable": {
-              "name": "msg"
-            },
-            "type": "string"
-          }
-        ],
-        "type": "void"
-      },
-      "name": "Loggable"
-    }
-  ],
-  "enums": [
-    {
-      "method": {
-        "body": {
-          "returns": [
-            {
-              "expression": {
-                "match": {
-                  "arms": [
-                    {
-                      "string": "\"✓\"",
-                      "member": {
-                        "names": [
-                          "Status",
-                          "Active"
-                        ],
-                        "static": true
-                      }
-                    },
-                    {
-                      "string": "\"×\"",
-                      "member": {
-                        "names": [
-                          "Status",
-                          "Inactive"
-                        ],
-                        "static": true
-                      }
-                    },
-                    {
-                      "string": "\"…\"",
-                      "member": {
-                        "names": [
-                          "Status",
-                          "Pending"
-                        ],
-                        "static": true
-                      }
-                    }
-                  ],
-                  "condition": {
-                    "expression": {
-                      "variable": {
-                        "name": "this"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "public": true,
-        "name": "label",
-        "type": "string"
-      },
-      "name": "Status",
-      "type": "string",
-      "constants": [
-        {
-          "string": "\"active\"",
-          "name": "Active"
-        },
-        {
-          "string": "\"inactive\"",
-          "name": "Inactive"
-        },
-        {
-          "string": "\"pending\"",
-          "name": "Pending"
-        }
-      ]
-    }
-  ],
-  "interfaces": [
-    {
-      "method": {
-        "type": "string",
-        "public": true,
-        "name": "greet",
-        "parameters": [
-          {
-            "variable": {
-              "name": "who"
-            },
-            "type": {
-              "type": "string",
-              "optional": true
-            }
-          }
-        ]
-      },
-      "name": "Speaker"
-    },
-    {
-      "method": {
-        "type": "int",
-        "public": true,
-        "name": "count"
-      },
-      "name": "Countable"
-    },
-    {
-      "method": {
-        "type": "string",
-        "public": true,
-        "name": "__toString"
-      },
-      "name": "Stringable"
-    },
-    {
-      "method": {
-        "type": "int",
-        "public": true,
-        "name": "size"
-      },
-      "name": "Countable2"
+        "body": {}
+      }
     }
   ],
   "functions": [
     {
-      "body": {
-        "returns": [
-          {
-            "expression": {
-              "call": {
-                "argument": {
-                  "spread": {
-                    "variable": {
-                      "name": "args"
-                    }
-                  }
-                },
-                "variable": {
-                  "name": "fn"
-                }
-              }
-            }
-          }
-        ]
-      },
       "name": "factory",
       "parameters": [
         {
+          "type": {},
           "variable": {
             "name": "fn"
-          },
-          "type": "callable"
+          }
         },
         {
+          "variadic": true,
+          "type": {},
           "variable": {
             "name": "args"
-          },
-          "variadic": true,
-          "type": "mixed"
+          }
         }
       ],
-      "type": "mixed"
-    },
-    {
+      "type": {},
       "body": {
-        "returns": [
-          {
-            "expression": {
-              "match": {
-                "arms": [
-                  {
-                    "int": "1",
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "Stringable"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "variable": {
-                            "name": "value"
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": "instanceof",
-                        "instanceof": true
-                      }
-                    }
-                  },
-                  {
-                    "int": "2",
-                    "binary": {
-                      "right": {
-                        "expression": {
-                          "name": "Countable2"
-                        }
-                      },
-                      "left": {
-                        "expression": {
-                          "variable": {
-                            "name": "value"
-                          }
-                        }
-                      },
-                      "op": {
-                        "text": "instanceof",
-                        "instanceof": true
-                      }
-                    }
-                  },
-                  {
-                    "int": "0",
-                    "default": true
-                  }
-                ],
-                "condition": {
-                  "expression": {
-                    "bool": "true"
-                  }
+        "return": {
+          "call": {
+            "variable": {
+              "name": "fn"
+            },
+            "argument": {
+              "spread": {
+                "variable": {
+                  "name": "args"
                 }
               }
             }
           }
-        ],
-        "unsets": [
-          {
-            "variable": {
-              "name": "x"
+        }
+      }
+    },
+    {
+      "name": "shapes",
+      "parameters": [
+        {
+          "type": {
+            "optional": true,
+            "type": {
+              "name": "PromotedDemo"
             }
+          },
+          "variable": {
+            "name": "thing"
+          }
+        },
+        {
+          "type": {},
+          "variable": {
+            "name": "value"
+          }
+        }
+      ],
+      "type": {},
+      "body": {
+        "comments": [
+          {
+            "leading": true,
+            "text": "// Nullsafe member access + call."
+          },
+          {
+            "leading": true,
+            "text": "// Anonymous class."
+          },
+          {
+            "leading": true,
+            "text": "// First-class callable + augmented assignment."
+          },
+          {
+            "leading": true,
+            "text": "// Reference assignment + by-ref foreach."
+          },
+          {
+            "leading": true,
+            "text": "// List destructure."
+          },
+          {
+            "leading": true,
+            "text": "// Function-local static + global."
+          },
+          {
+            "leading": true,
+            "text": "// Dynamic variable name + cast type."
+          },
+          {
+            "leading": true,
+            "text": "// Clone, error suppression, shell."
+          },
+          {
+            "leading": true,
+            "text": "// Heredoc / nowdoc."
+          },
+          {
+            "leading": true,
+            "text": "// Sequence in a for header."
+          },
+          {
+            "leading": true,
+            "text": "// Goto + named label."
+          },
+          {
+            "leading": true,
+            "text": "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below."
           }
         ],
         "expressions": [
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "member": {
-                    "name": "name",
-                    "nullsafe": true,
-                    "variable": {
-                      "name": "thing"
-                    }
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "name"
-                  }
-                }
+                "name": "name"
               },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
               "right": {
-                "expression": {
-                  "object": {
-                    "call": {
-                      "name": "describe"
-                    },
-                    "access": true,
-                    "variable": {
-                      "name": "thing"
-                    }
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "size"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "new": {
-                    "class": {
-                      "method": {
-                        "body": {
-                          "returns": [
-                            {
-                              "expression": {
-                                "string": "\"anon\""
-                              }
-                            }
-                          ]
-                        },
-                        "public": true,
-                        "name": "__toString",
-                        "type": "string"
-                      },
-                      "anonymous": true,
-                      "implements": {
-                        "type": {
-                          "name": "Stringable"
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "anon"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "call": {
-                    "argument": {
-                      "text": "...",
-                      "variadic": true
-                    },
-                    "name": "strtoupper"
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "maker"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "int": "0"
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "count"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "int": "5"
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "count"
-                  }
-                }
-              },
-              "op": {
-                "text": "+=",
-                "assign": true,
-                "plus": true
+                "nullsafe": true,
+                "variable": {
+                  "name": "thing"
+                },
+                "name": "name"
               }
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "int": "2"
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "count"
-                  }
-                }
+                "name": "size"
               },
-              "op": {
-                "text": "*=",
-                "assign": true,
-                "multiply": true
+              "right": {
+                "access": true,
+                "name": "thing",
+                "call": {
+                  "name": "describe"
+                }
               }
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "array": {
-                    "ints": [
-                      "1",
-                      "2",
-                      "3"
-                    ]
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "items"
-                  }
-                }
+                "name": "anon"
               },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
               "right": {
-                "expression": {
-                  "object": {
-                    "index": {
-                      "int": "0"
-                    },
-                    "access": true,
-                    "variable": {
-                      "name": "items"
+                "class": {
+                  "anonymous": true,
+                  "implements": {
+                    "name": "Stringable"
+                  },
+                  "method": {
+                    "public": true,
+                    "name": "__toString",
+                    "type": {},
+                    "body": {
+                      "return": {
+                        "string": {}
+                      }
                     }
                   }
                 }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "alias"
-                  }
-                }
-              },
-              "op": "="
+              }
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "variable": {
-                    "name": "items"
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "array": {
-                    "variables": [
-                      {
-                        "name": "first"
-                      },
-                      {
-                        "name": "second"
-                      }
-                    ]
-                  }
-                }
+                "name": "maker"
               },
-              "op": "="
+              "right": {
+                "name": "strtoupper",
+                "argument": {
+                  "variadic": true
+                }
+              }
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "array": {
-                    "ints": [
-                      "10",
-                      "20",
-                      "30",
-                      "40",
-                      "50"
-                    ]
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "array": {
-                    "variables": [
-                      {
-                        "name": "third"
-                      },
-                      {
-                        "name": "fifth"
-                      }
-                    ]
-                  }
-                }
+                "name": "count"
               },
-              "op": "="
+              "right": "0"
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "string": "\"thing\""
-                }
-              },
+              "plus": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "varname"
-                  }
-                }
+                "name": "count"
               },
-              "op": "="
+              "right": "5"
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "int": "42"
-                }
-              },
+              "multiply": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "variable": {
-                      "name": "varname"
-                    },
-                    "dynamic": true
-                  }
-                }
+                "name": "count"
               },
-              "op": "="
+              "right": "2"
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "cast": {
-                    "variable": {
-                      "name": "value"
-                    },
-                    "type": "int"
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "cast"
-                  }
-                }
+                "name": "items"
               },
-              "op": "="
+              "right": {
+                "ints": [
+                  "1",
+                  "2",
+                  "3"
+                ]
+              }
             }
           },
           {
             "assign": {
-              "right": {
-                "expression": {
-                  "clone": {
-                    "variable": {
-                      "name": "anon"
-                    }
-                  }
-                }
-              },
+              "assign": true,
               "left": {
-                "expression": {
-                  "variable": {
-                    "name": "copy"
-                  }
-                }
+                "name": "alias"
               },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
               "right": {
-                "expression": {
-                  "unary": {
-                    "call": {
-                      "argument": {
-                        "string": "\"/missing\""
-                      },
-                      "name": "file_get_contents"
-                    },
-                    "op": {
-                      "text": "@",
-                      "matmul": true
-                    }
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "maybe"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "shell": "`echo hi`"
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "output"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "string": {
-                    "text": "<<<EOT\n        hello $name\n        line two\n        EOT",
-                    "heredoc": true
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "here"
-                  }
-                }
-              },
-              "op": "="
-            }
-          },
-          {
-            "assign": {
-              "right": {
-                "expression": {
-                  "string": {
-                    "text": "<<<'EOT'\n        no interpolation: $not_a_var\n        EOT",
-                    "nowdoc": true
-                  }
-                }
-              },
-              "left": {
-                "expression": {
-                  "variable": {
-                    "name": "now"
-                  }
-                }
-              },
-              "op": "="
-            }
-          }
-        ],
-        "foreaches": [
-          {
-            "body": {
-              "expressions": [
-                {
-                  "assign": {
-                    "right": {
-                      "expression": {
-                        "int": "10"
-                      }
-                    },
-                    "left": {
-                      "expression": {
-                        "variable": {
-                          "name": "x"
-                        }
-                      }
-                    },
-                    "op": {
-                      "text": "*=",
-                      "assign": true,
-                      "multiply": true
-                    }
-                  }
-                }
-              ]
-            },
-            "right": {
-              "expression": {
                 "variable": {
                   "name": "items"
+                },
+                "int": "0"
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "variables": [
+                  {
+                    "name": "first"
+                  },
+                  {
+                    "name": "second"
+                  }
+                ]
+              },
+              "right": {
+                "name": "items"
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "variables": [
+                  {
+                    "name": "third"
+                  },
+                  {
+                    "name": "fifth"
+                  }
+                ]
+              },
+              "right": {
+                "ints": [
+                  "10",
+                  "20",
+                  "30",
+                  "40",
+                  "50"
+                ]
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "varname"
+              },
+              "right": {}
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "dynamic": true,
+                "variable": {
+                  "name": "varname"
+                }
+              },
+              "right": "42"
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "cast"
+              },
+              "right": {
+                "type": {},
+                "variable": {
+                  "name": "value"
                 }
               }
-            },
-            "left": {
-              "expression": "&$x"
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "copy"
+              },
+              "right": {
+                "variable": {
+                  "name": "anon"
+                }
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "maybe"
+              },
+              "right": {
+                "op": {
+                  "text": "@",
+                  "suppress": true
+                },
+                "call": {
+                  "name": "file_get_contents",
+                  "argument": {
+                    "string": {}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "output"
+              },
+              "right": {}
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "here"
+              },
+              "right": {
+                "heredoc": true
+              }
+            }
+          },
+          {
+            "assign": {
+              "assign": true,
+              "left": {
+                "name": "now"
+              },
+              "right": {
+                "nowdoc": true
+              }
             }
           }
         ],
+        "foreach": {
+          "right": {
+            "expression": {
+              "variable": {
+                "name": "items"
+              }
+            }
+          },
+          "left": {
+            "expression": {}
+          },
+          "body": {
+            "expression": {
+              "assign": {
+                "multiply": true,
+                "left": {
+                  "name": "x"
+                },
+                "right": "10"
+              }
+            }
+          }
+        },
+        "unset": {
+          "variable": {
+            "name": "x"
+          }
+        },
         "variables": [
           {
-            "null": "null",
             "static": true,
             "variable": {
               "name": "cached"
-            }
+            },
+            "null": "null"
           },
           {
+            "global": true,
             "variable": {
               "name": "REGISTRY"
-            },
-            "global": true
+            }
           }
         ],
-        "fors": [
-          {
-            "body": {
-              "comments": [
-                "/* ... */"
-              ]
-            },
-            "assigns": [
-              {
-                "right": {
-                  "expression": {
-                    "int": "0"
-                  }
-                },
-                "left": {
-                  "expression": {
-                    "variable": {
-                      "name": "i"
-                    }
-                  }
-                },
-                "op": "="
+        "for": {
+          "assigns": [
+            {
+              "assign": true,
+              "left": {
+                "name": "i"
               },
-              {
-                "right": {
-                  "expression": {
-                    "int": "10"
-                  }
-                },
-                "left": {
-                  "expression": {
-                    "variable": {
-                      "name": "j"
-                    }
-                  }
-                },
-                "op": "="
-              }
-            ],
-            "condition": {
-              "expression": {
-                "binary": {
-                  "right": {
-                    "expression": {
-                      "variable": {
-                        "name": "j"
-                      }
-                    }
-                  },
-                  "left": {
-                    "expression": {
-                      "variable": {
-                        "name": "i"
-                      }
-                    }
-                  },
-                  "op": {
-                    "text": "<",
-                    "compare": true,
-                    "less": true
-                  }
-                }
-              }
+              "right": "0"
             },
-            "unaries": [
-              {
-                "op": {
-                  "text": "++",
-                  "increment": true
-                },
-                "variable": {
+            {
+              "assign": true,
+              "left": {
+                "name": "j"
+              },
+              "right": "10"
+            }
+          ],
+          "condition": {
+            "expression": {
+              "binary": {
+                "left": {
                   "name": "i"
-                }
-              },
-              {
-                "op": {
-                  "text": "--",
-                  "decrement": true
                 },
-                "variable": {
+                "op": {
+                  "text": "<",
+                  "less": true
+                },
+                "right": {
                   "name": "j"
                 }
               }
-            ]
-          }
-        ],
-        "labels": [
-          {
-            "name": "end"
-          }
-        ],
-        "gotos": [
-          {
-            "name": "end"
-          }
-        ],
-        "comments": [
-          {
-            "text": "// Nullsafe member access + call.",
-            "leading": true
+            }
           },
-          {
-            "text": "// Anonymous class.",
-            "leading": true
-          },
-          {
-            "text": "// First-class callable + augmented assignment.",
-            "leading": true
-          },
-          {
-            "text": "// Reference assignment + by-ref foreach.",
-            "leading": true
-          },
-          {
-            "text": "// List destructure.",
-            "leading": true
-          },
-          {
-            "text": "// Function-local static + global.",
-            "leading": true
-          },
-          {
-            "text": "// Dynamic variable name + cast type.",
-            "leading": true
-          },
-          {
-            "text": "// Clone, error suppression, shell.",
-            "leading": true
-          },
-          {
-            "text": "// Heredoc / nowdoc.",
-            "leading": true
-          },
-          {
-            "text": "// Sequence in a for header.",
-            "leading": true
-          },
-          {
-            "text": "// Goto + named label.",
-            "leading": true
-          },
-          {
-            "text": "// Match-arm; intersection / DNF / bottom types appear in\n    // declarative positions (parameters / returns), not in\n    // `instanceof` expressions, so the type-shape exercises live in\n    // sibling functions below.",
-            "leading": true
-          }
-        ]
-      },
-      "name": "shapes",
-      "parameters": [
-        {
-          "variable": {
-            "name": "thing"
-          },
-          "type": {
-            "type": {
-              "name": "PromotedDemo"
+          "unaries": [
+            {
+              "op": {
+                "text": "++",
+                "increment": true
+              },
+              "variable": {
+                "name": "i"
+              }
             },
-            "optional": true
-          }
-        },
-        {
-          "variable": {
-            "name": "value"
-          },
-          "type": "mixed"
-        }
-      ],
-      "type": "mixed"
-    },
-    {
-      "body": {
-        "returns": [
-          {
-            "expression": {
-              "object": {
-                "call": {
-                  "name": "size"
-                },
-                "access": true,
-                "variable": {
-                  "name": "thing"
-                }
+            {
+              "op": {
+                "text": "--",
+                "decrement": true
+              },
+              "variable": {
+                "name": "j"
               }
             }
+          ],
+          "body": {
+            "comments": [
+              "/* ... */"
+            ]
           }
-        ]
-      },
+        },
+        "goto": {
+          "name": "end"
+        },
+        "label": {
+          "name": "end"
+        },
+        "return": {
+          "match": {
+            "condition": {
+              "expression": {
+                "bool": {}
+              }
+            },
+            "arms": [
+              {
+                "binary": {
+                  "left": {
+                    "name": "value"
+                  },
+                  "op": {
+                    "text": "instanceof",
+                    "instanceof": true
+                  },
+                  "right": "Stringable"
+                },
+                "int": "1"
+              },
+              {
+                "binary": {
+                  "left": {
+                    "name": "value"
+                  },
+                  "op": {
+                    "text": "instanceof",
+                    "instanceof": true
+                  },
+                  "right": "Countable2"
+                },
+                "int": "2"
+              },
+              {
+                "default": true,
+                "int": "0"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "name": "require_both",
       "parameters": [
         {
-          "variable": {
-            "name": "thing"
-          },
           "type": {
+            "intersection": true,
             "types": [
               {
                 "name": "Stringable"
@@ -1957,50 +1440,35 @@
               {
                 "name": "Countable2"
               }
-            ],
-            "intersection": true
+            ]
+          },
+          "variable": {
+            "name": "thing"
           }
         }
       ],
-      "type": "int"
-    },
-    {
+      "type": {},
       "body": {
-        "returns": [
-          {
-            "expression": {
-              "binary": {
-                "right": {
-                  "expression": {
-                    "null": "null"
-                  }
-                },
-                "left": {
-                  "expression": {
-                    "variable": {
-                      "name": "thing"
-                    }
-                  }
-                },
-                "op": {
-                  "text": "!==",
-                  "inequality": true,
-                  "strict": true
-                }
-              }
+        "return": {
+          "object": {
+            "access": true,
+            "name": "thing",
+            "call": {
+              "name": "size"
             }
           }
-        ]
-      },
+        }
+      }
+    },
+    {
       "name": "dnf_demo",
       "parameters": [
         {
-          "variable": {
-            "name": "thing"
-          },
           "type": {
+            "disjunctive": true,
             "types": [
               {
+                "intersection": true,
                 "types": [
                   {
                     "name": "Stringable"
@@ -2008,81 +1476,75 @@
                   {
                     "name": "Countable2"
                   }
-                ],
-                "intersection": true
+                ]
               },
-              "null"
-            ],
-            "disjunctive": true
+              {}
+            ]
+          },
+          "variable": {
+            "name": "thing"
           }
         }
       ],
-      "type": "bool"
+      "type": {},
+      "body": {
+        "return": {
+          "binary": {
+            "left": {
+              "name": "thing"
+            },
+            "op": {
+              "text": "!==",
+              "not_identical": true
+            },
+            "right": "null"
+          }
+        }
+      }
     },
     {
-      "body": {
-        "expressions": [
-          {
-            "throw": {
-              "new": {
-                "arguments": [
-                  {
-                    "string": "\"boom\""
-                  }
-                ],
-                "name": "RuntimeException"
-              }
-            }
-          }
-        ]
-      },
       "name": "never_returns",
       "type": {
-        "text": "never",
         "bottom": true
-      }
-    }
-  ],
-  "echos": [
-    {
-      "binary": {
-        "right": {
-          "expression": {
-            "string": "\"\\n\""
-          }
-        },
-        "left": {
-          "expression": {
-            "binary": {
-              "right": {
-                "expression": {
-                  "call": {
-                    "argument": {
-                      "int": "5"
-                    },
-                    "variable": {
-                      "name": "closure"
-                    }
-                  }
+      },
+      "body": {
+        "expression": {
+          "throw": {
+            "new": {
+              "name": "RuntimeException",
+              "arguments": [
+                {
+                  "string": {}
                 }
-              },
-              "left": {
-                "expression": {
-                  "string": "\"result: \""
-                }
-              },
-              "op": {
-                "text": ".",
-                "concat": true
-              }
+              ]
             }
           }
-        },
-        "op": {
-          "text": ".",
-          "concat": true
         }
       }
     }
-  ]
+  ],
+  "echo": {
+    "binary": {
+      "left": {
+        "left": {},
+        "op": {
+          "text": ".",
+          "concat": true
+        },
+        "right": {
+          "variable": {
+            "name": "closure"
+          },
+          "argument": {
+            "int": "5"
+          }
+        }
+      },
+      "op": {
+        "text": ".",
+        "concat": true
+      },
+      "right": {}
+    }
+  }
 }
