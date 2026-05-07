@@ -65,6 +65,7 @@ pub fn render_sql_to_xot(
 
         // ----- DML ------------------------------------------------------
         SqlIr::Select {
+            ctes,
             columns,
             into,
             from,
@@ -74,6 +75,11 @@ pub fn render_sql_to_xot(
             order_by,
             ..
         } => {
+            // CTEs render as siblings BEFORE the <select> element
+            // under the parent statement.
+            for c in ctes {
+                render_sql_to_xot(xot, parent, c, source)?;
+            }
             let select_node = element(xot, "select")?;
             xot.append(parent, select_node)?;
             for c in columns {
@@ -159,10 +165,42 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Merge { .. } | SqlIr::MergeWhen { .. } | SqlIr::Transaction { .. } => {
-            // Coverage gaps in this slice — render as Unknown so
-            // they're visible but not rejected.
-            unknown(xot, parent, "todo_dml", source)
+        SqlIr::Merge { target, source: src, on, whens, .. } => {
+            let node = element(xot, "merge")?;
+            xot.append(parent, node)?;
+            // Render target/source relations as <relation> children.
+            render_sql_to_xot(xot, node, target, source)?;
+            render_sql_to_xot(xot, node, src, source)?;
+            // ON condition.
+            render_sql_to_xot(xot, node, on, source)?;
+            // WHEN clauses.
+            for w in whens {
+                render_sql_to_xot(xot, node, w, source)?;
+            }
+            Ok(node)
+        }
+        SqlIr::MergeWhen { matched, action, .. } => {
+            let node = element(xot, "when")?;
+            xot.append(parent, node)?;
+            // Markers — `<matched/>` always, `<not/>` for the NOT MATCHED
+            // case. Per Principle: no underscore in element names; split
+            // compound words into separate markers.
+            if !*matched {
+                let n = element(xot, "not")?;
+                xot.append(node, n)?;
+            }
+            let m = element(xot, "matched")?;
+            xot.append(node, m)?;
+            render_sql_to_xot(xot, node, action, source)?;
+            Ok(node)
+        }
+        SqlIr::Transaction { statements, .. } => {
+            let node = element(xot, "transaction")?;
+            xot.append(parent, node)?;
+            for s in statements {
+                render_sql_to_xot(xot, node, s, source)?;
+            }
+            Ok(node)
         }
 
         // ----- Clauses --------------------------------------------------

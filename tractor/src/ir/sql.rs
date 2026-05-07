@@ -82,6 +82,7 @@ pub enum SqlIr {
     /// `<select>` — `SELECT cols FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY ...`.
     /// Each clause is its own typed slot.
     Select {
+        ctes: Vec<SqlIr>,             // WITH ... AS (...) CTE clauses (each SqlIr::Cte)
         columns: Vec<SqlIr>,          // each is SqlIr::Column or SqlIr::Star
         into: Option<Box<SqlIr>>,     // SELECT ... INTO #temp
         from: Option<Box<SqlIr>>,     // SqlIr::From

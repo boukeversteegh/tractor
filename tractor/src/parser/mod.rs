@@ -550,6 +550,27 @@ fn parse_with_ir_pipeline(
         });
     }
 
+    // SQL-language branch — TSQL through the typed `SqlIr` pipeline.
+    if matches!(lang, "tsql") {
+        let sql_ir = ir::sql_lower::lower_sql_root(tree.root_node(), source);
+        let mut xot = xot::Xot::new();
+        let doc = xot.new_document();
+        ir::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
+            .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+        return Ok(XotParseResult {
+            xot,
+            root: doc,
+            source_lines: source.lines().map(|s| s.to_string()).collect(),
+            file_path,
+            language: lang.to_string(),
+            ir: None,
+            data_ir: None,
+            #[cfg(feature = "native")]
+            sql_ir: Some(Box::new(sql_ir)),
+            source: source.to_string(),
+        });
+    }
+
     let ir_tree = match lang {
         "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
         "python" | "py" => ir::lower_python_root(tree.root_node(), source),
@@ -564,7 +585,6 @@ fn parse_with_ir_pipeline(
         "go" => ir::lower_go_root(tree.root_node(), source),
         "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
         "php" => ir::lower_php_root(tree.root_node(), source),
-        "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
@@ -684,6 +704,40 @@ fn parse_with_ir_pipeline_to_xee(
         });
     }
 
+    // SQL-language branch — TSQL through the typed `SqlIr` pipeline.
+    if matches!(lang, "tsql") {
+        let sql_ir = ir::sql_lower::lower_sql_root(tree.root_node(), source);
+        let mut xot = xot::Xot::new();
+        let holding = xot.new_document();
+        ir::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
+            .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+        let xml_node = xot.children(holding)
+            .find(|&c| xot.element(c).is_some())
+            .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
+        let xml = xot.to_string(holding)
+            .map_err(|e| ParseError::Parse(format!("SqlIr serialize failed: {e}")))?;
+        let mut documents = Documents::new();
+        let doc_handle = documents.add_string(
+            "file:///source".try_into().unwrap(),
+            &xml,
+        ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
+        let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
+        let source_arc = std::sync::Arc::new(source.to_string());
+        let root_tree = xml_node.map(|x| crate::xpath::Tree::Sql {
+            ir: std::sync::Arc::new(sql_ir),
+            source: source_arc,
+            xml: x,
+        });
+        return Ok(XeeParseResult {
+            documents,
+            doc_handle,
+            source_lines,
+            file_path,
+            language: lang.to_string(),
+            root_tree,
+        });
+    }
+
     let ir_tree = match lang {
         "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
         "python" | "py" => ir::lower_python_root(tree.root_node(), source),
@@ -694,7 +748,6 @@ fn parse_with_ir_pipeline_to_xee(
         "go" => ir::lower_go_root(tree.root_node(), source),
         "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
         "php" => ir::lower_php_root(tree.root_node(), source),
-        "tsql" => ir::lower_tsql_root(tree.root_node(), source),
         _ => return Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),

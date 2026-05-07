@@ -45,6 +45,9 @@ pub enum TractorNode {
     Full, Outer, Cross, Inner,
     // SELECT INTO temp-table marker.
     Into,
+    // MERGE WHEN markers — `<matched/>` always; `<not/>` added for
+    // the negative case (split per "no underscore" convention).
+    Matched, Not,
     // CAST
     Cast,
     // DDL — `Table`/`View`/`Index` are kind markers on `<create>` /
@@ -120,9 +123,10 @@ impl TractorNode {
             | Self::Reset                                                        => (false, true, Keyword),
             // `<star/>` — empty marker for `SELECT *`. Has no children.
             Self::Star                                                           => (true, false, Keyword),
-            // Direction / DDL kind markers — empty `<marker/>` elements.
+            // Direction / DDL kind / MERGE markers — empty `<marker/>` elements.
             Self::Asc | Self::Desc | Self::Table | Self::View | Self::Index
-            | Self::Add | Self::Full | Self::Outer | Self::Cross | Self::Inner  => (true, false, Keyword),
+            | Self::Add | Self::Full | Self::Outer | Self::Cross | Self::Inner
+            | Self::Matched | Self::Not                                          => (true, false, Keyword),
             // `<left>` / `<right>` are dual-use — Compare operand
             // wrappers (containers carrying expressions) AND JOIN
             // direction markers (empty `<left/>` on `<join>`).

@@ -61,6 +61,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
 
         // ----- DML ------------------------------------------------------
         SqlIr::Select {
+            ctes,
             columns,
             into,
             from,
@@ -71,6 +72,12 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             ..
         } => {
             let mut select = Map::new();
+            if !ctes.is_empty() {
+                select.insert(
+                    "ctes".into(),
+                    Value::Array(ctes.iter().map(|c| sql_to_json(c, source)).collect()),
+                );
+            }
             // For uniform shape: always emit columns as an array.
             select.insert(
                 "columns".into(),

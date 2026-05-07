@@ -95,6 +95,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
 
         // ----- Expressions -------------------------------------------
         "binary_expression" => lower_binary_or_compare(node, source),
+        "unary_expression" => lower_unary_or_temp(node, source),
         "between_expression" => lower_between(node, source),
         "case" => lower_case(node, source),
         "exists" => lower_exists(node, source),
@@ -391,16 +392,38 @@ fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlIr {
 fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
     let range = range_of(stmt);
     let span = span_of(stmt);
+    let mut ctes: Vec<SqlIr> = Vec::new();
     let mut columns: Vec<SqlIr> = Vec::new();
-    let into: Option<Box<SqlIr>> = None;
+    let mut into: Option<Box<SqlIr>> = None;
     let mut from: Option<Box<SqlIr>> = None;
     let mut where_: Option<Box<SqlIr>> = None;
     let mut group_by: Option<Box<SqlIr>> = None;
     let mut having: Option<Box<SqlIr>> = None;
     let mut order_by: Option<Box<SqlIr>> = None;
 
+    // Track whether we just saw `keyword_into` so the next
+    // `select_expression` becomes the INTO target.
+    let mut after_into = false;
     let mut cur = stmt.walk();
     for c in stmt.named_children(&mut cur) {
+        match c.kind() {
+            "keyword_into" => {
+                after_into = true;
+                continue;
+            }
+            "select_expression" if after_into => {
+                // INTO target — typically a single term wrapping a
+                // unary `#name` reference (temp table).
+                let mut sub = c.walk();
+                if let Some(item) = c.named_children(&mut sub).next() {
+                    let lowered = lower_column_item(item, source);
+                    into = Some(Box::new(lowered));
+                }
+                after_into = false;
+                continue;
+            }
+            _ => { after_into = false; }
+        }
         match c.kind() {
             "select" => {
                 // Walk select's named children — `keyword_select` and
@@ -464,11 +487,13 @@ fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
             "group_by" => group_by = Some(Box::new(lower_node(c, source))),
             "having" => having = Some(Box::new(lower_node(c, source))),
             "order_by" => order_by = Some(Box::new(lower_node(c, source))),
+            "cte" => ctes.push(lower_cte(c, source)),
             _ => {}
         }
     }
 
     SqlIr::Select {
+        ctes,
         columns,
         into,
         from,
@@ -520,6 +545,7 @@ fn lower_select(node: TsNode<'_>, source: &str) -> SqlIr {
     let _ = (&into, &group_by, &having, &order_by);
 
     SqlIr::Select {
+        ctes: Vec::new(),
         columns,
         into,
         from,
@@ -869,6 +895,63 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
     let _ = (left, right);
     SqlIr::Unknown {
         kind: format!("binary_op_unhandled:{}", op_text),
+        range,
+        span,
+    }
+}
+
+/// `unary_expression` CST. T-SQL uses `#x` for local temp tables
+/// and `##x` for global temp tables — both lower to `SqlIr::Temp
+/// { name }`. Other unary operators (NOT, -, +) lower to
+/// `SqlIr::Unary` (TODO when needed).
+fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
+    // Find the op text and operand.
+    let op_text = named
+        .iter()
+        .find(|c| c.kind().starts_with("op_"))
+        .map(|c| range_of(*c).slice(source))
+        .unwrap_or("");
+    if op_text == "#" || op_text == "##" {
+        // Temp-table reference. Operand is the inner identifier.
+        let operand_node = named
+            .iter()
+            .find(|c| !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_"))
+            .copied();
+        let operand = if let Some(c) = operand_node {
+            // Could be a `field` wrapping an `identifier` or an
+            // identifier directly.
+            if c.kind() == "field" {
+                let mut sub = c.walk();
+                let inner_first = c.named_children(&mut sub).next();
+                if let Some(id) = inner_first {
+                    SqlIr::Identifier { range: range_of(id), span: span_of(id) }
+                } else {
+                    SqlIr::Identifier { range: range_of(c), span: span_of(c) }
+                }
+            } else {
+                SqlIr::Identifier { range: range_of(c), span: span_of(c) }
+            }
+        } else {
+            SqlIr::Unknown {
+                kind: "missing_temp_name".into(),
+                range,
+                span,
+            }
+        };
+        return SqlIr::Temp {
+            name: Box::new(operand),
+            range,
+            span,
+        };
+    }
+    // Generic unary fallback — render as Unknown for now until
+    // typed operators are needed.
+    SqlIr::Unknown {
+        kind: format!("unary_op_unhandled:{}", op_text),
         range,
         span,
     }
