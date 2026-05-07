@@ -663,7 +663,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         }
 
         // Throw statement → simple statement so it carries source bytes.
-        "throw_statement" => simple_statement(node, "throw", source),
+        "throw_statement" => lower_java_throw(node, source),
 
         // Imports & package.
         "import_declaration" => {
@@ -1932,6 +1932,42 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         .collect();
     Ir::SimpleStatement {
         element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower Java `throw expr;` so the thrown expression sits under an
+/// `<expression>` host (Principle #5, matches Python yield/raise
+/// and the existing `<return>` shape — same conceptual role:
+/// throw-a-value vs return-a-value).
+fn lower_java_throw(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    let children: Vec<Ir> = if inner.is_empty() {
+        Vec::new()
+    } else {
+        let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
+        let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
+        let expr_range = ByteRange::new(expr_start, expr_end);
+        vec![Ir::SimpleStatement {
+            element_name: "expression",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: inner,
+            range: expr_range,
+            span,
+        }]
+    };
+    Ir::SimpleStatement {
+        element_name: "throw",
         modifiers: Modifiers::default(),
         extra_markers: &[],
         children,

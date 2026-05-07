@@ -105,7 +105,7 @@ program/
   │       │       │   ├─ left/expression/name = "input"
   │       │       │   ├─ op[equals] = "=="
   │       │       │   └─ right/expression/null = "null"
-  │       │       ├─ body/throw/new/
+  │       │       ├─ body/throw/expression/new/
   │       │       │   ├─ name = "IllegalArgumentException"
   │       │       │   └─ string = "\"null\""
   │       │       ├─ else_if/
@@ -399,7 +399,7 @@ program/
           │       │       │   ├─ name = "java.io.IOException"
           │       │       │   └─ name = "RuntimeException"
           │       │       ├─ name = "e"
-          │       │       └─ body/throw/name = "e"
+          │       │       └─ body/throw/expression/name = "e"
           │       └─ lock/
           │           ├─ this = "this"
           │           └─ body/expression/name = "SEED"

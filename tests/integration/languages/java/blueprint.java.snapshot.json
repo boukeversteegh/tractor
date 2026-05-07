@@ -264,9 +264,11 @@
                 },
                 "body": {
                   "throw": {
-                    "new": {
-                      "name": "IllegalArgumentException",
-                      "string": "\"null\""
+                    "expression": {
+                      "new": {
+                        "name": "IllegalArgumentException",
+                        "string": "\"null\""
+                      }
                     }
                   }
                 },
@@ -972,7 +974,9 @@
                   "name": "e",
                   "body": {
                     "throw": {
-                      "name": "e"
+                      "expression": {
+                        "name": "e"
+                      }
                     }
                   }
                 }
