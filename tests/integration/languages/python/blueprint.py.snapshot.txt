@@ -371,7 +371,7 @@ module/
   │       │   │   │   │   └─ name = "TypeError"
   │       │   │   │   └─ name = "e"
   │       │   │   └─ body/raise/
-  │       │   │       ├─ call/
+  │       │   │       ├─ expression/call/
   │       │   │       │   ├─ name = "RuntimeError"
   │       │   │       │   └─ string = "\"bad\""
   │       │   │       └─ name = "e"

@@ -632,9 +632,11 @@
               "name": "e",
               "body": {
                 "raise": {
-                  "call": {
-                    "name": "RuntimeError",
-                    "string": "\"bad\""
+                  "expression": {
+                    "call": {
+                      "name": "RuntimeError",
+                      "string": "\"bad\""
+                    }
                   },
                   "name": "e"
                 }

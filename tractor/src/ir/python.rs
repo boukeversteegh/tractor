@@ -474,7 +474,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // just renames. Each is lowered to Ir::SimpleStatement with
         // the right element name and the named CST children.
         "assert_statement"  => simple_statement(node, "assert",   source),
-        "raise_statement"   => simple_statement(node, "raise",    source),
+        "raise_statement"   => lower_python_raise(node, source),
         "delete_statement"  => simple_statement(node, "delete",   source),
         "global_statement"  => simple_statement(node, "global",   source),
         "nonlocal_statement"=> simple_statement(node, "nonlocal", source),
@@ -1382,6 +1382,48 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
         .map(|c| lower_node(c, source))
         .collect();
     Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
+}
+
+/// Lower a Python `raise X` / `raise X from Y` so the raised
+/// expression sits under an `<expression>` host (Principle #5,
+/// matches `<yield>` / `<return>`). The `from` cause stays as a
+/// trailing bare child for now — distinguishing it from the
+/// primary expression cleanly would need a `<from>` slot, which
+/// is a separate iter.
+fn lower_python_raise(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let mut children: Vec<Ir> = Vec::new();
+    let mut first = true;
+    for c in node.named_children(&mut cursor) {
+        let inner = lower_node(c, source);
+        if first {
+            // Wrap the raised expression in `<expression>` — same
+            // shape `<return>` and `<yield>` use for their operands.
+            let cr = inner.range();
+            let cs = inner.span();
+            children.push(Ir::SimpleStatement {
+                element_name: "expression",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children: vec![inner],
+                range: cr,
+                span: cs,
+            });
+            first = false;
+        } else {
+            children.push(inner);
+        }
+    }
+    Ir::SimpleStatement {
+        element_name: "raise",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
 }
 
 /// Lower a Python `yield expr` / `yield from expr` so the yielded
