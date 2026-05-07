@@ -85,8 +85,22 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             if named.len() == 1 && named[0].kind() == "identifier" {
                 bracket_stripped_name(range, span, source, "name")
             } else {
+                // Walk all children to swallow anonymous `.` tokens
+                // between segments via `Ir::Skip` (otherwise they
+                // leak as gap text).
+                let mut cur = node.walk();
+                let kids: Vec<Ir> = node
+                    .children(&mut cur)
+                    .map(|c| {
+                        if c.is_named() {
+                            lower_node(c, source)
+                        } else {
+                            Ir::Skip { range: range_of(c), span: span_of(c) }
+                        }
+                    })
+                    .collect();
                 Ir::Inline {
-                    children: named.into_iter().map(|c| lower_node(c, source)).collect(),
+                    children: kids,
                     list_name: None,
                     range, span,
                 }
@@ -270,18 +284,25 @@ fn lower_object_reference(node: TsNode<'_>, source: &str) -> Ir {
         };
     }
     // Qualified — leading identifiers become <schema>, last one
-    // stays as <name>. Re-walk all named children (preserving
-    // non-identifier children like dots / brackets via gap text).
+    // stays as <name>. Walk *all* children (named + anonymous) so
+    // we can `Ir::Skip` the inter-segment `.` punctuation tokens
+    // — without that, the dots leak as gap text between segments.
     let last_idx = id_children.len() - 1;
     let last_id_byte = id_children[last_idx].start_byte();
     let mut cursor2 = node.walk();
     let children: Vec<Ir> = node
-        .named_children(&mut cursor2)
+        .children(&mut cursor2)
         .map(|c| {
-            if c.kind() == "identifier" && c.start_byte() != last_id_byte {
-                bracket_stripped_name(range_of(c), span_of(c), source, "schema")
+            if c.is_named() {
+                if c.kind() == "identifier" && c.start_byte() != last_id_byte {
+                    bracket_stripped_name(range_of(c), span_of(c), source, "schema")
+                } else {
+                    lower_node(c, source)
+                }
             } else {
-                lower_node(c, source)
+                // Anonymous tokens (`.`, etc.) — consume their bytes
+                // so they don't leak as gap text.
+                Ir::Skip { range: range_of(c), span: span_of(c) }
             }
         })
         .collect();

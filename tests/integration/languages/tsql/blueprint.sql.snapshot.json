@@ -28,7 +28,11 @@
   "statements": [
     {
       "select": {
-        "$skip": null,
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "names": [
           "u",
           "Name",
@@ -45,6 +49,7 @@
         "where": {
           "$skip": null,
           "compare": {
+            "$skip": null,
             "names": [
               "u",
               "Age"
@@ -59,6 +64,7 @@
             null
           ],
           "target": {
+            "$skip": null,
             "names": [
               "u",
               "Name"
@@ -122,6 +128,8 @@
           null,
           null,
           null,
+          null,
+          null,
           null
         ],
         "schema": "dbo",
@@ -137,6 +145,7 @@
         "relation": {
           "schema": "dbo",
           "$skips": [
+            null,
             null,
             null,
             null,
@@ -166,6 +175,7 @@
       "update": {
         "relation": {
           "schema": "dbo",
+          "$skip": null,
           "name": "Config"
         },
         "$skips": [
@@ -192,7 +202,12 @@
     },
     {
       "select": {
-        "$skip": null,
+        "$skips": [
+          null,
+          null,
+          null,
+          null
+        ],
         "names": [
           "o",
           "ID",
@@ -219,13 +234,17 @@
               null
             ],
             "compare": {
+              "op": "=",
               "names": [
                 "o",
                 "UserID",
                 "u",
                 "ID"
               ],
-              "op": "="
+              "$skips": [
+                null,
+                null
+              ]
             }
           },
           {
@@ -239,19 +258,24 @@
               "alias": "a"
             },
             "compare": {
+              "op": "=",
               "names": [
                 "u",
                 "ID",
                 "a",
                 "UserID"
               ],
-              "op": "="
+              "$skips": [
+                null,
+                null
+              ]
             }
           }
         ],
         "where": {
           "$skip": null,
           "compare": {
+            "$skip": null,
             "names": [
               "o",
               "Total"
@@ -303,7 +327,10 @@
     },
     {
       "select": {
-        "$skip": null,
+        "$skips": [
+          null,
+          null
+        ],
         "names": [
           "u",
           "Name"
@@ -333,13 +360,17 @@
                 "where": {
                   "$skip": null,
                   "compare": {
+                    "op": "=",
                     "names": [
                       "o",
                       "UserID",
                       "u",
                       "ID"
                     ],
-                    "op": "="
+                    "$skips": [
+                      null,
+                      null
+                    ]
                   }
                 }
               }
@@ -712,13 +743,17 @@
         "s"
       ],
       "compare": {
+        "op": "=",
         "names": [
           "t",
           "ID",
           "s",
           "ID"
         ],
-        "op": "="
+        "$skips": [
+          null,
+          null
+        ]
       },
       "whens": [
         {
@@ -735,6 +770,10 @@
               "Name",
               "s",
               "Name"
+            ],
+            "$skips": [
+              null,
+              null
             ]
           }
         },
@@ -764,6 +803,10 @@
                 "ID",
                 "s",
                 "Name"
+              ],
+              "$skips": [
+                null,
+                null
               ]
             }
           ]
@@ -808,6 +851,7 @@
     {
       "function": {
         "$skips": [
+          null,
           null,
           null,
           null
