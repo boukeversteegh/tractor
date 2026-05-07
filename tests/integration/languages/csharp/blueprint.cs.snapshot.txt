@@ -62,15 +62,13 @@ unit/
   │   ├─ struct[public and readonly]/
   │   │   ├─ name = "Point"
   │   │   └─ body/
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and get]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
-  │   │       │   ├─ get = "get;"
   │   │       │   └─ value/expression/name = "x"
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and get]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
-  │   │       │   ├─ get = "get;"
   │   │       │   └─ value/expression/name = "y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "Point"
@@ -190,22 +188,17 @@ unit/
   │   │       ├─ field[private]/
   │   │       │   ├─ type/name = "int"
   │   │       │   └─ name = "_version"
-  │   │       ├─ property[public]/
+  │   │       ├─ property[public and get and init]/
   │   │       │   ├─ type/name = "int"
-  │   │       │   ├─ name = "Id"
-  │   │       │   ├─ get = "get;"
-  │   │       │   └─ init = "init;"
-  │   │       ├─ property[public]/
+  │   │       │   └─ name = "Id"
+  │   │       ├─ property[public and get and set]/
   │   │       │   ├─ type/name = "string"
   │   │       │   ├─ name = "Name"
-  │   │       │   ├─ get = "get;"
-  │   │       │   ├─ set = "set;"
   │   │       │   └─ value/expression/string = "\"\""
-  │   │       ├─ property[public and virtual]/
+  │   │       ├─ property[public and virtual and get]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
-  │   │       │   ├─ get = "get;"
-  │   │       │   ├─ set[protected] = "protected set;"
+  │   │       │   ├─ set[protected]
   │   │       │   └─ value/expression/object[access]/
   │   │       │       ├─ name = "Priority"
   │   │       │       └─ member/name = "Low"
@@ -944,11 +937,9 @@ unit/
       │       │   ├─ name = "Container"
       │       │   ├─ generic[class and new]/name = "T"
       │       │   └─ body/
-      │       │       ├─ property[public]/
+      │       │       ├─ property[public and get and set]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ name = "Value"
-      │       │       │   ├─ get = "get;"
-      │       │       │   ├─ set = "set;"
       │       │       │   └─ value/expression/new/name = "T"
       │       │       ├─ indexer[public]/
       │       │       │   ├─ type/name = "T"

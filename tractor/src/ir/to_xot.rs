@@ -2106,9 +2106,12 @@ fn render_ir_accessor(
         emit_gap(xot, node, source, range.start, br.start)?;
         render_to_xot(xot, node, b, source)?;
         emit_gap(xot, node, source, br.end, range.end)?;
-    } else {
-        emit_gap(xot, node, source, range.start, range.end)?;
     }
+    // Auto-accessors (no body) render as self-closing markers —
+    // `<get/>` / `<set/>` / `<init/>`. The accessor's element name
+    // already conveys the role; emitting the `get;` keyword + `;`
+    // as text content leaks syntax (Principle #2) and turns
+    // marker-shaped accessors into text leaves (Principle #13).
     Ok(node)
 }
 
