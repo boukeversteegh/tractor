@@ -256,7 +256,7 @@ file/
   │           │   └─ right/expression/compare/
   │           │       ├─ left/expression/name = "DeletedAt"
   │           │       ├─ op = "IS"
-  │           │       └─ right/expression[literal]
+  │           │       └─ right/expression/literal = "NULL"
   │           ├─ op = "AND"
   │           └─ right/expression/compare/
   │               ├─ left/expression/name = "Role"

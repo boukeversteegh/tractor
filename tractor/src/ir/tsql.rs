@@ -120,7 +120,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         "int" => Ir::Int { range, span },
-        "literal" => simple_statement(node, "literal", source),
+        // SQL literals are leaf tokens (`'hello'`, `42`, `0xFF`).
+        // Lower as text-leaf with element_name="literal" via Atom
+        // so JSON renders the source text directly instead of an
+        // empty `{}` (the previous SimpleStatement had no children
+        // and JSON had no text leaf to emit).
+        "literal" => Ir::Atom { element_name: "literal", range, span },
         "string" | "national_string" => Ir::String { range, span },
         "comment" | "line_comment" | "block_comment" => {
             Ir::Comment { leading: false, trailing: false, range, span }
