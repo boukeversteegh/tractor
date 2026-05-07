@@ -75,16 +75,14 @@
     {
       "insert": {
         "name": "AuditLog",
-        "columns": {
-          "columns": [
-            {
-              "name": "Action"
-            },
-            {
-              "name": "Timestamp"
-            }
-          ]
-        },
+        "columns": [
+          {
+            "name": "Action"
+          },
+          {
+            "name": "Timestamp"
+          }
+        ],
         "values": {
           "literal": "'UserQuery'",
           "call": {

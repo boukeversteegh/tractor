@@ -913,6 +913,26 @@ impl<'a> Renderer<'a> {
             }
             let key = self.element_name(c);
             let val = self.render(c, true);
+            // Collapse double-wrap from pluralized children. When a
+            // SimpleStatement-shaped child renders as `{plural:
+            // [...]}` where `plural` equals `pluralize(key)`, lift
+            // the inner array directly under the parent's key:
+            //
+            //     "columns": { "columns": [...] }   →   "columns": [...]
+            //
+            // Triggered by T-SQL INSERT's `<columns><column/>...`
+            // and similar plural-of-self wrappers across languages.
+            if let Value::Object(map) = &val {
+                if map.len() == 1 {
+                    if let Some((inner_key, _)) = map.iter().next() {
+                        if pluralize_list_name(key) == inner_key.as_str() {
+                            let inner_val = map.values().next().cloned().unwrap();
+                            shape.put(key, inner_val);
+                            continue;
+                        }
+                    }
+                }
+            }
             shape.list_with(key, val);
         }
     }
