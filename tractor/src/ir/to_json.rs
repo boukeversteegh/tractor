@@ -846,7 +846,13 @@ impl<'a> Renderer<'a> {
     fn op_value(&self, op_text: &str, op_marker: &str) -> Value {
         let mut obj = Map::new();
         obj.insert("text".into(), Value::String(op_text.to_string()));
-        obj.insert(op_marker.to_string(), Value::Bool(true));
+        // Some operators have no semantic marker (e.g. `=`, `<`,
+        // `>` in TSQL, where comparison polarity is implied by the
+        // op text itself). Skip the marker entry rather than
+        // emitting `"": true` with an empty key.
+        if !op_marker.is_empty() {
+            obj.insert(op_marker.to_string(), Value::Bool(true));
+        }
         Value::Object(obj)
     }
 

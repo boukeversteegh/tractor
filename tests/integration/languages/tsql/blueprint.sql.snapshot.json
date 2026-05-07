@@ -57,8 +57,7 @@
               ]
             },
             "op": {
-              "text": ">",
-              "": true
+              "text": ">"
             },
             "right": {}
           }
@@ -102,8 +101,7 @@
           "compare": {
             "left": "CreatedAt",
             "op": {
-              "text": "<",
-              "": true
+              "text": "<"
             },
             "right": {}
           }
@@ -155,8 +153,7 @@
         "assign": {
           "left": "Value",
           "op": {
-            "text": "=",
-            "": true
+            "text": "="
           },
           "right": "@NewValue"
         },
@@ -166,8 +163,7 @@
               "name": "Key"
             },
             "op": {
-              "text": "=",
-              "": true
+              "text": "="
             },
             "right": "@KeyName"
           }
@@ -216,8 +212,7 @@
                 ]
               },
               "op": {
-                "text": "=",
-                "": true
+                "text": "="
               },
               "right": {
                 "names": [
@@ -241,8 +236,7 @@
                 ]
               },
               "op": {
-                "text": "=",
-                "": true
+                "text": "="
               },
               "right": {
                 "names": [
@@ -262,8 +256,7 @@
               ]
             },
             "op": {
-              "text": ">",
-              "": true
+              "text": ">"
             },
             "right": {}
           }
@@ -284,8 +277,7 @@
           "compare": {
             "left": "ID",
             "op": {
-              "text": "IN",
-              "": true
+              "text": "IN"
             },
             "right": {
               "select": {
@@ -301,8 +293,7 @@
                   "compare": {
                     "left": "Total",
                     "op": {
-                      "text": ">",
-                      "": true
+                      "text": ">"
                     },
                     "right": {}
                   }
@@ -349,8 +340,7 @@
                       ]
                     },
                     "op": {
-                      "text": "=",
-                      "": true
+                      "text": "="
                     },
                     "right": {
                       "names": [
@@ -408,8 +398,7 @@
               }
             },
             "op": {
-              "text": ">",
-              "": true
+              "text": ">"
             },
             "right": {}
           }
@@ -428,8 +417,7 @@
                 "compare": {
                   "left": "Age",
                   "op": {
-                    "text": ">=",
-                    "": true
+                    "text": ">="
                   },
                   "right": {}
                 },
@@ -471,8 +459,7 @@
               "compare": {
                 "left": "Active",
                 "op": {
-                  "text": "=",
-                  "": true
+                  "text": "="
                 },
                 "right": {}
               }
@@ -602,33 +589,28 @@
               "left": {
                 "left": "Email",
                 "op": {
-                  "text": "LIKE",
-                  "": true
+                  "text": "LIKE"
                 },
                 "right": {}
               },
               "op": {
-                "text": "AND",
-                "": true
+                "text": "AND"
               },
               "right": {
                 "left": "DeletedAt",
                 "op": {
-                  "text": "IS",
-                  "": true
+                  "text": "IS"
                 },
                 "right": {}
               }
             },
             "op": {
-              "text": "AND",
-              "": true
+              "text": "AND"
             },
             "right": {
               "left": "Role",
               "op": {
-                "text": "IN",
-                "": true
+                "text": "IN"
               },
               "right": {
                 "literals": [
@@ -699,8 +681,7 @@
           ]
         },
         "op": {
-          "text": "=",
-          "": true
+          "text": "="
         },
         "right": {
           "names": [
@@ -719,8 +700,7 @@
               ]
             },
             "op": {
-              "text": "=",
-              "": true
+              "text": "="
             },
             "right": {
               "names": [
@@ -778,8 +758,7 @@
           "compare": {
             "left": "Active",
             "op": {
-              "text": "=",
-              "": true
+              "text": "="
             },
             "right": {}
           }
@@ -846,8 +825,7 @@
             "compare": {
               "left": "Active",
               "op": {
-                "text": "=",
-                "": true
+                "text": "="
               },
               "right": {}
             }
@@ -894,14 +872,12 @@
           "assign": {
             "left": "Balance",
             "op": {
-              "text": "=",
-              "": true
+              "text": "="
             },
             "right": {
               "left": "Balance",
               "op": {
-                "text": "-",
-                "": true
+                "text": "-"
               },
               "right": {}
             }
@@ -910,8 +886,7 @@
             "compare": {
               "left": "ID",
               "op": {
-                "text": "=",
-                "": true
+                "text": "="
               },
               "right": {}
             }
@@ -926,14 +901,12 @@
           "assign": {
             "left": "Balance",
             "op": {
-              "text": "=",
-              "": true
+              "text": "="
             },
             "right": {
               "left": "Balance",
               "op": {
-                "text": "+",
-                "": true
+                "text": "+"
               },
               "right": {}
             }
@@ -942,8 +915,7 @@
             "compare": {
               "left": "ID",
               "op": {
-                "text": "=",
-                "": true
+                "text": "="
               },
               "right": {}
             }
