@@ -16,14 +16,8 @@ use crate::languages::{collapse_conditionals, collect_named_elements};
 /// Java post-transform: collapse conditionals + wrap expression
 /// positions in `<expression>` hosts (Principle #15).
 pub fn java_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // Normalise Java's flat call shape to the canonical input.
-    // Java emits `<call><object/>NAME...args</call>` where the
-    // method name is a bare `<name>` sibling of `<object>`. The
-    // chain inverter expects `<call><member><object/><property/></member>...args</call>`,
-    // so pre-wrap the `<object>`+`<name>` pair into a synthetic
-    // `<member>` first.
-    crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
+    // Chain inversion is now done in `crate::ir::java` via
+    // `Ir::Access { receiver, segments }`. Removed.
     collapse_conditionals(xot, root)?;
     crate::transform::wrap_expression_positions(
         xot,

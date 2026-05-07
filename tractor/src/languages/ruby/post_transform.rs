@@ -27,8 +27,9 @@ use crate::languages::{collapse_conditionals, collect_named_elements};
 ///    value — so value-producing children of body containers are
 ///    real expression positions and should carry the host.
 pub fn ruby_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // Ruby uses Java's flat call shape (`<call><object/>NAME...</call>`).
-    // Wrap object+name into canonical `<member>` callee, then invert.
+    // Ruby's IR mostly uses `Ir::Access`, but a few CST shapes
+    // (call_expression with bare-name property + chain shapes
+    // unique to Ruby's grammar) still need wrapping + inversion.
     crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
     crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;

@@ -17,11 +17,9 @@ use crate::languages::{collapse_conditionals, collect_named_elements};
 /// positions in `<expression>` hosts (Principle #15) + restructure
 /// `<use>` elements into the unified path/alias/marker shape.
 pub fn php_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    // PHP's `<member>` and `<call>` use the `->` operator and emit
-    // unwrapped slots: receiver as a child with `field="object"`,
-    // access name as a bare `<name>` sibling (no `<property>`).
-    // Pre-pass wraps these into the canonical input shape, then
-    // chain inversion runs.
+    // PHP's IR mostly uses `Ir::Access`, but a few CST shapes
+    // (legacy `<member>` / `<call>` slots) still need wrapping +
+    // inversion via the post-pass.
     php_wrap_member_call_slots(xot, root)?;
     crate::transform::chain_inversion::wrap_flat_call_member(xot, root)?;
     crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
