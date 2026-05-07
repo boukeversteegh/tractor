@@ -496,7 +496,7 @@
                       }
                     },
                     {
-                      "case": {},
+                      "case": true,
                       "expression": {
                         "string": "\"other\""
                       }
@@ -557,7 +557,7 @@
               "body": {
                 "return": {
                   "expression": {
-                    "this": {},
+                    "this": true,
                     "arms": [
                       {
                         "case": {
@@ -725,7 +725,7 @@
                   "type": {
                     "array": true,
                     "name": "int",
-                    "type": {}
+                    "type": true
                   },
                   "name": "arr",
                   "value": {
@@ -979,7 +979,7 @@
                 }
               },
               "lock": {
-                "this": {},
+                "this": true,
                 "body": {
                   "expression": {
                     "name": "SEED"
@@ -1026,7 +1026,7 @@
                         }
                       },
                       {
-                        "case": {},
+                        "case": true,
                         "body": {
                           "yield": {
                             "int": "0"

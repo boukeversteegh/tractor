@@ -120,7 +120,7 @@
             "name": "chr",
             "value": {
               "expression": {
-                "char": {}
+                "char": true
               }
             }
           }
@@ -624,7 +624,7 @@
                         }
                       },
                       {
-                        "pattern": {},
+                        "pattern": true,
                         "value": {
                           "unary": {
                             "int": "99"
@@ -682,7 +682,7 @@
                         }
                       },
                       {
-                        "pattern": {},
+                        "pattern": true,
                         "value": {
                           "string": "\"many\""
                         }
@@ -1229,7 +1229,7 @@
           }
         }
       },
-      "body": {}
+      "body": true
     },
     {
       "pub": true,
@@ -1613,7 +1613,7 @@
                         }
                       },
                       {
-                        "pattern": {},
+                        "pattern": true,
                         "value": {
                           "string": "\"pos\""
                         }
@@ -2475,7 +2475,7 @@
               }
             }
           ],
-          "body": {}
+          "body": true
         }
       }
     }
@@ -2567,7 +2567,7 @@
       "body": {
         "mod": {
           "pub": {
-            "crate": {}
+            "crate": true
           },
           "name": "inner",
           "body": {
@@ -2581,10 +2581,10 @@
             },
             "function": {
               "pub": {
-                "in": {}
+                "in": true
               },
               "name": "path_vis",
-              "body": {}
+              "body": true
             }
           }
         }
@@ -2639,22 +2639,22 @@
     "name": "collect_pairs",
     "arms": [
       {
+        "name": "vec",
         "repetitions": [
           {
             "patterns": [
               {
                 "binding": true,
                 "name": "$key",
-                "fragment": {}
+                "fragment": true
               },
               {
                 "binding": true,
                 "name": "$value",
-                "fragment": {}
+                "fragment": true
               }
             ]
           },
-          {},
           {
             "names": [
               "stringify",
@@ -2662,8 +2662,7 @@
               "$value"
             ]
           }
-        ],
-        "name": "vec"
+        ]
       },
       {
         "names": [

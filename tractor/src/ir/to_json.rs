@@ -882,14 +882,16 @@ impl<'a> Renderer<'a> {
                 shape.flag(self.element_name(c));
                 continue;
             }
-            // Empty zero-width `Ir::SimpleStatement` is a synthetic
-            // marker (e.g. T-SQL JOIN direction `<left/>` /
-            // `<outer/>`). It folds to an XML marker chip via the
-            // empty-element pass; in JSON, surface as a boolean
-            // flag rather than `"\<name\>": {}`.
-            if let Ir::SimpleStatement { children: kids, modifiers, extra_markers, range, .. } = c {
-                if kids.is_empty()
-                    && range.is_empty()
+            // `Ir::SimpleStatement` with no semantic children
+            // (kids empty OR every kid is `Ir::Skip`) is a synthetic
+            // marker — e.g. T-SQL `SELECT *` (`<star>` with one
+            // anonymous-`*` Skip), JOIN direction `<left/>`. It
+            // folds to an XML marker chip via the empty-element
+            // pass; in JSON, surface as a boolean flag rather than
+            // `"\<name\>": {}`.
+            if let Ir::SimpleStatement { children: kids, modifiers, extra_markers, .. } = c {
+                let all_skip_or_empty = kids.iter().all(|k| matches!(k, Ir::Skip { .. }));
+                if all_skip_or_empty
                     && modifiers.marker_names().is_empty()
                     && extra_markers.is_empty()
                 {

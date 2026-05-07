@@ -1029,11 +1029,11 @@
               "interpolations": [
                 {
                   "name": "name",
-                  "cast": {}
+                  "cast": true
                 },
                 {
                   "name": "n",
-                  "format": {}
+                  "format": true
                 },
                 {
                   "string": {

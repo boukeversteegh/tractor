@@ -563,7 +563,7 @@
             "static": true,
             "name": "#counter",
             "value": {
-              "number": {}
+              "number": true
             }
           },
           "methods": [
@@ -690,7 +690,7 @@
                     "let": true,
                     "name": "i",
                     "value": {
-                      "number": {}
+                      "number": true
                     }
                   },
                   "condition": {
@@ -1199,7 +1199,7 @@
             "object": true,
             "pair": {
               "name": "scale",
-              "number": {}
+              "number": true
             },
             "name": "label"
           },
@@ -1408,13 +1408,13 @@
                 {
                   "name": "i",
                   "value": {
-                    "number": {}
+                    "number": true
                   }
                 },
                 {
                   "name": "j",
                   "value": {
-                    "number": {}
+                    "number": true
                   }
                 }
               ]
@@ -1501,14 +1501,14 @@
             "let": true,
             "name": "total",
             "value": {
-              "number": {}
+              "number": true
             }
           },
           {
             "let": true,
             "name": "n",
             "value": {
-              "number": {}
+              "number": true
             }
           }
         ],
@@ -1583,7 +1583,7 @@
                 ],
                 "value": {
                   "expression": {
-                    "number": {}
+                    "number": true
                   }
                 }
               },
@@ -1607,7 +1607,7 @@
             "name": "c",
             "value": {
               "expression": {
-                "number": {}
+                "number": true
               }
             },
             "rest": {
@@ -1790,11 +1790,7 @@
       "value": {
         "object": {
           "access": true,
-          "numbers": [
-            {},
-            {},
-            {}
-          ],
+          "number": true,
           "call": {
             "argument": {
               "parameter": {
@@ -2269,7 +2265,7 @@
         "static": true,
         "name": "counter",
         "value": {
-          "number": {}
+          "number": true
         }
       },
       "block": {

@@ -131,7 +131,7 @@
                       "keyword": true,
                       "name": "id",
                       "value": {
-                        "nil": {}
+                        "nil": true
                       }
                     }
                   ],
@@ -284,7 +284,7 @@
                     "body": {
                       "assign": {
                         "name": "@registry",
-                        "hash": {}
+                        "hash": true
                       }
                     }
                   }
@@ -515,11 +515,11 @@
                         "hash": {
                           "pairs": [
                             {
-                              "symbol": {},
+                              "symbol": true,
                               "name": "@id"
                             },
                             {
-                              "symbol": {},
+                              "symbol": true,
                               "name": "@name"
                             },
                             {
@@ -534,7 +534,7 @@
                         "hash": {
                           "pairs": [
                             {
-                              "symbol": {},
+                              "symbol": true,
                               "int": "1"
                             },
                             {
@@ -573,8 +573,8 @@
                             "name": "data"
                           },
                           "pair": {
-                            "symbol": {},
-                            "nil": {}
+                            "symbol": true,
+                            "nil": true
                           }
                         }
                       }
@@ -623,7 +623,7 @@
                 }
               ],
               "then": {
-                "symbol": {}
+                "symbol": true
               }
             },
             {
@@ -636,7 +636,7 @@
                 }
               },
               "then": {
-                "symbol": {}
+                "symbol": true
               }
             },
             {
@@ -644,7 +644,7 @@
                 "name": "String"
               },
               "then": {
-                "symbol": {}
+                "symbol": true
               }
             },
             {
@@ -658,20 +658,20 @@
                 }
               },
               "then": {
-                "symbol": {}
+                "symbol": true
               }
             },
             {
               "pattern": {
-                "nil": {}
+                "nil": true
               },
               "then": {
-                "symbol": {}
+                "symbol": true
               }
             }
           ],
           "else": {
-            "symbol": {}
+            "symbol": true
           }
         }
       }
@@ -734,7 +734,7 @@
                 },
                 "then": {
                   "if": {
-                    "retry": {},
+                    "retry": true,
                     "false": "false"
                   },
                   "object": {
@@ -889,12 +889,12 @@
               },
               "then": {
                 "expression": {
-                  "symbol": {}
+                  "symbol": true
                 }
               },
               "else": {
                 "expression": {
-                  "symbol": {}
+                  "symbol": true
                 }
               }
             }
@@ -1028,7 +1028,7 @@
         "call": {
           "name": "loop",
           "block": {
-            "break": {}
+            "break": true
           }
         },
         "logicals": [
@@ -1118,7 +1118,7 @@
                     "array": true
                   },
                   "then": {
-                    "symbol": {}
+                    "symbol": true
                   }
                 },
                 {
@@ -1179,7 +1179,7 @@
                     }
                   },
                   "then": {
-                    "symbol": {}
+                    "symbol": true
                   }
                 },
                 {
@@ -1187,7 +1187,7 @@
                     "hash": true,
                     "pattern": {
                       "keyword": true,
-                      "symbol": {},
+                      "symbol": true,
                       "pattern": {
                         "as": true,
                         "names": [
@@ -1211,7 +1211,7 @@
                     ]
                   },
                   "then": {
-                    "symbol": {}
+                    "symbol": true
                   }
                 },
                 {
@@ -1265,7 +1265,7 @@
         },
         "rescue": {
           "name": "result",
-          "symbol": {}
+          "symbol": true
         }
       }
     },

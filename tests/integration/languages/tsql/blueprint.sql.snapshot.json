@@ -92,7 +92,7 @@
       }
     },
     {
-      "delete": {},
+      "delete": true,
       "from": {
         "name": "OldRecords",
         "where": {
@@ -364,7 +364,7 @@
             "call": {
               "name": "COUNT",
               "column": {
-                "star": {}
+                "star": true
               }
             },
             "alias": "HeadCount"
@@ -392,7 +392,7 @@
             "left": {
               "name": "COUNT",
               "column": {
-                "star": {}
+                "star": true
               }
             },
             "op": {
@@ -534,7 +534,7 @@
                 "order": {
                   "target": {
                     "name": "Salary",
-                    "direction": {}
+                    "direction": true
                   }
                 }
               }
@@ -634,7 +634,7 @@
         "order": {
           "target": {
             "name": "Department",
-            "direction": {}
+            "direction": true
           }
         }
       }
@@ -922,5 +922,5 @@
       }
     ]
   },
-  "go": {}
+  "go": true
 }

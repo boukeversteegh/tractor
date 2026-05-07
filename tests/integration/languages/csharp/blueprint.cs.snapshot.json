@@ -442,7 +442,7 @@
                   "string": "\"use V2\""
                 },
                 {
-                  "bool": {}
+                  "bool": true
                 }
               ]
             }
@@ -1017,7 +1017,7 @@
                           "string": "\"big\""
                         },
                         {
-                          "discard": {},
+                          "discard": true,
                           "string": "\"plain\""
                         }
                       ]
@@ -1714,7 +1714,7 @@
                         "name": "Exception"
                       },
                       "body": {
-                        "throw": {}
+                        "throw": true
                       }
                     }
                   ],
@@ -2388,7 +2388,7 @@
                         "string": "\"x-axis\""
                       },
                       {
-                        "discard": {},
+                        "discard": true,
                         "string": "\"other\""
                       }
                     ]
@@ -2634,7 +2634,7 @@
                         "string": "\"exactly three\""
                       },
                       {
-                        "discard": {},
+                        "discard": true,
                         "string": "\"other\""
                       }
                     ]
@@ -3127,7 +3127,7 @@
                           "string": "\"one\""
                         },
                         {
-                          "discard": {},
+                          "discard": true,
                           "string": {
                             "interpolations": [
                               {
@@ -3331,7 +3331,7 @@
                     "string": "\"legacy\""
                   },
                   {
-                    "bool": {}
+                    "bool": true
                   }
                 ]
               },

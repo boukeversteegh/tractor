@@ -529,7 +529,7 @@
       ],
       "body": {
         "return": {
-          "nil": {}
+          "nil": true
         }
       }
     },
@@ -705,7 +705,7 @@
             }
           }
         },
-        "return": {}
+        "return": true
       }
     },
     {
@@ -843,7 +843,7 @@
             }
           }
         },
-        "return": {}
+        "return": true
       }
     },
     {
@@ -1002,7 +1002,7 @@
             }
           }
         },
-        "return": {}
+        "return": true
       }
     },
     {
@@ -1097,7 +1097,7 @@
                   "chan": {
                     "name": "int"
                   },
-                  "nil": {}
+                  "nil": true
                 }
               }
             }
@@ -1139,7 +1139,7 @@
                   "int": "10"
                 }
               },
-              "fallthrough": {}
+              "fallthrough": true
             },
             {
               "value": {
@@ -1380,7 +1380,7 @@
                 },
                 "then": {
                   "body": {
-                    "continue": {}
+                    "continue": true
                   }
                 }
               }
@@ -1672,7 +1672,7 @@
                 "string": {
                   "raw": true
                 },
-                "char": {}
+                "char": true
               }
             }
           },
@@ -1973,7 +1973,7 @@
           }
         },
         "return": {
-          "nil": {}
+          "nil": true
         }
       }
     }

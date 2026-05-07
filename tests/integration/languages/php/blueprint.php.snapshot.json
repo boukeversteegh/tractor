@@ -71,13 +71,13 @@
         "right": {
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "x"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "binary": {
               "left": {
@@ -130,7 +130,7 @@
           "anonymous": true,
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "x"
               }
@@ -139,7 +139,7 @@
           "variable": {
             "name": "pipeline"
           },
-          "type": {},
+          "type": true,
           "body": {
             "return": {
               "binary": {
@@ -175,14 +175,14 @@
           {
             "type": {
               "optional": true,
-              "type": {}
+              "type": true
             },
             "variable": {
               "name": "who"
             }
           }
         ],
-        "type": {}
+        "type": true
       }
     },
     {
@@ -190,7 +190,7 @@
       "method": {
         "public": true,
         "name": "count",
-        "type": {}
+        "type": true
       }
     },
     {
@@ -198,7 +198,7 @@
       "method": {
         "public": true,
         "name": "__toString",
-        "type": {}
+        "type": true
       }
     },
     {
@@ -206,7 +206,7 @@
       "method": {
         "public": true,
         "name": "size",
-        "type": {}
+        "type": true
       }
     }
   ],
@@ -217,13 +217,13 @@
       "name": "log",
       "parameters": [
         {
-          "type": {},
+          "type": true,
           "variable": {
             "name": "msg"
           }
         }
       ],
-      "type": {},
+      "type": true,
       "body": {
         "echo": {
           "string": {
@@ -239,7 +239,7 @@
   },
   "enum": {
     "name": "Status",
-    "type": {},
+    "type": true,
     "constants": [
       {
         "name": "Active",
@@ -257,7 +257,7 @@
     "method": {
       "public": true,
       "name": "label",
-      "type": {},
+      "type": true,
       "body": {
         "return": {
           "match": {
@@ -354,20 +354,20 @@
       "fields": [
         {
           "private": true,
-          "type": {},
+          "type": true,
           "name": "$name"
         },
         {
           "public": true,
           "readonly": true,
-          "type": {},
+          "type": true,
           "name": "$count"
         },
         {
           "protected": true,
           "type": {
             "optional": true,
-            "type": {}
+            "type": true
           },
           "name": "$label",
           "null": "null"
@@ -375,7 +375,7 @@
         {
           "public": true,
           "static": true,
-          "type": {},
+          "type": true,
           "name": "$registry",
           "int": "0"
         }
@@ -386,13 +386,13 @@
           "name": "__construct",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "name"
               }
             },
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "count"
               },
@@ -438,7 +438,7 @@
           "public": true,
           "abstract": true,
           "name": "render",
-          "type": {}
+          "type": true
         },
         {
           "public": true,
@@ -447,7 +447,7 @@
           "name": "create",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "name"
               }
@@ -478,7 +478,7 @@
             {
               "type": {
                 "optional": true,
-                "type": {}
+                "type": true
               },
               "variable": {
                 "name": "who"
@@ -487,13 +487,13 @@
             },
             {
               "variadic": true,
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "extras"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "expression": {
               "assign": {
@@ -603,13 +603,13 @@
           "name": "describe",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "n"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "return": {
               "ternary": {
@@ -649,19 +649,19 @@
           "name": "categorize",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "value"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "return": {
               "match": {
                 "condition": {
                   "expression": {
-                    "bool": {}
+                    "bool": true
                   }
                 },
                 "arms": [
@@ -733,13 +733,13 @@
           "name": "process",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "items"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "expression": {
               "assign": {
@@ -790,7 +790,7 @@
                   },
                   "then": {
                     "body": {
-                      "continue": {}
+                      "continue": true
                     }
                   }
                 },
@@ -834,7 +834,7 @@
                       "name": "e"
                     },
                     "body": {
-                      "continue": {}
+                      "continue": true
                     }
                   }
                 }
@@ -852,13 +852,13 @@
           "name": "transform",
           "parameters": [
             {
-              "type": {},
+              "type": true,
               "variable": {
                 "name": "item"
               }
             }
           ],
-          "type": {},
+          "type": true,
           "body": {
             "return": {
               "variable": {
@@ -879,7 +879,7 @@
             "public": true,
             "readonly": true,
             "promoted": true,
-            "type": {},
+            "type": true,
             "variable": {
               "name": "name"
             }
@@ -887,14 +887,14 @@
           {
             "protected": true,
             "promoted": true,
-            "type": {},
+            "type": true,
             "variable": {
               "name": "count"
             },
             "int": "0"
           }
         ],
-        "body": {}
+        "body": true
       }
     }
   ],
@@ -903,20 +903,20 @@
       "name": "factory",
       "parameters": [
         {
-          "type": {},
+          "type": true,
           "variable": {
             "name": "fn"
           }
         },
         {
           "variadic": true,
-          "type": {},
+          "type": true,
           "variable": {
             "name": "args"
           }
         }
       ],
-      "type": {},
+      "type": true,
       "body": {
         "return": {
           "call": {
@@ -949,13 +949,13 @@
           }
         },
         {
-          "type": {},
+          "type": true,
           "variable": {
             "name": "value"
           }
         }
       ],
-      "type": {},
+      "type": true,
       "body": {
         "comments": [
           {
@@ -1053,7 +1053,7 @@
                   "method": {
                     "public": true,
                     "name": "__toString",
-                    "type": {},
+                    "type": true,
                     "body": {
                       "return": {
                         "string": {}
@@ -1204,7 +1204,7 @@
                 "name": "cast"
               },
               "right": {
-                "type": {},
+                "type": true,
                 "variable": {
                   "name": "value"
                 }
@@ -1388,7 +1388,7 @@
           "match": {
             "condition": {
               "expression": {
-                "bool": {}
+                "bool": true
               }
             },
             "arms": [
@@ -1447,7 +1447,7 @@
           }
         }
       ],
-      "type": {},
+      "type": true,
       "body": {
         "return": {
           "object": {
@@ -1466,27 +1466,24 @@
         {
           "type": {
             "disjunctive": true,
-            "types": [
-              {
-                "intersection": true,
-                "types": [
-                  {
-                    "name": "Stringable"
-                  },
-                  {
-                    "name": "Countable2"
-                  }
-                ]
-              },
-              {}
-            ]
+            "type": {
+              "intersection": true,
+              "types": [
+                {
+                  "name": "Stringable"
+                },
+                {
+                  "name": "Countable2"
+                }
+              ]
+            }
           },
           "variable": {
             "name": "thing"
           }
         }
       ],
-      "type": {},
+      "type": true,
       "body": {
         "return": {
           "binary": {
