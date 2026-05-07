@@ -383,11 +383,8 @@ fn use_ir_pipeline(lang: &str, tree_mode: TreeMode) -> bool {
     match (lang, tree_mode) {
         ("json", TreeMode::Structure) => true,
         ("yaml" | "yml", TreeMode::Structure) => true,
+        ("toml", TreeMode::Structure) => true,
         ("ini" | "env", TreeMode::Structure) => true,
-        // TOML structure mode has edge cases (dotted-table nesting,
-        // array-of-tables collapse, quoted-key sanitization with
-        // @key attr) the lowering doesn't replicate yet. Keeping on
-        // imperative until those land.
         _ => false,
     }
 }

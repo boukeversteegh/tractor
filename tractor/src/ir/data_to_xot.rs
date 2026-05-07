@@ -222,6 +222,20 @@ pub fn render_data_to_xot_keyed(
                 .unwrap_or_else(|| "section".to_string());
             let node = element(xot, &element_name, *span);
             xot.append(parent, node)?;
+            // Special case: array-of-tables (TOML `[[x]]`) lowers to
+            // `Section { name, children: [Sequence([Mapping, ...])] }`
+            // — render each Mapping as a direct `<item>` child of
+            // the section, skipping the outer `<array>` wrapper.
+            if children.len() == 1 {
+                if let DataIr::Sequence { items, .. } = &children[0] {
+                    for item in items {
+                        let item_node = element(xot, "item", item.span());
+                        xot.append(node, item_node)?;
+                        render_keyed_value(xot, item_node, item, source)?;
+                    }
+                    return Ok(node);
+                }
+            }
             for c in children {
                 render_data_to_xot_keyed(xot, node, c, source)?;
             }
@@ -230,11 +244,18 @@ pub fn render_data_to_xot_keyed(
         DataIr::Pair { key, value, span, .. } => {
             // Key text → element name; value renders as the
             // element's content (text for scalars, nested for
-            // Mapping/Sequence).
-            let element_name = scalar_text(key, source).map(sanitize_xml_name)
-                .unwrap_or_else(|| "pair".to_string());
+            // Mapping/Sequence). When sanitization changes the
+            // name (e.g. `"first name"` → `first_name`), add a
+            // `key="…original…"` attribute so the original key
+            // text is queryable + recoverable.
+            let raw_key = scalar_text(key, source).unwrap_or_default();
+            let element_name = sanitize_xml_name(raw_key.clone());
             let node = element(xot, &element_name, *span);
             xot.append(parent, node)?;
+            if !raw_key.is_empty() && raw_key != element_name {
+                let key_attr = xot.add_name("key");
+                xot.attributes_mut(node).insert(key_attr, raw_key);
+            }
             render_keyed_value(xot, node, value, source)?;
             Ok(node)
         }
