@@ -284,7 +284,7 @@ program/
   │               │       └─ member/name = "items"
   │               ├─ catch/
   │               │   ├─ name = "e"
-  │               │   └─ body/block/throw/as/
+  │               │   └─ body/block/throw/expression/as/
   │               │       ├─ name = "e"
   │               │       └─ name = "Error"
   │               └─ finally/body/block/expression/object[access]/
@@ -458,7 +458,7 @@ program/
   │       │   ├─ arm[break]/string = "\"ready\""
   │       │   ├─ arm/
   │       │   │   ├─ string = "\"error\""
-  │       │   │   └─ throw/new/
+  │       │   │   └─ throw/expression/new/
   │       │   │       ├─ name = "Error"
   │       │   │       └─ string = "\"bad\""
   │       │   └─ arm[break]/comment = "/* fallthrough */"

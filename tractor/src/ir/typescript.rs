@@ -741,7 +741,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "try_statement" => simple_statement(node, "try", source),
         "catch_clause" => simple_statement(node, "catch", source),
         "finally_clause" => simple_statement(node, "finally", source),
-        "throw_statement" => simple_statement(node, "throw", source),
+        "throw_statement" => lower_typescript_throw(node, source),
 
         // JSX / TSX. The imperative pipeline mapped these as plain
         // renames (no Custom handlers); SimpleStatement is enough.
@@ -1960,6 +1960,42 @@ fn merge_ts_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
         }
     }
     out
+}
+
+/// Lower `throw expr` so the thrown expression sits under an
+/// `<expression>` host (Principle #5 — matches Python yield/raise,
+/// Java/C# throw, and the existing `<return>` shape across the
+/// codebase).
+fn lower_typescript_throw(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut cursor = node.walk();
+    let inner: Vec<Ir> = node.named_children(&mut cursor)
+        .map(|c| lower_node(c, source))
+        .collect();
+    let children: Vec<Ir> = if inner.is_empty() {
+        Vec::new()
+    } else {
+        let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
+        let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
+        let expr_range = ByteRange::new(expr_start, expr_end);
+        vec![Ir::SimpleStatement {
+            element_name: "expression",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: inner,
+            range: expr_range,
+            span,
+        }]
+    };
+    Ir::SimpleStatement {
+        element_name: "throw",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
 }
 
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {

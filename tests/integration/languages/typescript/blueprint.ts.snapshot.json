@@ -825,11 +825,13 @@
                     "name": "e",
                     "body": {
                       "throw": {
-                        "as": {
-                          "names": [
-                            "e",
-                            "Error"
-                          ]
+                        "expression": {
+                          "as": {
+                            "names": [
+                              "e",
+                              "Error"
+                            ]
+                          }
                         }
                       }
                     }
@@ -884,9 +886,11 @@
               {
                 "string": "\"error\"",
                 "throw": {
-                  "new": {
-                    "name": "Error",
-                    "string": "\"bad\""
+                  "expression": {
+                    "new": {
+                      "name": "Error",
+                      "string": "\"bad\""
+                    }
                   }
                 }
               },
