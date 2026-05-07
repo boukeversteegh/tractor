@@ -16,7 +16,7 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of};
-use super::sql::{ComparisonOp, SqlIr};
+use super::sql::{ComparisonOp, CreateKind, DropKind, SqlIr};
 
 /// Lower a T-SQL `program` CST root to [`SqlIr::File`].
 pub fn lower_sql_root(root: TsNode<'_>, source: &str) -> SqlIr {
@@ -79,6 +79,27 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
 
         // ----- Expressions -------------------------------------------
         "binary_expression" => lower_binary_or_compare(node, source),
+        "between_expression" => lower_between(node, source),
+        "case" => lower_case(node, source),
+        "exists" => lower_exists(node, source),
+        "cast" => lower_cast(node, source),
+        "invocation" => lower_call(node, source),
+
+        // ----- DDL ----------------------------------------------------
+        "create_table" => lower_create(node, CreateKind::Table, source),
+        "create_index" => lower_create(node, CreateKind::Index, source),
+        "create_view" => lower_create(node, CreateKind::View, source),
+        "drop_table" => lower_drop(node, DropKind::Table, source),
+        "drop_index" => lower_drop(node, DropKind::Index, source),
+        "alter_table" => lower_alter(node, source),
+        "add_column" => lower_add_column(node, source),
+        "column_definition" => lower_column_def(node, source),
+
+        // ----- Data types ---------------------------------------------
+        "int" => SqlIr::DataType { name: "int", length: None, range, span },
+        "varchar" => lower_data_type(node, "varchar", source),
+        "nvarchar" => lower_data_type(node, "nvarchar", source),
+        "datetime" => SqlIr::DataType { name: "datetime", length: None, range, span },
 
         // ----- Fallback ----------------------------------------------
         other => SqlIr::Unknown {
@@ -826,6 +847,339 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
+/// `between_expression` CST → `SqlIr::Between { value, low, high }`.
+fn lower_between(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let operands: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| {
+            !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_")
+        })
+        .collect();
+    let value = operands
+        .first()
+        .map(|c| lower_node(*c, source))
+        .unwrap_or(SqlIr::Unknown { kind: "missing_between_value".into(), range, span });
+    let low = operands
+        .get(1)
+        .map(|c| lower_node(*c, source))
+        .unwrap_or(SqlIr::Unknown { kind: "missing_between_low".into(), range, span });
+    let high = operands
+        .get(2)
+        .map(|c| lower_node(*c, source))
+        .unwrap_or(SqlIr::Unknown { kind: "missing_between_high".into(), range, span });
+    SqlIr::Between {
+        value: Box::new(value),
+        low: Box::new(low),
+        high: Box::new(high),
+        range,
+        span,
+    }
+}
+
+/// `case` CST → `SqlIr::Case { whens, else_ }`. The flat CST
+/// (keyword_when, cond, keyword_then, value, [keyword_when ...
+/// keyword_else], elseval, keyword_end) is grouped into typed
+/// When { condition, value } arms.
+fn lower_case(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut whens: Vec<SqlIr> = Vec::new();
+    let mut else_: Option<Box<SqlIr>> = None;
+
+    #[derive(Copy, Clone, PartialEq)]
+    enum State { Before, AfterWhen, AfterThen, AfterElse }
+    let mut state = State::Before;
+    let mut cond_buffer: Option<SqlIr> = None;
+    let mut when_start: super::types::ByteRange =
+        super::types::ByteRange::empty_at(range.start);
+
+    let mut cur = node.walk();
+    for c in node.named_children(&mut cur) {
+        let ck = c.kind();
+        if ck == "keyword_when" {
+            // Flush previous when if both pieces present.
+            if let Some(cond) = cond_buffer.take() {
+                // Was AfterThen but THEN value missing — leave; or
+                // we already pushed via AfterThen path below.
+                let _ = cond;
+            }
+            state = State::AfterWhen;
+            when_start = range_of(c);
+            continue;
+        }
+        if ck == "keyword_then" {
+            state = State::AfterThen;
+            continue;
+        }
+        if ck == "keyword_else" {
+            state = State::AfterElse;
+            continue;
+        }
+        if ck == "keyword_end" || ck == "keyword_case" {
+            continue;
+        }
+        if ck.starts_with("keyword_") || ck.starts_with("op_") {
+            continue;
+        }
+
+        match state {
+            State::AfterWhen => {
+                cond_buffer = Some(lower_node(c, source));
+            }
+            State::AfterThen => {
+                let cond = cond_buffer.take().unwrap_or(SqlIr::Unknown {
+                    kind: "missing_when_condition".into(),
+                    range,
+                    span,
+                });
+                let value = lower_node(c, source);
+                let v_end = value.range().end;
+                whens.push(SqlIr::When {
+                    condition: Box::new(cond),
+                    value: Box::new(value),
+                    range: super::types::ByteRange::new(when_start.start, v_end),
+                    span,
+                });
+            }
+            State::AfterElse => {
+                else_ = Some(Box::new(lower_node(c, source)));
+            }
+            State::Before => {}
+        }
+    }
+
+    SqlIr::Case { whens, else_, range, span }
+}
+
+/// `exists` CST → `SqlIr::Exists { subquery }`.
+fn lower_exists(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let inner = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .next()
+        .map(|c| lower_node(c, source))
+        .unwrap_or(SqlIr::Unknown { kind: "empty_exists".into(), range, span });
+    SqlIr::Exists { subquery: Box::new(inner), range, span }
+}
+
+/// `cast` CST → `SqlIr::Cast { value, type_ }`.
+fn lower_cast(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let value = named.first().map(|c| lower_node(*c, source)).unwrap_or(
+        SqlIr::Unknown { kind: "missing_cast_value".into(), range, span },
+    );
+    let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
+        SqlIr::Unknown { kind: "missing_cast_type".into(), range, span },
+    );
+    SqlIr::Cast {
+        value: Box::new(value),
+        type_: Box::new(type_),
+        range,
+        span,
+    }
+}
+
+/// `invocation` CST → `SqlIr::Call { callee, arguments }`.
+fn lower_call(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let callee = named.first().map(|c| lower_node(*c, source)).unwrap_or(
+        SqlIr::Unknown { kind: "missing_call_callee".into(), range, span },
+    );
+    let arguments: Vec<SqlIr> = named.iter().skip(1).map(|c| lower_node(*c, source)).collect();
+    SqlIr::Call {
+        callee: Box::new(callee),
+        arguments,
+        range,
+        span,
+    }
+}
+
+/// `create_table` / `create_view` / `create_index` → `SqlIr::Create`.
+fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let name = named.first().map(|c| {
+        // Usually object_reference/identifier — pull the inner identifier.
+        let mut nc = c.walk();
+        let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+        if let Some(only) = inner.first() {
+            SqlIr::Identifier {
+                range: range_of(*only),
+                span: span_of(*only),
+            }
+        } else {
+            SqlIr::Identifier {
+                range: range_of(*c),
+                span: span_of(*c),
+            }
+        }
+    }).unwrap_or(SqlIr::Unknown { kind: "missing_create_name".into(), range, span });
+    // Body collects the substantive children. For CREATE TABLE the
+    // grammar wraps column definitions in `column_definitions`; we
+    // inline its children so `body` is a flat list of `ColumnDef`.
+    let mut body: Vec<SqlIr> = Vec::new();
+    for c in named.iter().skip(1) {
+        if c.kind() == "column_definitions" {
+            let mut sub = c.walk();
+            for inner in c.named_children(&mut sub) {
+                if !inner.kind().starts_with("keyword_") {
+                    body.push(lower_node(inner, source));
+                }
+            }
+        } else {
+            body.push(lower_node(*c, source));
+        }
+    }
+    SqlIr::Create {
+        kind,
+        name: Box::new(name),
+        body,
+        range,
+        span,
+    }
+}
+
+/// `drop_table` / `drop_index` → `SqlIr::Drop`.
+fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let name = named.first().map(|c| {
+        let mut nc = c.walk();
+        let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+        if let Some(only) = inner.first() {
+            SqlIr::Identifier { range: range_of(*only), span: span_of(*only) }
+        } else {
+            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+        }
+    }).unwrap_or(SqlIr::Unknown { kind: "missing_drop_name".into(), range, span });
+    let _ = source;
+    SqlIr::Drop {
+        kind,
+        name: Box::new(name),
+        range,
+        span,
+    }
+}
+
+/// `alter_table` → `SqlIr::Alter { name, operation }`.
+fn lower_alter(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let name = named.first().map(|c| {
+        let mut nc = c.walk();
+        let inner: Vec<TsNode<'_>> = c.named_children(&mut nc).collect();
+        if let Some(only) = inner.first() {
+            SqlIr::Identifier { range: range_of(*only), span: span_of(*only) }
+        } else {
+            SqlIr::Identifier { range: range_of(*c), span: span_of(*c) }
+        }
+    }).unwrap_or(SqlIr::Unknown { kind: "missing_alter_name".into(), range, span });
+    let operation = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
+        SqlIr::Unknown { kind: "missing_alter_operation".into(), range, span },
+    );
+    SqlIr::Alter {
+        name: Box::new(name),
+        operation: Box::new(operation),
+        range,
+        span,
+    }
+}
+
+/// `add_column` CST → `SqlIr::AddColumn { column }`.
+fn lower_add_column(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let column = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .next()
+        .map(|c| lower_node(c, source))
+        .unwrap_or(SqlIr::Unknown { kind: "missing_add_column".into(), range, span });
+    SqlIr::AddColumn {
+        column: Box::new(column),
+        range,
+        span,
+    }
+}
+
+/// `column_definition` CST → `SqlIr::ColumnDef { name, type_, constraints }`.
+fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let named: Vec<TsNode<'_>> = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .collect();
+    let name = named.first().map(|c| SqlIr::Identifier {
+        range: range_of(*c),
+        span: span_of(*c),
+    }).unwrap_or(SqlIr::Unknown { kind: "missing_column_name".into(), range, span });
+    let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
+        SqlIr::Unknown { kind: "missing_column_type".into(), range, span },
+    );
+    let constraints: Vec<SqlIr> = named.iter().skip(2).map(|c| lower_node(*c, source)).collect();
+    SqlIr::ColumnDef {
+        name: Box::new(name),
+        type_: Box::new(type_),
+        constraints,
+        range,
+        span,
+    }
+}
+
+/// `varchar` / `nvarchar` etc. with optional length — `VARCHAR(100)`.
+fn lower_data_type(node: TsNode<'_>, name: &'static str, source: &str) -> SqlIr {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cur = node.walk();
+    let length = node
+        .named_children(&mut cur)
+        .filter(|c| !c.kind().starts_with("keyword_"))
+        .next()
+        .map(|c| Box::new(lower_node(c, source)));
+    SqlIr::DataType {
+        name,
+        length,
+        range,
+        span,
+    }
+}
+
 fn comparison_op_from_text(text: &str) -> Option<ComparisonOp> {
     Some(match text {
         "=" => ComparisonOp::Equal,
@@ -904,6 +1258,74 @@ mod tests {
         assert_eq!(assignments.len(), 1);
         assert!(matches!(&assignments[0], SqlIr::Assign { .. }));
         assert!(where_.is_some());
+    }
+
+    #[test]
+    fn create_table_lowers_to_typed_create_with_column_defs() {
+        let source = "CREATE TABLE T (id INT, name VARCHAR(100))";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Create { kind, body, .. } = inner.as_ref() else {
+            panic!("expected Create, got {inner:?}");
+        };
+        assert_eq!(*kind, super::super::sql::CreateKind::Table);
+        assert_eq!(body.len(), 2);
+        assert!(body.iter().all(|c| matches!(c, SqlIr::ColumnDef { .. })));
+    }
+
+    #[test]
+    fn drop_table_lowers_to_typed_drop() {
+        let source = "DROP TABLE T";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Drop { kind, .. } = inner.as_ref() else {
+            panic!("expected Drop, got {inner:?}");
+        };
+        assert_eq!(*kind, super::super::sql::DropKind::Table);
+    }
+
+    #[test]
+    fn between_expression_lowers_to_typed_between() {
+        let source = "SELECT a BETWEEN 1 AND 10 FROM x";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Select { columns, .. } = inner.as_ref() else { panic!(); };
+        // The first column item should be a Column wrapping a Between
+        // (or Between directly if term unwrapping is added later).
+        match columns.first() {
+            Some(SqlIr::Column { expression, .. }) => {
+                assert!(matches!(expression.as_ref(), SqlIr::Between { .. }),
+                    "column expression: {expression:?}");
+            }
+            Some(SqlIr::Between { .. }) => {}
+            other => panic!("unexpected column: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn case_when_then_else_lowers_to_typed_case() {
+        let source = "SELECT CASE WHEN a > 0 THEN 'P' ELSE 'N' END FROM x";
+        let tree = parse_tsql(source);
+        let ir = lower_sql_root(tree.root_node(), source);
+        let SqlIr::File { statements, .. } = ir else { panic!(); };
+        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlIr::Select { columns, .. } = inner.as_ref() else { panic!(); };
+        let case_ir = match columns.first() {
+            Some(SqlIr::Column { expression, .. }) => expression.as_ref(),
+            Some(other) => other,
+            None => panic!("no columns"),
+        };
+        let SqlIr::Case { whens, else_, .. } = case_ir else {
+            panic!("expected Case, got {case_ir:?}");
+        };
+        assert_eq!(whens.len(), 1);
+        assert!(else_.is_some());
     }
 
     #[test]
