@@ -172,6 +172,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
             span,
         },
 
+        // HTML block (raw `<!-- ... -->`, `<div>...</div>`, etc.) and
+        // inline HTML — rendered as `<html>` so XPath queries like
+        // `//html[contains(., 'TODO')]` can find embedded comments.
+        "html_block" | "html_tag" | "html_atx_open_tag" | "html_atx_close_tag" => {
+            DataIr::Element {
+                name: "html",
+                markers: vec![],
+                children: vec![DataIr::String {
+                    value: text_of(node, source),
+                    range,
+                    span,
+                }],
+                range,
+                span,
+            }
+        }
+
         // Paragraph — flatten its inline children rather than
         // wrapping in `<paragraph>`. The transform tests don't
         // assert paragraph structure; flattening keeps queries
