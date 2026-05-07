@@ -118,10 +118,21 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "go_statement" => simple_statement(node, "go", source),
         "execute_statement" => simple_statement(node, "exec", source),
         "set_statement" => simple_statement(node, "set", source),
-        "select_expression" => Ir::Inline {
-            children: lower_children(node, source),
-            list_name: None,
-            range, span,
+        "select_expression" => {
+            // Walk all children to swallow anonymous `,` separators
+            // between columns via `Ir::Skip`.
+            let mut cur = node.walk();
+            let kids: Vec<Ir> = node
+                .children(&mut cur)
+                .map(|c| {
+                    if c.is_named() {
+                        lower_node(c, source)
+                    } else {
+                        Ir::Skip { range: range_of(c), span: span_of(c) }
+                    }
+                })
+                .collect();
+            Ir::Inline { children: kids, list_name: None, range, span }
         },
         "select" => simple_statement(node, "select", source),
         "from" => simple_statement(node, "from", source),
@@ -170,9 +181,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         },
         "all_fields" => simple_statement(node, "star", source),
         "list" => simple_statement(node, "list", source),
-        "term" => Ir::Inline {
+        "term" => Ir::SimpleStatement {
+            element_name: "column",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
             children: lower_term_children(node, source),
-            list_name: None,
             range, span,
         },
         "relation" => Ir::SimpleStatement {
@@ -244,8 +257,23 @@ fn bracket_stripped_name(
 }
 
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    // Walk *all* children (named + anonymous). Anonymous tokens —
+    // commas, parens, dots, etc. — lower to `Ir::Skip` so their
+    // bytes don't leak as gap text under the parent. Named
+    // children lower normally; the early `keyword_*` / `op_*`
+    // detection in `lower_node` already produces `Ir::Skip` for
+    // those.
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+    let children: Vec<Ir> = node
+        .children(&mut cursor)
+        .map(|c| {
+            if c.is_named() {
+                lower_node(c, source)
+            } else {
+                Ir::Skip { range: range_of(c), span: span_of(c) }
+            }
+        })
+        .collect();
     Ir::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),

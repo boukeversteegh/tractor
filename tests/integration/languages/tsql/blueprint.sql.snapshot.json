@@ -30,14 +30,23 @@
       "select": {
         "$skips": [
           null,
-          null,
           null
         ],
-        "names": [
-          "u",
-          "Name",
-          "u",
-          "Age"
+        "columns": [
+          {
+            "$skip": null,
+            "names": [
+              "u",
+              "Name"
+            ]
+          },
+          {
+            "$skip": null,
+            "names": [
+              "u",
+              "Age"
+            ]
+          }
         ]
       },
       "from": {
@@ -83,6 +92,11 @@
         "name": "AuditLog",
         "lists": [
           {
+            "$skips": [
+              null,
+              null,
+              null
+            ],
             "columns": [
               {
                 "name": "Action"
@@ -94,8 +108,17 @@
           },
           {
             "literal": {},
+            "$skips": [
+              null,
+              null,
+              null
+            ],
             "call": {
-              "name": "GETDATE"
+              "name": "GETDATE",
+              "$skips": [
+                null,
+                null
+              ]
             }
           }
         ]
@@ -122,23 +145,32 @@
       "select": {
         "$skips": [
           null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
           null
         ],
-        "schema": "dbo",
-        "names": [
-          "Users",
-          "Name"
-        ],
-        "alias": "UserName",
-        "var": "@StartDate"
+        "columns": [
+          {
+            "schema": "dbo",
+            "$skips": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "names": [
+              "Users",
+              "Name"
+            ],
+            "alias": "UserName"
+          },
+          {
+            "var": "@StartDate"
+          }
+        ]
       },
       "from": {
         "$skip": null,
@@ -184,6 +216,7 @@
         ],
         "assign": {
           "name": "Value",
+          "$skip": null,
           "var": "@NewValue"
         },
         "where": {
@@ -205,16 +238,30 @@
         "$skips": [
           null,
           null,
-          null,
           null
         ],
-        "names": [
-          "o",
-          "ID",
-          "u",
-          "Name",
-          "a",
-          "City"
+        "columns": [
+          {
+            "$skip": null,
+            "names": [
+              "o",
+              "ID"
+            ]
+          },
+          {
+            "$skip": null,
+            "names": [
+              "u",
+              "Name"
+            ]
+          },
+          {
+            "$skip": null,
+            "names": [
+              "a",
+              "City"
+            ]
+          }
         ]
       },
       "from": {
@@ -289,7 +336,9 @@
     {
       "select": {
         "$skip": null,
-        "name": "Name"
+        "column": {
+          "name": "Name"
+        }
       },
       "from": {
         "$skip": null,
@@ -302,10 +351,6 @@
             "name": "ID",
             "$skip": null,
             "subquery": {
-              "select": {
-                "$skip": null,
-                "name": "UserID"
-              },
               "from": {
                 "$skip": null,
                 "relation": {
@@ -319,7 +364,17 @@
                     "literal": {}
                   }
                 }
-              }
+              },
+              "select": {
+                "$skip": null,
+                "column": {
+                  "name": "UserID"
+                }
+              },
+              "$skips": [
+                null,
+                null
+              ]
             }
           }
         }
@@ -327,14 +382,14 @@
     },
     {
       "select": {
-        "$skips": [
-          null,
-          null
-        ],
-        "names": [
-          "u",
-          "Name"
-        ]
+        "$skip": null,
+        "column": {
+          "$skip": null,
+          "names": [
+            "u",
+            "Name"
+          ]
+        }
       },
       "from": {
         "$skip": null,
@@ -347,10 +402,6 @@
           "exists": {
             "$skip": null,
             "subquery": {
-              "select": {
-                "$skip": null,
-                "literal": {}
-              },
               "from": {
                 "$skip": null,
                 "relation": {
@@ -373,7 +424,17 @@
                     ]
                   }
                 }
-              }
+              },
+              "select": {
+                "$skip": null,
+                "column": {
+                  "literal": {}
+                }
+              },
+              "$skips": [
+                null,
+                null
+              ]
             }
           }
         }
@@ -381,27 +442,45 @@
     },
     {
       "select": {
-        "calls": [
-          {
-            "name": "COUNT",
-            "star": {}
-          },
-          {
-            "names": [
-              "AVG",
-              "Salary"
-            ]
-          }
-        ],
-        "name": "Department",
         "$skips": [
           null,
           null,
           null
         ],
-        "aliases": [
-          "HeadCount",
-          "AvgSalary"
+        "columns": [
+          {
+            "name": "Department"
+          },
+          {
+            "call": {
+              "name": "COUNT",
+              "column": {
+                "star": {
+                  "$skip": null
+                }
+              },
+              "$skips": [
+                null,
+                null
+              ]
+            },
+            "$skip": null,
+            "alias": "HeadCount"
+          },
+          {
+            "call": {
+              "name": "AVG",
+              "column": {
+                "name": "Salary"
+              },
+              "$skips": [
+                null,
+                null
+              ]
+            },
+            "$skip": null,
+            "alias": "AvgSalary"
+          }
         ]
       },
       "from": {
@@ -421,7 +500,15 @@
           "compare": {
             "call": {
               "name": "COUNT",
-              "star": {}
+              "column": {
+                "star": {
+                  "$skip": null
+                }
+              },
+              "$skips": [
+                null,
+                null
+              ]
             },
             "op": ">",
             "literal": {}
@@ -431,30 +518,37 @@
     },
     {
       "select": {
-        "case": {
-          "$skips": [
-            null,
-            null,
-            null,
-            null,
-            null
-          ],
-          "compare": {
-            "name": "Age",
-            "op": ">=",
-            "literal": {}
-          },
-          "literals": [
-            {},
-            {}
-          ]
-        },
-        "name": "Name",
         "$skips": [
           null,
           null
         ],
-        "alias": "Category"
+        "columns": [
+          {
+            "name": "Name"
+          },
+          {
+            "case": {
+              "$skips": [
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              "compare": {
+                "name": "Age",
+                "op": ">=",
+                "literal": {}
+              },
+              "literals": [
+                {},
+                {}
+              ]
+            },
+            "$skip": null,
+            "alias": "Category"
+          }
+        ]
       },
       "from": {
         "$skip": null,
@@ -467,13 +561,24 @@
       "$skip": null,
       "cte": {
         "name": "ActiveUsers",
-        "$skip": null,
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "statement": {
           "select": {
-            "$skip": null,
-            "names": [
-              "ID",
-              "Name"
+            "$skips": [
+              null,
+              null
+            ],
+            "columns": [
+              {
+                "name": "ID"
+              },
+              {
+                "name": "Name"
+              }
             ]
           },
           "from": {
@@ -494,7 +599,9 @@
       },
       "select": {
         "$skip": null,
-        "name": "Name"
+        "column": {
+          "name": "Name"
+        }
       },
       "from": {
         "$skip": null,
@@ -511,22 +618,36 @@
         ],
         "selects": [
           {
-            "literal": {},
-            "name": "Name",
             "$skips": [
               null,
               null
             ],
-            "alias": "Source"
+            "columns": [
+              {
+                "name": "Name"
+              },
+              {
+                "literal": {},
+                "$skip": null,
+                "alias": "Source"
+              }
+            ]
           },
           {
-            "literal": {},
-            "name": "Name",
             "$skips": [
               null,
               null
             ],
-            "alias": "Source"
+            "columns": [
+              {
+                "name": "Name"
+              },
+              {
+                "literal": {},
+                "$skip": null,
+                "alias": "Source"
+              }
+            ]
           }
         ],
         "froms": [
@@ -547,39 +668,54 @@
     },
     {
       "select": {
-        "window": {
-          "call": {
-            "name": "ROW_NUMBER"
-          },
-          "$skip": null,
-          "over": {
-            "partition": {
-              "$skips": [
-                null,
-                null
-              ],
-              "name": "Department"
-            },
-            "order": {
-              "$skips": [
-                null,
-                null
-              ],
-              "target": {
-                "name": "Salary",
-                "direction": {
-                  "$skip": null
-                }
-              }
-            }
-          }
-        },
-        "name": "Name",
         "$skips": [
           null,
           null
         ],
-        "alias": "Rank"
+        "columns": [
+          {
+            "name": "Name"
+          },
+          {
+            "window": {
+              "call": {
+                "name": "ROW_NUMBER",
+                "$skips": [
+                  null,
+                  null
+                ]
+              },
+              "$skip": null,
+              "over": {
+                "order": {
+                  "$skips": [
+                    null,
+                    null
+                  ],
+                  "target": {
+                    "name": "Salary",
+                    "direction": {
+                      "$skip": null
+                    }
+                  }
+                },
+                "partition": {
+                  "$skips": [
+                    null,
+                    null
+                  ],
+                  "name": "Department"
+                },
+                "$skips": [
+                  null,
+                  null
+                ]
+              }
+            },
+            "$skip": null,
+            "alias": "Rank"
+          }
+        ]
       },
       "from": {
         "$skip": null,
@@ -590,32 +726,52 @@
     },
     {
       "select": {
-        "call": {
-          "names": [
-            "COALESCE",
-            "Nickname",
-            "Name"
-          ]
-        },
         "$skips": [
-          null,
           null,
           null
         ],
-        "cast": {
-          "name": "Age",
-          "$skips": [
-            null,
-            null
-          ],
-          "varchar": {
+        "columns": [
+          {
+            "call": {
+              "name": "COALESCE",
+              "$skips": [
+                null,
+                null,
+                null
+              ],
+              "columns": [
+                {
+                  "name": "Nickname"
+                },
+                {
+                  "name": "Name"
+                }
+              ]
+            },
             "$skip": null,
-            "literal": {}
+            "alias": "DisplayName"
+          },
+          {
+            "cast": {
+              "$skips": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "name": "Age",
+              "varchar": {
+                "$skips": [
+                  null,
+                  null,
+                  null
+                ],
+                "literal": {}
+              }
+            },
+            "$skip": null,
+            "alias": "AgeText"
           }
-        },
-        "aliases": [
-          "DisplayName",
-          "AgeText"
         ]
       },
       "from": {
@@ -649,6 +805,11 @@
                 "name": "Role",
                 "$skip": null,
                 "list": {
+                  "$skips": [
+                    null,
+                    null,
+                    null
+                  ],
                   "literals": [
                     {},
                     {}
@@ -666,7 +827,9 @@
           null,
           null
         ],
-        "name": "Department"
+        "column": {
+          "name": "Department"
+        }
       },
       "from": {
         "$skip": null,
@@ -695,6 +858,12 @@
         ],
         "name": "Audit",
         "columns": {
+          "$skips": [
+            null,
+            null,
+            null,
+            null
+          ],
           "definitions": [
             {
               "name": "ID",
@@ -707,7 +876,11 @@
             {
               "name": "Action",
               "nvarchar": {
-                "$skip": null,
+                "$skips": [
+                  null,
+                  null,
+                  null
+                ],
                 "literal": {}
               },
               "$skips": [
@@ -722,7 +895,11 @@
                 null
               ],
               "call": {
-                "name": "GETDATE"
+                "name": "GETDATE",
+                "$skips": [
+                  null,
+                  null
+                ]
               }
             }
           ]
@@ -773,6 +950,7 @@
             ],
             "$skips": [
               null,
+              null,
               null
             ]
           }
@@ -788,6 +966,11 @@
           ],
           "lists": [
             {
+              "$skips": [
+                null,
+                null,
+                null
+              ],
               "columns": [
                 {
                   "name": "ID"
@@ -798,15 +981,18 @@
               ]
             },
             {
+              "$skips": [
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
               "names": [
                 "s",
                 "ID",
                 "s",
                 "Name"
-              ],
-              "$skips": [
-                null,
-                null
               ]
             }
           ]
@@ -815,16 +1001,25 @@
     },
     {
       "select": {
-        "$skip": null,
-        "names": [
-          "Name",
-          "Age"
+        "$skips": [
+          null,
+          null
+        ],
+        "columns": [
+          {
+            "name": "Name"
+          },
+          {
+            "name": "Age"
+          }
         ]
       },
       "$skip": null,
-      "temp": {
-        "$skip": null,
-        "name": "TempUsers"
+      "column": {
+        "temp": {
+          "$skip": null,
+          "name": "TempUsers"
+        }
       },
       "from": {
         "$skip": null,
@@ -843,8 +1038,11 @@
     },
     {
       "set": {
-        "$skip": null,
         "var": "@Threshold",
+        "$skips": [
+          null,
+          null
+        ],
         "literal": {}
       }
     },
@@ -871,14 +1069,30 @@
             null
           ],
           "call": {
-            "names": [
-              "DATEDIFF",
-              "YEAR"
+            "name": "DATEDIFF",
+            "$skips": [
+              null,
+              null,
+              null,
+              null
             ],
-            "var": "@BirthDate",
-            "call": {
-              "name": "GETDATE"
-            }
+            "columns": [
+              {
+                "name": "YEAR"
+              },
+              {
+                "var": "@BirthDate"
+              },
+              {
+                "call": {
+                  "name": "GETDATE",
+                  "$skips": [
+                    null,
+                    null
+                  ]
+                }
+              }
+            ]
           }
         }
       }
@@ -920,6 +1134,9 @@
     "$skips": [
       null,
       null,
+      null,
+      null,
+      null,
       null
     ],
     "statements": [
@@ -934,6 +1151,7 @@
           ],
           "assign": {
             "name": "Balance",
+            "$skip": null,
             "compare": {
               "name": "Balance",
               "op": "-",
@@ -961,6 +1179,7 @@
           ],
           "assign": {
             "name": "Balance",
+            "$skip": null,
             "compare": {
               "name": "Balance",
               "op": "+",

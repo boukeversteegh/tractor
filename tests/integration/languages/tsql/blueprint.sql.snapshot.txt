@@ -2,10 +2,12 @@ file/
   ├─ comment = "-- Simple T-SQL example"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "u"
-  │   │   ├─ name = "Name"
-  │   │   ├─ name = "u"
-  │   │   └─ name = "Age"
+  │   │   ├─ column/
+  │   │   │   ├─ name = "u"
+  │   │   │   └─ name = "Name"
+  │   │   └─ column/
+  │   │       ├─ name = "u"
+  │   │       └─ name = "Age"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ name = "Users"
@@ -35,11 +37,12 @@ file/
   ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ schema = "dbo"
-  │   │   ├─ name = "Users"
-  │   │   ├─ name = "Name"
-  │   │   ├─ alias = "UserName"
-  │   │   └─ var = "@StartDate"
+  │   │   ├─ column/
+  │   │   │   ├─ schema = "dbo"
+  │   │   │   ├─ name = "Users"
+  │   │   │   ├─ name = "Name"
+  │   │   │   └─ alias = "UserName"
+  │   │   └─ column/var = "@StartDate"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ schema = "dbo"
@@ -63,12 +66,15 @@ file/
   ├─ comment = "-- JOINs"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "o"
-  │   │   ├─ name = "ID"
-  │   │   ├─ name = "u"
-  │   │   ├─ name = "Name"
-  │   │   ├─ name = "a"
-  │   │   └─ name = "City"
+  │   │   ├─ column/
+  │   │   │   ├─ name = "o"
+  │   │   │   └─ name = "ID"
+  │   │   ├─ column/
+  │   │   │   ├─ name = "u"
+  │   │   │   └─ name = "Name"
+  │   │   └─ column/
+  │   │       ├─ name = "a"
+  │   │       └─ name = "City"
   │   └─ from/
   │       ├─ relation/
   │       │   ├─ name = "Orders"
@@ -100,13 +106,13 @@ file/
   │           └─ literal = "100"
   ├─ comment = "-- Subquery with IN"
   ├─ statement/
-  │   ├─ select/name = "Name"
+  │   ├─ select/column/name = "Name"
   │   └─ from/
   │       ├─ relation/name = "Users"
   │       └─ where/compare/
   │           ├─ name = "ID"
   │           └─ subquery/
-  │               ├─ select/name = "UserID"
+  │               ├─ select/column/name = "UserID"
   │               └─ from/
   │                   ├─ relation/name = "Orders"
   │                   └─ where/compare/
@@ -115,7 +121,7 @@ file/
   │                       └─ literal = "50"
   ├─ comment = "-- EXISTS"
   ├─ statement/
-  │   ├─ select/
+  │   ├─ select/column/
   │   │   ├─ name = "u"
   │   │   └─ name = "Name"
   │   └─ from/
@@ -123,7 +129,7 @@ file/
   │       │   ├─ name = "Users"
   │       │   └─ alias = "u"
   │       └─ where/exists/subquery/
-  │           ├─ select/literal = "1"
+  │           ├─ select/column/literal = "1"
   │           └─ from/
   │               ├─ relation/
   │               │   ├─ name = "Orders"
@@ -137,36 +143,39 @@ file/
   ├─ comment = "-- GROUP BY, HAVING, aggregate functions"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "Department"
-  │   │   ├─ call/
-  │   │   │   ├─ name = "COUNT"
-  │   │   │   └─ star = "*"
-  │   │   ├─ alias = "HeadCount"
-  │   │   ├─ call/
-  │   │   │   ├─ name = "AVG"
-  │   │   │   └─ name = "Salary"
-  │   │   └─ alias = "AvgSalary"
+  │   │   ├─ column/name = "Department"
+  │   │   ├─ column/
+  │   │   │   ├─ call/
+  │   │   │   │   ├─ name = "COUNT"
+  │   │   │   │   └─ column[star]
+  │   │   │   └─ alias = "HeadCount"
+  │   │   └─ column/
+  │   │       ├─ call/
+  │   │       │   ├─ name = "AVG"
+  │   │       │   └─ column/name = "Salary"
+  │   │       └─ alias = "AvgSalary"
   │   └─ from/
   │       ├─ relation/name = "Employees"
   │       ├─ group/name = "Department"
   │       └─ having/compare/
   │           ├─ call/
   │           │   ├─ name = "COUNT"
-  │           │   └─ star = "*"
+  │           │   └─ column[star]
   │           ├─ op = ">"
   │           └─ literal = "5"
   ├─ comment = "-- CASE WHEN"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "Name"
-  │   │   ├─ case/
-  │   │   │   ├─ compare/
-  │   │   │   │   ├─ name = "Age"
-  │   │   │   │   ├─ op = ">="
-  │   │   │   │   └─ literal = "18"
-  │   │   │   ├─ literal = "'Adult'"
-  │   │   │   └─ literal = "'Minor'"
-  │   │   └─ alias = "Category"
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/
+  │   │       ├─ case/
+  │   │       │   ├─ compare/
+  │   │       │   │   ├─ name = "Age"
+  │   │       │   │   ├─ op = ">="
+  │   │       │   │   └─ literal = "18"
+  │   │       │   ├─ literal = "'Adult'"
+  │   │       │   └─ literal = "'Minor'"
+  │   │       └─ alias = "Category"
   │   └─ from/relation/name = "Users"
   ├─ comment = "-- CTE (Common Table Expression)"
   ├─ statement/
@@ -174,51 +183,56 @@ file/
   │   │   ├─ name = "ActiveUsers"
   │   │   └─ statement/
   │   │       ├─ select/
-  │   │       │   ├─ name = "ID"
-  │   │       │   └─ name = "Name"
+  │   │       │   ├─ column/name = "ID"
+  │   │       │   └─ column/name = "Name"
   │   │       └─ from/
   │   │           ├─ relation/name = "Users"
   │   │           └─ where/compare/
   │   │               ├─ name = "Active"
   │   │               ├─ op = "="
   │   │               └─ literal = "1"
-  │   ├─ select/name = "Name"
+  │   ├─ select/column/name = "Name"
   │   └─ from/relation/name = "ActiveUsers"
   ├─ comment = "-- UNION ALL"
   ├─ statement/union/
   │   ├─ select/
-  │   │   ├─ name = "Name"
-  │   │   ├─ literal = "'User'"
-  │   │   └─ alias = "Source"
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/
+  │   │       ├─ literal = "'User'"
+  │   │       └─ alias = "Source"
   │   ├─ from/relation/name = "Users"
   │   ├─ select/
-  │   │   ├─ name = "Name"
-  │   │   ├─ literal = "'Admin'"
-  │   │   └─ alias = "Source"
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/
+  │   │       ├─ literal = "'Admin'"
+  │   │       └─ alias = "Source"
   │   └─ from/relation/name = "Admins"
   ├─ comment = "-- Window function with PARTITION BY"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "Name"
-  │   │   ├─ window/
-  │   │   │   ├─ call/name = "ROW_NUMBER"
-  │   │   │   └─ over/
-  │   │   │       ├─ partition/name = "Department"
-  │   │   │       └─ order/target[direction]/name = "Salary"
-  │   │   └─ alias = "Rank"
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/
+  │   │       ├─ window/
+  │   │       │   ├─ call/name = "ROW_NUMBER"
+  │   │       │   └─ over/
+  │   │       │       ├─ partition/name = "Department"
+  │   │       │       └─ order/target[direction]/name = "Salary"
+  │   │       └─ alias = "Rank"
   │   └─ from/relation/name = "Employees"
   ├─ comment = "-- COALESCE, CAST, LIKE, IS NULL, IN list"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ call/
-  │   │   │   ├─ name = "COALESCE"
-  │   │   │   ├─ name = "Nickname"
-  │   │   │   └─ name = "Name"
-  │   │   ├─ alias = "DisplayName"
-  │   │   ├─ cast/
-  │   │   │   ├─ name = "Age"
-  │   │   │   └─ varchar/literal = "10"
-  │   │   └─ alias = "AgeText"
+  │   │   ├─ column/
+  │   │   │   ├─ call/
+  │   │   │   │   ├─ name = "COALESCE"
+  │   │   │   │   ├─ column/name = "Nickname"
+  │   │   │   │   └─ column/name = "Name"
+  │   │   │   └─ alias = "DisplayName"
+  │   │   └─ column/
+  │   │       ├─ cast/
+  │   │       │   ├─ name = "Age"
+  │   │       │   └─ varchar/literal = "10"
+  │   │       └─ alias = "AgeText"
   │   └─ from/
   │       ├─ relation/name = "Users"
   │       └─ where/compare/
@@ -234,7 +248,7 @@ file/
   │                   └─ literal = "'moderator'"
   ├─ comment = "-- DISTINCT with ORDER BY DESC"
   ├─ statement/
-  │   ├─ select/name = "Department"
+  │   ├─ select/column/name = "Department"
   │   └─ from/
   │       ├─ relation/name = "Employees"
   │       └─ order/target[direction]/name = "Department"
@@ -280,9 +294,9 @@ file/
   ├─ comment = "-- SELECT INTO temp table"
   ├─ statement/
   │   ├─ select/
-  │   │   ├─ name = "Name"
-  │   │   └─ name = "Age"
-  │   ├─ temp/name = "TempUsers"
+  │   │   ├─ column/name = "Name"
+  │   │   └─ column/name = "Age"
+  │   ├─ column/temp/name = "TempUsers"
   │   └─ from/
   │       ├─ relation/name = "Users"
   │       └─ where/compare/
@@ -327,9 +341,9 @@ file/
   │   ├─ int = "INT"
   │   └─ body/call/
   │       ├─ name = "DATEDIFF"
-  │       ├─ name = "YEAR"
-  │       ├─ var = "@BirthDate"
-  │       └─ call/name = "GETDATE"
+  │       ├─ column/name = "YEAR"
+  │       ├─ column/var = "@BirthDate"
+  │       └─ column/call/name = "GETDATE"
   ├─ go = "GO"
   ├─ comment = "-- EXEC stored procedure"
   ├─ statement/exec/name = "sp_helpdb"
