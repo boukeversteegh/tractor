@@ -95,38 +95,36 @@
           null
         ],
         "name": "AuditLog",
-        "lists": [
-          {
-            "$skips": [
-              null,
-              null,
-              null
-            ],
-            "columns": [
-              {
-                "name": "Action"
-              },
-              {
-                "name": "Timestamp"
-              }
-            ]
-          },
-          {
-            "literal": {},
-            "$skips": [
-              null,
-              null,
-              null
-            ],
-            "call": {
-              "name": "GETDATE",
-              "$skips": [
-                null,
-                null
-              ]
+        "columns": {
+          "$skips": [
+            null,
+            null,
+            null
+          ],
+          "columns": [
+            {
+              "name": "Action"
+            },
+            {
+              "name": "Timestamp"
             }
+          ]
+        },
+        "values": {
+          "literal": {},
+          "$skips": [
+            null,
+            null,
+            null
+          ],
+          "call": {
+            "name": "GETDATE",
+            "$skips": [
+              null,
+              null
+            ]
           }
-        ]
+        }
       }
     },
     {

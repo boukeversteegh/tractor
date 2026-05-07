@@ -23,10 +23,10 @@ file/
   │           └─ name = "Name"
   ├─ statement/insert/
   │   ├─ name = "AuditLog"
-  │   ├─ list/
+  │   ├─ columns/
   │   │   ├─ column/name = "Action"
   │   │   └─ column/name = "Timestamp"
-  │   └─ list/
+  │   └─ values/
   │       ├─ literal = "'UserQuery'"
   │       └─ call/name = "GETDATE"
   ├─ statement[delete]/from/

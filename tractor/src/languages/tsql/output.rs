@@ -21,7 +21,7 @@ pub enum TractorNode {
     // References and columns
     Relation, Ref, Column, Star,
     // Literals and values
-    Literal, List,
+    Literal, List, Values,
     // Binary-operator operand role wrappers (compare/assign/between).
     // TSQL's transform dispatcher (transform.rs:29) skips builder-
     // inserted `<left>`/`<right>` wrappers; iter 199 re-wraps via

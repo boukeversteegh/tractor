@@ -156,7 +156,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "order_target" => simple_statement(node, "target", source),
         "partition_by" => simple_statement(node, "partition", source),
         "join" => lower_tsql_join(node, source),
-        "insert" => simple_statement(node, "insert", source),
+        "insert" => lower_tsql_insert(node, source),
         "update" => simple_statement(node, "update", source),
         "delete" => simple_statement(node, "delete", source),
         "transaction" => simple_statement(node, "transaction", source),
@@ -433,6 +433,68 @@ fn lower_tsql_between(node: TsNode<'_>, source: &str) -> Ir {
         .collect();
     Ir::SimpleStatement {
         element_name: "between",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// `insert` — differentiate the column list `(c1, c2)` from the
+/// `VALUES (v1, v2)` list. Both surfaced as `<list>` siblings,
+/// indistinguishable in queries. Rename the column list to
+/// `<columns>` and the values list to `<values>`.
+///
+/// State machine: track whether we've seen `keyword_values`. The
+/// list before VALUES is the column list; the list after is the
+/// values list.
+fn lower_tsql_insert(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut seen_values_kw = false;
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node
+        .children(&mut cursor)
+        .map(|c| {
+            let kind = c.kind();
+            if kind == "keyword_values" {
+                seen_values_kw = true;
+                return Ir::Skip { range: range_of(c), span: span_of(c) };
+            }
+            if !c.is_named() {
+                return Ir::Skip { range: range_of(c), span: span_of(c) };
+            }
+            if kind == "list" {
+                // Lower the `list` CST inline as the slot's
+                // children — drop the redundant `<list>` wrapper
+                // since `<columns>` / `<values>` already conveys
+                // the role. Walk children, Skipping `(`/`)`/`,`.
+                let slot = if seen_values_kw { "values" } else { "columns" };
+                let mut sub_cur = c.walk();
+                let inner: Vec<Ir> = c.children(&mut sub_cur)
+                    .map(|gc| {
+                        if gc.is_named() {
+                            lower_node(gc, source)
+                        } else {
+                            Ir::Skip { range: range_of(gc), span: span_of(gc) }
+                        }
+                    })
+                    .collect();
+                return Ir::SimpleStatement {
+                    element_name: slot,
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: inner,
+                    range: range_of(c),
+                    span: span_of(c),
+                };
+            }
+            lower_node(c, source)
+        })
+        .collect();
+    Ir::SimpleStatement {
+        element_name: "insert",
         modifiers: Modifiers::default(),
         extra_markers: &[],
         children,
