@@ -223,9 +223,12 @@
           null
         ],
         "assign": {
-          "name": "Value",
-          "$skip": null,
-          "var": "@NewValue"
+          "left": "Value",
+          "op": {
+            "text": "=",
+            "": true
+          },
+          "right": "@NewValue"
         },
         "where": {
           "$skip": null,
@@ -1014,17 +1017,24 @@
             null
           ],
           "assign": {
-            "names": [
-              "t",
-              "Name",
-              "s",
-              "Name"
-            ],
-            "$skips": [
-              null,
-              null,
-              null
-            ]
+            "left": {
+              "$skip": null,
+              "names": [
+                "t",
+                "Name"
+              ]
+            },
+            "op": {
+              "text": "=",
+              "": true
+            },
+            "right": {
+              "$skip": null,
+              "names": [
+                "s",
+                "Name"
+              ]
+            }
           }
         },
         {
@@ -1225,9 +1235,12 @@
             null
           ],
           "assign": {
-            "name": "Balance",
-            "$skip": null,
-            "compare": {
+            "left": "Balance",
+            "op": {
+              "text": "=",
+              "": true
+            },
+            "right": {
               "left": "Balance",
               "op": {
                 "text": "-",
@@ -1259,9 +1272,12 @@
             null
           ],
           "assign": {
-            "name": "Balance",
-            "$skip": null,
-            "compare": {
+            "left": "Balance",
+            "op": {
+              "text": "=",
+              "": true
+            },
+            "right": {
               "left": "Balance",
               "op": {
                 "text": "+",

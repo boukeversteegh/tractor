@@ -58,8 +58,9 @@ file/
   │   │   ├─ schema = "dbo"
   │   │   └─ name = "Config"
   │   ├─ assign/
-  │   │   ├─ name = "Value"
-  │   │   └─ var = "@NewValue"
+  │   │   ├─ left/expression/name = "Value"
+  │   │   ├─ op = "="
+  │   │   └─ right/expression/var = "@NewValue"
   │   └─ where/compare/
   │       ├─ left/expression/name = "Key"
   │       ├─ op = "="
@@ -296,10 +297,13 @@ file/
   │   │       ├─ name = "s"
   │   │       └─ name = "ID"
   │   ├─ when/assign/
-  │   │   ├─ name = "t"
-  │   │   ├─ name = "Name"
-  │   │   ├─ name = "s"
-  │   │   └─ name = "Name"
+  │   │   ├─ left/expression/
+  │   │   │   ├─ name = "t"
+  │   │   │   └─ name = "Name"
+  │   │   ├─ op = "="
+  │   │   └─ right/expression/
+  │   │       ├─ name = "s"
+  │   │       └─ name = "Name"
   │   └─ when/
   │       ├─ list/
   │       │   ├─ column/name = "ID"
@@ -326,8 +330,9 @@ file/
   │   ├─ statement/update/
   │   │   ├─ relation/name = "Accounts"
   │   │   ├─ assign/
-  │   │   │   ├─ name = "Balance"
-  │   │   │   └─ compare/
+  │   │   │   ├─ left/expression/name = "Balance"
+  │   │   │   ├─ op = "="
+  │   │   │   └─ right/expression/compare/
   │   │   │       ├─ left/expression/name = "Balance"
   │   │   │       ├─ op[minus] = "-"
   │   │   │       └─ right/expression/literal = "100"
@@ -338,8 +343,9 @@ file/
   │   └─ statement/update/
   │       ├─ relation/name = "Accounts"
   │       ├─ assign/
-  │       │   ├─ name = "Balance"
-  │       │   └─ compare/
+  │       │   ├─ left/expression/name = "Balance"
+  │       │   ├─ op = "="
+  │       │   └─ right/expression/compare/
   │       │       ├─ left/expression/name = "Balance"
   │       │       ├─ op[plus] = "+"
   │       │       └─ right/expression/literal = "100"

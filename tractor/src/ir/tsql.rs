@@ -166,7 +166,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // ----- Expressions ---------------------------------------------
         "binary_expression" => lower_binary_expression(node, source),
         "unary_expression" => lower_unary_expression(node, source),
-        "assignment" => simple_statement(node, "assign", source),
+        "assignment" => lower_tsql_assignment(node, source),
         "between_expression" => simple_statement(node, "between", source),
         "exists" => simple_statement(node, "exists", source),
         "case" => simple_statement(node, "case", source),
@@ -365,6 +365,70 @@ fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
             _ => lower_node(c, source),
         })
         .collect()
+}
+
+/// `assignment` (`x = expr`) — lower as `Ir::Binary` with
+/// element_name="assign" so the LHS / RHS land in `<left>` /
+/// `<right>` slots and the `=` carries an `<equals/>` marker
+/// (per the cross-language assign shape).
+fn lower_tsql_assignment(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    let mut cursor = node.walk();
+    let mut left: Option<Ir> = None;
+    let mut right: Option<Ir> = None;
+    let mut op_text = String::new();
+    let mut op_range: Option<super::types::ByteRange> = None;
+    for c in node.children(&mut cursor) {
+        if c.is_named() {
+            let kind = c.kind();
+            if kind.starts_with("keyword_") || kind.starts_with("op_") {
+                if op_range.is_none() {
+                    if let Ok(text) = c.utf8_text(source.as_bytes()) {
+                        op_text = text.trim().to_string();
+                        op_range = Some(range_of(c));
+                    }
+                }
+                continue;
+            }
+            let ir = lower_node(c, source);
+            if left.is_none() {
+                left = Some(ir);
+            } else if right.is_none() {
+                right = Some(ir);
+            }
+        } else {
+            if let Ok(text) = c.utf8_text(source.as_bytes()) {
+                let trimmed = text.trim();
+                if !trimmed.is_empty()
+                    && !trimmed.chars().all(|ch| ch.is_alphanumeric() || ch == '_')
+                    && op_range.is_none()
+                {
+                    op_text = trimmed.to_string();
+                    op_range = Some(range_of(c));
+                }
+            }
+        }
+    }
+    let (Some(l), Some(r), Some(opr)) = (left, right, op_range) else {
+        return Ir::SimpleStatement {
+            element_name: "assign",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: Vec::new(),
+            range, span,
+        };
+    };
+    Ir::Binary {
+        element_name: "assign",
+        op_text,
+        op_marker: "",
+        op_range: opr,
+        left: Box::new(l),
+        right: Box::new(r),
+        range,
+        span,
+    }
 }
 
 /// `binary_expression` — lower as `Ir::Binary` so the rendered shape
