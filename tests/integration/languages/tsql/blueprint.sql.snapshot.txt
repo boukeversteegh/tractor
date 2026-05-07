@@ -299,6 +299,7 @@ file/
   │   ├─ select/
   │   │   ├─ column/name = "Name"
   │   │   └─ column/name = "Age"
+  │   ├─ into/column/temp/name = "TempUsers"
   │   ├─ from/relation/name = "Users"
   │   └─ where/compare/
   │       ├─ left/name = "Active"

@@ -665,6 +665,9 @@
           "Name",
           "Age"
         ],
+        "into": {
+          "temp": "TempUsers"
+        },
         "from": {
           "name": "Users"
         },
