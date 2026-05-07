@@ -1,0 +1,30 @@
+{
+  "results": [
+    {
+      "file": "tests/integration/sample.cs",
+      "line": 2,
+      "tree": {
+        "$type": "class",
+        "public": true,
+        "name": "Calculator",
+        "body": {
+          "$truncated": 72
+        }
+      },
+      "message": "tests/integration/sample.cs:2"
+    },
+    {
+      "file": "tests/integration/sample.cs",
+      "line": 9,
+      "tree": {
+        "$type": "class",
+        "public": true,
+        "name": "Greeter",
+        "body": {
+          "$truncated": 45
+        }
+      },
+      "message": "tests/integration/sample.cs:9"
+    }
+  ]
+}

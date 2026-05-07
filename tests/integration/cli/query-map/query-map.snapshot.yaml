@@ -1,0 +1,15 @@
+results:
+- file: tests/integration/sample.cs
+  line: 1
+  tree:
+    classes:
+    - name: Calculator
+      methods:
+      - Add
+      - Subtract
+      - Multiply
+    - name: Greeter
+      methods:
+      - Hello
+      - Goodbye
+      - Reset

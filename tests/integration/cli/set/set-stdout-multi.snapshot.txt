@@ -1,0 +1,8 @@
+tests/integration/cli/set/sample-a.yaml
+database:
+  host: db.example.com
+  port: 5432
+tests/integration/cli/set/sample-b.yaml
+database:
+  host: db.example.com
+  port: 5432

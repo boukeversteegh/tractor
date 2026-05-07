@@ -1,0 +1,238 @@
+[
+  {
+    "file": "tests/integration/sample.cs",
+    "line": 2,
+    "tree": {
+      "$type": "class",
+      "public": true,
+      "name": "Calculator",
+      "body": {
+        "$children": [
+          {
+            "$type": "method",
+            "public": true,
+            "name": "Subtract",
+            "parameter": {
+              "name": "a",
+              "type": {
+                "name": "int"
+              }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "b"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "text": "-",
+                        "minus": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "$children": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ]
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "name": "Multiply",
+            "parameter": {
+              "name": "a",
+              "type": {
+                "name": "int"
+              }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "b"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "name": "a"
+                        }
+                      },
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "$children": [
+              {
+                "$type": "parameter",
+                "type": {
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ]
+          }
+        ],
+        "method": {
+          "$children": [
+            {
+              "$type": "parameter",
+              "type": {
+                "name": "int"
+              },
+              "name": "b"
+            }
+          ],
+          "public": true,
+          "name": "Add",
+          "parameter": {
+            "name": "a",
+            "type": {
+              "name": "int"
+            }
+          },
+          "body": {
+            "block": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "b"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "name": "a"
+                      }
+                    },
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "message": "hit"
+  },
+  {
+    "file": "tests/integration/sample.cs",
+    "line": 9,
+    "tree": {
+      "$type": "class",
+      "public": true,
+      "name": "Greeter",
+      "body": {
+        "$children": [
+          {
+            "$type": "method",
+            "public": true,
+            "name": "Goodbye",
+            "parameter": {
+              "name": "name",
+              "type": {
+                "name": "string"
+              }
+            },
+            "body": {
+              "block": {
+                "return": {
+                  "expression": {
+                    "binary": {
+                      "right": {
+                        "expression": {
+                          "name": "name"
+                        }
+                      },
+                      "left": {
+                        "expression": {
+                          "string": "\"Goodbye, \""
+                        }
+                      },
+                      "op": {
+                        "text": "+",
+                        "plus": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "name": "Reset",
+            "body": {
+              "block": "{ }"
+            }
+          }
+        ],
+        "method": {
+          "body": {
+            "block": {
+              "return": {
+                "expression": {
+                  "binary": {
+                    "right": {
+                      "expression": {
+                        "name": "name"
+                      }
+                    },
+                    "left": {
+                      "expression": {
+                        "string": "\"Hello, \""
+                      }
+                    },
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "public": true,
+          "name": "Hello",
+          "parameter": {
+            "name": "name",
+            "type": {
+              "name": "string"
+            }
+          }
+        }
+      }
+    },
+    "message": "hit"
+  }
+]

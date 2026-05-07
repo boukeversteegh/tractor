@@ -1,0 +1,15 @@
+tests/integration/sample.cs:2
+class[@line="2" and @column="1" and @end_line="7" and @end_column="2"]/
+  ├─ public[@line="2" and @column="1" and @end_line="7" and @end_column="2"]
+  ├─ "public class"
+  ├─ name[@line="2" and @column="14" and @end_line="2" and @end_column="24"] = "Calculator"
+  └─ body[@line="3" and @column="1" and @end_line="7" and @end_column="2"]/
+      └─ ... (72 children)
+
+tests/integration/sample.cs:9
+class[@line="9" and @column="1" and @end_line="14" and @end_column="2"]/
+  ├─ public[@line="9" and @column="1" and @end_line="14" and @end_column="2"]
+  ├─ "public class"
+  ├─ name[@line="9" and @column="14" and @end_line="9" and @end_column="21"] = "Greeter"
+  └─ body[@line="10" and @column="1" and @end_line="14" and @end_column="2"]/
+      └─ ... (45 children)

@@ -1,0 +1,2676 @@
+{
+  "$type": "file",
+  "comments": [
+    {
+      "leading": true,
+      "text": "//! Rust kitchen-sink fixture: exhaustive blueprint of language constructs used\n//! by tractor's snapshot tests to catch design-principle regressions.\n"
+    },
+    {
+      "leading": true,
+      "text": "/// A named-field struct with generics, lifetimes, and a where clause.\n"
+    },
+    {
+      "leading": true,
+      "text": "/// A tuple struct.\n"
+    },
+    {
+      "leading": true,
+      "text": "/// A unit struct.\n"
+    },
+    {
+      "leading": true,
+      "text": "/// An enum with every variant flavor and explicit discriminants.\n"
+    },
+    {
+      "leading": true,
+      "text": "// `extern crate` declaration — legacy import form for the 2015 edition."
+    },
+    {
+      "leading": true,
+      "text": "// Foreign module / extern modifier — FFI block with variadic parameter."
+    },
+    {
+      "leading": true,
+      "text": "// Union — same shape family as struct/enum."
+    },
+    {
+      "leading": true,
+      "text": "// `for<'a>` higher-ranked trait bound + `?Sized` relaxed bound."
+    },
+    {
+      "leading": true,
+      "text": "// Const generic parameter — `<const N: usize>`."
+    },
+    "// `macro_rules!` definition exercises macro_rule / token_repetition_pattern /",
+    {
+      "leading": true,
+      "text": "// token_binding_pattern / fragment_specifier / token_repetition."
+    }
+  ],
+  "functions": [
+    {
+      "private": true,
+      "name": "numeric_zoo",
+      "returns": {
+        "type": {
+          "tuple": true,
+          "names": [
+            "u32",
+            "f64",
+            "i32",
+            "i32",
+            "i32"
+          ]
+        }
+      },
+      "body": {
+        "tuple": {
+          "float": "1.0f64",
+          "ints": [
+            "1u32",
+            "0x1F",
+            "0b101",
+            "1_000"
+          ]
+        }
+      }
+    },
+    {
+      "private": true,
+      "name": "strings_zoo",
+      "body": {
+        "lets": [
+          {
+            "name": "plain",
+            "value": {
+              "expression": {
+                "string": "\"hello\""
+              }
+            }
+          },
+          {
+            "name": "raw",
+            "value": {
+              "expression": {
+                "string": {
+                  "raw": true
+                }
+              }
+            }
+          },
+          {
+            "name": "raw_hash",
+            "value": {
+              "expression": {
+                "string": {
+                  "raw": true
+                }
+              }
+            }
+          },
+          {
+            "name": "bytes",
+            "value": {
+              "expression": {
+                "string": "b\"raw bytes\""
+              }
+            }
+          },
+          {
+            "name": "chr",
+            "value": {
+              "expression": {
+                "char": {}
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "private": true,
+      "name": "closures_and_refs",
+      "body": {
+        "lets": [
+          {
+            "name": "id",
+            "value": {
+              "expression": {
+                "closure": {
+                  "parameters": [
+                    "x"
+                  ],
+                  "name": "x"
+                }
+              }
+            }
+          },
+          {
+            "name": "add",
+            "type": {
+              "function": true,
+              "parameters": [
+                "i32",
+                "i32"
+              ],
+              "name": "i32"
+            },
+            "value": {
+              "expression": {
+                "closure": {
+                  "parameters": [
+                    "a",
+                    "b"
+                  ],
+                  "binary": {
+                    "left": "a",
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    },
+                    "right": "b"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "s",
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "String",
+                      "from"
+                    ]
+                  },
+                  "string": "\"owned\""
+                }
+              }
+            }
+          },
+          {
+            "name": "moved",
+            "value": {
+              "expression": {
+                "closure": {
+                  "parameters": [
+                    {
+                      "name": "x",
+                      "type": {
+                        "name": "i32"
+                      }
+                    }
+                  ],
+                  "name": "String",
+                  "block": {
+                    "macro": {
+                      "string": "\"{}-{}\"",
+                      "names": [
+                        "format",
+                        "s",
+                        "x"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "r",
+            "type": {
+              "borrowed": true,
+              "type": {
+                "name": "i32"
+              }
+            },
+            "value": {
+              "expression": {
+                "ref": {
+                  "int": "5"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "pub": true,
+      "name": "smart_pointers",
+      "body": {
+        "lets": [
+          {
+            "name": "b",
+            "type": {
+              "generic": true,
+              "name": "Box",
+              "type": {
+                "name": "i32"
+              }
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "Box",
+                      "new"
+                    ]
+                  },
+                  "int": "1"
+                }
+              }
+            }
+          },
+          {
+            "name": "rc",
+            "type": {
+              "generic": true,
+              "name": "Rc",
+              "type": {
+                "name": "String"
+              }
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "Rc",
+                      "new"
+                    ]
+                  },
+                  "call": {
+                    "path": {
+                      "names": [
+                        "String",
+                        "from"
+                      ]
+                    },
+                    "string": "\"rc\""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "arc",
+            "type": {
+              "generic": true,
+              "name": "Arc",
+              "type": {
+                "name": "u32"
+              }
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "Arc",
+                      "new"
+                    ]
+                  },
+                  "int": "9"
+                }
+              }
+            }
+          },
+          {
+            "name": "cell",
+            "type": {
+              "generic": true,
+              "name": "RefCell",
+              "type": {
+                "generic": true,
+                "name": "Vec",
+                "type": {
+                  "name": "i32"
+                }
+              }
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "RefCell",
+                      "new"
+                    ]
+                  },
+                  "macro": {
+                    "name": "vec",
+                    "ints": [
+                      "1",
+                      "2",
+                      "3"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "parsed",
+            "value": {
+              "expression": {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "argument": "0",
+                    "name": "unwrap_or"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "pub": true,
+      "name": "patterns",
+      "parameters": [
+        {
+          "name": "s",
+          "type": {
+            "name": "Shape"
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "i32"
+        }
+      },
+      "body": {
+        "lets": [
+          {
+            "name": "p",
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "names": [
+                      "Point",
+                      "new"
+                    ]
+                  },
+                  "ints": [
+                    "1",
+                    "2"
+                  ],
+                  "string": "\"p\""
+                }
+              }
+            }
+          },
+          {
+            "name": "q",
+            "value": {
+              "expression": {
+                "literal": {
+                  "name": "Point",
+                  "body": {
+                    "fields": [
+                      {
+                        "name": "x",
+                        "value": {
+                          "expression": {
+                            "int": "10"
+                          }
+                        }
+                      },
+                      {
+                        "name": "y",
+                        "value": {
+                          "expression": {
+                            "int": "20"
+                          }
+                        }
+                      },
+                      {
+                        "base": true,
+                        "object": {
+                          "access": true,
+                          "call": {
+                            "name": "clone"
+                          },
+                          "text": "p"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "expression": {
+                "match": {
+                  "value": {
+                    "expression": {
+                      "name": "s"
+                    }
+                  },
+                  "body": {
+                    "arms": [
+                      {
+                        "pattern": {
+                          "path": {
+                            "names": [
+                              "Shape",
+                              "Nothing"
+                            ]
+                          }
+                        },
+                        "value": {
+                          "int": "0"
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "or": true,
+                            "paths": [
+                              {
+                                "names": [
+                                  "Shape",
+                                  "Dot"
+                                ]
+                              },
+                              {
+                                "names": [
+                                  "Shape",
+                                  "Dot"
+                                ]
+                              }
+                            ],
+                            "names": [
+                              "y",
+                              "y"
+                            ],
+                            "ints": [
+                              "0",
+                              "0"
+                            ]
+                          }
+                        },
+                        "value": {
+                          "name": "y"
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "path": {
+                            "names": [
+                              "Shape",
+                              "Dot"
+                            ]
+                          },
+                          "names": [
+                            "x",
+                            "y"
+                          ],
+                          "condition": {
+                            "binary": {
+                              "left": "x",
+                              "op": {
+                                "text": "==",
+                                "equal": true
+                              },
+                              "right": "y"
+                            }
+                          }
+                        },
+                        "value": {
+                          "binary": {
+                            "left": "x",
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": "y"
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "struct": true,
+                            "path": {
+                              "names": [
+                                "Shape",
+                                "Rect"
+                              ]
+                            },
+                            "patterns": [
+                              {
+                                "field": true,
+                                "name": "w"
+                              },
+                              {
+                                "field": true,
+                                "name": "h"
+                              }
+                            ]
+                          },
+                          "condition": {
+                            "binary": {
+                              "left": "w",
+                              "op": {
+                                "text": ">",
+                                "greater": true
+                              },
+                              "right": "0"
+                            }
+                          }
+                        },
+                        "value": {
+                          "cast": {
+                            "value": {
+                              "expression": {
+                                "binary": {
+                                  "left": "w",
+                                  "op": {
+                                    "text": "*",
+                                    "multiply": true
+                                  },
+                                  "right": "h"
+                                }
+                              }
+                            },
+                            "type": {
+                              "name": "i32"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "path": {
+                            "names": [
+                              "Shape",
+                              "Labeled"
+                            ]
+                          },
+                          "pattern": {
+                            "ref": true,
+                            "name": "name"
+                          }
+                        },
+                        "value": {
+                          "cast": {
+                            "value": {
+                              "expression": {
+                                "object": {
+                                  "access": true,
+                                  "call": {
+                                    "name": "len"
+                                  },
+                                  "text": "name"
+                                }
+                              }
+                            },
+                            "type": {
+                              "name": "i32"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {},
+                        "value": {
+                          "unary": {
+                            "int": "99"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "bucket",
+            "value": {
+              "expression": {
+                "match": {
+                  "value": {
+                    "expression": {
+                      "int": "5"
+                    }
+                  },
+                  "body": {
+                    "arms": [
+                      {
+                        "pattern": {
+                          "range": {
+                            "inclusive": true,
+                            "from": {
+                              "int": "0"
+                            },
+                            "to": {
+                              "int": "9"
+                            }
+                          }
+                        },
+                        "value": {
+                          "string": "\"single\""
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "range": {
+                            "inclusive": true,
+                            "from": {
+                              "int": "10"
+                            },
+                            "to": {
+                              "int": "99"
+                            }
+                          }
+                        },
+                        "value": {
+                          "string": "\"double\""
+                        }
+                      },
+                      {
+                        "pattern": {},
+                        "value": {
+                          "string": "\"many\""
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "mut": true,
+            "name": "it",
+            "value": {
+              "expression": {
+                "object": {
+                  "access": true,
+                  "name": "vec",
+                  "ints": [
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "call": {
+                    "name": "into_iter"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "if": {
+          "condition": {
+            "names": [
+              "Some",
+              "v"
+            ],
+            "call": {
+              "name": "Some",
+              "int": "10"
+            }
+          },
+          "then": {
+            "block": {
+              "let": {
+                "pattern": {
+                  "wildcard": true
+                },
+                "value": {
+                  "expression": {
+                    "name": "v"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "while": {
+          "condition": {
+            "expression": {
+              "names": [
+                "Some",
+                "x"
+              ],
+              "object": {
+                "access": true,
+                "call": {
+                  "name": "next"
+                },
+                "text": "it"
+              }
+            }
+          },
+          "body": {
+            "lets": [
+              {
+                "name": "_shadow",
+                "value": {
+                  "expression": {
+                    "name": "x"
+                  }
+                }
+              },
+              {
+                "name": "_shadow",
+                "value": {
+                  "expression": {
+                    "cast": {
+                      "value": {
+                        "expression": {
+                          "name": "x"
+                        }
+                      },
+                      "type": {
+                        "name": "f64"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "name": "result"
+      }
+    },
+    {
+      "pub": true,
+      "name": "loops_and_flow",
+      "returns": {
+        "type": {
+          "name": "i32"
+        }
+      },
+      "body": {
+        "for": {
+          "names": [
+            "'outer",
+            "i"
+          ],
+          "value": {
+            "expression": {
+              "range": {
+                "exclusive": true,
+                "from": {
+                  "int": "0"
+                },
+                "to": {
+                  "int": "10"
+                }
+              }
+            }
+          },
+          "body": {
+            "for": {
+              "name": "j",
+              "value": {
+                "expression": {
+                  "range": {
+                    "exclusive": true,
+                    "from": {
+                      "int": "0"
+                    },
+                    "to": {
+                      "int": "10"
+                    }
+                  }
+                }
+              },
+              "body": {
+                "if": {
+                  "condition": {
+                    "binary": {
+                      "left": {
+                        "left": "i",
+                        "op": {
+                          "text": "*",
+                          "multiply": true
+                        },
+                        "right": "j"
+                      },
+                      "op": {
+                        "text": ">",
+                        "greater": true
+                      },
+                      "right": "20"
+                    }
+                  },
+                  "then": {
+                    "block": {
+                      "expression": {
+                        "break": {
+                          "name": "'outer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "while": {
+          "condition": {
+            "expression": {
+              "binary": {
+                "left": "n",
+                "op": {
+                  "text": "<",
+                  "less": true
+                },
+                "right": "3"
+              }
+            }
+          },
+          "body": {
+            "expression": {
+              "assign": {
+                "name": "n",
+                "int": "1"
+              }
+            }
+          }
+        },
+        "lets": [
+          {
+            "mut": true,
+            "name": "n",
+            "value": {
+              "expression": {
+                "int": "0"
+              }
+            }
+          },
+          {
+            "name": "found",
+            "value": {
+              "expression": {
+                "loop": {
+                  "body": {
+                    "expression": {
+                      "break": {
+                        "int": "42"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "name": "found"
+      }
+    },
+    {
+      "pub": true,
+      "name": "try_and_cast",
+      "returns": {
+        "type": {
+          "generic": true,
+          "name": "Result",
+          "type": {
+            "name": "i32"
+          },
+          "path": {
+            "path": {
+              "names": [
+                "std",
+                "num"
+              ]
+            },
+            "name": "ParseIntError"
+          }
+        }
+      },
+      "body": {
+        "lets": [
+          {
+            "name": "parsed",
+            "type": {
+              "name": "i32"
+            },
+            "value": {
+              "expression": {
+                "try": {
+                  "object": {
+                    "access": true,
+                    "call": {
+                      "name": "parse"
+                    },
+                    "text": "\"10\""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "casted",
+            "value": {
+              "expression": {
+                "cast": {
+                  "value": {
+                    "expression": {
+                      "cast": {
+                        "value": {
+                          "expression": {
+                            "name": "parsed"
+                          }
+                        },
+                        "type": {
+                          "name": "u8"
+                        }
+                      }
+                    }
+                  },
+                  "type": {
+                    "name": "i32"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "call": {
+          "name": "casted"
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "trait_object_and_impl",
+      "arguments": [
+        {
+          "name": "a"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "d",
+          "type": {
+            "borrowed": true,
+            "lifetime": {
+              "name": "a"
+            },
+            "type": {
+              "dynamic": true,
+              "type": {
+                "generic": true,
+                "name": "Drawable",
+                "type": {
+                  "associated": true,
+                  "name": "Canvas",
+                  "type": {
+                    "generic": true,
+                    "name": "Vec",
+                    "type": {
+                      "name": "u8"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "bounded": true,
+          "type": {
+            "abstract": true,
+            "name": "Display"
+          },
+          "lifetime": {
+            "name": "a"
+          }
+        }
+      },
+      "body": {
+        "macro": {
+          "string": "\"name={}\"",
+          "names": [
+            "format",
+            "d",
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "diverges",
+      "returns": {
+        "type": {
+          "never": true
+        }
+      },
+      "body": {
+        "macro": {
+          "name": "panic",
+          "string": "\"never returns\""
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "async_demo",
+      "returns": {
+        "type": {
+          "name": "u32"
+        }
+      },
+      "body": {
+        "let": {
+          "name": "block",
+          "value": {
+            "expression": {
+              "block": {
+                "async": true,
+                "binary": {
+                  "left": "1u32",
+                  "op": {
+                    "text": "+",
+                    "plus": true
+                  },
+                  "right": "2"
+                }
+              }
+            }
+          }
+        },
+        "await": {
+          "name": "block"
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "unsafe_block",
+      "body": {
+        "lets": [
+          {
+            "name": "x",
+            "value": {
+              "expression": {
+                "int": "5"
+              }
+            }
+          },
+          {
+            "name": "r",
+            "value": {
+              "expression": {
+                "cast": {
+                  "value": {
+                    "expression": {
+                      "ref": {
+                        "name": "x"
+                      }
+                    }
+                  },
+                  "type": {
+                    "pointer": true,
+                    "name": "i32"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "unsafe": {
+          "block": {
+            "let": {
+              "pattern": {
+                "wildcard": true
+              },
+              "value": {
+                "expression": {
+                  "unary": {
+                    "name": "r"
+                  }
+                }
+              }
+            },
+            "expression": {
+              "assign": {
+                "name": "COUNTER",
+                "int": "1"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "hrtb_demo",
+      "arguments": [
+        {
+          "name": "F"
+        },
+        {
+          "name": "T",
+          "extends": {
+            "bound": {
+              "optional": true,
+              "name": "Sized"
+            }
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "name": "_f",
+          "type": {
+            "name": "F"
+          }
+        },
+        {
+          "name": "_t",
+          "type": {
+            "borrowed": true,
+            "type": {
+              "name": "T"
+            }
+          }
+        }
+      ],
+      "where": {
+        "bound": {
+          "name": "F",
+          "extends": {
+            "bound": {
+              "higher": true,
+              "arguments": [
+                {
+                  "name": "a"
+                }
+              ],
+              "type": {
+                "function": true,
+                "name": "Fn",
+                "parameters": [
+                  {
+                    "borrowed": true,
+                    "lifetime": {
+                      "name": "a"
+                    },
+                    "type": {
+                      "name": "i32"
+                    }
+                  }
+                ],
+                "type": {
+                  "borrowed": true,
+                  "lifetime": {
+                    "name": "a"
+                  },
+                  "type": {
+                    "name": "i32"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "body": {}
+    },
+    {
+      "pub": true,
+      "name": "pattern_zoo",
+      "parameters": [
+        {
+          "name": "p",
+          "type": {
+            "generic": true,
+            "name": "Point",
+            "lifetime": {
+              "name": "_"
+            },
+            "type": {
+              "name": "i32"
+            }
+          }
+        },
+        {
+          "name": "opt",
+          "type": {
+            "generic": true,
+            "name": "Option",
+            "type": {
+              "generic": true,
+              "name": "Point",
+              "lifetime": {
+                "name": "_"
+              },
+              "type": {
+                "name": "i32"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "i32"
+        }
+      },
+      "body": {
+        "comments": [
+          {
+            "leading": true,
+            "text": "// remaining_field_pattern — `..`."
+          },
+          {
+            "leading": true,
+            "text": "// tuple_pattern + reference_pattern + captured_pattern."
+          },
+          {
+            "leading": true,
+            "text": "// slice_pattern."
+          },
+          {
+            "leading": true,
+            "text": "// assignment_expression (non-compound)."
+          },
+          {
+            "leading": true,
+            "text": "// array_expression."
+          },
+          {
+            "leading": true,
+            "text": "// unit_expression as value."
+          },
+          {
+            "leading": true,
+            "text": "// let-chain."
+          },
+          {
+            "leading": true,
+            "text": "// negative_literal in pattern position."
+          },
+          "// turbofish expression — `parse::<i32>` is generic_function but",
+          "// type-position turbofish like `Vec::<i32>::new` exercises",
+          {
+            "leading": true,
+            "text": "// generic_type_with_turbofish."
+          }
+        ],
+        "lets": [
+          {
+            "pattern": {
+              "struct": true,
+              "name": "Point",
+              "patterns": [
+                {
+                  "field": true,
+                  "name": "x"
+                },
+                {
+                  "rest": true
+                }
+              ]
+            },
+            "value": {
+              "expression": {
+                "name": "p"
+              }
+            }
+          },
+          {
+            "name": "tuple",
+            "value": {
+              "expression": {
+                "tuple": {
+                  "ints": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "expression": {
+                "match": {
+                  "value": {
+                    "expression": {
+                      "ref": {
+                        "name": "tuple"
+                      }
+                    }
+                  },
+                  "body": {
+                    "arms": [
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "ref": true,
+                            "pattern": {
+                              "tuple": true,
+                              "pattern": {
+                                "capture": true,
+                                "name": "a",
+                                "range": {
+                                  "inclusive": true,
+                                  "from": {
+                                    "int": "1"
+                                  },
+                                  "to": {
+                                    "int": "10"
+                                  }
+                                }
+                              },
+                              "names": [
+                                "b",
+                                "_c"
+                              ]
+                            }
+                          }
+                        },
+                        "value": {
+                          "binary": {
+                            "left": "a",
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": "b"
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "tuple": true,
+                            "names": [
+                              "a",
+                              "b",
+                              "c"
+                            ]
+                          }
+                        },
+                        "value": {
+                          "binary": {
+                            "left": {
+                              "left": "a",
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              },
+                              "right": "b"
+                            },
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": "c"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "arr",
+            "value": {
+              "expression": {
+                "array": {
+                  "ints": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "head_tail",
+            "value": {
+              "expression": {
+                "match": {
+                  "value": {
+                    "expression": {
+                      "ref": {
+                        "object": {
+                          "access": true,
+                          "index": {
+                            "exclusive": true
+                          },
+                          "text": "arr"
+                        }
+                      }
+                    }
+                  },
+                  "body": {
+                    "arms": [
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "slice": true,
+                            "pattern": {
+                              "rest": true
+                            },
+                            "names": [
+                              "first",
+                              "last"
+                            ]
+                          }
+                        },
+                        "value": {
+                          "binary": {
+                            "left": "first",
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": "last"
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "slice": true,
+                            "name": "only"
+                          }
+                        },
+                        "value": {
+                          "unary": {
+                            "name": "only"
+                          }
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "pattern": {
+                            "slice": true
+                          }
+                        },
+                        "value": {
+                          "int": "0"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "mut": true,
+            "name": "counter",
+            "value": {
+              "expression": {
+                "int": "0"
+              }
+            }
+          },
+          {
+            "name": "triples",
+            "value": {
+              "expression": {
+                "array": {
+                  "name": "counter",
+                  "binaries": [
+                    {
+                      "left": "counter",
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      },
+                      "right": "2"
+                    },
+                    {
+                      "left": "counter",
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      },
+                      "right": "3"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "unit_val",
+            "value": {
+              "expression": {
+                "literal": {
+                  "unit": true
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "value": {
+              "expression": {
+                "name": "unit_val"
+              }
+            }
+          },
+          {
+            "name": "signed",
+            "value": {
+              "expression": {
+                "match": {
+                  "value": {
+                    "expression": {
+                      "unary": {
+                        "int": "1i32"
+                      }
+                    }
+                  },
+                  "body": {
+                    "arms": [
+                      {
+                        "pattern": {
+                          "literal": {
+                            "negative": true,
+                            "int": "1"
+                          }
+                        },
+                        "value": {
+                          "string": "\"neg\""
+                        }
+                      },
+                      {
+                        "pattern": {
+                          "int": "0"
+                        },
+                        "value": {
+                          "string": "\"zero\""
+                        }
+                      },
+                      {
+                        "pattern": {},
+                        "value": {
+                          "string": "\"pos\""
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "value": {
+              "expression": {
+                "name": "signed"
+              }
+            }
+          },
+          {
+            "name": "v",
+            "value": {
+              "expression": {
+                "call": {
+                  "path": {
+                    "type": {
+                      "generic": true,
+                      "name": "Vec",
+                      "type": {
+                        "name": "i32"
+                      }
+                    },
+                    "name": "new"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "expression": {
+          "assign": {
+            "name": "counter",
+            "binary": {
+              "left": "total",
+              "op": {
+                "text": "+",
+                "plus": true
+              },
+              "right": "head_tail"
+            }
+          }
+        },
+        "if": {
+          "condition": {
+            "names": [
+              "Some",
+              "inner",
+              "opt",
+              "inner"
+            ],
+            "pattern": {
+              "struct": true,
+              "name": "Point",
+              "patterns": [
+                {
+                  "field": true,
+                  "names": [
+                    "x",
+                    "ix"
+                  ]
+                },
+                {
+                  "rest": true
+                }
+              ]
+            },
+            "binary": {
+              "left": "ix",
+              "op": {
+                "text": ">",
+                "greater": true
+              },
+              "right": "0"
+            }
+          },
+          "then": {
+            "block": {
+              "expression": {
+                "return": {
+                  "binary": {
+                    "left": "ix",
+                    "op": {
+                      "text": "+",
+                      "plus": true
+                    },
+                    "right": "x"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "binary": {
+          "left": {
+            "value": {
+              "expression": {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "len"
+                  },
+                  "text": "v"
+                }
+              }
+            },
+            "type": {
+              "name": "i32"
+            }
+          },
+          "op": {
+            "text": "+",
+            "plus": true
+          },
+          "right": {
+            "access": true,
+            "index": {
+              "text": "0"
+            },
+            "text": "triples"
+          }
+        }
+      }
+    },
+    {
+      "private": true,
+      "name": "main",
+      "body": {
+        "macro": {
+          "string": "\"hello, {}\"",
+          "names": [
+            "println",
+            "GREETING"
+          ]
+        },
+        "lets": [
+          {
+            "name": "v",
+            "value": {
+              "expression": {
+                "macro": {
+                  "name": "vec",
+                  "ints": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "name": "patterns",
+                  "call": {
+                    "path": {
+                      "names": [
+                        "Shape",
+                        "Dot"
+                      ]
+                    },
+                    "ints": [
+                      "1",
+                      "1"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "name": "loops_and_flow"
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "value": {
+              "expression": {
+                "call": {
+                  "name": "None",
+                  "call": {
+                    "path": {
+                      "names": [
+                        "Point",
+                        "new"
+                      ]
+                    },
+                    "ints": [
+                      "1",
+                      "2"
+                    ],
+                    "string": "\"p\""
+                  }
+                }
+              }
+            }
+          },
+          {
+            "pattern": {
+              "wildcard": true
+            },
+            "type": {
+              "generic": true,
+              "name": "Vec",
+              "type": {
+                "tuple": true,
+                "type": {
+                  "borrowed": true,
+                  "type": {
+                    "name": "str"
+                  }
+                },
+                "name": "i32"
+              }
+            },
+            "value": {
+              "expression": {
+                "macro": {
+                  "names": [
+                    "collect_pairs",
+                    "a",
+                    "b"
+                  ],
+                  "ints": [
+                    "1",
+                    "2"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "uses": [
+    {
+      "path": {
+        "names": [
+          "std",
+          "collections"
+        ]
+      },
+      "names": [
+        "HashMap",
+        "HashSet",
+        "Set"
+      ]
+    },
+    {
+      "path": {
+        "names": [
+          "std",
+          "fmt"
+        ]
+      },
+      "names": [
+        "self",
+        "Debug",
+        "Display"
+      ]
+    },
+    {
+      "path": {
+        "path": {
+          "names": [
+            "std",
+            "rc"
+          ]
+        },
+        "name": "Rc"
+      }
+    },
+    {
+      "path": {
+        "path": {
+          "names": [
+            "std",
+            "sync"
+          ]
+        },
+        "name": "Arc"
+      }
+    },
+    {
+      "path": {
+        "path": {
+          "names": [
+            "std",
+            "cell"
+          ]
+        },
+        "name": "RefCell"
+      }
+    },
+    {
+      "path": {
+        "names": [
+          "std",
+          "io"
+        ]
+      },
+      "names": [
+        "Read",
+        "IoRead",
+        "Write",
+        "IoWrite"
+      ]
+    },
+    {
+      "path": {
+        "names": [
+          "std",
+          "vec"
+        ]
+      }
+    },
+    {
+      "extern": true,
+      "names": [
+        "crate",
+        "alloc"
+      ]
+    }
+  ],
+  "attributes": [
+    {
+      "inner": true,
+      "names": [
+        "allow",
+        "dead_code",
+        "unused_variables",
+        "unused_imports",
+        "unused_mut"
+      ]
+    },
+    {
+      "names": [
+        "derive",
+        "Debug",
+        "Clone"
+      ]
+    },
+    {
+      "names": [
+        "derive",
+        "Debug"
+      ]
+    }
+  ],
+  "structs": [
+    {
+      "pub": true,
+      "name": "Point",
+      "arguments": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "T"
+        }
+      ],
+      "where": {
+        "bound": {
+          "name": "T",
+          "extends": {
+            "types": [
+              {
+                "name": "Clone"
+              },
+              {
+                "name": "Send"
+              }
+            ],
+            "lifetime": {
+              "name": "static"
+            }
+          }
+        }
+      },
+      "body": {
+        "fields": [
+          {
+            "pub": true,
+            "name": "x",
+            "type": {
+              "name": "T"
+            }
+          },
+          {
+            "pub": true,
+            "name": "y",
+            "type": {
+              "name": "T"
+            }
+          },
+          {
+            "name": "label",
+            "type": {
+              "borrowed": true,
+              "lifetime": {
+                "name": "a"
+              },
+              "type": {
+                "name": "str"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "pub": true,
+      "name": "Pair",
+      "arguments": [
+        {
+          "name": "T"
+        }
+      ],
+      "body": {
+        "names": [
+          "T",
+          "T"
+        ]
+      }
+    },
+    {
+      "pub": true,
+      "name": "Marker"
+    },
+    {
+      "pub": true,
+      "name": "FixedArray",
+      "arguments": [
+        {
+          "const": true,
+          "names": [
+            "N",
+            "usize"
+          ]
+        }
+      ],
+      "body": {
+        "field": {
+          "name": "items",
+          "type": {
+            "array": true,
+            "names": [
+              "u32",
+              "N"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "enum": {
+    "pub": true,
+    "name": "Shape",
+    "arguments": [
+      {
+        "name": "a"
+      }
+    ],
+    "variants": [
+      {
+        "name": "Nothing"
+      },
+      {
+        "name": "Dot",
+        "body": {
+          "names": [
+            "i32",
+            "i32"
+          ]
+        }
+      },
+      {
+        "name": "Rect",
+        "body": {
+          "fields": [
+            {
+              "name": "w",
+              "type": {
+                "name": "u32"
+              }
+            },
+            {
+              "name": "h",
+              "type": {
+                "name": "u32"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Labeled",
+        "body": {
+          "type": {
+            "borrowed": true,
+            "lifetime": {
+              "name": "a"
+            },
+            "type": {
+              "name": "str"
+            }
+          }
+        },
+        "int": "10"
+      }
+    ]
+  },
+  "trait": {
+    "pub": true,
+    "name": "Drawable",
+    "extends": {
+      "type": {
+        "name": "Debug"
+      }
+    },
+    "body": {
+      "type": {
+        "associated": true,
+        "name": "Canvas"
+      },
+      "const": {
+        "private": true,
+        "names": [
+          "MAX",
+          "usize"
+        ],
+        "int": "64"
+      },
+      "functions": [
+        {
+          "private": true,
+          "name": "draw",
+          "parameters": [
+            {
+              "self": true,
+              "name": "self"
+            },
+            {
+              "name": "c",
+              "type": {
+                "borrowed": true,
+                "mut": true,
+                "path": {
+                  "names": [
+                    "Self",
+                    "Canvas"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "private": true,
+          "name": "name",
+          "parameters": [
+            {
+              "self": true,
+              "name": "self"
+            }
+          ],
+          "returns": {
+            "type": {
+              "name": "String"
+            }
+          },
+          "body": {
+            "call": {
+              "path": {
+                "names": [
+                  "String",
+                  "from"
+                ]
+              },
+              "string": "\"drawable\""
+            }
+          }
+        }
+      ]
+    }
+  },
+  "impls": [
+    {
+      "arguments": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "T",
+          "extends": {
+            "types": [
+              {
+                "name": "Clone"
+              },
+              {
+                "name": "Send"
+              }
+            ],
+            "lifetime": {
+              "name": "static"
+            }
+          }
+        }
+      ],
+      "type": {
+        "generic": true,
+        "name": "Point",
+        "lifetime": {
+          "name": "a"
+        },
+        "type": {
+          "name": "T"
+        }
+      },
+      "body": {
+        "const": {
+          "pub": true,
+          "name": "ORIGIN_LABEL",
+          "type": {
+            "borrowed": true,
+            "lifetime": {
+              "name": "static"
+            },
+            "type": {
+              "name": "str"
+            }
+          },
+          "string": "\"origin\""
+        },
+        "functions": [
+          {
+            "pub": true,
+            "name": "new",
+            "parameters": [
+              {
+                "name": "x",
+                "type": {
+                  "name": "T"
+                }
+              },
+              {
+                "name": "y",
+                "type": {
+                  "name": "T"
+                }
+              },
+              {
+                "name": "label",
+                "type": {
+                  "borrowed": true,
+                  "lifetime": {
+                    "name": "a"
+                  },
+                  "type": {
+                    "name": "str"
+                  }
+                }
+              }
+            ],
+            "returns": {
+              "type": {
+                "name": "Self"
+              }
+            },
+            "body": {
+              "literal": {
+                "name": "Self",
+                "body": {
+                  "fields": [
+                    {
+                      "name": "x"
+                    },
+                    {
+                      "name": "y"
+                    },
+                    {
+                      "name": "label"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "pub": true,
+            "name": "async_clone",
+            "parameters": [
+              {
+                "self": true,
+                "name": "self"
+              }
+            ],
+            "returns": {
+              "type": {
+                "name": "Self"
+              }
+            },
+            "body": {
+              "object": {
+                "access": true,
+                "call": {
+                  "name": "clone"
+                },
+                "text": "self"
+              }
+            }
+          },
+          {
+            "pub": true,
+            "name": "const_fn",
+            "returns": {
+              "type": {
+                "name": "u32"
+              }
+            },
+            "body": {
+              "int": "42"
+            }
+          },
+          {
+            "pub": true,
+            "name": "unsafe_read",
+            "parameters": [
+              {
+                "name": "ptr",
+                "type": {
+                  "pointer": true,
+                  "name": "T"
+                }
+              }
+            ],
+            "returns": {
+              "type": {
+                "name": "T"
+              }
+            },
+            "body": {
+              "object": {
+                "access": true,
+                "unary": {
+                  "name": "ptr"
+                },
+                "call": {
+                  "name": "clone"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "arguments": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "T"
+        }
+      ],
+      "implements": {
+        "type": {
+          "name": "Drawable"
+        }
+      },
+      "type": {
+        "generic": true,
+        "name": "Point",
+        "lifetime": {
+          "name": "a"
+        },
+        "type": {
+          "name": "T"
+        }
+      },
+      "where": {
+        "bound": {
+          "name": "T",
+          "extends": {
+            "types": [
+              {
+                "name": "Clone"
+              },
+              {
+                "name": "Send"
+              },
+              {
+                "name": "Debug"
+              }
+            ],
+            "lifetime": {
+              "name": "static"
+            }
+          }
+        }
+      },
+      "body": {
+        "alias": {
+          "private": true,
+          "name": "Canvas",
+          "type": {
+            "generic": true,
+            "name": "Vec",
+            "type": {
+              "name": "u8"
+            }
+          }
+        },
+        "function": {
+          "private": true,
+          "name": "draw",
+          "parameters": [
+            {
+              "self": true,
+              "name": "self"
+            },
+            {
+              "name": "_c",
+              "type": {
+                "borrowed": true,
+                "mut": true,
+                "path": {
+                  "names": [
+                    "Self",
+                    "Canvas"
+                  ]
+                }
+              }
+            }
+          ],
+          "body": {}
+        }
+      }
+    }
+  ],
+  "aliases": [
+    {
+      "pub": true,
+      "name": "BoxedDraw",
+      "arguments": [
+        {
+          "name": "a"
+        }
+      ],
+      "type": {
+        "generic": true,
+        "name": "Box",
+        "type": {
+          "bounded": true,
+          "type": {
+            "dynamic": true,
+            "type": {
+              "generic": true,
+              "name": "Drawable",
+              "type": {
+                "associated": true,
+                "name": "Canvas",
+                "type": {
+                  "generic": true,
+                  "name": "Vec",
+                  "type": {
+                    "name": "u8"
+                  }
+                }
+              }
+            }
+          },
+          "lifetime": {
+            "name": "a"
+          }
+        }
+      }
+    },
+    {
+      "pub": true,
+      "name": "Callback",
+      "type": {
+        "function": true,
+        "parameters": [
+          "i32"
+        ],
+        "name": "i32"
+      }
+    }
+  ],
+  "const": {
+    "pub": true,
+    "names": [
+      "PI",
+      "f64"
+    ],
+    "float": "3.141_592_653_589f64"
+  },
+  "statics": [
+    {
+      "pub": true,
+      "name": "GREETING",
+      "type": {
+        "borrowed": true,
+        "type": {
+          "name": "str"
+        }
+      },
+      "string": "\"hello\""
+    },
+    {
+      "private": true,
+      "mut": true,
+      "names": [
+        "COUNTER",
+        "u32"
+      ],
+      "int": "0"
+    }
+  ],
+  "mods": [
+    {
+      "pub": true,
+      "name": "outer",
+      "body": {
+        "mod": {
+          "pub": {
+            "crate": {}
+          },
+          "name": "inner",
+          "body": {
+            "const": {
+              "pub": true,
+              "names": [
+                "INNER_CONST",
+                "u32"
+              ],
+              "int": "7"
+            },
+            "function": {
+              "pub": {
+                "in": {}
+              },
+              "name": "path_vis",
+              "body": {}
+            }
+          }
+        }
+      }
+    },
+    {
+      "foreign": true,
+      "extern": true,
+      "string": "\"C\"",
+      "function": {
+        "pub": true,
+        "name": "printf",
+        "parameters": [
+          {
+            "name": "fmt",
+            "type": {
+              "pointer": true,
+              "name": "u8"
+            }
+          },
+          {
+            "variadic": true
+          }
+        ]
+      }
+    }
+  ],
+  "union": {
+    "pub": true,
+    "name": "Either",
+    "body": {
+      "fields": [
+        {
+          "pub": true,
+          "name": "i",
+          "type": {
+            "name": "i32"
+          }
+        },
+        {
+          "pub": true,
+          "name": "f",
+          "type": {
+            "name": "f32"
+          }
+        }
+      ]
+    }
+  },
+  "macro": {
+    "definition": true,
+    "name": "collect_pairs",
+    "arms": [
+      {
+        "repetitions": [
+          {
+            "patterns": [
+              {
+                "binding": true,
+                "name": "$key",
+                "fragment": {}
+              },
+              {
+                "binding": true,
+                "name": "$value",
+                "fragment": {}
+              }
+            ]
+          },
+          {},
+          {
+            "names": [
+              "stringify",
+              "$key",
+              "$value"
+            ]
+          }
+        ],
+        "name": "vec"
+      },
+      {
+        "names": [
+          "Vec",
+          "new"
+        ]
+      }
+    ]
+  }
+}

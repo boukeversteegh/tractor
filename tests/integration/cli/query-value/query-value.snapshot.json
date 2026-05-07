@@ -1,0 +1,10 @@
+{
+  "results": [
+    {
+      "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;"
+    },
+    {
+      "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }"
+    }
+  ]
+}

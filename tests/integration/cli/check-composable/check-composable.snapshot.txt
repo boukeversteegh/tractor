@@ -1,0 +1,24 @@
+class[public]/
+  ├─ "public class"
+  ├─ name = "Calculator"
+  └─ body/
+      ├─ method[public]/
+      │   └─ ... (23 children)
+      ├─ method[public]/
+      │   └─ ... (23 children)
+      └─ method[public]/
+          └─ ... (23 children)
+error: class found
+
+class[public]/
+  ├─ "public class"
+  ├─ name = "Greeter"
+  └─ body/
+      ├─ method[public]/
+      │   └─ ... (19 children)
+      ├─ method[public]/
+      │   └─ ... (19 children)
+      └─ method[public]/
+          └─ ... (4 children)
+error: class found
+2 errors in 1 file

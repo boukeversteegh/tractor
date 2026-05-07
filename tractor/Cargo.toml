@@ -17,6 +17,11 @@ name = "update-snapshots"
 path = "src/bin/update_snapshots.rs"
 required-features = ["native"]
 
+[[bin]]
+name = "gen-kinds"
+path = "src/bin/gen_kinds.rs"
+required-features = ["native"]
+
 [features]
 default = ["native"]
 native = [
@@ -102,6 +107,8 @@ thiserror.workspace = true
 anyhow.workspace = true
 regex.workspace = true
 once_cell = "1.19"
+strum.workspace = true
+strum_macros.workspace = true
 
 # Native-only utilities
 atty = { workspace = true, optional = true }

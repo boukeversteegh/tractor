@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 3,
+      "files": 2,
+      "errors": 3
+    }
+  },
+  "results": [
+    {
+      "reason": "class found",
+      "severity": "error",
+      "lines": [
+        "public class Calculator",
+        "{",
+        "    public int Add(int a, int b) { return a + b; }",
+        "    public int Subtract(int a, int b) { return a - b; }",
+        "    public int Multiply(int a, int b) { return a * b; }",
+        "}"
+      ]
+    },
+    {
+      "reason": "class found",
+      "severity": "error",
+      "lines": [
+        "public class Greeter",
+        "{",
+        "    public string Hello(string name) { return \"Hello, \" + name; }",
+        "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+        "    public void Reset() { }",
+        "}"
+      ]
+    },
+    {
+      "reason": "class found",
+      "severity": "error",
+      "lines": [
+        "public class Alpha",
+        "{",
+        "    public string Name { get; set; }",
+        "}"
+      ]
+    }
+  ]
+}

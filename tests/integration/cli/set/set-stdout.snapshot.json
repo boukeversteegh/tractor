@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "success": true,
+    "totals": {
+      "results": 1,
+      "files": 1,
+      "updated": 1
+    }
+  },
+  "group": "file",
+  "results": [
+    {
+      "file": "tests/integration/cli/set/sample.yaml",
+      "output": "database:\n  host: db.example.com\n  port: 5432\n"
+    }
+  ]
+}

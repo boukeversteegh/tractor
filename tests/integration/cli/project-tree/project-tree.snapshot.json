@@ -1,0 +1,18 @@
+[
+  {
+    "$type": "class",
+    "public": true,
+    "name": "Calculator",
+    "body": {
+      "$truncated": 72
+    }
+  },
+  {
+    "$type": "class",
+    "public": true,
+    "name": "Greeter",
+    "body": {
+      "$truncated": 45
+    }
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 2,
+      "files": 1,
+      "errors": 2
+    }
+  },
+  "group": "file",
+  "results": [
+    {
+      "file": "tests/integration/sample.cs",
+      "results": [
+        {
+          "tree": {
+            "$type": "class",
+            "public": true,
+            "name": "Calculator",
+            "body": {
+              "$truncated": 72
+            }
+          },
+          "reason": "class found",
+          "severity": "error"
+        },
+        {
+          "tree": {
+            "$type": "class",
+            "public": true,
+            "name": "Greeter",
+            "body": {
+              "$truncated": 45
+            }
+          },
+          "reason": "class found",
+          "severity": "error"
+        }
+      ]
+    }
+  ]
+}

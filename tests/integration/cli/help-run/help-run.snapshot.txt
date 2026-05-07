@@ -1,0 +1,151 @@
+Execute a tractor config file (batch check/set operations)
+
+Usage: tractor run [OPTIONS] [FILES]...
+
+Arguments:
+  [FILES]...
+          Files to process (intersected with config file globs)
+
+Options:
+  -l, --lang <LANG>
+          Language for stdin or -s/--string input (e.g., csharp, rust, python)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Config:
+      --config <CONFIG>
+          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory. Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one
+
+Output:
+  -f, --format <FORMAT>
+          Output format [default: gcc]
+            text         Human-readable plain text
+            json         JSON report envelope
+            yaml         YAML report envelope
+            xml          XML report envelope
+            gcc          file:line:col: severity: reason (for CI/editors)
+            github       GitHub Actions annotation (::error file=...)
+            claude-code  Claude Code hook JSON (use with --hook)
+          
+          [default: gcc]
+
+  -v, --view <VIEW>
+          Choose which fields are included in the output [default: command,reason,severity,lines,status,value]
+          
+            content:
+              tree      Parsed source tree
+              value     Text content of matched nodes
+              source    Exact matched source text
+              lines     Full source lines containing each match
+              schema    Structural overview of element types
+            location:
+              file      File path of the match
+              line      Line number of the match
+              column    Column number of the match
+            diagnostic:
+              reason    Reason message for violations
+              severity  Severity level (error/warning)
+              command   Operation type (check, query, etc.)
+              origin    Diagnostic origin (xpath, cli, etc.)
+            summary:
+              totals    Summary totals across all matches
+              count     Total match count
+              query     Echo the XPath query as received
+            set mode:
+              status    Whether each match was updated or unchanged
+              output    Full modified content (for --stdout)
+          
+          Combine with commas: -v tree,value
+          Use +/- modifiers to adjust defaults: -v -lines or -v +source,-lines
+          
+          Examples:
+            -v value                Show only text content
+            -v tree,value           Combine multiple fields
+            -v -lines               Remove a field from defaults
+            -v +source,-lines       Add and remove in one expression
+
+  -m, --message <MESSAGE>
+          Message template for matches (e.g. "{file}:{line}: {value}")
+
+Extract:
+  -x, --extract <QUERY>
+          XPath expression to extract matching AST nodes
+
+  -t, --tree <TREE>
+          Tree mode [default: auto]
+            raw        Raw tree-sitter AST (no semantic transforms)
+            structure  Semantic syntax tree (default for code languages)
+            data       Data projection (default for JSON/YAML)
+          
+          When omitted, auto-selects: data for JSON/YAML, structure for everything else.
+
+  -W, --ignore-whitespace
+          Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+
+View:
+  -n, --limit <LIMIT>
+          Limit output to first N matches
+
+  -p, --projection <TARGET>
+          Choose which report element is emitted [default: report]
+            tree     Project matched trees
+            shape    Project matched tree shape (no text)
+            value    Project matched values
+            source   Project matched source snippets
+            lines    Project matched source lines
+            schema   Project the schema summary
+            count    Project the total result count
+            summary  Project the summary section
+            totals   Project summary totals
+            results  Project the results list
+            report   Project the full report
+
+      --single
+          Emit only the first projected item, bare with no list wrapper. Implies -n 1 for sequence projections.
+
+  -d, --depth <DEPTH>
+          Limit XML output depth (useful for large ASTs)
+
+      --meta
+          Include metadata attributes (start/end, kind, field) in XML output
+
+  -g, --group <GROUP_BY>
+          Group output by dimension: none, file, command, rule (comma-separated)
+
+Format:
+      --no-pretty
+          Disable pretty printing (shows XML without formatting, as used by XPath)
+
+      --color <COLOR>
+          Color output: auto (default), always, never
+          
+          [default: auto]
+
+      --no-color
+          Disable color output
+
+      --hook <HOOK>
+          Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+
+Filter:
+      --diff-files <RANGE>
+          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+
+      --diff-lines <RANGE>
+          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+
+Advanced:
+      --parse-depth <PARSE_DEPTH>
+          [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+
+  -c, --concurrency <CONCURRENCY>
+          Number of parallel workers
+
+      --max-files <MAX_FILES>
+          Maximum number of files to process (default: 10000)
+          
+          [default: 10000]
+
+      --verbose
+          Show verbose output

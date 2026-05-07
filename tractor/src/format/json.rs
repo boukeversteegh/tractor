@@ -59,6 +59,19 @@ pub(crate) fn project_json_value(
                 Ok(Value::Array(projected))
             }
         }
+        Projection::Shape => {
+            let shape_opts = render_opts.clone().with_shape_only(true);
+            let projected: Vec<Value> = report
+                .all_matches()
+                .into_iter()
+                .filter_map(|rm| project_match_field_to_json(rm, Projection::Tree, &shape_opts))
+                .collect();
+            if single {
+                Ok(first_or_empty(projected.into_iter())?)
+            } else {
+                Ok(Value::Array(projected))
+            }
+        }
     }
 }
 
@@ -180,7 +193,11 @@ fn project_match_field_to_json(
     render_opts: &RenderOptions,
 ) -> Option<Value> {
     match projection {
-        Projection::Tree => rm.tree.as_ref().map(|node| xml_node_to_json(node, render_opts.max_depth)),
+        // Tree projection: dispatch on the matched-tree variant. IR
+        // / DataIr → walk the typed renderers (type-driven shape);
+        // Xml → fall back to xml_to_json. JSON serialisation
+        // (string output) happens later in `render_json_output`.
+        Projection::Tree => rm.tree.as_ref().map(|tree| tree.to_json(render_opts.max_depth)),
         Projection::Value => rm.value.as_ref().map(|value| json!(value)),
         Projection::Source => rm.source.as_ref().map(|source| json!(source)),
         Projection::Lines => rm.lines.as_ref().map(|lines| json!(lines)),
@@ -306,8 +323,8 @@ pub fn match_to_value(
                 }
             }
             ViewField::Tree => {
-                if let Some(ref node) = rm.tree {
-                    obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
+                if let Some(ref tree) = rm.tree {
+                    obj.insert("tree".into(), tree.to_json(render_opts.max_depth));
                 }
             }
             ViewField::Origin => {
@@ -359,7 +376,7 @@ mod tests {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
             command: String::new(),
-            tree: Some(tree),
+            tree: Some(tractor::xpath::Tree::Xml(tree)),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
             message: None, origin: None, rule_id: None, status: None, output: None,

@@ -1,0 +1,34 @@
+summary:
+  success: true
+  totals:
+    results: 2
+    files: 1
+    updated: 2
+outputs:
+- file: tests/integration/cli/set/sample.yaml
+  content: |
+    database:
+      host: db.example.com
+      port: 5432
+- file: tests/integration/cli/set/sample.yaml
+  content: |
+    database:
+      host: localhost
+      port: 5433
+group: command
+results:
+- command: set
+  group: file
+  results:
+  - file: tests/integration/cli/set/sample.yaml
+    results:
+    - reason: //database/host
+      lines:
+      - '  host: localhost'
+      status: updated
+      value: localhost
+    - reason: //database/port
+      lines:
+      - '  port: 5432'
+      status: updated
+      value: '5432'

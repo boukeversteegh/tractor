@@ -1,0 +1,10 @@
+class[public]/
+  ├─ "public class"
+  ├─ name = "Calculator"
+  └─ body/
+      ├─ method[public]/
+      │   └─ ... (23 children)
+      ├─ method[public]/
+      │   └─ ... (23 children)
+      └─ method[public]/
+          └─ ... (23 children)

@@ -1,0 +1,17 @@
+tests/integration/sample.cs:2:1: error: class found
+2 >| 🟦public class Calculator🟦
+3  | 🟦{🟦
+4  |     🟪public int 🟪⬜Add⬜🟪(🟪⬜int a⬜🟪, 🟪⬜int b⬜🟪) { 🟪🟦return 🟦⬜a⬜🟦 + 🟦⬜b⬜🟦;🟦🟪 }🟪
+5  |     🟪public int 🟪⬜Subtract⬜🟪(🟪⬜int a⬜🟪, 🟪⬜int b⬜🟪) { 🟪🟦return 🟦⬜a⬜🟦 - 🟦⬜b⬜🟦;🟦🟪 }🟪
+6  |     🟪public int 🟪⬜Multiply⬜🟪(🟪⬜int a⬜🟪, 🟪⬜int b⬜🟪) { 🟪🟦return 🟦⬜a⬜🟦 * 🟦⬜b⬜🟦;🟦🟪 }🟪
+7 >| 🟦}🟦
+
+tests/integration/sample.cs:9:1: error: class found
+ 9 >| 🟦public class Greeter🟦
+10  | 🟦{🟦
+11  |     🟪public string 🟪⬜Hello⬜🟪(🟪⬜string name⬜🟪) { 🟪🟦return 🟦🟨"Hello, "🟨🟦 + 🟦⬜name⬜🟦;🟦🟪 }🟪
+12  |     🟪public string 🟪⬜Goodbye⬜🟪(🟪⬜string name⬜🟪) { 🟪🟦return 🟦🟨"Goodbye, "🟨🟦 + 🟦⬜name⬜🟦;🟦🟪 }🟪
+13  |     🟪public void 🟪⬜Reset⬜🟪() { }🟪
+14 >| 🟦}🟦
+
+2 errors in 1 file

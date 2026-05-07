@@ -112,7 +112,71 @@ fn render_value(
     }
 }
 
-/// Render an object: `{ "key": value, ... }`
+/// Compute the JSON key for a property element: prefer `key` (sanitized
+/// original key), fall back to `field`, fall back to the element name.
+fn property_key(attributes: &[(String, String)], element_name: &str) -> String {
+    get_attr(attributes, "key")
+        .or_else(|| get_attr(attributes, "field"))
+        .unwrap_or_else(|| element_name.to_string())
+}
+
+/// Group consecutive properties by their JSON key. Siblings with the
+/// same key (e.g. multiple `<parameter field="parameters">` from the
+/// Flat Lists principle) form a single group that renders as a JSON
+/// array under that key.
+fn group_by_key<'a>(properties: &[&'a XmlNode]) -> Vec<(String, Vec<&'a XmlNode>)> {
+    let mut groups: Vec<(String, Vec<&XmlNode>)> = Vec::new();
+    for prop in properties {
+        if let XmlNode::Element { name, attributes, .. } = prop {
+            let key = property_key(attributes, name);
+            if let Some(last) = groups.last_mut() {
+                if last.0 == key {
+                    last.1.push(prop);
+                    continue;
+                }
+            }
+            groups.push((key, vec![prop]));
+        }
+    }
+    groups
+}
+
+/// Render a single property's value (scalar, object, or array of children).
+fn render_property_value(
+    prop: &XmlNode,
+    opts: &RenderOptions,
+    buf: &mut String,
+    span_map: &mut SpanMap,
+) -> Result<(), super::RenderError> {
+    if let XmlNode::Element { attributes, children, .. } = prop {
+        let element_kids = element_children(children);
+        let text = text_content(children);
+
+        let value_start = buf.len();
+
+        if element_kids.is_empty() {
+            if let Some(text) = &text {
+                let kind = get_attr(attributes, "kind");
+                render_scalar(text, kind.as_deref(), buf);
+            } else {
+                buf.push_str("{}");
+            }
+        } else {
+            let all_props = element_kids.iter().all(|c| is_property_element(c));
+            if all_props {
+                render_object(&element_kids, opts, buf, span_map)?;
+            } else {
+                render_array(&element_kids, opts, buf, span_map)?;
+            }
+        }
+
+        record_span(attributes, value_start, buf.len(), span_map);
+    }
+    Ok(())
+}
+
+/// Render an object: `{ "key": value, ... }`. Siblings with the same
+/// effective key are grouped into an array (Principle #12 Flat Lists).
 fn render_object(
     properties: &[&XmlNode],
     opts: &RenderOptions,
@@ -130,49 +194,36 @@ fn render_object(
 
     buf.push('{');
 
-    for (i, prop) in properties.iter().enumerate() {
+    let groups = group_by_key(properties);
+    for (i, (key, group)) in groups.iter().enumerate() {
         if i > 0 {
             buf.push(',');
         }
         buf.push_str(&opts.newline);
         buf.push_str(&indent);
 
-        if let XmlNode::Element {
-            name,
-            attributes,
-            children,
-            ..
-        } = prop
-        {
-            // Use original key from `key` attribute if present (sanitized names)
-            let key = get_attr(attributes, "key").unwrap_or_else(|| name.clone());
-            buf.push('"');
-            buf.push_str(&escape_json_string(&key));
-            buf.push_str("\": ");
+        buf.push('"');
+        buf.push_str(&escape_json_string(key));
+        buf.push_str("\": ");
 
-            let element_kids = element_children(children);
-            let text = text_content(children);
-
-            // Track value span (starts after "key": )
-            let value_start = buf.len();
-
-            if element_kids.is_empty() {
-                if let Some(text) = &text {
-                    let kind = get_attr(attributes, "kind");
-                    render_scalar(text, kind.as_deref(), buf);
-                } else {
-                    buf.push_str("{}");
+        if group.len() == 1 {
+            render_property_value(group[0], &inner_opts, buf, span_map)?;
+        } else {
+            // Multiple same-key siblings render as a JSON array of values.
+            let array_opts = inner_opts.indented();
+            let array_indent = array_opts.current_indent();
+            buf.push('[');
+            for (j, prop) in group.iter().enumerate() {
+                if j > 0 {
+                    buf.push(',');
                 }
-            } else {
-                let all_props = element_kids.iter().all(|c| is_property_element(c));
-                if all_props {
-                    render_object(&element_kids, &inner_opts, buf, span_map)?;
-                } else {
-                    render_array(&element_kids, &inner_opts, buf, span_map)?;
-                }
+                buf.push_str(&opts.newline);
+                buf.push_str(&array_indent);
+                render_property_value(prop, &array_opts, buf, span_map)?;
             }
-
-            record_span(attributes, value_start, buf.len(), span_map);
+            buf.push_str(&opts.newline);
+            buf.push_str(&indent);
+            buf.push(']');
         }
     }
 

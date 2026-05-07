@@ -18,301 +18,12 @@ fn assert_well_formed_xml(xml: &str) {
     }
 }
 
-cli_suite! {
-    rust in "languages/rust" {
-        functions_exist => tractor query "sample.rs" -x "function" => count 4;
-        add_name => tractor query "sample.rs" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.rs" -x "function[name='main']" => count 1;
-        file_variable => tractor query "sample.rs" -x "$file" => count 1;
-        let_rename => tractor query "sample.rs" -x "let" => count 1;
-        binary_op => tractor query "sample.rs" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.rs" -x "call" => count 1;
-        macro_rename => tractor query "sample.rs" -x "macro" => count 1;
-        pub_functions => tractor query "sample.rs" -x "function[pub]" => count 3;
-        plain_pub => tractor query "sample.rs" -x "function[pub[not(*)]]" => count 1;
-        pub_crate => tractor query "sample.rs" -x "function[pub[crate]]" => count 1;
-        private_marker => tractor query "sample.rs" -x "function[private]" => count 1;
-    }
-}
 
-cli_suite! {
-    csharp in "languages/csharp" {
-        methods_exist => tractor query "sample.cs" -x "method" => count 5;
-        method_name => tractor query "sample.cs" -x "method[name='Add']" => count 1;
-        class_name => tractor query "sample.cs" -x "class[name='Sample']" => count 1;
-        unit_rename => tractor query "sample.cs" -x "unit" => count 1;
-        static_marker => tractor query "sample.cs" -x "static" => count 2;
-        binary_op => tractor query "sample.cs" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.cs" -x "call" => count 4;
-        ints_exist => tractor query "sample.cs" -x "int" => count 2;
-        public_methods => tractor query "sample.cs" -x "//method[public]" => count 1;
-        private_methods => tractor query "sample.cs" -x "//method[private]" => count 2;
-        internal_methods => tractor query "sample.cs" -x "//method[internal]" => count 1;
-        protected_methods => tractor query "sample.cs" -x "//method[protected]" => count 1;
-        maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attributes[contains(., 'MaxLength')]][not(attributes[contains(., 'AutoTruncate')])]/name" => count 1;
-        maxlength_on_bool => tractor query "attribute-maxlength-boolean.cs" -x "//property[type='bool'][attributes[contains(., 'MaxLength')]]/name" => count 1;
-        mapper_extension_method => tractor query "mapper-extension-method.cs" -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(parameters/parameter)=1][not(parameters/parameter/this)]/name" => count 1;
-        block_scoped_namespace => tractor query "namespaces-file-scoped.cs" -x "//namespace[body]" => count 1;
-        repository_getall_missing_orderby => tractor query "repository-getall-orderby.cs" -x "//class[contains(name, 'Repository')][not(contains(name, 'Mock'))]//method[contains(name, 'GetAll')][not(contains(., 'OrderBy'))]/name" => count 1;
-        query_missing_asnotracking => tractor query "query-asnotracking.cs" -x "//method[contains(name, 'Get')][contains(., '_context')][contains(., 'Map')][not(contains(., 'AsNoTracking'))]/name" => count 1;
-        generic_list_match => tractor query "generic-type-match.cs" -x "//type[.='List<string>']" => count 2;
-        generic_dictionary_match => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string, int>']" => count 2;
-        generic_count => tractor query "generic-type-match.cs" -x "//type[generic]" => count 8;
-        nested_generic_match => tractor query "generic-type-match.cs" -x "//type[.='List<Dictionary<string, User>>']" => count 2;
-        generic_string_args => tractor query "generic-type-match.cs" -x "//type[generic]/arguments/type[.='string']" => count 6;
-        ignore_whitespace => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string,int>']" -W => count 2;
-        null_forgiving_postfix => tractor query "null-forgiving-operator.cs" -x "//postfix_unary_expression" => count 5;
-        null_forgiving_no_errors => tractor query "null-forgiving-operator.cs" -x "//ERROR" => count 0;
-        null_forgiving_member_access => tractor query "null-forgiving-operator.cs" -x "//member[postfix_unary_expression]" => count 4;
-    }
-}
 
-cli_suite! {
-    go in "languages/go" {
-        functions_exist => tractor query "sample.go" -x "function" => count 3;
-        add_name => tractor query "sample.go" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.go" -x "function[name='main']" => count 1;
-        file_variable => tractor query "sample.go" -x "$file" => count 1;
-        package_clause => tractor query "sample.go" -x "package" => count 1;
-        binary_op => tractor query "sample.go" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.go" -x "call" => count 2;
-        exported => tractor query "sample.go" -x "function[exported]" => count 1;
-        unexported => tractor query "sample.go" -x "function[unexported]" => count 2;
-    }
-}
 
-cli_suite! {
-    ini in "languages/ini" {
-        global_name => tractor query "sample.ini" -x "//name[.='my-app']" => count 1;
-        version => tractor query "sample.ini" -x "//version[.='1.0.0']" => count 1;
-        host => tractor query "sample.ini" -x "//database/host[.='localhost']" => count 1;
-        port => tractor query "sample.ini" -x "//database/port[.='5432']" => count 1;
-        enabled => tractor query "sample.ini" -x "//database/enabled[.='true']" => count 1;
-        dotted_section_user => tractor query "sample.ini" -x "//database.credentials/username[.='admin']" => count 1;
-        dotted_section_password => tractor query "sample.ini" -x "//database.credentials/password[.='secret']" => count 1;
-        servers_count => tractor query "sample.ini" -x "//servers/count[.='2']" => count 1;
-        home_path => tractor query "sample.ini" -x "//paths/home[.='/usr/local']" => count 1;
-        temp_path => tractor query "sample.ini" -x "//paths/temp[.='/tmp']" => count 1;
-        comments => tractor query "sample.ini" -x "//comment" => count 2;
-        comment_text => tractor query "sample.ini" -x "//comment[.='Global settings']" => count 1;
-        document_root => tractor query "sample.ini" -x "//document" => count 1;
-    }
-}
 
-cli_suite! {
-    java in "languages/java" {
-        methods_exist => tractor query "sample.java" -x "method" => count 5;
-        method_name => tractor query "sample.java" -x "method[name='add']" => count 1;
-        class_name => tractor query "sample.java" -x "class[name='Sample']" => count 1;
-        program => tractor query "sample.java" -x "program" => count 1;
-        static_marker => tractor query "sample.java" -x "static" => count 2;
-        binary_ops => tractor query "sample.java" -x "binary[op='+']" => count 2;
-        calls => tractor query "sample.java" -x "call" => count 3;
-        public_methods => tractor query "sample.java" -x "//method[public]" => count 2;
-        package_private => tractor query "sample.java" -x "//method[package-private]" => count 2;
-        protected_methods => tractor query "sample.java" -x "//method[protected]" => count 1;
-    }
-}
 
-cli_suite! {
-    javascript in "languages/javascript" {
-        named_functions => tractor query "sample.js" -x "function[name]" => count 2;
-        add_name => tractor query "sample.js" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.js" -x "function[name='main']" => count 1;
-        program => tractor query "sample.js" -x "program" => count 1;
-        calls => tractor query "sample.js" -x "call" => count 3;
-        call_function_child => tractor query "sample.js" -x "call/function" => count 3;
-        direct_call_ref => tractor query "sample.js" -x "call/function[ref]" => count 2;
-        member_call_shape => tractor query "sample.js" -x "call/function/member" => count 1;
-        member_object => tractor query "sample.js" -x "member/object" => count 1;
-        member_property => tractor query "sample.js" -x "member/property" => count 1;
-    }
-}
 
-cli_suite! {
-    markdown in "languages/markdown" {
-        headings => tractor query "sample.md" -x "//heading" => count 2;
-        h1 => tractor query "sample.md" -x "//heading[h1]" => count 1;
-        h2 => tractor query "sample.md" -x "//heading[h2]" => count 1;
-        ordered_list => tractor query "sample.md" -x "//list[ordered]" => count 1;
-        unordered_list => tractor query "sample.md" -x "//list[unordered]" => count 1;
-        items => tractor query "sample.md" -x "//item" => count 5;
-        blockquote => tractor query "sample.md" -x "//blockquote" => count 1;
-        code_blocks => tractor query "sample.md" -x "//code_block" => count 3;
-        python_block => tractor query "sample.md" -x "//code_block[language='python']" => count 1;
-        javascript_block => tractor query "sample.md" -x "//code_block[language='javascript']" => count 1;
-        unlabeled_block => tractor query "sample.md" -x "//code_block[not(language)]" => count 1;
-        hr => tractor query "sample.md" -x "//hr" => count 1;
-    }
-}
-
-cli_suite! {
-    python in "languages/python" {
-        functions_exist => tractor query "sample.py" -x "function" => count 3;
-        add_name => tractor query "sample.py" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.py" -x "function[name='main']" => count 1;
-        module => tractor query "sample.py" -x "module" => count 1;
-        returns => tractor query "sample.py" -x "return" => count 2;
-        binary_op => tractor query "sample.py" -x "binary[op='+']" => count 1;
-        calls => tractor query "sample.py" -x "call" => count 3;
-        async_function => tractor query "sample.py" -x "function[async]" => count 1;
-        multiline_lf => tractor query "multiline-string-lf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
-        multiline_crlf => tractor query "multiline-string-crlf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
-        // Regression: 3-level predicates must match same as count() workaround (issue #129)
-        deep_predicate_2level => tractor query "sample.py" -x "//function[body/return]" => count 2;
-        deep_predicate_3level => tractor query "sample.py" -x "//function[body/return/binary]" => count 1;
-        deep_predicate_3level_count_workaround => tractor query "sample.py" -x "//function[count(body/return/binary)>0]" => count 1;
-    }
-}
-
-cli_suite! {
-    ruby in "languages/ruby" {
-        methods_exist => tractor query "sample.rb" -x "method" => count 2;
-        add_name => tractor query "sample.rb" -x "method[name='add']" => count 1;
-        main_name => tractor query "sample.rb" -x "method[name='main']" => count 1;
-        calls => tractor query "sample.rb" -x "call" => count 2;
-    }
-}
-
-cli_suite! {
-    toml in "languages/toml" {
-        title => tractor query "sample.toml" -x "//title[.='My App']" => count 1;
-        version => tractor query "sample.toml" -x "//version[.='1.0.0']" => count 1;
-        host => tractor query "sample.toml" -x "//database/host[.='localhost']" => count 1;
-        port => tractor query "sample.toml" -x "//database/port[.='5432']" => count 1;
-        enabled => tractor query "sample.toml" -x "//database/enabled[.='true']" => count 1;
-        dotted_user => tractor query "sample.toml" -x "//database/credentials/username" => count 1;
-        dotted_password => tractor query "sample.toml" -x "//database/credentials/password[.='secret']" => count 1;
-        servers => tractor query "sample.toml" -x "//servers/item" => count 2;
-        server_web1 => tractor query "sample.toml" -x "//servers/item[name='web-1']" => count 1;
-        server_web1_port => tractor query "sample.toml" -x "//servers/item[name='web-1']/port[.='8080']" => count 1;
-        features => tractor query "sample.toml" -x "//features/item" => count 3;
-        feature_auth => tractor query "sample.toml" -x "//features/item[.='auth']" => count 1;
-        inline_x => tractor query "sample.toml" -x "//inline/x[.='1']" => count 1;
-        inline_y => tractor query "sample.toml" -x "//inline/y[.='2']" => count 1;
-        quoted => tractor query "sample.toml" -x "//quoted[.='hello world']" => count 1;
-        sanitized_key => tractor query "sample.toml" -x "//first_name" => count 1;
-        original_key => tractor query "sample.toml" -x "//*[@key='first name']" => count 1;
-        deep_nested => tractor query "sample.toml" -x "//nested/level1/level2/value[.='deep']" => count 1;
-        document_root => tractor query "sample.toml" -x "//document" => count 1;
-    }
-}
-
-cli_suite! {
-    tsql in "languages/tsql" {
-        file_root => tractor query "sample.sql" -x "file" --lang "tsql" => count 1;
-        statements => tractor query "sample.sql" -x "statement" --lang "tsql" => count 24;
-        selects => tractor query "sample.sql" -x "select" --lang "tsql" => count 17;
-        inserts => tractor query "sample.sql" -x "insert" --lang "tsql" => count 1;
-        deletes => tractor query "sample.sql" -x "delete" --lang "tsql" => count 1;
-        updates => tractor query "sample.sql" -x "update" --lang "tsql" => count 3;
-        where_clauses => tractor query "sample.sql" -x "where" --lang "tsql" => count 14;
-        order_by => tractor query "sample.sql" -x "order_by" --lang "tsql" => count 3;
-        group_by => tractor query "sample.sql" -x "group_by" --lang "tsql" => count 1;
-        having => tractor query "sample.sql" -x "having" --lang "tsql" => count 1;
-        joins => tractor query "sample.sql" -x "join" --lang "tsql" => count 2;
-        subqueries => tractor query "sample.sql" -x "subquery" --lang "tsql" => count 2;
-        exists_predicate => tractor query "sample.sql" -x "exists" --lang "tsql" => count 1;
-        cte => tractor query "sample.sql" -x "cte" --lang "tsql" => count 1;
-        union_all => tractor query "sample.sql" -x "union" --lang "tsql" => count 1;
-        case_expr => tractor query "sample.sql" -x "case" --lang "tsql" => count 1;
-        between_expr => tractor query "sample.sql" -x "between" --lang "tsql" => count 1;
-        compare_gt => tractor query "sample.sql" -x "compare[op='>']" --lang "tsql" => count 4;
-        compare_gte => tractor query "sample.sql" -x "compare[op='>=']" --lang "tsql" => count 1;
-        calls => tractor query "sample.sql" -x "call" --lang "tsql" => count 9;
-        cast_expr => tractor query "sample.sql" -x "cast" --lang "tsql" => count 1;
-        window => tractor query "sample.sql" -x "window" --lang "tsql" => count 1;
-        partition_by => tractor query "sample.sql" -x "partition_by" --lang "tsql" => count 1;
-        star => tractor query "sample.sql" -x "star" --lang "tsql" => count 2;
-        aliases => tractor query "sample.sql" -x "alias" --lang "tsql" => count 17;
-        schema_refs => tractor query "sample.sql" -x "schema" --lang "tsql" => count 4;
-        variables => tractor query "sample.sql" -x "var" --lang "tsql" => count 6;
-        temp_table => tractor query "sample.sql" -x "temp_ref" --lang "tsql" => count 1;
-        direction => tractor query "sample.sql" -x "direction" --lang "tsql" => count 2;
-        create_table => tractor query "sample.sql" -x "create_table" --lang "tsql" => count 1;
-        column_defs => tractor query "sample.sql" -x "col_def" --lang "tsql" => count 3;
-        create_function => tractor query "sample.sql" -x "create_function" --lang "tsql" => count 1;
-        assignments => tractor query "sample.sql" -x "assign" --lang "tsql" => count 4;
-        merge_when => tractor query "sample.sql" -x "when" --lang "tsql" => count 2;
-        transaction => tractor query "sample.sql" -x "transaction" --lang "tsql" => count 1;
-        set_stmt => tractor query "sample.sql" -x "set" --lang "tsql" => count 1;
-        go_separator => tractor query "sample.sql" -x "go" --lang "tsql" => count 1;
-        exec => tractor query "sample.sql" -x "exec" --lang "tsql" => count 1;
-        comments => tractor query "sample.sql" -x "comment" --lang "tsql" => count 20;
-    }
-}
-
-cli_suite! {
-    tsx in "languages/tsx" {
-        program => tractor query "sample.tsx" -x "program" => count 1;
-        functions => tractor query "sample.tsx" -x "function[name]" => count 1;
-        component_name => tractor query "sample.tsx" -x "function[name='Greeting']" => count 1;
-        interface => tractor query "sample.tsx" -x "interface" => count 1;
-        variable => tractor query "sample.tsx" -x "variable" => count 1;
-        jsx_elements => tractor query "sample.tsx" -x "//jsx_element" => count 4;
-        jsx_opening => tractor query "sample.tsx" -x "//jsx_opening_element" => count 4;
-        jsx_closing => tractor query "sample.tsx" -x "//jsx_closing_element" => count 4;
-        jsx_attributes => tractor query "sample.tsx" -x "//jsx_attribute" => count 2;
-        jsx_expressions => tractor query "sample.tsx" -x "//jsx_expression" => count 5;
-        jsx_text => tractor query "sample.tsx" -x "//jsx_text" => count 5;
-    }
-}
-
-cli_suite! {
-    typescript in "languages/typescript" {
-        functions => tractor query "sample.ts" -x "function[name]" => count 4;
-        add_name => tractor query "sample.ts" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.ts" -x "function[name='main']" => count 1;
-        program => tractor query "sample.ts" -x "program" => count 1;
-        variable => tractor query "sample.ts" -x "variable" => count 1;
-        binary_op => tractor query "sample.ts" -x "binary[op='+']" => count 1;
-        calls => tractor query "sample.ts" -x "call" => count 4;
-        optional_params => tractor query "sample.ts" -x "//param[optional]" => count 2;
-        required_params => tractor query "sample.ts" -x "//param[required]" => count 5;
-    }
-}
-
-cli_suite! {
-    xml in "languages/xml" {
-        items => tractor query "sample.xml" -x "item" => count 3;
-        feature_items => tractor query "sample.xml" -x "item[@type='feature']" => count 2;
-        bug_items => tractor query "sample.xml" -x "item[@type='bug']" => count 1;
-        settings => tractor query "sample.xml" -x "setting" => count 2;
-        complete_items => tractor query "sample.xml" -x "item[status='complete']" => count 1;
-        attributes => tractor query "sample.xml" -x "project/@name" => count 1;
-        names => tractor query "sample.xml" -x "name" => count 3;
-        value_view => tractor query "sample.xml" -x "item/name" -v "value" => count some;
-    }
-}
-
-cli_suite! {
-    yaml in "languages/yaml" {
-        top_level_scalar => tractor query "sample.yaml" -x "//name[.='my-app']" => count 1;
-        nested_host => tractor query "sample.yaml" -x "//database/host[.='localhost']" => count 1;
-        nested_port => tractor query "sample.yaml" -x "//database/port[.='5432']" => count 1;
-        deep_mapping => tractor query "sample.yaml" -x "//database/credentials/username" => count 1;
-        repeated_servers => tractor query "sample.yaml" -x "//servers" => count 2;
-        server_mapping => tractor query "sample.yaml" -x "//servers[name='web-1']" => count 1;
-        server_port => tractor query "sample.yaml" -x "//servers[name='web-1']/port[.='8080']" => count 1;
-        features => tractor query "sample.yaml" -x "//features" => count 3;
-        feature_auth => tractor query "sample.yaml" -x "//features[.='auth']" => count 1;
-        deep_nested => tractor query "sample.yaml" -x "//nested/level1/level2/value[.='deep']" => count 1;
-        flow_map => tractor query "sample.yaml" -x "//flow_map/x[.='1']" => count 1;
-        flow_list => tractor query "sample.yaml" -x "//flow_list" => count 3;
-        quoted => tractor query "sample.yaml" -x "//quoted[.='hello world']" => count 1;
-        multiline => tractor query "sample.yaml" -x "//multiline[contains(.,'line one')]" => count 1;
-        sanitized_key => tractor query "sample.yaml" -x "//first_name" => count 1;
-        original_key => tractor query "sample.yaml" -x "//*[@key='first name']" => count 1;
-        sanitized_text => tractor query "sample.yaml" -x "//first_name[text()='Alice']" => count 1;
-        multi_doc_root => tractor query "multi.yaml" -x "//document" => count 3;
-        multi_doc_first => tractor query "multi.yaml" -x "//document[1]/name[.='doc1']" => count 1;
-        multi_doc_second => tractor query "multi.yaml" -x "//document[2]/name[.='doc2']" => count 1;
-        multi_doc_third => tractor query "multi.yaml" -x "//document[3]/value[.='three']" => count 1;
-        multi_doc_descendants => tractor query "multi.yaml" -x "//name" => count 3;
-        structure_root => tractor query "sample.yaml" -x "//document/object" -t "structure" => count 1;
-        structure_vocab => tractor query "sample.yaml" -x "//property[key/string='name']/value/string[.='my-app']" -t "structure" => count 1;
-    }
-}
 
 cli_suite! {
     string_input in "string-input" {
@@ -320,7 +31,7 @@ cli_suite! {
         python_string => tractor query -s "def hello(): pass" -l "python" -x "function" => count 1;
         csharp_string => tractor query -s "public class Foo { public void Bar() {} }" -l "csharp" -x "class" => count 1;
         javascript_string => tractor query -s "function greet() { return 'hi'; }" -l "javascript" -x "function" => count 1;
-        typescript_string => tractor query -s "const greet = (): string => 'hi';" -l "typescript" -x "lambda" => count 1;
+        typescript_string => tractor query -s "const greet = (): string => 'hi';" -l "typescript" -x "arrow" => count 1;
         short_flag => tractor query -s "fn main() {}" -l "rust" -x "function" => count 1;
         expect_exact => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count 2;
         expect_some => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count some;
@@ -361,25 +72,31 @@ cli_suite! {
     }
 }
 
+/// Round-trip: extract a fenced JavaScript code block from a
+/// markdown source via `-s`, pipe the extracted code to a second
+/// tractor invocation parsing it as JavaScript, and confirm it
+/// finds the function. Exercises stdin handoff, value extraction,
+/// and multi-language parsing in one go.
 #[test]
 fn markdown_round_trip_extracts_javascript_block() {
-    let extracted = query_command("sample.md", "//code_block[language='javascript']/code")
-        .arg("-v")
-        .arg("value")
-        .in_fixture("languages/markdown")
-        .capture();
+    let md_source = "```javascript\nfunction greet(name) { return name; }\n```\n";
+
+    let extracted = command([
+        "query",
+        "-s", md_source,
+        "-l", "markdown",
+        "-x", "//codeblock[language='javascript']/code",
+        "-v", "value",
+    ])
+    .capture();
     assert_eq!(0, extracted.status);
 
     let parsed = command([
         "query",
-        "-l",
-        "javascript",
-        "-x",
-        "//function[name]",
-        "-v",
-        "count",
-        "-p",
-        "count",
+        "-l", "javascript",
+        "-x", "//function[name]",
+        "-v", "count",
+        "-p", "count",
     ])
     .stdin(format!("{}\n", extracted.stdout))
     .capture();
@@ -457,6 +174,43 @@ fn project_tree_xml_single_stays_bare() {
 }
 
 #[test]
+fn project_shape_keeps_leaf_values_but_drops_dangling_text() {
+    // `-p shape` keeps element names + queryable predicates + leaf
+    // property values (`item = "one"`), but drops dangling tokens
+    // (parens, semicolons, keyword duplicates from marker lifts).
+    // `<item>one</item>` is a leaf shape — its text *is* the property
+    // value, so it stays. (Pre-Phase-3 the shape mode aggressively
+    // dropped all text including leaf values, leaving snapshots
+    // largely meaningless.)
+    let shape = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "shape";
+    })
+    .run();
+    assert!(
+        shape.stdout.contains("\"one\"") && shape.stdout.contains("\"two\""),
+        "shape projection must keep leaf property values, got: {}",
+        shape.stdout
+    );
+    assert!(
+        shape.stdout.contains("item"),
+        "shape projection must keep element names, got: {}",
+        shape.stdout
+    );
+
+    // Sanity: `-p tree` on the same input keeps the text values,
+    // confirming the difference is real.
+    let tree = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree";
+    })
+    .run();
+    assert!(
+        tree.stdout.contains("\"one\"") || tree.stdout.contains("one"),
+        "tree projection should retain text content, got: {}",
+        tree.stdout
+    );
+}
+
+#[test]
 fn project_tree_single_empty_exits_with_empty_stdout() {
     cli_case!({
         tractor query -s "<root/>" -l "xml" -x "//item" -p "tree" --single -f "xml";
@@ -484,7 +238,7 @@ fn project_results_preserves_grouping_in_json() {
     let result = cli_case!({
         tractor query "sample.cs" "sample2.cs" -x "//class/name" -v "file,value" -g "file" -p "results" -f "json";
     })
-    .in_fixture("formats")
+    .in_fixture("")
     .run();
     let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
     let groups = json.as_array().expect("results projection should stay a sequence");
@@ -537,7 +291,7 @@ fn projection_invalid_is_rejected_with_valid_values() {
         expect => {
             exit 1;
             combined_contains "invalid projection 'INVALID'";
-            combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
+            combined_contains "tree, shape, value, source, lines, schema, count, summary, totals, results, report";
         }
     })
     .run();
@@ -670,12 +424,12 @@ fn project_totals_single_is_a_noop_with_warning() {
 fn set_snapshot_text_default() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com";
-        expect => stdout_snapshot "formats/set/set.txt";
+        expect => stdout_snapshot "cli/set/set.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -683,12 +437,12 @@ fn set_snapshot_text_default() {
 fn set_snapshot_text_unchanged() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "localhost";
-        expect => stdout_snapshot "formats/set/set-unchanged.txt";
+        expect => stdout_snapshot "cli/set/set-unchanged.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -696,11 +450,11 @@ fn set_snapshot_text_unchanged() {
 fn set_snapshot_text_declarative_mode() {
     cli_case!({
         tractor set "sample.yaml" "database[host='db.example.com']";
-        expect => stdout_snapshot "formats/set/set-declarative.txt";
+        expect => stdout_snapshot "cli/set/set-declarative.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -708,9 +462,9 @@ fn set_snapshot_text_declarative_mode() {
 fn set_snapshot_stdout_mode() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdout.txt";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .run();
 }
@@ -719,7 +473,7 @@ fn set_snapshot_stdout_mode() {
 fn set_snapshot_stdout_mode_from_stdin() {
     cli_case!({
         tractor set -l "yaml" "database[host='db.example.com']" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdin-stdout.txt";
+        expect => stdout_snapshot "cli/set/set-stdin-stdout.snapshot.txt";
     })
     .stdin("database:\n  host: localhost\n  port: 5432\n")
     .run();
@@ -729,14 +483,14 @@ fn set_snapshot_stdout_mode_from_stdin() {
 fn set_snapshot_stdout_mode_multiple_files() {
     cli_case!({
         tractor set "sample-a.yaml" "sample-b.yaml" -x "//database/host" --value "db.example.com" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdout-multi.txt";
+        expect => stdout_snapshot "cli/set/set-stdout-multi.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .seed_file("sample-a.yaml", "database:\n  host: localhost\n  port: 5432\n")
     .seed_file("sample-b.yaml", "database:\n  host: localhost\n  port: 5432\n")
-    .replace_output("sample-a.yaml", "tests/integration/formats/set/sample-a.yaml")
-    .replace_output("sample-b.yaml", "tests/integration/formats/set/sample-b.yaml")
+    .replace_output("sample-a.yaml", "tests/integration/cli/set/sample-a.yaml")
+    .replace_output("sample-b.yaml", "tests/integration/cli/set/sample-b.yaml")
     .run();
 }
 
@@ -744,24 +498,24 @@ fn set_snapshot_stdout_mode_multiple_files() {
 fn set_snapshot_json() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" -f "json";
-        expect => stdout_snapshot "formats/set/set.json";
+        expect => stdout_snapshot "cli/set/set.snapshot.json";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
 #[test]
 fn set_snapshot_xml() {
     cli_case!({
-        tractor run --config "set-config.yaml" -f "xml";
-        expect => stdout_snapshot "formats/set/set.xml";
+        tractor run --config "set.config.yaml" -f "xml";
+        expect => stdout_snapshot "cli/set/set.snapshot.xml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -769,44 +523,44 @@ fn set_snapshot_xml() {
 fn set_snapshot_stdout_xml() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "xml";
-        expect => stdout_snapshot "formats/set/set-stdout.xml";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.xml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "xml";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.xml";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "xml";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.xml";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "json";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.json";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "json";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.json";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "yaml";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.yaml";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "yaml";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.yaml";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
@@ -814,11 +568,11 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
 fn set_snapshot_stdout_json() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "json";
-        expect => stdout_snapshot "formats/set/set-stdout.json";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.json";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -826,11 +580,11 @@ fn set_snapshot_stdout_json() {
 fn set_snapshot_stdout_yaml() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "yaml";
-        expect => stdout_snapshot "formats/set/set-stdout.yaml";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.yaml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -1000,7 +754,7 @@ fn inline_stdin_virtual_path_matches_include_glob() {
     // Rule has `include: ["src/**/*.js"]`. When stdin content is piped with
     // a virtual path under src/, the rule fires — proof that globs see the
     // virtual path instead of the old "<stdin>" sentinel that never matched.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript" "src/foo.js";
         expect => exit 1;
@@ -1016,7 +770,7 @@ fn inline_stdin_virtual_path_matches_include_glob() {
 fn inline_stdin_virtual_path_outside_include_glob_is_clean() {
     // Same rule/content, but virtual path doesn't match `include:` — rule
     // doesn't fire. Mirrors the disk-file behaviour for non-matching paths.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript" "test/foo.js";
         expect => exit 0;
@@ -1033,7 +787,7 @@ fn inline_string_virtual_path_appears_in_diagnostic_output() {
     // `-s` content + virtual path: the diagnostic should mention the virtual
     // path, never the "<string>" or "<stdin>" sentinel. Regression guard
     // against the sentinel leaking past the input boundary.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     let result = command([
         "check",
         "--config",
@@ -1067,7 +821,7 @@ fn inline_stdin_pathless_does_not_match_include_globs() {
     // Pathless inline source (no positional path) cannot match any rule
     // with an `include:` pattern — preserves the prior behaviour and makes
     // the difference vs. virtual-path mode explicit.
-    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//object[access and name='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
     cli_case!({
         tractor check --config "tractor.yml" -l "javascript";
         expect => exit 0;
@@ -1516,7 +1270,7 @@ fn view_modifier_can_drop_lines_in_gcc_output() {
         "gcc",
         "-v=-lines",
     ])
-    .in_fixture("formats")
+    .in_fixture("")
     .capture();
 
     assert_eq!(1, result.status);
@@ -1540,28 +1294,28 @@ fn view_modifier_can_drop_lines_in_gcc_output() {
 fn view_modifier_can_add_source_and_remove_tree() {
     let without_tree = query_command("sample.cs", "//class/name")
         .arg("-v=-tree")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     assert_eq!(0, without_tree.status);
     assert!(!without_tree.stdout.contains('<'));
 
     let with_source = query_command("sample.cs", "//class/name")
         .arg("-v=+source")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     assert_eq!(0, with_source.status);
-    assert!(with_source.stdout.contains("public class Foo"));
-    assert!(with_source.stdout.contains("public class Qux"));
+    assert!(with_source.stdout.contains("public class Calculator"));
+    assert!(with_source.stdout.contains("public class Greeter"));
 }
 
 #[test]
 fn view_modifier_is_idempotent_for_existing_fields() {
     let default_out = query_command("sample.cs", "//class/name")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     let modified_out = query_command("sample.cs", "//class/name")
         .arg("-v=+tree")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
 
     assert_eq!(0, default_out.status);
@@ -1572,7 +1326,7 @@ fn view_modifier_is_idempotent_for_existing_fields() {
 #[test]
 fn view_modifier_rejects_invalid_combinations() {
     command(["query", "sample.cs", "-x", "//class", "-v=tree,+source"])
-        .in_fixture("formats")
+        .in_fixture("")
         .assert_exit(1)
         .run();
 
@@ -1583,12 +1337,12 @@ fn view_modifier_rejects_invalid_combinations() {
         "//class/name",
         "-v=-file,-line,-tree",
     ])
-    .in_fixture("formats")
+    .in_fixture("")
     .assert_exit(1)
     .run();
 
     command(["query", "sample.cs", "-x", "//class", "-v=-nosuchfield"])
-        .in_fixture("formats")
+        .in_fixture("")
         .assert_exit(1)
         .run();
 }

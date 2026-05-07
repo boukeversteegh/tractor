@@ -1,0 +1,1604 @@
+{
+  "$type": "module",
+  "expression": {
+    "string": "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
+  },
+  "imports": [
+    {
+      "path": {
+        "names": [
+          "os"
+        ]
+      }
+    },
+    {
+      "path": {
+        "names": [
+          "sys"
+        ]
+      },
+      "aliased": {
+        "name": "system"
+      }
+    },
+    {
+      "path": {
+        "names": [
+          "annotations"
+        ]
+      }
+    }
+  ],
+  "froms": [
+    {
+      "path": {
+        "names": [
+          "collections"
+        ]
+      },
+      "import": {
+        "name": "OrderedDict"
+      }
+    },
+    {
+      "path": {
+        "names": [
+          "typing"
+        ]
+      },
+      "imports": [
+        {
+          "name": "Optional"
+        },
+        {
+          "name": "Union"
+        }
+      ]
+    },
+    {
+      "path": {
+        "names": [
+          "dataclasses"
+        ]
+      },
+      "imports": [
+        {
+          "name": "dataclass"
+        },
+        {
+          "name": "field"
+        }
+      ]
+    },
+    {
+      "relative": true,
+      "import": {
+        "name": "sibling"
+      }
+    },
+    {
+      "relative": true,
+      "path": {
+        "names": [
+          "utils"
+        ]
+      },
+      "import": {
+        "alias": {
+          "name": "h"
+        },
+        "name": "helper"
+      }
+    },
+    {
+      "path": {
+        "names": [
+          "os",
+          "path"
+        ]
+      },
+      "import": {
+        "name": "*"
+      }
+    }
+  ],
+  "assigns": [
+    {
+      "left": "GLOBAL_FLAG",
+      "type": {
+        "name": "bool"
+      },
+      "right": "True"
+    },
+    {
+      "left": "PI",
+      "type": {
+        "name": "float"
+      },
+      "right": "3.14159"
+    },
+    {
+      "left": [
+        "RAW_PATH",
+        "BYTES_BLOB"
+      ],
+      "right": [
+        "r\"C:\\Users\\foo\\bar\"",
+        "b\"\\x00\\x01\\x02\""
+      ]
+    },
+    {
+      "left": "TRIPLE",
+      "right": "\"\"\"line one\\nline two\"\"\""
+    }
+  ],
+  "functions": [
+    {
+      "name": "simple",
+      "parameters": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b",
+          "value": "1"
+        },
+        {
+          "args": true,
+          "name": "args"
+        },
+        {
+          "name": "kw_only",
+          "value": "2"
+        },
+        {
+          "kwargs": true,
+          "name": "kwargs"
+        }
+      ],
+      "body": {
+        "expression": {
+          "string": "\"\"\"Cover default, varargs, keyword-only, and **kwargs.\"\"\""
+        },
+        "return": {
+          "expression": {
+            "left": {
+              "left": "a",
+              "op": {
+                "text": "+",
+                "plus": true
+              },
+              "right": "b"
+            },
+            "op": {
+              "text": "+",
+              "plus": true
+            },
+            "right": "kw_only"
+          }
+        }
+      }
+    },
+    {
+      "name": "pos_only",
+      "parameters": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        },
+        null,
+        {
+          "name": "c"
+        },
+        {
+          "name": "d"
+        },
+        null,
+        {
+          "name": "e"
+        },
+        {
+          "name": "f",
+          "value": "0"
+        }
+      ],
+      "body": {
+        "expression": {
+          "string": "\"\"\"Cover positional-only and keyword-only boundaries.\"\"\""
+        },
+        "return": {
+          "expression": {
+            "names": [
+              "a",
+              "b",
+              "c",
+              "d",
+              "e",
+              "f"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "identity",
+      "type": {
+        "name": "T"
+      },
+      "parameter": {
+        "type": {
+          "name": "T"
+        },
+        "name": "v"
+      },
+      "returns": {
+        "type": {
+          "name": "T"
+        }
+      },
+      "body": {
+        "return": {
+          "expression": "v"
+        }
+      }
+    },
+    {
+      "name": "annotated",
+      "parameters": [
+        {
+          "type": {
+            "name": "int"
+          },
+          "name": "x"
+        },
+        {
+          "type": {
+            "generic": true,
+            "name": "Optional",
+            "type": "str"
+          },
+          "name": "y",
+          "value": "None"
+        },
+        {
+          "type": {
+            "type": {
+              "generic": true,
+              "name": "list",
+              "type": "int"
+            },
+            "none": "None"
+          },
+          "name": "z",
+          "value": "None"
+        }
+      ],
+      "returns": {
+        "type": {
+          "generic": true,
+          "name": "Union",
+          "types": [
+            "int",
+            "None"
+          ]
+        }
+      },
+      "body": {
+        "assert": {
+          "compare": {
+            "left": "x",
+            "op": {
+              "text": ">=",
+              "greater_or_equal": true
+            },
+            "right": "0"
+          },
+          "string": "\"x must be non-negative\""
+        },
+        "assigns": [
+          {
+            "left": "result",
+            "type": {
+              "name": "int"
+            },
+            "right": "x"
+          },
+          {
+            "assign": true,
+            "plus": true,
+            "left": "result",
+            "right": "1"
+          },
+          {
+            "assign": true,
+            "floor": true,
+            "left": "result",
+            "right": "2"
+          },
+          {
+            "left": "matrix",
+            "right": {
+              "lists": [
+                {
+                  "ints": [
+                    "1",
+                    "0"
+                  ]
+                },
+                {
+                  "ints": [
+                    "0",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "assign": true,
+            "matmul": true,
+            "left": "matrix",
+            "right": "matrix"
+          }
+        ],
+        "return": {
+          "expression": {
+            "condition": "result",
+            "then": "result",
+            "else": "None"
+          }
+        }
+      }
+    },
+    {
+      "async": true,
+      "name": "async_work",
+      "parameter": {
+        "type": {
+          "name": "str"
+        },
+        "name": "url"
+      },
+      "returns": {
+        "type": {
+          "name": "bytes"
+        }
+      },
+      "body": {
+        "with": {
+          "async": true,
+          "as": {
+            "call": {
+              "name": "url"
+            },
+            "name": "conn"
+          },
+          "body": {
+            "for": {
+              "async": true,
+              "left": "chunk",
+              "right": "conn",
+              "body": {
+                "yield": {
+                  "expression": {
+                    "name": "chunk"
+                  }
+                }
+              }
+            },
+            "assign": {
+              "left": "data",
+              "right": {
+                "await": true,
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "read"
+                  },
+                  "text": "conn"
+                }
+              }
+            },
+            "return": {
+              "expression": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gen_demo",
+      "parameter": {
+        "name": "n"
+      },
+      "body": {
+        "for": {
+          "left": "i",
+          "right": {
+            "name": "n"
+          },
+          "body": {
+            "yield": {
+              "expression": {
+                "name": "i"
+              }
+            }
+          }
+        },
+        "yield": {
+          "expression": {
+            "call": {
+              "name": "n",
+              "binary": {
+                "left": "n",
+                "op": {
+                  "text": "*",
+                  "multiply": true
+                },
+                "right": "2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "repeat",
+      "parameter": {
+        "name": "times"
+      },
+      "body": {
+        "function": {
+          "name": "decorator",
+          "parameter": {
+            "name": "fn"
+          },
+          "body": {
+            "function": {
+              "name": "wrapper",
+              "parameters": [
+                {
+                  "args": true,
+                  "name": "a"
+                },
+                {
+                  "kwargs": true,
+                  "name": "kw"
+                }
+              ],
+              "body": {
+                "for": {
+                  "left": "_",
+                  "right": {
+                    "name": "times"
+                  },
+                  "body": {
+                    "expression": {
+                      "call": {
+                        "name": "fn",
+                        "spreads": [
+                          {
+                            "name": "a"
+                          },
+                          {
+                            "name": "kw"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "return": {
+              "expression": "wrapper"
+            }
+          }
+        },
+        "return": {
+          "expression": "decorator"
+        }
+      }
+    },
+    {
+      "attributes": [
+        {
+          "name": "staticmethod"
+        },
+        {
+          "call": {
+            "name": "repeat",
+            "int": "3"
+          }
+        }
+      ],
+      "name": "stacked",
+      "body": {}
+    },
+    {
+      "name": "control_flow",
+      "parameter": {
+        "name": "items"
+      },
+      "body": {
+        "for": {
+          "lefts": [
+            "i",
+            "v"
+          ],
+          "right": {
+            "name": "items"
+          },
+          "body": {
+            "if": {
+              "condition": {
+                "left": "v",
+                "op": {
+                  "text": "<",
+                  "less": true
+                },
+                "right": "0"
+              },
+              "body": {
+                "continue": true
+              },
+              "else_if": {
+                "condition": {
+                  "left": "v",
+                  "op": {
+                    "text": "==",
+                    "equal": true
+                  },
+                  "right": "0"
+                },
+                "body": {
+                  "break": true
+                },
+                "else": {
+                  "body": {
+                    "assign": {
+                      "assign": true,
+                      "plus": true,
+                      "left": "total",
+                      "right": "v"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "assign": {
+              "assign": true,
+              "plus": true,
+              "left": "total",
+              "right": "1"
+            }
+          }
+        },
+        "assigns": [
+          {
+            "left": "total",
+            "right": "0"
+          },
+          {
+            "left": "n",
+            "right": "0"
+          }
+        ],
+        "while": {
+          "condition": {
+            "left": "n",
+            "op": {
+              "text": "<",
+              "less": true
+            },
+            "right": "10"
+          },
+          "body": {
+            "assign": {
+              "assign": true,
+              "plus": true,
+              "left": "n",
+              "right": "1"
+            }
+          },
+          "else": {}
+        },
+        "try": {
+          "body": {
+            "expression": {
+              "call": {
+                "name": "risky"
+              }
+            }
+          },
+          "catches": [
+            {
+              "type": {
+                "names": [
+                  "ValueError",
+                  "TypeError"
+                ]
+              },
+              "name": "e",
+              "body": {
+                "raise": {
+                  "expression": {
+                    "call": {
+                      "name": "RuntimeError",
+                      "string": "\"bad\""
+                    }
+                  },
+                  "name": "e"
+                }
+              }
+            },
+            {
+              "type": {
+                "name": "Exception"
+              },
+              "body": {}
+            }
+          ],
+          "else": {
+            "assign": {
+              "assign": true,
+              "plus": true,
+              "left": "total",
+              "right": "1"
+            }
+          },
+          "finally": {
+            "expression": {
+              "call": {
+                "name": "cleanup"
+              }
+            }
+          }
+        },
+        "with": {
+          "ases": [
+            {
+              "call": {
+                "name": "open",
+                "string": "\"a\""
+              },
+              "name": "fa"
+            },
+            {
+              "call": {
+                "name": "open",
+                "string": "\"b\""
+              },
+              "name": "fb"
+            }
+          ],
+          "body": {
+            "expressions": [
+              {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "read"
+                  },
+                  "text": "fa"
+                }
+              },
+              {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "read"
+                  },
+                  "text": "fb"
+                }
+              }
+            ]
+          }
+        },
+        "return": {
+          "expression": "total"
+        }
+      }
+    },
+    {
+      "name": "match_demo",
+      "parameter": {
+        "name": "msg"
+      },
+      "body": {
+        "match": {
+          "name": "msg",
+          "body": {
+            "arms": [
+              {
+                "pattern": {
+                  "dict": true,
+                  "strings": [
+                    "\"type\"",
+                    "\"id\""
+                  ],
+                  "values": [
+                    {
+                      "string": "\"ping\""
+                    },
+                    {
+                      "path": {
+                        "names": [
+                          "pid"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "guard": {
+                  "compare": {
+                    "left": "pid",
+                    "op": {
+                      "text": ">",
+                      "greater": true
+                    },
+                    "right": "0"
+                  }
+                },
+                "body": {
+                  "return": {
+                    "expression": "pid"
+                  }
+                }
+              },
+              {
+                "pattern": {
+                  "list": true,
+                  "ints": [
+                    "1",
+                    "2"
+                  ],
+                  "pattern": {
+                    "splat": true,
+                    "name": "rest"
+                  }
+                },
+                "body": {
+                  "return": {
+                    "expression": "rest"
+                  }
+                }
+              },
+              {
+                "pattern": {
+                  "path": {
+                    "names": [
+                      "Point"
+                    ]
+                  },
+                  "patterns": [
+                    {
+                      "name": "x",
+                      "int": "0"
+                    },
+                    {
+                      "name": "y",
+                      "path": {
+                        "names": [
+                          "y"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "return": {
+                    "expression": "y"
+                  }
+                }
+              },
+              {
+                "pattern": {
+                  "union": true,
+                  "strings": [
+                    "\"yes\"",
+                    "\"y\"",
+                    "\"Y\""
+                  ]
+                },
+                "body": {
+                  "return": {
+                    "expression": "True"
+                  }
+                }
+              },
+              {
+                "body": {
+                  "return": {
+                    "expression": "None"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "comprehensions",
+      "parameter": {
+        "name": "data"
+      },
+      "body": {
+        "assigns": [
+          {
+            "left": "squares",
+            "right": {
+              "comprehension": true,
+              "binary": {
+                "left": "x",
+                "op": {
+                  "text": "*",
+                  "multiply": true
+                },
+                "right": "x"
+              },
+              "for": {
+                "names": [
+                  "x",
+                  "data"
+                ]
+              },
+              "compare": {
+                "left": "x",
+                "op": {
+                  "text": ">",
+                  "greater": true
+                },
+                "right": "0"
+              }
+            }
+          },
+          {
+            "left": "pairs",
+            "right": {
+              "comprehension": true,
+              "pair": {
+                "key": "k",
+                "value": "v"
+              },
+              "for": {
+                "names": [
+                  "k",
+                  "v"
+                ],
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "items"
+                  },
+                  "text": "data"
+                }
+              },
+              "name": "v"
+            }
+          },
+          {
+            "left": "uniq",
+            "right": {
+              "comprehension": true,
+              "name": "x",
+              "for": {
+                "names": [
+                  "x",
+                  "data"
+                ]
+              }
+            }
+          },
+          {
+            "left": "gen",
+            "right": {
+              "fors": [
+                {
+                  "names": [
+                    "x",
+                    "data"
+                  ]
+                },
+                {
+                  "name": "_",
+                  "call": {
+                    "name": "range",
+                    "int": "2"
+                  }
+                }
+              ],
+              "names": [
+                "x",
+                "x"
+              ]
+            }
+          },
+          {
+            "left": "matrix",
+            "right": {
+              "comprehension": true,
+              "tuple": {
+                "names": [
+                  "i",
+                  "j"
+                ]
+              },
+              "fors": [
+                {
+                  "name": "i",
+                  "call": {
+                    "name": "range",
+                    "int": "3"
+                  }
+                },
+                {
+                  "name": "j",
+                  "call": {
+                    "name": "range",
+                    "int": "3"
+                  }
+                }
+              ],
+              "compare": {
+                "left": "i",
+                "op": {
+                  "text": "!=",
+                  "not_equal": true
+                },
+                "right": "j"
+              }
+            }
+          }
+        ],
+        "return": {
+          "expression": {
+            "names": [
+              "squares",
+              "pairs",
+              "uniq",
+              "gen",
+              "matrix"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "expression_demo",
+      "parameter": {
+        "name": "items"
+      },
+      "body": {
+        "if": {
+          "condition": {
+            "left": {
+              "assign": {
+                "name": "n",
+                "call": {
+                  "name": "items"
+                }
+              }
+            },
+            "op": {
+              "text": ">",
+              "greater": true
+            },
+            "right": "3"
+          },
+          "body": {
+            "expression": {
+              "call": {
+                "name": "print",
+                "string": {
+                  "interpolation": {
+                    "name": "n"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "assigns": [
+          {
+            "left": "first",
+            "right": {
+              "condition": "items",
+              "then": {
+                "access": true,
+                "index": {
+                  "text": "0"
+                },
+                "text": "items"
+              },
+              "else": "None"
+            }
+          },
+          {
+            "left": "name",
+            "right": "\"world\""
+          },
+          {
+            "left": "greeting",
+            "right": {
+              "interpolations": [
+                {
+                  "name": "name",
+                  "cast": {}
+                },
+                {
+                  "name": "n",
+                  "format": {}
+                },
+                {
+                  "string": {
+                    "interpolation": {
+                      "name": "name"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "left": "doubled",
+            "right": {
+              "name": "list",
+              "call": {
+                "name": "items",
+                "lambda": {
+                  "parameter": {
+                    "name": "v"
+                  },
+                  "body": {
+                    "left": "v",
+                    "op": {
+                      "text": "*",
+                      "multiply": true
+                    },
+                    "right": "2"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "left": [
+              "head",
+              {
+                "name": "mid"
+              },
+              "tail"
+            ],
+            "right": "items"
+          },
+          {
+            "left": "merged",
+            "right": {
+              "spreads": [
+                {
+                  "dict": {
+                    "pair": {
+                      "key": "\"a\"",
+                      "value": "1"
+                    }
+                  }
+                },
+                {
+                  "dict": {
+                    "pair": {
+                      "key": "\"b\"",
+                      "value": "2"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "left": "combined",
+            "right": {
+              "spreads": [
+                {
+                  "name": "items"
+                },
+                {
+                  "name": "items"
+                }
+              ]
+            }
+          },
+          {
+            "left": "GLOBAL_FLAG",
+            "right": "False"
+          }
+        ],
+        "global": {
+          "name": "GLOBAL_FLAG"
+        },
+        "return": {
+          "expression": {
+            "names": [
+              "first",
+              "greeting",
+              "doubled",
+              "head",
+              "mid",
+              "tail",
+              "merged",
+              "combined"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "closure_demo",
+      "body": {
+        "assign": {
+          "left": "counter",
+          "right": "0"
+        },
+        "function": {
+          "name": "inc",
+          "body": {
+            "nonlocal": {
+              "name": "counter"
+            },
+            "assign": {
+              "assign": true,
+              "plus": true,
+              "left": "counter",
+              "right": "1"
+            },
+            "return": {
+              "expression": "counter"
+            }
+          }
+        },
+        "delete": {
+          "name": "counter"
+        },
+        "return": {
+          "expression": "inc"
+        }
+      }
+    },
+    {
+      "name": "patterns_and_misc",
+      "parameters": [
+        {
+          "name": "values"
+        },
+        {
+          "name": "items"
+        },
+        {
+          "name": "x"
+        }
+      ],
+      "body": {
+        "expression": {
+          "string": "\"\"\"Exercise tuple/complex match patterns, except*, `not`, parenthesized\n    splats, and concatenated string literals.\"\"\""
+        },
+        "try": {
+          "body": {
+            "assign": {
+              "left": "result",
+              "right": {
+                "name": "items"
+              }
+            }
+          },
+          "catch": {
+            "type": {
+              "names": [
+                "ValueError",
+                "TypeError"
+              ]
+            },
+            "body": {
+              "assign": {
+                "left": "result",
+                "right": {}
+              }
+            }
+          }
+        },
+        "match": {
+          "name": "values",
+          "body": {
+            "arms": [
+              {
+                "pattern": {
+                  "tuple": true,
+                  "paths": [
+                    {
+                      "names": [
+                        "a"
+                      ]
+                    },
+                    {
+                      "names": [
+                        "b"
+                      ]
+                    }
+                  ]
+                },
+                "body": {
+                  "assign": {
+                    "left": "matched",
+                    "right": {
+                      "left": "a",
+                      "op": {
+                        "text": "+",
+                        "plus": true
+                      },
+                      "right": "b"
+                    }
+                  }
+                }
+              },
+              {
+                "pattern": {
+                  "ints": [
+                    "1",
+                    "2j"
+                  ]
+                },
+                "body": {
+                  "assign": {
+                    "left": "matched",
+                    "right": {
+                      "op": {
+                        "text": "-",
+                        "minus": true
+                      },
+                      "int": "1"
+                    }
+                  }
+                }
+              },
+              {
+                "body": {
+                  "assign": {
+                    "left": "matched",
+                    "right": "0"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "assigns": [
+          {
+            "left": "matched",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "left": "flag",
+            "right": {
+              "op": {
+                "text": "not",
+                "not": true
+              },
+              "name": "matched"
+            }
+          },
+          {
+            "left": "bundle",
+            "right": {
+              "spread": {
+                "name": "items"
+              }
+            }
+          },
+          {
+            "left": "banner",
+            "right": {
+              "strings": [
+                "\"first \"",
+                "\"second \"",
+                "\"third\""
+              ]
+            }
+          },
+          {
+            "left": "s",
+            "right": {
+              "ints": [
+                "1",
+                "2",
+                "3"
+              ]
+            }
+          }
+        ],
+        "comments": [
+          {
+            "leading": true,
+            "text": "# Set literal: another kind the IR pipeline supports. Slice /\n    # ellipsis additions await Python's IR migration (their <slice>\n    # / <ellipsis> elements aren't in the imperative pipeline's\n    # TractorNodeSpec yet)."
+          }
+        ],
+        "return": {
+          "expression": {
+            "names": [
+              "matched",
+              "result",
+              "flag",
+              "bundle",
+              "banner",
+              "s"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "comments": [
+    {
+      "leading": true,
+      "text": "# PEP 695 generic function/class/type-alias declarations."
+    },
+    {
+      "leading": true,
+      "text": "# `from __future__ import …`; module-level so it parses as\n# future_import_statement (a separate kind from import_from_statement)."
+    },
+    {
+      "leading": true,
+      "text": "# Wildcard import (`from x import *`)."
+    },
+    {
+      "leading": true,
+      "text": "# Python 3.12 type-alias statement and PEP 695 generics with constraints,\n# member-types, and splat-types."
+    }
+  ],
+  "classes": [
+    {
+      "name": "Box",
+      "type": {
+        "name": "T"
+      },
+      "body": {}
+    },
+    {
+      "attribute": {
+        "name": "dataclass"
+      },
+      "name": "Point",
+      "body": {
+        "expression": {
+          "string": "\"\"\"A dataclass with default factory.\"\"\""
+        },
+        "assigns": [
+          {
+            "left": "x",
+            "type": {
+              "name": "int"
+            },
+            "right": "0"
+          },
+          {
+            "left": "y",
+            "type": {
+              "name": "int"
+            },
+            "right": "0"
+          },
+          {
+            "left": "tags",
+            "type": {
+              "generic": true,
+              "name": "list",
+              "type": "str"
+            },
+            "right": {
+              "name": "field",
+              "keyword_argument": {
+                "name": "default_factory",
+                "value": "list"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Base",
+      "body": {}
+    },
+    {
+      "name": "Meta",
+      "extends": {
+        "type": {
+          "name": "type"
+        }
+      },
+      "body": {}
+    },
+    {
+      "name": "Derived",
+      "extends": [
+        {
+          "type": {
+            "name": "Base"
+          }
+        },
+        {
+          "type": {
+            "name": "metaclass",
+            "value": "Meta"
+          }
+        }
+      ],
+      "body": {
+        "expression": {
+          "string": "\"\"\"Class with inheritance and metaclass kwarg.\"\"\""
+        },
+        "class": {
+          "name": "Nested",
+          "body": {
+            "assign": {
+              "left": "CONST",
+              "right": "42"
+            }
+          }
+        },
+        "functions": [
+          {
+            "name": "__init__",
+            "parameters": [
+              {
+                "name": "self"
+              },
+              {
+                "type": {
+                  "name": "str"
+                },
+                "name": "name"
+              }
+            ],
+            "body": {
+              "assign": {
+                "left": {
+                  "access": true,
+                  "member": {
+                    "name": "name"
+                  },
+                  "text": "self"
+                },
+                "right": "name"
+              }
+            }
+          },
+          {
+            "name": "__eq__",
+            "parameters": [
+              {
+                "name": "self"
+              },
+              {
+                "name": "other"
+              }
+            ],
+            "body": {
+              "return": {
+                "expression": {
+                  "left": {
+                    "names": [
+                      "other",
+                      "Derived"
+                    ]
+                  },
+                  "op": {
+                    "text": "and",
+                    "and": true
+                  },
+                  "right": {
+                    "left": {
+                      "access": true,
+                      "member": {
+                        "name": "name"
+                      },
+                      "text": "self"
+                    },
+                    "op": {
+                      "text": "==",
+                      "equal": true
+                    },
+                    "right": {
+                      "access": true,
+                      "member": {
+                        "name": "name"
+                      },
+                      "text": "other"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "type_aliases": [
+    {
+      "type": {
+        "generic": true,
+        "name": "Vec",
+        "type": "T"
+      },
+      "value": {
+        "generic": true,
+        "name": "list",
+        "type": "T"
+      }
+    },
+    {
+      "name": "IntOrStr",
+      "value": {
+        "left": "int",
+        "op": {
+          "text": "|",
+          "bitwise_or": true
+        },
+        "right": "str"
+      }
+    },
+    {
+      "type": {
+        "generic": true,
+        "name": "Pair",
+        "types": [
+          {
+            "name": [
+              "T",
+              "int"
+            ]
+          },
+          {
+            "name": "U",
+            "tuple": {
+              "names": [
+                "int",
+                "str"
+              ]
+            }
+          },
+          {
+            "name": "Ts"
+          }
+        ]
+      },
+      "value": {
+        "generic": true,
+        "name": "tuple",
+        "types": [
+          "T",
+          "U",
+          {
+            "name": "Ts"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Containing",
+      "value": {
+        "access": true,
+        "member": {
+          "name": "Foo"
+        },
+        "text": "OrderedDict"
+      }
+    }
+  ]
+}

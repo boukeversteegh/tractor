@@ -23,7 +23,7 @@ use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
 pub use crate::xpath::Match;
-use crate::xot_transform::helpers::*;
+use crate::transform::helpers::*;
 use xot::Xot;
 
 /// Result of an upsert operation.

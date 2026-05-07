@@ -18,13 +18,14 @@ marker children that classify the operator, plus the original token as text.
 
 ## Structure
 
-Semantic marker elements are added inside `<op>`. The raw token is preserved as
-text content of `<op>` (not inside the marker), keeping markers pure
-empty elements consistent with the modifier pattern.
+Semantic marker elements are added inside `<op>` as **flat siblings** —
+no nested marker categories. Each marker is an empty empty element;
+together they form a presence-flag set on `<op>`. The raw token is
+preserved as text content of `<op>` for source-text round-trip.
 
 ```xml
 <binary>
-  <op><equals><strict/></equals>===</op>
+  <op><equals/><strict/>===</op>
   <left>x</left>
   <right>0</right>
 </binary>
@@ -32,15 +33,35 @@ empty elements consistent with the modifier pattern.
 
 ### Query patterns
 
-Both text matching and semantic matching work:
+Both text matching and semantic matching work; markers are queried as
+predicates on `<op>` directly.
 
 ```xpath
-//binary[op='===']                  (exact token match — still works)
-//binary[op[equals]]                (any equality: == or ===)
-//binary[op[equals[strict]]]        (strict equality only)
-//binary[op[compare[or-equal]]]     (>= or <=)
-//binary[op[logical[and]]]          (logical and: && or 'and')
+//binary[op='===']                          (exact token match)
+//binary[op[equals]]                        (any equality: == or ===)
+//binary[op[equals and strict]]             (strict equality only)
+//binary[op[compare]]                       (any comparison: < > <= >=)
+//binary[op[compare and equal]]          (>= or <=)
+//binary[op[compare and less and equal]] (only <=)
+//binary[op[logical and and]]               (logical and: && or 'and')
+//assign[op[assign]]                        (any compound assignment)
+//assign[op[assign and logical and and]]    (only &&=)
 ```
+
+Marker order on `<op>` is "primary, children, nested-name,
+nested-children" (see Operator Taxonomy below) but since markers are
+presence-flags the order is semantically irrelevant — XPath
+`[a and b]` predicates use them as a set.
+
+### Why flat, not nested?
+
+Earlier iterations nested markers (`<op><equals><strict/></equals></op>`),
+which forced asymmetric queries: `op[equals]` for a one-marker op,
+`op/equals[strict]` for a two-marker op. The flat form gives one
+uniform shape regardless of marker count, and `op[equals]` finds
+both `==` and `===`. See Principle #12 — flat siblings over wrapper
+elements; the same rationale applies to marker categories as to
+list containers.
 
 ### Graceful degradation
 
@@ -63,21 +84,21 @@ contain sub-markers for variations.
 
 ### Equality
 
-| Token(s)       | Marker                          | Languages          |
-|----------------|---------------------------------|--------------------|
-| `==`           | `<equals/>`                     | All                |
-| `===`          | `<equals><strict/></equals>`    | JS, TS             |
-| `!=`           | `<not-equals/>`                 | All                |
-| `!==`          | `<not-equals><strict/></not-equals>` | JS, TS        |
+| Token(s)       | Markers on `<op>`              | Languages          |
+|----------------|--------------------------------|--------------------|
+| `==`           | `<equals/>`                    | All                |
+| `===`          | `<equals/><strict/>`           | JS, TS, PHP        |
+| `!=`           | `<inequality/>`                | All                |
+| `!==`          | `<inequality/><strict/>`       | JS, TS, PHP        |
 
 ### Comparison
 
-| Token(s)       | Marker                                     | Languages |
-|----------------|-----------------------------------------------|-----------|
-| `<`            | `<compare><less/></compare>`               | All       |
-| `>`            | `<compare><greater/></compare>`            | All       |
-| `<=`           | `<compare><less/><or-equal/></compare>`    | All       |
-| `>=`           | `<compare><greater/><or-equal/></compare>` | All       |
+| Token(s)       | Markers on `<op>`                       | Languages |
+|----------------|-----------------------------------------|-----------|
+| `<`            | `<compare/><less/>`                     | All       |
+| `>`            | `<compare/><greater/>`                  | All       |
+| `<=`           | `<compare/><less/><equal/>`          | All       |
+| `>=`           | `<compare/><greater/><equal/>`       | All       |
 
 Query: `//binary[op[compare]]` — all comparisons.
 
@@ -97,35 +118,38 @@ grouping in queries.
 
 ### Logical
 
-| Token(s)          | Marker                          | Languages       |
-|-------------------|---------------------------------|-----------------|
-| `&&` / `and`      | `<logical><and/></logical>`     | All             |
-| `\|\|` / `or`     | `<logical><or/></logical>`      | All             |
-| `!` / `not`       | `<logical><not/></logical>`     | All (unary)     |
-| `??`              | `<nullish-coalescing/>`         | JS, TS, C#      |
+| Token(s)          | Markers on `<op>`         | Languages       |
+|-------------------|---------------------------|-----------------|
+| `&&` / `and`      | `<logical/><and/>`        | All             |
+| `\|\|` / `or`     | `<logical/><or/>`         | All             |
+| `!` / `not`       | `<logical/><not/>`        | All (unary)     |
+| `??`              | `<nullish/>`   | JS, TS, C#      |
 
 Query: `//binary[op[logical]]` — all logical operations.
 
 ### Bitwise
 
-| Token(s)       | Marker                            | Languages |
+| Token(s)       | Markers on `<op>`                 | Languages |
 |----------------|-----------------------------------|-----------|
-| `&`            | `<bitwise><and/></bitwise>`       | All       |
-| `\|`           | `<bitwise><or/></bitwise>`        | All       |
-| `^`            | `<bitwise><xor/></bitwise>`       | All       |
-| `~`            | `<bitwise><not/></bitwise>`       | All (unary) |
-| `<<`           | `<shift><left/></shift>`          | All       |
-| `>>`           | `<shift><right/></shift>`         | All       |
-| `>>>`          | `<shift><right/><unsigned/></shift>` | JS, TS |
+| `&`            | `<bitwise/><and/>`                | All       |
+| `\|`           | `<bitwise/><or/>`                 | All       |
+| `^`            | `<bitwise/><xor/>`                | All       |
+| `~`            | `<bitwise/><not/>`                | All (unary) |
+| `<<`           | `<shift/><left/>`                 | All       |
+| `>>`           | `<shift/><right/>`                | All       |
+| `>>>`          | `<shift/><right/><unsigned/>`     | JS, TS    |
 
 ### Assignment
 
-| Token(s)       | Marker                     | Languages |
-|----------------|----------------------------|-----------|
-| `=`            | *(none)*                   | All       |
-| `+=`           | `<assign><plus/></assign>` | All       |
-| `-=`           | `<assign><minus/></assign>`| All       |
-| (etc.)         | `<assign><OP/></assign>`   | All       |
+| Token(s)       | Markers on `<op>`                  | Languages |
+|----------------|------------------------------------|-----------|
+| `=`            | *(none)*                           | All       |
+| `+=`           | `<assign/><plus/>`                 | All       |
+| `-=`           | `<assign/><minus/>`                | All       |
+| `&&=`          | `<assign/><logical/><and/>`        | JS, TS    |
+| `&=`           | `<assign/><bitwise/><and/>`        | All       |
+| `<<=`          | `<assign/><shift/><left/>`         | All       |
+| (etc.)         | `<assign/><OP-family/><FLAG/>`     | All       |
 
 Bare `=` receives **no marker**. Assignment semantics are carried by the parent
 element (`<assign>`, `<variable>`, etc.), and `=` is ambiguous across languages:
@@ -133,9 +157,11 @@ in SQL it means equality in comparisons (`WHERE x = 1`) and assignment in SET
 clauses (`SET x = 1`). Rather than misclassify, we leave `=` unmarked —
 the parent element already disambiguates.
 
-Compound assignments (`+=`, `-=`, etc.) use `<assign>` as a wrapper with the
-arithmetic/logical marker as a child, since the parent element doesn't always
-convey the compound nature.
+Compound assignments (`+=`, `&&=`, etc.) carry an `<assign/>` marker plus the
+operator family's markers as flat siblings on `<op>`. The compound nature
+is queryable via `//assign[op[assign]]`; the specific compound is
+queryable by adding more marker predicates: `//assign[op[assign and logical and and]]`
+finds only `&&=`.
 
 Query: `//assign[op[assign]]` — all compound assignments.
 

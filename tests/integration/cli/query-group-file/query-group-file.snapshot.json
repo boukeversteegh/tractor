@@ -1,0 +1,48 @@
+{
+  "group": "file",
+  "results": [
+    {
+      "file": "tests/integration/sample.cs",
+      "results": [
+        {
+          "line": 2,
+          "tree": {
+            "$type": "class",
+            "public": true,
+            "name": "Calculator",
+            "body": {
+              "$truncated": 72
+            }
+          }
+        },
+        {
+          "line": 9,
+          "tree": {
+            "$type": "class",
+            "public": true,
+            "name": "Greeter",
+            "body": {
+              "$truncated": 45
+            }
+          }
+        }
+      ]
+    },
+    {
+      "file": "tests/integration/sample2.cs",
+      "results": [
+        {
+          "line": 1,
+          "tree": {
+            "$type": "class",
+            "public": true,
+            "name": "Alpha",
+            "body": {
+              "$truncated": 7
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

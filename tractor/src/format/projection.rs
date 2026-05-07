@@ -3,6 +3,7 @@ use super::options::{OutputFormat, ParsedViewSet, ViewField, ViewSet};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Projection {
     Tree,
+    Shape,
     Value,
     Source,
     Lines,
@@ -15,8 +16,9 @@ pub enum Projection {
 }
 
 impl Projection {
-    const ALL: [Projection; 10] = [
+    const ALL: [Projection; 11] = [
         Projection::Tree,
+        Projection::Shape,
         Projection::Value,
         Projection::Source,
         Projection::Lines,
@@ -31,6 +33,7 @@ impl Projection {
     pub fn name(&self) -> &'static str {
         match self {
             Projection::Tree => "tree",
+            Projection::Shape => "shape",
             Projection::Value => "value",
             Projection::Source => "source",
             Projection::Lines => "lines",
@@ -46,6 +49,7 @@ impl Projection {
     pub fn description(&self) -> &'static str {
         match self {
             Projection::Tree => "Project matched trees",
+            Projection::Shape => "Project matched tree shape (no text)",
             Projection::Value => "Project matched values",
             Projection::Source => "Project matched source snippets",
             Projection::Lines => "Project matched source lines",
@@ -80,6 +84,7 @@ impl Projection {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "tree" => Ok(Projection::Tree),
+            "shape" => Ok(Projection::Shape),
             "value" => Ok(Projection::Value),
             "source" => Ok(Projection::Source),
             "lines" => Ok(Projection::Lines),
@@ -103,7 +108,9 @@ impl Projection {
 
     pub fn view_replacement_field(&self) -> Option<ViewField> {
         match self {
-            Projection::Tree => Some(ViewField::Tree),
+            // Shape uses the same Tree view-field; the shape_only flag
+            // is plumbed through RenderOptions.
+            Projection::Tree | Projection::Shape => Some(ViewField::Tree),
             Projection::Value => Some(ViewField::Value),
             Projection::Source => Some(ViewField::Source),
             Projection::Lines => Some(ViewField::Lines),
@@ -119,6 +126,7 @@ impl Projection {
         matches!(
             self,
             Projection::Tree
+                | Projection::Shape
                 | Projection::Value
                 | Projection::Source
                 | Projection::Lines

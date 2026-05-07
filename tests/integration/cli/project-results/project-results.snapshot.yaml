@@ -1,0 +1,4 @@
+- file: tests/integration/sample.cs
+  value: Calculator
+- file: tests/integration/sample.cs
+  value: Greeter

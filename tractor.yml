@@ -1,9 +1,141 @@
-check:
-  files:
-    - "tractor/src/**/*.rs"
-  rules:
-    - id: no-todo
-      xpath: "//line_comment[contains(.,'TODO')]"
-      reason: "TODO comment"
-      severity: error
-      message: "{value}"
+operations:
+  - check:
+      files:
+        - "tractor/src/**/*.rs"
+      language: rust
+      rules:
+        - id: no-todo
+          xpath: "//comment[contains(.,'TODO')]"
+          reason: "TODO comment"
+          severity: error
+          message: "{value}"
+          expect:
+            - invalid: |
+                fn t() {
+                    // TODO fix this
+                }
+            - valid: |
+                fn t() {
+                    // just a regular comment
+                }
+
+        - id: chain-fluent-xot-with
+          # Match expressions whose immediate chain (or try-wrapped chain) is xot.with_*.
+          # Descendant-axis would over-match: `if cond { xot.with_a(); }` followed by
+          # `xot.with_b();` is conditional + unconditional, NOT a chain candidate.
+          xpath: "//body/expression[(object[access][name='xot']/call[starts-with(name[1],'with_')]) or (expression[try]/object[access][name='xot']/call[starts-with(name[1],'with_')])][following-sibling::*[1][self::expression][(object[access][name='xot']/call[starts-with(name[1],'with_')]) or (expression[try]/object[access][name='xot']/call[starts-with(name[1],'with_')])]]"
+          reason: "consecutive xot.with_* calls — chain them instead"
+          severity: error
+          message: "xot.with_* call is followed by another xot.with_* statement; chain them as xot.with_a(...).with_b(...) instead of writing separate statements"
+          expect:
+            - invalid: |
+                fn t() {
+                    xot.with_a();
+                    xot.with_b();
+                }
+            - invalid: |
+                fn t() -> Result<(), Error> {
+                    xot.with_a(node)?;
+                    xot.with_b(node);
+                    Ok(())
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a().with_b();
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a();
+                    other_call();
+                }
+            - valid: |
+                fn t() {
+                    xot.with_a();
+                    let x = 1;
+                    xot.with_b();
+                }
+
+  - check:
+      files:
+        - "tractor/tests/transform/**/*.rs"
+      language: rust
+      rules:
+        - id: inline-single-use-let
+          xpath: "//body/let[let $n := name return count(parent::body//name[. = $n]) = 2]"
+          reason: "let binding used once — inline it"
+          severity: error
+          message: "let {value} is used only once in this test; inline the value at the call site"
+          expect:
+            - invalid: |
+                fn t() {
+                    let mut tree = parse_src("rust", "fn x() {}");
+                    claim("only one usage", &mut tree, "//function", 1);
+                }
+            - valid: |
+                fn t() {
+                    claim("inlined at call site",
+                        &mut parse_src("rust", "fn x() {}"),
+                        "//function", 1);
+                }
+            - valid: |
+                fn t() {
+                    let mut tree = parse_src("rust", "fn x() {}");
+                    claim("used twice — first", &mut tree, "//function", 1);
+                    claim("used twice — second", &mut tree, "//body", 1);
+                }
+
+        - id: keep-let-uses-adjacent
+          # Comments are excluded from sibling counts so a comment block
+          # between consecutive uses doesn't register as a "gap."
+          xpath: "//body/let[let $n := name, $uses := following-sibling::*[not(self::comment) and .//name = $n] return count($uses) > 0 and (count($uses[last()]/preceding-sibling::*[not(self::comment)]) - count(preceding-sibling::*[not(self::comment)])) > count($uses)]"
+          reason: "let binding's uses are scattered — keep uses adjacent to the definition"
+          severity: error
+          message: "let {value} has gaps between its uses; move the binding next to its uses (or split into separate lets)"
+          expect:
+            - invalid: |
+                fn t() {
+                    let mut tree = parse_src("rust", "fn x() {}");
+                    claim("first use of tree", &mut tree, "//function", 1);
+                    claim("unrelated", &mut parse_src("rust", "fn y() {}"), "//function", 1);
+                    claim("late use of tree", &mut tree, "//body", 1);
+                }
+            - valid: |
+                fn t() {
+                    let mut tree = parse_src("rust", "fn x() {}");
+                    claim("first use of tree", &mut tree, "//function", 1);
+                    claim("second use of tree", &mut tree, "//body", 1);
+                    claim("unrelated last", &mut parse_src("rust", "fn y() {}"), "//function", 1);
+                }
+            - valid: |
+                fn t() {
+                    claim("unrelated first", &mut parse_src("rust", "fn y() {}"), "//function", 1);
+                    let mut tree = parse_src("rust", "fn x() {}");
+                    claim("first use of tree", &mut tree, "//function", 1);
+                    claim("second use of tree", &mut tree, "//body", 1);
+                }
+
+        - id: split-claim-union
+          xpath: "//call[name='claim'][int > 1][string[contains(., '|')]]"
+          reason: "claim with expected > 1 uses '|' — split into one claim per case"
+          severity: error
+          message: "this claim bundles multiple assertions via '|'; split into separate claims so failures are clear"
+          expect:
+            - invalid: |
+                fn t() {
+                    claim("bundled assertions",
+                        &mut tree,
+                        "//method[name='Area'][public] | //method[name='Perimeter'][public]",
+                        2);
+                }
+            - valid: |
+                fn t() {
+                    claim("one assertion per claim — Area",
+                        &mut tree, "//method[name='Area'][public]", 1);
+                    claim("one assertion per claim — Perimeter",
+                        &mut tree, "//method[name='Perimeter'][public]", 1);
+                }
+            - valid: |
+                fn t() {
+                    claim("union with expected=1 is fine (alternative match)",
+                        &mut tree, "//a | //b", 1);
+                }

@@ -1,0 +1,85 @@
+{
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 4,
+      "files": 1,
+      "errors": 2
+    }
+  },
+  "group": "command",
+  "results": [
+    {
+      "command": "check",
+      "group": "file",
+      "results": [
+        {
+          "file": "tests/integration/cli/run-multiop/../../sample.cs",
+          "results": [
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Calculator",
+                "{",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
+                "}"
+              ],
+              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;",
+              "rule_id": "no-class"
+            },
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
+              ],
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }",
+              "rule_id": "no-class"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "command": "test",
+      "group": "file",
+      "results": [
+        {
+          "file": "tests/integration/cli/run-multiop/../../sample.cs",
+          "results": [
+            {
+              "lines": [
+                "public class Calculator",
+                "{",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
+                "}"
+              ],
+              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;"
+            },
+            {
+              "lines": [
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
+              ],
+              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -13,8 +13,14 @@
 // Parsing & tree construction
 #[cfg(feature = "native")]
 pub mod parser;
-pub mod xot;
+pub mod transform;
 pub mod languages;
+
+// Experimental: typed-IR transform pipeline.
+// Parallel to `transform`; not yet wired into production paths.
+// See `docs/design-transform-redesign-exploration.md` § 11.
+#[cfg(feature = "native")]
+pub mod ir;
 
 // Querying
 pub mod xpath;
@@ -42,10 +48,6 @@ pub mod wasm;
 // These preserve all existing `crate::` and `tractor::` import paths so that
 // consumers (the binary crate, tests, etc.) don't need import changes.
 // ---------------------------------------------------------------------------
-
-// xot/ modules
-pub use xot::builder as xot_builder;
-pub use xot::transform as xot_transform;
 
 // languages/ additions
 pub use languages::info as language_info;
@@ -89,6 +91,7 @@ pub use parser::{
     XeeParseResult,
     get_language_abi_versions, LanguageAbiInfo,
     print_parse_timing_stats,
+    raw_kinds,
 };
 pub use xpath::{XPathEngine, Match, XmlNode, print_timing_stats, Documents, DocumentHandle};
 pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines, format_message, normalize_path, render_node, render_document, render_xml_string, render_xml_node, render_query_tree_node, render_query_tree_with_source, xml_node_to_string, RenderOptions, format_schema, format_schema_tree, SchemaCollector, xml_node_to_json, extract_syntax_spans_from_xml_node};
@@ -99,7 +102,7 @@ pub use rule::{Rule, RuleSet};
 pub use rule::{GlobMatcher, GlobError, CompiledRule, compile_ruleset};
 #[cfg(feature = "native")]
 pub use files::{expand_globs, expand_globs_checked, GlobExpansion, GlobExpansionError};
-pub use xot_builder::{XotBuilder, XeeBuilder};
+pub use transform::builder::{XotBuilder, XeeBuilder};
 pub use normalized_xpath::NormalizedXpath;
 pub use normalized_path::NormalizedPath;
 pub use glob_pattern::GlobPattern;

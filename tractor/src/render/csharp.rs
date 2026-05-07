@@ -6,21 +6,26 @@
 use super::{
     get_child, get_child_text, get_children, has_marker, text_content, RenderError, RenderOptions,
 };
-use crate::languages::csharp::{ACCESS_MODIFIERS, OTHER_MODIFIERS, semantic::*};
+use crate::languages::csharp::output::TractorNode::{
+    self, Accessor, Accessors, Add, Argument, Arguments, Attribute, Attributes, Body, Class, Comment,
+    Declarator, Field, Generic, Get, Import, Init, Name, Namespace, Nullable, Property, Remove, Set,
+    Struct, Type, Unit, Variable,
+};
+use crate::languages::csharp::{ACCESS_MODIFIERS, OTHER_MODIFIERS};
 use crate::xpath::XmlNode;
 
 /// Render a single XML node to C# source code
 pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
     match node {
-        XmlNode::Element { name, .. } => match name.as_str() {
-            CLASS => render_class(node, opts),
-            STRUCT => render_struct(node, opts),
-            PROPERTY => render_property(node, opts),
-            FIELD => render_field(node, opts),
-            UNIT => render_unit(node, opts),
-            NAMESPACE => render_namespace(node, opts),
-            IMPORT => render_import(node, opts),
-            COMMENT => render_comment(node, opts),
+        XmlNode::Element { name, .. } => match name.parse::<TractorNode>().ok() {
+            Some(Class) => render_class(node, opts),
+            Some(Struct) => render_struct(node, opts),
+            Some(Property) => render_property(node, opts),
+            Some(Field) => render_field(node, opts),
+            Some(Unit) => render_unit(node, opts),
+            Some(Namespace) => render_namespace(node, opts),
+            Some(Import) => render_import(node, opts),
+            Some(Comment) => render_comment(node, opts),
             _ => Err(RenderError::UnsupportedNode(name.clone())),
         },
         XmlNode::Text(t) => Ok(t.clone()),
@@ -29,7 +34,7 @@ pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
 }
 
 // ---------------------------------------------------------------------------
-// Modifiers (consts imported from languages::csharp)
+// Modifiers
 // ---------------------------------------------------------------------------
 
 /// Collect all modifier markers from a node, in canonical C# order
@@ -38,14 +43,16 @@ fn collect_modifiers(node: &XmlNode) -> Vec<&'static str> {
 
     // Access modifiers first
     for &m in ACCESS_MODIFIERS {
-        if has_marker(node, m) {
-            mods.push(m);
+        let s = m.as_str();
+        if has_marker(node, s) {
+            mods.push(s);
         }
     }
     // Then other modifiers in canonical order
     for &m in OTHER_MODIFIERS {
-        if has_marker(node, m) {
-            mods.push(m);
+        let s = m.as_str();
+        if has_marker(node, s) {
+            mods.push(s);
         }
     }
 
@@ -68,11 +75,11 @@ fn modifiers_str(node: &XmlNode) -> String {
 /// Render a <type> element to C# type syntax
 fn render_type(node: &XmlNode) -> Result<String, RenderError> {
     match node {
-        XmlNode::Element { name, children, .. } if name == TYPE => {
-            if has_marker(node, GENERIC) {
+        XmlNode::Element { name, children, .. } if name == Type.as_str() => {
+            if has_marker(node, Generic.as_str()) {
                 return render_generic_type(node);
             }
-            let has_nullable = has_marker(node, NULLABLE);
+            let has_nullable = has_marker(node, Nullable.as_str());
 
             let type_name: String = children
                 .iter()
@@ -80,8 +87,8 @@ fn render_type(node: &XmlNode) -> Result<String, RenderError> {
                     XmlNode::Text(t) => Some(t.trim().to_string()),
                     XmlNode::Element {
                         name, children: ch, ..
-                    } if (name == NULLABLE || name == GENERIC) && ch.is_empty() => None,
-                    XmlNode::Element { name: n, .. } if n == TYPE => render_type(c).ok(),
+                    } if (name == Nullable.as_str() || name == Generic.as_str()) && ch.is_empty() => None,
+                    XmlNode::Element { name: n, .. } if n == Type.as_str() => render_type(c).ok(),
                     _ => None,
                 })
                 .collect::<Vec<_>>()
@@ -94,7 +101,7 @@ fn render_type(node: &XmlNode) -> Result<String, RenderError> {
             }
         }
         _ => text_content(node).ok_or_else(|| RenderError::MissingChild {
-            parent: TYPE.into(),
+            parent: Type.as_str().into(),
             child: "text".into(),
         }),
     }
@@ -124,9 +131,9 @@ fn render_generic_type(node: &XmlNode) -> Result<String, RenderError> {
         .join("");
 
     // Get type arguments
-    let args_node = get_child(node, ARGUMENTS);
+    let args_node = get_child(node, Arguments.as_str());
     let type_args = if let Some(args) = args_node {
-        let arg_types: Vec<String> = get_children(args, TYPE)
+        let arg_types: Vec<String> = get_children(args, Type.as_str())
             .iter()
             .filter_map(|t| render_type(t).ok())
             .collect();
@@ -148,7 +155,7 @@ fn render_generic_type(node: &XmlNode) -> Result<String, RenderError> {
 
 /// Render <attributes> block
 fn render_attributes(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    let attrs = get_children(node, ATTRIBUTES);
+    let attrs = get_children(node, Attributes.as_str());
     if attrs.is_empty() {
         return Ok(String::new());
     }
@@ -157,7 +164,7 @@ fn render_attributes(node: &XmlNode, opts: &RenderOptions) -> Result<String, Ren
     let mut result = String::new();
 
     for attr_list in attrs {
-        let items: Vec<String> = get_children(attr_list, ATTRIBUTE)
+        let items: Vec<String> = get_children(attr_list, Attribute.as_str())
             .iter()
             .filter_map(|a| render_single_attribute(a).ok())
             .collect();
@@ -171,14 +178,14 @@ fn render_attributes(node: &XmlNode, opts: &RenderOptions) -> Result<String, Ren
 }
 
 fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: ATTRIBUTE.into(),
-        child: NAME.into(),
+    let name = get_child_text(node, Name.as_str()).ok_or_else(|| RenderError::MissingChild {
+        parent: Attribute.as_str().into(),
+        child: Name.as_str().into(),
     })?;
 
-    let args = get_child(node, ARGUMENTS);
+    let args = get_child(node, Arguments.as_str());
     if let Some(args_node) = args {
-        let arg_values: Vec<String> = get_children(args_node, ARGUMENT)
+        let arg_values: Vec<String> = get_children(args_node, Argument.as_str())
             .iter()
             .filter_map(|a| text_content(a))
             .collect();
@@ -195,19 +202,44 @@ fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
 // ---------------------------------------------------------------------------
 
 fn render_accessors(node: &XmlNode) -> Result<String, RenderError> {
-    let accessors_node = match get_child(node, ACCESSORS) {
-        Some(n) => n,
-        None => return Ok(String::new()),
+    let direct_accessors = match node {
+        XmlNode::Element { children, .. } => children
+            .iter()
+            .filter(|child| {
+                matches!(
+                    child,
+                    XmlNode::Element { name, .. }
+                        if matches!(name.parse::<TractorNode>().ok(), Some(Get | Set | Init | Add | Remove))
+                )
+            })
+            .collect::<Vec<_>>(),
+        _ => Vec::new(),
     };
 
-    let accessors: Vec<String> = get_children(accessors_node, ACCESSOR)
-        .iter()
-        .filter_map(|a| {
-            let text = text_content(a)?;
-            let trimmed = text.trim().trim_end_matches(';').trim().to_string();
-            Some(format!("{};", trimmed))
-        })
-        .collect();
+    let accessors: Vec<String> = if direct_accessors.is_empty() {
+        // Backward-compatible support for older hand-written renderer
+        // fixtures that still use <accessors><accessor>get;</accessor>...
+        get_child(node, Accessors.as_str())
+            .map(|accessors_node| {
+                get_children(accessors_node, Accessor.as_str())
+                    .iter()
+                    .filter_map(|a| {
+                        let text = text_content(a)?;
+                        let trimmed = text.trim().trim_end_matches(';').trim().to_string();
+                        Some(format!("{};", trimmed))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        direct_accessors
+            .iter()
+            .filter_map(|a| match a {
+                XmlNode::Element { name, .. } => Some(format!("{};", name)),
+                _ => None,
+            })
+            .collect()
+    };
 
     if accessors.is_empty() {
         Ok(String::new())
@@ -230,15 +262,15 @@ fn render_property(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
     let mods = modifiers_str(node);
 
     // Type
-    let type_node = get_child(node, TYPE).ok_or_else(|| RenderError::MissingChild {
-        parent: PROPERTY.into(),
-        child: TYPE.into(),
+    let type_node = get_child(node, Type.as_str()).ok_or_else(|| RenderError::MissingChild {
+        parent: Property.as_str().into(),
+        child: Type.as_str().into(),
     })?;
     let type_str = render_type(type_node)?;
 
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: PROPERTY.into(),
-        child: NAME.into(),
+    let name = get_child_text(node, Name.as_str()).ok_or_else(|| RenderError::MissingChild {
+        parent: Property.as_str().into(),
+        child: Name.as_str().into(),
     })?;
 
     // Accessors
@@ -259,27 +291,28 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
     let attrs = render_attributes(node, opts)?;
     let mods = modifiers_str(node);
 
-    // Type — fields may have type as a child element or as a variable/declarator structure
-    let type_str = if let Some(type_node) = get_child(node, TYPE) {
+    // Type: transformed fields expose <type> directly.
+    let type_str = if let Some(type_node) = get_child(node, Type.as_str()) {
         render_type(type_node)?
     } else {
         return Err(RenderError::MissingChild {
-            parent: FIELD.into(),
-            child: TYPE.into(),
+            parent: Field.as_str().into(),
+            child: Type.as_str().into(),
         });
     };
 
-    // Name — may be in <name> directly or in a <variable><declarator><name>
-    let name = get_child_text(node, NAME)
+    // Name: current field shape uses <declarator><name>; keep the
+    // legacy <variable> fallback for older serialized trees.
+    let name = get_child_text(node, Name.as_str())
         .or_else(|| {
-            get_child(node, VARIABLE)
-                .and_then(|v| get_child(v, DECLARATOR))
-                .and_then(|d| get_child_text(d, NAME))
+            get_child(node, Variable.as_str())
+                .and_then(|v| get_child(v, Declarator.as_str()))
+                .and_then(|d| get_child_text(d, Name.as_str()))
         })
-        .or_else(|| get_child(node, DECLARATOR).and_then(|d| get_child_text(d, NAME)))
+        .or_else(|| get_child(node, Declarator.as_str()).and_then(|d| get_child_text(d, Name.as_str())))
         .ok_or_else(|| RenderError::MissingChild {
-            parent: FIELD.into(),
-            child: NAME.into(),
+            parent: Field.as_str().into(),
+            child: Name.as_str().into(),
         })?;
 
     let decl = format!("{}{}{} {};", indent, mods, type_str, name);
@@ -291,11 +324,11 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
 // ---------------------------------------------------------------------------
 
 fn render_class(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    render_type_declaration(node, CLASS, opts)
+    render_type_declaration(node, Class.as_str(), opts)
 }
 
 fn render_struct(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    render_type_declaration(node, STRUCT, opts)
+    render_type_declaration(node, Struct.as_str(), opts)
 }
 
 fn render_type_declaration(
@@ -308,9 +341,9 @@ fn render_type_declaration(
     let attrs = render_attributes(node, opts)?;
     let mods = modifiers_str(node);
 
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
+    let name = get_child_text(node, Name.as_str()).ok_or_else(|| RenderError::MissingChild {
         parent: keyword.into(),
-        child: NAME.into(),
+        child: Name.as_str().into(),
     })?;
 
     // Collect body members
@@ -346,7 +379,7 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
 
     // Look for members directly in children (after flatten transform, body members
     // may be direct children or inside a <body> element)
-    let body_children = if let Some(body) = get_child(node, BODY) {
+    let body_children = if let Some(body) = get_child(node, Body.as_str()) {
         if let XmlNode::Element { children: bc, .. } = body {
             bc.as_slice()
         } else {
@@ -358,13 +391,12 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
 
     for child in body_children {
         if let XmlNode::Element { name, .. } = child {
-            match name.as_str() {
-                PROPERTY | FIELD | CLASS | STRUCT | COMMENT => {
-                    members.push(render_node(child, opts)?);
-                }
-                // Skip non-renderable elements (body wrapper text like { })
-                _ => {}
+            if matches!(name.parse::<TractorNode>().ok(),
+                        Some(Property | Field | Class | Struct | Comment))
+            {
+                members.push(render_node(child, opts)?);
             }
+            // else: skip non-renderable elements (body wrapper text like { })
         }
     }
 
@@ -376,12 +408,12 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
 // ---------------------------------------------------------------------------
 
 fn render_namespace(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: NAMESPACE.into(),
-        child: NAME.into(),
+    let name = get_child_text(node, Name.as_str()).ok_or_else(|| RenderError::MissingChild {
+        parent: Namespace.as_str().into(),
+        child: Name.as_str().into(),
     })?;
 
-    let has_body = get_child(node, BODY).is_some();
+    let has_body = get_child(node, Body.as_str()).is_some();
 
     if has_body {
         let body_opts = opts.indented();
@@ -416,11 +448,10 @@ fn collect_namespace_members(
     let mut members = Vec::new();
     for child in children {
         if let XmlNode::Element { name, .. } = child {
-            match name.as_str() {
-                CLASS | STRUCT | IMPORT | COMMENT => {
-                    members.push(render_node(child, opts)?);
-                }
-                _ => {}
+            if matches!(name.parse::<TractorNode>().ok(),
+                        Some(Class | Struct | Import | Comment))
+            {
+                members.push(render_node(child, opts)?);
             }
         }
     }
@@ -463,11 +494,10 @@ fn render_unit(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
     let mut parts = Vec::new();
     for child in children {
         if let XmlNode::Element { name, .. } = child {
-            match name.as_str() {
-                IMPORT | NAMESPACE | CLASS | STRUCT | COMMENT => {
-                    parts.push(render_node(child, opts)?);
-                }
-                _ => {}
+            if matches!(name.parse::<TractorNode>().ok(),
+                        Some(Import | Namespace | Class | Struct | Comment))
+            {
+                parts.push(render_node(child, opts)?);
             }
         }
     }
@@ -486,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_render_simple_property() {
-        let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public string Name { get; set; }");
@@ -494,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_render_nullable_property() {
-        let xml = r#"<property><public/><type>Guid<nullable/></type><name>UserId</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>Guid<nullable/></type><name>UserId</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public Guid? UserId { get; set; }");
@@ -502,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_render_property_with_attribute() {
-        let xml = r#"<property><attributes><attribute><name>Required</name></attribute></attributes><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><attributes><attribute><name>Required</name></attribute></attributes><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "[Required]\npublic string Name { get; set; }");
@@ -527,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_render_class_with_members() {
-        let xml = r#"<class><public/><name>User</name><body><property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property><field><private/><readonly/><type>int</type><name>_id</name></field></body></class>"#;
+        let xml = r#"<class><public/><name>User</name><body><property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property><field><private/><readonly/><type>int</type><name>_id</name></field></body></class>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         let expected = "public class User\n{\n    public string Name { get; set; }\n\n    private readonly int _id;\n}";
@@ -536,7 +566,7 @@ mod tests {
 
     #[test]
     fn test_render_generic_type_property() {
-        let xml = r#"<property><public/><type><generic/>List<arguments><type>string</type></arguments></type><name>Items</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type><generic/>List<arguments><type>string</type></arguments></type><name>Items</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public List<string> Items { get; set; }");
@@ -544,7 +574,7 @@ mod tests {
 
     #[test]
     fn test_render_nested_generic_type() {
-        let xml = r#"<property><public/><type><generic/>Dictionary<arguments><type>string</type><type>int</type></arguments></type><name>Map</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type><generic/>Dictionary<arguments><type>string</type><type>int</type></arguments></type><name>Map</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public Dictionary<string, int> Map { get; set; }");
@@ -552,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_render_property_with_indentation() {
-        let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let opts = RenderOptions {
             indent_level: 1,

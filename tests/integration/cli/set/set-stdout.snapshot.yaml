@@ -1,0 +1,13 @@
+summary:
+  success: true
+  totals:
+    results: 1
+    files: 1
+    updated: 1
+group: file
+results:
+- file: tests/integration/cli/set/sample.yaml
+  output: |
+    database:
+      host: db.example.com
+      port: 5432

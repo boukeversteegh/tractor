@@ -407,6 +407,11 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
     let info = analyze_element(current, options);
 
     if let Some(value) = direct_leaf_value(&info) {
+        // Even in shape mode, keep the leaf-property text (`name = "foo"`,
+        // `int = "3"`) — these are *property values* of the parent, not
+        // dangling source tokens. Dangling text (parens, semicolons,
+        // keyword duplicates left over from marker lifts) is still
+        // dropped at the visible-items level for shape mode.
         return RenderEntry {
             line: RenderLine::PathValue {
                 path,
@@ -629,6 +634,16 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
     let parent_start = source_start_line(node);
     let parent_end = source_end_line(node);
 
+    // Shape mode: drop *dangling* text (parens, semicolons, keyword
+    // duplicates from marker lifts) but keep *leaf* text — the single
+    // text child of a node like `<name>foo</name>` is the property
+    // value, not a dangling token. Detected by "has any non-marker
+    // element child": if yes, any text alongside is dangling.
+    let has_non_marker_element = children.iter().any(|c| {
+        matches!(c, XmlNode::Element { .. }) && !is_marker_element(c, options)
+    });
+    let suppress_text_in_shape = options.shape_only && has_non_marker_element;
+
     for child in children {
         match child {
             XmlNode::Element { .. } if is_marker_element(child, options) => markers.push(child),
@@ -636,17 +651,21 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
                 non_marker_elements.push(child);
                 visible_items.push(VisibleChild::Element(child));
             }
-            XmlNode::Text(text) if !text.trim().is_empty() => {
+            // Shape mode: dangling text alongside elements is suppressed;
+            // a sole text child (leaf value) is preserved.
+            XmlNode::Text(text) if !text.trim().is_empty() && !suppress_text_in_shape => {
                 visible_items.push(VisibleChild::Text {
                     text: text.trim(),
                     line_hint: None,
                 });
             }
-            XmlNode::Comment(text) => visible_items.push(VisibleChild::Comment {
-                text,
-                line_hint: None,
-            }),
-            XmlNode::ProcessingInstruction { target, data } => {
+            XmlNode::Comment(text) if !options.shape_only => {
+                visible_items.push(VisibleChild::Comment {
+                    text,
+                    line_hint: None,
+                });
+            }
+            XmlNode::ProcessingInstruction { target, data } if !options.shape_only => {
                 visible_items.push(VisibleChild::ProcessingInstruction {
                     target,
                     data: data.as_deref(),
@@ -721,11 +740,11 @@ fn is_marker_element(node: &XmlNode, options: &RenderOptions) -> bool {
 fn is_hidden_meta_attr(name: &str) -> bool {
     matches!(
         name,
-        "line" | "column" | "end_line" | "end_column" | "kind" | "field" | "path"
+        "line" | "column" | "end_line" | "end_column" | "kind" | "field" | "list" | "path"
     )
 }
 
-fn count_descendant_elements(node: &XmlNode) -> usize {
+pub fn count_descendant_elements(node: &XmlNode) -> usize {
     match node {
         XmlNode::Element { children, .. } => children
             .iter()
@@ -986,6 +1005,58 @@ mod tests {
                 "  └─ body = \"{ }\"\n"
             )
         );
+    }
+
+    #[test]
+    fn shape_only_strips_dangling_text_but_keeps_leaf_values() {
+        // class[internal]/                    ← shape strips:
+        //   ├─ "class"                          - dangling text literal (alongside elements) → DROP
+        //   ├─ name = "Repo"                    - leaf property value → KEEP
+        //   ├─ generic[class and new]/          - markers/predicates stay
+        //   │   └─ name = "T"                   - leaf property value → KEEP
+        //   └─ body = "{}"                      - leaf-shape (no element children) → KEEP
+        let node = elem(
+            "class",
+            vec![
+                elem("internal", vec![]),
+                text("class"),
+                elem("name", vec![text("Repo")]),
+                text("<"),
+                elem(
+                    "generic",
+                    vec![
+                        elem("class", vec![]),
+                        elem("new", vec![]),
+                        elem("name", vec![text("T")]),
+                    ],
+                ),
+                text(">"),
+                elem("body", vec![text("{}")]),
+            ],
+        );
+
+        let shape = render_query_tree_node(&node, &RenderOptions::new().with_shape_only(true));
+
+        // Shape mode keeps leaf property values (name = "Repo",
+        // body = "{}") but drops dangling source tokens ("class", "<", ">").
+        // Linear-chain collapse: `generic[…]/name = "T"` renders on
+        // one line because the generic element has only one non-marker
+        // child.
+        assert_eq!(
+            shape,
+            concat!(
+                "class[internal]/\n",
+                "  ├─ name = \"Repo\"\n",
+                "  ├─ generic[class and new]/name = \"T\"\n",
+                "  └─ body = \"{}\"\n",
+            )
+        );
+
+        // Sanity: regular tree mode keeps text values AND dangling tokens.
+        let tree = render_query_tree_node(&node, &RenderOptions::new());
+        assert!(tree.contains("\"Repo\""));
+        assert!(tree.contains("\"class\""));
+        assert!(tree.contains("\"{}\""));
     }
 
     #[test]

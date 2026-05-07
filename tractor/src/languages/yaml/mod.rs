@@ -1,29 +1,36 @@
-//! YAML transform logic
+//! YAML transform logic.
 //!
-//! Provides two transforms for dual-branch output:
-//! - `syntax`: Normalizes TreeSitter YAML nodes into a unified syntax vocabulary
-//!   (object/array/property/key/value/string/number/bool/null)
-//! - `data`: Projects into query-friendly data view where mapping keys
-//!   become element names and scalar values become text content.
+//! Per-language pipeline ownership:
 //!
-//! Data view example:
-//! ```yaml
-//! foo:
-//!   bar: baz
+//! ```text
+//! input → rules → output
+//!         ↑
+//!         transformations (Custom handlers)
 //! ```
-//! Becomes:
-//! ```xml
-//! <foo>
-//!   <bar>baz</bar>
-//! </foo>
-//! ```
-//! Queryable as: `//data/foo/bar[.='baz']`
+//!
+//! - [`input`]    — generated `YamlKind` enum (the input vocabulary).
+//!                  Regenerate via `task gen:kinds`; do not hand-edit.
+//! - [`output`]   — output element-name constants for the syntax
+//!                  branch. Data-branch names are user-data driven.
+//! - [`rules`]    — `syntax_rule` and `data_rule`, the input → action
+//!                  tables. YAML is dual-transform like JSON.
+//! - [`transformations`] — `Rule::Custom` handlers used by both
+//!                         tables.
+//! - [`syntax`] / [`data`] — thin orchestrators that look up the
+//!                          kind and dispatch via the shared rule
+//!                          executor. The data orchestrator also
+//!                          handles the builder-inserted `<value>`
+//!                          wrapper by element name.
 
+pub mod input;
+pub mod output;
+pub mod rules;
+pub mod transformations;
 pub mod syntax;
 pub mod data;
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::TransformAction;
+use crate::transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 pub use syntax::syntax_transform;

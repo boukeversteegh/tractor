@@ -1,0 +1,23 @@
+tests/integration/sample.cs:2
+🟦class[public]🟦🟫/🟫
+🟫  ├─ 🟫🟨"public class"🟨
+🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Calculator"🟨
+🟫  └─ 🟫🟦body🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      │   └─ 🟫🟫... (23 children)🟫
+🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      │   └─ 🟫🟫... (23 children)🟫
+🟫      └─ 🟫🟦method[public]🟦🟫/🟫
+🟫          └─ 🟫🟫... (23 children)🟫
+
+tests/integration/sample.cs:9
+🟦class[public]🟦🟫/🟫
+🟫  ├─ 🟫🟨"public class"🟨
+🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Greeter"🟨
+🟫  └─ 🟫🟦body🟦🟫/🟫
+🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      │   └─ 🟫🟫... (19 children)🟫
+🟫      ├─ 🟫🟦method[public]🟦🟫/🟫
+🟫      │   └─ 🟫🟫... (19 children)🟫
+🟫      └─ 🟫🟦method[public]🟦🟫/🟫
+🟫          └─ 🟫🟫... (4 children)🟫

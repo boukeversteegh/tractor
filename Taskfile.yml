@@ -106,6 +106,17 @@ tasks:
     cmds:
       - cargo test -p tractor --test cli
 
+  gen:kinds:
+    desc: Regenerate per-language Kind enums from each grammar's node-types.json
+    cmds:
+      - cargo run --release -p tractor --bin gen-kinds
+
+  verify:gen-kinds:
+    desc: Regenerate Kind enums and verify there is no diff (CI check)
+    cmds:
+      - task: gen:kinds
+      - git diff --exit-code -- tractor/src/languages/*/input.rs
+
   test:snapshots:
     desc: Check that XML snapshots match current tractor output
     deps: [build]

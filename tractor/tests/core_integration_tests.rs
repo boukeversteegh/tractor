@@ -5,12 +5,10 @@
 /// 2. Snapshot loading and querying
 /// 3. XPath querying against parsed code
 
-use std::path::PathBuf;
 use tractor::{
-    load_xml_string_to_documents, load_xml_file_to_documents,
+    load_xml_string_to_documents,
     parse, ParseInput, ParseOptions,
     XPathEngine, XeeParseResult, SchemaCollector,
-    output::{render_node, RenderOptions},
 };
 
 /// Parse an in-memory source string for tests. Collapses the common
@@ -34,39 +32,6 @@ fn parse_test_inline(
             parse_depth: None,
         },
     )
-}
-
-/// Parse a fixture file from disk for tests. Uses default options (language
-/// auto-detected from path, no tree-mode override, no depth cap).
-fn parse_test_disk(path: &std::path::Path) -> Result<XeeParseResult, tractor::parser::ParseError> {
-    parse(
-        ParseInput::Disk { path },
-        ParseOptions::default(),
-    )
-}
-
-fn get_test_fixtures_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .join("tests/integration/fixtures")
-}
-
-fn get_test_snapshots_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .join("tests/integration/snapshots")
-}
-
-/// Helper to render XeeParseResult to XML string (for comparison)
-fn render_to_xml(result: &XeeParseResult) -> String {
-    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-    let xot = result.documents.xot();
-    let render_opts = RenderOptions::new().with_pretty_print(true);
-    xot.children(doc_node)
-        .map(|child| render_node(xot, child, &render_opts))
-        .collect()
 }
 
 #[test]
@@ -109,198 +74,6 @@ fn test_query_xml_passthrough() {
     assert_eq!(matches.len(), 2, "Should find 2 functions");
 }
 
-#[test]
-fn test_load_snapshot_and_query() {
-    // Test loading a snapshot file and querying it
-    let snapshots_dir = get_test_snapshots_dir();
-    let snapshot_path = snapshots_dir.join("sample.rs.xml");
-
-    if !snapshot_path.exists() {
-        eprintln!("Snapshot not found, skipping test: {:?}", snapshot_path);
-        return;
-    }
-
-    let mut result = load_xml_file_to_documents(&snapshot_path)
-        .expect("Should load snapshot");
-
-    let engine = XPathEngine::new();
-    let matches = engine.query_documents(
-        &mut result.documents,
-        result.doc_handle,
-        "//function",
-        result.source_lines.clone(),
-        &result.file_path,
-    ).expect("Query should succeed");
-
-    assert!(matches.len() >= 2, "Should find at least 2 functions in sample.rs");
-}
-
-#[test]
-fn test_snapshot_matches_current_output() {
-    // Test that current output matches snapshot
-    let fixtures_dir = get_test_fixtures_dir();
-    let snapshots_dir = get_test_snapshots_dir();
-
-    let fixture_path = fixtures_dir.join("sample.rs");
-    let snapshot_path = snapshots_dir.join("sample.rs.xml");
-
-    if !fixture_path.exists() || !snapshot_path.exists() {
-        eprintln!("Fixture or snapshot not found, skipping test");
-        return;
-    }
-
-    // Parse the fixture using unified pipeline
-    let parsed = parse_test_disk(&fixture_path)
-        .expect("Should parse fixture");
-    let current_xml = render_to_xml(&parsed);
-
-    // Load the snapshot
-    let snapshot = std::fs::read_to_string(&snapshot_path)
-        .expect("Should read snapshot");
-
-    // Normalize before comparing
-    let normalize = |s: &str| {
-        use regex::Regex;
-        let mut normalized = s.to_string();
-
-        // Remove XML declaration
-        let xml_decl_re = Regex::new(r#"<\?xml[^?]*\?>\s*"#).unwrap();
-        normalized = xml_decl_re.replace_all(&normalized, "").to_string();
-
-        // Remove path attributes
-        let path_re = Regex::new(r#"\s*path="[^"]*""#).unwrap();
-        normalized = path_re.replace_all(&normalized, "").to_string();
-
-        // Remove location attributes
-        let loc_re = Regex::new(r#"\s*(start|end)="[^"]*""#).unwrap();
-        normalized = loc_re.replace_all(&normalized, "").to_string();
-
-        normalized
-    };
-
-    let normalized_current = normalize(&current_xml);
-    let normalized_snapshot = normalize(&snapshot);
-
-    if normalized_current != normalized_snapshot {
-        eprintln!("Current (first 500 chars):\n{}", &normalized_current.chars().take(500).collect::<String>());
-        eprintln!("\nSnapshot (first 500 chars):\n{}", &normalized_snapshot.chars().take(500).collect::<String>());
-
-        for (i, (c1, c2)) in normalized_current.chars().zip(normalized_snapshot.chars()).enumerate() {
-            if c1 != c2 {
-                eprintln!("\nFirst difference at position {}: '{}' vs '{}'", i, c1, c2);
-                eprintln!("Context: ...{}...", &normalized_current.chars().skip(i.saturating_sub(20)).take(40).collect::<String>());
-                break;
-            }
-        }
-    }
-
-    assert_eq!(
-        normalized_current, normalized_snapshot,
-        "Current output should match snapshot (paths and locations normalized)"
-    );
-}
-
-#[test]
-fn test_xpath_structure_assertions() {
-    // Test XPath structure assertions on fixtures
-    let fixtures_dir = get_test_fixtures_dir();
-    let fixture_path = fixtures_dir.join("sample.rs");
-
-    if !fixture_path.exists() {
-        eprintln!("Fixture not found, skipping test");
-        return;
-    }
-
-    let mut parsed = parse_test_disk(&fixture_path)
-        .expect("Should parse fixture");
-
-    let engine = XPathEngine::new();
-
-    // Assert: Should have 2 functions
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 2, "Should have 2 functions");
-
-    // Assert: Should have 'add' function
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function/name[type='add']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have 'add' function");
-
-    // Assert: Should have 'main' function
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function/name[type='main']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have 'main' function");
-
-    // Assert: Should have binary operator +
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//binary[@op='+']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have + operator");
-}
-
-#[test]
-fn test_multi_language_snapshots() {
-    // Test that we can load and query snapshots from multiple languages
-    let snapshots_dir = get_test_snapshots_dir();
-
-    let languages = vec![
-        ("sample.rs.xml", "//function", 2),
-        ("sample.py.xml", "//function", 2),
-        ("sample.js.xml", "//function", 2),
-        ("sample.ts.xml", "//function", 2),
-        ("sample.go.xml", "//function", 2),
-        ("sample.java.xml", "//method", 2),
-        ("sample.cs.xml", "//method", 2),
-        ("sample.rb.xml", "//method", 2),
-    ];
-
-    let engine = XPathEngine::new();
-
-    for (snapshot_name, xpath, expected_count) in languages {
-        let snapshot_path = snapshots_dir.join(snapshot_name);
-
-        if !snapshot_path.exists() {
-            eprintln!("Snapshot not found, skipping: {:?}", snapshot_path);
-            continue;
-        }
-
-        let mut result = load_xml_file_to_documents(&snapshot_path)
-            .expect(&format!("Should load {}", snapshot_name));
-
-        let matches = engine.query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath,
-            result.source_lines.clone(),
-            &result.file_path,
-        ).expect(&format!("Query should succeed for {}", snapshot_name));
-
-        assert_eq!(
-            matches.len(), expected_count,
-            "{}: Expected {} matches for '{}', got {}",
-            snapshot_name, expected_count, xpath, matches.len()
-        );
-    }
-}
 
 #[test]
 fn test_xpath_string_value_preserves_whitespace() {
@@ -362,23 +135,35 @@ fn test_xpath_exact_string_match_without_formatting_whitespace() {
 
 #[test]
 fn test_csharp_null_forgiving_operator() {
-    // Test that C# null-forgiving operator (!) is parsed correctly as postfix_unary_expression
-    // This was historically broken due to shell escaping issues during testing (! -> \!)
+    // C#'s null-forgiving operator `name!` is a postfix non-null
+    // assertion, not a unary not-operator. Per Principle #15 it
+    // surfaces as `<expression>` host with a `<non_null/>` marker
+    // (analog of TypeScript's `non_null_expression`).
     let source = "class T { void M() { var x = name!.Length; } }";
     let mut result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
 
-    // The ! should be parsed as postfix_unary_expression, not ERROR
+    // The ! produces an <expression> host with <non_null/> marker.
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//postfix_unary_expression",
+        "//expression[non_null]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find postfix_unary_expression for null-forgiving operator");
+    assert_eq!(matches.len(), 1, "Should find expression[non_null] for null-forgiving operator");
+
+    // Sanity: should NOT be classified as a unary not-operator.
+    let bogus = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//unary[op[logical[not]]]",
+        result.source_lines.clone(),
+        &result.file_path,
+    ).expect("Query should succeed");
+    assert_eq!(bogus.len(), 0, "name! must not be classified as a unary not-operator");
 
     // Verify there are no ERROR nodes (which would indicate parsing failure)
     let errors = engine.query_documents(
@@ -390,15 +175,19 @@ fn test_csharp_null_forgiving_operator() {
     ).expect("Query should succeed");
     assert_eq!(errors.len(), 0, "Should have no ERROR nodes - null-forgiving operator should parse correctly");
 
-    // Can query for member access on null-forgiving expression
+    // Can query for member access on null-forgiving expression.
+    // Post iter-245 (C# chain inversion): the chain is
+    // `<object[access]><expression[non_null]>name</expression><member>Length</member></object>`,
+    // so the non-null expression is the chain receiver (a direct
+    // child of the chain wrapper).
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//member[postfix_unary_expression]",
+        "//object[access]/expression[non_null]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find member access with postfix_unary_expression child");
+    assert_eq!(matches.len(), 1, "Should find non-null expression as the chain receiver");
 }
 
 // ============================================================================

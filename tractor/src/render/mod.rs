@@ -167,7 +167,7 @@ pub fn parse_xml(input: &str) -> Result<XmlNode, RenderError> {
 /// - `"key": "text"`         → `<key>text</key>`  (text element)
 /// - `"key": { ... }`        → `<key>...</key>`   (structural element, key as name)
 /// - `"$type": "name"`       → element name
-/// - `"children": [...]`     → ordered child elements
+/// - `"$children": [...]`    → ordered child elements (overflow / non-lifted)
 /// - `{ "name": "text" }`    → `<name>text</name>` (compact leaf in children array)
 pub fn parse_json(input: &str) -> Result<XmlNode, RenderError> {
     let value: serde_json::Value = serde_json::from_str(input)
@@ -236,13 +236,13 @@ fn json_value_to_xmlnode(value: &serde_json::Value) -> Result<XmlNode, RenderErr
 
 /// Convert a JSON object's properties into XmlNode children.
 /// Handles booleans (markers), strings (text elements), objects (structural),
-/// and the special "children" array.
+/// and the special "$children" array.
 fn json_object_to_children(obj: &serde_json::Map<String, serde_json::Value>) -> Result<Vec<XmlNode>, RenderError> {
     let mut children = Vec::new();
 
-    // First pass: collect lifted properties (everything except $type and children)
+    // First pass: collect lifted properties (everything except $type and $children)
     for (key, value) in obj {
-        if key == "$type" || key == "children" {
+        if key == "$type" || key == "$children" {
             continue;
         }
         match value {
@@ -277,8 +277,8 @@ fn json_object_to_children(obj: &serde_json::Map<String, serde_json::Value>) -> 
         }
     }
 
-    // Second pass: append children array elements
-    if let Some(serde_json::Value::Array(arr)) = obj.get("children") {
+    // Second pass: append $children array elements
+    if let Some(serde_json::Value::Array(arr)) = obj.get("$children") {
         for item in arr {
             children.push(json_value_to_xmlnode(item)?);
         }

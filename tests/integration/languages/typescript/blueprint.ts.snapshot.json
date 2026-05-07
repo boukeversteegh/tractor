@@ -1,0 +1,2294 @@
+{
+  "$type": "program",
+  "comments": [
+    "// blueprint.ts — TypeScript kitchen-sink fixture.\n// Rendered by tractor's snapshot system so design-principle changes\n// to the TypeScript transform show up as visible snapshot diffs.\n// Covers most major TS constructs: classes, interfaces, generics,\n// unions, conditional/mapped types, async/generators, decorators of syntax.",
+    {
+      "leading": true,
+      "text": "/** A shape with an optional label and readonly id. */"
+    },
+    {
+      "leading": true,
+      "text": "/** Abstract base using visibility + readonly + static. */"
+    },
+    {
+      "leading": true,
+      "text": "/* A block comment describing control flow demos. */"
+    },
+    "// Iter 18: TS 5+ / advanced type / declare / module shapes.",
+    {
+      "leading": true,
+      "text": "// Ambient `declare` declarations."
+    },
+    {
+      "leading": true,
+      "text": "// Constructor / typeof / this / rest / optional-tuple / template-type shapes."
+    },
+    {
+      "leading": true,
+      "text": "// Rest in tuple — anonymous form keeps the rest_type at the outer level\n// so `//type[rest]` matches without a `<name>` field wrapper."
+    },
+    {
+      "leading": true,
+      "text": "// `T?` only appears inside tuple element annotations."
+    },
+    {
+      "leading": true,
+      "text": "// Old-style cast (`<T>expr`) — type assertion."
+    },
+    {
+      "leading": true,
+      "text": "// Class with static initializer block."
+    },
+    {
+      "leading": true,
+      "text": "// Asserts / type predicate annotations."
+    },
+    {
+      "leading": true,
+      "text": "// `Foo<T>` instantiation expression."
+    },
+    {
+      "leading": true,
+      "text": "// Old-style `import x = require(y)` form."
+    },
+    {
+      "leading": true,
+      "text": "// `import.meta` / `new.target` meta-properties."
+    },
+    {
+      "leading": true,
+      "text": "// Nested type / value identifiers."
+    },
+    {
+      "leading": true,
+      "text": "// Regex literal + flags."
+    },
+    {
+      "leading": true,
+      "text": "// Labeled / sequence / for-classic / debugger / do-while / with (deprecated)."
+    },
+    {
+      "leading": true,
+      "text": "// Pair pattern + assignment pattern in destructure with defaults."
+    }
+  ],
+  "imports": [
+    {
+      "name": "defaultExport",
+      "specs": [
+        {
+          "name": "namedA"
+        },
+        {
+          "names": [
+            "namedB",
+            "aliasedB"
+          ]
+        }
+      ],
+      "string": "\"./barrel\""
+    },
+    {
+      "namespace": {
+        "name": "ns"
+      },
+      "string": "\"./namespace\""
+    },
+    {
+      "spec": {
+        "name": "OnlyAtCompileTime"
+      },
+      "string": "\"./types\""
+    },
+    {
+      "name": "legacy",
+      "string": "\"./legacy\""
+    }
+  ],
+  "exports": [
+    {
+      "spec": {
+        "name": "namedA"
+      },
+      "string": "\"./barrel\""
+    },
+    {
+      "alias": {
+        "name": "Re",
+        "generic": {
+          "name": "T"
+        },
+        "type": {
+          "conditional": true,
+          "type": {
+            "generic": true,
+            "name": "Array",
+            "type": {
+              "infer": true,
+              "name": "U"
+            }
+          },
+          "names": [
+            "T",
+            "U",
+            "never"
+          ]
+        }
+      }
+    },
+    {
+      "interface": {
+        "name": "Shape",
+        "generic": {
+          "name": "T"
+        },
+        "body": {
+          "properties": [
+            {
+              "readonly": true,
+              "name": "id",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "optional": true,
+              "name": "label",
+              "type": {
+                "name": "string"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "name": "T"
+              }
+            }
+          ],
+          "method": {
+            "public": true,
+            "name": "describe",
+            "parameter": {
+              "required": true,
+              "type": {
+                "name": "string"
+              },
+              "name": "prefix"
+            },
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Point",
+        "type": {
+          "object": true,
+          "properties": [
+            {
+              "name": "x",
+              "type": {
+                "name": "number"
+              }
+            },
+            {
+              "name": "y",
+              "type": {
+                "name": "number"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Pair",
+        "type": {
+          "tuple": true,
+          "names": [
+            "string",
+            "number"
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Status",
+        "type": {
+          "union": true,
+          "types": [
+            {
+              "union": true,
+              "types": [
+                {
+                  "union": true,
+                  "types": [
+                    {
+                      "literal": true,
+                      "string": "\"idle\""
+                    },
+                    {
+                      "literal": true,
+                      "string": "\"loading\""
+                    }
+                  ]
+                },
+                {
+                  "literal": true,
+                  "string": "\"ready\""
+                }
+              ]
+            },
+            {
+              "literal": true,
+              "string": "\"error\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Mapper",
+        "generic": {
+          "name": "T"
+        },
+        "type": {
+          "function": true,
+          "parameter": {
+            "required": true,
+            "type": {
+              "name": "T"
+            },
+            "name": "input"
+          },
+          "name": "T"
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Partialized",
+        "generic": {
+          "name": "T"
+        },
+        "type": {
+          "object": true,
+          "indexer": {
+            "types": [
+              {
+                "mapped": true,
+                "name": "K",
+                "type": {
+                  "keyof": true,
+                  "name": "T"
+                }
+              },
+              {
+                "optional": true,
+                "type": {
+                  "lookup": true,
+                  "names": [
+                    "T",
+                    "K"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "alias": {
+        "name": "Greeting",
+        "type": {
+          "template": true,
+          "string": "hello, ",
+          "name": "${string}"
+        }
+      }
+    },
+    {
+      "enum": {
+        "name": "Color",
+        "body": {
+          "constants": [
+            {
+              "name": "Red",
+              "string": "\"RED\""
+            },
+            {
+              "name": "Green",
+              "string": "\"GREEN\""
+            },
+            {
+              "name": "Blue",
+              "string": "\"BLUE\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "class": {
+        "abstract": true,
+        "name": "Base",
+        "generic": {
+          "name": "T",
+          "extends": {
+            "type": {
+              "name": "Shape"
+            }
+          }
+        },
+        "body": {
+          "fields": [
+            {
+              "public": true,
+              "static": true,
+              "type": {
+                "name": "string"
+              },
+              "name": "kind",
+              "value": {
+                "string": "\"base\""
+              }
+            },
+            {
+              "protected": true,
+              "readonly": true,
+              "type": {
+                "name": "number"
+              },
+              "name": "createdAt",
+              "value": {
+                "object": {
+                  "access": true,
+                  "call": {
+                    "name": "now"
+                  },
+                  "text": "Date"
+                }
+              }
+            },
+            {
+              "private": true,
+              "type": {
+                "generic": true,
+                "name": "Map",
+                "types": [
+                  "string",
+                  "T"
+                ]
+              },
+              "name": "_cache",
+              "value": {
+                "new": {
+                  "name": "Map"
+                }
+              }
+            }
+          ],
+          "methods": [
+            {
+              "public": true,
+              "name": "constructor",
+              "parameters": [
+                {
+                  "public": true,
+                  "required": true,
+                  "type": {
+                    "name": "string"
+                  },
+                  "name": "name"
+                },
+                {
+                  "private": true,
+                  "readonly": true,
+                  "optional": true,
+                  "type": {
+                    "name": "number"
+                  },
+                  "name": "seed"
+                }
+              ],
+              "body": {}
+            },
+            {
+              "public": true,
+              "abstract": true,
+              "name": "render",
+              "returns": {
+                "type": {
+                  "name": "string"
+                }
+              }
+            },
+            {
+              "public": true,
+              "get": true,
+              "name": "cacheSize",
+              "returns": {
+                "type": {
+                  "name": "number"
+                }
+              },
+              "body": {
+                "return": {
+                  "expression": {
+                    "access": true,
+                    "members": [
+                      {
+                        "name": "_cache"
+                      },
+                      {
+                        "name": "size"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "set": true,
+              "name": "primary",
+              "parameter": {
+                "required": true,
+                "type": {
+                  "name": "T"
+                },
+                "name": "value"
+              },
+              "body": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "member": {
+                      "name": "_cache"
+                    },
+                    "call": {
+                      "arguments": [
+                        "\"primary\"",
+                        "value"
+                      ],
+                      "name": "set"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "name": "store",
+              "parameters": [
+                {
+                  "required": true,
+                  "type": {
+                    "name": "string"
+                  },
+                  "name": "key"
+                },
+                {
+                  "required": true,
+                  "type": {
+                    "name": "T"
+                  },
+                  "name": "value"
+                }
+              ],
+              "returns": {
+                "type": {
+                  "name": "void"
+                }
+              },
+              "body": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "member": {
+                      "name": "_cache"
+                    },
+                    "call": {
+                      "arguments": [
+                        "key",
+                        "value"
+                      ],
+                      "name": "set"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "class": {
+        "name": "Widget",
+        "generic": {
+          "name": "T",
+          "extends": {
+            "type": {
+              "name": "Shape"
+            }
+          }
+        },
+        "extends": [
+          {
+            "type": {
+              "name": "Base"
+            }
+          },
+          {
+            "type": {
+              "type": {
+                "name": "T"
+              }
+            }
+          }
+        ],
+        "body": {
+          "field": {
+            "public": true,
+            "static": true,
+            "name": "#counter",
+            "value": {
+              "number": {}
+            }
+          },
+          "methods": [
+            {
+              "public": true,
+              "name": "constructor",
+              "parameters": [
+                {
+                  "required": true,
+                  "type": {
+                    "name": "string"
+                  },
+                  "name": "name"
+                },
+                {
+                  "private": true,
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  },
+                  "name": "items",
+                  "value": {}
+                }
+              ],
+              "body": {
+                "expressions": [
+                  {
+                    "call": {
+                      "super": {},
+                      "name": "name"
+                    }
+                  },
+                  {
+                    "unary": {
+                      "postfix": true,
+                      "op": {
+                        "text": "++",
+                        "increment": true
+                      },
+                      "object": {
+                        "access": true,
+                        "member": {
+                          "name": "#counter"
+                        },
+                        "text": "Widget"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "public": true,
+              "override": true,
+              "name": "render",
+              "returns": {
+                "type": {
+                  "name": "string"
+                }
+              },
+              "body": {
+                "variable": {
+                  "const": true,
+                  "name": "first",
+                  "value": {
+                    "binary": {
+                      "left": {
+                        "access": true,
+                        "index": {},
+                        "members": [
+                          {
+                            "name": "items"
+                          },
+                          {
+                            "name": "label",
+                            "optional": true
+                          }
+                        ]
+                      },
+                      "op": {
+                        "text": "??",
+                        "null_coalesce": true
+                      },
+                      "right": "\"unnamed\""
+                    }
+                  }
+                },
+                "return": {
+                  "expression": {
+                    "interpolation": {
+                      "nonnull": {
+                        "name": "first"
+                      }
+                    },
+                    "strings": [
+                      "Widget<",
+                      ">"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "generator": true,
+              "name": "entries",
+              "returns": {
+                "type": {
+                  "generic": true,
+                  "name": "Generator",
+                  "type": {
+                    "tuple": true,
+                    "names": [
+                      "number",
+                      "T"
+                    ]
+                  }
+                }
+              },
+              "body": {
+                "for": {
+                  "variable": {
+                    "let": true,
+                    "name": "i",
+                    "value": {
+                      "number": {}
+                    }
+                  },
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "<",
+                      "less": true
+                    },
+                    "right": {
+                      "access": true,
+                      "members": [
+                        {
+                          "name": "items"
+                        },
+                        {
+                          "name": "length"
+                        }
+                      ]
+                    }
+                  },
+                  "unary": {
+                    "postfix": true,
+                    "op": {
+                      "text": "++",
+                      "increment": true
+                    },
+                    "name": "i"
+                  },
+                  "body": {
+                    "yield": {
+                      "list": {
+                        "name": "i",
+                        "object": {
+                          "access": true,
+                          "member": {
+                            "name": "items"
+                          },
+                          "index": {
+                            "text": "i"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "public": true,
+              "async": true,
+              "name": "loadAll",
+              "parameters": [
+                {
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "string"
+                  },
+                  "name": "urls"
+                },
+                {
+                  "required": true,
+                  "type": {
+                    "array": true,
+                    "name": "string"
+                  },
+                  "rest": {
+                    "name": "extra"
+                  }
+                }
+              ],
+              "returns": {
+                "type": {
+                  "generic": true,
+                  "name": "Promise",
+                  "type": {
+                    "array": true,
+                    "name": "T"
+                  }
+                }
+              },
+              "body": {
+                "try": {
+                  "body": {
+                    "variable": {
+                      "const": true,
+                      "name": "merged",
+                      "value": {
+                        "list": {
+                          "spreads": [
+                            {
+                              "name": "urls"
+                            },
+                            {
+                              "name": "extra"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "for": {
+                      "left": {
+                        "expression": {
+                          "name": "u"
+                        }
+                      },
+                      "right": {
+                        "expression": {
+                          "name": "merged"
+                        }
+                      },
+                      "body": {
+                        "expression": {
+                          "await": {
+                            "call": {
+                              "name": "u"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "return": {
+                      "expression": {
+                        "access": true,
+                        "member": {
+                          "name": "items"
+                        }
+                      }
+                    }
+                  },
+                  "catch": {
+                    "name": "e",
+                    "body": {
+                      "throw": {
+                        "expression": {
+                          "as": {
+                            "names": [
+                              "e",
+                              "Error"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "finally": {
+                    "body": {
+                      "expression": {
+                        "object": {
+                          "access": true,
+                          "members": [
+                            {
+                              "name": "items"
+                            },
+                            {
+                              "name": "length"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "function": {
+        "name": "controlFlow",
+        "parameter": {
+          "required": true,
+          "type": {
+            "name": "number"
+          },
+          "name": "n"
+        },
+        "returns": {
+          "type": {
+            "name": "Status"
+          }
+        },
+        "body": {
+          "switch": {
+            "name": "status",
+            "arms": [
+              {
+                "string": "\"ready\"",
+                "break": true
+              },
+              {
+                "string": "\"error\"",
+                "throw": {
+                  "expression": {
+                    "new": {
+                      "name": "Error",
+                      "string": "\"bad\""
+                    }
+                  }
+                }
+              },
+              {
+                "comments": [
+                  "/* fallthrough */"
+                ],
+                "break": true
+              }
+            ]
+          },
+          "if": {
+            "condition": {
+              "left": "n",
+              "op": {
+                "text": "<",
+                "less": true
+              },
+              "right": {}
+            },
+            "body": {
+              "assign": {
+                "left": "status",
+                "right": "\"error\""
+              }
+            },
+            "else_if": {
+              "condition": {
+                "left": "n",
+                "op": {
+                  "text": "===",
+                  "equal": true
+                },
+                "right": {}
+              },
+              "body": {
+                "assign": {
+                  "left": "status",
+                  "right": "\"idle\""
+                }
+              },
+              "else_if": {
+                "condition": {
+                  "left": "n",
+                  "op": {
+                    "text": "<",
+                    "less": true
+                  },
+                  "right": {}
+                },
+                "body": {
+                  "assign": {
+                    "left": "status",
+                    "right": "\"loading\""
+                  }
+                },
+                "else": {
+                  "body": {
+                    "assign": {
+                      "left": "status",
+                      "right": "\"ready\""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "variables": [
+            {
+              "let": true,
+              "type": {
+                "name": "Status"
+              },
+              "name": "status",
+              "value": {
+                "string": "\"idle\""
+              }
+            },
+            {
+              "const": true,
+              "type": {
+                "generic": true,
+                "name": "Record",
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "name": "obj",
+              "value": {
+                "object": {
+                  "literal": true,
+                  "pairs": [
+                    {
+                      "key": "a",
+                      "value": {}
+                    },
+                    {
+                      "key": "b",
+                      "value": {}
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "fors": [
+            {
+              "left": {
+                "expression": {
+                  "name": "k"
+                }
+              },
+              "right": {
+                "expression": {
+                  "name": "obj"
+                }
+              },
+              "body": {
+                "expression": {
+                  "assign": {
+                    "left": {
+                      "object": {
+                        "access": true,
+                        "index": {
+                          "text": "k"
+                        },
+                        "text": "obj"
+                      }
+                    },
+                    "right": {}
+                  }
+                }
+              }
+            },
+            {
+              "left": {
+                "expression": {
+                  "pattern": {
+                    "array": true,
+                    "name": "v"
+                  }
+                }
+              },
+              "right": {
+                "expression": {
+                  "object": {
+                    "access": true,
+                    "call": {
+                      "argument": "obj",
+                      "name": "entries"
+                    },
+                    "text": "Object"
+                  }
+                }
+              },
+              "body": {
+                "expression": {
+                  "unary": {
+                    "op": {
+                      "text": "void",
+                      "void": true
+                    },
+                    "name": "v"
+                  }
+                }
+              }
+            }
+          ],
+          "while": {
+            "condition": "false",
+            "body": {
+              "comments": [
+                "/* never */"
+              ]
+            }
+          },
+          "return": {
+            "expression": {
+              "condition": {
+                "left": "n",
+                "op": {
+                  "text": ">",
+                  "greater": true
+                },
+                "right": {}
+              },
+              "then": "status",
+              "else": "\"idle\""
+            }
+          }
+        }
+      }
+    }
+  ],
+  "functions": [
+    {
+      "name": "isShape",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
+        },
+        "name": "v"
+      },
+      "returns": {
+        "type": {
+          "name": "v",
+          "type": {
+            "name": "Shape"
+          }
+        }
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "left": {
+                "left": {
+                  "op": {
+                    "text": "typeof",
+                    "typeof": true
+                  },
+                  "name": "v"
+                },
+                "op": {
+                  "text": "===",
+                  "equal": true
+                },
+                "right": "\"object\""
+              },
+              "op": {
+                "text": "&&",
+                "and": true
+              },
+              "right": {
+                "left": "v",
+                "op": {
+                  "text": "!==",
+                  "not_equal": true
+                },
+                "right": "null"
+              }
+            },
+            "op": {
+              "text": "&&",
+              "and": true
+            },
+            "right": {
+              "left": "\"id\"",
+              "op": {
+                "text": "in",
+                "in": true
+              },
+              "right": "v"
+            }
+          }
+        }
+      }
+    },
+    {
+      "async": true,
+      "name": "compute",
+      "generic": {
+        "name": "T",
+        "extends": {
+          "type": {
+            "union": true,
+            "names": [
+              "number",
+              "string"
+            ]
+          }
+        }
+      },
+      "parameters": [
+        {
+          "required": true,
+          "type": {
+            "name": "T"
+          },
+          "name": "input"
+        },
+        {
+          "required": true,
+          "type": {
+            "object": true,
+            "properties": [
+              {
+                "optional": true,
+                "name": "scale",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "optional": true,
+                "name": "label",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ]
+          },
+          "pattern": {
+            "object": true,
+            "pair": {
+              "name": "scale",
+              "number": {}
+            },
+            "name": "label"
+          },
+          "value": {
+            "literal": true
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "generic": true,
+          "name": "Promise",
+          "type": "Greeting"
+        }
+      },
+      "body": {
+        "comments": [
+          {
+            "trailing": true,
+            "text": "// array destructure + rest"
+          }
+        ],
+        "variables": [
+          {
+            "const": true,
+            "pattern": {
+              "array": true,
+              "name": "head",
+              "rest": {
+                "name": "rest"
+              }
+            },
+            "value": {
+              "object": {
+                "access": true,
+                "name": "input",
+                "call": {
+                  "argument": "\"\"",
+                  "name": "split"
+                }
+              }
+            }
+          },
+          {
+            "const": true,
+            "name": "spread",
+            "value": {
+              "object": {
+                "literal": true,
+                "spread": {
+                  "object": {
+                    "literal": true,
+                    "name": "scale"
+                  }
+                },
+                "names": [
+                  "label",
+                  "head",
+                  "rest"
+                ]
+              }
+            }
+          },
+          {
+            "const": true,
+            "name": "msg",
+            "value": {
+              "as": {
+                "call": {
+                  "name": "tag",
+                  "strings": [
+                    "hello, ",
+                    " (",
+                    ")"
+                  ],
+                  "interpolations": [
+                    {
+                      "binary": {
+                        "left": "label",
+                        "op": {
+                          "text": "??",
+                          "null_coalesce": true
+                        },
+                        "right": "\"world\""
+                      }
+                    },
+                    {
+                      "object": {
+                        "access": true,
+                        "member": {
+                          "name": "scale"
+                        },
+                        "text": "spread"
+                      }
+                    }
+                  ]
+                },
+                "name": "Greeting"
+              }
+            }
+          }
+        ],
+        "return": {
+          "expression": {
+            "names": [
+              "msg",
+              "Greeting"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "isNumber",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
+        },
+        "name": "x"
+      },
+      "returns": {
+        "type": {
+          "asserts": true,
+          "name": "x",
+          "type": {
+            "name": "number"
+          }
+        }
+      },
+      "body": {
+        "if": {
+          "condition": {
+            "left": {
+              "op": {
+                "text": "typeof",
+                "typeof": true
+              },
+              "name": "x"
+            },
+            "op": {
+              "text": "!==",
+              "not_equal": true
+            },
+            "right": "\"number\""
+          },
+          "body": {
+            "new": {
+              "name": "Error",
+              "string": "\"not a number\""
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "MetaCtor",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "unknown"
+        },
+        "this": {}
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "access": true,
+              "member": {
+                "name": "name",
+                "optional": true
+              },
+              "text": "new.target"
+            },
+            "op": {
+              "text": "??",
+              "null_coalesce": true
+            },
+            "right": "\"\""
+          }
+        }
+      }
+    },
+    {
+      "name": "controlOdds",
+      "parameter": {
+        "required": true,
+        "type": {
+          "name": "number"
+        },
+        "name": "value"
+      },
+      "returns": {
+        "type": {
+          "name": "number"
+        }
+      },
+      "body": {
+        "label": {
+          "name": "outer",
+          "for": {
+            "variable": {
+              "let": true,
+              "declarators": [
+                {
+                  "name": "i",
+                  "value": {
+                    "number": {}
+                  }
+                },
+                {
+                  "name": "j",
+                  "value": {
+                    "number": {}
+                  }
+                }
+              ]
+            },
+            "condition": {
+              "left": "i",
+              "op": {
+                "text": "<",
+                "less": true
+              },
+              "right": {}
+            },
+            "unaries": [
+              {
+                "postfix": true,
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "name": "i"
+              },
+              {
+                "postfix": true,
+                "op": {
+                  "text": "--",
+                  "decrement": true
+                },
+                "name": "j"
+              }
+            ],
+            "body": {
+              "ifs": [
+                {
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {}
+                  },
+                  "body": {
+                    "name": "outer"
+                  }
+                },
+                {
+                  "condition": {
+                    "left": "i",
+                    "op": {
+                      "text": "===",
+                      "equal": true
+                    },
+                    "right": {}
+                  },
+                  "body": {
+                    "name": "outer"
+                  }
+                }
+              ],
+              "expression": {
+                "assign": {
+                  "left": "total",
+                  "right": {
+                    "assign": {
+                      "left": "total",
+                      "right": "i"
+                    },
+                    "binary": {
+                      "left": "total",
+                      "op": {
+                        "text": "*",
+                        "multiply": true
+                      },
+                      "right": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "variables": [
+          {
+            "let": true,
+            "name": "total",
+            "value": {
+              "number": {}
+            }
+          },
+          {
+            "let": true,
+            "name": "n",
+            "value": {
+              "number": {}
+            }
+          }
+        ],
+        "do": {
+          "body": {
+            "expression": {
+              "unary": {
+                "postfix": true,
+                "op": {
+                  "text": "++",
+                  "increment": true
+                },
+                "name": "n"
+              }
+            }
+          },
+          "condition": {
+            "left": "n",
+            "op": {
+              "text": "<",
+              "less": true
+            },
+            "right": {}
+          }
+        },
+        "if": {
+          "condition": "false",
+          "body": {}
+        },
+        "return": {
+          "expression": {
+            "left": "total",
+            "op": {
+              "text": "+",
+              "plus": true
+            },
+            "right": "n"
+          }
+        }
+      }
+    },
+    {
+      "name": "destructure",
+      "parameters": [
+        {
+          "required": true,
+          "type": {
+            "object": true,
+            "properties": [
+              {
+                "optional": true,
+                "name": "a",
+                "type": {
+                  "name": "number"
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "name": "number"
+                }
+              }
+            ]
+          },
+          "pattern": {
+            "object": true,
+            "pairs": [
+              {
+                "names": [
+                  "a",
+                  "aa"
+                ],
+                "value": {
+                  "expression": {
+                    "number": {}
+                  }
+                }
+              },
+              {
+                "names": [
+                  "b",
+                  "bb"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": true,
+          "type": {
+            "array": true,
+            "name": "number"
+          },
+          "pattern": {
+            "array": true,
+            "name": "c",
+            "value": {
+              "expression": {
+                "number": {}
+              }
+            },
+            "rest": {
+              "name": "rest"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "number"
+        }
+      },
+      "body": {
+        "return": {
+          "expression": {
+            "left": {
+              "left": {
+                "left": "aa",
+                "op": {
+                  "text": "+",
+                  "plus": true
+                },
+                "right": "bb"
+              },
+              "op": {
+                "text": "+",
+                "plus": true
+              },
+              "right": "c"
+            },
+            "op": {
+              "text": "+",
+              "plus": true
+            },
+            "right": {
+              "access": true,
+              "member": {
+                "name": "length"
+              },
+              "text": "rest"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "variables": [
+    {
+      "const": true,
+      "name": "tag",
+      "value": {
+        "arrow": {
+          "parameters": [
+            {
+              "required": true,
+              "type": {
+                "name": "TemplateStringsArray"
+              },
+              "name": "parts"
+            },
+            {
+              "required": true,
+              "type": {
+                "array": true,
+                "name": "unknown"
+              },
+              "rest": {
+                "name": "vals"
+              }
+            }
+          ],
+          "value": {
+            "expression": {
+              "object": {
+                "access": true,
+                "call": {
+                  "arguments": [
+                    {
+                      "parameters": [
+                        {
+                          "required": true,
+                          "name": "acc"
+                        },
+                        {
+                          "required": true,
+                          "name": "p"
+                        },
+                        {
+                          "required": true,
+                          "name": "i"
+                        }
+                      ],
+                      "value": {
+                        "expression": {
+                          "binary": {
+                            "left": {
+                              "left": "acc",
+                              "op": {
+                                "text": "+",
+                                "plus": true
+                              },
+                              "right": "p"
+                            },
+                            "op": {
+                              "text": "+",
+                              "plus": true
+                            },
+                            "right": {
+                              "left": {
+                                "access": true,
+                                "index": {
+                                  "text": "i"
+                                },
+                                "text": "vals"
+                              },
+                              "op": {
+                                "text": "??",
+                                "null_coalesce": true
+                              },
+                              "right": "\"\""
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "\"\""
+                  ],
+                  "name": "reduce"
+                },
+                "text": "parts"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "arrow",
+      "value": {
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "type": {
+              "array": true,
+              "name": "U"
+            },
+            "name": "xs"
+          },
+          "returns": {
+            "type": {
+              "union": true,
+              "name": "U",
+              "type": {
+                "literal": true,
+                "name": "undefined"
+              }
+            }
+          },
+          "value": {
+            "expression": {
+              "object": {
+                "access": true,
+                "index": {},
+                "text": "xs"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "type": {
+        "array": true,
+        "name": "number"
+      },
+      "name": "doubled",
+      "value": {
+        "object": {
+          "access": true,
+          "numbers": [
+            {},
+            {},
+            {}
+          ],
+          "call": {
+            "argument": {
+              "parameter": {
+                "required": true,
+                "name": "x"
+              },
+              "returns": {
+                "type": {
+                  "name": "number"
+                }
+              },
+              "value": {
+                "expression": {
+                  "binary": {
+                    "left": "x",
+                    "op": {
+                      "text": "*",
+                      "multiply": true
+                    },
+                    "right": {}
+                  }
+                }
+              }
+            },
+            "name": "map"
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "arrowBlock",
+      "value": {
+        "arrow": {
+          "parameter": {
+            "required": true,
+            "type": {
+              "name": "number"
+            },
+            "name": "x"
+          },
+          "returns": {
+            "type": {
+              "name": "number"
+            }
+          },
+          "body": {
+            "return": {
+              "expression": {
+                "left": "x",
+                "op": {
+                  "text": "*",
+                  "multiply": true
+                },
+                "right": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "type": {
+        "union": true,
+        "name": "string",
+        "type": {
+          "literal": true,
+          "null": "null"
+        }
+      },
+      "name": "maybe",
+      "value": {
+        "null": "null"
+      }
+    },
+    {
+      "const": true,
+      "name": "fallback",
+      "value": {
+        "binary": {
+          "left": "maybe",
+          "op": {
+            "text": "??",
+            "null_coalesce": true
+          },
+          "right": "\"default\""
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "nonNull",
+      "value": {
+        "nonnull": {
+          "as": {
+            "name": "maybe",
+            "type": {
+              "union": true,
+              "name": "string",
+              "type": {
+                "literal": true,
+                "null": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "asserted",
+      "value": {
+        "as": {
+          "type": {
+            "name": "number"
+          },
+          "as": {
+            "type": {
+              "name": "unknown"
+            },
+            "string": "\"42\""
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "arrayOf",
+      "value": {
+        "type": {
+          "generic": true,
+          "type": {
+            "name": "number"
+          }
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "fixed",
+      "value": {
+        "call": {
+          "name": "arrayOf"
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "url",
+      "value": {
+        "object": {
+          "access": true,
+          "member": {
+            "name": "url"
+          },
+          "text": "import.meta"
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "nestedVal",
+      "value": {
+        "object": {
+          "access": true,
+          "member": {
+            "name": "counter"
+          },
+          "text": "StaticBlock"
+        }
+      }
+    },
+    {
+      "const": true,
+      "name": "pattern",
+      "value": {
+        "string": "/^foo(\\d+)bar$/giu"
+      }
+    }
+  ],
+  "expressions": [
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "arrow"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "doubled"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "fallback"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "nonNull"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "ns"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "defaultExport"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "aliasedB"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "controlOdds"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "destructure"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "asserted"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "fixed"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "url"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "nestedVal"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "pattern"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "MetaCtor"
+      }
+    },
+    {
+      "unary": {
+        "op": {
+          "text": "void",
+          "void": true
+        },
+        "name": "legacy"
+      }
+    }
+  ],
+  "declares": [
+    {
+      "variable": {
+        "const": true,
+        "type": {
+          "name": "boolean"
+        },
+        "name": "__DEV__"
+      }
+    },
+    {
+      "function": {
+        "name": "externalThing",
+        "parameter": {
+          "required": true,
+          "type": {
+            "name": "string"
+          },
+          "name": "name"
+        },
+        "returns": {
+          "type": {
+            "name": "void"
+          }
+        }
+      }
+    },
+    {
+      "namespace": {
+        "name": "SideEffect",
+        "body": {
+          "function": {
+            "name": "init",
+            "returns": {
+              "type": {
+                "name": "void"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "aliases": [
+    {
+      "name": "Builder",
+      "type": {
+        "constructor": true,
+        "parameter": {
+          "required": true,
+          "type": {
+            "name": "string"
+          },
+          "name": "input"
+        },
+        "name": "Status"
+      }
+    },
+    {
+      "name": "Identity",
+      "generic": {
+        "name": "T"
+      },
+      "type": {
+        "conditional": true,
+        "type": {
+          "typeof": true,
+          "name": "globalThis"
+        },
+        "names": [
+          "T",
+          "T",
+          "never"
+        ]
+      }
+    },
+    {
+      "name": "Reflective",
+      "type": {
+        "object": true,
+        "method": {
+          "public": true,
+          "name": "copy",
+          "returns": {
+            "type": {
+              "name": "this"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RestArgs",
+      "type": {
+        "tuple": true,
+        "name": "number",
+        "type": {
+          "rest": true,
+          "type": {
+            "array": true,
+            "name": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "OptionalSlot",
+      "type": {
+        "tuple": true,
+        "parameters": [
+          {
+            "required": true,
+            "type": {
+              "name": "number"
+            },
+            "name": "head"
+          },
+          {
+            "optional": true,
+            "type": {
+              "name": "string"
+            },
+            "name": "tail"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NestedTy",
+      "type": {
+        "lookup": true,
+        "name": "StaticBlock",
+        "type": {
+          "literal": true,
+          "string": "\"counter\""
+        }
+      }
+    }
+  ],
+  "class": {
+    "name": "StaticBlock",
+    "body": {
+      "field": {
+        "public": true,
+        "static": true,
+        "name": "counter",
+        "value": {
+          "number": {}
+        }
+      },
+      "block": {
+        "static": true,
+        "body": {
+          "expression": {
+            "assign": {
+              "left": {
+                "access": true,
+                "member": {
+                  "name": "counter"
+                },
+                "text": "StaticBlock"
+              },
+              "right": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}
