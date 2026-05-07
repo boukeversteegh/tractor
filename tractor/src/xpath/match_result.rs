@@ -96,12 +96,16 @@ pub struct Match {
 #[derive(Debug, Clone)]
 pub enum Tree {
     /// Programming-language IR (root-document match).
+    /// Native-only: the `crate::ir` module is gated behind the
+    /// `native` feature, so WASM builds skip this variant.
+    #[cfg(feature = "native")]
     Ir {
         ir: Arc<crate::ir::Ir>,
         source: Arc<String>,
         xml: XmlNode,
     },
-    /// Data-language IR (root-document match).
+    /// Data-language IR (root-document match). Native-only.
+    #[cfg(feature = "native")]
     DataIr {
         ir: Arc<crate::ir::DataIr>,
         source: Arc<String>,
@@ -123,7 +127,9 @@ impl Tree {
     /// the XML→JSON projection until partial matches carry IR too.
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
+            #[cfg(feature = "native")]
             Tree::Ir { ir, source, .. } => crate::ir::ir_to_json(ir, source),
+            #[cfg(feature = "native")]
             Tree::DataIr { ir, .. } => crate::ir::data_to_json(ir),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
         }
@@ -136,7 +142,9 @@ impl Tree {
     pub fn as_xml_node(&self) -> &XmlNode {
         match self {
             Tree::Xml(node) => node,
+            #[cfg(feature = "native")]
             Tree::Ir { xml, .. } => xml,
+            #[cfg(feature = "native")]
             Tree::DataIr { xml, .. } => xml,
         }
     }

@@ -49,9 +49,9 @@ file/
   │       │   ├─ schema = "dbo"
   │       │   └─ name = "Users"
   │       └─ where/between/
-  │           ├─ name = "Age"
-  │           ├─ literal = "18"
-  │           └─ literal = "65"
+  │           ├─ value/name = "Age"
+  │           ├─ lower/literal = "18"
+  │           └─ upper/literal = "65"
   ├─ comment = "-- UPDATE with variables and schema-qualified table"
   ├─ statement/update/
   │   ├─ relation/

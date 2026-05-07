@@ -180,7 +180,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "binary_expression" => lower_binary_expression(node, source),
         "unary_expression" => lower_unary_expression(node, source),
         "assignment" => lower_tsql_assignment(node, source),
-        "between_expression" => simple_statement(node, "between", source),
+        "between_expression" => lower_tsql_between(node, source),
         "exists" => simple_statement(node, "exists", source),
         "case" => simple_statement(node, "case", source),
         "when_clause" => simple_statement(node, "when", source),
@@ -378,6 +378,67 @@ fn lower_term_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
             _ => lower_node(c, source),
         })
         .collect()
+}
+
+/// `between_expression` (`x BETWEEN low AND high`) — wrap each
+/// operand in a named slot: `<value>` for the test expression,
+/// `<lower>` and `<upper>` for the bounds. Without slots, the
+/// three values surfaced as flat siblings (`name`, `literal`,
+/// `literal`) and queries couldn't tell which was the test
+/// expression vs the bounds.
+fn lower_tsql_between(node: TsNode<'_>, source: &str) -> Ir {
+    let range = range_of(node);
+    let span = span_of(node);
+    // Collect operand-bearing children (skipping keyword_*/op_*).
+    let mut operand_cursor = node.walk();
+    let operand_nodes: Vec<TsNode<'_>> = node.named_children(&mut operand_cursor)
+        .filter(|c| {
+            let kind = c.kind();
+            !kind.starts_with("keyword_") && !kind.starts_with("op_")
+        })
+        .collect();
+    let value_id = operand_nodes.first().map(|n| n.id());
+    let low_id = operand_nodes.get(1).map(|n| n.id());
+    let high_id = operand_nodes.get(2).map(|n| n.id());
+    // Walk *all* children so keyword/op/anonymous tokens get
+    // `Ir::Skip`'d (otherwise BETWEEN / AND / parens leak as
+    // gap text). Operand-bearing identifiers/literals get
+    // wrapped in their respective slots.
+    let mut cursor = node.walk();
+    let children: Vec<Ir> = node.children(&mut cursor)
+        .map(|c| {
+            let cid = c.id();
+            let slot = if Some(cid) == value_id { Some("value") }
+                       else if Some(cid) == low_id { Some("lower") }
+                       else if Some(cid) == high_id { Some("upper") }
+                       else { None };
+            if let Some(slot_name) = slot {
+                return Ir::SimpleStatement {
+                    element_name: slot_name,
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![lower_node(c, source)],
+                    range: range_of(c),
+                    span: span_of(c),
+                };
+            }
+            // Anonymous OR keyword/op children → Skip.
+            let kind = c.kind();
+            if !c.is_named() || kind.starts_with("keyword_") || kind.starts_with("op_") {
+                Ir::Skip { range: range_of(c), span: span_of(c) }
+            } else {
+                lower_node(c, source)
+            }
+        })
+        .collect();
+    Ir::SimpleStatement {
+        element_name: "between",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
 }
 
 /// `join` — emit direction markers (`[left]`, `[right]`, `[full]`,

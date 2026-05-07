@@ -196,17 +196,23 @@
         "where": {
           "$skip": null,
           "between": {
-            "name": "Age",
+            "value": {
+              "name": "Age",
+              "$skips": [
+                null,
+                null
+              ]
+            },
+            "lower": {
+              "literal": {}
+            },
             "$skips": [
-              null,
-              null,
               null,
               null
             ],
-            "literals": [
-              {},
-              {}
-            ]
+            "upper": {
+              "literal": {}
+            }
           }
         }
       }
