@@ -23,7 +23,10 @@ use crate::languages::collapse_conditionals;
 /// remain.
 pub fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
     attach_ir_where_clauses(xot, root)?;
-    // Invert right-deep <member>/<call> chains.
+    // Chain inversion is mostly handled inside `crate::ir::csharp`
+    // via `Ir::Access`, but a few CST kinds (`range_expression` /
+    // `index` operator chains) still produce flat shapes that need
+    // wrapping; this call catches those edge cases.
     crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
     collapse_conditionals(xot, root)?;
     crate::transform::tag_multi_target_expressions(xot, root)?;

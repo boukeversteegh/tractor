@@ -23,13 +23,10 @@ pub fn python_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Er
     // it as an XML post-pass since the IR doesn't know about
     // parent context during lowering.
     inject_python_visibility_markers(xot, root)?;
-    // Invert right-deep `<member>`/`<call>` chains into nested
-    // `<chain>` form (per `docs/design-chain-inversion.md`).
-    // Python's tree already matches the canonical input shape:
-    // `<call><member><object/><property/></member>...args</call>`
-    // and `<member><object/><property/></member>`. Run early so
-    // subsequent passes see the post-inversion shape.
-    crate::transform::chain_inversion::invert_chains_in_tree(xot, root)?;
+    // Chain inversion is no longer needed: `crate::ir::python` lowers
+    // member/call/index access into `Ir::Access { receiver, segments }`
+    // directly, which `to_xot` renders as the inverted nested form.
+    // (This call ran on the imperative pipeline's right-deep output.)
     crate::transform::wrap_expression_positions(
         xot,
         root,
