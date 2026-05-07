@@ -22,7 +22,7 @@
 use tree_sitter::Node as TsNode;
 
 use super::data::DataIr;
-use super::types::{ByteRange, Span};
+use super::lower_helpers::{range_of, span_of, text_of};
 
 pub fn lower_toml_data_root(root: TsNode<'_>, source: &str) -> DataIr {
     lower_node(root, source)
@@ -180,23 +180,3 @@ fn strip_quotes(raw: &str) -> String {
     }
 }
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
-    let r = node.byte_range();
-    source[r].to_string()
-}
-
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    let r = node.byte_range();
-    ByteRange::new(r.start as u32, r.end as u32)
-}
-
-fn span_of(node: TsNode<'_>) -> Span {
-    let s = node.start_position();
-    let e = node.end_position();
-    Span {
-        line: s.row as u32 + 1,
-        column: s.column as u32 + 1,
-        end_line: e.row as u32 + 1,
-        end_column: e.column as u32 + 1,
-    }
-}

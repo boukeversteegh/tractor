@@ -29,7 +29,7 @@
 use tree_sitter::Node as TsNode;
 
 use super::data::DataIr;
-use super::types::{ByteRange, Span};
+use super::lower_helpers::{range_of, span_of, text_borrow};
 
 /// Lower a JSON CST root node to [`DataIr`].
 pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataIr {
@@ -130,10 +130,10 @@ fn decode_json_string(node: TsNode<'_>, source: &str) -> String {
     for child in node.named_children(&mut cursor) {
         match child.kind() {
             "string_content" => {
-                out.push_str(text_of_node_borrow(child, source));
+                out.push_str(text_borrow(child, source));
             }
             "escape_sequence" => {
-                let raw = text_of_node_borrow(child, source);
+                let raw = text_borrow(child, source);
                 out.push_str(&decode_escape(raw));
             }
             _ => {}
@@ -183,26 +183,5 @@ fn strip_comment_delimiters(raw: &str) -> String {
 }
 
 fn text_of(node: TsNode<'_>, source: &str) -> String {
-    text_of_node_borrow(node, source).to_string()
-}
-
-fn text_of_node_borrow<'s>(node: TsNode<'_>, source: &'s str) -> &'s str {
-    let r = node.byte_range();
-    &source[r]
-}
-
-fn range_of(node: TsNode<'_>) -> ByteRange {
-    let r = node.byte_range();
-    ByteRange::new(r.start as u32, r.end as u32)
-}
-
-fn span_of(node: TsNode<'_>) -> Span {
-    let s = node.start_position();
-    let e = node.end_position();
-    Span {
-        line: s.row as u32 + 1,
-        column: s.column as u32 + 1,
-        end_line: e.row as u32 + 1,
-        end_column: e.column as u32 + 1,
-    }
+    text_borrow(node, source).to_string()
 }

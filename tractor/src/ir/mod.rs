@@ -73,6 +73,11 @@ pub mod ini_data;
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
+// Shared helpers for `lower_<lang>` modules — text/range/span
+// extraction. Centralized to avoid 200+ LOC of duplication
+// across 13 per-language lower files.
+#[cfg(feature = "native")]
+pub mod lower_helpers;
 #[cfg(feature = "native")]
 pub mod source;
 #[cfg(feature = "native")]
