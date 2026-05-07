@@ -37,15 +37,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
     let kind = node.kind();
 
     // All `keyword_*` and the `op_*` operator leaves are detached —
-    // their text is already in the surrounding source. We emit them
-    // as Inline (no element, no children) so the gap-text mechanism
-    // preserves the bytes.
+    // their text is syntax (Principle #2), and the parent element
+    // name conveys the role. Emit `Ir::Skip` so the parent's
+    // `render_with_gaps` advances its cursor past the keyword
+    // bytes without leaking them as text content.
     if kind.starts_with("keyword_") || kind.starts_with("op_") {
-        return Ir::Inline {
-            children: Vec::new(),
-            list_name: None,
-            range, span,
-        };
+        return Ir::Skip { range, span };
     }
 
     match kind {

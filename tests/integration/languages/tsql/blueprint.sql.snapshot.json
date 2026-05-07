@@ -28,17 +28,20 @@
   "statements": [
     {
       "select": {
+        "$skip": null,
         "names": [
           "u.Name",
           "u.Age"
         ]
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users",
           "alias": "u"
         },
         "where": {
+          "$skip": null,
           "compare": {
             "name": "u.Age",
             "op": ">",
@@ -46,6 +49,10 @@
           }
         },
         "order": {
+          "$skips": [
+            null,
+            null
+          ],
           "target": {
             "name": "u.Name"
           }
@@ -54,6 +61,11 @@
     },
     {
       "insert": {
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "name": "AuditLog",
         "lists": [
           {
@@ -76,10 +88,14 @@
       }
     },
     {
-      "delete": {},
+      "delete": {
+        "$skip": null
+      },
       "from": {
+        "$skip": null,
         "name": "OldRecords",
         "where": {
+          "$skip": null,
           "compare": {
             "name": "CreatedAt",
             "op": "<",
@@ -91,17 +107,27 @@
     {
       "select": {
         "name": "[dbo].[Users].[Name]",
+        "$skips": [
+          null,
+          null
+        ],
         "alias": "UserName",
         "var": "@StartDate"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "schema": "[dbo]",
           "name": "[Users]"
         },
         "where": {
+          "$skip": null,
           "between": {
             "name": "[Age]",
+            "$skips": [
+              null,
+              null
+            ],
             "literals": [
               {},
               {}
@@ -116,11 +142,16 @@
           "schema": "dbo",
           "name": "Config"
         },
+        "$skips": [
+          null,
+          null
+        ],
         "assign": {
           "name": "Value",
           "var": "@NewValue"
         },
         "where": {
+          "$skip": null,
           "compare": {
             "name": "[Key]",
             "op": "=",
@@ -131,6 +162,7 @@
     },
     {
       "select": {
+        "$skip": null,
         "names": [
           "o.ID",
           "u.Name",
@@ -138,6 +170,7 @@
         ]
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Orders",
           "alias": "o"
@@ -148,6 +181,10 @@
               "name": "Users",
               "alias": "u"
             },
+            "$skips": [
+              null,
+              null
+            ],
             "compare": {
               "op": "=",
               "names": [
@@ -157,6 +194,11 @@
             }
           },
           {
+            "$skips": [
+              null,
+              null,
+              null
+            ],
             "relation": {
               "name": "Addresses",
               "alias": "a"
@@ -171,6 +213,7 @@
           }
         ],
         "where": {
+          "$skip": null,
           "compare": {
             "name": "o.Total",
             "op": ">",
@@ -181,24 +224,31 @@
     },
     {
       "select": {
+        "$skip": null,
         "name": "Name"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users"
         },
         "where": {
+          "$skip": null,
           "compare": {
             "name": "ID",
+            "$skip": null,
             "subquery": {
               "select": {
+                "$skip": null,
                 "name": "UserID"
               },
               "from": {
+                "$skip": null,
                 "relation": {
                   "name": "Orders"
                 },
                 "where": {
+                  "$skip": null,
                   "compare": {
                     "name": "Total",
                     "op": ">",
@@ -213,25 +263,32 @@
     },
     {
       "select": {
+        "$skip": null,
         "name": "u.Name"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users",
           "alias": "u"
         },
         "where": {
+          "$skip": null,
           "exists": {
+            "$skip": null,
             "subquery": {
               "select": {
+                "$skip": null,
                 "literal": {}
               },
               "from": {
+                "$skip": null,
                 "relation": {
                   "name": "Orders",
                   "alias": "o"
                 },
                 "where": {
+                  "$skip": null,
                   "compare": {
                     "op": "=",
                     "names": [
@@ -248,7 +305,6 @@
     },
     {
       "select": {
-        "name": "Department",
         "calls": [
           {
             "name": "COUNT",
@@ -261,19 +317,31 @@
             ]
           }
         ],
+        "name": "Department",
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "aliases": [
           "HeadCount",
           "AvgSalary"
         ]
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Employees"
         },
         "group": {
+          "$skips": [
+            null,
+            null
+          ],
           "name": "Department"
         },
         "having": {
+          "$skip": null,
           "compare": {
             "call": {
               "name": "COUNT",
@@ -287,8 +355,14 @@
     },
     {
       "select": {
-        "name": "Name",
         "case": {
+          "$skips": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
           "compare": {
             "name": "Age",
             "op": ">=",
@@ -299,29 +373,40 @@
             {}
           ]
         },
+        "name": "Name",
+        "$skips": [
+          null,
+          null
+        ],
         "alias": "Category"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users"
         }
       }
     },
     {
+      "$skip": null,
       "cte": {
         "name": "ActiveUsers",
+        "$skip": null,
         "statement": {
           "select": {
+            "$skip": null,
             "names": [
               "ID",
               "Name"
             ]
           },
           "from": {
+            "$skip": null,
             "relation": {
               "name": "Users"
             },
             "where": {
+              "$skip": null,
               "compare": {
                 "name": "Active",
                 "op": "=",
@@ -332,9 +417,11 @@
         }
       },
       "select": {
+        "$skip": null,
         "name": "Name"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "ActiveUsers"
         }
@@ -342,25 +429,39 @@
     },
     {
       "union": {
+        "$skips": [
+          null,
+          null
+        ],
         "selects": [
           {
-            "name": "Name",
             "literal": {},
+            "name": "Name",
+            "$skips": [
+              null,
+              null
+            ],
             "alias": "Source"
           },
           {
-            "name": "Name",
             "literal": {},
+            "name": "Name",
+            "$skips": [
+              null,
+              null
+            ],
             "alias": "Source"
           }
         ],
         "froms": [
           {
+            "$skip": null,
             "relation": {
               "name": "Users"
             }
           },
           {
+            "$skip": null,
             "relation": {
               "name": "Admins"
             }
@@ -370,26 +471,42 @@
     },
     {
       "select": {
-        "name": "Name",
         "window": {
           "call": {
             "name": "ROW_NUMBER"
           },
+          "$skip": null,
           "over": {
             "partition": {
+              "$skips": [
+                null,
+                null
+              ],
               "name": "Department"
             },
             "order": {
+              "$skips": [
+                null,
+                null
+              ],
               "target": {
                 "name": "Salary",
-                "direction": {}
+                "direction": {
+                  "$skip": null
+                }
               }
             }
           }
         },
+        "name": "Name",
+        "$skips": [
+          null,
+          null
+        ],
         "alias": "Rank"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Employees"
         }
@@ -404,9 +521,19 @@
             "Name"
           ]
         },
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "cast": {
           "name": "Age",
+          "$skips": [
+            null,
+            null
+          ],
           "varchar": {
+            "$skip": null,
             "literal": {}
           }
         },
@@ -416,26 +543,35 @@
         ]
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users"
         },
         "where": {
+          "$skip": null,
           "compare": {
+            "$skip": null,
             "compares": [
               {
+                "$skip": null,
                 "compares": [
                   {
                     "name": "Email",
+                    "$skip": null,
                     "literal": {}
                   },
                   {
                     "name": "DeletedAt",
-                    "literal": {}
+                    "$skip": null,
+                    "literal": {
+                      "$skip": null
+                    }
                   }
                 ]
               },
               {
                 "name": "Role",
+                "$skip": null,
                 "list": {
                   "literals": [
                     {},
@@ -450,37 +586,65 @@
     },
     {
       "select": {
+        "$skips": [
+          null,
+          null
+        ],
         "name": "Department"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Employees"
         },
         "order": {
+          "$skips": [
+            null,
+            null
+          ],
           "target": {
             "name": "Department",
-            "direction": {}
+            "direction": {
+              "$skip": null
+            }
           }
         }
       }
     },
     {
       "create": {
+        "$skips": [
+          null,
+          null
+        ],
         "name": "Audit",
         "columns": {
           "definitions": [
             {
               "name": "ID",
-              "int": "INT"
+              "int": "INT",
+              "$skips": [
+                null,
+                null
+              ]
             },
             {
               "name": "Action",
               "nvarchar": {
+                "$skip": null,
                 "literal": {}
-              }
+              },
+              "$skips": [
+                null,
+                null
+              ]
             },
             {
               "name": "CreatedAt",
+              "$skips": [
+                null,
+                null
+              ],
               "call": {
                 "name": "GETDATE"
               }
@@ -490,6 +654,12 @@
       }
     },
     {
+      "$skips": [
+        null,
+        null,
+        null,
+        null
+      ],
       "names": [
         "Target",
         "t",
@@ -505,6 +675,13 @@
       },
       "whens": [
         {
+          "$skips": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
           "assign": {
             "names": [
               "t.Name",
@@ -513,6 +690,14 @@
           }
         },
         {
+          "$skips": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
           "lists": [
             {
               "columns": [
@@ -536,19 +721,24 @@
     },
     {
       "select": {
+        "$skip": null,
         "names": [
           "Name",
           "Age"
         ]
       },
+      "$skip": null,
       "temp": {
+        "$skip": null,
         "name": "TempUsers"
       },
       "from": {
+        "$skip": null,
         "relation": {
           "name": "Users"
         },
         "where": {
+          "$skip": null,
           "compare": {
             "name": "Active",
             "op": "=",
@@ -559,19 +749,32 @@
     },
     {
       "set": {
+        "$skip": null,
         "var": "@Threshold",
         "literal": {}
       }
     },
     {
       "function": {
+        "$skips": [
+          null,
+          null,
+          null
+        ],
         "schema": "dbo",
         "name": "GetAge",
         "arg": {
-          "var": "@BirthDate"
+          "var": "@BirthDate",
+          "$skip": null
         },
         "int": "INT",
         "body": {
+          "$skips": [
+            null,
+            null,
+            null,
+            null
+          ],
           "call": {
             "names": [
               "DATEDIFF",
@@ -587,6 +790,7 @@
     },
     {
       "exec": {
+        "$skip": null,
         "name": "sp_helpdb"
       }
     },
@@ -598,24 +802,41 @@
     },
     {
       "alter": {
+        "$skips": [
+          null,
+          null
+        ],
         "name": "Orders",
         "unknown": "ADD CONSTRAINT fk_customer FOREIGN KEY (CustomerID) REFERENCES Customers(ID)"
       }
     },
     {
       "alter": {
+        "$skips": [
+          null,
+          null
+        ],
         "name": "Orders",
         "unknown": "DROP CONSTRAINT fk_customer"
       }
     }
   ],
   "transaction": {
+    "$skips": [
+      null,
+      null,
+      null
+    ],
     "statements": [
       {
         "update": {
           "relation": {
             "name": "Accounts"
           },
+          "$skips": [
+            null,
+            null
+          ],
           "assign": {
             "name": "Balance",
             "compare": {
@@ -625,6 +846,7 @@
             }
           },
           "where": {
+            "$skip": null,
             "compare": {
               "name": "ID",
               "op": "=",
@@ -638,6 +860,10 @@
           "relation": {
             "name": "Accounts"
           },
+          "$skips": [
+            null,
+            null
+          ],
           "assign": {
             "name": "Balance",
             "compare": {
@@ -647,6 +873,7 @@
             }
           },
           "where": {
+            "$skip": null,
             "compare": {
               "name": "ID",
               "op": "=",

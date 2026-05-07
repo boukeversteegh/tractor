@@ -94,6 +94,15 @@ pub fn render_to_xot(
         Ir::Class { .. } => render_ir_class(xot, parent, ir, source),
         Ir::Body { .. } => render_ir_body(xot, parent, ir, source),
         Ir::Parameter { .. } => render_ir_parameter(xot, parent, ir, source),
+        Ir::Skip { range: _, span: _ } => {
+            // Source-range consumer that emits nothing. Parent's
+            // `render_with_gaps` still advances its cursor past
+            // `range.end`, so the gap before the next sibling
+            // skips the consumed bytes (used by T-SQL to swallow
+            // anonymous keyword children without leaking them as
+            // gap text).
+            Ok(parent)
+        }
         Ir::PositionalSeparator { range, span } => {
             leaf(xot, parent, "positional", source, *range, *span)
         }

@@ -95,6 +95,7 @@ impl<'a> Renderer<'a> {
             | Ir::Null { .. }
             | Ir::True { .. }
             | Ir::False { .. } => Some(text_scalar(ir)),
+            Ir::Skip { .. } => Some(Value::Null),
             Ir::PositionalSeparator { .. } | Ir::KeywordSeparator { .. } => {
                 // Markers; rendered as flags by parents. Render as null
                 // when reached as a value.
@@ -184,6 +185,7 @@ impl<'a> Renderer<'a> {
             Ir::Cast { .. } => "cast",
             Ir::Null { .. } => "null",
             Ir::Inline { .. } => "$inline",
+            Ir::Skip { .. } => "$skip",
             Ir::Unknown { .. } => "unknown",
             Ir::Call { .. } => "call",
         }
@@ -683,7 +685,8 @@ impl<'a> Renderer<'a> {
             | Ir::True { .. }
             | Ir::False { .. }
             | Ir::None { .. }
-            | Ir::Null { .. } => {}
+            | Ir::Null { .. }
+            | Ir::Skip { .. } => {}
         }
     }
 

@@ -21,14 +21,12 @@ file/
   │   └─ list/
   │       ├─ literal = "'UserQuery'"
   │       └─ call/name = "GETDATE"
-  ├─ statement/
-  │   ├─ delete = "DELETE"
-  │   └─ from/
-  │       ├─ name = "OldRecords"
-  │       └─ where/compare/
-  │           ├─ name = "CreatedAt"
-  │           ├─ op = "<"
-  │           └─ literal = "'2020-01-01'"
+  ├─ statement[delete]/from/
+  │   ├─ name = "OldRecords"
+  │   └─ where/compare/
+  │       ├─ name = "CreatedAt"
+  │       ├─ op = "<"
+  │       └─ literal = "'2020-01-01'"
   ├─ comment = "-- Bracket identifiers, schema-qualified names, variables"
   ├─ statement/
   │   ├─ select/
@@ -187,9 +185,7 @@ file/
   │   │   │   ├─ call/name = "ROW_NUMBER"
   │   │   │   └─ over/
   │   │   │       ├─ partition/name = "Department"
-  │   │   │       └─ order/target/
-  │   │   │           ├─ name = "Salary"
-  │   │   │           └─ direction = "DESC"
+  │   │   │       └─ order/target[direction]/name = "Salary"
   │   │   └─ alias = "Rank"
   │   └─ from/relation/name = "Employees"
   ├─ comment = "-- COALESCE, CAST, LIKE, IS NULL, IN list"
@@ -211,9 +207,7 @@ file/
   │           │   ├─ compare/
   │           │   │   ├─ name = "Email"
   │           │   │   └─ literal = "'%@gmail.com'"
-  │           │   └─ compare/
-  │           │       ├─ name = "DeletedAt"
-  │           │       └─ literal = "NULL"
+  │           │   └─ compare[literal]/name = "DeletedAt"
   │           └─ compare/
   │               ├─ name = "Role"
   │               └─ list/
@@ -224,9 +218,7 @@ file/
   │   ├─ select/name = "Department"
   │   └─ from/
   │       ├─ relation/name = "Employees"
-  │       └─ order/target/
-  │           ├─ name = "Department"
-  │           └─ direction = "DESC"
+  │       └─ order/target[direction]/name = "Department"
   ├─ comment = "-- CREATE TABLE"
   ├─ statement/create/
   │   ├─ name = "Audit"

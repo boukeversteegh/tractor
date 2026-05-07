@@ -601,6 +601,14 @@ pub enum Ir {
         span: Span,
     },
 
+    /// Source-range consumer that emits nothing in the rendered tree.
+    /// Used by per-language lowerings to "swallow" anonymous keyword
+    /// bytes (e.g. T-SQL `SELECT` / `FROM` / `WHERE`) without leaking
+    /// them as gap text under the parent element. The parent's
+    /// `render_with_gaps` advances its cursor past `range.end`, so
+    /// the gap before the next sibling skips the keyword bytes.
+    Skip { range: ByteRange, span: Span },
+
     /// `<positional>/</positional>` — `/` separator marking the end
     /// of positional-only parameters.
     PositionalSeparator { range: ByteRange, span: Span },
@@ -1314,6 +1322,7 @@ impl Ir {
             | Ir::Class { span, .. }
             | Ir::Body { span, .. }
             | Ir::Parameter { span, .. }
+            | Ir::Skip { span, .. }
             | Ir::PositionalSeparator { span, .. }
             | Ir::KeywordSeparator { span, .. }
             | Ir::Decorator { span, .. }
@@ -1395,6 +1404,7 @@ impl Ir {
             | Ir::Class { range, .. }
             | Ir::Body { range, .. }
             | Ir::Parameter { range, .. }
+            | Ir::Skip { range, .. }
             | Ir::PositionalSeparator { range, .. }
             | Ir::KeywordSeparator { range, .. }
             | Ir::Decorator { range, .. }
@@ -1668,6 +1678,7 @@ impl Ir {
             Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
             | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }
             | Ir::Atom { .. }
+            | Ir::Skip { .. }
             | Ir::Comment { .. } | Ir::PositionalSeparator { .. }
             | Ir::KeywordSeparator { .. } | Ir::Break { .. } | Ir::Continue { .. }
             | Ir::Unknown { .. } => {}
