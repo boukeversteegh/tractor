@@ -173,8 +173,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         },
 
         // HTML block (raw `<!-- ... -->`, `<div>...</div>`, etc.) and
-        // inline HTML — rendered as `<html>` so XPath queries like
-        // `//html[contains(., 'TODO')]` can find embedded comments.
+        // inline HTML — rendered as `<html>` so XPath queries
+        // matching on the html text content (e.g. searching for a
+        // marker word inside an HTML comment) can resolve.
         "html_block" | "html_tag" | "html_atx_open_tag" | "html_atx_close_tag" => {
             DataIr::Element {
                 name: "html",
