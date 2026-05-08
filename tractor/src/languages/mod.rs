@@ -246,7 +246,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: Some(typescript::typescript_post_transform),
+        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -264,7 +264,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: Some(typescript::typescript_post_transform),
+        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -282,7 +282,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: Some(typescript::typescript_post_transform),
+        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),

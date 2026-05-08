@@ -1818,11 +1818,14 @@ fn lower_ts_declarator_parts(d: TsNode<'_>, source: &str) -> Vec<Ir> {
         parts.push(lower_node(n, source));
     }
     if let Some(v) = d.child_by_field_name("value") {
+        // <value><expression>...</expression></value> at lowering time
+        // (replaces wrap_expression_positions on rendered xot).
+        let expr = crate::ir::Expression::wrap(lower_node(v, source));
         parts.push(Ir::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
             extra_markers: &[],
-            children: vec![lower_node(v, source)],
+            children: vec![*expr.inner],
             range: range_of(v),
             span: span_of(v),
         });

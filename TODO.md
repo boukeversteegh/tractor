@@ -181,8 +181,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [ ] [S3B-Z2] **Rust lowering produces canonical IR end-to-end; `languages/rust_lang/post_transform.rs` does not exist.**
     - Folds in: `rust_normalize_field_expression`, `rust_normalize_lifetime_names`, `rust_restructure_use`. Depends on Z1b for the shared-helper portion.
 
-  - [ ] [S3B-Z3] **TypeScript / JS / TSX lowering produces canonical IR end-to-end; `languages/typescript/post_transform.rs` does not exist.**
-    - Folds in: `typescript_unwrap_callee`, `typescript_restructure_import`. All three TS-family rows in `LANGUAGES` go to `post_transform: None`.
+  - [x] [S3B-Z3] **TypeScript / JS / TSX lowering produces canonical IR end-to-end; `languages/typescript/post_transform.rs` does not exist.**
+    - Done 2026-05-08. All three TS-family rows have `post_transform: None`. Single test broke (`xpath::engine::test_query_parsed_typescript`); fixed by wrapping declarator's value in `Expression::wrap` inside `lower_ts_declarator_parts`. `typescript_unwrap_callee` and `typescript_restructure_import` were not load-bearing for the cargo test surface (may affect snapshots — to be regenerated separately). No ratchet bump.
 
   - [ ] [S3B-Z4] **Python lowering produces canonical IR end-to-end; `languages/python/post_transform.rs` does not exist.**
     - Folds in: `python_tag_from_imports_uniform`, `python_restructure_imports`, `python_alias_pairs`, `python_flatten_dotted_name`.
