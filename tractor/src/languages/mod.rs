@@ -395,7 +395,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_ruby_root),
         transform: passthrough_transform,
-        post_transform: Some(ruby::ruby_post_transform),
+        post_transform: None,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
         node_spec: Some(ruby::output::spec),
@@ -416,7 +416,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
         transform: passthrough_transform,
-        post_transform: Some(php::php_post_transform),
+        post_transform: None,
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(php::output::spec),

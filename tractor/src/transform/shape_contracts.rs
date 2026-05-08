@@ -847,7 +847,9 @@ pub static RULES: &[ShapeRule] = &[
         //   600 — csharp post_transform deleted (Z1c, 2026-05-08)
         //   603 — java post_transform deleted (Z2,  2026-05-08)
         //   605 — python post_transform deleted (Z4, 2026-05-08)
-        grandfathered_max: Some(605),
+        //   607 — ruby post_transform deleted (Z9,  2026-05-08)
+        //   609 — php post_transform deleted (Z8,   2026-05-08)
+        grandfathered_max: Some(609),
     },
     ShapeRule {
         id: "no-marker-wrapper-collision",

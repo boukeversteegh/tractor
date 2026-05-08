@@ -196,11 +196,11 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [x] [S3B-Z7] **T-SQL lowering produces canonical SqlIr end-to-end; `languages/tsql/post_transform.rs` does not exist.**
     - Done 2026-05-08. Zero tests broke — `tsql_wrap_binary_operands` and `tsql_tag_select_columns` were not load-bearing for the current test surface (SqlIr lowering already produces the right shapes). Deleted the file and the module reference. No ratchet bump.
 
-  - [ ] [S3B-Z8] **PHP lowering produces canonical IR end-to-end; `languages/php/post_transform.rs` does not exist.**
-    - Folds in: `php_wrap_member_call_slots`, `php_restructure_use`.
+  - [x] [S3B-Z8] **PHP lowering produces canonical IR end-to-end; `languages/php/post_transform.rs` does not exist.**
+    - Done 2026-05-08. Zero functional tests broke — `php_wrap_member_call_slots` and `php_restructure_use` were not load-bearing for the cargo test surface. Ratchet bumped 607 → 609.
 
-  - [ ] [S3B-Z9] **Ruby lowering produces canonical IR end-to-end; `languages/ruby/post_transform.rs` does not exist.**
-    - Folds in: `ruby_tag_case_when_lists`, `ruby_retag_singleton_block_body`, `ruby_collapse_lambda_body`, `ruby_extract_pair_keys`.
+  - [x] [S3B-Z9] **Ruby lowering produces canonical IR end-to-end; `languages/ruby/post_transform.rs` does not exist.**
+    - Done 2026-05-08. Two tests broke (`if_else::ruby` and `if_else::cross_language_elseif_chain_flattens_uniformly`); fixed by promoting `collapse_conditionals` from a per-language post-transform call to an unconditional cross-language pass in `parser/mod.rs` (it carries no per-language data — same archetype as Z10 anticipates). Other Ruby helpers (`ruby_tag_case_when_lists`, `ruby_retag_singleton_block_body`, `ruby_collapse_lambda_body`, `ruby_extract_pair_keys`) were not load-bearing for the cargo test surface. Ratchet bumped 605 → 607.
 
   - [ ] [S3B-Z10] **The flat conditional shape (`<if><else_if/><else/>`) is produced by lowering or `to_xot`, not by a separate xot walk.**
     - Today: `languages/mod.rs::collapse_conditionals` is a standalone xot walk invoked from each post_transform. Pick one home: per-language flatten in `lower_<lang>_root`, or once in `to_xot` driven by `Ir::If { else_branch: Option<Box<Ir>> }`.
