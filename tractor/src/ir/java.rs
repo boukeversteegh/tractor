@@ -573,11 +573,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 });
             }
             if let Some(v) = value_node {
+                let expr = crate::ir::Expression::wrap(lower_node(v, source));
                 children.push(Ir::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
-                    children: vec![lower_node(v, source)],
+                    children: vec![*expr.inner],
                     range: range_of(v),
                     span: span_of(v),
                 });
@@ -1198,11 +1199,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // above as `Ir::Name` for the simple cases; this arm is the
         // path-shaped catch-all for `scoped_identifier` proper.)
         "scoped_identifier" => {
-            let mut cursor = node.walk();
-            let segments: Vec<Ir> = node
-                .named_children(&mut cursor)
-                .map(|c| lower_node(c, source))
-                .collect();
+            // Flatten recursively at lowering time so `java.util.List`
+            // produces `<path><name>java</name><name>util</name><name>List</name></path>`
+            // instead of nested `<path><path>...</path>...</path>`. Replaces
+            // the imperative `flatten_nested_paths` post-walk.
+            let mut segments: Vec<Ir> = Vec::new();
+            collect_scoped_segments(node, source, &mut segments);
             Ir::Path { segments, range, span }
         }
 
@@ -1695,12 +1697,14 @@ fn lower_java_multi_declarator(
             });
         }
         if let Some(v) = value_node {
-            let inner = lower_node(v, source);
+            // <value><expression>...</expression></value> — value-position
+            // expression host (Principle #15) encoded at lowering time.
+            let inner = crate::ir::Expression::wrap(lower_node(v, source));
             decl_children.push(Ir::SimpleStatement {
                 element_name: "value",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
-                children: vec![inner],
+                children: vec![*inner.inner],
                 range: range_of(v),
                 span: span_of(v),
             });
@@ -1910,6 +1914,23 @@ fn merge_java_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
         }
     }
     out
+}
+
+/// Walk a (possibly nested) `scoped_identifier` / `scoped_type_identifier`
+/// subtree, emitting `Ir::Name` for each terminal identifier. Mirrors
+/// the imperative `flatten_nested_paths` post-walk and the Java post-
+/// pass `java_unwrap_type_in_path` (which dropped `<type>` wrappers
+/// on path segments) — both are encoded here at lowering time.
+fn collect_scoped_segments<'a>(node: TsNode<'a>, source: &str, out: &mut Vec<Ir>) {
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "scoped_identifier" | "scoped_type_identifier" => {
+                collect_scoped_segments(c, source, out);
+            }
+            _ => out.push(lower_node(c, source)),
+        }
+    }
 }
 
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {

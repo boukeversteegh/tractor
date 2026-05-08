@@ -377,7 +377,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_java_root),
         transform: passthrough_transform,
-        post_transform: Some(java::java_post_transform),
+        post_transform: None,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(java::output::spec),

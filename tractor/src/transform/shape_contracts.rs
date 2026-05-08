@@ -836,14 +836,17 @@ pub static RULES: &[ShapeRule] = &[
         description: "JSON children-overflow — same-name siblings collided on a singleton key without role-named slot wrappers or list= tagging.",
         severity: Severity::Advisory,
         check: check_no_children_overflow,
-        // 584 grandfathered sites as of 2026-05-07 — the post-IR
-        // pipeline cut all imperative `list=` tagging, so the
-        // overflow rule fires on every flat children list across
-        // every language. Decrementing this is a coordinated cross-
-        // language exercise (ratchet down as each language gets
-        // explicit slot wrappers). Promote to `Severity::Error` and
-        // drop the ratchet when the count reaches zero.
-        grandfathered_max: Some(600),
+        // The count rises each time a language drops its
+        // `post_transform` (S3B-Z1c…Z9) since `tag_multi_role_children`
+        // / `distribute_member_list_attrs` go with it. The principled
+        // fix is **S3D** — read cardinality from typed `Vec<Ir>` slots
+        // in `to_xot`/`to_json`, drop the `list=` attribute mechanism
+        // entirely. S3D zeroes this counter when it lands; the ratchet
+        // is bumped per language migration as known debt until then.
+        // Snapshot:
+        //   600 — csharp post_transform deleted (Z1c, 2026-05-08)
+        //   603 — java post_transform deleted (Z2,  2026-05-08)
+        grandfathered_max: Some(603),
     },
     ShapeRule {
         id: "no-marker-wrapper-collision",

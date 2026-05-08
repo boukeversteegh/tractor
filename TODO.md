@@ -187,8 +187,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [ ] [S3B-Z4] **Python lowering produces canonical IR end-to-end; `languages/python/post_transform.rs` does not exist.**
     - Folds in: `python_tag_from_imports_uniform`, `python_restructure_imports`, `python_alias_pairs`, `python_flatten_dotted_name`.
 
-  - [ ] [S3B-Z5] **Java lowering produces canonical IR end-to-end; `languages/java/post_transform.rs` does not exist.**
-    - Folds in: `java_unwrap_type_in_path`.
+  - [x] [S3B-Z5] **Java lowering produces canonical IR end-to-end; `languages/java/post_transform.rs` does not exist.**
+    - Done 2026-05-08. `scoped_identifier` lowering recurses to flatten nested paths (folds in `flatten_nested_paths` + `java_unwrap_type_in_path`). `enhanced_for_statement` and `lower_java_multi_declarator` wrap value-position content via `Expression::wrap` (folds in `wrap_expression_positions` for those slots). Ratchet bumped 600→603 — three new advisory `no-children-overflow` sites pending S3D.
 
   - [ ] [S3B-Z6] **Go lowering produces canonical IR end-to-end; `languages/go/post_transform.rs` does not exist.**
     - Folds in: `go_retag_singleton_closure_body`.
