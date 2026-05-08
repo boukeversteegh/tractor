@@ -305,7 +305,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.
         transform: passthrough_transform,
-        post_transform: Some(csharp::csharp_post_transform),
+        post_transform: None,
         syntax_category: csharp::syntax_category,
         field_wrappings: CSHARP_FIELD_WRAPPINGS,
         node_spec: Some(csharp::output::spec),

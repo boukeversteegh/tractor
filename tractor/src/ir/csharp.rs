@@ -2805,7 +2805,7 @@ fn lower_variable_declarator(
                 let pattern_ir = Box::new(lower_node(p, source));
                 let value_ir = value_node
                     .filter(|v| v.id() != p.id())
-                    .map(|v| Box::new(lower_node(v, source)));
+                    .map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
                 let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
                 return Ir::Variable {
                     element_name,
@@ -2840,7 +2840,7 @@ fn lower_variable_declarator(
 
     let name_ir = Ir::Name { range: range_of(n), span: span_of(n) };
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
-    let value_ir = value_node.map(|v| Box::new(lower_node(v, source)));
+    let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
     Ir::Variable {
         element_name,
         modifiers,

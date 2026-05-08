@@ -630,7 +630,7 @@ impl<'a> Renderer<'a> {
                 }
                 self.add_singleton_or_text(shape, name);
                 if let Some(v) = value {
-                    shape.singleton("value", self.wrap_expression_host(v));
+                    shape.singleton("value", self.wrap_expression_host(&v.inner));
                 }
             }
             Ir::Is { value, type_target, .. } => {

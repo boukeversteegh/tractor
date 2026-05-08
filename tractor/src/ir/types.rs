@@ -908,7 +908,7 @@ pub enum Ir {
         decorators: Vec<Ir>,
         type_ann: Option<Box<Ir>>,
         name: Box<Ir>,
-        value: Option<Box<Ir>>,
+        value: Option<Expression>,
         range: ByteRange,
         span: Span,
     },
@@ -1278,6 +1278,49 @@ impl AccessSegment {
             AccessSegment::Call { range, .. } => *range,
         }
     }
+}
+
+/// Typed wrapper for expression-position slots (`Ir::Variable.value`,
+/// `Ir::If.condition`, `Ir::Binary.left/right`, `Ir::Return.value`, …).
+/// The type system enforces Principle #15: anything in these slots
+/// renders as `<expression>` so XPath queries match a uniform parent
+/// regardless of inner shape.
+///
+/// Construct via [`Expression::wrap`], which is idempotent: if the
+/// supplied `Ir` already renders as `<expression>` (`Ir::Expression`
+/// variant, or `Ir::SimpleStatement { element_name: "expression", … }`
+/// — used for `<expression[ref]>`/etc. with extra markers), the inner
+/// is stored as-is; otherwise it is wrapped in `Ir::Expression`. Either
+/// way, exactly one `<expression>` element renders per slot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Expression {
+    pub inner: Box<Ir>,
+}
+
+impl Expression {
+    pub fn wrap(inner: Ir) -> Self {
+        let already = matches!(&inner,
+            Ir::Expression { .. }
+                | Ir::SimpleStatement { element_name: "expression", .. }
+        );
+        if already {
+            Self { inner: Box::new(inner) }
+        } else {
+            let range = inner.range();
+            let span = inner.span();
+            Self {
+                inner: Box::new(Ir::Expression {
+                    inner: Box::new(inner),
+                    marker: None,
+                    range,
+                    span,
+                }),
+            }
+        }
+    }
+
+    pub fn range(&self) -> ByteRange { self.inner.range() }
+    pub fn span(&self) -> Span { self.inner.span() }
 }
 
 impl Ir {
@@ -1671,7 +1714,7 @@ impl Ir {
                 v.extend(decorators.iter());
                 if let Some(t) = type_ann { v.push(t); }
                 v.push(name);
-                if let Some(val) = value { v.push(val); }
+                if let Some(val) = value { v.push(&val.inner); }
             }
             Ir::Inline { children, .. } => v.extend(children.iter()),
             // Leaves and markers — no Ir children.

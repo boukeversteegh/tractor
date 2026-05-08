@@ -134,7 +134,7 @@ pub mod source;
 #[cfg(feature = "native")]
 pub mod coverage;
 
-pub use types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind, Span, to_source};
+pub use types::{Access, AccessSegment, ByteRange, Expression, Ir, Modifiers, ParamKind, Span, to_source};
 pub use to_xot::render_to_xot;
 pub use to_json::ir_to_json;
 #[cfg(feature = "native")]

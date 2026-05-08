@@ -503,16 +503,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let value_node = node.child_by_field_name("value");
             // TS class fields default to `public`.
             let modifiers = lower_ts_modifiers(node, source, Some(Access::Public));
-            let value_ir = value_node.map(|v| {
-                Box::new(Ir::SimpleStatement {
-                    element_name: "value",
-                    modifiers: Modifiers::default(),
-                    extra_markers: &[],
-                    children: vec![lower_node(v, source)],
-                    range: range_of(v),
-                    span: span_of(v),
-                })
-            });
+            let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
             Ir::Variable {
                 element_name: "field",
                 modifiers,

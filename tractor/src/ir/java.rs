@@ -1767,17 +1767,7 @@ fn lower_variable_declarator(
     // `<condition>` etc. and adds the `<expression>` host inside).
     // Java tests assert `value/expression/int='1'`; without the
     // wrapper the value renders as a bare child of `<field>`.
-    let value_ir = value_node.map(|v| {
-        let inner = lower_node(v, source);
-        Box::new(Ir::SimpleStatement {
-            element_name: "value",
-            modifiers: Modifiers::default(),
-            extra_markers: &[],
-            children: vec![inner],
-            range: range_of(v),
-            span: span_of(v),
-        })
-    });
+    let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
     Ir::Variable {
         element_name,
         modifiers,

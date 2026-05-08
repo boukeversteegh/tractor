@@ -988,7 +988,7 @@ fn render_ir_variable(
     for d in decorators { order.push(d); }
     if let Some(t) = type_ann { order.push(t.as_ref()); }
     order.push(name.as_ref());
-    if let Some(v) = value { order.push(v.as_ref()); }
+    if let Some(v) = value { order.push(v.inner.as_ref()); }
     order.sort_by_key(|c| c.range().start);
     let mut cursor = range.start;
     for c in &order {
@@ -1012,7 +1012,7 @@ fn render_ir_variable(
             }
         }
         if let Some(v) = value {
-            if std::ptr::eq(*c, v.as_ref()) {
+            if std::ptr::eq(*c, v.inner.as_ref()) {
                 // Wrap initializer in `<value>` so the value slot is
                 // queryable consistently with properties / parameters
                 // (Principle #5 / #15). The `<expression>` host is
