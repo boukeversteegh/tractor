@@ -321,7 +321,15 @@ fn render_ir_class(
         };
         let cr = inner.range();
         emit_gap(xot, node, source, cursor, cr.start)?;
-        if matches!(slot, CSlot::Base(_)) {
+        if matches!(slot, CSlot::Where(_)) {
+            // C# where-clause source bytes flow through as gap text
+            // under `<class>` — no `<where>` element. The constraint
+            // structure is already merged into `<generic>` items by
+            // `fold_csharp_where_clauses_into_generics` during
+            // lowering, so the structural query path doesn't need
+            // a separate `<where>` element.
+            emit_gap(xot, node, source, cr.start, cr.end)?;
+        } else if matches!(slot, CSlot::Base(_)) {
             // Bases wrap in `<extends><type>...</type></extends>`
             // — when the inner is already a type-shaped IR
             // (GenericType produces its own `<type>`), don't

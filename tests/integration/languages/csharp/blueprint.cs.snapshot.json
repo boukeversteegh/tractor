@@ -113,7 +113,9 @@
         "public": true,
         "name": "IRepository",
         "generic": {
-          "name": "T"
+          "name": "T",
+          "class": true,
+          "new": true
         },
         "body": {
           "methods": [
@@ -3338,7 +3340,9 @@
               "public": true,
               "name": "Container",
               "generic": {
-                "name": "T"
+                "name": "T",
+                "class": true,
+                "new": true
               },
               "body": {
                 "property": {

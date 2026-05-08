@@ -558,15 +558,24 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 None => Vec::new(),
             };
             // Where clauses (`where T : ...`). Each
-            // `type_parameter_constraints_clause` child of the class
-            // node lowers to an Ir node that renders as `<where>` —
-            // the `attach_csharp_where_clauses` post-pass merges
-            // these onto the matching `<generic>` later.
+            // `type_parameter_constraints_clause` child is consumed
+            // twice: once by `fold_csharp_where_clauses_into_generics`,
+            // which translates each constraint and appends it to the
+            // matching `<generic>` item; once for `where_clauses` so
+            // its source-range bytes flow through `render_ir_class`
+            // (which renders C# where clauses as gap text — the
+            // structural query path runs through the merged generics).
             let mut wc_walk = node.walk();
-            let where_clauses: Vec<Ir> = node.named_children(&mut wc_walk)
+            let raw_where_clauses: Vec<Ir> = node.named_children(&mut wc_walk)
                 .filter(|c| c.kind() == "type_parameter_constraints_clause")
                 .map(|c| lower_node(c, source))
                 .collect();
+            let mut wc_walk2 = node.walk();
+            let where_for_render: Vec<Ir> = node.named_children(&mut wc_walk2)
+                .filter(|c| c.kind() == "type_parameter_constraints_clause")
+                .map(|c| lower_node(c, source))
+                .collect();
+            let generics = fold_csharp_where_clauses_into_generics(generics, raw_where_clauses, source);
             Ir::Class {
                 kind,
                 modifiers,
@@ -580,7 +589,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }),
                 generics,
                 bases,
-                where_clauses,
+                where_clauses: where_for_render,
                 body: Box::new(match body_node {
                     Some(b) => lower_block_like(b, source),
                     None => Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span },
@@ -2379,6 +2388,142 @@ fn simple_statement_marked(
         }
     }
     Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span }
+}
+
+/// Merge `where T : ...` clauses into the matching `<generic>` item.
+/// Each `where` clause is a `SimpleStatement::where` whose first
+/// `Ir::Name` child names the target type parameter; remaining
+/// `SimpleStatement::constraint` children are translated into markers
+/// and `<extends>` wrappers and appended to the matching item's
+/// children. Mirrors the (now-removed) `attach_ir_where_clauses` post
+/// transform, but operates on typed IR before xot rendering — so the
+/// generic param renders with its constraints already attached.
+fn fold_csharp_where_clauses_into_generics(
+    generics: Option<Box<Ir>>,
+    where_clauses: Vec<Ir>,
+    source: &str,
+) -> Option<Box<Ir>> {
+    let Some(mut g_box) = generics else { return None };
+    if where_clauses.is_empty() { return Some(g_box); }
+    if let Ir::Generic { items, .. } = &mut *g_box {
+        for clause in where_clauses {
+            let Ir::SimpleStatement { children: clause_children, .. } = clause else { continue };
+            // First Name child is the target generic-param name.
+            let target_name = clause_children.iter().find_map(|c| match c {
+                Ir::Name { range, .. } => Some(range.slice(source).to_string()),
+                _ => None,
+            });
+            let Some(target_name) = target_name else { continue };
+            // Find the matching generic item by its first Name child.
+            let target_idx = items.iter().position(|i| {
+                csharp_generic_item_name(i, source).as_deref() == Some(target_name.as_str())
+            });
+            let Some(target_idx) = target_idx else { continue };
+            // Anchor every synthesized marker's range at the generic
+            // item's `range.end` so `render_with_gaps` doesn't emit
+            // gap text from the item's last child to a marker placed
+            // anywhere outside the item's own range.
+            let anchor = items[target_idx].range().end;
+            // Translate each constraint into a child of the generic item.
+            for c in clause_children {
+                let Ir::SimpleStatement { element_name: "constraint", children, range, span, .. } = c else { continue };
+                if let Some(translated) = translate_csharp_constraint(children, range, anchor, span, source) {
+                    if let Ir::SimpleStatement { children: target_children, .. } = &mut items[target_idx] {
+                        target_children.push(translated);
+                    }
+                }
+            }
+        }
+    }
+    Some(g_box)
+}
+
+/// Extract the source text of the first `Ir::Name` child of a
+/// `<generic>` item (which is a `SimpleStatement::generic` produced
+/// by `type_parameter`).
+fn csharp_generic_item_name(item: &Ir, source: &str) -> Option<String> {
+    let Ir::SimpleStatement { children, .. } = item else { return None };
+    children.iter().find_map(|c| match c {
+        Ir::Name { range, .. } => Some(range.slice(source).to_string()),
+        _ => None,
+    })
+}
+
+/// Translate one `<constraint>`'s children into the corresponding
+/// generic-parameter child:
+/// - `new()` (a `SimpleStatement::new` child) → empty `<new/>` marker
+/// - type bound (a `<type>`-shaped child: `GenericType`,
+///   `FieldWrap("type", _)`, or `SimpleStatement::type`) →
+///   `<extends>type</extends>` (no double-wrap if already typed)
+/// - bare keyword (`class` / `struct` / `notnull` / `unmanaged` —
+///   detected by source text) → empty marker by that name
+///
+/// Returned IR uses zero-width ranges anchored at `range.start` so the
+/// markers contribute no source text — `render_ir_class` emits the
+/// where-clause source bytes as gap text under `<class>` (see the
+/// `CSlot::Where` branch), and these merged markers add structure
+/// without duplicating bytes.
+fn translate_csharp_constraint(
+    children: Vec<Ir>,
+    constraint_range: ByteRange,
+    anchor: u32,
+    span: Span,
+    source: &str,
+) -> Option<Ir> {
+    let zero = ByteRange::empty_at(anchor);
+    let has_new = children.iter().any(|c| matches!(c, Ir::SimpleStatement { element_name: "new", .. }));
+    if has_new {
+        return Some(empty_csharp_marker("new", zero, span));
+    }
+    let type_idx = children.iter().position(|c| matches!(c,
+        Ir::GenericType { .. }
+            | Ir::SimpleStatement { element_name: "type", .. }
+            | Ir::FieldWrap { wrapper: "type", .. }
+    ));
+    if let Some(idx) = type_idx {
+        let mut children = children;
+        let type_ir = children.swap_remove(idx);
+        // `<extends>` is structural-only inside `<generic>`. Its
+        // inner `type_ir` keeps its original range so `<name>`
+        // / `<type>` leaves can carry the bound's text — the
+        // bound's source bytes also flow through the class-level
+        // where-clause gap text, accepting a minor duplication
+        // bounded to the bound type's identifier in exchange for
+        // a queryable structural shape.
+        return Some(Ir::SimpleStatement {
+            element_name: "extends",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: vec![type_ir],
+            range: zero,
+            span,
+        });
+    }
+    let trimmed = constraint_range.slice(source).trim();
+    match trimmed {
+        "class" | "struct" | "notnull" | "unmanaged" => {
+            let name: &'static str = match trimmed {
+                "class"     => "class",
+                "struct"    => "struct",
+                "notnull"   => "notnull",
+                "unmanaged" => "unmanaged",
+                _ => unreachable!(),
+            };
+            Some(empty_csharp_marker(name, zero, span))
+        }
+        _ => None,
+    }
+}
+
+fn empty_csharp_marker(element_name: &'static str, range: ByteRange, span: Span) -> Ir {
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children: Vec::new(),
+        range,
+        span,
+    }
 }
 
 /// Wrap an IR node in `Ir::FieldWrap` if its tree-sitter field name
