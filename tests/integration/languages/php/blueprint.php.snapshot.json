@@ -800,14 +800,11 @@
                       "assign": {
                         "assign": true,
                         "left": {
-                          "variables": [
-                            {
-                              "name": "results"
-                            },
-                            {
-                              "name": "key"
-                            }
-                          ]
+                          "access": true,
+                          "name": "results",
+                          "index": {
+                            "name": "key"
+                          }
                         },
                         "right": {
                           "access": true,
@@ -1127,10 +1124,11 @@
                 "name": "alias"
               },
               "right": {
-                "variable": {
-                  "name": "items"
-                },
-                "int": "0"
+                "access": true,
+                "name": "items",
+                "index": {
+                  "text": "0"
+                }
               }
             }
           },

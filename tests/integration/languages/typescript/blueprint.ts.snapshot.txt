@@ -218,9 +218,9 @@ program/
   │       │       │       │   ├─ this = "this"
   │       │       │       │   └─ member/
   │       │       │       │       ├─ name = "items"
-  │       │       │       │       └─ object[access]/
+  │       │       │       │       └─ index/
   │       │       │       │           ├─ number = "0"
-  │       │       │       │           └─ index/member[optional]/name = "label"
+  │       │       │       │           └─ member[optional]/name = "label"
   │       │       │       ├─ op[nullish] = "??"
   │       │       │       └─ right/expression/string = "\"unnamed\""
   │       │       └─ return/expression/template/

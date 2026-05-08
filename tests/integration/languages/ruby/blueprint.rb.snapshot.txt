@@ -523,9 +523,9 @@ program/
   │       │       ├─ int = "10"
   │       │       ├─ int = "20"
   │       │       └─ int = "30"
-  │       ├─ object[access]/
+  │       ├─ expression/index/
   │       │   ├─ name = "arr"
-  │       │   └─ index/int = "0"
+  │       │   └─ int = "0"
   │       └─ rescue/
   │           ├─ name = "result"
   │           └─ symbol = ":failed"

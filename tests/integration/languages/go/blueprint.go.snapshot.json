@@ -784,11 +784,12 @@
                 },
                 "right": {
                   "expression": {
-                    "index": {
-                      "names": [
-                        "seen",
-                        "x"
-                      ]
+                    "object": {
+                      "access": true,
+                      "index": {
+                        "text": "x"
+                      },
+                      "text": "seen"
                     }
                   }
                 }
@@ -810,11 +811,12 @@
                     {
                       "assign": true,
                       "left": {
-                        "index": {
-                          "names": [
-                            "seen",
-                            "x"
-                          ]
+                        "object": {
+                          "access": true,
+                          "index": {
+                            "text": "x"
+                          },
+                          "text": "seen"
                         }
                       },
                       "right": {
@@ -1126,9 +1128,12 @@
         "switch": {
           "value": {
             "expression": {
-              "index": {
-                "name": "implicit",
-                "int": "0"
+              "object": {
+                "access": true,
+                "index": {
+                  "text": "0"
+                },
+                "text": "implicit"
               }
             }
           },

@@ -675,12 +675,11 @@ unit/
   │               │   │   ├─ name = "List"
   │               │   │   └─ type/name = "int"
   │               │   ├─ name = "list"
-  │               │   └─ value/expression/object[access]/
+  │               │   └─ value/expression/index/
   │               │       ├─ int = "1"
-  │               │       └─ index/
-  │               │           ├─ int = "2"
-  │               │           ├─ int = "3"
-  │               │           └─ range/name = "odds"
+  │               │       ├─ int = "2"
+  │               │       ├─ int = "3"
+  │               │       └─ range/name = "odds"
   │               ├─ variable/
   │               │   ├─ type[generic]/
   │               │   │   ├─ name = "Dictionary"
