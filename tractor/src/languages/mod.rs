@@ -434,7 +434,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Sql(crate::ir::sql_lower::lower_sql_root),
         transform: tsql::transform,
-        post_transform: Some(tsql::tsql_post_transform),
+        post_transform: None,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(tsql::output::spec),

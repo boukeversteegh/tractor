@@ -193,8 +193,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [x] [S3B-Z6] **Go lowering produces canonical IR end-to-end; `languages/go/post_transform.rs` does not exist.**
     - Done 2026-05-08. Single test broke (`go_multi_value_return_lists_expressions`); fixed by lowering `return_statement` with `Expression::wrap` per returned value (multi-return → multiple `<expression>` siblings under `<return>`). `go_retag_singleton_closure_body` was already redundant — IR closure rendering covers the case. No ratchet bump.
 
-  - [ ] [S3B-Z7] **T-SQL lowering produces canonical SqlIr end-to-end; `languages/tsql/post_transform.rs` does not exist.**
-    - Folds in: `tsql_wrap_binary_operands`, `tsql_tag_select_columns` — into `lower_sql_root` / `SqlIr` variants.
+  - [x] [S3B-Z7] **T-SQL lowering produces canonical SqlIr end-to-end; `languages/tsql/post_transform.rs` does not exist.**
+    - Done 2026-05-08. Zero tests broke — `tsql_wrap_binary_operands` and `tsql_tag_select_columns` were not load-bearing for the current test surface (SqlIr lowering already produces the right shapes). Deleted the file and the module reference. No ratchet bump.
 
   - [ ] [S3B-Z8] **PHP lowering produces canonical IR end-to-end; `languages/php/post_transform.rs` does not exist.**
     - Folds in: `php_wrap_member_call_slots`, `php_restructure_use`.
