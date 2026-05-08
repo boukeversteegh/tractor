@@ -250,12 +250,6 @@ pub fn parse_string_to_xot_with_options(
         let transform_fn = languages::get_transform(lang);
         crate::transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
-
-        // Post-walk structural rewrites (e.g. flat conditional shape).
-        if let Some(post_fn) = languages::get_post_transform(lang) {
-            post_fn(&mut xot, root)
-                .map_err(|e| ParseError::Parse(e.to_string()))?;
-        }
     }
 
     Ok(XotParseResult {
@@ -375,32 +369,6 @@ fn parse_with_ir_pipeline(
     let doc = xot.new_document();
     ir::render_to_xot(&mut xot, doc, &ir_tree, source)
         .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
-
-    // Cross-language structural normalization that doesn't carry any
-    // per-language data: collapse nested `else { if ... }` into flat
-    // `<else_if>` siblings (Principle: stable element-name shapes).
-    // Runs regardless of `LanguageOps::post_transform` so a language
-    // with `post_transform: None` (post-S3B-Z2…Z9 migrations) still
-    // gets the canonical conditional shape.
-    let elem_root = xot.children(doc)
-        .find(|&c| xot.element(c).is_some());
-    if let Some(elem_root) = elem_root {
-        languages::collapse_conditionals(&mut xot, elem_root)
-            .map_err(|e| ParseError::Parse(format!("collapse_conditionals failed: {e}")))?;
-    }
-
-    // Per-language post-transforms (list-tagging on multi-role
-    // siblings, language-specific structural rewrites). Each language
-    // is migrating these into IR construction (S3B-Z2…Z9); fully-
-    // migrated languages have `post_transform: None`.
-    if let Some(post_fn) = languages::get_post_transform(lang) {
-        let elem_root = xot.children(doc)
-            .find(|&c| xot.element(c).is_some());
-        if let Some(elem_root) = elem_root {
-            post_fn(&mut xot, elem_root)
-                .map_err(|e| ParseError::Parse(format!("post_transform failed: {e}")))?;
-        }
-    }
 
     Ok(XotParseResult {
         xot,
@@ -551,25 +519,7 @@ fn parse_with_ir_pipeline_to_xee(
     let holding = xot.new_document();
     ir::render_to_xot(&mut xot, holding, &ir_tree, source)
         .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
-    // Cross-language conditional collapse (see comment in the xee
-    // branch above for rationale).
-    let elem_root = xot.children(holding)
-        .find(|&c| xot.element(c).is_some());
-    if let Some(elem_root) = elem_root {
-        languages::collapse_conditionals(&mut xot, elem_root)
-            .map_err(|e| ParseError::Parse(format!("collapse_conditionals failed: {e}")))?;
-    }
-    // Per-language post-transforms (see comment in the xee branch
-    // above).
-    if let Some(post_fn) = languages::get_post_transform(lang) {
-        let elem_root = xot.children(holding)
-            .find(|&c| xot.element(c).is_some());
-        if let Some(elem_root) = elem_root {
-            post_fn(&mut xot, elem_root)
-                .map_err(|e| ParseError::Parse(format!("post_transform failed: {e}")))?;
-        }
-    }
-    // Capture the post-transformed xot root as an XmlNode for legacy
+    // Capture the rendered xot root as an XmlNode for legacy
     // XML / text renderers — same shape XPath queries see.
     let xml_node = xot.children(holding)
         .find(|&c| xot.element(c).is_some())

@@ -89,15 +89,6 @@ impl TractorNodeSpec {
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 
-/// Type alias for language post-transform functions.
-///
-/// Runs after `walk_transform`, receiving the full document root. Used
-/// for structural rewrites that need their descendants already
-/// renamed — e.g. collapsing a nested `else`/`if` chain into the flat
-/// `<if><else_if/><else/>` shape (see
-/// `specs/tractor-parse/semantic-tree/transformations.md`).
-pub type PostTransformFn = fn(&mut Xot, XotNode) -> Result<(), xot::Error>;
-
 /// Type alias for syntax category mapping functions
 /// Maps a transformed element name to a syntax category for highlighting
 pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
@@ -209,7 +200,6 @@ pub struct LanguageOps {
     #[cfg(feature = "native")]
     pub ir_family: IrFamily,
     pub transform: TransformFn,
-    pub post_transform: Option<PostTransformFn>,
     pub syntax_category: SyntaxCategoryFn,
     pub field_wrappings: &'static [(&'static str, &'static str)],
     pub node_spec: Option<TractorNodeSpecLookupFn>,
@@ -246,7 +236,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -264,7 +253,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -282,7 +270,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
         node_spec: Some(typescript::output::spec),
@@ -305,7 +292,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: csharp::syntax_category,
         field_wrappings: CSHARP_FIELD_WRAPPINGS,
         node_spec: Some(csharp::output::spec),
@@ -323,7 +309,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_python_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,
         node_spec: Some(python::output::spec),
@@ -341,7 +326,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_go_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
         node_spec: Some(go::output::spec),
@@ -359,7 +343,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_rust_root),
         transform: passthrough_transform,
-        post_transform: Some(rust_lang::rust_post_transform),
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
         node_spec: Some(rust_lang::output::spec),
@@ -377,7 +360,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_java_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(java::output::spec),
@@ -395,7 +377,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_ruby_root),
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
         node_spec: Some(ruby::output::spec),
@@ -416,7 +397,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(php::output::spec),
@@ -434,7 +414,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Sql(crate::ir::sql_lower::lower_sql_root),
         transform: tsql::transform,
-        post_transform: None,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: Some(tsql::output::spec),
@@ -453,7 +432,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data(crate::ir::lower_json_data_root),
         transform: json::data_transform,
-        post_transform: None,
         syntax_category: json::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -471,7 +449,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data(crate::ir::lower_yaml_data_root),
         transform: yaml::data_transform,
-        post_transform: None,
         syntax_category: yaml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -493,7 +470,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // lowering already collapses array-of-tables; no post-pass
         // needed.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: toml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -512,7 +488,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         ir_family: IrFamily::Data(crate::ir::lower_ini_data_root),
         // INI flows entirely through `crate::ir::ini_data`.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: ini::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -533,7 +508,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         // INI's data lowering — same shape). Grammar is bash because
         // the .env shell-style syntax overlaps closely.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: env::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -552,7 +526,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         ir_family: IrFamily::Data(crate::ir::lower_markdown_data_root),
         // Markdown flows entirely through `crate::ir::markdown_data`.
         transform: passthrough_transform,
-        post_transform: None,
         syntax_category: markdown::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
         node_spec: None,
@@ -586,107 +559,6 @@ pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
     get_language(lang).and_then(|l| l.data_transforms)
 }
 
-/// Get the post-transform function for a language, if any.
-pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
-    get_language(lang).and_then(|l| l.post_transform)
-}
-
-// C# post_transform moved iter 330 to
-// tractor/src/languages/csharp/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// csharp::csharp_post_transform.
-
-// TOML's array-of-tables collapse used to live here as
-// `toml_post_transform`. Now handled natively by the IR's data
-// lowering (`crate::ir::toml_data::collapse_array_of_tables`).
-// C# helpers (csharp_normalize_conditional_access,
-// unify_file_scoped_namespace, attach_where_clause_constraints,
-// append_constraint_to_generic) moved iter 330 to
-// tractor/src/languages/csharp/post_transform.rs alongside
-// csharp_post_transform itself.
-
-// Rust post_transform + helpers (rust_normalize_field_expression,
-// rust_normalize_lifetime_names, rust_restructure_use) moved iter
-// 329 to `tractor/src/languages/rust_lang/post_transform.rs`
-// per user direction. The LanguageOps::post_transform registration
-// above references `rust_lang::rust_post_transform`.
-
-// TypeScript post_transform + helpers (typescript_unwrap_callee,
-// typescript_restructure_import) moved iter 330 to
-// tractor/src/languages/typescript/post_transform.rs per user
-// direction. The LanguageOps::post_transform registration above
-// references typescript::typescript_post_transform.
-
-// Python post_transform + helpers (python_tag_from_imports_uniform,
-// python_restructure_imports, python_alias_pairs,
-// python_flatten_dotted_name) moved iter 330 to
-// tractor/src/languages/python/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// python::python_post_transform.
-
-// Java post_transform + helpers (java_unwrap_type_in_path) moved iter
-// 331 to tractor/src/languages/java/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// java::java_post_transform.
-
-// Go post_transform + helpers (go_retag_singleton_closure_body) moved
-// iter 331 to tractor/src/languages/go/post_transform.rs per user
-// direction. The LanguageOps::post_transform registration above
-// references go::go_post_transform.
-
-// TSQL post_transform + helpers (tsql_wrap_binary_operands,
-// tsql_tag_select_columns) moved iter 333 to
-// tractor/src/languages/tsql/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// tsql::tsql_post_transform.
-
-// PHP post_transform + helpers (php_wrap_member_call_slots,
-// php_restructure_use) moved iter 333 to
-// tractor/src/languages/php/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// php::php_post_transform.
-
-// Ruby post_transform + helpers (ruby_tag_case_when_lists,
-// ruby_retag_singleton_block_body, ruby_collapse_lambda_body,
-// ruby_extract_pair_keys, RUBY_VALUE_KINDS) moved iter 333 to
-// tractor/src/languages/ruby/post_transform.rs per user direction.
-// The LanguageOps::post_transform registration above references
-// ruby::ruby_post_transform.
-
-/// Post-transform pass that collapses every `<if>` in the tree into
-/// the flat conditional shape (see the cross-cutting convention in
-/// `specs/tractor-parse/semantic-tree/transformations.md`).
-pub(crate) fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::conditionals::collapse_else_if_chain;
-    // Collect all <if> nodes first (we mutate the tree as we go).
-    let mut if_nodes: Vec<XotNode> = Vec::new();
-    collect_if_nodes(xot, root, &mut if_nodes);
-    // Process outer-most `<if>` first. `collect_if_nodes` returns
-    // document order, which is parent-before-child; handling the outer
-    // one first lifts its `<else_if>` siblings correctly before we
-    // recurse into any nested ifs.
-    for node in if_nodes {
-        // Skip nodes that were detached by an earlier pass (happens when
-        // we lift an inner `<if>`'s children into an `<else_if>` — the
-        // inner `<if>` is left empty and its own recursion becomes a
-        // no-op, but we still call it to be safe).
-        if xot.parent(node).is_none() && !xot.is_document(node) {
-            continue;
-        }
-        collapse_else_if_chain(xot, node)?;
-    }
-    Ok(())
-}
-
-fn collect_if_nodes(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-    use crate::transform::helpers::*;
-    if xot.element(node).is_some() && get_element_name(xot, node).as_deref() == Some("if") {
-        out.push(node);
-    }
-    for child in xot.children(node) {
-        collect_if_nodes(xot, child, out);
-    }
-}
 
 /// Recursively collect every element with the given name into `out`,
 /// in document order.

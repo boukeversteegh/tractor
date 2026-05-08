@@ -539,9 +539,6 @@ impl XeeBuilder {
                     crate::languages::get_transform(lang)
                 };
                 crate::transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
-                if let Some(post_fn) = crate::languages::get_post_transform(lang) {
-                    post_fn(self.documents.xot_mut(), doc_node)?;
-                }
                 // Layer 2 — debug-build shape-contract assertion. Same
                 // predicate as the cargo integration test; runs every
                 // transform invocation so regressions surface at first

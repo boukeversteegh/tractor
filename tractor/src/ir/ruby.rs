@@ -191,8 +191,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "destructured_parameter" => simple_statement_marked(node, "parameter", &["destructured"], source),
 
         // ----- Control flow --------------------------------------------
-        "if" | "if_modifier" => simple_statement(node, "if", source),
-        "unless" | "unless_modifier" => simple_statement(node, "unless", source),
+        // Ruby `if cond then x elsif c2 then y else z end` is nested in
+        // the CST (`if -> alternative=elsif -> alternative=else`). Flatten
+        // at lowering time so the IR carries a flat `<if>[else_if][else]`
+        // shape — replaces the `collapse_conditionals` post-walk for Ruby.
+        "if" | "if_modifier" => lower_ruby_if(node, "if", source),
+        "unless" | "unless_modifier" => lower_ruby_if(node, "unless", source),
         "elsif" => simple_statement(node, "else_if", source),
         "else" => simple_statement(node, "else", source),
         "for" => ruby_for(node, source),
@@ -496,6 +500,92 @@ fn ruby_param_with_value(
         children,
         range, span,
     }
+}
+
+/// Lower a Ruby `if`/`unless` to a flat IR shape:
+/// `<if> condition body* <else_if/>* <else/>? </if>`. Tree-sitter
+/// nests the alternatives (`if.alternative = elsif.alternative = else`);
+/// this fn walks that chain and emits siblings of the outer `<if>`.
+fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut children: Vec<Ir> = Vec::new();
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "elsif" => {
+                // Lower the elsif's own non-alternative children as the
+                // <else_if>'s children, then continue the chain by
+                // recursing into its alternative.
+                children.push(flatten_ruby_elsif_chain(c, source));
+                if let Some(alt) = ruby_alternative_child(c) {
+                    append_ruby_alternative_chain(alt, source, &mut children);
+                }
+            }
+            "else" => {
+                children.push(simple_statement(c, "else", source));
+            }
+            _ => children.push(lower_node(c, source)),
+        }
+    }
+    Ir::SimpleStatement {
+        element_name,
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower an `elsif` node, EXCLUDING any nested `elsif`/`else`
+/// alternative — the caller appends those as siblings.
+fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    let mut children: Vec<Ir> = Vec::new();
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        if matches!(c.kind(), "elsif" | "else") {
+            continue;
+        }
+        children.push(lower_node(c, source));
+    }
+    Ir::SimpleStatement {
+        element_name: "else_if",
+        modifiers: Modifiers::default(),
+        extra_markers: &[],
+        children,
+        range,
+        span,
+    }
+}
+
+/// Walk a Ruby `if`-alternative chain (an `elsif` or terminal `else`)
+/// and append the flattened sequence to `out`.
+fn append_ruby_alternative_chain(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
+    match node.kind() {
+        "elsif" => {
+            out.push(flatten_ruby_elsif_chain(node, source));
+            if let Some(alt) = ruby_alternative_child(node) {
+                append_ruby_alternative_chain(alt, source, out);
+            }
+        }
+        "else" => {
+            out.push(simple_statement(node, "else", source));
+        }
+        _ => {}
+    }
+}
+
+/// First named `elsif` / `else` child of an `if` or `elsif` node — the
+/// continuation of the alternative chain in tree-sitter-ruby's nested
+/// CST shape.
+fn ruby_alternative_child<'a>(node: TsNode<'a>) -> Option<TsNode<'a>> {
+    let mut cursor = node.walk();
+    let r = node.named_children(&mut cursor)
+        .find(|n| matches!(n.kind(), "elsif" | "else"));
+    r
 }
 
 /// Lower a Ruby while/until loop with `<condition><expression>` and

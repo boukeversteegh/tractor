@@ -219,7 +219,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // mod_item handled below in declaration block (rust_decl)
 
         // `use std::collections::HashMap;` — use declaration.
-        "use_declaration" => simple_statement(node, "use", source),
+        // Flatten the nested scoped_identifier and lift the leaf
+        // segment out of `<path>` so consumers see a flat
+        // `<use><path><name>std</name><name>collections</name></path><name>HashMap</name></use>`
+        // shape (Principle: stable element-name shapes for queries).
+        // Group form `use foo::{a, b}` expands each list item into a
+        // sibling `<use>` under a `<use[group]>` parent. Replaces the
+        // imperative `rust_restructure_use` post-walk.
+        "use_declaration" => lower_rust_use(node, source),
         "use_as_clause" | "use_list" | "scoped_use_list" | "use_wildcard"
         | "use_bounds" => {
             // Wrapper grammar — flatten children into the parent.
@@ -1514,6 +1521,235 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             span,
         },
     }
+}
+
+/// Lower a Rust `use_declaration` to the flat-leaf shape:
+/// `use a::b::c` → `<use><path><name>a</name><name>b</name></path><name>c</name></use>`.
+/// Group form `use a::{b, c}` → `<use[group]><use>...</use><use>...</use></use>`.
+/// Wildcard `use a::*` → `<use[wildcard]><path>...</path></use>`.
+/// Alias `use a::b as B` → `<use><path>...</path><name>b</name><aliased><name>B</name></aliased></use>`.
+fn lower_rust_use(node: TsNode<'_>, source: &str) -> Ir {
+    let span = span_of(node);
+    let range = range_of(node);
+    // Detect `pub use` re-export.
+    let mut cursor = node.walk();
+    let is_pub = node.named_children(&mut cursor)
+        .any(|c| c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub"));
+    // The argument is the first non-modifier named child.
+    let mut cursor = node.walk();
+    let arg = node.named_children(&mut cursor)
+        .find(|c| c.kind() != "visibility_modifier");
+    let mut markers: Vec<&'static str> = Vec::new();
+    if is_pub { markers.push("reexport"); }
+    let children: Vec<Ir> = match arg {
+        Some(a) => lower_rust_use_inner(a, source, &mut markers),
+        None => Vec::new(),
+    };
+    let extra_markers: &'static [&'static str] = match markers.as_slice() {
+        [] => &[],
+        ["reexport"] => &["reexport"],
+        ["wildcard"] => &["wildcard"],
+        ["group"] => &["group"],
+        ["alias"] => &["alias"],
+        ["reexport", "group"] | ["group", "reexport"] => &["reexport", "group"],
+        ["reexport", "wildcard"] | ["wildcard", "reexport"] => &["reexport", "wildcard"],
+        ["reexport", "alias"] | ["alias", "reexport"] => &["reexport", "alias"],
+        _ => &[],
+    };
+    Ir::SimpleStatement {
+        element_name: "use",
+        modifiers: Modifiers::default(),
+        extra_markers,
+        children,
+        range,
+        span,
+    }
+}
+
+/// Lower the inner argument of a `use_declaration`. May produce flat
+/// path+leaf children for a simple use, group children (`<use>` siblings)
+/// for a `use_list`, etc. Pushes shape-discriminating markers
+/// (`group` / `wildcard` / `alias`) into `markers_out`.
+fn lower_rust_use_inner(
+    arg: TsNode<'_>,
+    source: &str,
+    markers_out: &mut Vec<&'static str>,
+) -> Vec<Ir> {
+    match arg.kind() {
+        "scoped_identifier" => {
+            // Flatten path and lift the trailing name as a sibling.
+            let mut segments: Vec<Ir> = Vec::new();
+            collect_rust_scoped_segments(arg, source, &mut segments);
+            split_path_and_leaf(arg, segments, source)
+        }
+        "identifier" | "self" | "super" | "crate" | "metavariable" => {
+            // `use Foo;` (rare but legal) — bare leaf, no path.
+            vec![lower_node(arg, source)]
+        }
+        "use_wildcard" => {
+            // `use a::*;` — wildcard form. Children: path + `<wildcard/>` marker.
+            markers_out.push("wildcard");
+            let mut cursor = arg.walk();
+            let path_arg = arg.named_children(&mut cursor)
+                .find(|c| matches!(c.kind(), "scoped_identifier" | "identifier"));
+            match path_arg {
+                Some(p) => {
+                    let mut segments: Vec<Ir> = Vec::new();
+                    if p.kind() == "scoped_identifier" {
+                        collect_rust_scoped_segments(p, source, &mut segments);
+                    } else {
+                        segments.push(lower_node(p, source));
+                    }
+                    let span = span_of(p);
+                    let range = range_of(p);
+                    vec![Ir::SimpleStatement {
+                        element_name: "path",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: segments,
+                        range, span,
+                    }]
+                }
+                None => Vec::new(),
+            }
+        }
+        "scoped_use_list" | "use_list" => {
+            // `use a::{b, c};` (scoped_use_list) or bare `{b, c}` (use_list).
+            markers_out.push("group");
+            let mut cursor = arg.walk();
+            // Optional path prefix.
+            let path_node = arg.named_children(&mut cursor)
+                .find(|c| matches!(c.kind(), "scoped_identifier" | "identifier"));
+            let path_segments: Vec<Ir> = path_node.map(|p| {
+                let mut segs = Vec::new();
+                if p.kind() == "scoped_identifier" {
+                    collect_rust_scoped_segments(p, source, &mut segs);
+                } else {
+                    segs.push(lower_node(p, source));
+                }
+                segs
+            }).unwrap_or_default();
+            // The list items live in the use_list child (or directly here).
+            let mut list_cur = arg.walk();
+            let list_node = arg.named_children(&mut list_cur)
+                .find(|c| c.kind() == "use_list")
+                .unwrap_or(arg);
+            // Each non-noise named child becomes one inner `<use>`.
+            let mut item_cur = list_node.walk();
+            let mut inner_uses: Vec<Ir> = Vec::new();
+            for item in list_node.named_children(&mut item_cur) {
+                if matches!(item.kind(), "scoped_identifier" | "identifier") && item.id() == path_node.map(|p| p.id()).unwrap_or(0) {
+                    continue;
+                }
+                let mut item_markers: Vec<&'static str> = Vec::new();
+                let inner_children = lower_rust_use_inner(item, source, &mut item_markers);
+                // Combine path prefix with inner children.
+                let mut combined: Vec<Ir> = Vec::new();
+                let prefix_path: Option<Ir> = if !path_segments.is_empty() {
+                    let r = path_node.map(range_of).unwrap_or(range_of(item));
+                    let s = path_node.map(span_of).unwrap_or(span_of(item));
+                    Some(Ir::SimpleStatement {
+                        element_name: "path",
+                        modifiers: Modifiers::default(),
+                        extra_markers: &[],
+                        children: path_segments.iter().map(clone_ir).collect(),
+                        range: r, span: s,
+                    })
+                } else { None };
+                if let Some(p) = prefix_path {
+                    combined.push(p);
+                }
+                combined.extend(inner_children);
+                let inner_extra: &'static [&'static str] = match item_markers.as_slice() {
+                    [] => &[],
+                    ["alias"] => &["alias"],
+                    _ => &[],
+                };
+                inner_uses.push(Ir::SimpleStatement {
+                    element_name: "use",
+                    modifiers: Modifiers::default(),
+                    extra_markers: inner_extra,
+                    children: combined,
+                    range: range_of(item),
+                    span: span_of(item),
+                });
+            }
+            inner_uses
+        }
+        "use_as_clause" => {
+            // `a::b as B` — children: scoped/identifier + name (alias).
+            markers_out.push("alias");
+            let path_node = arg.child_by_field_name("path");
+            let alias_node = arg.child_by_field_name("alias");
+            let mut out: Vec<Ir> = Vec::new();
+            if let Some(p) = path_node {
+                let mut segments: Vec<Ir> = Vec::new();
+                if p.kind() == "scoped_identifier" {
+                    collect_rust_scoped_segments(p, source, &mut segments);
+                    out.extend(split_path_and_leaf(p, segments, source));
+                } else {
+                    out.push(lower_node(p, source));
+                }
+            }
+            if let Some(a) = alias_node {
+                let inner = lower_node(a, source);
+                let r = range_of(a);
+                let s = span_of(a);
+                out.push(Ir::SimpleStatement {
+                    element_name: "aliased",
+                    modifiers: Modifiers::default(),
+                    extra_markers: &[],
+                    children: vec![inner],
+                    range: r, span: s,
+                });
+            }
+            out
+        }
+        _ => vec![lower_node(arg, source)],
+    }
+}
+
+/// Walk a (possibly nested) Rust `scoped_identifier`, emitting each
+/// terminal segment as its own `Ir::Name`. Replaces the imperative
+/// `flatten_nested_paths` post-walk.
+fn collect_rust_scoped_segments<'a>(node: TsNode<'a>, source: &str, out: &mut Vec<Ir>) {
+    let mut cursor = node.walk();
+    for c in node.named_children(&mut cursor) {
+        match c.kind() {
+            "scoped_identifier" => collect_rust_scoped_segments(c, source, out),
+            _ => out.push(lower_node(c, source)),
+        }
+    }
+}
+
+/// Take a flat list of path segments and split off the trailing leaf
+/// as a sibling: `[std, collections, HashMap]` → `[<path>std,collections</path>, <name>HashMap</name>]`.
+fn split_path_and_leaf(scope: TsNode<'_>, segments: Vec<Ir>, _source: &str) -> Vec<Ir> {
+    if segments.len() < 2 {
+        return segments;
+    }
+    let mut segs = segments;
+    let leaf = segs.pop().expect("len >= 2");
+    let path_range = match (segs.first(), segs.last()) {
+        (Some(f), Some(l)) => ByteRange::new(f.range().start, l.range().end),
+        _ => range_of(scope),
+    };
+    let path_span = segs.first().map(|s| s.span()).unwrap_or_else(|| span_of(scope));
+    vec![
+        Ir::SimpleStatement {
+            element_name: "path",
+            modifiers: Modifiers::default(),
+            extra_markers: &[],
+            children: segs,
+            range: path_range,
+            span: path_span,
+        },
+        leaf,
+    ]
+}
+
+fn clone_ir(ir: &Ir) -> Ir {
+    ir.clone()
 }
 
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {

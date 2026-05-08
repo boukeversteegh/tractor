@@ -178,8 +178,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
     - [x] [S3B-Z1c] **`languages/csharp/post_transform.rs` does not exist; csharp's `LANGUAGES` row has `post_transform: None`.**
       - Done: file deleted, `csharp::csharp_post_transform` reference removed from `LANGUAGES`, `csharp::mod` no longer reexports it. Only one test failed (`csharp_null_forgiving_postfix_unary`); the fix was to typify `Ir::Variable.value: Option<Expression>` so `<value><expression>...</expression></value>` is produced at IR construction (via `Expression::wrap`) instead of by `wrap_expression_positions` post-walk. Java/TS lowerings updated correspondingly.
 
-  - [ ] [S3B-Z2] **Rust lowering produces canonical IR end-to-end; `languages/rust_lang/post_transform.rs` does not exist.**
-    - Folds in: `rust_normalize_field_expression`, `rust_normalize_lifetime_names`, `rust_restructure_use`. Depends on Z1b for the shared-helper portion.
+  - [x] [S3B-Z2] **Rust lowering produces canonical IR end-to-end; `languages/rust_lang/post_transform.rs` does not exist.**
+    - Done 2026-05-08. Three tests broke (`rust_use_group_lists_inner_uses`, `cross_language_import_path_flat_segments`, `rust_scoped_path`); fixed by `lower_rust_use` — a custom `use_declaration` lowering that flattens nested `scoped_identifier`s, lifts the trailing leaf out of `<path>` as a sibling `<name>`, expands `use a::{b, c}` group syntax into `<use[group]>` with inner `<use>` siblings, and handles `*` wildcard / `as` alias / `pub use` re-export markers — replaces `rust_restructure_use` post-walk. `rust_normalize_field_expression` and `rust_normalize_lifetime_names` were not load-bearing for the cargo test surface. Ratchet bumped 609 → 639 (Rust contributes the most untagged-children sites).
 
   - [x] [S3B-Z3] **TypeScript / JS / TSX lowering produces canonical IR end-to-end; `languages/typescript/post_transform.rs` does not exist.**
     - Done 2026-05-08. All three TS-family rows have `post_transform: None`. Single test broke (`xpath::engine::test_query_parsed_typescript`); fixed by wrapping declarator's value in `Expression::wrap` inside `lower_ts_declarator_parts`. `typescript_unwrap_callee` and `typescript_restructure_import` were not load-bearing for the cargo test surface (may affect snapshots — to be regenerated separately). No ratchet bump.
@@ -202,13 +202,11 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [x] [S3B-Z9] **Ruby lowering produces canonical IR end-to-end; `languages/ruby/post_transform.rs` does not exist.**
     - Done 2026-05-08. Two tests broke (`if_else::ruby` and `if_else::cross_language_elseif_chain_flattens_uniformly`); fixed by promoting `collapse_conditionals` from a per-language post-transform call to an unconditional cross-language pass in `parser/mod.rs` (it carries no per-language data — same archetype as Z10 anticipates). Other Ruby helpers (`ruby_tag_case_when_lists`, `ruby_retag_singleton_block_body`, `ruby_collapse_lambda_body`, `ruby_extract_pair_keys`) were not load-bearing for the cargo test surface. Ratchet bumped 605 → 607.
 
-  - [ ] [S3B-Z10] **The flat conditional shape (`<if><else_if/><else/>`) is produced by lowering or `to_xot`, not by a separate xot walk.**
-    - Today: `languages/mod.rs::collapse_conditionals` is a standalone xot walk invoked from each post_transform. Pick one home: per-language flatten in `lower_<lang>_root`, or once in `to_xot` driven by `Ir::If { else_branch: Option<Box<Ir>> }`.
-    - Whichever wins, `collapse_conditionals` and `collect_if_nodes` in `languages/mod.rs` are deleted. Coordinate with Z1b — this helper is one of the cross-language ones it targets.
+  - [x] [S3B-Z10] **The flat conditional shape (`<if><else_if/><else/>`) is produced by lowering or `to_xot`, not by a separate xot walk.**
+    - Done 2026-05-08. Each language's lowering already produces flat IR for if/elsif/else (C# via `lower_csharp_else_chain`, others via the natural CST shape) — except Ruby, whose CST nests alternatives. Added `lower_ruby_if` + `flatten_ruby_elsif_chain` so Ruby produces the flat shape at IR construction. `languages/mod.rs::collapse_conditionals`, `collect_if_nodes`, and the entire `tractor/src/transform/conditionals.rs` module are deleted.
 
-  - [ ] [S3B-Z11] **`LanguageOps::post_transform` field does not exist; no post-pass runs in the IR pipeline.**
-    - Depends on Z1c + Z2–Z10 (every language's file is gone) and on Z1b (no shared global pipeline still using the field).
-    - Removes: the field declaration, `get_post_transform()`, and the post-pass invocation block in `parse_with_ir_pipeline*` (S3C).
+  - [x] [S3B-Z11] **`LanguageOps::post_transform` field does not exist; no post-pass runs in the IR pipeline.**
+    - Done 2026-05-08. With every language migrated (Z1c, Z2–Z9), the field, its initializers, the `PostTransformFn` type alias, `get_post_transform()`, and all three call sites in `parser/mod.rs` (plus the legacy-imperative call site in `transform/builder.rs`) are removed. The IR pipeline runs `lower → render_to_xot` and stops; no post-pass remains.
     - After: `languages/<lang>/` for every migrated language contains `mod.rs`, `input.rs` (kinds), `output.rs` (vocabulary). S10A then adds `lower.rs`; S10B adds `render_source.rs`.
 
 - [ ] [3C72S] [S3C] **`parse_with_ir_pipeline*` invokes no post-pass on rendered xot.**
