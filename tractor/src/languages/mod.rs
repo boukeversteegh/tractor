@@ -341,7 +341,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_go_root),
         transform: passthrough_transform,
-        post_transform: Some(go::go_post_transform),
+        post_transform: None,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
         node_spec: Some(go::output::spec),

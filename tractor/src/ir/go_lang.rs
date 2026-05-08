@@ -383,7 +383,34 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "select_statement" => simple_statement(node, "select", source),
         "send_statement" => simple_statement(node, "send", source),
         "receive_statement" => simple_statement(node, "receive", source),
-        "return_statement" => simple_statement(node, "return", source),
+        "return_statement" => {
+            // Go's `return x, y, z` — wrap EACH returned value in
+            // `<expression>` so consumers see one expression per value
+            // (multi-return is the same archetype as multi-target call
+            // args). Replaces the imperative `wrap_expression_positions`
+            // post-walk for the return slot.
+            let mut cursor = node.walk();
+            let children: Vec<Ir> = node.named_children(&mut cursor)
+                .flat_map(|c| {
+                    if c.kind() == "expression_list" {
+                        let mut ec = c.walk();
+                        c.named_children(&mut ec)
+                            .map(|item| *crate::ir::Expression::wrap(lower_node(item, source)).inner)
+                            .collect::<Vec<_>>()
+                    } else {
+                        vec![*crate::ir::Expression::wrap(lower_node(c, source)).inner]
+                    }
+                })
+                .collect();
+            Ir::SimpleStatement {
+                element_name: "return",
+                modifiers: Modifiers::default(),
+                extra_markers: &[],
+                children,
+                range: range_of(node),
+                span: span_of(node),
+            }
+        }
         "break_statement" => simple_statement(node, "break", source),
         "continue_statement" => simple_statement(node, "continue", source),
         "goto_statement" => simple_statement(node, "goto", source),

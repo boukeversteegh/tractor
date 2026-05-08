@@ -190,8 +190,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [x] [S3B-Z5] **Java lowering produces canonical IR end-to-end; `languages/java/post_transform.rs` does not exist.**
     - Done 2026-05-08. `scoped_identifier` lowering recurses to flatten nested paths (folds in `flatten_nested_paths` + `java_unwrap_type_in_path`). `enhanced_for_statement` and `lower_java_multi_declarator` wrap value-position content via `Expression::wrap` (folds in `wrap_expression_positions` for those slots). Ratchet bumped 600→603 — three new advisory `no-children-overflow` sites pending S3D.
 
-  - [ ] [S3B-Z6] **Go lowering produces canonical IR end-to-end; `languages/go/post_transform.rs` does not exist.**
-    - Folds in: `go_retag_singleton_closure_body`.
+  - [x] [S3B-Z6] **Go lowering produces canonical IR end-to-end; `languages/go/post_transform.rs` does not exist.**
+    - Done 2026-05-08. Single test broke (`go_multi_value_return_lists_expressions`); fixed by lowering `return_statement` with `Expression::wrap` per returned value (multi-return → multiple `<expression>` siblings under `<return>`). `go_retag_singleton_closure_body` was already redundant — IR closure rendering covers the case. No ratchet bump.
 
   - [ ] [S3B-Z7] **T-SQL lowering produces canonical SqlIr end-to-end; `languages/tsql/post_transform.rs` does not exist.**
     - Folds in: `tsql_wrap_binary_operands`, `tsql_tag_select_columns` — into `lower_sql_root` / `SqlIr` variants.
