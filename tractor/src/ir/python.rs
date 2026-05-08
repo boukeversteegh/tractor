@@ -18,7 +18,7 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{AccessSegment, ByteRange, Ir, Modifiers, ParamKind};
+use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind};
 
 /// Lower a Python tree-sitter root node to [`Ir`].
 ///
@@ -1706,16 +1706,59 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
         s.named_children(&mut c).map(|n| lower_node(n, source)).collect()
     }).unwrap_or_default();
 
-    let body = match body_node {
+    let mut body = match body_node {
         Some(b) => Box::new(lower_block(b, source)),
         None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
     };
+    // Inject Python name-convention visibility (`__x__` public,
+    // `__x` private, `_x` protected, `x` public) onto direct
+    // function children. Replaces `inject_python_visibility_markers`
+    // post-walk; encoded at lowering time so the Ir::Function carries
+    // the access modifier and the renderer emits the marker via
+    // `Modifiers::marker_names`.
+    set_python_class_member_visibility(&mut body, source);
 
     Ir::Class {
         kind: "class",
         // Python: no access modifiers, no static/abstract/etc on class.
         modifiers: Modifiers::default(),
         decorators, name, generics, bases, where_clauses: Vec::new(), body, range, span,
+    }
+}
+
+/// Walk a class body's direct children, setting `Ir::Function.modifiers.access`
+/// based on Python name conventions. Only applies to direct
+/// children (Principle #9 — visibility scope is the immediate class
+/// body, not nested functions).
+fn set_python_class_member_visibility(body: &mut Ir, source: &str) {
+    let children = match body {
+        Ir::Body { children, .. } => children,
+        _ => return,
+    };
+    for child in children {
+        // Decorated functions wrap Ir::Function in Ir::Decorated; reach into it.
+        let target: &mut Ir = match child {
+            Ir::Function { .. } => child,
+            _ => continue,
+        };
+        let Ir::Function { modifiers, name, .. } = target else { continue };
+        if modifiers.access.is_some() {
+            continue;
+        }
+        let name_text = match name.as_ref() {
+            Ir::Name { range, .. } => range.slice(source),
+            _ => continue,
+        };
+        let access = if name_text.starts_with("__") && name_text.ends_with("__") && name_text.len() > 4 {
+            Access::Public
+        } else if name_text.starts_with("__") {
+            Access::Private
+        } else if name_text.starts_with('_') {
+            Access::Protected
+        } else {
+            Access::Public
+        };
+        modifiers.access = Some(access);
     }
 }
 

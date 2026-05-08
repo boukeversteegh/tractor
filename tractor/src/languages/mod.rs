@@ -323,7 +323,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Programming(crate::ir::lower_python_root),
         transform: passthrough_transform,
-        post_transform: Some(python::python_post_transform),
+        post_transform: None,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,
         node_spec: Some(python::output::spec),

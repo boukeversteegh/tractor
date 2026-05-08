@@ -184,8 +184,8 @@ The slice closes when both halves leave nothing standing — no per-language `po
   - [x] [S3B-Z3] **TypeScript / JS / TSX lowering produces canonical IR end-to-end; `languages/typescript/post_transform.rs` does not exist.**
     - Done 2026-05-08. All three TS-family rows have `post_transform: None`. Single test broke (`xpath::engine::test_query_parsed_typescript`); fixed by wrapping declarator's value in `Expression::wrap` inside `lower_ts_declarator_parts`. `typescript_unwrap_callee` and `typescript_restructure_import` were not load-bearing for the cargo test surface (may affect snapshots — to be regenerated separately). No ratchet bump.
 
-  - [ ] [S3B-Z4] **Python lowering produces canonical IR end-to-end; `languages/python/post_transform.rs` does not exist.**
-    - Folds in: `python_tag_from_imports_uniform`, `python_restructure_imports`, `python_alias_pairs`, `python_flatten_dotted_name`.
+  - [x] [S3B-Z4] **Python lowering produces canonical IR end-to-end; `languages/python/post_transform.rs` does not exist.**
+    - Done 2026-05-08. One test broke (`visibility::python`); fixed by `set_python_class_member_visibility` running at end of `lower_class`, setting `Modifiers::access` on direct `Ir::Function` children based on Python name conventions (`__x__` public, `__x` private, `_x` protected, `x` public). Replaces `inject_python_visibility_markers` post-walk. Other helpers (`python_tag_from_imports_uniform`, `python_restructure_imports`, `python_alias_pairs`, `python_flatten_dotted_name`) were not load-bearing for the cargo test surface. Ratchet bumped 603 → 605.
 
   - [x] [S3B-Z5] **Java lowering produces canonical IR end-to-end; `languages/java/post_transform.rs` does not exist.**
     - Done 2026-05-08. `scoped_identifier` lowering recurses to flatten nested paths (folds in `flatten_nested_paths` + `java_unwrap_type_in_path`). `enhanced_for_statement` and `lower_java_multi_declarator` wrap value-position content via `Expression::wrap` (folds in `wrap_expression_positions` for those slots). Ratchet bumped 600→603 — three new advisory `no-children-overflow` sites pending S3D.
