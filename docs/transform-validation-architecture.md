@@ -69,14 +69,14 @@ The walker behind layers 1 and 2 reads each element's role from the per-language
 
 Five of the original 12 `tree_invariants.rs` properties are subsumed by the spec-driven walker (markers stay empty, name is text-leaf, containers have content, repeated-name nesting, declared-name membership). The remaining hand-coded invariants stay until their spec form reaches parity.
 
-## 5. How this evolves with the IR migration
+## 5. How this evolves with the tree migration
 
-In the imperative pipeline, shape contracts had to walk the rendered xot tree because that's where shape decisions accumulated across `walk_transform` + `post_transform` + cross-cutting passes. The IR pipeline pushes most of that work upstream:
+In the imperative pipeline, shape contracts had to walk the rendered xot tree because that's where shape decisions accumulated across `walk_transform` + `post_transform` + cross-cutting passes. The tree pipeline pushes most of that work upstream:
 
-- Shape decisions made in `lower_<lang>_root` are *type-level* — slot cardinality is `Box<Ir>` vs `Vec<Ir>`, marker presence is an enum variant. Many regressions that were runtime walks become unrepresentable.
+- Shape decisions made in `lower_<lang>_root` are *type-level* — slot cardinality is `Box<SyntaxTree>` vs `Vec<SyntaxTree>`, marker presence is an enum variant. Many regressions that were runtime walks become unrepresentable.
 - TODO.md S3E (move shape contracts to type-level where provable) shrinks the runtime walk to genuinely runtime rules (`op-marker-matches-text` is the canonical example — the rule depends on the actual text content).
 
-The archetypes in §1 don't go away — they're properties of the emitted XML, regardless of whether it came from imperative mutation or IR rendering. The validation layers stay relevant; their *substrate* migrates from xot-walks to type checks where possible.
+The archetypes in §1 don't go away — they're properties of the emitted XML, regardless of whether it came from imperative mutation or tree rendering. The validation layers stay relevant; their *substrate* migrates from xot-walks to type checks where possible.
 
 ## 6. Where to read further
 

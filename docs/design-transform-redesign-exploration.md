@@ -19,6 +19,14 @@
 > you're investigating *why* the IR was chosen over the in-place
 > mutation refinements that were also on the table.
 
+> **Terminology note (2026-05-12).** S12 renamed the typed IR types
+> to the per-domain "Tree" vocabulary: `Ir → SyntaxTree`,
+> `DataIr → DataTree`, `SqlIr → SqlTree`; module `crate::ir → crate::tree`;
+> `IrFamily → TreeKind`. The body of this doc is preserved verbatim
+> using the original `Ir` / `DataIr` / `SqlIr` names for historical
+> accuracy. For the current vocabulary and design rationale, see
+> `docs/design-ir-and-renderings.md` §9 and `TODO.md` slice S12.
+
 ---
 
 Status: **exploration / experiment proposal**, not a decided plan.

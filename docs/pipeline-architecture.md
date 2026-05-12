@@ -1,6 +1,6 @@
 # Pipeline architecture
 
-This document describes the actual data-processing pipeline of the tractor CLI as it exists today: parallelism, branching points, file paths. For the IR-side architecture (CST→IR lowering, `to_xot`, `to_json`, source renderers), see the doc-comments in `tractor/src/ir/`. For active reorganization work, see `TODO.md`.
+This document describes the actual data-processing pipeline of the tractor CLI as it exists today: parallelism, branching points, file paths. For the tree-side architecture (CST→tree lowering, `to_xot`, `to_json`, source renderers), see the doc-comments in `tractor/src/ir/`. For active reorganization work, see `TODO.md`.
 
 ## High-level diagram
 
@@ -30,7 +30,7 @@ executor::execute(plans, ExecCtx, ReportBuilder)
    │   │ (executor/mod.rs:132):
    │   │   sources.par_iter()  ← rayon parallelism
    │   │     source.parse(lang, tree_mode, ...)
-   │   │       → tractor::parser::parse  ── IR path or legacy
+   │   │       → tractor::parser::parse  ── tree path or legacy
    │   │     result.query(xpath)
    │   │       → XPath eval (xee)
    │   │   collect Vec<Match>, sort by (file, line, col), apply limit
@@ -60,23 +60,23 @@ format::render(report, ctx)
 stdout (matches/report)  +  stderr (summary, diagnostics)
 ```
 
-## Parse path (where the IR pipeline lives)
+## Parse path (where the tree pipeline lives)
 
-`source.parse(...)` calls into `tractor::parser::parse` (`tractor/src/parser/mod.rs:1106`). Three IR-family branches plus a legacy branch are gated by `use_ir_pipeline(lang, mode)` (`parser/mod.rs:380`) until `TODO.md`'s S2-Z4 collapses the gate into a registry lookup. Branch-by-branch:
+`source.parse(...)` calls into `tractor::parser::parse` (`tractor/src/parser/mod.rs:1106`). Three tree-family branches plus a legacy branch are gated by `use_ir_pipeline(lang, mode)` (`parser/mod.rs:380`) until `TODO.md`'s S2-Z4 collapses the gate into a registry lookup. Branch-by-branch:
 
 | Path | Languages | Where |
 |---|---|---|
-| **IR (programming)** — `Ir` | csharp, python, java, ts/js/tsx/jsx, rust, go, ruby, php | `parse_with_ir_pipeline_to_xee` |
-| **IR (data)** — `DataIr` | json, yaml, toml, ini, env, markdown (Structure mode) | same fn, data branch |
-| **IR (sql)** — `SqlIr` | tsql | same fn, sql branch |
+| **tree (programming)** — `SyntaxTree` | csharp, python, java, ts/js/tsx/jsx, rust, go, ruby, php | `parse_with_ir_pipeline_to_xee` |
+| **tree (data)** — `DataTree` | json, yaml, toml, ini, env, markdown (Structure mode) | same fn, data branch |
+| **tree (sql)** — `SqlTree` | tsql | same fn, sql branch |
 | **Legacy imperative** — `XeeBuilder::build_with_options` + `walk_transform` | Raw mode for everything; c, cpp, html, css, bash, scala, lua, haskell, ocaml, r, julia; json/yaml in Data mode | `parser/mod.rs:933` |
 | **WASM** — `XotBuilder` + `walk_transform` | All web-app parses | `tractor/src/wasm/mod.rs` |
 
-The IR path renders to xot, **serialises the xot to a string, and re-parses it into xee `Documents`** (acknowledged "v1 stepping stone" at `parser/mod.rs:641`; TODO.md S7 closes it). After that it runs each language's `post_transform` for residual shape work plus the `list="X"` attribute pass.
+The tree path renders to xot, **serialises the xot to a string, and re-parses it into xee `Documents`** (acknowledged "v1 stepping stone" at `parser/mod.rs:641`; TODO.md S7 closes it). After that it runs each language's `post_transform` for residual shape work plus the `list="X"` attribute pass.
 
 ### Reverse path (render / set / update value-rewrite)
 
-`tractor render` and `tractor set / update`'s value-rewrite use a separate reverse pipeline: `tractor::render::parse_xml` / `parse_json` → `XmlNode` → `render::render(node, lang, TreeMode::Data, opts)` (`tractor/src/render/mod.rs`). It speaks `XmlNode`, not IR, and supports csharp / json / yaml only. The IR-side reverse renderer (`tractor/src/ir/source/*.rs`) is implemented for 9 languages but not yet wired into production. TODO.md S4 closes the gap.
+`tractor render` and `tractor set / update`'s value-rewrite use a separate reverse pipeline: `tractor::render::parse_xml` / `parse_json` → `XmlNode` → `render::render(node, lang, TreeMode::Data, opts)` (`tractor/src/render/mod.rs`). It speaks `XmlNode`, not tree, and supports csharp / json / yaml only. The tree-side reverse renderer (`tractor/src/ir/source/*.rs`) is implemented for 9 languages but not yet wired into production. TODO.md S4 closes the gap.
 
 ## Parallelism
 
@@ -100,7 +100,7 @@ The rayon worker pool uses a 16 MiB stack (`cli/context.rs`) because xee's XPath
 | 2 | `cli/run.rs` vs `cli/<cmd>.rs` | Single CLI op vs config-file batch |
 | 3 | `cli/context.rs::RunContext::build` | `OutputFormat`, `ViewSet`, color |
 | 4 | `input::Source::parse` (per source) | Disk file vs virtual / inline |
-| 5 | `parser::parse` | IR (programming / data / sql) vs legacy imperative |
+| 5 | `parser::parse` | tree (programming / data / sql) vs legacy imperative |
 | 6 | `executor::execute` | `OperationPlan` variant — dispatches to `execute_query` / `execute_check` / `execute_test` / `execute_set` / `execute_update` |
 | 7 | `matcher::project_report` | `Count` / `Schema` view → short-circuit; otherwise project per `ViewSet` |
 | 8 | `format::render` | One of seven `OutputFormat`s |
@@ -119,8 +119,8 @@ The rayon worker pool uses a 16 MiB stack (`cli/context.rs`) because xee's XPath
 | `tractor/src/input/filter.rs` | per-result filtering (severity, tag, …) |
 | `tractor/src/input/git.rs` | diff-files intersection |
 | `tractor/src/input/plan.rs` | `resolve_operation_inputs` — turns CLI/config args into `Vec<Source>` + `Filters` |
-| `tractor/src/parser/mod.rs` | `parse()` (unified) + IR + legacy parse fns |
-| `tractor/src/ir/` | typed IR + `to_xot` / `to_json` / `to_data` / `source` (reverse render, unwired) |
+| `tractor/src/parser/mod.rs` | `parse()` (unified) + tree + legacy parse fns |
+| `tractor/src/ir/` | typed tree + `to_xot` / `to_json` / `to_data` / `source` (reverse render, unwired) |
 | `tractor/src/executor/mod.rs` | `execute()` dispatcher, `query_files_multi` (rayon) |
 | `tractor/src/executor/{query,check,test,set,update}.rs` | per-op executors + their `OperationPlan` types |
 | `tractor/src/matcher.rs` | `run_rules`, `project_report`, `prepare_report_for_output`, `apply_message_template` |
@@ -137,9 +137,9 @@ The rayon worker pool uses a 16 MiB stack (`cli/context.rs`) because xee's XPath
 | Gap | Description | Tracked |
 |---|---|---|
 | Two parse APIs | `parse(ParseInput, ParseOptions)` (unified) + legacy `parse_string_to_xot` / `parse_file_to_xee` / `parse_string_to_xee` still exposed in `lib.rs` | TODO.md S9 |
-| Two reverse renderers | XmlNode-based `render/*.rs` (3 languages, wired) and IR-based `ir/source/*.rs` (9 languages, unwired) | TODO.md S4 |
-| Two JSON projections | `xml_to_json` (legacy), `ir_to_json` (1087 LOC of heuristics), `data_to_json` (principled). Three concurrent paths. | TODO.md S5 |
+| Two reverse renderers | XmlNode-based `render/*.rs` (3 languages, wired) and tree-based `ir/source/*.rs` (9 languages, unwired) | TODO.md S4 |
+| Two JSON projections | `xml_to_json` (legacy), `tree_to_json` (1087 LOC of heuristics), `data_to_json` (principled). Three concurrent paths. | TODO.md S5 |
 | Two language registries | `tractor/src/languages/mod.rs::LANGUAGES` + `tractor/src/languages/info.rs::LANGUAGES`, both claiming SSoT | TODO.md C5 |
-| WASM vs CLI divergence | WASM bypasses `crate::ir`; produces different semantic XML for migrated languages | TODO.md S6 |
-| Post-pass paradigm mix | IR pipeline renders typed → mutates rendered xot with `post_transform` shared helpers | TODO.md S3 |
-| `xot.to_string()` → xee reparse | IR pipeline serialises XML and re-parses into xee Documents | TODO.md S7 |
+| WASM vs CLI divergence | WASM bypasses `crate::tree`; produces different semantic XML for migrated languages | TODO.md S6 |
+| Post-pass paradigm mix | tree pipeline renders typed → mutates rendered xot with `post_transform` shared helpers | TODO.md S3 |
+| `xot.to_string()` → xee reparse | tree pipeline serialises XML and re-parses into xee Documents | TODO.md S7 |
