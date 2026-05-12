@@ -524,43 +524,88 @@ Listed roughly by blast radius (smaller first). Each Z step:
 
 ---
 
-## S12 — Terminology rename: `Tree` / `TreeNode` (kills the `Ir` framing)
+## S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`)
 
-**Goal.** Rename Rust types and module paths so user-facing names match the design vocabulary. `Ir → TreeNode`, `crate::ir → crate::tree`, "variant" → "node" in docs. Per the decision recorded in `docs/design-ir-and-renderings.md` §9 (2026-05-11).
+**Goal.** "IR" disappears from the codebase, comments, and docs. Rust types rename to per-domain trees; `crate::ir → crate::tree`. Markdown extracts from `DataIr` into a new `DocumentTree`. Vocabulary in docs: "tree" / "tree node", not "IR" / "IR variant". Per the decisions recorded in `docs/design-ir-and-renderings.md` §9 (2026-05-11 / 2026-05-12).
 
-**Why now.** Design-doc rewrite (S11 + the ir-and-renderings doc) commits to "TreeNode" / "tree" as the user-facing vocabulary. Keeping the Rust types named `Ir` while docs say "TreeNode" creates a permanent translation tax for new readers and complicates principle-doc rewrites. Easier to rename once than to maintain the divergence.
+**Why now.** Design-doc rewrite (S11 + the ir-and-renderings doc) commits to "tree" as the user-facing vocabulary. Keeping the Rust types named `Ir` while docs say "tree" creates a permanent translation tax for new readers. "Intermediate representation" leaks an implementation framing into the API.
 
-**Depends on.** None structural — pure mechanical rename. Coordinate with S11 (in-flight): if both are happening, do S12 first so S11's variant work uses the new names.
-**Unblocks.** Cleaner spec docs (no need for a "TreeNode means `Ir` in code" note); fresh-reader onboarding.
-**Independent of.** S1–S10, S11's structural changes (S12 is pure rename; S11 is shape).
+**Depends on.** None structural — pure mechanical rename + Markdown extraction. Coordinate with S11 (in-flight): if both are happening, do S12 first so S11's node work uses the new names.
+**Unblocks.** Cleaner spec docs (no need for a "tree means `Ir` in code" note); fresh-reader onboarding.
+**Independent of.** S1–S10, S11's structural changes (S12 is naming + Markdown extraction; S11 is shape).
 
-**Size.** L (~50 files touched, but mechanical). One big commit or per-Z-step.
+**Size.** L (~50 files touched, plus Markdown extraction; mostly mechanical). Per-Z-step commits.
 **Reversibility.** High — git revert restores the old names. Public API churn for anyone using `tractor::ir::*` externally.
 
+**Decisions locked (2026-05-12):**
+- Type renames: `Ir → SyntaxTree`, `DataIr → DataTree`, `SqlIr → SqlTree`. New `DocumentTree` extracted from Markdown lowering.
+- Module: `crate::ir → crate::tree`.
+- `IrFamily → TreeKind` (variants `Syntax` / `Data` / `Sql` / `Document`).
+- Spec dir: `specs/tractor-parse/semantic-tree/ → specs/tractor-parse/tree/`.
+- Historical doc `docs/design-transform-redesign-exploration.md`: leave body frozen, add terminology-note banner.
+
 **Invariants when closed:**
-- `crate::tree::TreeNode` exists; `crate::ir::Ir` does not.
-- `crate::tree::DataTreeNode` (or `tree::data::TreeNode`) exists; `crate::ir::DataIr` does not.
-- `crate::tree::sql::SqlTreeNode` (or `tree::sql::TreeNode`) exists; `crate::ir::sql::SqlIr` does not.
+- `crate::tree::SyntaxTree`, `crate::tree::DataTree`, `crate::tree::SqlTree`, `crate::tree::DocumentTree` exist; `Ir` / `DataIr` / `SqlIr` do not.
 - `crate::tree` module path replaces `crate::ir`.
-- Doc comments and TODO references use "tree node" / "tree" rather than "IR variant" / "IR".
+- `TreeKind` (with `Syntax` / `Data` / `Sql` / `Document` variants) replaces `IrFamily`.
+- Markdown lowers to `DocumentTree`, not `DataTree`.
+- `specs/tractor-parse/tree/` exists; `specs/tractor-parse/semantic-tree/` does not.
+- All living docs scrubbed of "IR" / "intermediate representation" vocabulary. Historical doc carries a terminology-note banner.
+- TODO.md vocabulary scrubbed.
 - All tests pass under the new names.
 
 ### Tasks
 
-- [ ] [S12-Z1] **`Ir` enum renamed to `TreeNode`; `Ir::*` constructors renamed to `TreeNode::*`.**
-  - Find-replace across `tractor/src/` and `tractor/tests/`. ~50 files; the bulk of the work.
+- [ ] [S12-Z1] **`Ir` enum renamed to `SyntaxTree`; `Ir::*` constructors renamed to `SyntaxTree::*`.**
+  - Find-replace across `tractor/src/` and `tractor/tests/`. ~50 files; bulk of the type-rename work.
   - Module path stays `crate::ir::*` for this step (it's just the type name).
   - Verify: `cargo check` clean; `cargo test` green.
+
 - [ ] [S12-Z2] **`crate::ir` module renamed to `crate::tree`; `pub mod ir;` → `pub mod tree;`.**
   - `git mv tractor/src/ir tractor/src/tree`; update `tractor/src/lib.rs`.
-  - Update every `use crate::ir::*` to `use crate::tree::*` (find-replace).
+  - Update every `use crate::ir::*` to `use crate::tree::*`.
   - Verify: `cargo check`, `cargo test`.
-- [ ] [S12-Z3] **`DataIr` renamed to `DataTreeNode` (or moved to `tree::data::TreeNode`).**
-  - Decide between flat naming (`DataTreeNode` at the top level) and nested (`tree::data::TreeNode`).
-  - Same mechanical pattern as Z1+Z2.
-- [ ] [S12-Z4] **`SqlIr` renamed to `SqlTreeNode` (or `tree::sql::TreeNode`).** Same pattern as Z3.
-- [ ] [S12-Z5] **Module-level renames flow through: `IrFamily → TreeFamily`, `to_xot::render_ir_* → render_tree_*`, etc.** Audit `crate::ir::*` re-exports and supporting type aliases. Doc comments scan: "IR" → "tree node" where appropriate.
-- [ ] [S12-Z6] **TODO.md and design docs scrubbed.** Replace mentions of "IR variant" → "tree node", "IR shape" → "tree structure", `Ir::*` → `TreeNode::*` where they describe the code (leave historical "Done — fixed X in `Ir::Variable`" notes intact since they reference the code at the time).
+
+- [ ] [S12-Z3] **`DataIr` renamed to `DataTree` (Markdown still inside for now).**
+  - Mechanical type rename. Markdown extraction is Z5 (kept separate to minimize blast radius per commit).
+  - Verify: `cargo check`, `cargo test`.
+
+- [ ] [S12-Z4] **`SqlIr` renamed to `SqlTree`.** Same mechanical pattern as Z3.
+
+- [ ] [S12-Z5] **`DocumentTree` created; Markdown lowering extracted from `DataTree` into `DocumentTree`.**
+  - New file `tractor/src/tree/document.rs` (or `tree/document/types.rs`) with `enum DocumentTree`. Variants drawn from the current Markdown `DataIr::Document` + `DataIr::Element { name, markers, ... }` shapes, but typed: `DocumentTree::Document`, `DocumentTree::Heading { level: HeadingLevel, ... }`, `DocumentTree::List { ordered: ListOrdering, items }`, `DocumentTree::CodeBlock { language, code }`, `DocumentTree::BlockQuote`, `DocumentTree::ThematicBreak`, etc.
+  - Move `tractor/src/ir/markdown_data.rs` → `tractor/src/tree/document/lower.rs` and rewrite to lower into `DocumentTree`.
+  - Add `to_xot` / `to_json` for `DocumentTree`. Output shape unchanged from today's `DataIr::Element` projections (keeps existing XPath queries / blueprint tests working).
+  - Update language registry: Markdown's `tree_kind` switches from `Data` to `Document`.
+  - Verify: existing Markdown blueprint snapshots unchanged; `cargo test` green.
+
+- [ ] [S12-Z6] **`IrFamily → TreeKind`; variants `Syntax` / `Data` / `Sql` / `Document`.**
+  - Rename the enum on `LanguageOps`. Update every callsite.
+  - Per-language values updated (most languages get `TreeKind::Syntax`; data languages `Data`; T-SQL `Sql`; Markdown `Document` per Z5).
+  - Verify: `cargo check`, `cargo test`.
+
+- [ ] [S12-Z7] **Module-level renames flow through.**
+  - `to_xot::render_ir_* → render_tree_*`, `data_ir → data_tree`, etc.
+  - Audit `crate::ir::*` re-exports and supporting type aliases (now under `crate::tree::*`).
+  - Doc-comment scan: "IR" → "tree" or specific tree type; "IR variant" → "tree node".
+
+- [ ] [S12-Z8] **`specs/tractor-parse/semantic-tree/` renamed to `specs/tractor-parse/tree/`.**
+  - `git mv` the directory.
+  - Update cross-links in `specs/tractor-parse/*.md`, `docs/*.md`, CLAUDE.md, README files.
+  - Subspec contents scrubbed for IR vocabulary; future passes may split into `syntax-tree.md` / `data-tree.md` / `sql-tree.md` / `document-tree.md` subdivisions.
+
+- [ ] [S12-Z9] **Living `docs/*.md` files scrubbed.**
+  - `docs/pipeline-architecture.md` (15 mentions), `docs/transform-validation-architecture.md` (4 mentions), `docs/design-projection-pipeline.md` (105 mentions). Rewrite IR references to the new tree names.
+  - `docs/design-transform-redesign-exploration.md` — body unchanged; add terminology-note banner at top mapping `Ir → SyntaxTree`, `DataIr → DataTree`, `SqlIr → SqlTree`.
+  - `docs/design-ir-and-renderings.md` itself — rename to `docs/design-tree-and-renderings.md` (or move to `specs/tractor-parse/tree/renderings.md` when ready per §6 of the design doc).
+
+- [ ] [S12-Z10] **TODO.md scrubbed.**
+  - Replace "IR variant" → "tree node", "IR shape" → "tree structure", `Ir::*` → `SyntaxTree::*` where they describe live code.
+  - Leave historical "Done — fixed X in `Ir::Variable`" notes intact (they reference the code at the time).
+  - Update slice headers / invariants that mention IR-family names.
+
+- [ ] [S12-Z11] **`specs/tractor-parse/dual-view/`, `specs/codexpath/cli/output-options/json-format/`, `specs/cli-output-design.md` scrubbed.**
+  - Find-replace IR vocabulary; align with the §5 bucketing from the design doc as the principles get re-categorized.
 
 ---
 
