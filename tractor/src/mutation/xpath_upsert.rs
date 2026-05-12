@@ -18,13 +18,20 @@
 //! All language-specific knowledge lives in the parser and renderer.
 //! The upsert algorithm itself is language-agnostic.
 
-use crate::parser::{parse, ParseInput, ParseOptions, XeeParseResult};
-use crate::render::{self, RenderOptions};
+use crate::parser::{parse, parse_string_to_xot, ParseInput, ParseOptions, XeeParseResult};
 use crate::tree_mode::TreeMode;
-use crate::xpath::xot_node_to_xml_node;
 pub use crate::xpath::Match;
-use crate::transform::helpers::*;
-use xot::Xot;
+
+#[cfg(feature = "native")]
+use crate::ir::data::{DataIr, ScalarKind};
+
+/// Languages whose upsert path is implemented (`json` / `yaml` /
+/// `yml`, all via the typed-IR pipeline). Other languages return
+/// [`UpsertError::UnsupportedLanguage`] so the executor's fallback
+/// (text-replacement for string values) can take over.
+fn lang_supports_upsert(lang: &str) -> bool {
+    matches!(lang, "json" | "yaml" | "yml")
+}
 
 /// Result of an upsert operation.
 #[derive(Debug)]
@@ -76,18 +83,7 @@ pub fn update_only(
     value: &str,
     limit: Option<usize>,
 ) -> Result<UpsertResult, UpsertError> {
-    // Verify the language has a renderer that supports data mode
-    let test_render = render::render(
-        &crate::xpath::XmlNode::Element {
-            name: "test".to_string(),
-            attributes: vec![],
-            children: vec![],
-        },
-        lang,
-        TreeMode::Data,
-        &RenderOptions::default(),
-    );
-    if let Err(render::RenderError::UnsupportedLanguage(_)) = test_render {
+    if !lang_supports_upsert(lang) {
         return Err(UpsertError::UnsupportedLanguage(lang.to_string()));
     }
 
@@ -162,18 +158,7 @@ pub fn upsert_typed(
     limit: Option<usize>,
     value_kind: Option<&str>,
 ) -> Result<UpsertResult, UpsertError> {
-    // Verify the language has a renderer that supports data mode
-    let test_render = render::render(
-        &crate::xpath::XmlNode::Element {
-            name: "test".to_string(),
-            attributes: vec![],
-            children: vec![],
-        },
-        lang,
-        TreeMode::Data,
-        &RenderOptions::default(),
-    );
-    if let Err(render::RenderError::UnsupportedLanguage(_)) = test_render {
+    if !lang_supports_upsert(lang) {
         return Err(UpsertError::UnsupportedLanguage(lang.to_string()));
     }
 
@@ -212,24 +197,57 @@ pub fn upsert_typed(
 
 /// Update existing nodes' values using render-with-spans-splice.
 ///
-/// Handles all matches in a single pass: mutates all matched nodes in the
-/// tree, re-renders once, then splices all modified spans back into the
-/// original source (applied in reverse order to preserve byte offsets).
+/// All currently-supported upsert languages (`json` / `yaml` / `yml`)
+/// take the typed-`DataIr` reverse path; the entry-point allowlist
+/// rejects everything else with [`UpsertError::UnsupportedLanguage`]
+/// before reaching here, so this function is a thin dispatcher.
 fn update_existing(
     source: &str,
     lang: &str,
     value: &str,
     matches: &[Match],
-    mut result: XeeParseResult,
+    _result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
-    let doc_node = result.documents.document_node(result.doc_handle)
-        .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
+    #[cfg(feature = "native")]
+    {
+        update_existing_via_data_ir(source, lang, value, matches)
+    }
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (source, lang, value, matches);
+        Err(UpsertError::UnsupportedLanguage(lang.to_string()))
+    }
+}
 
-    let ast_root = find_document_element(result.documents.xot(), doc_node)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("no document element found".into()))?;
+/// IR-direct update for data languages (json / yaml). Mirror of
+/// [`update_existing`]'s splice loop but reading the typed
+/// [`DataIr`] tree — no `XmlNode` intermediate.
+#[cfg(feature = "native")]
+fn update_existing_via_data_ir(
+    source: &str,
+    lang: &str,
+    value: &str,
+    matches: &[Match],
+) -> Result<UpsertResult, UpsertError> {
+    let parsed = parse_string_to_xot(
+        source,
+        lang,
+        "<update>".to_string(),
+        Some(TreeMode::Data),
+    )
+    .map_err(|e| UpsertError::Parse(e.to_string()))?;
+    let mut ir = *parsed.data_ir.ok_or_else(|| {
+        UpsertError::Parse(format!(
+            "language '{}' did not produce a DataIr on the IR pipeline",
+            lang,
+        ))
+    })?;
 
-    // Step 1: Record original byte spans and mutate all matched nodes
-    let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new(); // (orig_start, orig_end, span_key)
+    // Step 1: Record original byte spans and mutate every matched
+    // value in the typed IR. Each match's source position lines up
+    // with the value-scalar leaf in `DataIr` (the IR's keyed render
+    // sets element line/col to value.span()).
+    let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new();
 
     for matched in matches {
         let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
@@ -237,53 +255,127 @@ fn update_existing(
         let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
             .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-        let target = find_node_by_span(result.documents.xot(), ast_root, matched.line, matched.column)
-            .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
+        let target = ir.find_at_offset_mut(orig_start as u32).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "could not locate node at byte offset {} in DataIr",
+                orig_start,
+            ))
+        })?;
 
-        replace_text_content(result.documents.xot_mut(), target, value)?;
+        // Preserve the target's existing scalar variant so that
+        // updates respect the original kind (string stays string,
+        // number stays number) — matches the legacy behavior where
+        // the kind attribute on the rendered xot was not modified
+        // by `replace_text_content`.
+        let kind = scalar_kind_of(target);
+        target
+            .set_scalar(value, kind)
+            .map_err(|e| UpsertError::Render(format!("set_scalar: {}", e)))?;
 
         let span_key = (matched.line, matched.column);
         splice_info.push((orig_start, orig_end, span_key));
     }
 
-    // Step 2: Re-render once with span tracking
-    let xml_node = xot_node_to_xml_node(result.documents.xot(), ast_root);
-    let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
-        .map_err(|e| UpsertError::Render(e.to_string()))?;
+    // Step 2: Render the modified IR with span tracking.
+    let (rendered, span_map) = render_data_ir_with_spans(&ir, lang, source);
 
-    // Step 3: Sort splices by position descending and apply from end to start
-    // to preserve byte offsets
+    // Step 3: Sort splices by descending position and apply.
     splice_info.sort_by(|a, b| b.0.cmp(&a.0));
-
-    // Deduplicate by position (same node matched multiple times)
     splice_info.dedup_by(|a, b| a.0 == b.0 && a.1 == b.1);
 
     let mut new_source = source.to_string();
     let mut applied = 0;
-
     for (orig_start, orig_end, span_key) in &splice_info {
-        let (new_start, new_end) = span_map.get(span_key)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("node at {}:{} not found in rendered output span map", span_key.0, span_key.1),
-            ))?;
-
+        let (new_start, new_end) = span_map.get(span_key).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "node at {}:{} not found in IR span map",
+                span_key.0, span_key.1,
+            ))
+        })?;
         new_source.replace_range(*orig_start..*orig_end, &rendered[*new_start..*new_end]);
         applied += 1;
     }
 
-    let count = applied;
     Ok(UpsertResult {
         source: new_source,
         inserted: false,
-        matches_updated: count,
+        matches_updated: applied,
         matches: matches.to_vec(),
-        description: format!("updated {} existing value{}", count, if count == 1 { "" } else { "s" }),
+        description: format!(
+            "updated {} existing value{}",
+            applied,
+            if applied == 1 { "" } else { "s" },
+        ),
     })
 }
 
-/// Insert new structure using render-with-spans-splice.
+#[cfg(feature = "native")]
+fn scalar_kind_of(ir: &DataIr) -> ScalarKind {
+    match ir {
+        DataIr::String { .. } => ScalarKind::String,
+        DataIr::Number { .. } => ScalarKind::Number,
+        DataIr::Bool { .. } => ScalarKind::Bool,
+        DataIr::Null { .. } => ScalarKind::Null,
+        _ => ScalarKind::String,
+    }
+}
+
+#[cfg(feature = "native")]
+fn render_data_ir_with_spans(
+    ir: &DataIr,
+    lang: &str,
+    source: &str,
+) -> (String, std::collections::HashMap<(u32, u32), (usize, usize)>) {
+    let (indent, newline) = detect_indent_and_newline(source);
+    match lang {
+        "json" => {
+            let opts = crate::ir::source::data_json::JsonRenderOptions {
+                indent,
+                newline,
+                indent_level: 0,
+            };
+            crate::ir::source::data_json::render_json_with_spans(ir, &opts)
+        }
+        "yaml" | "yml" => {
+            let opts = crate::ir::source::data_yaml::YamlRenderOptions {
+                indent,
+                newline,
+                indent_level: 0,
+            };
+            crate::ir::source::data_yaml::render_yaml_with_spans(ir, &opts)
+        }
+        _ => unreachable!("render_data_ir_with_spans called for non-data language: {}", lang),
+    }
+}
+
+/// Insert new structure using render-with-spans-splice. All
+/// supported upsert languages (`json` / `yaml` / `yml`) flow through
+/// the typed-`DataIr` insertion path; the entry-point allowlist
+/// rejects everything else upstream.
 fn insert_new(
+    source: &str,
+    lang: &str,
+    xpath: &str,
+    value: &str,
+    value_kind: Option<&str>,
+    result: XeeParseResult,
+) -> Result<UpsertResult, UpsertError> {
+    #[cfg(feature = "native")]
+    {
+        return insert_new_via_data_ir(source, lang, xpath, value, value_kind, result);
+    }
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (source, lang, xpath, value, value_kind, result);
+        Err(UpsertError::UnsupportedLanguage(lang.to_string()))
+    }
+}
+
+/// IR-direct insert for data languages (json / yaml). The xee XPath
+/// engine resolves the deepest matching prefix the same way as the
+/// legacy path; mutation + render flows through [`DataIr`] only.
+#[cfg(feature = "native")]
+fn insert_new_via_data_ir(
     source: &str,
     lang: &str,
     xpath: &str,
@@ -291,7 +383,6 @@ fn insert_new(
     value_kind: Option<&str>,
     mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
-    // Parse the XPath into key steps (bare names) and raw segments (with predicates)
     let (key_path, raw_segments) = xpath_to_key_path(xpath)?;
     if key_path.is_empty() {
         return Err(UpsertError::NoInsertionPoint(
@@ -299,49 +390,31 @@ fn insert_new(
         ));
     }
 
-    // Detect the XPath axis prefix (e.g. "//" or "/") so we can reconstruct
-    // valid prefix queries for the engine.
-    let xpath_prefix = if xpath.trim().starts_with("//") {
-        "//"
-    } else {
-        "/"
-    };
+    let xpath_prefix = if xpath.trim().starts_with("//") { "//" } else { "/" };
 
-    // Step 1: Use the real XPath engine to find the deepest matching prefix.
-    // Try progressively shorter prefixes (from N-1 segments down to 1) until
-    // one matches. This honours predicates, axes, and any valid XPath.
-    let doc_node = result.documents.document_node(result.doc_handle)
-        .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
-    let ast_root = find_document_element(result.documents.xot(), doc_node)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("no document element found".into()))?;
-
+    // Use the xee XPath engine to find the deepest matching prefix —
+    // identical to the legacy path. We only need (line, column) of
+    // the deepest existing ancestor, not its xot node.
     let mut existing_depth = 0usize;
-    // When no prefix matches, insert under the document element.
-    // Descend through structural wrappers like <document>.
-    let mut ancestor_node = descend_structural_wrappers(result.documents.xot(), ast_root);
+    let mut ancestor_offset: u32 = 0;
+    let mut ancestor_span_key: Option<(u32, u32)> = None;
 
-    // Try prefixes from longest (all but last segment) to shortest (1 segment)
     for depth in (1..raw_segments.len()).rev() {
         let prefix_xpath = format!(
             "{}{}",
             xpath_prefix,
             raw_segments[..depth].join("/"),
         );
-        let matches = result.query(&prefix_xpath)
-            .unwrap_or_default();
-
+        let matches = result.query(&prefix_xpath).unwrap_or_default();
         if let Some(matched) = matches.first() {
-            // Found deepest matching prefix — locate the xot node
-            if let Some(node) = find_node_by_span(
-                result.documents.xot(),
-                ast_root,
-                matched.line,
-                matched.column,
-            ) {
-                existing_depth = depth;
-                ancestor_node = node;
-                break;
-            }
+            let off = line_col_to_byte_offset(source, matched.line, matched.column)
+                .ok_or_else(|| UpsertError::NoInsertionPoint(
+                    "ancestor span out of bounds".into(),
+                ))?;
+            existing_depth = depth;
+            ancestor_offset = off as u32;
+            ancestor_span_key = Some((matched.line, matched.column));
+            break;
         }
     }
 
@@ -351,208 +424,179 @@ fn insert_new(
             "all path elements exist but XPath didn't match — predicate mismatch?".into(),
         ));
     }
-
-    // Check that segments we need to *create* don't contain predicates —
-    // predicates on existing ancestors are fine (the XPath engine resolved
-    // them), but we can't materialise attributes/conditions on new nodes.
     for raw_seg in raw_segments.iter().skip(existing_depth) {
         if raw_seg.contains('[') {
-            return Err(UpsertError::NoInsertionPoint(
-                format!(
-                    "cannot insert: segment '{}' contains a predicate which cannot be applied during node creation",
-                    raw_seg,
-                ),
-            ));
+            return Err(UpsertError::NoInsertionPoint(format!(
+                "cannot insert: segment '{}' contains a predicate which cannot be applied during node creation",
+                raw_seg,
+            )));
         }
     }
 
-    // Record the splice node's original span.
-    // When existing_depth == 0, the splice node is the document root, so the
-    // entire source is replaced with the full re-render.
     let is_root_splice = existing_depth == 0;
+
+    // Re-parse the source to obtain a mutably-owned DataIr.
+    let parsed = parse_string_to_xot(
+        source,
+        lang,
+        "<insert>".to_string(),
+        Some(TreeMode::Data),
+    )
+    .map_err(|e| UpsertError::Parse(e.to_string()))?;
+    let mut ir = *parsed.data_ir.ok_or_else(|| {
+        UpsertError::Parse(format!(
+            "language '{}' did not produce a DataIr on the IR pipeline",
+            lang,
+        ))
+    })?;
+
+    // Locate the insertion target — the deepest container
+    // (Mapping / Sequence / Section) whose source range starts at
+    // the ancestor offset (or `0` for root splice).
+    let target_offset = if is_root_splice { 0 } else { ancestor_offset };
+    let target = find_insertion_target_at_offset(&mut ir, target_offset).ok_or_else(|| {
+        UpsertError::NoInsertionPoint(format!(
+            "could not locate container at byte offset {} in DataIr",
+            target_offset,
+        ))
+    })?;
+    let kind = scalar_kind_from_str(value_kind);
+    let missing: Vec<&str> = missing_keys.iter().map(|s| s.as_str()).collect();
+    target
+        .insert_nested_pair(&missing, value, kind)
+        .map_err(|e| UpsertError::Render(format!("insert_nested_pair: {}", e)))?;
+
+    let (rendered, span_map) = render_data_ir_with_spans(&ir, lang, source);
+
+    let new_content = if is_root_splice {
+        rendered.trim_end().to_string()
+    } else {
+        let span_key = ancestor_span_key.expect("ancestor_span_key set when !is_root_splice");
+        let (new_start, new_end) = span_map.get(&span_key).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "ancestor at {}:{} not found in IR span map",
+                span_key.0, span_key.1,
+            ))
+        })?;
+        rendered[*new_start..*new_end].to_string()
+    };
 
     let (orig_start, orig_end) = if is_root_splice {
         (0, source.len())
     } else {
-        get_node_byte_span(result.documents.xot(), ancestor_node, source)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no source span".into(),
-            ))?
+        // For non-root splices the original range is the matched
+        // ancestor's value span. We don't have the xot end_line / end_col
+        // here directly, but we can recover them by re-querying the
+        // ancestor span via DataIr's range.
+        let target = ir.find_at_offset(ancestor_offset).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(
+                "ancestor disappeared from DataIr after insert".into(),
+            )
+        })?;
+        let r = target.range();
+        (r.start as usize, r.end as usize)
     };
 
-    // Step 3: Mutate the tree — add missing children
-    let xot = result.documents.xot_mut();
-    add_nested_children(xot, ancestor_node, missing_keys, value, value_kind)?;
-
-    // Step 4: Re-render the full modified tree with span tracking
-    let xml_node = xot_node_to_xml_node(result.documents.xot(), ast_root);
-    let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
-        .map_err(|e| UpsertError::Render(e.to_string()))?;
-
-    // Step 5: Determine the new splice content
-    let new_content = if is_root_splice {
-        // Full re-render replaces the entire source
-        rendered.trim_end().to_string()
-    } else {
-        // Look up the ancestor node's new span from the renderer's span map
-        let xot = result.documents.xot();
-        let sl: u32 = get_attr(xot, ancestor_node, "line")
-            .and_then(|v| v.parse().ok())
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no line attribute for span lookup".into(),
-            ))?;
-        let sc: u32 = get_attr(xot, ancestor_node, "column")
-            .and_then(|v| v.parse().ok())
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no column attribute for span lookup".into(),
-            ))?;
-        let span_key = (sl, sc);
-        let (new_start, new_end) = span_map.get(&span_key)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("ancestor node at {}:{} not found in rendered output span map", sl, sc),
-            ))?;
-        rendered[*new_start..*new_end].to_string()
-    };
-
-    // Step 6: Splice
-    let mut new_source = String::with_capacity(source.len());
+    let mut new_source = String::with_capacity(source.len() + value.len());
     new_source.push_str(&source[..orig_start]);
     new_source.push_str(&new_content);
     new_source.push_str(&source[orig_end..]);
-
-    let description = format!(
-        "inserted {}",
-        missing_keys.join("/"),
-    );
 
     Ok(UpsertResult {
         source: new_source,
         inserted: true,
         matches_updated: 0,
         matches: vec![],
-        description,
+        description: format!("inserted {}", missing_keys.join("/")),
     })
 }
 
-// ---------------------------------------------------------------------------
-// Tree helpers
-// ---------------------------------------------------------------------------
-
-/// Navigate from document root to the AST root element.
-fn find_document_element(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
-    xot.document_element(doc_node).ok()
-}
-
-/// Find a node in the xot tree by its start position.
-fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u32) -> Option<xot::Node> {
-    // Check if this node matches
-    let line: Option<u32> = get_attr(xot, root, "line").and_then(|v| v.parse().ok());
-    let col: Option<u32> = get_attr(xot, root, "column").and_then(|v| v.parse().ok());
-    if line == Some(target_line) && col == Some(target_col) {
-        return Some(root);
+/// Map `--kind <s>` into a [`ScalarKind`]. None → Auto.
+#[cfg(feature = "native")]
+fn scalar_kind_from_str(kind: Option<&str>) -> ScalarKind {
+    match kind {
+        Some("string") => ScalarKind::String,
+        Some("number") => ScalarKind::Number,
+        Some("bool") | Some("boolean") | Some("true") | Some("false") => ScalarKind::Bool,
+        Some("null") => ScalarKind::Null,
+        _ => ScalarKind::Auto,
     }
-
-    // Recurse into children
-    for child in xot.children(root) {
-        if xot.element(child).is_some() {
-            if let Some(found) = find_node_by_span(xot, child, target_line, target_col) {
-                return Some(found);
-            }
-        }
-    }
-    None
 }
 
-/// Get start/end span of a node as (line, col, end_line, end_col).
-fn get_node_span(xot: &Xot, node: xot::Node) -> Option<(u32, u32, u32, u32)> {
-    let sl: u32 = get_attr(xot, node, "line")?.parse().ok()?;
-    let sc: u32 = get_attr(xot, node, "column")?.parse().ok()?;
-    let el: u32 = get_attr(xot, node, "end_line")?.parse().ok()?;
-    let ec: u32 = get_attr(xot, node, "end_column")?.parse().ok()?;
-    Some((sl, sc, el, ec))
-}
-
-/// Get the byte span of a node in the source string.
-fn get_node_byte_span(xot: &Xot, node: xot::Node, source: &str) -> Option<(usize, usize)> {
-    let (sl, sc, el, ec) = get_node_span(xot, node)?;
-    let start = line_col_to_byte_offset(source, sl, sc)?;
-    let end = line_col_to_byte_offset(source, el, ec)?;
-    Some((start, end))
-}
-
-/// Replace all text content of a node with new text.
-fn replace_text_content(xot: &mut Xot, node: xot::Node, new_text: &str) -> Result<(), xot::Error> {
-    // Remove all existing children
-    let children: Vec<xot::Node> = xot.children(node).collect();
-    for child in children {
-        xot.detach(child)?;
-    }
-    // Add new text
-    let text_node = xot.new_text(new_text);
-    xot.append(node, text_node)?;
-    Ok(())
-}
-
-/// Descend through structural wrapper nodes (e.g., `<document>` in YAML)
-/// that sit between the File container and the actual user data.
-fn descend_structural_wrappers(xot: &Xot, container: xot::Node) -> xot::Node {
-    let mut current = container;
-    loop {
-        let element_children: Vec<_> = xot.children(current)
-            .filter(|&c| xot.element(c).is_some())
-            .collect();
-        if element_children.len() == 1 {
-            let child_name = get_element_name(xot, element_children[0]);
-            if matches!(child_name.as_deref(), Some("document")) {
-                current = element_children[0];
-                continue;
-            }
-        }
-        break;
-    }
-    current
-}
-
-/// Add nested children to a node for the missing key path steps.
+/// Walk the tree and return the deepest container
+/// (Mapping / Sequence / Section) whose source range starts at the
+/// given byte offset. Skips `Document` wrappers (we never insert
+/// directly into a Document — the Document's first child container
+/// is the user-visible root, mirroring how
+/// [`descend_structural_wrappers`] handled the xot equivalent).
 ///
-/// `value_kind`: `Some("string")` forces string, `Some("null")` forces null,
-/// `None` omits the kind attribute so the renderer auto-detects from the text.
-fn add_nested_children(
-    xot: &mut Xot,
-    parent: xot::Node,
-    keys: &[String],
-    leaf_value: &str,
-    value_kind: Option<&str>,
-) -> Result<(), xot::Error> {
-    let mut current = parent;
+/// Used by [`insert_new_via_data_ir`] to map an XPath-derived
+/// ancestor position to the right insertion target. Distinct from
+/// [`DataIr::find_at_offset_mut`] which drills to the deepest match
+/// — fine for value-replacement (where the target is the leaf
+/// scalar) but wrong for insertion (where the target is the
+/// surrounding container).
+#[cfg(feature = "native")]
+fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut DataIr> {
+    // Two-phase walk to keep the borrow checker happy: an immutable
+    // pre-pass decides whether to descend (a deeper container
+    // matches) or return `self`; the mutable descent commits to
+    // exactly one borrow path.
+    let has_deeper = ir
+        .children_iter()
+        .any(|c| has_container_at(c, offset));
 
-    for (i, key) in keys.iter().enumerate() {
-        let name = xot.add_name(key);
-        let element = xot.new_element(name);
-
-        // Mark as property
-        let field_attr = xot.add_name("field");
-        xot.attributes_mut(element).insert(field_attr, key.clone());
-
-        if i == keys.len() - 1 {
-            // Leaf: set value as text content
-            let text_node = xot.new_text(leaf_value);
-            xot.append(element, text_node)?;
-
-            // Set kind attribute if explicitly specified; omit to let
-            // the renderer auto-detect (null, number, boolean, string).
-            if let Some(kind) = value_kind {
-                let kind_attr = xot.add_name("kind");
-                xot.attributes_mut(element).insert(kind_attr, kind.to_string());
+    if has_deeper {
+        match ir {
+            DataIr::Document { children, .. }
+            | DataIr::Sequence { items: children, .. }
+            | DataIr::Section { children, .. } => {
+                for child in children.iter_mut() {
+                    if let Some(f) = find_insertion_target_at_offset(child, offset) {
+                        return Some(f);
+                    }
+                }
+                None
             }
+            DataIr::Mapping { pairs, .. } => {
+                for child in pairs.iter_mut() {
+                    if let Some(f) = find_insertion_target_at_offset(child, offset) {
+                        return Some(f);
+                    }
+                }
+                None
+            }
+            DataIr::Pair { key, value, .. } => {
+                if let Some(f) = find_insertion_target_at_offset(key, offset) {
+                    return Some(f);
+                }
+                find_insertion_target_at_offset(value, offset)
+            }
+            _ => None,
         }
-
-        xot.append(current, element)?;
-        current = element;
+    } else {
+        let is_container = matches!(
+            ir,
+            DataIr::Mapping { .. } | DataIr::Sequence { .. } | DataIr::Section { .. }
+        );
+        if is_container && ir.range().start == offset {
+            Some(ir)
+        } else {
+            None
+        }
     }
+}
 
-    Ok(())
+#[cfg(feature = "native")]
+fn has_container_at(ir: &DataIr, offset: u32) -> bool {
+    let is_container = matches!(
+        ir,
+        DataIr::Mapping { .. } | DataIr::Sequence { .. } | DataIr::Section { .. }
+    );
+    if is_container && ir.range().start == offset {
+        return true;
+    }
+    ir.children_iter().any(|c| has_container_at(c, offset))
 }
 
 // ---------------------------------------------------------------------------
@@ -630,24 +674,21 @@ fn line_col_to_byte_offset(content: &str, line: u32, col: u32) -> Option<usize> 
     None
 }
 
-/// Detect render options from source (indentation style, newline style).
-fn detect_render_options(source: &str) -> RenderOptions {
+/// Detect indent and newline conventions from the source: returns
+/// `(indent, newline)`. Two-space default for indent if the source
+/// has no indented line; `\n` default for newline unless `\r\n` is
+/// present.
+fn detect_indent_and_newline(source: &str) -> (String, String) {
     let newline = if source.contains("\r\n") { "\r\n" } else { "\n" };
-
-    // Detect indent from first indented line
-    let indent = source.lines()
+    let indent = source
+        .lines()
         .find(|line| line.starts_with(' ') || line.starts_with('\t'))
         .map(|line| {
             let trimmed = line.trim_start();
             &line[..line.len() - trimmed.len()]
         })
         .unwrap_or("  ");
-
-    RenderOptions {
-        indent: indent.to_string(),
-        indent_level: 0,
-        newline: newline.to_string(),
-    }
+    (indent.to_string(), newline.to_string())
 }
 
 #[cfg(test)]

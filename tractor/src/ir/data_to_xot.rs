@@ -220,7 +220,15 @@ pub fn render_data_to_xot_keyed(
 ) -> Result<XotNode, xot::Error> {
     match ir {
         DataIr::Document { children, span, .. } => {
-            let node = element(xot, "document", *span);
+            // YAML's tree-sitter `stream` and `document` both lower to
+            // `DataIr::Document`; when the children are themselves
+            // Documents (multi-doc stream), the outer wrapper is
+            // rendered as `<stream>` to preserve the legacy shape and
+            // keep `//document` queries counting only inner docs.
+            let is_stream = !children.is_empty()
+                && children.iter().all(|c| matches!(c, DataIr::Document { .. }));
+            let element_name = if is_stream { "stream" } else { "document" };
+            let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
             for c in children {
                 render_data_to_xot_keyed(xot, node, c, source)?;
@@ -253,16 +261,47 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Pair { key, value, span, .. } => {
-            // Key text → element name; value renders as the
-            // element's content (text for scalars, nested for
-            // Mapping/Sequence). When sanitization changes the
-            // name (e.g. `"first name"` → `first_name`), add a
-            // `key="…original…"` attribute so the original key
-            // text is queryable + recoverable.
+        DataIr::Pair { key, value, span: _, .. } => {
+            // Key text → element name; value renders as the element's
+            // content. The element's source location is set to the
+            // VALUE span (not the pair span) so that splice-based
+            // mutation paths can replace just the value bytes when
+            // updating a property — matches the legacy data-branch
+            // shape's convention.
+            //
+            // For Sequence values, produce repeated sibling elements
+            // named after the key (per the data-branch spec —
+            // `{"tags": ["a", "b"]}` renders as
+            // `<tags>a</tags><tags>b</tags>`, not nested `<item>`).
+            //
+            // When sanitization changes the name (e.g. `"first name"`
+            // → `first_name`), add a `key="…original…"` attribute so
+            // the original key text is queryable + recoverable.
             let raw_key = scalar_text(key, source).unwrap_or_default();
             let element_name = sanitize_xml_name(raw_key.clone());
-            let node = element(xot, &element_name, *span);
+
+            if let DataIr::Sequence { items, .. } = value.as_ref() {
+                // Named array (semantic-tree Principle #12): repeat the
+                // key name as siblings, each tagged `list="<key>"` so
+                // JSON/YAML renderers know the items belong to a single
+                // logical list — even when there's only one item.
+                let mut last = parent;
+                for item in items {
+                    let node = element(xot, &element_name, item.span());
+                    xot.append(parent, node)?;
+                    let list_attr = xot.add_name("list");
+                    xot.attributes_mut(node).insert(list_attr, raw_key.clone());
+                    if !raw_key.is_empty() && raw_key != element_name {
+                        let key_attr = xot.add_name("key");
+                        xot.attributes_mut(node).insert(key_attr, raw_key.clone());
+                    }
+                    render_keyed_value(xot, node, item, source)?;
+                    last = node;
+                }
+                return Ok(last);
+            }
+
+            let node = element(xot, &element_name, value.span());
             xot.append(parent, node)?;
             if !raw_key.is_empty() && raw_key != element_name {
                 let key_attr = xot.add_name("key");
@@ -271,28 +310,26 @@ pub fn render_data_to_xot_keyed(
             render_keyed_value(xot, node, value, source)?;
             Ok(node)
         }
-        DataIr::Mapping { pairs, span, .. } => {
-            // Top-level mapping (no enclosing Section) — render as
-            // <document>-equivalent inline. Each pair gets its key
-            // as element name.
-            let node = element(xot, "object", *span);
-            xot.append(parent, node)?;
+        DataIr::Mapping { pairs, span: _, .. } => {
+            // Per data-branch spec: object keys become elements
+            // directly under the parent — no `<object>` wrapper.
             for p in pairs {
-                render_data_to_xot_keyed(xot, node, p, source)?;
+                render_data_to_xot_keyed(xot, parent, p, source)?;
             }
-            Ok(node)
+            Ok(parent)
         }
-        DataIr::Sequence { items, span, .. } => {
-            // Top-level sequence (no enclosing Pair) — wrap in
-            // <array>. Inner items get <item> wrapping.
-            let node = element(xot, "array", *span);
-            xot.append(parent, node)?;
+        DataIr::Sequence { items, span: _, .. } => {
+            // Anonymous array (top-level, or array nested in another
+            // array): each item gets an `<item>` wrapper. Per spec,
+            // there is no `<array>` outer wrapper here.
+            let mut last = parent;
             for item in items {
                 let item_node = element(xot, "item", item.span());
-                xot.append(node, item_node)?;
+                xot.append(parent, item_node)?;
                 render_keyed_value(xot, item_node, item, source)?;
+                last = item_node;
             }
-            Ok(node)
+            Ok(last)
         }
         DataIr::String { value, span, .. } => {
             let node = element(xot, "string", *span);
@@ -405,7 +442,17 @@ fn render_keyed_value(
             let t = xot.new_text(if *value { "true" } else { "false" });
             xot.append(parent, t)?;
         }
-        DataIr::Null { .. } => { /* leave parent empty */ }
+        DataIr::Null { range, .. } => {
+            // Per data-branch spec: null renders as a literal text
+            // node so XPath value comparisons (`. = 'null'`) work and
+            // projections show the source keyword. Preserve YAML's
+            // `~` vs `null` distinction by slicing the source range
+            // (DataIr::Null doesn't carry the keyword text).
+            let raw = range.slice(source).trim();
+            let text = if raw.is_empty() { "null" } else { raw };
+            let t = xot.new_text(text);
+            xot.append(parent, t)?;
+        }
         DataIr::Mapping { pairs, .. } => {
             for p in pairs {
                 render_data_to_xot_keyed(xot, parent, p, source)?;

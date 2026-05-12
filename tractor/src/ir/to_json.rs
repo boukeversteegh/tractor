@@ -1003,16 +1003,11 @@ impl Shape {
         let plural = pluralize_list_name(element_name);
         let count = self.counts.entry(plural.clone()).or_insert(0);
         *count += 1;
-        // Element names that the imperative pipeline always tags with
-        // `list="X"` even for singletons (so xml_to_json emits a plural
-        // array) — when ir_to_json sees one of these, skip the
-        // singleton-shape branch and go directly to the plural array
-        // even on first occurrence. Mirrors the post_transform's
-        // `tag_multi_role_children` + `distribute_member_list_attrs`
-        // tagging for known multi-cardinality children, so the JSON
-        // output stays consistent with the existing snapshot
-        // convention regardless of how many occurrences a given
-        // source actually has.
+        // Element names that always render as a plural JSON array
+        // even for singletons. Used to keep the JSON output
+        // consistent with snapshot convention when an element of
+        // this name appears once — we skip the singleton branch and
+        // go directly to the plural array on first occurrence.
         let always_plural = matches!(element_name, "comment");
         if *count == 1 && !always_plural {
             // First occurrence — use singular key (the singleton form).

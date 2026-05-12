@@ -170,5 +170,6 @@ pub use markdown_data::lower_markdown_data_root;
 pub use data_to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 #[cfg(feature = "native")]
 pub use data_to_json::data_to_json;
+pub use to_data::{lower_to_data_ir, has_unhandled};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};

@@ -27,7 +27,10 @@ pub mod xpath;
 
 // Output & rendering
 pub mod output;
-pub mod render;
+// `render` module retired by S4C/S4D — the IR-pipeline reverse path
+// owns this surface now: programming languages render through
+// `ir::source::*`, data languages through
+// `ir::source::data_{json,yaml}`.
 
 // Core data types
 pub mod model;

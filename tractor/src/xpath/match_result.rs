@@ -133,10 +133,27 @@ impl Tree {
     /// (arrays for `Vec<Ir>` slots, singletons for `Box<Ir>` slots)
     /// comes from the typed renderers; `Tree::Xml` falls back to
     /// the XML→JSON projection until partial matches carry IR too.
+    ///
+    /// **`Tree::Ir` dispatch (S5C).** Programming-language IR
+    /// renders through `lower_to_data_ir → data_to_json` once the
+    /// projection covers every variant in the tree. While S5A is
+    /// in progress, documents containing unhandled variants still
+    /// fall back to the legacy heuristic `ir_to_json` — coverage
+    /// flips per-document to the new path as `to_data::project`'s
+    /// arms grow. The legacy path retires when `has_unhandled`
+    /// returns false for every test fixture (S5A's closing
+    /// condition).
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
             #[cfg(feature = "native")]
-            Tree::Ir { ir, source, .. } => crate::ir::ir_to_json(ir, source),
+            Tree::Ir { ir, source, .. } => {
+                let data = crate::ir::lower_to_data_ir(ir, source);
+                if crate::ir::has_unhandled(&data) {
+                    crate::ir::ir_to_json(ir, source)
+                } else {
+                    crate::ir::data_to_json(&data)
+                }
+            }
             #[cfg(feature = "native")]
             Tree::DataIr { ir, .. } => crate::ir::data_to_json(ir),
             #[cfg(feature = "native")]

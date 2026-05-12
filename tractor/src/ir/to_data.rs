@@ -55,6 +55,30 @@ pub fn lower_to_data_ir(ir: &Ir, source: &str) -> DataIr {
     project(ir, source)
 }
 
+/// Walk a projected [`DataIr`] tree and return `true` if any node is
+/// the `unhandled:<variant>` coverage-gap marker (see the catch-all
+/// arm in `project`). Used by the JSON dispatch path to decide
+/// whether to flow through the new `to_data` → `data_to_json` path
+/// or fall back to the legacy heuristic `ir_to_json` for documents
+/// the projection doesn't yet cover end-to-end.
+pub fn has_unhandled(ir: &DataIr) -> bool {
+    if let DataIr::Unknown { kind, .. } = ir {
+        if kind.starts_with("unhandled:") {
+            return true;
+        }
+    }
+    match ir {
+        DataIr::Document { children, .. }
+        | DataIr::Sequence { items: children, .. }
+        | DataIr::Section { children, .. }
+        | DataIr::Element { children, .. }
+        | DataIr::Directive { children, .. } => children.iter().any(has_unhandled),
+        DataIr::Mapping { pairs, .. } => pairs.iter().any(has_unhandled),
+        DataIr::Pair { key, value, .. } => has_unhandled(key) || has_unhandled(value),
+        _ => false,
+    }
+}
+
 fn project(ir: &Ir, source: &str) -> DataIr {
     match ir {
         // ----- Scalar leaves --------------------------------------------
@@ -135,12 +159,941 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             }
         }
 
-        // ----- Everything else is a coverage gap (slice 1 scope) -------
-        other => DataIr::Unknown {
-            kind: format!("unhandled:{}", ir_variant_name(other)),
-            range: other.range(),
-            span: other.span(),
+        // ----- Body — transparent: its children are the parent's pairs.
+        // When a caller projects a Body directly (not as a Class /
+        // Function slot), emit a Mapping containing those pairs. The
+        // typical use is via `collect_member_pairs(body.children)` at
+        // the parent level, but standalone projection still works.
+        Ir::Body { children, range, span, .. } => {
+            let pairs = collect_member_pairs(children, source);
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Function — modifier flags + name + parameters list +
+        // returns + body member pairs. Mirrors the legacy projection
+        // shape but without `$type`.
+        Ir::Function {
+            element_name: _,
+            modifiers,
+            decorators: _,
+            name,
+            generics: _,
+            parameters,
+            returns,
+            body,
+            range,
+            span,
+        } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            pairs.push(make_pair("name", project(name, source), *range, *span));
+            for p in parameters {
+                pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
+            }
+            if let Some(r) = returns {
+                pairs.push(make_pair("returns", project(r, source), r.range(), r.span()));
+            }
+            if let Some(b) = body {
+                if let Ir::Body { children, .. } = b.as_ref() {
+                    pairs.extend(collect_member_pairs(children, source));
+                }
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ----- Variable — modifier flags + type? + name + value?.
+        Ir::Variable {
+            element_name: _,
+            modifiers,
+            decorators: _,
+            type_ann,
+            name,
+            value,
+            range,
+            span,
+        } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            if let Some(t) = type_ann {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            pairs.push(make_pair("name", project(name, source), *range, *span));
+            if let Some(v) = value {
+                let inner = &v.inner;
+                pairs.push(make_pair("value", project(inner, source), inner.range(), inner.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Property — modifier flags + type? + name + accessors +
+        // value?. Each accessor renders by its kind ("get" / "set" /
+        // "init") as a pair under that name; multiple of the same kind
+        // are pluralized by `pluralize_pairs`.
+        Ir::Property {
+            modifiers,
+            decorators: _,
+            type_ann,
+            name,
+            accessors,
+            value,
+            range,
+            span,
+        } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            if let Some(t) = type_ann {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            pairs.push(make_pair("name", project(name, source), *range, *span));
+            for a in accessors {
+                let key = element_name_for_pair(a);
+                pairs.push(make_pair(key, project(a, source), a.range(), a.span()));
+            }
+            if let Some(v) = value {
+                pairs.push(make_pair("value", project(v, source), v.range(), v.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ----- Returns — wrapper around a type-annotation slot.
+        Ir::Returns { type_ann, range, span } => {
+            DataIr::Mapping {
+                pairs: vec![make_pair(
+                    "type",
+                    project(type_ann, source),
+                    type_ann.range(),
+                    type_ann.span(),
+                )],
+                range: *range,
+                span: *span,
+            }
+        }
+
+        // ----- Parameter — kind/extra/modifier flags, type?, name,
+        // default?. Mirrors legacy modulo `$type`.
+        Ir::Parameter {
+            kind,
+            extra_markers,
+            modifiers,
+            name,
+            type_ann,
+            default,
+            range,
+            span,
+        } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            match kind {
+                super::types::ParamKind::Args => pairs.push(make_flag("args", *range, *span)),
+                super::types::ParamKind::Kwargs => pairs.push(make_flag("kwargs", *range, *span)),
+                _ => {}
+            }
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            for m in *extra_markers {
+                pairs.push(make_flag(m, *range, *span));
+            }
+            if let Some(t) = type_ann {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            pairs.push(make_pair("name", project(name, source), *range, *span));
+            if let Some(d) = default {
+                pairs.push(make_pair("value", project(d, source), d.range(), d.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- SimpleStatement (non-marker case) — modifier flags +
+        // extra markers + children as keyed pairs. Marker-only cases
+        // are folded by `synthetic_marker_name` at the parent level
+        // and never reach here as a project() call.
+        Ir::SimpleStatement {
+            element_name: _,
+            modifiers,
+            extra_markers,
+            children,
+            range,
+            span,
+        } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            for m in *extra_markers {
+                pairs.push(make_flag(m, *range, *span));
+            }
+            pairs.extend(collect_member_pairs(children, source));
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Scalar literals — leaf text from `source[range]`. Each
+        // maps to its natural DataIr scalar variant; the JSON output
+        // becomes a bare value (number / string / bool / null) at
+        // that position rather than a wrapper object.
+        Ir::Int { range, span } => DataIr::Number {
+            text: range.slice(source).to_string(),
+            range: *range,
+            span: *span,
         },
+        Ir::Float { range, span } => DataIr::Number {
+            text: range.slice(source).to_string(),
+            range: *range,
+            span: *span,
+        },
+        Ir::String { range, span } => DataIr::String {
+            value: range.slice(source).to_string(),
+            range: *range,
+            span: *span,
+        },
+        Ir::True { range, span } => DataIr::Bool {
+            value: true,
+            range: *range,
+            span: *span,
+        },
+        Ir::False { range, span } => DataIr::Bool {
+            value: false,
+            range: *range,
+            span: *span,
+        },
+        Ir::None { range, span } => DataIr::Null { range: *range, span: *span },
+        Ir::Null { range, span } => DataIr::Null { range: *range, span: *span },
+
+        // ----- Tuple / List / Set — anonymous-ordered collections.
+        // JSON renders as an array of projected children.
+        Ir::Tuple { children, range, span }
+        | Ir::List { children, range, span }
+        | Ir::Set { children, range, span } => DataIr::Sequence {
+            items: children
+                .iter()
+                .filter(|c| !matches!(c, Ir::Skip { .. }))
+                .map(|c| project(c, source))
+                .collect(),
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Dictionary — keyed pairs. Each `Ir::Pair { key, value }`
+        // projects to `DataIr::Pair`; the dictionary itself becomes a
+        // Mapping over those pairs.
+        Ir::Dictionary { pairs, range, span } => DataIr::Mapping {
+            pairs: pairs
+                .iter()
+                .filter(|p| !matches!(p, Ir::Skip { .. }))
+                .map(|p| project(p, source))
+                .collect(),
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Pair — a dictionary entry. Becomes a `DataIr::Pair`
+        // so that an enclosing `Dictionary` projects cleanly to a
+        // JSON object. (Distinct from the structural `make_pair`
+        // helper used at the parent-of-class level.)
+        Ir::Pair { key, value, range, span } => DataIr::Pair {
+            key: Box::new(project(key, source)),
+            value: Box::new(project(value, source)),
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Expression — Principle #15 stable host wrapper.
+        // No marker: transparent projection to inner (the host has
+        // no JSON-visible content of its own). Marker case
+        // (`non_null` / `await`): emit a Mapping with the marker
+        // as a flag, then merge the inner's projected pairs (if it
+        // projects to a Mapping) or place the inner under its
+        // element-name slot.
+        Ir::Expression { inner, marker, range, span } => match marker {
+            None => project(inner, source),
+            Some(m) => {
+                let mut pairs: Vec<DataIr> = vec![make_flag(m, *range, *span)];
+                match project(inner, source) {
+                    DataIr::Mapping { pairs: inner_pairs, .. } => pairs.extend(inner_pairs),
+                    other => {
+                        let key = element_name_for_pair(inner);
+                        pairs.push(make_pair(key, other, inner.range(), inner.span()));
+                    }
+                }
+                DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+            }
+        },
+
+        // ----- Binary / Comparison — symmetric `<left><op><right>`
+        // shape. The `op` slot carries `text` + the op_marker as a
+        // boolean flag (e.g. `{ text: "+", plus: true }`). Operands
+        // are projected directly without an `<expression>` wrapper
+        // (the wrapper has no JSON role per the design).
+        Ir::Binary { left, op_text, op_marker, right, range, span, .. }
+        | Ir::Comparison { left, op_text, op_marker, right, range, span, .. } => {
+            DataIr::Mapping {
+                pairs: vec![
+                    make_pair("left", project(left, source), left.range(), left.span()),
+                    make_pair("op", make_op_mapping(op_text, op_marker, *range, *span), *range, *span),
+                    make_pair("right", project(right, source), right.range(), right.span()),
+                ],
+                range: *range,
+                span: *span,
+            }
+        }
+
+        // ----- Unary — op + extra-marker flags + operand.
+        Ir::Unary { op_text, op_marker, operand, extra_markers, range, span, .. } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            for m in *extra_markers {
+                pairs.push(make_flag(m, *range, *span));
+            }
+            pairs.push(make_pair("op", make_op_mapping(op_text, op_marker, *range, *span), *range, *span));
+            pairs.push(make_pair("operand", project(operand, source), operand.range(), operand.span()));
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Ternary — `<condition><then><else>` shape.
+        Ir::Ternary { condition, if_true, if_false, range, span } => DataIr::Mapping {
+            pairs: vec![
+                make_pair("condition", project(condition, source), condition.range(), condition.span()),
+                make_pair("then", project(if_true, source), if_true.range(), if_true.span()),
+                make_pair("else", project(if_false, source), if_false.range(), if_false.span()),
+            ],
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Is — `value is type_target`. Projects to a Mapping
+        // with `left` (value) and `right` (type) for symmetry with
+        // Binary / Comparison.
+        Ir::Is { value, type_target, range, span } => DataIr::Mapping {
+            pairs: vec![
+                make_pair("left", project(value, source), value.range(), value.span()),
+                make_pair("right", project(type_target, source), type_target.range(), type_target.span()),
+            ],
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Cast — `(Type)expr`. Mapping with `type` and `value`.
+        Ir::Cast { type_ann, value, range, span } => DataIr::Mapping {
+            pairs: vec![
+                make_pair("type", project(type_ann, source), type_ann.range(), type_ann.span()),
+                make_pair("value", project(value, source), value.range(), value.span()),
+            ],
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Call — callee + arguments. Each argument projects
+        // under its own element-name; pluralization groups multiple
+        // same-keyed siblings (e.g. `name: [...]`).
+        Ir::Call { callee, arguments, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("callee", project(callee, source), callee.range(), callee.span()));
+            for a in arguments {
+                let key = element_name_for_pair(a);
+                pairs.push(make_pair(key, project(a, source), a.range(), a.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ----- KeywordArgument — `name=value` named argument.
+        // Mapping with `name` + `value` slots.
+        Ir::KeywordArgument { name, value, range, span } => DataIr::Mapping {
+            pairs: vec![
+                make_pair("name", project(name, source), name.range(), name.span()),
+                make_pair("value", project(value, source), value.range(), value.span()),
+            ],
+            range: *range,
+            span: *span,
+        },
+
+        // ----- ListSplat / DictSplat — `*x` / `**x` spread. Project
+        // the inner expression directly; the splat marker is dropped
+        // from the JSON view. (The `<spread[list]/>` / `<spread[dict]/>`
+        // distinction is XML-only structure for queryability.)
+        Ir::ListSplat { inner, .. } | Ir::DictSplat { inner, .. } => project(inner, source),
+
+        // ----- Control flow ----------------------------------------------
+
+        // If / ElseIf — `condition`, `body` (member pairs flattened),
+        // optional `else_branch`. ElseIf chains stay flat (each one
+        // is its own pair under the parent if's `else_if` slot).
+        Ir::If { condition, body, else_branch, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            if let Some(e) = else_branch {
+                let key = element_name_for_pair(e);
+                pairs.push(make_pair(key, project(e, source), e.range(), e.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+        Ir::ElseIf { condition, body, else_branch, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            if let Some(e) = else_branch {
+                let key = element_name_for_pair(e);
+                pairs.push(make_pair(key, project(e, source), e.range(), e.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+        Ir::Else { body, range, span } => {
+            let pairs = if let Ir::Body { children, .. } = body.as_ref() {
+                collect_member_pairs(children, source)
+            } else {
+                vec![make_pair("body", project(body, source), body.range(), body.span())]
+            };
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // For — Python `for target in iter: body [else]`. `is_async`
+        // becomes a flag; multiple targets / iterables stay as
+        // sibling pairs (pluralized).
+        Ir::For { is_async, targets, iterables, body, else_body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *is_async {
+                pairs.push(make_flag("async", *range, *span));
+            }
+            for t in targets {
+                pairs.push(make_pair("left", project(t, source), t.range(), t.span()));
+            }
+            for i in iterables {
+                pairs.push(make_pair("right", project(i, source), i.range(), i.span()));
+            }
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            if let Some(e) = else_body {
+                pairs.push(make_pair("else", project(e, source), e.range(), e.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // While — `condition`, body members flat, optional `else`.
+        Ir::While { condition, body, else_body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            if let Some(e) = else_body {
+                pairs.push(make_pair("else", project(e, source), e.range(), e.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Foreach — C#/Java `foreach`. Optional type, single target,
+        // single iterable, body. `in` flag for parity with legacy.
+        Ir::Foreach { type_ann, target, iterable, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_flag("in", *range, *span));
+            if let Some(t) = type_ann {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            pairs.push(make_pair("left", project(target, source), target.range(), target.span()));
+            pairs.push(make_pair("right", project(iterable, source), iterable.range(), iterable.span()));
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // CFor — C-style `for(init; cond; update) body`.
+        Ir::CFor { initializer, condition, updates, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Some(i) = initializer {
+                let key = element_name_for_pair(i);
+                pairs.push(make_pair(key, project(i, source), i.range(), i.span()));
+            }
+            if let Some(c) = condition {
+                pairs.push(make_pair("condition", project(c, source), c.range(), c.span()));
+            }
+            for u in updates {
+                let key = element_name_for_pair(u);
+                pairs.push(make_pair(key, project(u, source), u.range(), u.span()));
+            }
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // DoWhile — body + condition (legacy renders body first).
+        Ir::DoWhile { body, condition, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Break / Continue — bare keyword statements; empty Mapping.
+        Ir::Break { range, span } | Ir::Continue { range, span } => {
+            DataIr::Mapping { pairs: vec![], range: *range, span: *span }
+        }
+
+        // Try — protected body + handlers + optional else / finally.
+        Ir::Try { try_body, handlers, else_body, finally_body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Ir::Body { children, .. } = try_body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(try_body, source), try_body.range(), try_body.span()));
+            }
+            for h in handlers {
+                let key = element_name_for_pair(h); // "catch" or "except"
+                pairs.push(make_pair(key, project(h, source), h.range(), h.span()));
+            }
+            if let Some(e) = else_body {
+                pairs.push(make_pair("else", project(e, source), e.range(), e.span()));
+            }
+            if let Some(f) = finally_body {
+                pairs.push(make_pair("finally", project(f, source), f.range(), f.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ExceptHandler / catch.
+        Ir::ExceptHandler { kind: _, type_target, binding, filter, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Some(t) = type_target {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            if let Some(b) = binding {
+                pairs.push(make_pair("name", project(b, source), b.range(), b.span()));
+            }
+            if let Some(f) = filter {
+                pairs.push(make_pair("filter", project(f, source), f.range(), f.span()));
+            }
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ----- Misc tail --------------------------------------------------
+
+        // Lambda — modifier flags + parameters + body.
+        Ir::Lambda { modifiers, parameters, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            for p in parameters {
+                pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
+            }
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ObjectCreation — `new Type(args) { Init }`.
+        Ir::ObjectCreation { type_target, arguments, initializer, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Some(t) = type_target {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            for a in arguments {
+                let key = element_name_for_pair(a);
+                pairs.push(make_pair(key, project(a, source), a.range(), a.span()));
+            }
+            if let Some(init) = initializer {
+                pairs.push(make_pair("literal", project(init, source), init.range(), init.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Constructor — modifier flags + name + parameters + body.
+        Ir::Constructor { modifiers, decorators: _, name, parameters, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            for p in parameters {
+                pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
+            }
+            if let Ir::Body { children, .. } = body.as_ref() {
+                pairs.extend(collect_member_pairs(children, source));
+            } else {
+                pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Generic — flat list of TypeParameter items. Each renders
+        // under its element name (`type`); pluralization groups them.
+        Ir::Generic { items, range, span } => {
+            let pairs: Vec<DataIr> = items
+                .iter()
+                .map(|it| {
+                    let key = element_name_for_pair(it);
+                    make_pair(key, project(it, source), it.range(), it.span())
+                })
+                .collect();
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // TypeParameter — name + optional constraint.
+        Ir::TypeParameter { name, constraint, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            if let Some(c) = constraint {
+                let key = element_name_for_pair(c);
+                pairs.push(make_pair(key, project(c, source), c.range(), c.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // GenericType — `Name[T, U]` instantiation. `generic` flag +
+        // base name + each param under its element name (typically
+        // "type"; pluralized).
+        Ir::GenericType { name, params, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_flag("generic", *range, *span));
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            for p in params {
+                let key = element_name_for_pair(p);
+                pairs.push(make_pair(key, project(p, source), p.range(), p.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // TypeAlias — `type Foo[T] = Bar`. name + type_params? + value.
+        Ir::TypeAlias { name, type_params, value, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            if let Some(t) = type_params {
+                pairs.push(make_pair("generic", project(t, source), t.range(), t.span()));
+            }
+            pairs.push(make_pair("value", project(value, source), value.range(), value.span()));
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // Enum — modifier flags + name + optional underlying type +
+        // members (each EnumMember).
+        Ir::Enum { modifiers, decorators: _, name, underlying_type, members, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            if let Some(u) = underlying_type {
+                pairs.push(make_pair("type", project(u, source), u.range(), u.span()));
+            }
+            for m in members {
+                pairs.push(make_pair("constant", project(m, source), m.range(), m.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // EnumMember — name + optional value.
+        Ir::EnumMember { decorators: _, name, value, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            if let Some(v) = value {
+                pairs.push(make_pair("value", project(v, source), v.range(), v.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // Accessor — modifier flags + optional body.
+        Ir::Accessor { modifiers, kind: _, body, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            push_modifier_flags(&mut pairs, modifiers, *range, *span);
+            if let Some(b) = body {
+                if let Ir::Body { children, .. } = b.as_ref() {
+                    pairs.extend(collect_member_pairs(children, source));
+                } else {
+                    pairs.push(make_pair("body", project(b, source), b.range(), b.span()));
+                }
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Using — C# `using System;`. is_static flag + path + alias?.
+        Ir::Using { is_static, alias, path, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *is_static {
+                pairs.push(make_flag("static", *range, *span));
+            }
+            pairs.push(make_pair("path", project(path, source), path.range(), path.span()));
+            if let Some(a) = alias {
+                pairs.push(make_pair("alias", project(a, source), a.range(), a.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // Namespace — name + member children + file_scoped flag.
+        Ir::Namespace { name, children, file_scoped, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *file_scoped {
+                pairs.push(make_flag("file", *range, *span));
+            }
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            pairs.extend(collect_member_pairs(children, source));
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // From — Python `from x import y`. relative flag + path? +
+        // imports list (each FromImport).
+        Ir::From { relative, path, imports, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *relative {
+                pairs.push(make_flag("relative", *range, *span));
+            }
+            if let Some(p) = path {
+                pairs.push(make_pair("path", project(p, source), p.range(), p.span()));
+            }
+            for i in imports {
+                let key = element_name_for_pair(i);
+                pairs.push(make_pair(key, project(i, source), i.range(), i.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // FromImport — has_alias flag + name + alias?.
+        Ir::FromImport { has_alias, name, alias, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *has_alias {
+                pairs.push(make_flag("alias", *range, *span));
+            }
+            pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
+            if let Some(a) = alias {
+                pairs.push(make_pair("alias", project(a, source), a.range(), a.span()));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // Path — flat segment list. Renders each segment as a "name"
+        // pair; pluralization → `names: [...]`.
+        Ir::Path { segments, range, span } => {
+            let pairs: Vec<DataIr> = segments
+                .iter()
+                .map(|s| {
+                    let key = element_name_for_pair(s);
+                    make_pair(key, project(s, source), s.range(), s.span())
+                })
+                .collect();
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // Aliased — wrapper around the renamed-target identifier.
+        // Project transparently to the inner.
+        Ir::Aliased { inner, .. } => project(inner, source),
+
+        // Assign — `target = value` / `t1, t2 = v1, v2` / `t: T = v`.
+        // op_markers as flags + optional type + left(s) + right(s).
+        Ir::Assign { targets, type_annotation, op_markers, values, range, span, .. } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            for m in op_markers {
+                pairs.push(make_flag(m, *range, *span));
+            }
+            if let Some(t) = type_annotation {
+                pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
+            }
+            for t in targets {
+                pairs.push(make_pair("left", project(t, source), t.range(), t.span()));
+            }
+            for v in values {
+                pairs.push(make_pair("right", project(v, source), v.range(), v.span()));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // FieldWrap — `<type>{inner}</type>` or `<value>{inner}</value>`.
+        // Project transparently to the inner; the wrapper is XML-only
+        // for queryability (the parent's slot key already conveys the
+        // role at JSON level).
+        Ir::FieldWrap { inner, .. } => project(inner, source),
+
+        // PositionalSeparator / KeywordSeparator — pure-syntax markers
+        // (`/` and `*` in Python parameter lists). No JSON content.
+        Ir::PositionalSeparator { range, span } | Ir::KeywordSeparator { range, span } => {
+            DataIr::Null { range: *range, span: *span }
+        }
+
+        // Unknown — keep the kind visible so coverage gaps surface.
+        Ir::Unknown { kind, range, span } => DataIr::Unknown {
+            kind: format!("ir-unknown:{}", kind),
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Access chain (deferred from Z3) ---------------------------
+        // Receiver + segment list (Member / Index / Call). The legacy
+        // path emits `access` flag, then unfolds receiver into the
+        // outer object's properties, then each segment as a
+        // pluralized pair under `member` / `index` / `call`.
+        Ir::Access { receiver, segments, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            pairs.push(make_flag("access", *range, *span));
+            pairs.push(make_pair(
+                "receiver",
+                project(receiver, source),
+                receiver.range(),
+                receiver.span(),
+            ));
+            for seg in segments {
+                let (key, mapping) = project_access_segment(seg, source);
+                let r = seg.range();
+                let s = seg.span();
+                pairs.push(make_pair(key, mapping, r, s));
+            }
+            DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
+        }
+
+        // ----- Comment — emit the source text as a String scalar.
+        // Comments appear as `Pair("comment", String("// ..."))` under
+        // their parent. Leading/trailing positional info is dropped
+        // from the JSON shape (it lives on the IR for tree-text
+        // rendering, but isn't part of the data view).
+        Ir::Comment { range, span, .. } => DataIr::String {
+            value: range.slice(source).to_string(),
+            range: *range,
+            span: *span,
+        },
+
+        // ----- Return — `<return><value>...</value></return>` → a
+        // Mapping with one `expression` slot pair when a value is
+        // present; an empty Mapping for bare `return;`.
+        Ir::Return { value, range, span } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let Some(v) = value {
+                pairs.push(make_pair(
+                    "expression",
+                    project(v, source),
+                    v.range(),
+                    v.span(),
+                ));
+            }
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Decorator — wraps an inner expression. Project the
+        // inner directly under the parent's `decorator` slot; the
+        // decorator wrapper itself adds nothing the JSON view needs.
+        Ir::Decorator { inner, range: _, span: _ } => project(inner, source),
+
+        // ----- Import — its children are key/value pairs (path,
+        // alias, etc.) that flatten directly under the parent. Same
+        // shape as Module / Body.
+        Ir::Import { children, range, span, .. } => {
+            let pairs = collect_member_pairs(children, source);
+            DataIr::Mapping { pairs, range: *range, span: *span }
+        }
+
+        // ----- Exhaustiveness checkpoint (S5A-Z7) ---------------------
+        // No catch-all arm: every `Ir` variant has its own
+        // projection rule above. Adding a new variant to `Ir`
+        // forces the compiler to surface it here, which prevents
+        // silent miscompiles back to "all-unknown" output. The
+        // `has_unhandled` runtime predicate stays for the
+        // marker-carrying `Unknown` projection (a real coverage
+        // gap, not just an enum mismatch).
+    }
+}
+
+fn make_flag(name: &str, range: super::types::ByteRange, span: super::types::Span) -> DataIr {
+    make_pair(name, DataIr::Bool { value: true, range, span }, range, span)
+}
+
+/// Project an [`AccessSegment`] into `(slot_name, mapping)` for use
+/// inside the enclosing `Access` Mapping. Mirrors the legacy
+/// `to_json::Renderer::add_access_chain` shape, modulo the `$type`
+/// key (each segment knows its kind via the slot name).
+fn project_access_segment(
+    seg: &super::types::AccessSegment,
+    source: &str,
+) -> (&'static str, DataIr) {
+    use super::types::AccessSegment;
+    let r = seg.range();
+    let s = seg.span();
+    match seg {
+        AccessSegment::Member { property_range, optional, .. } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if *optional {
+                pairs.push(make_flag("optional", r, s));
+            }
+            pairs.push(make_pair(
+                "name",
+                DataIr::String {
+                    value: property_range.slice(source).to_string(),
+                    range: *property_range,
+                    span: s,
+                },
+                *property_range,
+                s,
+            ));
+            ("member", DataIr::Mapping { pairs, range: r, span: s })
+        }
+        AccessSegment::Index { indices, .. } => {
+            let pairs: Vec<DataIr> = indices
+                .iter()
+                .map(|i| {
+                    let key = element_name_for_pair(i);
+                    make_pair(key, project(i, source), i.range(), i.span())
+                })
+                .collect();
+            ("index", DataIr::Mapping { pairs: pluralize_pairs(pairs), range: r, span: s })
+        }
+        AccessSegment::Call { name, name_span, arguments, .. } => {
+            let mut pairs: Vec<DataIr> = Vec::new();
+            if let (Some(nr), Some(ns)) = (name, name_span) {
+                pairs.push(make_pair(
+                    "name",
+                    DataIr::String {
+                        value: nr.slice(source).to_string(),
+                        range: *nr,
+                        span: *ns,
+                    },
+                    *nr,
+                    *ns,
+                ));
+            }
+            for a in arguments {
+                let key = element_name_for_pair(a);
+                pairs.push(make_pair(key, project(a, source), a.range(), a.span()));
+            }
+            ("call", DataIr::Mapping { pairs: pluralize_pairs(pairs), range: r, span: s })
+        }
+    }
+}
+
+/// Build the `<op>` Mapping for Binary / Unary / Comparison: a
+/// `text` pair (the literal operator) plus a boolean flag named for
+/// the IR's `op_marker` (e.g. `plus`, `minus`, `lt`). Mirrors
+/// `to_json::Renderer::op_value`.
+fn make_op_mapping(
+    op_text: &str,
+    op_marker: &'static str,
+    range: super::types::ByteRange,
+    span: super::types::Span,
+) -> DataIr {
+    DataIr::Mapping {
+        pairs: vec![
+            make_pair(
+                "text",
+                DataIr::String { value: op_text.to_string(), range, span },
+                range,
+                span,
+            ),
+            make_flag(op_marker, range, span),
+        ],
+        range,
+        span,
     }
 }
 
@@ -430,6 +1383,66 @@ mod tests {
         assert_eq!(pairs.len(), 2, "pairs: {pairs:?}");
         assert_eq!(pair_key_string(&pairs[0]).as_deref(), Some("public"));
         assert_eq!(pair_key_string(&pairs[1]).as_deref(), Some("name"));
+    }
+
+    #[test]
+    fn has_unhandled_predicate_trips_on_unhandled_marker() {
+        // `has_unhandled` walks the DataIr looking for the
+        // `unhandled:<variant>` coverage-gap marker. After S5A-Z7
+        // the projection has zero arms that emit such markers (the
+        // `Ir::project` match is exhaustive — compiler-checked), so
+        // any test must construct the DataIr by hand.
+        use super::super::types::{ByteRange, Span};
+        let r = ByteRange::new(0, 1);
+        let s = Span::point(1, 1);
+        let bare = DataIr::Unknown { kind: "unhandled:fake".into(), range: r, span: s };
+        assert!(has_unhandled(&bare));
+
+        let nested = DataIr::Mapping {
+            pairs: vec![DataIr::Pair {
+                key: Box::new(DataIr::String { value: "x".into(), range: r, span: s }),
+                value: Box::new(DataIr::Unknown { kind: "unhandled:nested".into(), range: r, span: s }),
+                range: r,
+                span: s,
+            }],
+            range: r,
+            span: s,
+        };
+        assert!(has_unhandled(&nested), "should walk into pair values");
+
+        // Non-`unhandled:` Unknown (e.g. `ir-unknown:` from the
+        // typed `Ir::Unknown` projection) is NOT a coverage gap.
+        let benign = DataIr::Unknown { kind: "ir-unknown:foo_kind".into(), range: r, span: s };
+        assert!(!has_unhandled(&benign));
+    }
+
+    #[test]
+    fn projection_is_exhaustive_for_all_ir_variants() {
+        // Compile-enforced via the absence of a catch-all in
+        // `project`, but assert at runtime too so that any future
+        // accidental re-introduction of an `unhandled:` arm
+        // surfaces as a test failure instead of a silent regression.
+        let source = "Foo";
+        let class = Ir::Class {
+            kind: "class",
+            modifiers: Modifiers { access: Some(Access::Public), ..Modifiers::default() },
+            decorators: vec![],
+            name: Box::new(name("Foo")),
+            generics: None,
+            bases: vec![],
+            where_clauses: vec![],
+            body: Box::new(Ir::Body {
+                children: vec![],
+                pass_only: false,
+                block_wrap: true,
+                range: pos(3, 3),
+                span: sp(),
+            }),
+            range: pos(0, 3),
+            span: sp(),
+        };
+        let proj = lower_to_data_ir(&class, source);
+        assert!(!has_unhandled(&proj));
     }
 
     #[test]

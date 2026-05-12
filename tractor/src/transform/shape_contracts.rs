@@ -836,13 +836,14 @@ pub static RULES: &[ShapeRule] = &[
         description: "JSON children-overflow — same-name siblings collided on a singleton key without role-named slot wrappers or list= tagging.",
         severity: Severity::Advisory,
         check: check_no_children_overflow,
-        // The count rises each time a language drops its
-        // `post_transform` (S3B-Z1c…Z9) since `tag_multi_role_children`
-        // / `distribute_member_list_attrs` go with it. The principled
-        // fix is **S3D** — read cardinality from typed `Vec<Ir>` slots
-        // in `to_xot`/`to_json`, drop the `list=` attribute mechanism
-        // entirely. S3D zeroes this counter when it lands; the ratchet
-        // is bumped per language migration as known debt until then.
+        // The count rose as each language dropped its
+        // `post_transform` (S3B-Z1c…Z9) — the post-pass-driven
+        // `list=` tagging that masked these children-overflow sites
+        // went with it. Cardinality now flows from typed `Vec<Ir>`
+        // slots through `to_xot`/`to_json`; the rule's job is to
+        // surface remaining XPath shape sites where the typed slot
+        // has not yet caught up with what the JSON projection would
+        // emit. Bump on a per-language basis as known debt.
         // Snapshot:
         //   600 — csharp post_transform deleted (Z1c, 2026-05-08)
         //   603 — java post_transform deleted (Z2,  2026-05-08)

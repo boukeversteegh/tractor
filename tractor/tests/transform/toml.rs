@@ -70,16 +70,16 @@ fn toml_deeply_nested_table_path() {
 
 #[test]
 fn toml_array_of_strings() {
-    claim("string array renders as <features> with one <item> per element",
+    claim("string array renders as repeated <features> siblings — one per element (Principle #12 flat lists)",
         &mut parse_src("toml", r#"
             features = ["auth", "logging", "metrics"]
         "#),
         &multi_xpath(r#"
-            //features
-                [count(item)=3]
-                [item='auth']
-                [item='logging']
-                [item='metrics']
+            //document
+                [count(features)=3]
+                [features='auth']
+                [features='logging']
+                [features='metrics']
         "#),
         1);
 }

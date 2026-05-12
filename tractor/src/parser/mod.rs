@@ -220,7 +220,7 @@ pub fn parse_string_to_xot_with_options(
     // `let_declaration`) — the IR pipeline replaces those with the
     // semantic vocabulary (`<let>`).
     if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
-        return parse_with_ir_pipeline(source, lang, file_path);
+        return parse_with_ir_pipeline(source, lang, file_path, resolved);
     }
 
     let language = get_tree_sitter_language(lang)?;
@@ -275,8 +275,10 @@ fn parse_with_ir_pipeline(
     source: &str,
     lang: &str,
     file_path: String,
+    tree_mode: TreeMode,
 ) -> Result<XotParseResult, ParseError> {
     use crate::ir;
+    use crate::languages::IrFamily;
 
     let language = get_tree_sitter_language(lang)?;
     let mut parser = tree_sitter::Parser::new();
@@ -285,103 +287,84 @@ fn parse_with_ir_pipeline(
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
-    // Data-language branch — the data IR is structurally simpler
-    // (mappings / sequences / scalars) and uses a separate type
-    // (`DataIr`). Two renderers:
-    //   - `render_data_to_xot_json`  — JSON / YAML structure shape
-    //     (`<object><property><key>...</key><value>...</value>...`)
-    //   - `render_data_to_xot_keyed` — TOML / INI shape with keys as
-    //     element names (`<sectionname><key>v</key>...`)
-    let data_lower: Option<fn(_, &str) -> ir::DataIr> = match lang {
-        "json" => Some(ir::lower_json_data_root),
-        "yaml" | "yml" => Some(ir::lower_yaml_data_root),
-        "toml" => Some(ir::lower_toml_data_root),
-        "ini" | "env" => Some(ir::lower_ini_data_root),
-        "markdown" | "md" | "mdx" => Some(ir::lower_markdown_data_root),
-        _ => None,
-    };
-    if let Some(lower) = data_lower {
-        let data_ir = lower(tree.root_node(), source);
-        let mut xot = xot::Xot::new();
-        let doc = xot.new_document();
-        let render_keyed = matches!(lang, "toml" | "ini" | "env");
-        if render_keyed {
-            ir::render_data_to_xot_keyed(&mut xot, doc, &data_ir, source)
-        } else {
-            ir::render_data_to_xot_json(&mut xot, doc, &data_ir, source)
-        }
-        .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
-        return Ok(XotParseResult {
-            xot,
-            root: doc,
-            source_lines: source.lines().map(|s| s.to_string()).collect(),
-            file_path,
-            language: lang.to_string(),
-            ir: None,
-            data_ir: Some(Box::new(data_ir)),
-            #[cfg(feature = "native")]
-            sql_ir: None,
-            source: source.to_string(),
-        });
-    }
-
-    // SQL-language branch — TSQL through the typed `SqlIr` pipeline.
-    if matches!(lang, "tsql") {
-        let sql_ir = ir::sql_lower::lower_sql_root(tree.root_node(), source);
-        let mut xot = xot::Xot::new();
-        let doc = xot.new_document();
-        ir::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
-            .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
-        return Ok(XotParseResult {
-            xot,
-            root: doc,
-            source_lines: source.lines().map(|s| s.to_string()).collect(),
-            file_path,
-            language: lang.to_string(),
-            ir: None,
-            data_ir: None,
-            #[cfg(feature = "native")]
-            sql_ir: Some(Box::new(sql_ir)),
-            source: source.to_string(),
-        });
-    }
-
-    let ir_tree = match lang {
-        "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
-        "python" | "py" => ir::lower_python_root(tree.root_node(), source),
-        "java" => ir::lower_java_root(tree.root_node(), source),
-        // JavaScript shares the TS IR — TS is a strict superset and
-        // tree-sitter's TS/JS grammars share most node kinds. JS-only
-        // shapes fall through to `Ir::Unknown` and surface in the
-        // missing-kinds audit until added.
-        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
-            => ir::lower_typescript_root(tree.root_node(), source),
-        "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
-        "go" => ir::lower_go_root(tree.root_node(), source),
-        "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
-        "php" => ir::lower_php_root(tree.root_node(), source),
-        _ => return Err(ParseError::Parse(format!(
-            "IR pipeline not yet wired for language {lang}"
-        ))),
-    };
+    let lang_ops = crate::languages::get_language(lang).ok_or_else(|| {
+        ParseError::Parse(format!("Unknown language: {lang}"))
+    })?;
 
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
-    ir::render_to_xot(&mut xot, doc, &ir_tree, source)
-        .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+    let source_lines: Vec<String> = source.lines().map(|s| s.to_string()).collect();
 
-    Ok(XotParseResult {
-        xot,
-        root: doc,
-        source_lines: source.lines().map(|s| s.to_string()).collect(),
-        file_path,
-        language: lang.to_string(),
-        ir: Some(Box::new(ir_tree)),
-        data_ir: None,
-        #[cfg(feature = "native")]
-        sql_ir: None,
-        source: source.to_string(),
-    })
+    // Single dispatch on the `IrFamily` variant — the lower fn is
+    // carried by the variant, so no language-keyed match arm is
+    // needed here.
+    match lang_ops.ir_family {
+        IrFamily::Programming(lower) => {
+            let ir_tree = lower(tree.root_node(), source);
+            ir::render_to_xot(&mut xot, doc, &ir_tree, source)
+                .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+            Ok(XotParseResult {
+                xot,
+                root: doc,
+                source_lines,
+                file_path,
+                language: lang.to_string(),
+                ir: Some(Box::new(ir_tree)),
+                data_ir: None,
+                #[cfg(feature = "native")]
+                sql_ir: None,
+                source: source.to_string(),
+            })
+        }
+        IrFamily::Data { structure, content } => {
+            // Tree mode picks the parser: `--tree=structure` uses the
+            // syntax-tree projection; `--tree=data` uses the
+            // content/keys-as-elements projection. `uses_ir` filters
+            // out Raw mode upstream, so this match is exhaustive.
+            let parser = match tree_mode {
+                TreeMode::Structure => structure,
+                TreeMode::Data => content,
+                TreeMode::Raw => unreachable!(
+                    "uses_ir returns false for Raw mode on Data languages"
+                ),
+            };
+            let data_ir = (parser.lower)(tree.root_node(), source);
+            (parser.render)(&mut xot, doc, &data_ir, source)
+                .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+            Ok(XotParseResult {
+                xot,
+                root: doc,
+                source_lines,
+                file_path,
+                language: lang.to_string(),
+                ir: None,
+                data_ir: Some(Box::new(data_ir)),
+                #[cfg(feature = "native")]
+                sql_ir: None,
+                source: source.to_string(),
+            })
+        }
+        IrFamily::Sql(lower) => {
+            let sql_ir = lower(tree.root_node(), source);
+            ir::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
+                .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+            Ok(XotParseResult {
+                xot,
+                root: doc,
+                source_lines,
+                file_path,
+                language: lang.to_string(),
+                ir: None,
+                data_ir: None,
+                #[cfg(feature = "native")]
+                sql_ir: Some(Box::new(sql_ir)),
+                source: source.to_string(),
+            })
+        }
+        IrFamily::None => Err(ParseError::Parse(format!(
+            "IR pipeline not yet wired for language {lang}"
+        ))),
+    }
 }
 
 #[cfg(not(feature = "native"))]
@@ -405,8 +388,10 @@ fn parse_with_ir_pipeline_to_xee(
     source: &str,
     lang: &str,
     file_path: String,
+    tree_mode: TreeMode,
 ) -> Result<XeeParseResult, ParseError> {
     use crate::ir;
+    use crate::languages::IrFamily;
 
     let language = get_tree_sitter_language(lang)?;
     let mut parser = tree_sitter::Parser::new();
@@ -415,132 +400,85 @@ fn parse_with_ir_pipeline_to_xee(
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
-    // Data-language branch — uses `DataIr` + format-appropriate
-    // renderer (JSON-style for json/yaml, key-as-element-name for
-    // toml/ini).
-    let data_lower: Option<fn(_, &str) -> ir::DataIr> = match lang {
-        "json" => Some(ir::lower_json_data_root),
-        "yaml" | "yml" => Some(ir::lower_yaml_data_root),
-        "toml" => Some(ir::lower_toml_data_root),
-        "ini" | "env" => Some(ir::lower_ini_data_root),
-        "markdown" | "md" | "mdx" => Some(ir::lower_markdown_data_root),
-        _ => None,
-    };
-    if let Some(lower) = data_lower {
-        let data_ir = lower(tree.root_node(), source);
-        let mut xot = xot::Xot::new();
-        let holding = xot.new_document();
-        let render_keyed = matches!(lang, "toml" | "ini" | "env");
-        if render_keyed {
-            ir::render_data_to_xot_keyed(&mut xot, holding, &data_ir, source)
-        } else {
-            ir::render_data_to_xot_json(&mut xot, holding, &data_ir, source)
-        }
-        .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
-        // Capture xot root as XmlNode for legacy XML/text renderers.
-        let xml_node = xot.children(holding)
-            .find(|&c| xot.element(c).is_some())
-            .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
-        let xml = xot.to_string(holding)
-            .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
-        let mut documents = Documents::new();
-        let doc_handle = documents.add_string(
-            "file:///source".try_into().unwrap(),
-            &xml,
-        ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
-        let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
-        let source_arc = std::sync::Arc::new(source.to_string());
-        let root_tree = xml_node.map(|x| crate::xpath::Tree::DataIr {
-            ir: std::sync::Arc::new(data_ir),
-            source: source_arc,
-            xml: x,
-        });
-        return Ok(XeeParseResult {
-            documents,
-            doc_handle,
-            source_lines,
-            file_path,
-            language: lang.to_string(),
-            root_tree,
-        });
-    }
+    let lang_ops = crate::languages::get_language(lang).ok_or_else(|| {
+        ParseError::Parse(format!("Unknown language: {lang}"))
+    })?;
 
-    // SQL-language branch — TSQL through the typed `SqlIr` pipeline.
-    if matches!(lang, "tsql") {
-        let sql_ir = ir::sql_lower::lower_sql_root(tree.root_node(), source);
-        let mut xot = xot::Xot::new();
-        let holding = xot.new_document();
-        ir::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
-            .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
-        let xml_node = xot.children(holding)
-            .find(|&c| xot.element(c).is_some())
-            .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
-        let xml = xot.to_string(holding)
-            .map_err(|e| ParseError::Parse(format!("SqlIr serialize failed: {e}")))?;
-        let mut documents = Documents::new();
-        let doc_handle = documents.add_string(
-            "file:///source".try_into().unwrap(),
-            &xml,
-        ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
-        let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
-        let source_arc = std::sync::Arc::new(source.to_string());
-        let root_tree = xml_node.map(|x| crate::xpath::Tree::Sql {
-            ir: std::sync::Arc::new(sql_ir),
-            source: source_arc,
-            xml: x,
-        });
-        return Ok(XeeParseResult {
-            documents,
-            doc_handle,
-            source_lines,
-            file_path,
-            language: lang.to_string(),
-            root_tree,
-        });
-    }
-
-    let ir_tree = match lang {
-        "csharp" | "cs" => ir::lower_csharp_root(tree.root_node(), source),
-        "python" | "py" => ir::lower_python_root(tree.root_node(), source),
-        "java" => ir::lower_java_root(tree.root_node(), source),
-        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
-            => ir::lower_typescript_root(tree.root_node(), source),
-        "rust" | "rs" => ir::lower_rust_root(tree.root_node(), source),
-        "go" => ir::lower_go_root(tree.root_node(), source),
-        "ruby" | "rb" => ir::lower_ruby_root(tree.root_node(), source),
-        "php" => ir::lower_php_root(tree.root_node(), source),
-        _ => return Err(ParseError::Parse(format!(
-            "IR pipeline not yet wired for language {lang}"
-        ))),
-    };
-
-    // Render IR to xot in a holding document, then serialize.
     let mut xot = xot::Xot::new();
     let holding = xot.new_document();
-    ir::render_to_xot(&mut xot, holding, &ir_tree, source)
-        .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
-    // Capture the rendered xot root as an XmlNode for legacy
-    // XML / text renderers — same shape XPath queries see.
-    let xml_node = xot.children(holding)
-        .find(|&c| xot.element(c).is_some())
-        .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
 
+    // Render to xot via the IR family-specific lower + render pair,
+    // then capture the result as an `XmlNode` (for legacy XML / text
+    // renderers) and a `Tree::*` (for IR-aware renderers).
+    let root_tree = match lang_ops.ir_family {
+        IrFamily::Programming(lower) => {
+            let ir_tree = lower(tree.root_node(), source);
+            ir::render_to_xot(&mut xot, holding, &ir_tree, source)
+                .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+            let xml_node = xot.children(holding)
+                .find(|&c| xot.element(c).is_some())
+                .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
+            let source_arc = std::sync::Arc::new(source.to_string());
+            xml_node.map(|x| crate::xpath::Tree::Ir {
+                ir: std::sync::Arc::new(ir_tree),
+                source: source_arc,
+                xml: x,
+            })
+        }
+        IrFamily::Data { structure, content } => {
+            // Tree mode picks the parser. `uses_ir` filters out Raw
+            // upstream, so this match is exhaustive.
+            let parser = match tree_mode {
+                TreeMode::Structure => structure,
+                TreeMode::Data => content,
+                TreeMode::Raw => unreachable!(
+                    "uses_ir returns false for Raw mode on Data languages"
+                ),
+            };
+            let data_ir = (parser.lower)(tree.root_node(), source);
+            (parser.render)(&mut xot, holding, &data_ir, source)
+                .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+            let xml_node = xot.children(holding)
+                .find(|&c| xot.element(c).is_some())
+                .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
+            let source_arc = std::sync::Arc::new(source.to_string());
+            xml_node.map(|x| crate::xpath::Tree::DataIr {
+                ir: std::sync::Arc::new(data_ir),
+                source: source_arc,
+                xml: x,
+            })
+        }
+        IrFamily::Sql(lower) => {
+            let sql_ir = lower(tree.root_node(), source);
+            ir::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
+                .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+            let xml_node = xot.children(holding)
+                .find(|&c| xot.element(c).is_some())
+                .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
+            let source_arc = std::sync::Arc::new(source.to_string());
+            xml_node.map(|x| crate::xpath::Tree::Sql {
+                ir: std::sync::Arc::new(sql_ir),
+                source: source_arc,
+                xml: x,
+            })
+        }
+        IrFamily::None => {
+            return Err(ParseError::Parse(format!(
+                "IR pipeline not yet wired for language {lang}"
+            )));
+        }
+    };
+
+    // Serialize xot → string → re-parse into xee Documents (the v1
+    // stepping stone; future S7 work eliminates this round-trip).
     let xml = xot.to_string(holding)
         .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
-
     let mut documents = Documents::new();
     let doc_handle = documents.add_string(
         "file:///source".try_into().unwrap(),
         &xml,
     ).map_err(|e| ParseError::Parse(format!("xee load failed: {e}")))?;
-
     let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
-    let source_arc = std::sync::Arc::new(source.to_string());
-    let root_tree = xml_node.map(|x| crate::xpath::Tree::Ir {
-        ir: std::sync::Arc::new(ir_tree),
-        source: source_arc,
-        xml: x,
-    });
 
     Ok(XeeParseResult {
         documents,
@@ -668,7 +606,7 @@ pub fn parse_string_to_xee_with_options(
         .map_err(ParseError::Parse)?;
 
     if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
-        return parse_with_ir_pipeline_to_xee(source, lang, file_path);
+        return parse_with_ir_pipeline_to_xee(source, lang, file_path, resolved);
     }
     let language = get_tree_sitter_language(lang)?;
 
