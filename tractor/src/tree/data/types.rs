@@ -41,7 +41,7 @@
 
 #![cfg(feature = "native")]
 
-use super::types::{ByteRange, Span};
+use crate::tree::types::{ByteRange, Span};
 
 /// Format-agnostic data-language tree.
 #[derive(Debug, Clone)]

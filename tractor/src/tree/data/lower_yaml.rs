@@ -13,9 +13,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::data::DataTree;
-use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::ByteRange;
+use crate::tree::DataTree;
+use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::types::ByteRange;
 
 /// Lower a YAML CST root node (`stream`) to [`DataTree`].
 pub fn lower_yaml_data_root(root: TsNode<'_>, source: &str) -> DataTree {

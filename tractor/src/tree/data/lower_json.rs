@@ -28,8 +28,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::data::DataTree;
-use super::lower_helpers::{range_of, span_of, text_borrow};
+use crate::tree::DataTree;
+use crate::tree::lower_helpers::{range_of, span_of, text_borrow};
 
 /// Lower a JSON CST root node to [`DataTree`].
 pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataTree {

@@ -27,7 +27,7 @@
 
 use serde_json::{Map, Value};
 
-use super::data::DataTree;
+use crate::tree::DataTree;
 
 /// Render a [`DataTree`] tree to a `serde_json::Value`. The structural
 /// tree variants map cleanly onto JSON's universe:

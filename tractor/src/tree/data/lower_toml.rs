@@ -21,9 +21,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::data::DataTree;
-use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{ByteRange, Span};
+use crate::tree::DataTree;
+use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::types::{ByteRange, Span};
 
 pub fn lower_toml_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)

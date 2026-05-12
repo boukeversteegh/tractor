@@ -79,24 +79,12 @@ pub mod types;
 pub mod to_xot;
 pub mod to_json;
 // Data-language tree — a separate, simpler typed shape for JSON /
-// YAML / TOML / INI. Format-agnostic: a single `DataTree` tree can
-// be rendered to any of XML / JSON / YAML / TOML.
+// YAML / TOML / INI / .env / Markdown. Format-agnostic: a single
+// `DataTree` tree can be rendered to any of XML / JSON / YAML / TOML.
+// Per-format lowering + the to_xot / to_json renderers live under
+// `tree::data::*` (regrouped in S10C).
 #[cfg(feature = "native")]
 pub mod data;
-#[cfg(feature = "native")]
-pub mod json_data;
-#[cfg(feature = "native")]
-pub mod yaml_data;
-#[cfg(feature = "native")]
-pub mod toml_data;
-#[cfg(feature = "native")]
-pub mod ini_data;
-#[cfg(feature = "native")]
-pub mod markdown_data;
-#[cfg(feature = "native")]
-pub mod data_to_xot;
-#[cfg(feature = "native")]
-pub mod data_to_json;
 // `SyntaxTree` → `DataTree` projection. Replacing the
 // ad-hoc projection in `to_json.rs` per
 // `docs/design-projection-pipeline.md`.
@@ -132,19 +120,19 @@ pub use to_json::tree_to_json;
 #[cfg(feature = "native")]
 pub use data::DataTree;
 #[cfg(feature = "native")]
-pub use json_data::lower_json_data_root;
+pub use data::lower_json::lower_json_data_root;
 #[cfg(feature = "native")]
-pub use yaml_data::lower_yaml_data_root;
+pub use data::lower_yaml::lower_yaml_data_root;
 #[cfg(feature = "native")]
-pub use toml_data::lower_toml_data_root;
+pub use data::lower_toml::lower_toml_data_root;
 #[cfg(feature = "native")]
-pub use ini_data::lower_ini_data_root;
+pub use data::lower_ini::lower_ini_data_root;
 #[cfg(feature = "native")]
-pub use markdown_data::lower_markdown_data_root;
+pub use data::lower_markdown::lower_markdown_data_root;
 #[cfg(feature = "native")]
-pub use data_to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
+pub use data::to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 #[cfg(feature = "native")]
-pub use data_to_json::data_to_json;
+pub use data::to_json::data_to_json;
 pub use to_data::{lower_to_data_ir, has_unhandled};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};

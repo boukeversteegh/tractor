@@ -33,8 +33,8 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::data::DataTree;
-use super::types::Span;
+use crate::tree::DataTree;
+use crate::tree::types::Span;
 
 /// Render a [`DataTree`] tree as a child of `parent` in the given Xot
 /// document, using JSON-style element names.
