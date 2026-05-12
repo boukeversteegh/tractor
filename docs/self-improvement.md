@@ -7,14 +7,14 @@ principle it serves.
 
 The loop is **scoped to transformations only** — per-language `rules.rs` /
 `transformations.rs`, the shared `transform/` post-walk passes, and the
-per-language specs at `specs/tractor-parse/semantic-tree/transformations/*.md`.
+per-language specs at `specs/tractor-parse/tree/transformations/*.md`.
 CLI, output formatting, query engine, and build infrastructure are out of
 scope unless a transformation change forces work there.
 
 ## Loop process — one iteration
 
 1. **Refresh context.** Re-read the relevant slice of
-   `specs/tractor-parse/semantic-tree/design.md` (Goals #1–#7,
+   `specs/tractor-parse/tree/design.md` (Goals #1–#7,
    Principles #1–#17) and any per-language spec that bears on the target.
 
 2. **Pick a target.** *Exactly one* item from a discovery source (below).
@@ -52,9 +52,9 @@ scope unless a transformation change forces work there.
    - `tractor/tests/transform/**` (transform tests)
    - `tractor/tests/core_integration_tests.rs` (only when an existing
      test is invalidated)
-   - `specs/tractor-parse/semantic-tree/transformations/<lang>.md`
+   - `specs/tractor-parse/tree/transformations/<lang>.md`
      (when documenting a per-language decision)
-   - `specs/tractor-parse/semantic-tree/design.md` (only with explicit
+   - `specs/tractor-parse/tree/design.md` (only with explicit
      user approval — design decisions are not autonomous)
 
 7. **Tests + snapshots.**
@@ -157,7 +157,7 @@ before ship.
 
 ### E. Per-language transformation specs
 
-`specs/tractor-parse/semantic-tree/transformations/{rust,csharp,
+`specs/tractor-parse/tree/transformations/{rust,csharp,
 typescript,java,go,python,ruby,php}.md`. "Open questions" / "Pending"
 / "Future" sections in these flag known suboptimal shapes where a
 design decision was deliberately deferred. Several already have
@@ -165,7 +165,7 @@ proposed shapes written out — those are low-friction targets.
 
 ### F. The design doc
 
-`specs/tractor-parse/semantic-tree/design.md`. Goals and Principles are
+`specs/tractor-parse/tree/design.md`. Goals and Principles are
 the *evaluation criteria*, not generally a discovery source — but
 **scan for "audit candidates" lists** (e.g. Principle #15 has one).
 Items marked there are explicitly known violations.
@@ -398,7 +398,7 @@ When a subagent flags something:
    regression is a real iter.
 6. **Post-cycle review**: after each iteration commits + pushes, spawn
    a subagent to (a) review the diff against
-   `specs/tractor-parse/semantic-tree/design.md`, and (b) report any
+   `specs/tractor-parse/tree/design.md`, and (b) report any
    *new* issues it surfaces for the backlog. Append the findings
    before starting the next iteration.
 7. **Queue naming questions for end-of-loop**: when picking a marker
@@ -413,9 +413,9 @@ is paused.
 
 The loop touches these files repeatedly:
 
-- `specs/tractor-parse/semantic-tree/design.md` — read-only reference;
+- `specs/tractor-parse/tree/design.md` — read-only reference;
   only edited with explicit user approval.
-- `specs/tractor-parse/semantic-tree/transformations/{rust,csharp,
+- `specs/tractor-parse/tree/transformations/{rust,csharp,
   typescript,java,go,python,ruby,php}.md` — per-language decision
   records; written when an iteration documents a non-trivial
   per-language choice.

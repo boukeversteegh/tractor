@@ -2,7 +2,7 @@
 
 **Status:** Draft for iteration. Not yet committed to specs.
 
-**Purpose.** Today's design docs in `specs/tractor-parse/semantic-tree/design.md`, `specs/tractor-parse/dual-view/data-branch/*.md`, and `specs/codexpath/cli/output-options/json-format/*.md` write principles in terms of XML element shapes (`<class>`, `<body>`, `list="X"`, etc.). After the IR migration (S3 / S4 / S5), `Ir`/`DataIr`/`SqlIr` are the canonical typed structures — XML and JSON are derived views. This doc proposes how to disentangle the two: which principles describe the IR (the data) and which describe each rendering of it.
+**Purpose.** Today's design docs in `specs/tractor-parse/tree/design.md`, `specs/tractor-parse/dual-view/data-branch/*.md`, and `specs/codexpath/cli/output-options/json-format/*.md` write principles in terms of XML element shapes (`<class>`, `<body>`, `list="X"`, etc.). After the IR migration (S3 / S4 / S5), `Ir`/`DataIr`/`SqlIr` are the canonical typed structures — XML and JSON are derived views. This doc proposes how to disentangle the two: which principles describe the IR (the data) and which describe each rendering of it.
 
 **How to use this doc.** Mark up inline with your comments. Use any markup that's clear (`<!-- COMMENT: ... -->`, `>>` quotation, or just edit/add prose). When the design feels stable, we lift relevant pieces into `specs/` and retire / rewrite the affected source-of-truth docs.
 
@@ -402,9 +402,9 @@ After the 2026-05-12 doc-consolidation commit (`fbed305a`), the relevant doc lan
 - **`docs/design-transform-redesign-exploration.md`** — ADOPTED-banner historical doc explaining why we moved from imperative xot mutation to typed trees. Body intentionally frozen for accuracy. **S12 policy question: scrub or leave alone?** (Q11 below.)
 
 **Specs (`specs/tractor-parse/`):**
-- **`specs/tractor-parse/semantic-tree/design.md`** — the principle catalogue this proposal re-buckets (§5).
-- **`specs/tractor-parse/semantic-tree/transformations.md`** — describes per-language CST→semantic transforms; in the new framing, these are CST→tree lowering rules (the tree is the post-transform state).
-- **`specs/tractor-parse/semantic-tree/chain-inversion.md`** — moved into the spec dir from `docs/` on 2026-05-12. Spec for the `Ir::Access` left-deep chain shape; will become `SyntaxTree::Access` under S12. Cross-link from `design.md`.
+- **`specs/tractor-parse/tree/design.md`** — the principle catalogue this proposal re-buckets (§5).
+- **`specs/tractor-parse/tree/transformations.md`** — describes per-language CST→semantic transforms; in the new framing, these are CST→tree lowering rules (the tree is the post-transform state).
+- **`specs/tractor-parse/tree/chain-inversion.md`** — moved into the spec dir from `docs/` on 2026-05-12. Spec for the `Ir::Access` left-deep chain shape; will become `SyntaxTree::Access` under S12. Cross-link from `design.md`.
 - **`specs/tractor-parse/dual-view/data-branch/*.md`** — describes the data-tree XML shape; in the new framing, those are `DataTree → XML` projection rules.
 - **`specs/codexpath/cli/output-options/json-format/*.md`** — describes JSON shape; in the new framing, those are `tree → JSON` projection rules.
 
@@ -444,7 +444,7 @@ The "IR" term disappears from **code, comments, and docs**. Scope:
   - `docs/transform-validation-architecture.md` — 4 IR mentions; light touch.
   - `docs/design-projection-pipeline.md` — 105 IR mentions; heaviest single doc. Will largely become a tree-projection design doc after sweep.
   - `docs/design-transform-redesign-exploration.md` — 156 IR mentions; ADOPTED-banner historical doc. **Q11: scrub or leave frozen?**
-  - `specs/tractor-parse/semantic-tree/*` → renames to `specs/tractor-parse/tree/*` (Q10 resolved 2026-05-12). Subspecs scrubbed for IR vocabulary; later passes may split into `syntax-tree.md` / `data-tree.md` / `sql-tree.md` / `document-tree.md` subdivisions.
+  - `specs/tractor-parse/tree/*` → renames to `specs/tractor-parse/tree/*` (Q10 resolved 2026-05-12). Subspecs scrubbed for IR vocabulary; later passes may split into `syntax-tree.md` / `data-tree.md` / `sql-tree.md` / `document-tree.md` subdivisions.
   - `specs/tractor-parse/dual-view/*`.
   - `specs/codexpath/cli/output-options/json-format/*`.
   - `specs/cli-output-design.md`.
@@ -467,7 +467,7 @@ Tracked as **S12** in TODO.md.
 | Q7. JSON enum encoding | ✅ resolved 2026-05-11: B2 string-style (`"visibility": "public"`) |
 | Q8. Terminology rename | ✅ resolved 2026-05-11: rename now (see S12) |
 | Q9. `IrFamily` rename | ✅ resolved 2026-05-12: `TreeKind` with variants `Syntax` / `Data` / `Sql` / `Document` |
-| Q10. `specs/tractor-parse/semantic-tree/` directory | ✅ resolved 2026-05-12: rename to `specs/tractor-parse/tree/`. Subspecs can be reorganised underneath (`syntax-tree.md`, `data-tree.md`, etc.) as the sweep proceeds. |
+| Q10. `specs/tractor-parse/tree/` directory | ✅ resolved 2026-05-12: rename to `specs/tractor-parse/tree/`. Subspecs can be reorganised underneath (`syntax-tree.md`, `data-tree.md`, etc.) as the sweep proceeds. |
 | Q11. Scrub `docs/design-transform-redesign-exploration.md`? | ✅ resolved 2026-05-12: leave body frozen for historical accuracy; add a terminology-note banner at top mapping `Ir → SyntaxTree`, `DataIr → DataTree`, `SqlIr → SqlTree`. |
 | Q12. Markdown tree name (provisional answer pending your call) | ✅ resolved 2026-05-12: `DocumentTree` (shared with future HTML) |
 

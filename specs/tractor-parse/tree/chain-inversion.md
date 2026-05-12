@@ -299,6 +299,6 @@ The left-deep emission is mechanical: walk the right-deep CST shape from the out
 
 ## References
 
-- `specs/tractor-parse/semantic-tree/design.md` — Principles #5, #11, #15; § "Hierarchical access nests top-down" (the high-level decision).
+- `specs/tractor-parse/tree/design.md` — Principles #5, #11, #15; § "Hierarchical access nests top-down" (the high-level decision).
 - `tractor/src/ir/types.rs` — `Ir::Access` + `AccessSegment` variants.
 - `tractor/src/ir/<lang>.rs` — per-language lowering that constructs `Ir::Access` directly from right-deep CST.

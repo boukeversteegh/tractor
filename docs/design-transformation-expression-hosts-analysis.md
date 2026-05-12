@@ -87,7 +87,7 @@ So users learn the distinction:
 
 ## Design Goal to Add: Broad-to-Narrow Query Refinement
 
-Add a new design goal or guiding principle to `@specs/tractor-parse/semantic-tree/design.md`.
+Add a new design goal or guiding principle to `@specs/tractor-parse/tree/design.md`.
 
 Suggested text:
 
@@ -856,7 +856,7 @@ Because text-only leaves like `<name>foo</name>` should not grow child markers, 
 
 ## Proposed New Principle: Stable Expression Hosts
 
-Suggested text for `@specs/tractor-parse/semantic-tree/design.md`:
+Suggested text for `@specs/tractor-parse/tree/design.md`:
 
 ```md
 ### Stable Expression Hosts

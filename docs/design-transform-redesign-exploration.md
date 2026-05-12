@@ -687,7 +687,7 @@ testable.
 ### 11.5 IR shape and renderer responsibility
 
 The IR variants are exactly the semantic-tree concepts in
-`specs/tractor-parse/semantic-tree/design.md`. That spec becomes the IR
+`specs/tractor-parse/tree/design.md`. That spec becomes the IR
 schema by construction.
 
 The renderer (`render: Ir → Xot`) is **mechanical**: it walks the IR and
