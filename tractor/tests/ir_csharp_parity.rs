@@ -26,7 +26,8 @@
 
 #![cfg(feature = "native")]
 
-use tractor::tree::{audit_coverage, lower_csharp_root, render_to_xot, to_source};
+use tractor::tree::{audit_coverage, render_to_xot, to_source};
+use tractor::languages::csharp::lower_csharp_root;
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
@@ -1133,7 +1134,7 @@ fn conditional_access_isomorphism() {
             None
         }
         let target = find(cst.root_node()).expect("access expression");
-        let access = tractor::tree::lower_csharp_node(target, source);
+        let access = tractor::languages::csharp::lower::lower_csharp_node(target, source);
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
@@ -1203,7 +1204,7 @@ fn non_null_assertion() {
         None
     }
     let target = find(cst.root_node()).expect("postfix_unary");
-    let tree = tractor::tree::lower_csharp_node(target, s);
+    let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
@@ -1244,7 +1245,7 @@ fn is_type_test() {
         None
     }
     let target = find(cst.root_node()).expect("is_expression");
-    let tree = tractor::tree::lower_csharp_node(target, s);
+    let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
@@ -1436,7 +1437,7 @@ fn cast_expression() {
         None
     }
     let target = find(cst.root_node()).expect("cast");
-    let tree = tractor::tree::lower_csharp_node(target, s);
+    let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");

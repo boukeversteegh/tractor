@@ -321,8 +321,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_csharp,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_csharp_root),
-        // C# flows entirely through `crate::tree::csharp`. The imperative
+        tree_kind: TreeKind::Syntax(crate::languages::csharp::lower_csharp_root),
+        // C# flows entirely through `crate::languages::csharp::lower`. The imperative
         // walker is no longer reachable for C#; `passthrough_transform`
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.

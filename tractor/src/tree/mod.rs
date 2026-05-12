@@ -79,7 +79,6 @@ pub mod types;
 pub mod to_xot;
 pub mod to_json;
 pub mod python;
-pub mod csharp;
 pub mod java;
 pub mod typescript;
 pub mod rust_lang;
@@ -139,8 +138,6 @@ pub use to_xot::render_to_xot;
 pub use to_json::tree_to_json;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
-#[cfg(feature = "native")]
-pub use csharp::{lower_csharp_root, lower_csharp_node};
 #[cfg(feature = "native")]
 pub use java::{lower_java_root, lower_java_node};
 #[cfg(feature = "native")]
