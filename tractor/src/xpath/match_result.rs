@@ -157,7 +157,7 @@ impl Tree {
             #[cfg(feature = "native")]
             Tree::DataTree { tree, .. } => crate::tree::data_to_json(tree),
             #[cfg(feature = "native")]
-            Tree::Sql { tree, source, .. } => crate::tree::sql_to_json::sql_to_json(tree, source),
+            Tree::Sql { tree, source, .. } => crate::tree::sql::to_json::sql_to_json(tree, source),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
         }
     }

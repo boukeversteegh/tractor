@@ -21,7 +21,7 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::sql::{
+use super::types::{
     BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree, UnaryOp,
 };
 

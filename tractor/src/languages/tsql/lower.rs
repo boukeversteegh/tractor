@@ -15,8 +15,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of};
-use super::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlTree};
+use crate::tree::lower_helpers::{range_of, span_of};
+use crate::tree::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlTree};
 
 /// Detect `QuoteStyle` from raw source text and return the parsed
 /// (unquoted) identifier value alongside it. Bracket / double-quote /
@@ -1026,8 +1026,8 @@ fn lower_case(node: TsNode<'_>, source: &str) -> SqlTree {
     enum State { Before, AfterWhen, AfterThen, AfterElse }
     let mut state = State::Before;
     let mut cond_buffer: Option<SqlTree> = None;
-    let mut when_start: super::types::ByteRange =
-        super::types::ByteRange::empty_at(range.start);
+    let mut when_start: crate::tree::types::ByteRange =
+        crate::tree::types::ByteRange::empty_at(range.start);
 
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
@@ -1073,7 +1073,7 @@ fn lower_case(node: TsNode<'_>, source: &str) -> SqlTree {
                 whens.push(SqlTree::When {
                     condition: Box::new(cond),
                     value: Box::new(value),
-                    range: super::types::ByteRange::new(when_start.start, v_end),
+                    range: crate::tree::types::ByteRange::new(when_start.start, v_end),
                     span,
                 });
             }

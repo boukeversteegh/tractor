@@ -447,7 +447,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsql,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Sql(crate::tree::sql_lower::lower_sql_root),
+        tree_kind: TreeKind::Sql(crate::languages::tsql::lower_sql_root),
         transform: tsql::transform,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,

@@ -346,7 +346,7 @@ fn parse_with_ir_pipeline(
         }
         TreeKind::Sql(lower) => {
             let sql_tree = lower(tree.root_node(), source);
-            tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
+            tree::sql::to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
@@ -450,7 +450,7 @@ fn parse_with_ir_pipeline_to_xee(
         }
         TreeKind::Sql(lower) => {
             let sql_tree = lower(tree.root_node(), source);
-            tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_tree, source)
+            tree::sql::to_xot::render_sql_to_xot(&mut xot, holding, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())

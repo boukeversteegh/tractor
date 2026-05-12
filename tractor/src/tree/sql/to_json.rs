@@ -29,7 +29,7 @@
 
 use serde_json::{Map, Value};
 
-use super::sql::{
+use super::types::{
     BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree, UnaryOp,
 };
 

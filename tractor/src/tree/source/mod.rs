@@ -47,10 +47,8 @@ pub mod common;
 // Per-language canonical-source emitters moved to
 // `languages/<lang>/render_source.rs` in S10B. The match dispatch in
 // `render()` below calls into them directly.
-// SQL-family languages use their own typed tree (`SqlTree`) and a
-// separate renderer entrypoint `render_sql`. Iter 53 retired the
-// legacy `SyntaxTree`-based TSQL pipeline.
-pub mod sql;
+// SQL-family canonical-source emitter moved to `tree::sql::render_source`
+// in S10D. The `render_sql` function below calls into it.
 // Data-language tree-direct source emitters (S4B-Z2). Read [`DataTree`]
 // directly and produce JSON / YAML text with optional span tracking
 // — replaces the [`crate::render`] XmlNode roundtrip for tree-pipeline
@@ -97,5 +95,5 @@ pub fn render_sql(tree: &super::sql::SqlTree, source_anchor: Option<&str>) -> St
     if let Some(source) = source_anchor {
         return tree.to_source(source).to_string();
     }
-    sql::render(tree)
+    crate::tree::sql::render_source::render(tree)
 }

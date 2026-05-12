@@ -92,18 +92,11 @@ pub mod data;
 pub mod to_data;
 // SQL-language tree — typed variants per construct. Parallel to
 // `SyntaxTree` (programming languages) and `DataTree` (data languages).
-// See module doc-comment for rationale.
+// Per-construct lowering, to_xot, to_json, and render_source live
+// under `tree::sql::*` (regrouped in S10D). T-SQL CST lowering moved
+// to `crate::languages::tsql::lower`.
 #[cfg(feature = "native")]
 pub mod sql;
-// TSQL CST → SqlTree lowering.
-#[cfg(feature = "native")]
-pub mod sql_lower;
-// SqlTree → Xot rendering.
-#[cfg(feature = "native")]
-pub mod sql_to_xot;
-// SqlTree → JSON rendering.
-#[cfg(feature = "native")]
-pub mod sql_to_json;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
