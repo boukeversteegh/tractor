@@ -843,7 +843,7 @@ fn drop_kind_marker(kind: DropKind) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::sql_lower::lower_sql_root;
+    use crate::languages::tsql::lower_sql_root;
     use tree_sitter::Parser;
 
     fn parse_tsql(source: &str) -> tree_sitter::Tree {

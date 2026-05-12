@@ -2053,7 +2053,7 @@ mod tests {
         let SqlTree::Create { kind, body, .. } = inner.as_ref() else {
             panic!("expected Create, got {inner:?}");
         };
-        assert_eq!(*kind, super::super::sql::CreateKind::Table);
+        assert_eq!(*kind, crate::tree::sql::CreateKind::Table);
         assert_eq!(body.len(), 2);
         assert!(body.iter().all(|c| matches!(c, SqlTree::ColumnDef { .. })));
     }
@@ -2068,7 +2068,7 @@ mod tests {
         let SqlTree::Drop { kind, .. } = inner.as_ref() else {
             panic!("expected Drop, got {inner:?}");
         };
-        assert_eq!(*kind, super::super::sql::DropKind::Table);
+        assert_eq!(*kind, crate::tree::sql::DropKind::Table);
     }
 
     #[test]
@@ -2170,7 +2170,7 @@ mod tests {
         // Find a Join in relations.
         let join = relations.iter().find(|r| matches!(r, SqlTree::Join { .. }));
         let SqlTree::Join { kind, on, .. } = join.expect("join") else { panic!(); };
-        assert_eq!(*kind, super::super::sql::JoinKind::Left);
+        assert_eq!(*kind, crate::tree::sql::JoinKind::Left);
         assert!(on.is_some());
     }
 
