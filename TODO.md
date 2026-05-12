@@ -401,7 +401,7 @@ The shared tree machinery — `tree/types.rs` (the unified `SyntaxTree` enum), `
 ### Tasks
 
 - [ ] [S10A] **No `tree/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
-  - Each move: `git mv tree/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `tree/mod.rs`; update the `tree_kind: Programming(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
+  - Each move: `git mv tree/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `tree/mod.rs`; update the `tree_kind: Syntax(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
   - Per-language sub-tasks:
     - [ ] [S10A-Z1] csharp — `tree/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
     - [ ] [S10A-Z2] python — `tree/python.rs` (2238 LOC) → `languages/python/lower.rs`.
