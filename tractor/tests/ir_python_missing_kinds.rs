@@ -7,7 +7,8 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::tree::{audit_coverage, lower_python_root};
+use tractor::tree::audit_coverage;
+use tractor::languages::python::lower_python_root;
 
 #[test]
 #[ignore]

@@ -342,7 +342,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_python,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_python_root),
+        tree_kind: TreeKind::Syntax(crate::languages::python::lower_python_root),
         transform: passthrough_transform,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,

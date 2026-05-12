@@ -78,7 +78,6 @@ pub mod types;
 // - `source/` : original byte-anchored or canonical source text.
 pub mod to_xot;
 pub mod to_json;
-pub mod python;
 pub mod java;
 pub mod typescript;
 pub mod rust_lang;
@@ -136,8 +135,6 @@ pub mod coverage;
 pub use types::{Access, AccessSegment, ByteRange, Expression, SyntaxTree, Modifiers, ParamKind, Span, to_source};
 pub use to_xot::render_to_xot;
 pub use to_json::tree_to_json;
-#[cfg(feature = "native")]
-pub use python::lower_python_root;
 #[cfg(feature = "native")]
 pub use java::{lower_java_root, lower_java_node};
 #[cfg(feature = "native")]

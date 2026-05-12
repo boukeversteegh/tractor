@@ -12,7 +12,8 @@
 
 #![cfg(feature = "native")]
 
-use tractor::tree::{audit_coverage, lower_python_root, render_to_xot, to_source};
+use tractor::tree::{audit_coverage, render_to_xot, to_source};
+use tractor::languages::python::lower_python_root;
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
