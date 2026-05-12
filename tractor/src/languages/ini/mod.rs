@@ -1,6 +1,6 @@
 //! INI language module.
 //!
-//! INI runs through `crate::ir::ini_data` end-to-end. The legacy
+//! INI runs through `crate::tree::ini_data` end-to-end. The legacy
 //! imperative `rules.rs` / `transformations.rs` / `transform.rs`
 //! modules have been retired.
 

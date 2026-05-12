@@ -1,6 +1,6 @@
 //! Java language module.
 //!
-//! Java runs through `crate::ir::java` end-to-end.
+//! Java runs through `crate::tree::java` end-to-end.
 //!
 //!   - [`input`]   — generated `JavaKind` enum, kept as a kind-coverage
 //!                   catalogue for `tests/kind_catalogue.rs`.

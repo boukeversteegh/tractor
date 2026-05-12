@@ -6,7 +6,7 @@
 
 #![allow(dead_code)]
 
-use crate::ir::types::{AccessSegment, SyntaxTree};
+use crate::tree::types::{AccessSegment, SyntaxTree};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Indent {

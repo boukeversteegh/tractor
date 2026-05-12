@@ -3,7 +3,7 @@
 //! Mirrors the C# IR closely — Java and C# share most CST shapes
 //! (class/method/field declarations, modifiers, generics, blocks).
 //! Per-kind arms recursively lower children; the renderer in
-//! `crate::ir::to_xot` is shared with all other IR-pipeline languages.
+//! `crate::tree::to_xot` is shared with all other IR-pipeline languages.
 //!
 //! Coverage is incremental: each unhandled kind falls through to
 //! `SyntaxTree::Unknown`. The diagnostic test
@@ -573,7 +573,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 });
             }
             if let Some(v) = value_node {
-                let expr = crate::ir::Expression::wrap(lower_node(v, source));
+                let expr = crate::tree::Expression::wrap(lower_node(v, source));
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
                     modifiers: Modifiers::default(),
@@ -1699,7 +1699,7 @@ fn lower_java_multi_declarator(
         if let Some(v) = value_node {
             // <value><expression>...</expression></value> — value-position
             // expression host (Principle #15) encoded at lowering time.
-            let inner = crate::ir::Expression::wrap(lower_node(v, source));
+            let inner = crate::tree::Expression::wrap(lower_node(v, source));
             decl_children.push(SyntaxTree::SimpleStatement {
                 element_name: "value",
                 modifiers: Modifiers::default(),
@@ -1771,7 +1771,7 @@ fn lower_variable_declarator(
     // `<condition>` etc. and adds the `<expression>` host inside).
     // Java tests assert `value/expression/int='1'`; without the
     // wrapper the value renders as a bare child of `<field>`.
-    let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
+    let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
     SyntaxTree::Variable {
         element_name,
         modifiers,

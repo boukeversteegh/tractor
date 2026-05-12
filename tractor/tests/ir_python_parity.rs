@@ -22,7 +22,7 @@
 
 #![cfg(feature = "native")]
 
-use tractor::ir::{lower_python_root, render_to_xot, to_source};
+use tractor::tree::{lower_python_root, render_to_xot, to_source};
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 

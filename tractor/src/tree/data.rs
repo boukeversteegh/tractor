@@ -1,9 +1,9 @@
 //! Data-language IR — a format-agnostic typed shape for JSON / YAML /
 //! TOML / INI.
 //!
-//! ## Why a separate type from [`crate::ir::SyntaxTree`]
+//! ## Why a separate type from [`crate::tree::SyntaxTree`]
 //!
-//! The programming-language IR ([`crate::ir::SyntaxTree`]) is built around
+//! The programming-language IR ([`crate::tree::SyntaxTree`]) is built around
 //! constructs like `Class`, `Function`, `If` — it carries semantic
 //! type information specific to programming-language ASTs.
 //!
@@ -461,7 +461,7 @@ fn build_nested_pair(keys: &[&str], value: &str, kind: ScalarKind) -> DataIr {
 #[cfg(test)]
 mod mutation_tests {
     use super::*;
-    use crate::ir::lower_json_data_root;
+    use crate::tree::lower_json_data_root;
 
     fn lower(src: &str) -> DataIr {
         let language = tree_sitter_json::LANGUAGE.into();

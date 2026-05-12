@@ -34,7 +34,7 @@
 
 use serde_json::{Map, Value};
 
-use crate::ir::types::{AccessSegment, SyntaxTree, Modifiers, ParamKind};
+use crate::tree::types::{AccessSegment, SyntaxTree, Modifiers, ParamKind};
 use crate::transform::helpers::pluralize_list_name;
 
 const KEY_TYPE: &str = "$type";

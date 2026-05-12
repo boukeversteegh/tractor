@@ -2,7 +2,7 @@
 //!
 //! Mirrors the Rust IR pipeline pattern. Each per-kind arm
 //! recursively lowers children; unhandled kinds fall through to
-//! `SyntaxTree::Unknown`. The renderer in `crate::ir::to_xot` is shared.
+//! `SyntaxTree::Unknown`. The renderer in `crate::tree::to_xot` is shared.
 //!
 //! Production parser routes Go through this lowering end-to-end
 //! (see `parser::use_ir_pipeline`). The legacy imperative
@@ -395,10 +395,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     if c.kind() == "expression_list" {
                         let mut ec = c.walk();
                         c.named_children(&mut ec)
-                            .map(|item| *crate::ir::Expression::wrap(lower_node(item, source)).inner)
+                            .map(|item| *crate::tree::Expression::wrap(lower_node(item, source)).inner)
                             .collect::<Vec<_>>()
                     } else {
-                        vec![*crate::ir::Expression::wrap(lower_node(c, source)).inner]
+                        vec![*crate::tree::Expression::wrap(lower_node(c, source)).inner]
                     }
                 })
                 .collect();

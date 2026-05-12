@@ -12,7 +12,7 @@
 
 use std::collections::HashMap;
 
-use crate::ir::data::DataIr;
+use crate::tree::data::DataIr;
 
 /// `(line, col) → (rendered_start, rendered_end)` byte range map.
 ///
@@ -257,7 +257,7 @@ fn escape_json_string(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::lower_json_data_root;
+    use crate::tree::lower_json_data_root;
 
     fn lower(src: &str) -> DataIr {
         let language = tree_sitter_json::LANGUAGE.into();
@@ -311,7 +311,7 @@ mod tests {
         let mut ir = ir;
         let target = ir.find_at_offset_mut(8).unwrap();
         target
-            .set_scalar("hi \"world\"\nbye", crate::ir::data::ScalarKind::String)
+            .set_scalar("hi \"world\"\nbye", crate::tree::data::ScalarKind::String)
             .unwrap();
         let out = render_json(&ir, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
@@ -374,7 +374,7 @@ mod tests {
 
         ir.find_at_offset_mut(value_offset_in_src)
             .unwrap()
-            .set_scalar("Bob", crate::ir::data::ScalarKind::String)
+            .set_scalar("Bob", crate::tree::data::ScalarKind::String)
             .unwrap();
 
         let (rendered, spans) = render_json_with_spans(&ir, &JsonRenderOptions::default());

@@ -100,14 +100,14 @@ pub enum Tree {
     /// `native` feature, so WASM builds skip this variant.
     #[cfg(feature = "native")]
     SyntaxTree {
-        ir: Arc<crate::ir::SyntaxTree>,
+        ir: Arc<crate::tree::SyntaxTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
     /// Data-language IR (root-document match). Native-only.
     #[cfg(feature = "native")]
     DataIr {
-        ir: Arc<crate::ir::DataIr>,
+        ir: Arc<crate::tree::DataIr>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -115,7 +115,7 @@ pub enum Tree {
     /// Renders via `sql_to_xot` for XML and `sql_to_json` for JSON.
     #[cfg(feature = "native")]
     Sql {
-        ir: Arc<crate::ir::sql::SqlIr>,
+        ir: Arc<crate::tree::sql::SqlIr>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -147,17 +147,17 @@ impl Tree {
         match self {
             #[cfg(feature = "native")]
             Tree::SyntaxTree { ir, source, .. } => {
-                let data = crate::ir::lower_to_data_ir(ir, source);
-                if crate::ir::has_unhandled(&data) {
-                    crate::ir::ir_to_json(ir, source)
+                let data = crate::tree::lower_to_data_ir(ir, source);
+                if crate::tree::has_unhandled(&data) {
+                    crate::tree::ir_to_json(ir, source)
                 } else {
-                    crate::ir::data_to_json(&data)
+                    crate::tree::data_to_json(&data)
                 }
             }
             #[cfg(feature = "native")]
-            Tree::DataIr { ir, .. } => crate::ir::data_to_json(ir),
+            Tree::DataIr { ir, .. } => crate::tree::data_to_json(ir),
             #[cfg(feature = "native")]
-            Tree::Sql { ir, source, .. } => crate::ir::sql_to_json::sql_to_json(ir, source),
+            Tree::Sql { ir, source, .. } => crate::tree::sql_to_json::sql_to_json(ir, source),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
         }
     }

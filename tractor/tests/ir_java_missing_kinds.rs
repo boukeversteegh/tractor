@@ -3,7 +3,7 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::ir::{audit_coverage, lower_java_root};
+use tractor::tree::{audit_coverage, lower_java_root};
 
 #[test]
 #[ignore]
@@ -122,7 +122,7 @@ fn dump_java_type_pattern_ir_only() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
     let tree = p.parse(s, None).unwrap();
-    let ir = tractor::ir::lower_java_root(tree.root_node(), s);
+    let ir = tractor::tree::lower_java_root(tree.root_node(), s);
     eprintln!("{:#?}", ir);
 }
 

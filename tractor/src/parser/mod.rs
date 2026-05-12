@@ -53,12 +53,12 @@ pub struct XotParseResult {
     /// relied on for cardinality inference: the IR's typed slots
     /// (Vec<SyntaxTree> = list, Box<SyntaxTree> = singleton) carry the same
     /// information at the right semantic layer.
-    pub ir: Option<Box<crate::ir::SyntaxTree>>,
+    pub ir: Option<Box<crate::tree::SyntaxTree>>,
 
     /// Typed `DataIr` root for data languages (JSON / YAML / TOML /
     /// INI / env / markdown). `Some` only when the IR pipeline took
     /// the data-language branch.
-    pub data_ir: Option<Box<crate::ir::DataIr>>,
+    pub data_ir: Option<Box<crate::tree::DataIr>>,
 
     /// Typed `SqlIr` root for SQL-family languages (TSQL today).
     /// `Some` only when the IR pipeline took the SQL branch. SQL has
@@ -67,7 +67,7 @@ pub struct XotParseResult {
     /// projection heuristics that the cross-language `SyntaxTree` requires
     /// for generic SimpleStatement wrappers.
     #[cfg(feature = "native")]
-    pub sql_ir: Option<Box<crate::ir::sql::SqlIr>>,
+    pub sql_ir: Option<Box<crate::tree::sql::SqlIr>>,
 
     /// The original source text. Needed alongside `ir` / `data_ir`
     /// because both reference source byte ranges for leaf text
@@ -267,7 +267,7 @@ pub fn parse_string_to_xot_with_options(
 }
 
 /// Parse via the typed-IR pipeline. Lowers tree-sitter CST through
-/// `tractor::ir::lower_<lang>_root`, then renders to xot using
+/// `tractor::tree::lower_<lang>_root`, then renders to xot using
 /// `render_to_xot`. The result is wrapped in a document so xot
 /// queries treat it like the imperative pipeline's output.
 #[cfg(feature = "native")]
@@ -277,7 +277,7 @@ fn parse_with_ir_pipeline(
     file_path: String,
     tree_mode: TreeMode,
 ) -> Result<XotParseResult, ParseError> {
-    use crate::ir;
+    use crate::tree;
     use crate::languages::IrFamily;
 
     let language = get_tree_sitter_language(lang)?;
@@ -301,7 +301,7 @@ fn parse_with_ir_pipeline(
     match lang_ops.ir_family {
         IrFamily::Programming(lower) => {
             let ir_tree = lower(tree.root_node(), source);
-            ir::render_to_xot(&mut xot, doc, &ir_tree, source)
+            tree::render_to_xot(&mut xot, doc, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
@@ -346,7 +346,7 @@ fn parse_with_ir_pipeline(
         }
         IrFamily::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
-            ir::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
+            tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
                 .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
@@ -390,7 +390,7 @@ fn parse_with_ir_pipeline_to_xee(
     file_path: String,
     tree_mode: TreeMode,
 ) -> Result<XeeParseResult, ParseError> {
-    use crate::ir;
+    use crate::tree;
     use crate::languages::IrFamily;
 
     let language = get_tree_sitter_language(lang)?;
@@ -413,7 +413,7 @@ fn parse_with_ir_pipeline_to_xee(
     let root_tree = match lang_ops.ir_family {
         IrFamily::Programming(lower) => {
             let ir_tree = lower(tree.root_node(), source);
-            ir::render_to_xot(&mut xot, holding, &ir_tree, source)
+            tree::render_to_xot(&mut xot, holding, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
@@ -450,7 +450,7 @@ fn parse_with_ir_pipeline_to_xee(
         }
         IrFamily::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
-            ir::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
+            tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
                 .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())

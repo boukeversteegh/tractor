@@ -7,7 +7,7 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::ir::{audit_coverage, lower_python_root};
+use tractor::tree::{audit_coverage, lower_python_root};
 
 #[test]
 #[ignore]
@@ -48,7 +48,7 @@ fn python_missing_kinds() {
     // inner-handler fallthrough (the audit only sees outer kinds).
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
-    tractor::ir::render_to_xot(&mut xot, doc, &ir, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, doc, &ir, &source).expect("render");
     let xml = xot.to_string(doc).unwrap();
     let mut counts = std::collections::BTreeMap::<String, usize>::new();
     for token in xml.split("<unknown kind=\"").skip(1) {

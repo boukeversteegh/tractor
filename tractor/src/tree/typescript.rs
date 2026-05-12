@@ -3,7 +3,7 @@
 //! Single lower function handles all four flavours — the TS / JS / TSX
 //! grammars share most node kinds (TS is a superset, TSX adds JSX-only
 //! kinds). Per-kind arms recursively lower children; the renderer in
-//! `crate::ir::to_xot` is shared.
+//! `crate::tree::to_xot` is shared.
 //!
 //! Production parser routes ts/js/tsx/jsx through this lowering
 //! end-to-end (see `parser::use_ir_pipeline`). The legacy imperative
@@ -503,7 +503,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let value_node = node.child_by_field_name("value");
             // TS class fields default to `public`.
             let modifiers = lower_ts_modifiers(node, source, Some(Access::Public));
-            let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
+            let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
             SyntaxTree::Variable {
                 element_name: "field",
                 modifiers,
@@ -1820,7 +1820,7 @@ fn lower_ts_declarator_parts(d: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
     if let Some(v) = d.child_by_field_name("value") {
         // <value><expression>...</expression></value> at lowering time
         // (replaces wrap_expression_positions on rendered xot).
-        let expr = crate::ir::Expression::wrap(lower_node(v, source));
+        let expr = crate::tree::Expression::wrap(lower_node(v, source));
         parts.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),

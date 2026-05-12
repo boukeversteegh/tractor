@@ -1,7 +1,7 @@
 //! T-SQL: SqlIr → source code (canonical, no-anchor).
 //!
-//! Per-language entry under `crate::ir::source` for SQL-family
-//! languages. Called via [`crate::ir::source::render_sql`] which
+//! Per-language entry under `crate::tree::source` for SQL-family
+//! languages. Called via [`crate::tree::source::render_sql`] which
 //! handles both anchored mode (uses `SqlIr.to_source(s)` for byte-
 //! identical output) and from-scratch canonical mode (this module).
 //!
@@ -29,7 +29,7 @@
 
 #![cfg(feature = "native")]
 
-use crate::ir::sql::{QuoteStyle, SqlIr};
+use crate::tree::sql::{QuoteStyle, SqlIr};
 
 /// Render a [`SqlIr`] tree as canonical SQL source text.
 ///
@@ -62,7 +62,7 @@ pub fn render(ir: &SqlIr) -> String {
 /// Placeholder for atoms whose canonical form isn't yet derivable
 /// without source. Returns a marker that distinguishes from real
 /// content; once full canonical-source support lands these go away.
-fn range_placeholder(_range: &crate::ir::types::ByteRange) -> String {
+fn range_placeholder(_range: &crate::tree::types::ByteRange) -> String {
     "/*range*/".to_string()
 }
 
@@ -88,7 +88,7 @@ fn variant_name(ir: &SqlIr) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::types::{ByteRange, Span};
+    use crate::tree::types::{ByteRange, Span};
 
     fn ident(value: &str, q: QuoteStyle) -> SqlIr {
         SqlIr::Identifier {

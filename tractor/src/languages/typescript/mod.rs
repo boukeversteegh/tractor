@@ -1,6 +1,6 @@
 //! TypeScript / JavaScript / TSX / JSX language pipeline.
 //!
-//! All four flavours run through `crate::ir::typescript` end-to-end.
+//! All four flavours run through `crate::tree::typescript` end-to-end.
 //!
 //!   - [`input`]    — generated `TsKind` enum (union of typescript +
 //!                    tsx grammars), kept as a kind-coverage

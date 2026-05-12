@@ -10,7 +10,7 @@ use std::fs;
 use serde_json::Value;
 use tree_sitter::Parser;
 
-use tractor::ir::{ir_to_json, lower_csharp_root};
+use tractor::tree::{ir_to_json, lower_csharp_root};
 
 fn blueprint_path() -> String {
     let candidates = [

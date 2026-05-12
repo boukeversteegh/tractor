@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use crate::ir::data::DataIr;
+use crate::tree::data::DataIr;
 
 /// `(line, col) → (rendered_start, rendered_end)` byte range map.
 pub type DataSpanMap = HashMap<(u32, u32), (usize, usize)>;
@@ -425,7 +425,7 @@ fn yaml_quote_key(key: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::lower_yaml_data_root;
+    use crate::tree::lower_yaml_data_root;
 
     fn lower(src: &str) -> DataIr {
         let language = tree_sitter_yaml::LANGUAGE.into();
@@ -470,7 +470,7 @@ mod tests {
         // Replace value with the string "true" — must be quoted.
         let target = ir.find_at_offset_mut(6).unwrap();
         target
-            .set_scalar("true", crate::ir::data::ScalarKind::String)
+            .set_scalar("true", crate::tree::data::ScalarKind::String)
             .unwrap();
         let out = render_yaml(&ir, &YamlRenderOptions::default());
         assert!(
@@ -508,7 +508,7 @@ mod tests {
 
         ir.find_at_offset_mut(value_offset)
             .unwrap()
-            .set_scalar("Bob", crate::ir::data::ScalarKind::String)
+            .set_scalar("Bob", crate::tree::data::ScalarKind::String)
             .unwrap();
 
         let (rendered, spans) = render_yaml_with_spans(&ir, &YamlRenderOptions::default());

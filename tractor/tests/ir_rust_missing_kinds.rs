@@ -3,7 +3,7 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::ir::{audit_coverage, lower_rust_root, to_source};
+use tractor::tree::{audit_coverage, lower_rust_root, to_source};
 
 /// Diagnostic for the Rust IR pipeline. Reports CST kind coverage,
 /// roundtrip identity, and any unknowns in the IR. The production

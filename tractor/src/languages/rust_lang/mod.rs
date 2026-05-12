@@ -1,6 +1,6 @@
 //! Rust language pipeline.
 //!
-//! Rust runs through `crate::ir::rust_lang` end-to-end.
+//! Rust runs through `crate::tree::rust_lang` end-to-end.
 //!
 //!   - [`input`]    — generated `RustKind` enum, kept as a kind-coverage
 //!                    catalogue for `tests/kind_catalogue.rs`.

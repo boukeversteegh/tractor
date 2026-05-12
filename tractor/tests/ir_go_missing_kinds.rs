@@ -3,7 +3,7 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::ir::{audit_coverage, lower_go_root, to_source};
+use tractor::tree::{audit_coverage, lower_go_root, to_source};
 
 #[test]
 #[ignore]

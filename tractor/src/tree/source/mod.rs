@@ -1,11 +1,11 @@
 //! IR → source code rendering. Per-language source emitters that walk
-//! the typed [`SyntaxTree`](crate::ir::SyntaxTree) tree and produce source code text.
+//! the typed [`SyntaxTree`](crate::tree::SyntaxTree) tree and produce source code text.
 //!
 //! ## Two rendering modes
 //!
 //! 1. **Anchored** (`render(ir, lang, Some(source))`): Uses the IR's
 //!    byte ranges to slice gap text from the original source, the same
-//!    mechanism as [`crate::ir::to_source`]. Output is byte-for-byte
+//!    mechanism as [`crate::tree::to_source`]. Output is byte-for-byte
 //!    identical to the input source.
 //!
 //! 2. **From-scratch** (`render(ir, lang, None)`): Renders source from
@@ -92,7 +92,7 @@ pub fn render(ir: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> Strin
     }
 }
 
-/// Render a SQL [`SqlIr`](crate::ir::sql::SqlIr) tree to source text.
+/// Render a SQL [`SqlIr`](crate::tree::sql::SqlIr) tree to source text.
 ///
 /// `source_anchor`: the original source the IR was lowered from. When
 /// supplied, gap-text slicing returns the original bytes verbatim

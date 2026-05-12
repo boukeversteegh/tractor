@@ -11,9 +11,9 @@
 use serde_json::json;
 use tree_sitter::Parser;
 
-use tractor::ir::{data_to_json, lower_json_data_root};
+use tractor::tree::{data_to_json, lower_json_data_root};
 
-fn parse_json(src: &str) -> tractor::ir::DataIr {
+fn parse_json(src: &str) -> tractor::tree::DataIr {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_json::LANGUAGE.into()).unwrap();
     let tree = p.parse(src, None).unwrap();

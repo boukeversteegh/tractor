@@ -23,7 +23,7 @@ use crate::tree_mode::TreeMode;
 pub use crate::xpath::Match;
 
 #[cfg(feature = "native")]
-use crate::ir::data::{DataIr, ScalarKind};
+use crate::tree::data::{DataIr, ScalarKind};
 
 /// Languages whose upsert path is implemented (`json` / `yaml` /
 /// `yml`, all via the typed-IR pipeline). Other languages return
@@ -329,20 +329,20 @@ fn render_data_ir_with_spans(
     let (indent, newline) = detect_indent_and_newline(source);
     match lang {
         "json" => {
-            let opts = crate::ir::source::data_json::JsonRenderOptions {
+            let opts = crate::tree::source::data_json::JsonRenderOptions {
                 indent,
                 newline,
                 indent_level: 0,
             };
-            crate::ir::source::data_json::render_json_with_spans(ir, &opts)
+            crate::tree::source::data_json::render_json_with_spans(ir, &opts)
         }
         "yaml" | "yml" => {
-            let opts = crate::ir::source::data_yaml::YamlRenderOptions {
+            let opts = crate::tree::source::data_yaml::YamlRenderOptions {
                 indent,
                 newline,
                 indent_level: 0,
             };
-            crate::ir::source::data_yaml::render_yaml_with_spans(ir, &opts)
+            crate::tree::source::data_yaml::render_yaml_with_spans(ir, &opts)
         }
         _ => unreachable!("render_data_ir_with_spans called for non-data language: {}", lang),
     }

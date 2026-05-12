@@ -1,6 +1,6 @@
 //! SQL-language IR — a fully typed representation of T-SQL (and
 //! eventually MySQL / PostgreSQL / SQLite) constructs. Parallel to
-//! [`crate::ir::SyntaxTree`] (programming languages) and [`crate::ir::data::DataIr`]
+//! [`crate::tree::SyntaxTree`] (programming languages) and [`crate::tree::data::DataIr`]
 //! (data languages).
 //!
 //! ## Why a separate IR
@@ -39,7 +39,7 @@
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
 //!    is captured by [`QuoteStyle`] on the atom variant; `value` is
 //!    the parsed unquoted text. Implemented as the canonical-mode
-//!    arm of [`crate::ir::source::render_sql`] in `source/sql.rs`,
+//!    arm of [`crate::tree::source::render_sql`] in `source/sql.rs`,
 //!    fitting the existing per-language source-rendering convention.
 
 #![cfg(feature = "native")]

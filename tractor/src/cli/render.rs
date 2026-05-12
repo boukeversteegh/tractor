@@ -7,7 +7,7 @@ use tractor::parser::parse_string_to_xot;
 ///
 /// The `render` command parses source through the typed-IR pipeline
 /// and re-emits it via the IR-aware source renderer
-/// (`ir::source::render`). In anchored mode (the default) this is a
+/// (`tree::source::render`). In anchored mode (the default) this is a
 /// byte-for-byte identity — useful for verifying lossless parse and as
 /// the substrate that `tractor set` / `tractor update` build on.
 #[derive(Args, Debug)]
@@ -38,12 +38,12 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let rendered = if let Some(ir) = &parsed.ir {
         // Programming-language IR: anchored render slices the source
         // verbatim, so the round-trip is byte-identical.
-        tractor::ir::source::render(ir, &lang, Some(&parsed.source))
+        tractor::tree::source::render(ir, &lang, Some(&parsed.source))
     } else if let Some(data_ir) = &parsed.data_ir {
         // Data-language IR: anchored slice via DataIr::to_source.
         data_ir.to_source(&parsed.source).to_string()
     } else if let Some(sql_ir) = &parsed.sql_ir {
-        tractor::ir::source::render_sql(sql_ir, Some(&parsed.source))
+        tractor::tree::source::render_sql(sql_ir, Some(&parsed.source))
     } else {
         return Err(format!(
             "language '{}' is not on the IR pipeline; render is only available \

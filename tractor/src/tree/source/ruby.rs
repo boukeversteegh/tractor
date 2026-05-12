@@ -5,7 +5,7 @@
 //! Modeled via empty `block_open` and `end` as `block_close`.
 #![allow(dead_code)]
 use super::common::{write_ir, Indent, Syntax};
-use crate::ir::types::SyntaxTree;
+use crate::tree::types::SyntaxTree;
 
 pub fn render(ir: &SyntaxTree) -> String {
     let mut out = String::new();

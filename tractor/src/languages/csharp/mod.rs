@@ -1,6 +1,6 @@
 //! C# language module.
 //!
-//! C# runs through `crate::ir::csharp` end-to-end. What remains here:
+//! C# runs through `crate::tree::csharp` end-to-end. What remains here:
 //!
 //!   - [`input`]    — generated `CsKind` enum, kept as a kind-coverage
 //!                    catalogue for `tests/kind_catalogue.rs`.

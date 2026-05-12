@@ -296,7 +296,7 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
         // exists. `SyntaxTree::Unknown` covers the diagnostic.
         // TOML / INI / env / markdown moved off the imperative
         // pipeline: rule tables no longer exist. The IR pipeline
-        // (crate::ir::{toml_data, ini_data, markdown_data}) owns
+        // (crate::tree::{toml_data, ini_data, markdown_data}) owns
         // their dispatch; `DataIr::Unknown` covers the diagnostic.
         ("tsql",       passthrough_kinds(tsql::rules::rule)),
         ("json", dedupe({

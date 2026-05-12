@@ -106,17 +106,17 @@ pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 #[cfg(feature = "native")]
 pub type GrammarFn = fn() -> tree_sitter::Language;
 
-/// CST → [`SyntaxTree`](crate::ir::SyntaxTree) lowering function pointer (programming languages).
+/// CST → [`SyntaxTree`](crate::tree::SyntaxTree) lowering function pointer (programming languages).
 #[cfg(feature = "native")]
-pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::SyntaxTree;
+pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::SyntaxTree;
 
-/// CST → [`DataIr`](crate::ir::DataIr) lowering function pointer (data languages).
+/// CST → [`DataIr`](crate::tree::DataIr) lowering function pointer (data languages).
 #[cfg(feature = "native")]
-pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::DataIr;
+pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataIr;
 
-/// CST → [`SqlIr`](crate::ir::sql::SqlIr) lowering function pointer (SQL family).
+/// CST → [`SqlIr`](crate::tree::sql::SqlIr) lowering function pointer (SQL family).
 #[cfg(feature = "native")]
-pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::sql::SqlIr;
+pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::sql::SqlIr;
 
 /// Renderer for a `DataIr` tree. Each [`DataParser`] pairs a lower
 /// fn with one of these so the pipeline never needs a per-language
@@ -125,7 +125,7 @@ pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir:
 pub type DataRenderFn = fn(
     &mut xot::Xot,
     xot::Node,
-    &crate::ir::DataIr,
+    &crate::tree::DataIr,
     &str,
 ) -> Result<xot::Node, xot::Error>;
 
@@ -255,7 +255,7 @@ pub struct LanguageOps {
 /// fan-out collapses to simple `iter().find()` calls below.
 pub const LANGUAGES: &[LanguageOps] = &[
     // ----- TypeScript / JSX / JavaScript family -----------------------------
-    // TS / JS / TSX / JSX all flow through `crate::ir::typescript` —
+    // TS / JS / TSX / JSX all flow through `crate::tree::typescript` —
     // tree-sitter's TS / JS / TSX grammars share most node kinds and
     // TS is a superset; the IR's lower_node arms handle the JSX-only
     // kinds (jsx_element, jsx_attribute, jsx_text, …) too. They share
@@ -269,7 +269,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_typescript,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -286,7 +286,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsx,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -303,7 +303,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_javascript,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_typescript_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -321,8 +321,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_csharp,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_csharp_root),
-        // C# flows entirely through `crate::ir::csharp`. The imperative
+        ir_family: IrFamily::Programming(crate::tree::lower_csharp_root),
+        // C# flows entirely through `crate::tree::csharp`. The imperative
         // walker is no longer reachable for C#; `passthrough_transform`
         // satisfies the field's contract for any code path that still
         // looks up `transform` by language id.
@@ -342,7 +342,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_python,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_python_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_python_root),
         transform: passthrough_transform,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,
@@ -359,7 +359,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_go,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_go_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_go_root),
         transform: passthrough_transform,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
@@ -376,7 +376,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_rust,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_rust_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_rust_root),
         transform: passthrough_transform,
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
@@ -393,7 +393,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_java,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_java_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_java_root),
         transform: passthrough_transform,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -410,7 +410,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_ruby,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_ruby_root),
+        ir_family: IrFamily::Programming(crate::tree::lower_ruby_root),
         transform: passthrough_transform,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
@@ -427,8 +427,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_php,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::ir::lower_php_root),
-        // PHP flows entirely through `crate::ir::php`. The imperative
+        ir_family: IrFamily::Programming(crate::tree::lower_php_root),
+        // PHP flows entirely through `crate::tree::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
         transform: passthrough_transform,
@@ -447,7 +447,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsql,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Sql(crate::ir::sql_lower::lower_sql_root),
+        ir_family: IrFamily::Sql(crate::tree::sql_lower::lower_sql_root),
         transform: tsql::transform,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -467,12 +467,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_json_data_root,
-                render: crate::ir::render_data_to_xot_json,
+                lower: crate::tree::lower_json_data_root,
+                render: crate::tree::render_data_to_xot_json,
             },
             content: DataParser {
-                lower: crate::ir::lower_json_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_json_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
         transform: json::data_transform,
@@ -493,12 +493,12 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_yaml_data_root,
-                render: crate::ir::render_data_to_xot_json,
+                lower: crate::tree::lower_yaml_data_root,
+                render: crate::tree::render_data_to_xot_json,
             },
             content: DataParser {
-                lower: crate::ir::lower_yaml_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_yaml_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
         transform: yaml::data_transform,
@@ -519,15 +519,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_toml_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_toml_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
             content: DataParser {
-                lower: crate::ir::lower_toml_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_toml_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        // TOML flows entirely through `crate::ir::toml_data` (parser
+        // TOML flows entirely through `crate::tree::toml_data` (parser
         // dispatches to `parse_with_ir_pipeline`). The IR's data
         // lowering already collapses array-of-tables; no post-pass
         // needed.
@@ -549,15 +549,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_ini_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_ini_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
             content: DataParser {
-                lower: crate::ir::lower_ini_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_ini_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        // INI flows entirely through `crate::ir::ini_data`.
+        // INI flows entirely through `crate::tree::ini_data`.
         transform: passthrough_transform,
         syntax_category: ini::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -576,15 +576,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_ini_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_ini_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
             content: DataParser {
-                lower: crate::ir::lower_ini_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_ini_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        // .env flows entirely through `crate::ir::ini_data` (shares
+        // .env flows entirely through `crate::tree::ini_data` (shares
         // INI's data lowering — same shape). Grammar is bash because
         // the .env shell-style syntax overlaps closely.
         transform: passthrough_transform,
@@ -605,15 +605,15 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         ir_family: IrFamily::Data {
             structure: DataParser {
-                lower: crate::ir::lower_markdown_data_root,
-                render: crate::ir::render_data_to_xot_json,
+                lower: crate::tree::lower_markdown_data_root,
+                render: crate::tree::render_data_to_xot_json,
             },
             content: DataParser {
-                lower: crate::ir::lower_markdown_data_root,
-                render: crate::ir::render_data_to_xot_keyed,
+                lower: crate::tree::lower_markdown_data_root,
+                render: crate::tree::render_data_to_xot_keyed,
             },
         },
-        // Markdown flows entirely through `crate::ir::markdown_data`.
+        // Markdown flows entirely through `crate::tree::markdown_data`.
         transform: passthrough_transform,
         syntax_category: markdown::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,

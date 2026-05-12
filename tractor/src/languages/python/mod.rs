@@ -1,6 +1,6 @@
 //! Python language module.
 //!
-//! Python runs through `crate::ir::python` end-to-end.
+//! Python runs through `crate::tree::python` end-to-end.
 //!
 //!   - [`input`]   — generated `PyKind` enum, kept as a kind-coverage
 //!                   catalogue for `tests/kind_catalogue.rs`.

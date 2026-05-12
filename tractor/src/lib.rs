@@ -20,7 +20,7 @@ pub mod languages;
 // Parallel to `transform`; not yet wired into production paths.
 // See `docs/design-transform-redesign-exploration.md` § 11.
 #[cfg(feature = "native")]
-pub mod ir;
+pub mod tree;
 
 // Querying
 pub mod xpath;
@@ -29,8 +29,8 @@ pub mod xpath;
 pub mod output;
 // `render` module retired by S4C/S4D — the IR-pipeline reverse path
 // owns this surface now: programming languages render through
-// `ir::source::*`, data languages through
-// `ir::source::data_{json,yaml}`.
+// `tree::source::*`, data languages through
+// `tree::source::data_{json,yaml}`.
 
 // Core data types
 pub mod model;

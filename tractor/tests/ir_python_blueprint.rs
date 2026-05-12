@@ -12,7 +12,7 @@
 
 #![cfg(feature = "native")]
 
-use tractor::ir::{audit_coverage, lower_python_root, render_to_xot, to_source};
+use tractor::tree::{audit_coverage, lower_python_root, render_to_xot, to_source};
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
@@ -252,7 +252,7 @@ fn blueprint_coverage_audit() {
     let mut xot = xot::Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    tractor::ir::render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, dr, &ir, &source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken");

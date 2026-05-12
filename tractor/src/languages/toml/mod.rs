@@ -1,6 +1,6 @@
 //! TOML language module.
 //!
-//! TOML runs through `crate::ir::toml_data` end-to-end. The legacy
+//! TOML runs through `crate::tree::toml_data` end-to-end. The legacy
 //! imperative `rules.rs` / `transformations.rs` / `transform.rs`
 //! modules have been retired.
 //!

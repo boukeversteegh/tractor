@@ -1,6 +1,6 @@
 //! Go language pipeline.
 //!
-//! Go runs through `crate::ir::go_lang` end-to-end.
+//! Go runs through `crate::tree::go_lang` end-to-end.
 //!
 //!   - [`input`]    — generated `GoKind` enum, kept as a kind-coverage
 //!                    catalogue for `tests/kind_catalogue.rs`.

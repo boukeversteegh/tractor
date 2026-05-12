@@ -1,6 +1,6 @@
 //! Markdown language module.
 //!
-//! Markdown runs through `crate::ir::markdown_data` end-to-end. The
+//! Markdown runs through `crate::tree::markdown_data` end-to-end. The
 //! legacy imperative `rules.rs` / `transformations.rs` /
 //! `transform.rs` modules have been retired.
 //!

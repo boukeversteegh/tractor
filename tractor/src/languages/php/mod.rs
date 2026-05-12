@@ -1,6 +1,6 @@
 //! PHP language pipeline.
 //!
-//! PHP flows through `crate::ir::php` end-to-end.
+//! PHP flows through `crate::tree::php` end-to-end.
 //!
 //!   - [`input`]    — generated `PhpKind` enum, kept as a kind-coverage
 //!                    catalogue for `tests/kind_catalogue.rs`.

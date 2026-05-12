@@ -26,7 +26,7 @@
 
 #![cfg(feature = "native")]
 
-use tractor::ir::{audit_coverage, lower_csharp_root, render_to_xot, to_source};
+use tractor::tree::{audit_coverage, lower_csharp_root, render_to_xot, to_source};
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
@@ -1133,7 +1133,7 @@ fn conditional_access_isomorphism() {
             None
         }
         let target = find(tree.root_node()).expect("access expression");
-        let access = tractor::ir::lower_csharp_node(target, source);
+        let access = tractor::tree::lower_csharp_node(target, source);
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
@@ -1203,7 +1203,7 @@ fn non_null_assertion() {
         None
     }
     let target = find(tree.root_node()).expect("postfix_unary");
-    let ir = tractor::ir::lower_csharp_node(target, s);
+    let ir = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
@@ -1244,7 +1244,7 @@ fn is_type_test() {
         None
     }
     let target = find(tree.root_node()).expect("is_expression");
-    let ir = tractor::ir::lower_csharp_node(target, s);
+    let ir = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
@@ -1290,8 +1290,8 @@ fn access_marker_swap_via_enum_mutation() {
     let mut ir = lower_csharp_root(tree.root_node(), s);
 
     // Locate the class IR.
-    fn find_class(ir: &mut tractor::ir::SyntaxTree) -> Option<&mut tractor::ir::SyntaxTree> {
-        use tractor::ir::SyntaxTree;
+    fn find_class(ir: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
+        use tractor::tree::SyntaxTree;
         if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
         match ir {
             SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
@@ -1307,13 +1307,13 @@ fn access_marker_swap_via_enum_mutation() {
     let class = find_class(&mut ir).expect("SyntaxTree::Class in tree");
 
     // Verify it parsed with modifiers.access = Public.
-    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
-        assert_eq!(modifiers.access, Some(tractor::ir::Access::Public),
+    if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
+        assert_eq!(modifiers.access, Some(tractor::tree::Access::Public),
             "expected `public class Foo` to lower to Access::Public");
     }
 
     // Render before mutation.
-    fn render_view(ir: &tractor::ir::SyntaxTree, src: &str) -> String {
+    fn render_view(ir: &tractor::tree::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
@@ -1327,8 +1327,8 @@ fn access_marker_swap_via_enum_mutation() {
 
     // Mutation: flip access to Private. ONE FIELD CHANGE.
     let class = find_class(&mut ir).unwrap();
-    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
-        modifiers.access = Some(tractor::ir::Access::Private);
+    if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
+        modifiers.access = Some(tractor::tree::Access::Private);
     }
 
     // Re-render. Marker swapped by construction — no XML-level
@@ -1359,8 +1359,8 @@ fn static_marker_via_modifiers_mutation() {
     let tree = p.parse(s, None).unwrap();
     let mut ir = lower_csharp_root(tree.root_node(), s);
 
-    fn find_class(ir: &mut tractor::ir::SyntaxTree) -> Option<&mut tractor::ir::SyntaxTree> {
-        use tractor::ir::SyntaxTree;
+    fn find_class(ir: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
+        use tractor::tree::SyntaxTree;
         if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
         match ir {
             SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
@@ -1374,12 +1374,12 @@ fn static_marker_via_modifiers_mutation() {
         }
     }
     let class = find_class(&mut ir).expect("SyntaxTree::Class");
-    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
+    if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
         assert!(!modifiers.static_, "should not be static initially");
         modifiers.static_ = true;
     }
 
-    fn render_view(ir: &tractor::ir::SyntaxTree, src: &str) -> String {
+    fn render_view(ir: &tractor::tree::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
@@ -1398,7 +1398,7 @@ fn static_marker_via_modifiers_mutation() {
 /// names return Err, known flags toggle the right field.
 #[test]
 fn modifiers_set_flag_api() {
-    let mut m = tractor::ir::Modifiers::default();
+    let mut m = tractor::tree::Modifiers::default();
     assert!(m.is_empty());
 
     m.set_flag("static", true).unwrap();
@@ -1436,7 +1436,7 @@ fn cast_expression() {
         None
     }
     let target = find(tree.root_node()).expect("cast");
-    let ir = tractor::ir::lower_csharp_node(target, s);
+    let ir = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");

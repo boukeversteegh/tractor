@@ -1,6 +1,6 @@
 //! Ruby language pipeline.
 //!
-//! Ruby runs through `crate::ir::ruby` end-to-end.
+//! Ruby runs through `crate::tree::ruby` end-to-end.
 //!
 //!   - [`input`]    — generated `RubyKind` enum, kept as a kind-coverage
 //!                    catalogue for `tests/kind_catalogue.rs`.

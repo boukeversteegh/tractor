@@ -2805,7 +2805,7 @@ fn lower_variable_declarator(
                 let pattern_ir = Box::new(lower_node(p, source));
                 let value_ir = value_node
                     .filter(|v| v.id() != p.id())
-                    .map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
+                    .map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
                 let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
                 return SyntaxTree::Variable {
                     element_name,
@@ -2840,7 +2840,7 @@ fn lower_variable_declarator(
 
     let name_ir = SyntaxTree::Name { range: range_of(n), span: span_of(n) };
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
-    let value_ir = value_node.map(|v| crate::ir::Expression::wrap(lower_node(v, source)));
+    let value_ir = value_node.map(|v| crate::tree::Expression::wrap(lower_node(v, source)));
     SyntaxTree::Variable {
         element_name,
         modifiers,
