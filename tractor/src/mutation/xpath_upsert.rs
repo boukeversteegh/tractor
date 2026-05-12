@@ -23,7 +23,7 @@ use crate::tree_mode::TreeMode;
 pub use crate::xpath::Match;
 
 #[cfg(feature = "native")]
-use crate::tree::data::{DataIr, ScalarKind};
+use crate::tree::data::{DataTree, ScalarKind};
 
 /// Languages whose upsert path is implemented (`json` / `yaml` /
 /// `yml`, all via the typed-IR pipeline). Other languages return
@@ -198,7 +198,7 @@ pub fn upsert_typed(
 /// Update existing nodes' values using render-with-spans-splice.
 ///
 /// All currently-supported upsert languages (`json` / `yaml` / `yml`)
-/// take the typed-`DataIr` reverse path; the entry-point allowlist
+/// take the typed-`DataTree` reverse path; the entry-point allowlist
 /// rejects everything else with [`UpsertError::UnsupportedLanguage`]
 /// before reaching here, so this function is a thin dispatcher.
 fn update_existing(
@@ -221,7 +221,7 @@ fn update_existing(
 
 /// IR-direct update for data languages (json / yaml). Mirror of
 /// [`update_existing`]'s splice loop but reading the typed
-/// [`DataIr`] tree — no `XmlNode` intermediate.
+/// [`DataTree`] tree — no `XmlNode` intermediate.
 #[cfg(feature = "native")]
 fn update_existing_via_data_ir(
     source: &str,
@@ -238,14 +238,14 @@ fn update_existing_via_data_ir(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
     let mut ir = *parsed.data_ir.ok_or_else(|| {
         UpsertError::Parse(format!(
-            "language '{}' did not produce a DataIr on the IR pipeline",
+            "language '{}' did not produce a DataTree on the IR pipeline",
             lang,
         ))
     })?;
 
     // Step 1: Record original byte spans and mutate every matched
     // value in the typed IR. Each match's source position lines up
-    // with the value-scalar leaf in `DataIr` (the IR's keyed render
+    // with the value-scalar leaf in `DataTree` (the IR's keyed render
     // sets element line/col to value.span()).
     let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new();
 
@@ -257,7 +257,7 @@ fn update_existing_via_data_ir(
 
         let target = ir.find_at_offset_mut(orig_start as u32).ok_or_else(|| {
             UpsertError::NoInsertionPoint(format!(
-                "could not locate node at byte offset {} in DataIr",
+                "could not locate node at byte offset {} in DataTree",
                 orig_start,
             ))
         })?;
@@ -310,19 +310,19 @@ fn update_existing_via_data_ir(
 }
 
 #[cfg(feature = "native")]
-fn scalar_kind_of(ir: &DataIr) -> ScalarKind {
+fn scalar_kind_of(ir: &DataTree) -> ScalarKind {
     match ir {
-        DataIr::String { .. } => ScalarKind::String,
-        DataIr::Number { .. } => ScalarKind::Number,
-        DataIr::Bool { .. } => ScalarKind::Bool,
-        DataIr::Null { .. } => ScalarKind::Null,
+        DataTree::String { .. } => ScalarKind::String,
+        DataTree::Number { .. } => ScalarKind::Number,
+        DataTree::Bool { .. } => ScalarKind::Bool,
+        DataTree::Null { .. } => ScalarKind::Null,
         _ => ScalarKind::String,
     }
 }
 
 #[cfg(feature = "native")]
 fn render_data_ir_with_spans(
-    ir: &DataIr,
+    ir: &DataTree,
     lang: &str,
     source: &str,
 ) -> (String, std::collections::HashMap<(u32, u32), (usize, usize)>) {
@@ -350,7 +350,7 @@ fn render_data_ir_with_spans(
 
 /// Insert new structure using render-with-spans-splice. All
 /// supported upsert languages (`json` / `yaml` / `yml`) flow through
-/// the typed-`DataIr` insertion path; the entry-point allowlist
+/// the typed-`DataTree` insertion path; the entry-point allowlist
 /// rejects everything else upstream.
 fn insert_new(
     source: &str,
@@ -373,7 +373,7 @@ fn insert_new(
 
 /// IR-direct insert for data languages (json / yaml). The xee XPath
 /// engine resolves the deepest matching prefix the same way as the
-/// legacy path; mutation + render flows through [`DataIr`] only.
+/// legacy path; mutation + render flows through [`DataTree`] only.
 #[cfg(feature = "native")]
 fn insert_new_via_data_ir(
     source: &str,
@@ -435,7 +435,7 @@ fn insert_new_via_data_ir(
 
     let is_root_splice = existing_depth == 0;
 
-    // Re-parse the source to obtain a mutably-owned DataIr.
+    // Re-parse the source to obtain a mutably-owned DataTree.
     let parsed = parse_string_to_xot(
         source,
         lang,
@@ -445,7 +445,7 @@ fn insert_new_via_data_ir(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
     let mut ir = *parsed.data_ir.ok_or_else(|| {
         UpsertError::Parse(format!(
-            "language '{}' did not produce a DataIr on the IR pipeline",
+            "language '{}' did not produce a DataTree on the IR pipeline",
             lang,
         ))
     })?;
@@ -456,7 +456,7 @@ fn insert_new_via_data_ir(
     let target_offset = if is_root_splice { 0 } else { ancestor_offset };
     let target = find_insertion_target_at_offset(&mut ir, target_offset).ok_or_else(|| {
         UpsertError::NoInsertionPoint(format!(
-            "could not locate container at byte offset {} in DataIr",
+            "could not locate container at byte offset {} in DataTree",
             target_offset,
         ))
     })?;
@@ -487,10 +487,10 @@ fn insert_new_via_data_ir(
         // For non-root splices the original range is the matched
         // ancestor's value span. We don't have the xot end_line / end_col
         // here directly, but we can recover them by re-querying the
-        // ancestor span via DataIr's range.
+        // ancestor span via DataTree's range.
         let target = ir.find_at_offset(ancestor_offset).ok_or_else(|| {
             UpsertError::NoInsertionPoint(
-                "ancestor disappeared from DataIr after insert".into(),
+                "ancestor disappeared from DataTree after insert".into(),
             )
         })?;
         let r = target.range();
@@ -532,12 +532,12 @@ fn scalar_kind_from_str(kind: Option<&str>) -> ScalarKind {
 ///
 /// Used by [`insert_new_via_data_ir`] to map an XPath-derived
 /// ancestor position to the right insertion target. Distinct from
-/// [`DataIr::find_at_offset_mut`] which drills to the deepest match
+/// [`DataTree::find_at_offset_mut`] which drills to the deepest match
 /// — fine for value-replacement (where the target is the leaf
 /// scalar) but wrong for insertion (where the target is the
 /// surrounding container).
 #[cfg(feature = "native")]
-fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut DataIr> {
+fn find_insertion_target_at_offset(ir: &mut DataTree, offset: u32) -> Option<&mut DataTree> {
     // Two-phase walk to keep the borrow checker happy: an immutable
     // pre-pass decides whether to descend (a deeper container
     // matches) or return `self`; the mutable descent commits to
@@ -548,9 +548,9 @@ fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut 
 
     if has_deeper {
         match ir {
-            DataIr::Document { children, .. }
-            | DataIr::Sequence { items: children, .. }
-            | DataIr::Section { children, .. } => {
+            DataTree::Document { children, .. }
+            | DataTree::Sequence { items: children, .. }
+            | DataTree::Section { children, .. } => {
                 for child in children.iter_mut() {
                     if let Some(f) = find_insertion_target_at_offset(child, offset) {
                         return Some(f);
@@ -558,7 +558,7 @@ fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut 
                 }
                 None
             }
-            DataIr::Mapping { pairs, .. } => {
+            DataTree::Mapping { pairs, .. } => {
                 for child in pairs.iter_mut() {
                     if let Some(f) = find_insertion_target_at_offset(child, offset) {
                         return Some(f);
@@ -566,7 +566,7 @@ fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut 
                 }
                 None
             }
-            DataIr::Pair { key, value, .. } => {
+            DataTree::Pair { key, value, .. } => {
                 if let Some(f) = find_insertion_target_at_offset(key, offset) {
                     return Some(f);
                 }
@@ -577,7 +577,7 @@ fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut 
     } else {
         let is_container = matches!(
             ir,
-            DataIr::Mapping { .. } | DataIr::Sequence { .. } | DataIr::Section { .. }
+            DataTree::Mapping { .. } | DataTree::Sequence { .. } | DataTree::Section { .. }
         );
         if is_container && ir.range().start == offset {
             Some(ir)
@@ -588,10 +588,10 @@ fn find_insertion_target_at_offset(ir: &mut DataIr, offset: u32) -> Option<&mut 
 }
 
 #[cfg(feature = "native")]
-fn has_container_at(ir: &DataIr, offset: u32) -> bool {
+fn has_container_at(ir: &DataTree, offset: u32) -> bool {
     let is_container = matches!(
         ir,
-        DataIr::Mapping { .. } | DataIr::Sequence { .. } | DataIr::Section { .. }
+        DataTree::Mapping { .. } | DataTree::Sequence { .. } | DataTree::Section { .. }
     );
     if is_container && ir.range().start == offset {
         return true;

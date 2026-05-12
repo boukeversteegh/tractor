@@ -21,7 +21,7 @@
 //! - Ruby (`ruby` / `rb`)
 //! - PHP (`php`)
 //!
-//! Languages on the parallel `DataIr` (see [`data`]):
+//! Languages on the parallel `DataTree` (see [`data`]):
 //! JSON, YAML, TOML, INI, `.env`, Markdown — in their default
 //! `Structure` mode.
 //!
@@ -87,7 +87,7 @@ pub mod go_lang;
 pub mod ruby;
 pub mod php;
 // Data-language IR — a separate, simpler typed shape for JSON /
-// YAML / TOML / INI. Format-agnostic: a single `DataIr` tree can
+// YAML / TOML / INI. Format-agnostic: a single `DataTree` tree can
 // be rendered to any of XML / JSON / YAML / TOML.
 #[cfg(feature = "native")]
 pub mod data;
@@ -105,13 +105,13 @@ pub mod markdown_data;
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
-// Programming-language `SyntaxTree` → `DataIr` projection. Replacing the
+// Programming-language `SyntaxTree` → `DataTree` projection. Replacing the
 // ad-hoc projection in `to_json.rs` per
 // `docs/design-projection-pipeline.md`.
 #[cfg(feature = "native")]
 pub mod to_data;
 // SQL-language IR — typed variants per construct. Parallel to
-// `SyntaxTree` (programming languages) and `DataIr` (data languages).
+// `SyntaxTree` (programming languages) and `DataTree` (data languages).
 // See module doc-comment for rationale.
 #[cfg(feature = "native")]
 pub mod sql;
@@ -155,7 +155,7 @@ pub use ruby::{lower_ruby_root, lower_ruby_node};
 pub use php::{lower_php_root, lower_php_node};
 #[cfg(feature = "native")]
 #[cfg(feature = "native")]
-pub use data::DataIr;
+pub use data::DataTree;
 #[cfg(feature = "native")]
 pub use json_data::lower_json_data_root;
 #[cfg(feature = "native")]

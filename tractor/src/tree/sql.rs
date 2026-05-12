@@ -1,6 +1,6 @@
 //! SQL-language IR — a fully typed representation of T-SQL (and
 //! eventually MySQL / PostgreSQL / SQLite) constructs. Parallel to
-//! [`crate::tree::SyntaxTree`] (programming languages) and [`crate::tree::data::DataIr`]
+//! [`crate::tree::SyntaxTree`] (programming languages) and [`crate::tree::data::DataTree`]
 //! (data languages).
 //!
 //! ## Why a separate IR

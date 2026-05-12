@@ -110,22 +110,22 @@ pub type GrammarFn = fn() -> tree_sitter::Language;
 #[cfg(feature = "native")]
 pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::SyntaxTree;
 
-/// CST → [`DataIr`](crate::tree::DataIr) lowering function pointer (data languages).
+/// CST → [`DataTree`](crate::tree::DataTree) lowering function pointer (data languages).
 #[cfg(feature = "native")]
-pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataIr;
+pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataTree;
 
 /// CST → [`SqlIr`](crate::tree::sql::SqlIr) lowering function pointer (SQL family).
 #[cfg(feature = "native")]
 pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::sql::SqlIr;
 
-/// Renderer for a `DataIr` tree. Each [`DataParser`] pairs a lower
+/// Renderer for a `DataTree` tree. Each [`DataParser`] pairs a lower
 /// fn with one of these so the pipeline never needs a per-language
 /// match to choose a renderer.
 #[cfg(feature = "native")]
 pub type DataRenderFn = fn(
     &mut xot::Xot,
     xot::Node,
-    &crate::tree::DataIr,
+    &crate::tree::DataTree,
     &str,
 ) -> Result<xot::Node, xot::Error>;
 

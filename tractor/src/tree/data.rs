@@ -9,12 +9,12 @@
 //!
 //! Data languages have a much smaller, simpler universe — mappings,
 //! sequences, scalars. Reusing the programming-language IR would
-//! introduce noise; a focused [`DataIr`] type lets each variant
+//! introduce noise; a focused [`DataTree`] type lets each variant
 //! carry only what data languages need.
 //!
 //! ## Format-agnostic
 //!
-//! A single [`DataIr`] tree can be rendered to any of:
+//! A single [`DataTree`] tree can be rendered to any of:
 //! - `<object>/<array>/<property>` XML (JSON syntax branch shape)
 //! - `<mapping>/<sequence>/<pair>` XML (YAML syntax branch shape)
 //! - data-branch XML where keys become element names (`{a: 1}` →
@@ -37,7 +37,7 @@
 //! 2. **Source attributes** — every variant carries `range:
 //!    ByteRange` and `span: Span` for line/column reporting.
 //! 3. **No silent drops** — un-handled CST kinds fall through to
-//!    [`DataIr::Unknown`] (visible `<unknown kind="…"/>`).
+//!    [`DataTree::Unknown`] (visible `<unknown kind="…"/>`).
 
 #![cfg(feature = "native")]
 
@@ -45,10 +45,10 @@ use super::types::{ByteRange, Span};
 
 /// Format-agnostic data-language IR.
 #[derive(Debug, Clone)]
-pub enum DataIr {
+pub enum DataTree {
     /// Top-level document. The CST root.
     Document {
-        children: Vec<DataIr>,
+        children: Vec<DataTree>,
         range: ByteRange,
         span: Span,
     },
@@ -57,7 +57,7 @@ pub enum DataIr {
     /// Renders as `<object>` (JSON) / `<mapping>` (YAML) / `<table>`
     /// (TOML) / `<section>` (INI) per format choice.
     Mapping {
-        pairs: Vec<DataIr>, // each is DataIr::Pair (or Comment)
+        pairs: Vec<DataTree>, // each is DataTree::Pair (or Comment)
         range: ByteRange,
         span: Span,
     },
@@ -65,20 +65,20 @@ pub enum DataIr {
     /// Array / list / sequence — ordered values.
     /// Renders as `<array>` (JSON) / `<sequence>` (YAML).
     Sequence {
-        items: Vec<DataIr>,
+        items: Vec<DataTree>,
         range: ByteRange,
         span: Span,
     },
 
-    /// Key-value pair. Key is typically [`DataIr::Scalar`] with a
+    /// Key-value pair. Key is typically [`DataTree::Scalar`] with a
     /// string value (object keys in JSON are quoted strings; YAML
-    /// keys can be other scalars). Value is any [`DataIr`].
+    /// keys can be other scalars). Value is any [`DataTree`].
     /// Renders as `<property><key>...</key><value>...</value></property>`
     /// in syntax mode; data mode lifts the key string to the
     /// element name.
     Pair {
-        key: Box<DataIr>,
-        value: Box<DataIr>,
+        key: Box<DataTree>,
+        value: Box<DataTree>,
         range: ByteRange,
         span: Span,
     },
@@ -87,8 +87,8 @@ pub enum DataIr {
     /// a Mapping because the source bytes for `[name]` need to be
     /// preserved.
     Section {
-        name: Box<DataIr>, // typically Scalar(String)
-        children: Vec<DataIr>,
+        name: Box<DataTree>, // typically Scalar(String)
+        children: Vec<DataTree>,
         range: ByteRange,
         span: Span,
     },
@@ -146,7 +146,7 @@ pub enum DataIr {
     /// `<directive[tag]><handle>!!</handle><prefix>…</prefix></directive>`.
     Directive {
         flavor: &'static str, // "yaml", "tag", "reserved"
-        children: Vec<DataIr>,
+        children: Vec<DataTree>,
         range: ByteRange,
         span: Span,
     },
@@ -164,7 +164,7 @@ pub enum DataIr {
     Element {
         name: &'static str,
         markers: Vec<&'static str>,
-        children: Vec<DataIr>,
+        children: Vec<DataTree>,
         range: ByteRange,
         span: Span,
     },
@@ -179,42 +179,42 @@ pub enum DataIr {
     },
 }
 
-impl DataIr {
+impl DataTree {
     /// Source byte range covered by this node.
     pub fn range(&self) -> ByteRange {
         match self {
-            DataIr::Document { range, .. }
-            | DataIr::Mapping { range, .. }
-            | DataIr::Sequence { range, .. }
-            | DataIr::Pair { range, .. }
-            | DataIr::Section { range, .. }
-            | DataIr::String { range, .. }
-            | DataIr::Number { range, .. }
-            | DataIr::Bool { range, .. }
-            | DataIr::Null { range, .. }
-            | DataIr::Comment { range, .. }
-            | DataIr::Directive { range, .. }
-            | DataIr::Element { range, .. }
-            | DataIr::Unknown { range, .. } => *range,
+            DataTree::Document { range, .. }
+            | DataTree::Mapping { range, .. }
+            | DataTree::Sequence { range, .. }
+            | DataTree::Pair { range, .. }
+            | DataTree::Section { range, .. }
+            | DataTree::String { range, .. }
+            | DataTree::Number { range, .. }
+            | DataTree::Bool { range, .. }
+            | DataTree::Null { range, .. }
+            | DataTree::Comment { range, .. }
+            | DataTree::Directive { range, .. }
+            | DataTree::Element { range, .. }
+            | DataTree::Unknown { range, .. } => *range,
         }
     }
 
     /// Source-location span (line / column).
     pub fn span(&self) -> Span {
         match self {
-            DataIr::Document { span, .. }
-            | DataIr::Mapping { span, .. }
-            | DataIr::Sequence { span, .. }
-            | DataIr::Pair { span, .. }
-            | DataIr::Section { span, .. }
-            | DataIr::String { span, .. }
-            | DataIr::Number { span, .. }
-            | DataIr::Bool { span, .. }
-            | DataIr::Null { span, .. }
-            | DataIr::Comment { span, .. }
-            | DataIr::Directive { span, .. }
-            | DataIr::Element { span, .. }
-            | DataIr::Unknown { span, .. } => *span,
+            DataTree::Document { span, .. }
+            | DataTree::Mapping { span, .. }
+            | DataTree::Sequence { span, .. }
+            | DataTree::Pair { span, .. }
+            | DataTree::Section { span, .. }
+            | DataTree::String { span, .. }
+            | DataTree::Number { span, .. }
+            | DataTree::Bool { span, .. }
+            | DataTree::Null { span, .. }
+            | DataTree::Comment { span, .. }
+            | DataTree::Directive { span, .. }
+            | DataTree::Element { span, .. }
+            | DataTree::Unknown { span, .. } => *span,
         }
     }
 
@@ -238,39 +238,39 @@ pub enum ScalarKind {
     Null,
 }
 
-impl DataIr {
-    /// Build a synthetic scalar `DataIr` with no source coverage.
+impl DataTree {
+    /// Build a synthetic scalar `DataTree` with no source coverage.
     /// `range` is zero-width at byte 0; `span` is point (0, 0). Used
     /// by mutation primitives to introduce values that don't exist in
     /// the original source.
-    pub fn synthetic_scalar(text: &str, kind: ScalarKind) -> DataIr {
+    pub fn synthetic_scalar(text: &str, kind: ScalarKind) -> DataTree {
         let range = ByteRange::empty_at(0);
         let span = Span::point(0, 0);
         Self::scalar_with(text, kind, range, span)
     }
 
-    fn scalar_with(text: &str, kind: ScalarKind, range: ByteRange, span: Span) -> DataIr {
+    fn scalar_with(text: &str, kind: ScalarKind, range: ByteRange, span: Span) -> DataTree {
         match kind {
             ScalarKind::Auto => match text {
-                "null" => DataIr::Null { range, span },
-                "true" => DataIr::Bool { value: true, range, span },
-                "false" => DataIr::Bool { value: false, range, span },
+                "null" => DataTree::Null { range, span },
+                "true" => DataTree::Bool { value: true, range, span },
+                "false" => DataTree::Bool { value: false, range, span },
                 _ if !text.is_empty() && text.parse::<f64>().is_ok() => {
-                    DataIr::Number { text: text.to_string(), range, span }
+                    DataTree::Number { text: text.to_string(), range, span }
                 }
-                _ => DataIr::String { value: text.to_string(), range, span },
+                _ => DataTree::String { value: text.to_string(), range, span },
             },
-            ScalarKind::String => DataIr::String { value: text.to_string(), range, span },
-            ScalarKind::Number => DataIr::Number { text: text.to_string(), range, span },
-            ScalarKind::Bool => DataIr::Bool { value: text == "true", range, span },
-            ScalarKind::Null => DataIr::Null { range, span },
+            ScalarKind::String => DataTree::String { value: text.to_string(), range, span },
+            ScalarKind::Number => DataTree::Number { text: text.to_string(), range, span },
+            ScalarKind::Bool => DataTree::Bool { value: text == "true", range, span },
+            ScalarKind::Null => DataTree::Null { range, span },
         }
     }
 
     /// Walk this tree and return the deepest descendant whose range
     /// starts at exactly `byte_offset`. Used by mutation paths to map
     /// an XPath-derived position back to the typed IR.
-    pub fn find_at_offset(&self, byte_offset: u32) -> Option<&DataIr> {
+    pub fn find_at_offset(&self, byte_offset: u32) -> Option<&DataTree> {
         // Prefer the deepest match: try children first, fall back to self.
         for child in self.children_iter() {
             if let Some(found) = child.find_at_offset(byte_offset) {
@@ -285,7 +285,7 @@ impl DataIr {
     }
 
     /// Mutable counterpart to [`find_at_offset`].
-    pub fn find_at_offset_mut(&mut self, byte_offset: u32) -> Option<&mut DataIr> {
+    pub fn find_at_offset_mut(&mut self, byte_offset: u32) -> Option<&mut DataTree> {
         // First do an immutable walk to decide whether any descendant
         // matches. Use that decision to commit the mutable borrow to
         // the right path (Rust can't reborrow `self` after a partial
@@ -303,11 +303,11 @@ impl DataIr {
         }
         // Some descendant matches; drill in.
         match self {
-            DataIr::Document { children, .. }
-            | DataIr::Sequence { items: children, .. }
-            | DataIr::Section { children, .. }
-            | DataIr::Directive { children, .. }
-            | DataIr::Element { children, .. } => {
+            DataTree::Document { children, .. }
+            | DataTree::Sequence { items: children, .. }
+            | DataTree::Section { children, .. }
+            | DataTree::Directive { children, .. }
+            | DataTree::Element { children, .. } => {
                 for child in children.iter_mut() {
                     if child.find_at_offset(byte_offset).is_some() {
                         return child.find_at_offset_mut(byte_offset);
@@ -315,7 +315,7 @@ impl DataIr {
                 }
                 None
             }
-            DataIr::Mapping { pairs, .. } => {
+            DataTree::Mapping { pairs, .. } => {
                 for child in pairs.iter_mut() {
                     if child.find_at_offset(byte_offset).is_some() {
                         return child.find_at_offset_mut(byte_offset);
@@ -323,7 +323,7 @@ impl DataIr {
                 }
                 None
             }
-            DataIr::Pair { key, value, .. } => {
+            DataTree::Pair { key, value, .. } => {
                 if key.find_at_offset(byte_offset).is_some() {
                     return key.find_at_offset_mut(byte_offset);
                 }
@@ -339,15 +339,15 @@ impl DataIr {
     /// Iterate this node's direct children. Yields nothing for leaf
     /// scalars (`String`, `Number`, `Bool`, `Null`, `Comment`,
     /// `Unknown`).
-    pub fn children_iter(&self) -> Box<dyn Iterator<Item = &DataIr> + '_> {
+    pub fn children_iter(&self) -> Box<dyn Iterator<Item = &DataTree> + '_> {
         match self {
-            DataIr::Document { children, .. }
-            | DataIr::Sequence { items: children, .. }
-            | DataIr::Section { children, .. }
-            | DataIr::Directive { children, .. }
-            | DataIr::Element { children, .. } => Box::new(children.iter()),
-            DataIr::Mapping { pairs, .. } => Box::new(pairs.iter()),
-            DataIr::Pair { key, value, .. } => {
+            DataTree::Document { children, .. }
+            | DataTree::Sequence { items: children, .. }
+            | DataTree::Section { children, .. }
+            | DataTree::Directive { children, .. }
+            | DataTree::Element { children, .. } => Box::new(children.iter()),
+            DataTree::Mapping { pairs, .. } => Box::new(pairs.iter()),
+            DataTree::Pair { key, value, .. } => {
                 Box::new([key.as_ref(), value.as_ref()].into_iter())
             }
             _ => Box::new(std::iter::empty()),
@@ -361,10 +361,10 @@ impl DataIr {
     pub fn set_scalar(&mut self, text: &str, kind: ScalarKind) -> Result<(), String> {
         if !matches!(
             self,
-            DataIr::String { .. }
-                | DataIr::Number { .. }
-                | DataIr::Bool { .. }
-                | DataIr::Null { .. }
+            DataTree::String { .. }
+                | DataTree::Number { .. }
+                | DataTree::Bool { .. }
+                | DataTree::Null { .. }
         ) {
             return Err(format!(
                 "set_scalar: target is not a scalar variant (got {:?})",
@@ -381,7 +381,7 @@ impl DataIr {
     /// `Err` if called on a non-Pair variant.
     pub fn set_pair_value(&mut self, text: &str, kind: ScalarKind) -> Result<(), String> {
         match self {
-            DataIr::Pair { value, .. } => {
+            DataTree::Pair { value, .. } => {
                 let range = value.range();
                 let span = value.span();
                 *value = Box::new(Self::scalar_with(text, kind, range, span));
@@ -411,15 +411,15 @@ impl DataIr {
         }
         let leaf_pair = build_nested_pair(keys, value, kind);
         match self {
-            DataIr::Document { children, .. } => {
+            DataTree::Document { children, .. } => {
                 children.push(leaf_pair);
                 Ok(())
             }
-            DataIr::Mapping { pairs, .. } => {
+            DataTree::Mapping { pairs, .. } => {
                 pairs.push(leaf_pair);
                 Ok(())
             }
-            DataIr::Section { children, .. } => {
+            DataTree::Section { children, .. } => {
                 children.push(leaf_pair);
                 Ok(())
             }
@@ -431,26 +431,26 @@ impl DataIr {
     }
 }
 
-fn build_nested_pair(keys: &[&str], value: &str, kind: ScalarKind) -> DataIr {
+fn build_nested_pair(keys: &[&str], value: &str, kind: ScalarKind) -> DataTree {
     let range = ByteRange::empty_at(0);
     let span = Span::point(0, 0);
 
     let (head, tail) = keys.split_first().expect("keys is non-empty");
-    let key_node = DataIr::String {
+    let key_node = DataTree::String {
         value: head.to_string(),
         range,
         span,
     };
     let value_node = if tail.is_empty() {
-        DataIr::scalar_with(value, kind, range, span)
+        DataTree::scalar_with(value, kind, range, span)
     } else {
-        DataIr::Mapping {
+        DataTree::Mapping {
             pairs: vec![build_nested_pair(tail, value, kind)],
             range,
             span,
         }
     };
-    DataIr::Pair {
+    DataTree::Pair {
         key: Box::new(key_node),
         value: Box::new(value_node),
         range,
@@ -463,7 +463,7 @@ mod mutation_tests {
     use super::*;
     use crate::tree::lower_json_data_root;
 
-    fn lower(src: &str) -> DataIr {
+    fn lower(src: &str) -> DataTree {
         let language = tree_sitter_json::LANGUAGE.into();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&language).unwrap();
@@ -473,20 +473,20 @@ mod mutation_tests {
 
     #[test]
     fn synthetic_scalar_auto_detects() {
-        match DataIr::synthetic_scalar("null", ScalarKind::Auto) {
-            DataIr::Null { .. } => {}
+        match DataTree::synthetic_scalar("null", ScalarKind::Auto) {
+            DataTree::Null { .. } => {}
             other => panic!("expected Null, got {:?}", other),
         }
-        match DataIr::synthetic_scalar("42", ScalarKind::Auto) {
-            DataIr::Number { text, .. } => assert_eq!(text, "42"),
+        match DataTree::synthetic_scalar("42", ScalarKind::Auto) {
+            DataTree::Number { text, .. } => assert_eq!(text, "42"),
             other => panic!("expected Number, got {:?}", other),
         }
-        match DataIr::synthetic_scalar("true", ScalarKind::Auto) {
-            DataIr::Bool { value: true, .. } => {}
+        match DataTree::synthetic_scalar("true", ScalarKind::Auto) {
+            DataTree::Bool { value: true, .. } => {}
             other => panic!("expected Bool(true), got {:?}", other),
         }
-        match DataIr::synthetic_scalar("hello", ScalarKind::Auto) {
-            DataIr::String { value, .. } => assert_eq!(value, "hello"),
+        match DataTree::synthetic_scalar("hello", ScalarKind::Auto) {
+            DataTree::String { value, .. } => assert_eq!(value, "hello"),
             other => panic!("expected String, got {:?}", other),
         }
     }
@@ -494,8 +494,8 @@ mod mutation_tests {
     #[test]
     fn synthetic_scalar_kind_overrides_auto_detection() {
         // Forcing String keeps "true" as a string.
-        match DataIr::synthetic_scalar("true", ScalarKind::String) {
-            DataIr::String { value, .. } => assert_eq!(value, "true"),
+        match DataTree::synthetic_scalar("true", ScalarKind::String) {
+            DataTree::String { value, .. } => assert_eq!(value, "true"),
             other => panic!("expected String, got {:?}", other),
         }
     }
@@ -507,7 +507,7 @@ mod mutation_tests {
         // The String "Alice" starts at byte 9 (the opening quote).
         let at_value = ir.find_at_offset(9).expect("value found");
         match at_value {
-            DataIr::String { value, .. } => assert_eq!(value, "Alice"),
+            DataTree::String { value, .. } => assert_eq!(value, "Alice"),
             other => panic!("expected String, got {:?}", other),
         }
     }
@@ -523,7 +523,7 @@ mod mutation_tests {
         let after = ir.find_at_offset(value_offset).unwrap();
         assert_eq!(after.range(), original_range);
         match after {
-            DataIr::String { value, .. } => assert_eq!(value, "Bob"),
+            DataTree::String { value, .. } => assert_eq!(value, "Bob"),
             other => panic!("expected String, got {:?}", other),
         }
     }
@@ -542,24 +542,24 @@ mod mutation_tests {
         let mut ir = lower(src);
         // Find the top-level mapping (it's a child of Document).
         let mapping = match &mut ir {
-            DataIr::Document { children, .. } => &mut children[0],
+            DataTree::Document { children, .. } => &mut children[0],
             _ => panic!("expected Document"),
         };
         mapping
             .insert_nested_pair(&["age"], "30", ScalarKind::Auto)
             .unwrap();
         match mapping {
-            DataIr::Mapping { pairs, .. } => {
+            DataTree::Mapping { pairs, .. } => {
                 assert_eq!(pairs.len(), 2);
                 let last = &pairs[1];
                 match last {
-                    DataIr::Pair { key, value, .. } => {
+                    DataTree::Pair { key, value, .. } => {
                         match key.as_ref() {
-                            DataIr::String { value: k, .. } => assert_eq!(k, "age"),
+                            DataTree::String { value: k, .. } => assert_eq!(k, "age"),
                             other => panic!("expected key String, got {:?}", other),
                         }
                         match value.as_ref() {
-                            DataIr::Number { text, .. } => assert_eq!(text, "30"),
+                            DataTree::Number { text, .. } => assert_eq!(text, "30"),
                             other => panic!("expected value Number, got {:?}", other),
                         }
                     }
@@ -575,18 +575,18 @@ mod mutation_tests {
         let src = r#"{"name": "Alice"}"#;
         let mut ir = lower(src);
         let mapping = match &mut ir {
-            DataIr::Document { children, .. } => &mut children[0],
+            DataTree::Document { children, .. } => &mut children[0],
             _ => panic!("expected Document"),
         };
         mapping
             .insert_nested_pair(&["db", "host"], "localhost", ScalarKind::String)
             .unwrap();
         match mapping {
-            DataIr::Mapping { pairs, .. } => {
+            DataTree::Mapping { pairs, .. } => {
                 let added = &pairs[1];
                 match added {
-                    DataIr::Pair { value, .. } => match value.as_ref() {
-                        DataIr::Mapping { pairs: inner, .. } => {
+                    DataTree::Pair { value, .. } => match value.as_ref() {
+                        DataTree::Mapping { pairs: inner, .. } => {
                             assert_eq!(inner.len(), 1);
                         }
                         other => panic!("expected inner Mapping, got {:?}", other),

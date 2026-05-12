@@ -1,9 +1,9 @@
-//! JSON source emitter for [`DataIr`] — produces canonical JSON text
+//! JSON source emitter for [`DataTree`] — produces canonical JSON text
 //! with optional span tracking for splice-based mutation.
 //!
-//! Mirrors [`crate::render::json`] but reads the typed [`DataIr`] tree
+//! Mirrors [`crate::render::json`] but reads the typed [`DataTree`] tree
 //! directly (no XmlNode intermediate). The span map keys each
-//! [`DataIr`] node by its `span()` (line, column) and records the
+//! [`DataTree`] node by its `span()` (line, column) and records the
 //! byte range of its rendered value, so callers like
 //! [`crate::mutation::xpath_upsert`] can splice byte regions of a
 //! re-rendered tree back into the original source.
@@ -12,7 +12,7 @@
 
 use std::collections::HashMap;
 
-use crate::tree::data::DataIr;
+use crate::tree::data::DataTree;
 
 /// `(line, col) → (rendered_start, rendered_end)` byte range map.
 ///
@@ -56,12 +56,12 @@ impl JsonRenderOptions {
     }
 }
 
-/// Render a [`DataIr`] to JSON source text and a span map.
+/// Render a [`DataTree`] to JSON source text and a span map.
 ///
 /// The trailing newline is appended after the final `}` / `]` /
 /// scalar, matching [`crate::render::json::render_node_tracked`].
 pub fn render_json_with_spans(
-    ir: &DataIr,
+    ir: &DataTree,
     opts: &JsonRenderOptions,
 ) -> (String, DataSpanMap) {
     let mut buf = String::new();
@@ -72,68 +72,68 @@ pub fn render_json_with_spans(
 }
 
 /// Convenience: render JSON without keeping the span map.
-pub fn render_json(ir: &DataIr, opts: &JsonRenderOptions) -> String {
+pub fn render_json(ir: &DataTree, opts: &JsonRenderOptions) -> String {
     render_json_with_spans(ir, opts).0
 }
 
 fn render_value(
-    ir: &DataIr,
+    ir: &DataTree,
     opts: &JsonRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
 ) {
     let start = buf.len();
     match ir {
-        DataIr::Document { children, .. } => {
+        DataTree::Document { children, .. } => {
             // Top-level document is a transparent wrapper. Render the
             // first non-comment child as the JSON value; everything
             // else is dropped (JSON has no comments).
             let payload = children
                 .iter()
-                .find(|c| !matches!(c, DataIr::Comment { .. }));
+                .find(|c| !matches!(c, DataTree::Comment { .. }));
             if let Some(child) = payload {
                 render_value(child, opts, buf, spans);
             } else {
                 buf.push_str("null");
             }
         }
-        DataIr::Mapping { pairs, .. } => render_object(pairs, opts, buf, spans),
-        DataIr::Sequence { items, .. } => render_array(items, opts, buf, spans),
-        DataIr::String { value, .. } => emit_string(value, buf),
-        DataIr::Number { text, .. } => buf.push_str(text),
-        DataIr::Bool { value, .. } => {
+        DataTree::Mapping { pairs, .. } => render_object(pairs, opts, buf, spans),
+        DataTree::Sequence { items, .. } => render_array(items, opts, buf, spans),
+        DataTree::String { value, .. } => emit_string(value, buf),
+        DataTree::Number { text, .. } => buf.push_str(text),
+        DataTree::Bool { value, .. } => {
             buf.push_str(if *value { "true" } else { "false" });
         }
-        DataIr::Null { .. } => buf.push_str("null"),
-        DataIr::Pair { value, .. } => {
+        DataTree::Null { .. } => buf.push_str("null"),
+        DataTree::Pair { value, .. } => {
             // Top-level Pair without an enclosing mapping — render the
             // value alone. (Shouldn't normally happen; defensive.)
             render_value(value, opts, buf, spans);
         }
-        DataIr::Section { children, .. } | DataIr::Directive { children, .. } => {
+        DataTree::Section { children, .. } | DataTree::Directive { children, .. } => {
             // Sections and directives don't have a JSON projection;
             // render as a mapping over their child pairs.
-            let pairs: Vec<&DataIr> = children
+            let pairs: Vec<&DataTree> = children
                 .iter()
-                .filter(|c| matches!(c, DataIr::Pair { .. }))
+                .filter(|c| matches!(c, DataTree::Pair { .. }))
                 .collect();
             if pairs.is_empty() {
                 buf.push_str("{}");
             } else {
-                let owned: Vec<DataIr> = pairs.iter().map(|p| (*p).clone()).collect();
+                let owned: Vec<DataTree> = pairs.iter().map(|p| (*p).clone()).collect();
                 render_object(&owned, opts, buf, spans);
             }
         }
-        DataIr::Comment { .. } => {
+        DataTree::Comment { .. } => {
             // JSON has no comments; emit nothing.
             return;
         }
-        DataIr::Element { children, .. } => {
+        DataTree::Element { children, .. } => {
             // Markdown-style synthetic element — render children in
             // sequence as a JSON array.
             render_array(children, opts, buf, spans);
         }
-        DataIr::Unknown { .. } => buf.push_str("null"),
+        DataTree::Unknown { .. } => buf.push_str("null"),
     }
     let end = buf.len();
     if end > start {
@@ -143,14 +143,14 @@ fn render_value(
 }
 
 fn render_object(
-    pairs: &[DataIr],
+    pairs: &[DataTree],
     opts: &JsonRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
 ) {
-    let real: Vec<&DataIr> = pairs
+    let real: Vec<&DataTree> = pairs
         .iter()
-        .filter(|p| matches!(p, DataIr::Pair { .. }))
+        .filter(|p| matches!(p, DataTree::Pair { .. }))
         .collect();
 
     if real.is_empty() {
@@ -171,7 +171,7 @@ fn render_object(
         buf.push_str(&opts.newline);
         buf.push_str(&inner_indent);
 
-        if let DataIr::Pair { key, value, .. } = pair {
+        if let DataTree::Pair { key, value, .. } = pair {
             // Key text — keys are typically String scalars; fall back
             // to range-slice text for unusual key types.
             let key_text = scalar_text(key);
@@ -188,7 +188,7 @@ fn render_object(
 }
 
 fn render_array(
-    items: &[DataIr],
+    items: &[DataTree],
     opts: &JsonRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
@@ -218,14 +218,14 @@ fn render_array(
     buf.push(']');
 }
 
-fn scalar_text(ir: &DataIr) -> String {
+fn scalar_text(ir: &DataTree) -> String {
     match ir {
-        DataIr::String { value, .. } => value.clone(),
-        DataIr::Number { text, .. } => text.clone(),
-        DataIr::Bool { value, .. } => {
+        DataTree::String { value, .. } => value.clone(),
+        DataTree::Number { text, .. } => text.clone(),
+        DataTree::Bool { value, .. } => {
             if *value { "true".to_string() } else { "false".to_string() }
         }
-        DataIr::Null { .. } => "null".to_string(),
+        DataTree::Null { .. } => "null".to_string(),
         _ => String::new(),
     }
 }
@@ -259,7 +259,7 @@ mod tests {
     use super::*;
     use crate::tree::lower_json_data_root;
 
-    fn lower(src: &str) -> DataIr {
+    fn lower(src: &str) -> DataTree {
         let language = tree_sitter_json::LANGUAGE.into();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&language).unwrap();
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn mutation_then_render_roundtrips_via_span_map() {
-        // End-to-end S4B-Z2 contract: mutate a value via DataIr
+        // End-to-end S4B-Z2 contract: mutate a value via DataTree
         // primitives, re-render, and use the span map to splice the
         // new bytes back into the original source.
         let src = r#"{"name": "Alice", "age": 30}"#;

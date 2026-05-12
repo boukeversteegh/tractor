@@ -40,7 +40,7 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
         // verbatim, so the round-trip is byte-identical.
         tractor::tree::source::render(ir, &lang, Some(&parsed.source))
     } else if let Some(data_ir) = &parsed.data_ir {
-        // Data-language IR: anchored slice via DataIr::to_source.
+        // Data-language IR: anchored slice via DataTree::to_source.
         data_ir.to_source(&parsed.source).to_string()
     } else if let Some(sql_ir) = &parsed.sql_ir {
         tractor::tree::source::render_sql(sql_ir, Some(&parsed.source))

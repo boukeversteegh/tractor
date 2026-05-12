@@ -1,8 +1,8 @@
-//! Markdown tree-sitter CST → [`DataIr`] lowering.
+//! Markdown tree-sitter CST → [`DataTree`] lowering.
 //!
 //! Markdown is structurally distinct from JSON / YAML / TOML / INI:
 //! it's hierarchical *block-level text* rather than key-value
-//! data. The lowering uses [`DataIr::Element`] (a generic element
+//! data. The lowering uses [`DataTree::Element`] (a generic element
 //! variant with a fixed name + optional empty-marker children) for
 //! the structural shapes (`<heading[h1]>`, `<list[ordered]>`,
 //! `<codeblock>`, …) and the standard scalar variants for inline
@@ -10,7 +10,7 @@
 //!
 //! Mapping (focused on what the transform tests assert):
 //!
-//!   - `document` → [`DataIr::Document`]
+//!   - `document` → [`DataTree::Document`]
 //!   - `atx_heading` → `Element { name: "heading", markers: ["h{N}"], … }`
 //!   - `setext_heading` → `Element { name: "heading", markers: ["h1"|"h2"], … }`
 //!   - `list` → `Element { name: "list", markers: ["ordered"|"unordered"], children: <items> }`
@@ -24,20 +24,20 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::data::DataIr;
+use super::data::DataTree;
 use super::lower_helpers::{range_of, span_of, text_of};
 use super::types::{ByteRange, Span};
 
-pub fn lower_markdown_data_root(root: TsNode<'_>, source: &str) -> DataIr {
+pub fn lower_markdown_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
+fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
     match node.kind() {
-        "document" => DataIr::Document {
+        "document" => DataTree::Document {
             children: lower_named_children(node, source),
             range,
             span,
@@ -46,7 +46,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // Headings
         "atx_heading" => {
             let level = atx_heading_level(node);
-            DataIr::Element {
+            DataTree::Element {
                 name: "heading",
                 markers: vec![level_marker(level)],
                 children: lower_heading_content(node, source),
@@ -56,7 +56,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         }
         "setext_heading" => {
             let level = setext_heading_level(node);
-            DataIr::Element {
+            DataTree::Element {
                 name: "heading",
                 markers: vec![level_marker(level)],
                 children: lower_heading_content(node, source),
@@ -71,7 +71,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // ordered).
         "list" => {
             let marker = list_marker(node);
-            DataIr::Element {
+            DataTree::Element {
                 name: "list",
                 markers: vec![marker],
                 children: lower_named_children(node, source),
@@ -79,7 +79,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
                 span,
             }
         }
-        "list_item" => DataIr::Element {
+        "list_item" => DataTree::Element {
             name: "item",
             markers: vec![],
             children: lower_list_item_content(node, source),
@@ -88,7 +88,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         },
 
         // Block quote
-        "block_quote" => DataIr::Element {
+        "block_quote" => DataTree::Element {
             name: "blockquote",
             markers: vec![],
             children: lower_named_children(node, source),
@@ -99,7 +99,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // Code blocks. Fenced exposes optional `info_string` →
         // `language` text; indented has none.
         "fenced_code_block" => {
-            let mut children: Vec<DataIr> = Vec::new();
+            let mut children: Vec<DataTree> = Vec::new();
             let mut cursor = node.walk();
             for c in node.named_children(&mut cursor) {
                 match c.kind() {
@@ -108,10 +108,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
                         // attribute classes like `python attr=…`).
                         let lang = text_of(c, source).split_whitespace().next().unwrap_or("").to_string();
                         if !lang.is_empty() {
-                            children.push(DataIr::Element {
+                            children.push(DataTree::Element {
                                 name: "language",
                                 markers: vec![],
-                                children: vec![DataIr::String {
+                                children: vec![DataTree::String {
                                     value: lang,
                                     range: range_of(c),
                                     span: span_of(c),
@@ -122,10 +122,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
                         }
                     }
                     "code_fence_content" => {
-                        children.push(DataIr::Element {
+                        children.push(DataTree::Element {
                             name: "code",
                             markers: vec![],
-                            children: vec![DataIr::String {
+                            children: vec![DataTree::String {
                                 value: text_of(c, source),
                                 range: range_of(c),
                                 span: span_of(c),
@@ -137,7 +137,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
                     _ => {}
                 }
             }
-            DataIr::Element {
+            DataTree::Element {
                 name: "codeblock",
                 markers: vec![],
                 children,
@@ -145,13 +145,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
                 span,
             }
         }
-        "indented_code_block" => DataIr::Element {
+        "indented_code_block" => DataTree::Element {
             name: "codeblock",
             markers: vec![],
-            children: vec![DataIr::Element {
+            children: vec![DataTree::Element {
                 name: "code",
                 markers: vec![],
-                children: vec![DataIr::String {
+                children: vec![DataTree::String {
                     value: text_of(node, source),
                     range,
                     span,
@@ -164,7 +164,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         },
 
         // Horizontal rule
-        "thematic_break" => DataIr::Element {
+        "thematic_break" => DataTree::Element {
             name: "hr",
             markers: vec![],
             children: vec![],
@@ -177,10 +177,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // matching on the html text content (e.g. searching for a
         // marker word inside an HTML comment) can resolve.
         "html_block" | "html_tag" | "html_atx_open_tag" | "html_atx_close_tag" => {
-            DataIr::Element {
+            DataTree::Element {
                 name: "html",
                 markers: vec![],
-                children: vec![DataIr::String {
+                children: vec![DataTree::String {
                     value: text_of(node, source),
                     range,
                     span,
@@ -195,7 +195,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // assert paragraph structure; flattening keeps queries
         // like `//heading` simple at the cost of losing paragraph
         // boundaries.
-        "paragraph" => DataIr::Element {
+        "paragraph" => DataTree::Element {
             name: "paragraph",
             markers: vec![],
             children: lower_named_children(node, source),
@@ -206,14 +206,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // Inline content (bold/italic/text/link/...) — just lower
         // children. Inline-level shape is intentionally not pinned
         // by these tests.
-        "inline" | "section" => DataIr::Document {
+        "inline" | "section" => DataTree::Document {
             children: lower_named_children(node, source),
             range,
             span,
         },
 
         // Other kinds — fallthrough.
-        other => DataIr::Unknown {
+        other => DataTree::Unknown {
             kind: other.to_string(),
             range,
             span,
@@ -221,7 +221,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
+fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
@@ -230,7 +230,7 @@ fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
 
 /// Heading content excludes the `atx_h{N}_marker` child (which
 /// only carries the `#` markers, not text).
-fn lower_heading_content(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
+fn lower_heading_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor)
         .filter(|c| !matches!(
@@ -245,7 +245,7 @@ fn lower_heading_content(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
 
 /// List item content excludes list-marker children + task-list
 /// markers (those become Element markers on the list, not content).
-fn lower_list_item_content(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
+fn lower_list_item_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor)
         .filter(|c| !matches!(

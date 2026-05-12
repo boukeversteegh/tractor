@@ -106,8 +106,8 @@ pub enum Tree {
     },
     /// Data-language IR (root-document match). Native-only.
     #[cfg(feature = "native")]
-    DataIr {
-        ir: Arc<crate::tree::DataIr>,
+    DataTree {
+        ir: Arc<crate::tree::DataTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -155,7 +155,7 @@ impl Tree {
                 }
             }
             #[cfg(feature = "native")]
-            Tree::DataIr { ir, .. } => crate::tree::data_to_json(ir),
+            Tree::DataTree { ir, .. } => crate::tree::data_to_json(ir),
             #[cfg(feature = "native")]
             Tree::Sql { ir, source, .. } => crate::tree::sql_to_json::sql_to_json(ir, source),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
@@ -172,7 +172,7 @@ impl Tree {
             #[cfg(feature = "native")]
             Tree::SyntaxTree { xml, .. } => xml,
             #[cfg(feature = "native")]
-            Tree::DataIr { xml, .. } => xml,
+            Tree::DataTree { xml, .. } => xml,
             #[cfg(feature = "native")]
             Tree::Sql { xml, .. } => xml,
         }
@@ -216,7 +216,7 @@ impl Match {
         }
     }
 
-    /// Attach the matched tree (`Tree::SyntaxTree`, `Tree::DataIr`, or
+    /// Attach the matched tree (`Tree::SyntaxTree`, `Tree::DataTree`, or
     /// `Tree::Xml` for partial matches / XPath atomic results).
     pub fn with_tree(mut self, tree: Tree) -> Self {
         self.tree = Some(tree);

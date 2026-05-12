@@ -1,7 +1,7 @@
-//! `DataIr → serde_json::Value` direct-path tests.
+//! `DataTree → serde_json::Value` direct-path tests.
 //!
 //! These tests confirm the format-agnostic IR can be converted
-//! to JSON without going through Xot. The same `DataIr` tree
+//! to JSON without going through Xot. The same `DataTree` tree
 //! also goes through `data_to_xot` for queries, so the two paths
 //! must agree on the *data* (xot adds source-attribute noise
 //! `<x line="..."/>` that JSON projection drops anyway).
@@ -13,7 +13,7 @@ use tree_sitter::Parser;
 
 use tractor::tree::{data_to_json, lower_json_data_root};
 
-fn parse_json(src: &str) -> tractor::tree::DataIr {
+fn parse_json(src: &str) -> tractor::tree::DataTree {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_json::LANGUAGE.into()).unwrap();
     let tree = p.parse(src, None).unwrap();
@@ -68,7 +68,7 @@ fn json_integers_stay_integers() {
 
 #[test]
 fn json_string_escapes_resolved() {
-    // The DataIr's String.value is the *parsed* string (escapes
+    // The DataTree's String.value is the *parsed* string (escapes
     // resolved); the direct JSON path emits that, not the raw
     // source bytes.
     let ir = parse_json(r#"{"text": "line1\nline2"}"#);

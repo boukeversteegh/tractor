@@ -1,9 +1,9 @@
-//! [`DataIr`] → Xot rendering — syntax-branch (preserves source
+//! [`DataTree`] → Xot rendering — syntax-branch (preserves source
 //! structure), JSON-style element vocabulary.
 //!
 //! Element-name mapping for the JSON-style render:
 //!
-//!   | DataIr variant | XML element             |
+//!   | DataTree variant | XML element             |
 //!   |----------------|-------------------------|
 //!   | Document       | `<document>`            |
 //!   | Mapping        | `<object>`              |
@@ -19,7 +19,7 @@
 //!
 //! Other formats (YAML, TOML) get their own renderer modules with
 //! different name choices (e.g. `<mapping>`/`<sequence>` for YAML)
-//! — but they all walk the same `DataIr` tree.
+//! — but they all walk the same `DataTree` tree.
 //!
 //! ## Invariant — round-trip text recovery
 //!
@@ -33,15 +33,15 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::data::DataIr;
+use super::data::DataTree;
 use super::types::Span;
 
-/// Render a [`DataIr`] tree as a child of `parent` in the given Xot
+/// Render a [`DataTree`] tree as a child of `parent` in the given Xot
 /// document, using JSON-style element names.
 ///
 /// Punctuation tokens (`{`, `}`, `[`, `]`, `,`, `:`) and string
 /// quote characters are not preserved as XML text — the parsed
-/// `DataIr` carries the structural info, and JSON's punctuation is
+/// `DataTree` carries the structural info, and JSON's punctuation is
 /// noise from a query perspective. This matches the existing
 /// imperative-pipeline shape (which used `remove_text_children`
 /// + `extract_string_content` to strip).
@@ -52,12 +52,12 @@ use super::types::Span;
 pub fn render_data_to_xot_json(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &DataIr,
+    ir: &DataTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     let _ = source; // unused: structure-only render, no gap text.
     match ir {
-        DataIr::Document { children, span, .. } => {
+        DataTree::Document { children, span, .. } => {
             let node = element(xot, "document", *span);
             xot.append(parent, node)?;
             for c in children {
@@ -65,7 +65,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Mapping { pairs, span, .. } => {
+        DataTree::Mapping { pairs, span, .. } => {
             let node = element(xot, "object", *span);
             xot.append(parent, node)?;
             for p in pairs {
@@ -73,7 +73,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Sequence { items, span, .. } => {
+        DataTree::Sequence { items, span, .. } => {
             let node = element(xot, "array", *span);
             xot.append(parent, node)?;
             for i in items {
@@ -81,7 +81,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Pair { key, value, span, .. } => {
+        DataTree::Pair { key, value, span, .. } => {
             let node = element(xot, "property", *span);
             xot.append(parent, node)?;
             let key_el = element(xot, "key", key.span());
@@ -92,7 +92,7 @@ pub fn render_data_to_xot_json(
             render_data_to_xot_json(xot, val_el, value, source)?;
             Ok(node)
         }
-        DataIr::Section { name, children, span, .. } => {
+        DataTree::Section { name, children, span, .. } => {
             let node = element(xot, "section", *span);
             xot.append(parent, node)?;
             render_data_to_xot_json(xot, node, name, source)?;
@@ -101,7 +101,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::String { value, span, .. } => {
+        DataTree::String { value, span, .. } => {
             // Emit `<string>parsed_value</string>` with escapes
             // resolved — matches the imperative pipeline's
             // `extract_string_content` shape.
@@ -113,7 +113,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Number { text, span, .. } => {
+        DataTree::Number { text, span, .. } => {
             let node = element(xot, "number", *span);
             xot.append(parent, node)?;
             if !text.is_empty() {
@@ -122,7 +122,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Bool { value, span, .. } => {
+        DataTree::Bool { value, span, .. } => {
             // Render text as `true` / `false` to match imperative
             // pipeline (which renamed `true_node` / `false_node` to
             // `<bool>` with the original keyword text).
@@ -132,13 +132,13 @@ pub fn render_data_to_xot_json(
             xot.append(node, t)?;
             Ok(node)
         }
-        DataIr::Null { span, .. } => {
+        DataTree::Null { span, .. } => {
             // `<null>` keeps no text body — matches imperative.
             let node = element(xot, "null", *span);
             xot.append(parent, node)?;
             Ok(node)
         }
-        DataIr::Comment { text, span, .. } => {
+        DataTree::Comment { text, span, .. } => {
             let node = element(xot, "comment", *span);
             xot.append(parent, node)?;
             if !text.is_empty() {
@@ -147,7 +147,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Directive { flavor, children, span, .. } => {
+        DataTree::Directive { flavor, children, span, .. } => {
             let node = element(xot, "directive", *span);
             xot.append(parent, node)?;
             // Marker child for the flavor (`<yaml/>` / `<tag/>` / `<reserved/>`).
@@ -155,7 +155,7 @@ pub fn render_data_to_xot_json(
             xot.append(node, m)?;
             // Each pair `key=value` renders as `<key>value</key>`.
             for c in children {
-                if let DataIr::Pair { key, value, .. } = c {
+                if let DataTree::Pair { key, value, .. } = c {
                     if let Some(k) = scalar_text(key, source) {
                         let safe = sanitize_xml_name(k);
                         let kn = element(xot, &safe, key.span());
@@ -169,7 +169,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Element { name, markers, children, span, .. } => {
+        DataTree::Element { name, markers, children, span, .. } => {
             let node = element(xot, name, *span);
             xot.append(parent, node)?;
             for m in markers {
@@ -181,7 +181,7 @@ pub fn render_data_to_xot_json(
             }
             Ok(node)
         }
-        DataIr::Unknown { kind, range, span } => {
+        DataTree::Unknown { kind, range, span } => {
             let node = element(xot, "unknown", *span);
             let kind_attr = xot.add_name("kind");
             xot.attributes_mut(node).insert(kind_attr, kind.clone());
@@ -200,7 +200,7 @@ pub fn render_data_to_xot_json(
 // Helpers (mirror those in `to_xot.rs`)
 // ---------------------------------------------------------------------------
 
-/// Render a [`DataIr`] tree using the **data-branch** projection:
+/// Render a [`DataTree`] tree using the **data-branch** projection:
 /// pair keys become element names rather than `<property><key>...`
 /// wrappers. Used for TOML / INI / Markdown which don't have a
 /// distinct "syntax" XML view.
@@ -215,18 +215,18 @@ pub fn render_data_to_xot_json(
 pub fn render_data_to_xot_keyed(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &DataIr,
+    ir: &DataTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     match ir {
-        DataIr::Document { children, span, .. } => {
+        DataTree::Document { children, span, .. } => {
             // YAML's tree-sitter `stream` and `document` both lower to
-            // `DataIr::Document`; when the children are themselves
+            // `DataTree::Document`; when the children are themselves
             // Documents (multi-doc stream), the outer wrapper is
             // rendered as `<stream>` to preserve the legacy shape and
             // keep `//document` queries counting only inner docs.
             let is_stream = !children.is_empty()
-                && children.iter().all(|c| matches!(c, DataIr::Document { .. }));
+                && children.iter().all(|c| matches!(c, DataTree::Document { .. }));
             let element_name = if is_stream { "stream" } else { "document" };
             let node = element(xot, element_name, *span);
             xot.append(parent, node)?;
@@ -235,7 +235,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Section { name, children, span, .. } => {
+        DataTree::Section { name, children, span, .. } => {
             // Section name (typically Scalar(String)) becomes the
             // element name. Sanitize for XML.
             let element_name = scalar_text(name, source).map(sanitize_xml_name)
@@ -247,7 +247,7 @@ pub fn render_data_to_xot_keyed(
             // — render each Mapping as a direct `<item>` child of
             // the section, skipping the outer `<array>` wrapper.
             if children.len() == 1 {
-                if let DataIr::Sequence { items, .. } = &children[0] {
+                if let DataTree::Sequence { items, .. } = &children[0] {
                     for item in items {
                         let item_node = element(xot, "item", item.span());
                         xot.append(node, item_node)?;
@@ -261,7 +261,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Pair { key, value, span: _, .. } => {
+        DataTree::Pair { key, value, span: _, .. } => {
             // Key text → element name; value renders as the element's
             // content. The element's source location is set to the
             // VALUE span (not the pair span) so that splice-based
@@ -280,7 +280,7 @@ pub fn render_data_to_xot_keyed(
             let raw_key = scalar_text(key, source).unwrap_or_default();
             let element_name = sanitize_xml_name(raw_key.clone());
 
-            if let DataIr::Sequence { items, .. } = value.as_ref() {
+            if let DataTree::Sequence { items, .. } = value.as_ref() {
                 // Named array (semantic-tree Principle #12): repeat the
                 // key name as siblings, each tagged `list="<key>"` so
                 // JSON/YAML renderers know the items belong to a single
@@ -310,7 +310,7 @@ pub fn render_data_to_xot_keyed(
             render_keyed_value(xot, node, value, source)?;
             Ok(node)
         }
-        DataIr::Mapping { pairs, span: _, .. } => {
+        DataTree::Mapping { pairs, span: _, .. } => {
             // Per data-branch spec: object keys become elements
             // directly under the parent — no `<object>` wrapper.
             for p in pairs {
@@ -318,7 +318,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(parent)
         }
-        DataIr::Sequence { items, span: _, .. } => {
+        DataTree::Sequence { items, span: _, .. } => {
             // Anonymous array (top-level, or array nested in another
             // array): each item gets an `<item>` wrapper. Per spec,
             // there is no `<array>` outer wrapper here.
@@ -331,7 +331,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(last)
         }
-        DataIr::String { value, span, .. } => {
+        DataTree::String { value, span, .. } => {
             let node = element(xot, "string", *span);
             xot.append(parent, node)?;
             if !value.is_empty() {
@@ -340,7 +340,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Number { text, span, .. } => {
+        DataTree::Number { text, span, .. } => {
             let node = element(xot, "number", *span);
             xot.append(parent, node)?;
             if !text.is_empty() {
@@ -349,19 +349,19 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Bool { value, span, .. } => {
+        DataTree::Bool { value, span, .. } => {
             let node = element(xot, "bool", *span);
             xot.append(parent, node)?;
             let t = xot.new_text(if *value { "true" } else { "false" });
             xot.append(node, t)?;
             Ok(node)
         }
-        DataIr::Null { span, .. } => {
+        DataTree::Null { span, .. } => {
             let node = element(xot, "null", *span);
             xot.append(parent, node)?;
             Ok(node)
         }
-        DataIr::Comment { text, span, .. } => {
+        DataTree::Comment { text, span, .. } => {
             let node = element(xot, "comment", *span);
             xot.append(parent, node)?;
             if !text.is_empty() {
@@ -370,7 +370,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Directive { flavor, children, span, .. } => {
+        DataTree::Directive { flavor, children, span, .. } => {
             let node = element(xot, "directive", *span);
             xot.append(parent, node)?;
             // Marker child for the flavor (`<yaml/>` / `<tag/>` / `<reserved/>`).
@@ -378,7 +378,7 @@ pub fn render_data_to_xot_keyed(
             xot.append(node, m)?;
             // Each pair `key=value` renders as `<key>value</key>`.
             for c in children {
-                if let DataIr::Pair { key, value, .. } = c {
+                if let DataTree::Pair { key, value, .. } = c {
                     if let Some(k) = scalar_text(key, source) {
                         let safe = sanitize_xml_name(k);
                         let kn = element(xot, &safe, key.span());
@@ -392,7 +392,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Element { name, markers, children, span, .. } => {
+        DataTree::Element { name, markers, children, span, .. } => {
             let node = element(xot, name, *span);
             xot.append(parent, node)?;
             for m in markers {
@@ -404,7 +404,7 @@ pub fn render_data_to_xot_keyed(
             }
             Ok(node)
         }
-        DataIr::Unknown { kind, range, span } => {
+        DataTree::Unknown { kind, range, span } => {
             let node = element(xot, "unknown", *span);
             let kind_attr = xot.add_name("kind");
             xot.attributes_mut(node).insert(kind_attr, kind.clone());
@@ -424,41 +424,41 @@ pub fn render_data_to_xot_keyed(
 fn render_keyed_value(
     xot: &mut Xot,
     parent: XotNode,
-    value: &DataIr,
+    value: &DataTree,
     source: &str,
 ) -> Result<(), xot::Error> {
     match value {
-        DataIr::String { value, .. } => {
+        DataTree::String { value, .. } => {
             if !value.is_empty() {
                 let t = xot.new_text(value);
                 xot.append(parent, t)?;
             }
         }
-        DataIr::Number { text, .. } => {
+        DataTree::Number { text, .. } => {
             let t = xot.new_text(text);
             xot.append(parent, t)?;
         }
-        DataIr::Bool { value, .. } => {
+        DataTree::Bool { value, .. } => {
             let t = xot.new_text(if *value { "true" } else { "false" });
             xot.append(parent, t)?;
         }
-        DataIr::Null { range, .. } => {
+        DataTree::Null { range, .. } => {
             // Per data-branch spec: null renders as a literal text
             // node so XPath value comparisons (`. = 'null'`) work and
             // projections show the source keyword. Preserve YAML's
             // `~` vs `null` distinction by slicing the source range
-            // (DataIr::Null doesn't carry the keyword text).
+            // (DataTree::Null doesn't carry the keyword text).
             let raw = range.slice(source).trim();
             let text = if raw.is_empty() { "null" } else { raw };
             let t = xot.new_text(text);
             xot.append(parent, t)?;
         }
-        DataIr::Mapping { pairs, .. } => {
+        DataTree::Mapping { pairs, .. } => {
             for p in pairs {
                 render_data_to_xot_keyed(xot, parent, p, source)?;
             }
         }
-        DataIr::Sequence { items, .. } => {
+        DataTree::Sequence { items, .. } => {
             // Each array element gets an `<item>` wrapper so the
             // shape is `<key><item>v1</item><item>v2</item></key>`.
             // JSON projection then collects them as an array.
@@ -476,14 +476,14 @@ fn render_keyed_value(
     Ok(())
 }
 
-/// Pull the textual content out of a scalar DataIr (for use as a
+/// Pull the textual content out of a scalar DataTree (for use as a
 /// keyed element name). Returns None for non-scalar IRs.
-fn scalar_text<'a>(ir: &'a DataIr, source: &'a str) -> Option<String> {
+fn scalar_text<'a>(ir: &'a DataTree, source: &'a str) -> Option<String> {
     match ir {
-        DataIr::String { value, .. } => Some(value.clone()),
-        DataIr::Number { text, .. } => Some(text.clone()),
-        DataIr::Bool { value, .. } => Some(value.to_string()),
-        DataIr::Null { .. } => Some("null".to_string()),
+        DataTree::String { value, .. } => Some(value.clone()),
+        DataTree::Number { text, .. } => Some(text.clone()),
+        DataTree::Bool { value, .. } => Some(value.to_string()),
+        DataTree::Null { .. } => Some("null".to_string()),
         // Allow any leaf-ish IR by sliding source bytes.
         _ => Some(ir.range().slice(source).trim().to_string()),
     }

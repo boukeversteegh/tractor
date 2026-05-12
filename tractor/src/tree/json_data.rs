@@ -1,57 +1,57 @@
-//! JSON tree-sitter CST → [`DataIr`] lowering.
+//! JSON tree-sitter CST → [`DataTree`] lowering.
 //!
 //! Pure function. No global state, no in-place mutation. Each
-//! tree-sitter kind maps to exactly one DataIr variant (or
-//! [`DataIr::Unknown`] if not yet covered).
+//! tree-sitter kind maps to exactly one DataTree variant (or
+//! [`DataTree::Unknown`] if not yet covered).
 //!
 //! ## Coverage
 //!
 //! Tree-sitter-json's named-kind universe is small (12 kinds —
 //! see `JsonKind`):
-//!   - `document` → [`DataIr::Document`]
-//!   - `object` → [`DataIr::Mapping`]
-//!   - `array` → [`DataIr::Sequence`]
-//!   - `pair` → [`DataIr::Pair`]
-//!   - `string` → [`DataIr::String`] with parsed text (escapes
+//!   - `document` → [`DataTree::Document`]
+//!   - `object` → [`DataTree::Mapping`]
+//!   - `array` → [`DataTree::Sequence`]
+//!   - `pair` → [`DataTree::Pair`]
+//!   - `string` → [`DataTree::String`] with parsed text (escapes
 //!     resolved) — text bytes inside the quotes are
 //!     `string_content` + `escape_sequence` children, which we
 //!     reassemble.
-//!   - `number` → [`DataIr::Number`] (raw text)
-//!   - `true` / `false` → [`DataIr::Bool`]
-//!   - `null` → [`DataIr::Null`]
-//!   - `comment` → [`DataIr::Comment`] (JSON5 / JSONC)
+//!   - `number` → [`DataTree::Number`] (raw text)
+//!   - `true` / `false` → [`DataTree::Bool`]
+//!   - `null` → [`DataTree::Null`]
+//!   - `comment` → [`DataTree::Comment`] (JSON5 / JSONC)
 //!
 //! Unhandled kinds (`escape_sequence` / `string_content` outside a
-//! `string` parent) fall through to [`DataIr::Unknown`].
+//! `string` parent) fall through to [`DataTree::Unknown`].
 
 #![cfg(feature = "native")]
 
 use tree_sitter::Node as TsNode;
 
-use super::data::DataIr;
+use super::data::DataTree;
 use super::lower_helpers::{range_of, span_of, text_borrow};
 
-/// Lower a JSON CST root node to [`DataIr`].
-pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataIr {
+/// Lower a JSON CST root node to [`DataTree`].
+pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
+fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
     match node.kind() {
-        "document" => DataIr::Document {
+        "document" => DataTree::Document {
             children: lower_named_children(node, source),
             range,
             span,
         },
-        "object" => DataIr::Mapping {
+        "object" => DataTree::Mapping {
             pairs: lower_named_children(node, source),
             range,
             span,
         },
-        "array" => DataIr::Sequence {
+        "array" => DataTree::Sequence {
             items: lower_named_children(node, source),
             range,
             span,
@@ -62,13 +62,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
             let key = named.next();
             let value = named.next();
             match (key, value) {
-                (Some(k), Some(v)) => DataIr::Pair {
+                (Some(k), Some(v)) => DataTree::Pair {
                     key: Box::new(lower_node(k, source)),
                     value: Box::new(lower_node(v, source)),
                     range,
                     span,
                 },
-                _ => DataIr::Unknown {
+                _ => DataTree::Unknown {
                     kind: "pair (missing key/value)".to_string(),
                     range,
                     span,
@@ -77,23 +77,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         }
         "string" => {
             let value = decode_json_string(node, source);
-            DataIr::String { value, range, span }
+            DataTree::String { value, range, span }
         }
-        "number" => DataIr::Number {
+        "number" => DataTree::Number {
             text: text_of(node, source),
             range,
             span,
         },
-        "true" => DataIr::Bool { value: true, range, span },
-        "false" => DataIr::Bool { value: false, range, span },
-        "null" => DataIr::Null { range, span },
+        "true" => DataTree::Bool { value: true, range, span },
+        "false" => DataTree::Bool { value: false, range, span },
+        "null" => DataTree::Null { range, span },
         "comment" => {
             // JSON5 / JSONC line comment (`//`) or block comment
             // (`/* */`). Strip the leading delimiter for the `text`
             // field; the original is recoverable via the range.
             let raw = text_of(node, source);
             let text = strip_comment_delimiters(&raw);
-            DataIr::Comment {
+            DataTree::Comment {
                 text,
                 // Comment classification (leading vs trailing) is
                 // refined in a post-pass once we know the surrounding
@@ -107,7 +107,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
         // `string_content` / `escape_sequence` only ever appear
         // *inside* a `string` parent — handled there. If we see
         // them at a top level it's a parse error.
-        other => DataIr::Unknown {
+        other => DataTree::Unknown {
             kind: other.to_string(),
             range,
             span,
@@ -115,7 +115,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataIr {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataIr> {
+fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))

@@ -45,7 +45,7 @@ pub struct XotParseResult {
     /// Typed IR root retained through to render time. `Some` for
     /// programming languages on the IR pipeline; `None` for the
     /// imperative path (and for data languages — they keep their
-    /// `DataIr` separately, see `data_ir`).
+    /// `DataTree` separately, see `data_ir`).
     ///
     /// JSON / YAML / structured-format output renders from this
     /// instead of going through `xml_to_json`. That lets us drop the
@@ -55,10 +55,10 @@ pub struct XotParseResult {
     /// information at the right semantic layer.
     pub ir: Option<Box<crate::tree::SyntaxTree>>,
 
-    /// Typed `DataIr` root for data languages (JSON / YAML / TOML /
+    /// Typed `DataTree` root for data languages (JSON / YAML / TOML /
     /// INI / env / markdown). `Some` only when the IR pipeline took
     /// the data-language branch.
-    pub data_ir: Option<Box<crate::tree::DataIr>>,
+    pub data_ir: Option<Box<crate::tree::DataTree>>,
 
     /// Typed `SqlIr` root for SQL-family languages (TSQL today).
     /// `Some` only when the IR pipeline took the SQL branch. SQL has
@@ -330,7 +330,7 @@ fn parse_with_ir_pipeline(
             };
             let data_ir = (parser.lower)(tree.root_node(), source);
             (parser.render)(&mut xot, doc, &data_ir, source)
-                .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
                 root: doc,
@@ -437,12 +437,12 @@ fn parse_with_ir_pipeline_to_xee(
             };
             let data_ir = (parser.lower)(tree.root_node(), source);
             (parser.render)(&mut xot, holding, &data_ir, source)
-                .map_err(|e| ParseError::Parse(format!("DataIr render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
-            xml_node.map(|x| crate::xpath::Tree::DataIr {
+            xml_node.map(|x| crate::xpath::Tree::DataTree {
                 ir: std::sync::Arc::new(data_ir),
                 source: source_arc,
                 xml: x,

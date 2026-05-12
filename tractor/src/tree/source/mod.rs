@@ -56,7 +56,7 @@ pub mod php;
 // separate renderer entrypoint `render_sql`. Iter 53 retired the
 // legacy `SyntaxTree`-based TSQL pipeline.
 pub mod sql;
-// Data-language IR-direct source emitters (S4B-Z2). Read [`DataIr`]
+// Data-language IR-direct source emitters (S4B-Z2). Read [`DataTree`]
 // directly and produce JSON / YAML text with optional span tracking
 // — replaces the [`crate::render`] XmlNode roundtrip for IR-pipeline
 // data languages.

@@ -1,16 +1,16 @@
-//! YAML source emitter for [`DataIr`] — produces canonical YAML
+//! YAML source emitter for [`DataTree`] — produces canonical YAML
 //! text with optional span tracking for splice-based mutation.
 //!
-//! Mirrors [`crate::render::yaml`] but reads the typed [`DataIr`]
+//! Mirrors [`crate::render::yaml`] but reads the typed [`DataTree`]
 //! tree directly (no XmlNode intermediate). The span map keys each
-//! [`DataIr`] node by its `span()` (line, column) and records the
+//! [`DataTree`] node by its `span()` (line, column) and records the
 //! byte range of its rendered value.
 
 #![cfg(feature = "native")]
 
 use std::collections::HashMap;
 
-use crate::tree::data::DataIr;
+use crate::tree::data::DataTree;
 
 /// `(line, col) → (rendered_start, rendered_end)` byte range map.
 pub type DataSpanMap = HashMap<(u32, u32), (usize, usize)>;
@@ -47,9 +47,9 @@ impl YamlRenderOptions {
     }
 }
 
-/// Render a [`DataIr`] to YAML source text and a span map.
+/// Render a [`DataTree`] to YAML source text and a span map.
 pub fn render_yaml_with_spans(
-    ir: &DataIr,
+    ir: &DataTree,
     opts: &YamlRenderOptions,
 ) -> (String, DataSpanMap) {
     let mut buf = String::new();
@@ -62,22 +62,22 @@ pub fn render_yaml_with_spans(
 }
 
 /// Convenience: render YAML without keeping the span map.
-pub fn render_yaml(ir: &DataIr, opts: &YamlRenderOptions) -> String {
+pub fn render_yaml(ir: &DataTree, opts: &YamlRenderOptions) -> String {
     render_yaml_with_spans(ir, opts).0
 }
 
 fn render_top(
-    ir: &DataIr,
+    ir: &DataTree,
     opts: &YamlRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
 ) {
     match ir {
-        DataIr::Document { children, .. } => {
+        DataTree::Document { children, .. } => {
             // Stream of documents (multi-doc YAML): each child is itself
             // a Document, emit `---` between them.
             let is_stream = !children.is_empty()
-                && children.iter().all(|c| matches!(c, DataIr::Document { .. }));
+                && children.iter().all(|c| matches!(c, DataTree::Document { .. }));
             if is_stream {
                 for (i, doc) in children.iter().enumerate() {
                     if i > 0 {
@@ -89,7 +89,7 @@ fn render_top(
             } else {
                 let payload = children
                     .iter()
-                    .find(|c| !matches!(c, DataIr::Comment { .. }));
+                    .find(|c| !matches!(c, DataTree::Comment { .. }));
                 if let Some(child) = payload {
                     render_value(child, opts, buf, true, spans);
                 }
@@ -102,7 +102,7 @@ fn render_top(
 }
 
 fn render_value(
-    ir: &DataIr,
+    ir: &DataTree,
     opts: &YamlRenderOptions,
     buf: &mut String,
     at_top: bool,
@@ -110,8 +110,8 @@ fn render_value(
 ) {
     let start = buf.len();
     match ir {
-        DataIr::Mapping { pairs, .. } => {
-            if pairs.iter().all(|p| !matches!(p, DataIr::Pair { .. })) {
+        DataTree::Mapping { pairs, .. } => {
+            if pairs.iter().all(|p| !matches!(p, DataTree::Pair { .. })) {
                 buf.push_str("{}");
             } else if at_top {
                 render_mapping(pairs, opts, buf, spans);
@@ -120,7 +120,7 @@ fn render_value(
                 render_mapping(pairs, &opts.indented(), buf, spans);
             }
         }
-        DataIr::Sequence { items, .. } => {
+        DataTree::Sequence { items, .. } => {
             if items.is_empty() {
                 buf.push_str("[]");
             } else if at_top {
@@ -130,29 +130,29 @@ fn render_value(
                 render_sequence(items, &opts.indented(), buf, spans);
             }
         }
-        DataIr::String { value, .. } => emit_scalar_string(value, buf),
-        DataIr::Number { text, .. } => buf.push_str(text),
-        DataIr::Bool { value, .. } => {
+        DataTree::String { value, .. } => emit_scalar_string(value, buf),
+        DataTree::Number { text, .. } => buf.push_str(text),
+        DataTree::Bool { value, .. } => {
             buf.push_str(if *value { "true" } else { "false" });
         }
-        DataIr::Null { .. } => buf.push_str("null"),
-        DataIr::Pair { value, .. } => {
+        DataTree::Null { .. } => buf.push_str("null"),
+        DataTree::Pair { value, .. } => {
             // Bare Pair as a value — defensive; render value alone.
             render_value(value, opts, buf, at_top, spans);
         }
-        DataIr::Document { .. } => {
+        DataTree::Document { .. } => {
             // Nested document — render via render_top.
             render_top(ir, opts, buf, spans);
         }
-        DataIr::Section { children, .. } | DataIr::Directive { children, .. } => {
-            let pairs: Vec<&DataIr> = children
+        DataTree::Section { children, .. } | DataTree::Directive { children, .. } => {
+            let pairs: Vec<&DataTree> = children
                 .iter()
-                .filter(|c| matches!(c, DataIr::Pair { .. }))
+                .filter(|c| matches!(c, DataTree::Pair { .. }))
                 .collect();
             if pairs.is_empty() {
                 buf.push_str("{}");
             } else {
-                let owned: Vec<DataIr> = pairs.iter().map(|p| (*p).clone()).collect();
+                let owned: Vec<DataTree> = pairs.iter().map(|p| (*p).clone()).collect();
                 if at_top {
                     render_mapping(&owned, opts, buf, spans);
                 } else {
@@ -161,8 +161,8 @@ fn render_value(
                 }
             }
         }
-        DataIr::Comment { .. } => return,
-        DataIr::Element { children, .. } => {
+        DataTree::Comment { .. } => return,
+        DataTree::Element { children, .. } => {
             if children.is_empty() {
                 buf.push_str("[]");
             } else if at_top {
@@ -172,7 +172,7 @@ fn render_value(
                 render_sequence(children, &opts.indented(), buf, spans);
             }
         }
-        DataIr::Unknown { .. } => buf.push_str("null"),
+        DataTree::Unknown { .. } => buf.push_str("null"),
     }
     let end = buf.len();
     if end > start {
@@ -182,7 +182,7 @@ fn render_value(
 }
 
 fn render_mapping(
-    pairs: &[DataIr],
+    pairs: &[DataTree],
     opts: &YamlRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
@@ -190,13 +190,13 @@ fn render_mapping(
     let indent = opts.current_indent();
 
     for pair in pairs {
-        let DataIr::Pair { key, value, .. } = pair else { continue };
+        let DataTree::Pair { key, value, .. } = pair else { continue };
 
         let key_text = scalar_text(key);
         let key_str = yaml_quote_key(&key_text);
 
         match value.as_ref() {
-            DataIr::Mapping { pairs: inner, .. } if inner.iter().any(|p| matches!(p, DataIr::Pair { .. })) => {
+            DataTree::Mapping { pairs: inner, .. } if inner.iter().any(|p| matches!(p, DataTree::Pair { .. })) => {
                 buf.push_str(&indent);
                 buf.push_str(&key_str);
                 buf.push(':');
@@ -205,7 +205,7 @@ fn render_mapping(
                 render_mapping(inner, &opts.indented(), buf, spans);
                 record_value_span(value, block_start, buf.len(), spans);
             }
-            DataIr::Sequence { items, .. } if !items.is_empty() => {
+            DataTree::Sequence { items, .. } if !items.is_empty() => {
                 buf.push_str(&indent);
                 buf.push_str(&key_str);
                 buf.push(':');
@@ -228,7 +228,7 @@ fn render_mapping(
 }
 
 fn render_sequence(
-    items: &[DataIr],
+    items: &[DataTree],
     opts: &YamlRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
@@ -239,11 +239,11 @@ fn render_sequence(
         buf.push_str(&indent);
         buf.push_str("- ");
         match item {
-            DataIr::Mapping { pairs, .. } if pairs.iter().any(|p| matches!(p, DataIr::Pair { .. })) => {
+            DataTree::Mapping { pairs, .. } if pairs.iter().any(|p| matches!(p, DataTree::Pair { .. })) => {
                 // Inline first pair on the same line as `-`, rest indented.
                 render_sequence_mapping_item(pairs, opts, buf, spans);
             }
-            DataIr::Sequence { items: inner, .. } if !inner.is_empty() => {
+            DataTree::Sequence { items: inner, .. } if !inner.is_empty() => {
                 buf.push_str(&opts.newline);
                 let block_start = buf.len();
                 render_sequence(inner, &opts.indented(), buf, spans);
@@ -260,7 +260,7 @@ fn render_sequence(
 }
 
 fn render_sequence_mapping_item(
-    pairs: &[DataIr],
+    pairs: &[DataTree],
     opts: &YamlRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
@@ -270,7 +270,7 @@ fn render_sequence_mapping_item(
     let mut first = true;
 
     for pair in pairs {
-        let DataIr::Pair { key, value, .. } = pair else { continue };
+        let DataTree::Pair { key, value, .. } = pair else { continue };
         let key_text = scalar_text(key);
         let key_str = yaml_quote_key(&key_text);
 
@@ -279,14 +279,14 @@ fn render_sequence_mapping_item(
         }
         buf.push_str(&key_str);
         match value.as_ref() {
-            DataIr::Mapping { pairs: inner_pairs, .. } if inner_pairs.iter().any(|p| matches!(p, DataIr::Pair { .. })) => {
+            DataTree::Mapping { pairs: inner_pairs, .. } if inner_pairs.iter().any(|p| matches!(p, DataTree::Pair { .. })) => {
                 buf.push(':');
                 buf.push_str(&opts.newline);
                 let block_start = buf.len();
                 render_mapping(inner_pairs, &inner.indented(), buf, spans);
                 record_value_span(value, block_start, buf.len(), spans);
             }
-            DataIr::Sequence { items, .. } if !items.is_empty() => {
+            DataTree::Sequence { items, .. } if !items.is_empty() => {
                 buf.push(':');
                 buf.push_str(&opts.newline);
                 let block_start = buf.len();
@@ -305,37 +305,37 @@ fn render_sequence_mapping_item(
     }
 }
 
-fn render_inline_value(ir: &DataIr, buf: &mut String) {
+fn render_inline_value(ir: &DataTree, buf: &mut String) {
     match ir {
-        DataIr::String { value, .. } => emit_scalar_string(value, buf),
-        DataIr::Number { text, .. } => buf.push_str(text),
-        DataIr::Bool { value, .. } => {
+        DataTree::String { value, .. } => emit_scalar_string(value, buf),
+        DataTree::Number { text, .. } => buf.push_str(text),
+        DataTree::Bool { value, .. } => {
             buf.push_str(if *value { "true" } else { "false" });
         }
-        DataIr::Null { .. } => buf.push_str("null"),
-        DataIr::Mapping { pairs, .. } if pairs.iter().all(|p| !matches!(p, DataIr::Pair { .. })) => {
+        DataTree::Null { .. } => buf.push_str("null"),
+        DataTree::Mapping { pairs, .. } if pairs.iter().all(|p| !matches!(p, DataTree::Pair { .. })) => {
             buf.push_str("{}");
         }
-        DataIr::Sequence { items, .. } if items.is_empty() => {
+        DataTree::Sequence { items, .. } if items.is_empty() => {
             buf.push_str("[]");
         }
-        DataIr::Mapping { .. } | DataIr::Sequence { .. } => {
+        DataTree::Mapping { .. } | DataTree::Sequence { .. } => {
             // Should never reach here — block render path handles
             // non-empty composite values. Fallback: empty braces.
             buf.push_str("{}");
         }
-        DataIr::Pair { value, .. } => render_inline_value(value, buf),
-        DataIr::Comment { .. }
-        | DataIr::Document { .. }
-        | DataIr::Section { .. }
-        | DataIr::Directive { .. }
-        | DataIr::Element { .. }
-        | DataIr::Unknown { .. } => buf.push_str("null"),
+        DataTree::Pair { value, .. } => render_inline_value(value, buf),
+        DataTree::Comment { .. }
+        | DataTree::Document { .. }
+        | DataTree::Section { .. }
+        | DataTree::Directive { .. }
+        | DataTree::Element { .. }
+        | DataTree::Unknown { .. } => buf.push_str("null"),
     }
 }
 
 fn record_value_span(
-    value: &DataIr,
+    value: &DataTree,
     start: usize,
     end: usize,
     spans: &mut DataSpanMap,
@@ -346,14 +346,14 @@ fn record_value_span(
     }
 }
 
-fn scalar_text(ir: &DataIr) -> String {
+fn scalar_text(ir: &DataTree) -> String {
     match ir {
-        DataIr::String { value, .. } => value.clone(),
-        DataIr::Number { text, .. } => text.clone(),
-        DataIr::Bool { value, .. } => {
+        DataTree::String { value, .. } => value.clone(),
+        DataTree::Number { text, .. } => text.clone(),
+        DataTree::Bool { value, .. } => {
             if *value { "true".to_string() } else { "false".to_string() }
         }
-        DataIr::Null { .. } => "null".to_string(),
+        DataTree::Null { .. } => "null".to_string(),
         _ => String::new(),
     }
 }
@@ -427,7 +427,7 @@ mod tests {
     use super::*;
     use crate::tree::lower_yaml_data_root;
 
-    fn lower(src: &str) -> DataIr {
+    fn lower(src: &str) -> DataTree {
         let language = tree_sitter_yaml::LANGUAGE.into();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&language).unwrap();

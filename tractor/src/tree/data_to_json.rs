@@ -1,8 +1,8 @@
-//! [`DataIr`] → `serde_json::Value` — direct cross-format render.
+//! [`DataTree`] → `serde_json::Value` — direct cross-format render.
 //!
 //! ## Why
 //!
-//! Today's tractor JSON output goes `source → CST → DataIr → Xot
+//! Today's tractor JSON output goes `source → CST → DataTree → Xot
 //! → xml_to_json → JSON`. Xot serves as a shared container, but
 //! that means JSON output depends on XML attributes (`list="X"`)
 //! that the renderer-pair (`data_to_xot` + `xml_to_json`) has to
@@ -12,27 +12,27 @@
 //! This module provides a direct path:
 //!
 //! ```text
-//!   DataIr ────────► serde_json::Value
+//!   DataTree ────────► serde_json::Value
 //! ```
 //!
 //! No Xot, no `list=` attrs, no XML-to-JSON projection rules. The
-//! IR's structural typing (`Sequence<DataIr>`, `Mapping<Pair>`)
+//! IR's structural typing (`Sequence<DataTree>`, `Mapping<Pair>`)
 //! gives JSON its array-vs-object decisions for free.
 //!
 //! Same approach applies to YAML / TOML output (separate
-//! `data_to_yaml.rs` / `data_to_toml.rs` modules — DataIr is
+//! `data_to_yaml.rs` / `data_to_toml.rs` modules — DataTree is
 //! format-agnostic by design).
 
 #![cfg(feature = "native")]
 
 use serde_json::{Map, Value};
 
-use super::data::DataIr;
+use super::data::DataTree;
 
-/// Render a [`DataIr`] tree to a `serde_json::Value`. The structural
+/// Render a [`DataTree`] tree to a `serde_json::Value`. The structural
 /// IR variants map cleanly onto JSON's universe:
 ///
-///   | DataIr             | JSON                                    |
+///   | DataTree             | JSON                                    |
 ///   |--------------------|-----------------------------------------|
 ///   | Document           | object containing top-level pairs       |
 ///   | Mapping            | object                                  |
@@ -45,15 +45,15 @@ use super::data::DataIr;
 ///   | Null               | null                                    |
 ///   | Comment            | (skipped — not part of the data shape)  |
 ///   | Unknown            | object `{ "$unknown": <kind> }`         |
-pub fn data_to_json(ir: &DataIr) -> Value {
+pub fn data_to_json(ir: &DataTree) -> Value {
     match ir {
-        DataIr::Document { children, .. } => {
+        DataTree::Document { children, .. } => {
             // A YAML "stream" can have multiple documents — for now,
             // single-document case: collect top-level pairs into one
             // object. Multi-document case wraps in an array.
-            let docs: Vec<&DataIr> = children
+            let docs: Vec<&DataTree> = children
                 .iter()
-                .filter(|c| !matches!(c, DataIr::Comment { .. }))
+                .filter(|c| !matches!(c, DataTree::Comment { .. }))
                 .collect();
             if docs.len() == 1 {
                 data_to_json(docs[0])
@@ -63,20 +63,20 @@ pub fn data_to_json(ir: &DataIr) -> Value {
                 Value::Array(docs.iter().map(|c| data_to_json(c)).collect())
             }
         }
-        DataIr::Mapping { pairs, .. } => {
+        DataTree::Mapping { pairs, .. } => {
             let mut obj = Map::new();
             collect_pairs(&mut obj, pairs);
             Value::Object(obj)
         }
-        DataIr::Sequence { items, .. } => {
+        DataTree::Sequence { items, .. } => {
             let arr: Vec<Value> = items
                 .iter()
-                .filter(|c| !matches!(c, DataIr::Comment { .. }))
+                .filter(|c| !matches!(c, DataTree::Comment { .. }))
                 .map(data_to_json)
                 .collect();
             Value::Array(arr)
         }
-        DataIr::Pair { .. } => {
+        DataTree::Pair { .. } => {
             // A bare Pair shouldn't be rendered standalone — it's
             // always a child of a Mapping/Section. Falling here
             // means a misuse: emit a single-pair object.
@@ -84,7 +84,7 @@ pub fn data_to_json(ir: &DataIr) -> Value {
             collect_pairs(&mut obj, std::slice::from_ref(ir));
             Value::Object(obj)
         }
-        DataIr::Section { name, children, .. } => {
+        DataTree::Section { name, children, .. } => {
             // Section becomes a single-key object: `{ name: { ...children... } }`.
             // The TOML/INI imperative pipelines collapse the section
             // into the top-level via key-as-element-name, but the
@@ -96,13 +96,13 @@ pub fn data_to_json(ir: &DataIr) -> Value {
             outer.insert(key, Value::Object(inner));
             Value::Object(outer)
         }
-        DataIr::String { value, .. } => Value::String(value.clone()),
-        DataIr::Number { text, .. } => parse_number(text),
-        DataIr::Bool { value, .. } => Value::Bool(*value),
-        DataIr::Null { .. } => Value::Null,
-        DataIr::Comment { .. } => Value::Null, // dropped — not data
-        DataIr::Directive { .. } => Value::Null, // metadata, not data
-        DataIr::Element { name, children, .. } => {
+        DataTree::String { value, .. } => Value::String(value.clone()),
+        DataTree::Number { text, .. } => parse_number(text),
+        DataTree::Bool { value, .. } => Value::Bool(*value),
+        DataTree::Null { .. } => Value::Null,
+        DataTree::Comment { .. } => Value::Null, // dropped — not data
+        DataTree::Directive { .. } => Value::Null, // metadata, not data
+        DataTree::Element { name, children, .. } => {
             // Generic element → object keyed by name with content
             // children rendered as the value. Markers (empty
             // `<marker/>` children) are dropped from JSON.
@@ -114,8 +114,8 @@ pub fn data_to_json(ir: &DataIr) -> Value {
                 let text: String = children
                     .iter()
                     .filter_map(|c| match c {
-                        DataIr::String { value, .. } => Some(value.clone()),
-                        DataIr::Number { text, .. } => Some(text.clone()),
+                        DataTree::String { value, .. } => Some(value.clone()),
+                        DataTree::Number { text, .. } => Some(text.clone()),
                         _ => None,
                     })
                     .collect::<Vec<_>>()
@@ -133,7 +133,7 @@ pub fn data_to_json(ir: &DataIr) -> Value {
                 Value::Object(outer)
             }
         }
-        DataIr::Unknown { kind, .. } => {
+        DataTree::Unknown { kind, .. } => {
             let mut o = Map::new();
             o.insert("$unknown".to_string(), Value::String(kind.clone()));
             Value::Object(o)
@@ -145,17 +145,17 @@ pub fn data_to_json(ir: &DataIr) -> Value {
 /// nested by their name. Comments are dropped. Repeated keys
 /// promote earlier value to a 1-element array, then append (rare in
 /// JSON, common in TOML's `[[x]]` array-of-tables).
-fn collect_pairs(obj: &mut Map<String, Value>, children: &[DataIr]) {
+fn collect_pairs(obj: &mut Map<String, Value>, children: &[DataTree]) {
     for c in children {
         match c {
-            DataIr::Pair { key, value, .. } => {
+            DataTree::Pair { key, value, .. } => {
                 let k = match scalar_str(key) {
                     Some(s) => s,
                     None => continue,
                 };
                 insert_or_append(obj, k, data_to_json(value));
             }
-            DataIr::Section { name, children: sec_children, .. } => {
+            DataTree::Section { name, children: sec_children, .. } => {
                 let k = match scalar_str(name) {
                     Some(s) => s,
                     None => continue,
@@ -164,7 +164,7 @@ fn collect_pairs(obj: &mut Map<String, Value>, children: &[DataIr]) {
                 collect_pairs(&mut inner, sec_children);
                 insert_or_append(obj, k, Value::Object(inner));
             }
-            DataIr::Comment { .. } => { /* drop */ }
+            DataTree::Comment { .. } => { /* drop */ }
             // A loose scalar / sequence inside a mapping body is
             // unusual but recoverable as numbered keys.
             other => {
@@ -194,12 +194,12 @@ fn insert_or_append(obj: &mut Map<String, Value>, key: String, value: Value) {
 
 /// Pull a string-shaped value out of a scalar IR for use as a JSON
 /// object key.
-fn scalar_str(ir: &DataIr) -> Option<String> {
+fn scalar_str(ir: &DataTree) -> Option<String> {
     match ir {
-        DataIr::String { value, .. } => Some(value.clone()),
-        DataIr::Number { text, .. } => Some(text.clone()),
-        DataIr::Bool { value, .. } => Some(value.to_string()),
-        DataIr::Null { .. } => Some("null".to_string()),
+        DataTree::String { value, .. } => Some(value.clone()),
+        DataTree::Number { text, .. } => Some(text.clone()),
+        DataTree::Bool { value, .. } => Some(value.to_string()),
+        DataTree::Null { .. } => Some("null".to_string()),
         _ => None,
     }
 }
