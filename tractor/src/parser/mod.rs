@@ -219,7 +219,7 @@ pub fn parse_string_to_xot_with_options(
     // pipeline. Raw mode emits raw tree-sitter kind names (e.g.
     // `let_declaration`) — the IR pipeline replaces those with the
     // semantic vocabulary (`<let>`).
-    if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
+    if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline(source, lang, file_path, resolved);
     }
 
@@ -278,7 +278,7 @@ fn parse_with_ir_pipeline(
     tree_mode: TreeMode,
 ) -> Result<XotParseResult, ParseError> {
     use crate::tree;
-    use crate::languages::IrFamily;
+    use crate::languages::TreeKind;
 
     let language = get_tree_sitter_language(lang)?;
     let mut parser = tree_sitter::Parser::new();
@@ -295,11 +295,11 @@ fn parse_with_ir_pipeline(
     let doc = xot.new_document();
     let source_lines: Vec<String> = source.lines().map(|s| s.to_string()).collect();
 
-    // Single dispatch on the `IrFamily` variant — the lower fn is
+    // Single dispatch on the `TreeKind` variant — the lower fn is
     // carried by the variant, so no language-keyed match arm is
     // needed here.
-    match lang_ops.ir_family {
-        IrFamily::Programming(lower) => {
+    match lang_ops.tree_kind {
+        TreeKind::Syntax(lower) => {
             let ir_tree = lower(tree.root_node(), source);
             tree::render_to_xot(&mut xot, doc, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
@@ -316,16 +316,16 @@ fn parse_with_ir_pipeline(
                 source: source.to_string(),
             })
         }
-        IrFamily::Data { structure, content } => {
+        TreeKind::Data { structure, content } => {
             // Tree mode picks the parser: `--tree=structure` uses the
             // syntax-tree projection; `--tree=data` uses the
-            // content/keys-as-elements projection. `uses_ir` filters
+            // content/keys-as-elements projection. `uses_tree` filters
             // out Raw mode upstream, so this match is exhaustive.
             let parser = match tree_mode {
                 TreeMode::Structure => structure,
                 TreeMode::Data => content,
                 TreeMode::Raw => unreachable!(
-                    "uses_ir returns false for Raw mode on Data languages"
+                    "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
             let data_ir = (parser.lower)(tree.root_node(), source);
@@ -344,7 +344,7 @@ fn parse_with_ir_pipeline(
                 source: source.to_string(),
             })
         }
-        IrFamily::Sql(lower) => {
+        TreeKind::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
             tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
@@ -361,7 +361,7 @@ fn parse_with_ir_pipeline(
                 source: source.to_string(),
             })
         }
-        IrFamily::None => Err(ParseError::Parse(format!(
+        TreeKind::None => Err(ParseError::Parse(format!(
             "IR pipeline not yet wired for language {lang}"
         ))),
     }
@@ -391,7 +391,7 @@ fn parse_with_ir_pipeline_to_xee(
     tree_mode: TreeMode,
 ) -> Result<XeeParseResult, ParseError> {
     use crate::tree;
-    use crate::languages::IrFamily;
+    use crate::languages::TreeKind;
 
     let language = get_tree_sitter_language(lang)?;
     let mut parser = tree_sitter::Parser::new();
@@ -410,8 +410,8 @@ fn parse_with_ir_pipeline_to_xee(
     // Render to xot via the IR family-specific lower + render pair,
     // then capture the result as an `XmlNode` (for legacy XML / text
     // renderers) and a `Tree::*` (for IR-aware renderers).
-    let root_tree = match lang_ops.ir_family {
-        IrFamily::Programming(lower) => {
+    let root_tree = match lang_ops.tree_kind {
+        TreeKind::Syntax(lower) => {
             let ir_tree = lower(tree.root_node(), source);
             tree::render_to_xot(&mut xot, holding, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
@@ -425,14 +425,14 @@ fn parse_with_ir_pipeline_to_xee(
                 xml: x,
             })
         }
-        IrFamily::Data { structure, content } => {
-            // Tree mode picks the parser. `uses_ir` filters out Raw
+        TreeKind::Data { structure, content } => {
+            // Tree mode picks the parser. `uses_tree` filters out Raw
             // upstream, so this match is exhaustive.
             let parser = match tree_mode {
                 TreeMode::Structure => structure,
                 TreeMode::Data => content,
                 TreeMode::Raw => unreachable!(
-                    "uses_ir returns false for Raw mode on Data languages"
+                    "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
             let data_ir = (parser.lower)(tree.root_node(), source);
@@ -448,7 +448,7 @@ fn parse_with_ir_pipeline_to_xee(
                 xml: x,
             })
         }
-        IrFamily::Sql(lower) => {
+        TreeKind::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
             tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
@@ -462,7 +462,7 @@ fn parse_with_ir_pipeline_to_xee(
                 xml: x,
             })
         }
-        IrFamily::None => {
+        TreeKind::None => {
             return Err(ParseError::Parse(format!(
                 "IR pipeline not yet wired for language {lang}"
             )));
@@ -605,7 +605,7 @@ pub fn parse_string_to_xee_with_options(
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
 
-    if crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false) {
+    if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline_to_xee(source, lang, file_path, resolved);
     }
     let language = get_tree_sitter_language(lang)?;

@@ -108,15 +108,15 @@ pub type GrammarFn = fn() -> tree_sitter::Language;
 
 /// CST → [`SyntaxTree`](crate::tree::SyntaxTree) lowering function pointer (programming languages).
 #[cfg(feature = "native")]
-pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::SyntaxTree;
+pub type LowerToSyntaxTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::SyntaxTree;
 
 /// CST → [`DataTree`](crate::tree::DataTree) lowering function pointer (data languages).
 #[cfg(feature = "native")]
-pub type LowerToDataIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataTree;
+pub type LowerToDataTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataTree;
 
 /// CST → [`SqlTree`](crate::tree::sql::SqlTree) lowering function pointer (SQL family).
 #[cfg(feature = "native")]
-pub type LowerToSqlIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::sql::SqlTree;
+pub type LowerToSqlTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::sql::SqlTree;
 
 /// Renderer for a `DataTree` tree. Each [`DataParser`] pairs a lower
 /// fn with one of these so the pipeline never needs a per-language
@@ -135,7 +135,7 @@ pub type DataRenderFn = fn(
 #[cfg(feature = "native")]
 #[derive(Copy, Clone)]
 pub struct DataParser {
-    pub lower: LowerToDataIr,
+    pub lower: LowerToDataTree,
     pub render: DataRenderFn,
 }
 
@@ -157,10 +157,10 @@ pub struct DataParser {
 /// entirely.
 #[cfg(feature = "native")]
 #[derive(Copy, Clone)]
-pub enum IrFamily {
+pub enum TreeKind {
     None,
-    Programming(LowerToIr),
-    Sql(LowerToSqlIr),
+    Syntax(LowerToSyntaxTree),
+    Sql(LowerToSqlTree),
     Data {
         structure: DataParser,
         content: DataParser,
@@ -170,19 +170,19 @@ pub enum IrFamily {
 #[cfg(feature = "native")]
 impl LanguageOps {
     /// True iff this language should run through the typed-IR pipeline
-    /// at the given tree mode. Reads `ir_family` from the registry —
+    /// at the given tree mode. Reads `tree_kind` from the registry —
     /// no per-language match needed at the call site.
     ///
-    /// - `IrFamily::None` → never; the legacy imperative path handles it.
-    /// - `IrFamily::Programming` / `IrFamily::Sql` → any non-Raw mode.
-    /// - `IrFamily::Data` → both `Structure` and `Data` modes (the
+    /// - `TreeKind::None` → never; the legacy imperative path handles it.
+    /// - `TreeKind::Syntax` / `TreeKind::Sql` → any non-Raw mode.
+    /// - `TreeKind::Data` → both `Structure` and `Data` modes (the
     ///   variant carries one parser per mode).
-    pub fn uses_ir(&self, tree_mode: crate::tree_mode::TreeMode) -> bool {
+    pub fn uses_tree(&self, tree_mode: crate::tree_mode::TreeMode) -> bool {
         use crate::tree_mode::TreeMode;
-        match self.ir_family {
-            IrFamily::None => false,
-            IrFamily::Programming(_) | IrFamily::Sql(_) => tree_mode != TreeMode::Raw,
-            IrFamily::Data { .. } => matches!(tree_mode, TreeMode::Structure | TreeMode::Data),
+        match self.tree_kind {
+            TreeKind::None => false,
+            TreeKind::Syntax(_) | TreeKind::Sql(_) => tree_mode != TreeMode::Raw,
+            TreeKind::Data { .. } => matches!(tree_mode, TreeMode::Structure | TreeMode::Data),
         }
     }
 }
@@ -230,10 +230,10 @@ pub struct LanguageOps {
     #[cfg(feature = "native")]
     pub grammar: GrammarFn,
     /// Which IR family this language lowers to (and the lower fn). See
-    /// [`IrFamily`]. `None` means the language stays on the legacy
+    /// [`TreeKind`]. `None` means the language stays on the legacy
     /// imperative path.
     #[cfg(feature = "native")]
-    pub ir_family: IrFamily,
+    pub tree_kind: TreeKind,
     pub transform: TransformFn,
     pub syntax_category: SyntaxCategoryFn,
     pub field_wrappings: &'static [(&'static str, &'static str)],
@@ -269,7 +269,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_typescript,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -286,7 +286,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsx,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -303,7 +303,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_javascript,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -321,7 +321,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_csharp,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_csharp_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_csharp_root),
         // C# flows entirely through `crate::tree::csharp`. The imperative
         // walker is no longer reachable for C#; `passthrough_transform`
         // satisfies the field's contract for any code path that still
@@ -342,7 +342,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_python,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_python_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_python_root),
         transform: passthrough_transform,
         syntax_category: python::syntax_category,
         field_wrappings: PYTHON_FIELD_WRAPPINGS,
@@ -359,7 +359,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_go,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_go_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_go_root),
         transform: passthrough_transform,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
@@ -376,7 +376,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_rust,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_rust_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_rust_root),
         transform: passthrough_transform,
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
@@ -393,7 +393,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_java,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_java_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_java_root),
         transform: passthrough_transform,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -410,7 +410,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_ruby,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_ruby_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_ruby_root),
         transform: passthrough_transform,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
@@ -427,7 +427,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_php,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Programming(crate::tree::lower_php_root),
+        tree_kind: TreeKind::Syntax(crate::tree::lower_php_root),
         // PHP flows entirely through `crate::tree::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.
@@ -447,7 +447,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsql,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Sql(crate::tree::sql_lower::lower_sql_root),
+        tree_kind: TreeKind::Sql(crate::tree::sql_lower::lower_sql_root),
         transform: tsql::transform,
         syntax_category: tsql::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -465,7 +465,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_json,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_json_data_root,
                 render: crate::tree::render_data_to_xot_json,
@@ -491,7 +491,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_yaml,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_yaml_data_root,
                 render: crate::tree::render_data_to_xot_json,
@@ -517,7 +517,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_toml,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_toml_data_root,
                 render: crate::tree::render_data_to_xot_keyed,
@@ -547,7 +547,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_ini,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_ini_data_root,
                 render: crate::tree::render_data_to_xot_keyed,
@@ -574,7 +574,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_env,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_ini_data_root,
                 render: crate::tree::render_data_to_xot_keyed,
@@ -603,7 +603,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_markdown,
         #[cfg(feature = "native")]
-        ir_family: IrFamily::Data {
+        tree_kind: TreeKind::Data {
             structure: DataParser {
                 lower: crate::tree::lower_markdown_data_root,
                 render: crate::tree::render_data_to_xot_json,
