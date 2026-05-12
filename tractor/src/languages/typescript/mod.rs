@@ -12,6 +12,8 @@ use crate::transform::operators::is_operator_marker;
 
 #[cfg(feature = "native")]
 pub mod lower;
+#[cfg(feature = "native")]
+pub mod render_source;
 pub mod input;
 pub mod output;
 

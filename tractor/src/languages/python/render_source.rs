@@ -3,7 +3,7 @@
 //! Python uses `:`-introduced indented blocks, no statement
 //! terminators, no parens around conditions.
 #![allow(dead_code)]
-use super::common::{write_ir, Indent, Syntax};
+use crate::tree::source::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {

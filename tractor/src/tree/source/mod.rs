@@ -44,14 +44,9 @@
 #![allow(dead_code)]
 
 pub mod common;
-pub mod csharp;
-pub mod java;
-pub mod python;
-pub mod typescript;
-pub mod rust_lang;
-pub mod go_lang;
-pub mod ruby;
-pub mod php;
+// Per-language canonical-source emitters moved to
+// `languages/<lang>/render_source.rs` in S10B. The match dispatch in
+// `render()` below calls into them directly.
 // SQL-family languages use their own typed tree (`SqlTree`) and a
 // separate renderer entrypoint `render_sql`. Iter 53 retired the
 // legacy `SyntaxTree`-based TSQL pipeline.
@@ -76,14 +71,14 @@ pub fn render(tree: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> Str
         return super::to_source(tree, source).to_string();
     }
     match lang {
-        "csharp" => csharp::render(tree),
-        "java" => java::render(tree),
-        "python" => python::render(tree),
-        "typescript" => typescript::render(tree),
-        "rust" => rust_lang::render(tree),
-        "go" => go_lang::render(tree),
-        "ruby" => ruby::render(tree),
-        "php" => php::render(tree),
+        "csharp" => crate::languages::csharp::render_source::render(tree),
+        "java" => crate::languages::java::render_source::render(tree),
+        "python" => crate::languages::python::render_source::render(tree),
+        "typescript" => crate::languages::typescript::render_source::render(tree),
+        "rust" => crate::languages::rust_lang::render_source::render(tree),
+        "go" => crate::languages::go::render_source::render(tree),
+        "ruby" => crate::languages::ruby::render_source::render(tree),
+        "php" => crate::languages::php::render_source::render(tree),
         // T-SQL uses `SqlTree`, not `SyntaxTree` — call `render_sql` instead.
         // This arm exists so users passing "tsql" get a clear panic
         // rather than silently falling through to generic.
