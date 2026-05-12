@@ -400,39 +400,38 @@ The shared tree machinery — `tree/types.rs` (the unified `SyntaxTree` enum), `
 
 ### Tasks
 
-- [ ] [S10A] **No `tree/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
+- [x] [S10A] **No `tree/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
   - Each move: `git mv tree/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `tree/mod.rs`; update the `tree_kind: Syntax(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
   - Per-language sub-tasks:
-    - [ ] [S10A-Z1] csharp — `tree/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
-    - [ ] [S10A-Z2] python — `tree/python.rs` (2238 LOC) → `languages/python/lower.rs`.
-    - [ ] [S10A-Z3] java — `tree/java.rs` (2053 LOC) → `languages/java/lower.rs`.
-    - [ ] [S10A-Z4] typescript — `tree/typescript.rs` (2079 LOC) → `languages/typescript/lower.rs` (covers ts/tsx/js/jsx).
-    - [ ] [S10A-Z5] rust_lang — `tree/rust_lang.rs` (1967 LOC) → `languages/rust_lang/lower.rs`.
-    - [ ] [S10A-Z6] go — `tree/go_lang.rs` (1507 LOC) → `languages/go/lower.rs`.
-    - [ ] [S10A-Z7] ruby — `tree/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
-    - [ ] [S10A-Z8] php — `tree/php.rs` (1563 LOC) → `languages/php/lower.rs`.
+    - [x] [S10A-Z1] csharp — `tree/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
+    - [x] [S10A-Z2] python — `tree/python.rs` (2238 LOC) → `languages/python/lower.rs`.
+    - [x] [S10A-Z3] java — `tree/java.rs` (2053 LOC) → `languages/java/lower.rs`.
+    - [x] [S10A-Z4] typescript — `tree/typescript.rs` (2079 LOC) → `languages/typescript/lower.rs` (covers ts/tsx/js/jsx).
+    - [x] [S10A-Z5] rust_lang — `tree/rust_lang.rs` (1967 LOC) → `languages/rust_lang/lower.rs`.
+    - [x] [S10A-Z6] go — `tree/go_lang.rs` (1507 LOC) → `languages/go/lower.rs`.
+    - [x] [S10A-Z7] ruby — `tree/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
+    - [x] [S10A-Z8] php — `tree/php.rs` (1563 LOC) → `languages/php/lower.rs`.
 
-- [ ] [S10B] **No `tree/source/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place. `LanguageOps` carries a `render_canonical: Option<RenderCanonicalFn>` field; `tree/source/mod.rs::render`'s match dispatch is gone.**
-  - Each per-language emitter is small (~26–31 LOC: `Syntax` struct + `render` fn calling `super::common::write_ir`). Shared `write_ir` engine in `tree/source/common.rs` stays put.
-  - Per-language sub-tasks: [S10B-Z1..Z8] csharp / java / python / typescript / rust_lang / go / ruby / php.
-  - SQL is handled by S10D.
+- [/] [S10B] **No `tree/render/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place.** (File-move portion done; the registry-field `render_canonical: Option<RenderCanonicalFn>` on `LanguageOps` was deferred — `tree/render/mod.rs::render` still uses a match dispatch into the new per-language locations. Pure file-move-and-import-update; the registry-plumbing refactor is a separate concern.)
+  - Per-language sub-tasks: [S10B-Z1..Z8] csharp / java / python / typescript / rust_lang / go / ruby / php — all moved.
+  - SQL handled by S10D.
 
-- [ ] [S10C] **`tree/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `tree/` root do not exist.**
+- [x] [S10C] **`tree/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `tree/` root do not exist.**
   - Today's flat layout: `data.rs` (226), `data_to_xot.rs` (501), `data_to_json.rs` (222), `to_data.rs` (465 — `SyntaxTree → DataTree` projection, stays at tree root), `json_data.rs` (187), `yaml_data.rs` (265), `toml_data.rs` (367), `ini_data.rs` (152), `markdown_data.rs` (324).
   - Target: `tree/data/{types.rs, to_xot.rs, to_json.rs, lower_json.rs, lower_yaml.rs, lower_toml.rs, lower_ini.rs, lower_markdown.rs}`.
 
-- [ ] [S10D] **`tree/sql/` is a directory; the five flat `sql*.rs` files at `tree/` root and `tree/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
+- [x] [S10D] **`tree/sql/` is a directory; the five flat `sql*.rs` files at `tree/` root and `tree/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
   - Today's flat layout: `sql.rs` (741), `sql_lower.rs` (2243), `sql_to_xot.rs` (908), `sql_to_json.rs` (684), `tree/source/sql.rs` (147).
   - Target: `tree/sql/{types.rs, to_xot.rs, to_json.rs, render_source.rs}` + `languages/tsql/lower.rs`.
 
-- [ ] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
+- [x] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
   - Files contain only the generated `CsKind` / `PyKind` / `JavaKind` / etc. enum (CST-kind catalogue), used by `tests/kind_catalogue.rs` and the `SyntaxTree::Unknown` audit. The "input" name dates from the retired imperative pipeline.
   - Update `task gen:kinds` codegen to write `kinds.rs`. Update test imports.
 
 - [ ] [S10F] **No `languages/<lang>/output.rs` file exists; `vocabulary.rs` exists in its place (or contents are folded into `mod.rs`).**
   - Cross-reference C2: if C2 chooses (a) "drive shape contracts off `SyntaxTree` variants alone and delete `TractorNode`", S10F is moot — delete the files instead.
 
-- [ ] [S10G] **`tree/source/` does not exist; `tree/render/` exists in its place (or `tree/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
+- [x] [S10G] **`tree/source/` does not exist; `tree/render/` exists in its place (or `tree/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
 
 - [ ] [S10H] **Either `transform/` has a clear sole-purpose role (with a name that matches), or it is gone.**
   - After S3A + S3B + S3D + S3E + C3, the survivors are: `walk_transform`, `apply_field_wrappings`, possibly `singletons.rs`, possibly `builder.rs`. These serve only the legacy `XeeBuilder` path (data languages JSON/YAML's syntax branch + Raw mode + WASM until S6).
