@@ -1,6 +1,6 @@
 //! IR → Xot rendering.
 //!
-//! Mechanical translation: given an [`Ir`] tree and the original
+//! Mechanical translation: given an [`SyntaxTree`] tree and the original
 //! `source` string, build the corresponding Xot tree. No decisions
 //! live here — every shape choice is encoded in the IR variants.
 //!
@@ -34,65 +34,65 @@
 
 use xot::{Node as XotNode, Xot};
 
-use super::types::{AccessSegment, ByteRange, Ir, ParamKind, Span};
+use super::types::{AccessSegment, ByteRange, SyntaxTree, ParamKind, Span};
 
-/// Render an [`Ir`] tree as a child of `parent` in the given Xot
+/// Render an [`SyntaxTree`] tree as a child of `parent` in the given Xot
 /// document. Returns the root node of the rendered subtree.
 ///
 /// `source` must be the same string the IR was lowered from.
 pub fn render_to_xot(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     match ir {
-        Ir::Module { .. } => render_ir_module(xot, parent, ir, source),
-        Ir::Expression { .. } => render_ir_expression(xot, parent, ir, source),
-        Ir::Access { .. } => render_ir_access(xot, parent, ir, source),
-        Ir::Tuple { .. } => render_ir_tuple(xot, parent, ir, source),
-        Ir::List { .. } => render_ir_list(xot, parent, ir, source),
-        Ir::Set { .. } => render_ir_set(xot, parent, ir, source),
-        Ir::Dictionary { .. } => render_ir_dictionary(xot, parent, ir, source),
-        Ir::Pair { .. } => render_ir_pair(xot, parent, ir, source),
-        Ir::GenericType { .. } => render_ir_generic_type(xot, parent, ir, source),
-        Ir::Comparison { .. } => render_ir_comparison(xot, parent, ir, source),
-        Ir::If { .. } => render_ir_if(xot, parent, ir, source),
-        Ir::ElseIf { .. } => render_ir_else_if(xot, parent, ir, source),
-        Ir::Else { .. } => render_ir_else(xot, parent, ir, source),
-        Ir::For { .. } => render_ir_for(xot, parent, ir, source),
-        Ir::While { .. } => render_ir_while(xot, parent, ir, source),
-        Ir::Foreach { .. } => render_ir_foreach(xot, parent, ir, source),
-        Ir::CFor { .. } => render_ir_cfor(xot, parent, ir, source),
-        Ir::DoWhile { .. } => render_ir_do_while(xot, parent, ir, source),
-        Ir::FieldWrap { .. } => render_ir_field_wrap(xot, parent, ir, source),
-        Ir::SimpleStatement { .. } => render_ir_simple_statement(xot, parent, ir, source),
-        Ir::Try { .. } => render_ir_try(xot, parent, ir, source),
-        Ir::ExceptHandler { .. } => render_ir_except_handler(xot, parent, ir, source),
-        Ir::TypeAlias { .. } => render_ir_type_alias(xot, parent, ir, source),
-        Ir::KeywordArgument { .. } => render_ir_keyword_argument(xot, parent, ir, source),
-        Ir::ListSplat { .. } => render_ir_list_splat(xot, parent, ir, source),
-        Ir::DictSplat { .. } => render_ir_dict_splat(xot, parent, ir, source),
-        Ir::Ternary { .. } => render_ir_ternary(xot, parent, ir, source),
-        Ir::ObjectCreation { .. } => render_ir_object_creation(xot, parent, ir, source),
-        Ir::Lambda { .. } => render_ir_lambda(xot, parent, ir, source),
-        Ir::Break { span, range } => {
+        SyntaxTree::Module { .. } => render_ir_module(xot, parent, ir, source),
+        SyntaxTree::Expression { .. } => render_ir_expression(xot, parent, ir, source),
+        SyntaxTree::Access { .. } => render_ir_access(xot, parent, ir, source),
+        SyntaxTree::Tuple { .. } => render_ir_tuple(xot, parent, ir, source),
+        SyntaxTree::List { .. } => render_ir_list(xot, parent, ir, source),
+        SyntaxTree::Set { .. } => render_ir_set(xot, parent, ir, source),
+        SyntaxTree::Dictionary { .. } => render_ir_dictionary(xot, parent, ir, source),
+        SyntaxTree::Pair { .. } => render_ir_pair(xot, parent, ir, source),
+        SyntaxTree::GenericType { .. } => render_ir_generic_type(xot, parent, ir, source),
+        SyntaxTree::Comparison { .. } => render_ir_comparison(xot, parent, ir, source),
+        SyntaxTree::If { .. } => render_ir_if(xot, parent, ir, source),
+        SyntaxTree::ElseIf { .. } => render_ir_else_if(xot, parent, ir, source),
+        SyntaxTree::Else { .. } => render_ir_else(xot, parent, ir, source),
+        SyntaxTree::For { .. } => render_ir_for(xot, parent, ir, source),
+        SyntaxTree::While { .. } => render_ir_while(xot, parent, ir, source),
+        SyntaxTree::Foreach { .. } => render_ir_foreach(xot, parent, ir, source),
+        SyntaxTree::CFor { .. } => render_ir_cfor(xot, parent, ir, source),
+        SyntaxTree::DoWhile { .. } => render_ir_do_while(xot, parent, ir, source),
+        SyntaxTree::FieldWrap { .. } => render_ir_field_wrap(xot, parent, ir, source),
+        SyntaxTree::SimpleStatement { .. } => render_ir_simple_statement(xot, parent, ir, source),
+        SyntaxTree::Try { .. } => render_ir_try(xot, parent, ir, source),
+        SyntaxTree::ExceptHandler { .. } => render_ir_except_handler(xot, parent, ir, source),
+        SyntaxTree::TypeAlias { .. } => render_ir_type_alias(xot, parent, ir, source),
+        SyntaxTree::KeywordArgument { .. } => render_ir_keyword_argument(xot, parent, ir, source),
+        SyntaxTree::ListSplat { .. } => render_ir_list_splat(xot, parent, ir, source),
+        SyntaxTree::DictSplat { .. } => render_ir_dict_splat(xot, parent, ir, source),
+        SyntaxTree::Ternary { .. } => render_ir_ternary(xot, parent, ir, source),
+        SyntaxTree::ObjectCreation { .. } => render_ir_object_creation(xot, parent, ir, source),
+        SyntaxTree::Lambda { .. } => render_ir_lambda(xot, parent, ir, source),
+        SyntaxTree::Break { span, range } => {
             let node = element(xot, "break", *span);
             xot.append(parent, node)?;
             emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Continue { span, range } => {
+        SyntaxTree::Continue { span, range } => {
             let node = element(xot, "continue", *span);
             xot.append(parent, node)?;
             emit_gap(xot, node, source, range.start, range.end)?;
             Ok(node)
         }
-        Ir::Function { .. } => render_ir_function(xot, parent, ir, source),
-        Ir::Class { .. } => render_ir_class(xot, parent, ir, source),
-        Ir::Body { .. } => render_ir_body(xot, parent, ir, source),
-        Ir::Parameter { .. } => render_ir_parameter(xot, parent, ir, source),
-        Ir::Skip { range: _, span: _ } => {
+        SyntaxTree::Function { .. } => render_ir_function(xot, parent, ir, source),
+        SyntaxTree::Class { .. } => render_ir_class(xot, parent, ir, source),
+        SyntaxTree::Body { .. } => render_ir_body(xot, parent, ir, source),
+        SyntaxTree::Parameter { .. } => render_ir_parameter(xot, parent, ir, source),
+        SyntaxTree::Skip { range: _, span: _ } => {
             // Source-range consumer that emits nothing. Parent's
             // `render_with_gaps` still advances its cursor past
             // `range.end`, so the gap before the next sibling
@@ -101,51 +101,51 @@ pub fn render_to_xot(
             // gap text).
             Ok(parent)
         }
-        Ir::PositionalSeparator { range, span } => {
+        SyntaxTree::PositionalSeparator { range, span } => {
             leaf(xot, parent, "positional", source, *range, *span)
         }
-        Ir::KeywordSeparator { range, span } => {
+        SyntaxTree::KeywordSeparator { range, span } => {
             leaf(xot, parent, "keyword", source, *range, *span)
         }
-        Ir::Decorator { .. } => render_ir_decorator(xot, parent, ir, source),
-        Ir::Returns { .. } => render_ir_returns(xot, parent, ir, source),
-        Ir::Generic { .. } => render_ir_generic(xot, parent, ir, source),
-        Ir::TypeParameter { .. } => render_ir_type_parameter(xot, parent, ir, source),
-        Ir::Return { .. } => render_ir_return(xot, parent, ir, source),
-        Ir::Comment { .. } => render_ir_comment(xot, parent, ir, source),
-        Ir::Assign { .. } => render_ir_assign(xot, parent, ir, source),
-        Ir::Import { .. } => render_ir_import(xot, parent, ir, source),
-        Ir::From { .. } => render_ir_from(xot, parent, ir, source),
-        Ir::FromImport { .. } => render_ir_from_import(xot, parent, ir, source),
-        Ir::Path { .. } => render_ir_path(xot, parent, ir, source),
-        Ir::Aliased { .. } => render_ir_aliased(xot, parent, ir, source),
-        Ir::Call { .. } => render_ir_call(xot, parent, ir, source),
-        Ir::Binary { .. } => render_ir_binary(xot, parent, ir, source),
-        Ir::Unary { .. } => render_ir_unary(xot, parent, ir, source),
+        SyntaxTree::Decorator { .. } => render_ir_decorator(xot, parent, ir, source),
+        SyntaxTree::Returns { .. } => render_ir_returns(xot, parent, ir, source),
+        SyntaxTree::Generic { .. } => render_ir_generic(xot, parent, ir, source),
+        SyntaxTree::TypeParameter { .. } => render_ir_type_parameter(xot, parent, ir, source),
+        SyntaxTree::Return { .. } => render_ir_return(xot, parent, ir, source),
+        SyntaxTree::Comment { .. } => render_ir_comment(xot, parent, ir, source),
+        SyntaxTree::Assign { .. } => render_ir_assign(xot, parent, ir, source),
+        SyntaxTree::Import { .. } => render_ir_import(xot, parent, ir, source),
+        SyntaxTree::From { .. } => render_ir_from(xot, parent, ir, source),
+        SyntaxTree::FromImport { .. } => render_ir_from_import(xot, parent, ir, source),
+        SyntaxTree::Path { .. } => render_ir_path(xot, parent, ir, source),
+        SyntaxTree::Aliased { .. } => render_ir_aliased(xot, parent, ir, source),
+        SyntaxTree::Call { .. } => render_ir_call(xot, parent, ir, source),
+        SyntaxTree::Binary { .. } => render_ir_binary(xot, parent, ir, source),
+        SyntaxTree::Unary { .. } => render_ir_unary(xot, parent, ir, source),
 
         // ----- Atoms — emit source[range] as the leaf text. ---------
-        Ir::Name { range, span } => leaf(xot, parent, "name", source, *range, *span),
-        Ir::Atom { element_name, range, span } => leaf(xot, parent, element_name, source, *range, *span),
-        Ir::Int { range, span } => leaf(xot, parent, "int", source, *range, *span),
-        Ir::Float { range, span } => leaf(xot, parent, "float", source, *range, *span),
-        Ir::String { range, span } => leaf(xot, parent, "string", source, *range, *span),
-        Ir::True { range, span } => leaf(xot, parent, "true", source, *range, *span),
-        Ir::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
-        Ir::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
-        Ir::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
-        Ir::Enum { .. } => render_ir_enum(xot, parent, ir, source),
-        Ir::EnumMember { .. } => render_ir_enum_member(xot, parent, ir, source),
-        Ir::Property { .. } => render_ir_property(xot, parent, ir, source),
-        Ir::Accessor { .. } => render_ir_accessor(xot, parent, ir, source),
-        Ir::Constructor { .. } => render_ir_constructor(xot, parent, ir, source),
-        Ir::Using { .. } => render_ir_using(xot, parent, ir, source),
-        Ir::Namespace { .. } => render_ir_namespace(xot, parent, ir, source),
-        Ir::Variable { .. } => render_ir_variable(xot, parent, ir, source),
-        Ir::Is { .. } => render_ir_is(xot, parent, ir, source),
-        Ir::Cast { .. } => render_ir_cast(xot, parent, ir, source),
+        SyntaxTree::Name { range, span } => leaf(xot, parent, "name", source, *range, *span),
+        SyntaxTree::Atom { element_name, range, span } => leaf(xot, parent, element_name, source, *range, *span),
+        SyntaxTree::Int { range, span } => leaf(xot, parent, "int", source, *range, *span),
+        SyntaxTree::Float { range, span } => leaf(xot, parent, "float", source, *range, *span),
+        SyntaxTree::String { range, span } => leaf(xot, parent, "string", source, *range, *span),
+        SyntaxTree::True { range, span } => leaf(xot, parent, "true", source, *range, *span),
+        SyntaxTree::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
+        SyntaxTree::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
+        SyntaxTree::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
+        SyntaxTree::Enum { .. } => render_ir_enum(xot, parent, ir, source),
+        SyntaxTree::EnumMember { .. } => render_ir_enum_member(xot, parent, ir, source),
+        SyntaxTree::Property { .. } => render_ir_property(xot, parent, ir, source),
+        SyntaxTree::Accessor { .. } => render_ir_accessor(xot, parent, ir, source),
+        SyntaxTree::Constructor { .. } => render_ir_constructor(xot, parent, ir, source),
+        SyntaxTree::Using { .. } => render_ir_using(xot, parent, ir, source),
+        SyntaxTree::Namespace { .. } => render_ir_namespace(xot, parent, ir, source),
+        SyntaxTree::Variable { .. } => render_ir_variable(xot, parent, ir, source),
+        SyntaxTree::Is { .. } => render_ir_is(xot, parent, ir, source),
+        SyntaxTree::Cast { .. } => render_ir_cast(xot, parent, ir, source),
 
-        Ir::Inline { .. } => render_ir_inline(xot, parent, ir, source),
-        Ir::Unknown { .. } => render_ir_unknown(xot, parent, ir, source),
+        SyntaxTree::Inline { .. } => render_ir_inline(xot, parent, ir, source),
+        SyntaxTree::Unknown { .. } => render_ir_unknown(xot, parent, ir, source),
     }
 }
 
@@ -165,10 +165,10 @@ pub fn render_to_xot(
 fn render_ir_assign(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } = ir
+    let SyntaxTree::Assign { targets, type_annotation, op_text, op_range, op_markers, values, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "assign", *span);
     xot.append(parent, node)?;
@@ -219,7 +219,7 @@ fn render_ir_assign(
     // <op>{op_text}{markers}</op> — markers come from the
     // canonical OPERATOR_MARKERS table (shared with the
     // imperative pipeline) keyed by op_text. The `op_markers`
-    // field on Ir::Assign is now unused.
+    // field on SyntaxTree::Assign is now unused.
     let _ = op_markers;
     if !op_text.is_empty() {
         let op_node = element(xot, "op", *span);
@@ -245,9 +245,9 @@ fn render_ir_assign(
             let vr = v.range();
             emit_gap(xot, right_node, source, cursor, vr.start)?;
             // Don't double-wrap when the value already
-            // produces an `<expression>` host (Ir::Expression
+            // produces an `<expression>` host (SyntaxTree::Expression
             // / await / non-null markers).
-            if matches!(v, Ir::Expression { .. }) {
+            if matches!(v, SyntaxTree::Expression { .. }) {
                 render_to_xot(xot, right_node, v, source)?;
             } else {
                 let expr = element(xot, "expression", v.span());
@@ -272,10 +272,10 @@ fn render_ir_assign(
 fn render_ir_class(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Class { kind, modifiers, decorators, name, generics, bases, where_clauses, body, range, span } = ir
+    let SyntaxTree::Class { kind, modifiers, decorators, name, generics, bases, where_clauses, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
@@ -289,18 +289,18 @@ fn render_ir_class(
     // body.
     #[derive(Clone, Copy)]
     enum CSlot<'a> {
-        Decor(&'a Ir),
-        Name(&'a Ir),
-        Generics(&'a Ir),
-        Base(&'a Ir),
-        Where(&'a Ir),
-        Body(&'a Ir),
+        Decor(&'a SyntaxTree),
+        Name(&'a SyntaxTree),
+        Generics(&'a SyntaxTree),
+        Base(&'a SyntaxTree),
+        Where(&'a SyntaxTree),
+        Body(&'a SyntaxTree),
     }
     let mut order: Vec<CSlot> = Vec::new();
     for d in decorators { order.push(CSlot::Decor(d)); }
     order.push(CSlot::Name(name));
     if let Some(g) = generics {
-        if let Ir::Generic { items, .. } = g.as_ref() {
+        if let SyntaxTree::Generic { items, .. } = g.as_ref() {
             for it in items { order.push(CSlot::Generics(it)); }
         } else {
             order.push(CSlot::Generics(g));
@@ -315,7 +315,7 @@ fn render_ir_class(
     });
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             CSlot::Decor(i) | CSlot::Name(i) | CSlot::Generics(i)
             | CSlot::Base(i) | CSlot::Where(i) | CSlot::Body(i) => i,
         };
@@ -339,8 +339,8 @@ fn render_ir_class(
             // `<extends>` wrap.
             let inner_already_wrapped = matches!(
                 inner,
-                Ir::SimpleStatement { element_name: "implements", .. }
-                    | Ir::SimpleStatement { element_name: "extends", .. }
+                SyntaxTree::SimpleStatement { element_name: "implements", .. }
+                    | SyntaxTree::SimpleStatement { element_name: "extends", .. }
             );
             if inner_already_wrapped {
                 render_to_xot(xot, node, inner, source)?;
@@ -348,8 +348,8 @@ fn render_ir_class(
                 let ext = element(xot, "extends", inner.span());
                 xot.append(node, ext)?;
                 let already_typed = matches!(inner,
-                    Ir::GenericType { .. }
-                        | Ir::SimpleStatement { element_name: "type", .. }
+                    SyntaxTree::GenericType { .. }
+                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
                 );
                 if already_typed {
                     render_to_xot(xot, ext, inner, source)?;
@@ -372,10 +372,10 @@ fn render_ir_class(
 fn render_ir_except_handler(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::ExceptHandler { kind, type_target, binding, filter, body, range, span } = ir
+    let SyntaxTree::ExceptHandler { kind, type_target, binding, filter, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
@@ -387,7 +387,7 @@ fn render_ir_except_handler(
     // older slot layout: `<type>` + bare binding name.
     let python_shape = *kind == "except";
     #[derive(Clone, Copy)]
-    enum Slot<'a> { Type(&'a Ir), Bind(&'a Ir), Filter(&'a Ir), Body(&'a Ir) }
+    enum Slot<'a> { Type(&'a SyntaxTree), Bind(&'a SyntaxTree), Filter(&'a SyntaxTree), Body(&'a SyntaxTree) }
     let mut order: Vec<Slot> = Vec::new();
     if let Some(t) = type_target { order.push(Slot::Type(t)); }
     if let Some(b) = binding { order.push(Slot::Bind(b)); }
@@ -439,7 +439,7 @@ fn render_ir_except_handler(
     }
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             Slot::Type(i) | Slot::Bind(i) | Slot::Filter(i) | Slot::Body(i) => i,
         };
         let cr = inner.range();
@@ -474,10 +474,10 @@ fn render_ir_except_handler(
 fn render_ir_for(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::For { is_async, targets, iterables, body, else_body, range, span } = ir
+    let SyntaxTree::For { is_async, targets, iterables, body, else_body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "for", *span);
     xot.append(parent, node)?;
@@ -546,10 +546,10 @@ fn render_ir_for(
 fn render_ir_if(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::If { condition, body, else_branch, range, span } = ir
+    let SyntaxTree::If { condition, body, else_branch, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "if", *span);
     xot.append(parent, node)?;
@@ -573,7 +573,7 @@ fn render_ir_if(
         let br_range = branch.range();
         emit_gap(xot, node, source, cursor, br_range.start)?;
         match branch {
-            Ir::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
+            SyntaxTree::ElseIf { condition: ec, body: eb, else_branch: deeper, span: es, range: er } => {
                 let elseif = element(xot, "else_if", *es);
                 xot.append(node, elseif)?;
                 let ecr = ec.range();
@@ -590,7 +590,7 @@ fn render_ir_if(
                 cursor = er.end;
                 next = deeper.as_ref().map(|b| b.as_ref());
             }
-            Ir::Else { body: eb, span: es, range: er } => {
+            SyntaxTree::Else { body: eb, span: es, range: er } => {
                 let el = element(xot, "else", *es);
                 xot.append(node, el)?;
                 let ebr = eb.range();
@@ -615,17 +615,17 @@ fn render_ir_if(
 fn render_ir_foreach(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Foreach { type_ann, target, iterable, body, range, span } = ir
+    let SyntaxTree::Foreach { type_ann, target, iterable, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "foreach", *span);
     xot.append(parent, node)?;
     let in_marker = element(xot, "in", *span);
     xot.append(node, in_marker)?;
     #[derive(Clone, Copy)]
-    enum Slot<'a> { Type(&'a Ir), Target(&'a Ir), Iter(&'a Ir), Body(&'a Ir) }
+    enum Slot<'a> { Type(&'a SyntaxTree), Target(&'a SyntaxTree), Iter(&'a SyntaxTree), Body(&'a SyntaxTree) }
     let mut order: Vec<Slot> = Vec::new();
     if let Some(t) = type_ann { order.push(Slot::Type(t)); }
     order.push(Slot::Target(target));
@@ -636,7 +636,7 @@ fn render_ir_foreach(
     });
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             Slot::Type(i) | Slot::Target(i) | Slot::Iter(i) | Slot::Body(i) => i,
         };
         let cr = inner.range();
@@ -675,14 +675,14 @@ fn render_ir_foreach(
 fn render_ir_field_wrap(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::FieldWrap { wrapper, inner, range, span } = ir else { unreachable!() };
+    let SyntaxTree::FieldWrap { wrapper, inner, range, span } = ir else { unreachable!() };
     // When the wrapper is `name`, collapse the inner to a flat text
     // leaf — `<name>` is text-only by contract. Works for bare
-    // identifiers (Ir::Name), dotted paths (Ir::Path), generic types
-    // (Ir::GenericType), and any other inner: we emit the full source
+    // identifiers (SyntaxTree::Name), dotted paths (SyntaxTree::Path), generic types
+    // (SyntaxTree::GenericType), and any other inner: we emit the full source
     // slice as the text content. Mirrors the imperative pipeline's
     // `name_wrapper`.
     if *wrapper == "name" {
@@ -698,10 +698,10 @@ fn render_ir_field_wrap(
     // Skip the wrap entirely if the inner already produces an element
     // of the same name — avoids `<X><X>...</X></X>` double-nesting.
     let inner_already_emits_wrapper = match (*wrapper, inner.as_ref()) {
-        ("body", Ir::Body { .. }) => true,
-        ("type", Ir::GenericType { .. }) => true,
-        ("type", Ir::SimpleStatement { element_name: "type", .. }) => true,
-        ("name", Ir::SimpleStatement { element_name: "name", .. }) => true,
+        ("body", SyntaxTree::Body { .. }) => true,
+        ("type", SyntaxTree::GenericType { .. }) => true,
+        ("type", SyntaxTree::SimpleStatement { element_name: "type", .. }) => true,
+        ("name", SyntaxTree::SimpleStatement { element_name: "name", .. }) => true,
         _ => false,
     };
     if inner_already_emits_wrapper {
@@ -716,7 +716,7 @@ fn render_ir_field_wrap(
     let ir_range = inner.range();
     emit_gap(xot, node, source, range.start, ir_range.start)?;
     let target = if matches!(*wrapper, "value" | "condition")
-        && !matches!(inner.as_ref(), Ir::Expression { .. })
+        && !matches!(inner.as_ref(), SyntaxTree::Expression { .. })
     {
         let expr = element(xot, "expression", *span);
         xot.append(node, expr)?;
@@ -733,15 +733,15 @@ fn render_ir_field_wrap(
 fn render_ir_ternary(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Ternary { condition, if_true, if_false, range, span } = ir
+    let SyntaxTree::Ternary { condition, if_true, if_false, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "ternary", *span);
     xot.append(parent, node)?;
     #[derive(Clone, Copy)]
-    enum Slot<'a> { Cond(&'a Ir), True(&'a Ir), False(&'a Ir) }
+    enum Slot<'a> { Cond(&'a SyntaxTree), True(&'a SyntaxTree), False(&'a SyntaxTree) }
     let mut order: Vec<Slot> = vec![
         Slot::Cond(condition),
         Slot::True(if_true),
@@ -752,7 +752,7 @@ fn render_ir_ternary(
     });
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             Slot::Cond(i) | Slot::True(i) | Slot::False(i) => i,
         };
         let cr = inner.range();
@@ -786,14 +786,14 @@ fn render_ir_ternary(
 fn render_ir_try(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Try { try_body, handlers, else_body, finally_body, range, span } = ir
+    let SyntaxTree::Try { try_body, handlers, else_body, finally_body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "try", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = vec![try_body.as_ref()];
+    let mut order: Vec<&SyntaxTree> = vec![try_body.as_ref()];
     for h in handlers { order.push(h); }
     if let Some(e) = else_body { order.push(e.as_ref()); }
     if let Some(f) = finally_body { order.push(f.as_ref()); }
@@ -825,10 +825,10 @@ fn render_ir_try(
 fn render_ir_lambda(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Lambda { modifiers, parameters, body, range, span } = ir
+    let SyntaxTree::Lambda { modifiers, parameters, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "lambda", *span);
     xot.append(parent, node)?;
@@ -836,12 +836,12 @@ fn render_ir_lambda(
         let m = element(xot, marker, *span);
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for p in parameters { order.push(p); }
     order.push(body.as_ref());
     order.sort_by_key(|c| c.range().start);
 
-    let is_block_body = matches!(body.as_ref(), Ir::Body { .. });
+    let is_block_body = matches!(body.as_ref(), SyntaxTree::Body { .. });
     let mut cursor = range.start;
     for child in &order {
         let cr = child.range();
@@ -869,10 +869,10 @@ fn render_ir_lambda(
 fn render_ir_function(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } = ir
+    let SyntaxTree::Function { element_name, modifiers, decorators, name, generics, parameters, returns, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
@@ -880,11 +880,11 @@ fn render_ir_function(
         let m = element(xot, marker, Span::point(span.line, span.column));
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     order.push(name.as_ref());
     if let Some(g) = generics {
-        if let Ir::Generic { items, .. } = g.as_ref() {
+        if let SyntaxTree::Generic { items, .. } = g.as_ref() {
             for it in items { order.push(it); }
         } else {
             order.push(g.as_ref());
@@ -904,10 +904,10 @@ fn render_ir_function(
 fn render_ir_parameter(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, range, span } = ir
+    let SyntaxTree::Parameter { kind, extra_markers, modifiers, name, type_ann, default, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "parameter", *span);
     xot.append(parent, node)?;
@@ -931,7 +931,7 @@ fn render_ir_parameter(
         xot.append(node, m)?;
     }
     #[derive(Clone, Copy)]
-    enum Slot<'a> { Name(&'a Ir), Type(&'a Ir), Default(&'a Ir) }
+    enum Slot<'a> { Name(&'a SyntaxTree), Type(&'a SyntaxTree), Default(&'a SyntaxTree) }
     let mut order: Vec<Slot> = vec![Slot::Name(name)];
     if let Some(t) = type_ann { order.push(Slot::Type(t)); }
     if let Some(d) = default { order.push(Slot::Default(d)); }
@@ -941,7 +941,7 @@ fn render_ir_parameter(
 
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             Slot::Name(i) | Slot::Type(i) | Slot::Default(i) => i,
         };
         let ir_range = inner.range();
@@ -973,10 +973,10 @@ fn render_ir_parameter(
 fn render_ir_variable(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } = ir
+    let SyntaxTree::Variable { element_name, modifiers, decorators, type_ann, name, value, range, span } = ir
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     for marker in modifiers.marker_names() {
@@ -984,7 +984,7 @@ fn render_ir_variable(
         xot.append(node, m)?;
     }
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     if let Some(t) = type_ann { order.push(t.as_ref()); }
     order.push(name.as_ref());
@@ -997,8 +997,8 @@ fn render_ir_variable(
         if let Some(t) = type_ann {
             if std::ptr::eq(*c, t.as_ref()) {
                 let already_typed = matches!(*c,
-                    Ir::GenericType { .. }
-                        | Ir::SimpleStatement { element_name: "type", .. }
+                    SyntaxTree::GenericType { .. }
+                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
                 );
                 if already_typed {
                     render_to_xot(xot, node, *c, source)?;
@@ -1027,7 +1027,7 @@ fn render_ir_variable(
                 // violation in the other direction).
                 let already_wrapped = matches!(
                     *c,
-                    Ir::SimpleStatement { element_name: "value", .. }
+                    SyntaxTree::SimpleStatement { element_name: "value", .. }
                 );
                 if already_wrapped {
                     render_to_xot(xot, node, *c, source)?;
@@ -1051,10 +1051,10 @@ fn render_ir_variable(
 fn render_ir_comparison(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Comparison { left, op_text, op_marker, op_range, right, range, span } = ir
+    let SyntaxTree::Comparison { left, op_text, op_marker, op_range, right, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "compare", *span);
     xot.append(parent, node)?;
@@ -1084,10 +1084,10 @@ fn render_ir_comparison(
 fn render_ir_while(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::While { condition, body, else_body, range, span } = ir else { unreachable!() };
+    let SyntaxTree::While { condition, body, else_body, range, span } = ir else { unreachable!() };
     let node = element(xot, "while", *span);
     xot.append(parent, node)?;
     let cr = condition.range();
@@ -1117,13 +1117,13 @@ fn render_ir_while(
 fn render_ir_cfor(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::CFor { initializer, condition, updates, body, range, span } = ir else { unreachable!() };
+    let SyntaxTree::CFor { initializer, condition, updates, body, range, span } = ir else { unreachable!() };
     let node = element(xot, "for", *span);
     xot.append(parent, node)?;
-    let mut header: Vec<(usize, &Ir, u8)> = Vec::new();
+    let mut header: Vec<(usize, &SyntaxTree, u8)> = Vec::new();
     if let Some(i) = initializer { header.push((i.range().start as usize, i.as_ref(), 0)); }
     if let Some(c) = condition { header.push((c.range().start as usize, c.as_ref(), 1)); }
     for u in updates { header.push((u.range().start as usize, u, 2)); }
@@ -1157,10 +1157,10 @@ fn render_ir_cfor(
 fn render_ir_do_while(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::DoWhile { body, condition, range, span } = ir else { unreachable!() };
+    let SyntaxTree::DoWhile { body, condition, range, span } = ir else { unreachable!() };
     let node = element(xot, "do", *span);
     xot.append(parent, node)?;
     let br = body.range();
@@ -1181,10 +1181,10 @@ fn render_ir_do_while(
 fn render_ir_body(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Body { children, pass_only, block_wrap, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Body { children, pass_only, block_wrap, range, span } = ir else { unreachable!() };
     let node = element(xot, "body", *span);
     xot.append(parent, node)?;
     let target = if *block_wrap {
@@ -1210,10 +1210,10 @@ fn render_ir_body(
 fn render_ir_binary(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Binary { element_name, op_text, op_marker, op_range, left, right, range, span } = ir
+    let SyntaxTree::Binary { element_name, op_text, op_marker, op_range, left, right, range, span } = ir
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
@@ -1249,10 +1249,10 @@ fn render_ir_binary(
 fn render_ir_unary(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Unary { op_text, op_marker, op_range, operand, extra_markers, range, span } = ir
+    let SyntaxTree::Unary { op_text, op_marker, op_range, operand, extra_markers, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "unary", *span);
     xot.append(parent, node)?;
@@ -1298,16 +1298,16 @@ fn render_ir_unary(
 fn render_ir_return(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Return { value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Return { value, range, span } = ir else { unreachable!() };
     let node = element(xot, "return", *span);
     xot.append(parent, node)?;
     if let Some(v) = value {
         let vr = v.range();
         emit_gap(xot, node, source, range.start, vr.start)?;
-        if let Ir::Inline { children, .. } = v.as_ref() {
+        if let SyntaxTree::Inline { children, .. } = v.as_ref() {
             let mut cursor = vr.start;
             for c in children {
                 let cr = c.range();
@@ -1334,13 +1334,13 @@ fn render_ir_return(
 fn render_ir_type_alias(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::TypeAlias { name, type_params, value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::TypeAlias { name, type_params, value, range, span } = ir else { unreachable!() };
     let node = element(xot, "alias", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = vec![name.as_ref()];
+    let mut order: Vec<&SyntaxTree> = vec![name.as_ref()];
     if let Some(p) = type_params { order.push(p.as_ref()); }
     order.push(value.as_ref());
     order.sort_by_key(|c| c.range().start);
@@ -1373,17 +1373,17 @@ fn render_ir_type_alias(
 fn render_ir_access(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Access { receiver, segments, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Access { receiver, segments, range, span } = ir else { unreachable!() };
     let object = element(xot, "object", *span);
     xot.append(parent, object)?;
     let access = element(xot, "access", Span::point(span.line, span.column));
     xot.append(object, access)?;
     let receiver_range = receiver.range();
     let recv_text = receiver_range.slice(source);
-    if matches!(receiver.as_ref(), Ir::Name { .. }) {
+    if matches!(receiver.as_ref(), SyntaxTree::Name { .. }) {
         if recv_text == "base" {
             let m = element(xot, "base", Span::point(span.line, span.column));
             xot.append(object, m)?;
@@ -1404,10 +1404,10 @@ fn render_ir_access(
 fn render_ir_generic_type(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::GenericType { name, params, range, span } = ir else { unreachable!() };
+    let SyntaxTree::GenericType { name, params, range, span } = ir else { unreachable!() };
     let node = element(xot, "type", *span);
     xot.append(parent, node)?;
     let g = element(xot, "generic", *span);
@@ -1432,10 +1432,10 @@ fn render_ir_generic_type(
 fn render_ir_else_if(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::ElseIf { condition, body, else_branch, range, span } = ir else { unreachable!() };
+    let SyntaxTree::ElseIf { condition, body, else_branch, range, span } = ir else { unreachable!() };
     let node = element(xot, "else_if", *span);
     xot.append(parent, node)?;
     let cr = condition.range();
@@ -1463,19 +1463,19 @@ fn render_ir_else_if(
 fn render_ir_returns(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Returns { type_ann, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Returns { type_ann, range, span } = ir else { unreachable!() };
     let node = element(xot, "returns", *span);
     xot.append(parent, node)?;
     let tr = type_ann.range();
     emit_gap(xot, node, source, range.start, tr.start)?;
     let already_typed = matches!(
         type_ann.as_ref(),
-        Ir::GenericType { .. }
-            | Ir::SimpleStatement { element_name: "type", .. }
-            | Ir::SimpleStatement { element_name: "predicate", .. }
+        SyntaxTree::GenericType { .. }
+            | SyntaxTree::SimpleStatement { element_name: "type", .. }
+            | SyntaxTree::SimpleStatement { element_name: "predicate", .. }
     );
     if already_typed {
         render_to_xot(xot, node, type_ann, source)?;
@@ -1492,10 +1492,10 @@ fn render_ir_returns(
 fn render_ir_is(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Is { value, type_target, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Is { value, type_target, range, span } = ir else { unreachable!() };
     let node = element(xot, "is", *span);
     xot.append(parent, node)?;
     let vr = value.range();
@@ -1522,10 +1522,10 @@ fn render_ir_is(
 fn render_ir_cast(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Cast { type_ann, value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Cast { type_ann, value, range, span } = ir else { unreachable!() };
     let node = element(xot, "cast", *span);
     xot.append(parent, node)?;
     let tr = type_ann.range();
@@ -1548,10 +1548,10 @@ fn render_ir_cast(
 fn render_ir_inline(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Inline { children, list_name, range, span: _ } = ir else { unreachable!() };
+    let SyntaxTree::Inline { children, list_name, range, span: _ } = ir else { unreachable!() };
     let before: Vec<XotNode> = xot.children(parent).collect();
     render_with_gaps(xot, parent, source, *range, children, |xot, parent, child| {
         render_to_xot(xot, parent, child, source).map(|_| ())
@@ -1574,10 +1574,10 @@ fn render_ir_inline(
 fn render_ir_comment(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Comment { leading, trailing, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Comment { leading, trailing, range, span } = ir else { unreachable!() };
     let node = element(xot, "comment", *span);
     xot.append(parent, node)?;
     if *leading {
@@ -1600,10 +1600,10 @@ fn render_ir_comment(
 fn render_ir_import(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Import { has_alias, children, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Import { has_alias, children, range, span } = ir else { unreachable!() };
     let node = element(xot, "import", *span);
     xot.append(parent, node)?;
     if *has_alias {
@@ -1620,17 +1620,17 @@ fn render_ir_import(
 fn render_ir_from(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::From { relative, path, imports, range, span } = ir else { unreachable!() };
+    let SyntaxTree::From { relative, path, imports, range, span } = ir else { unreachable!() };
     let node = element(xot, "from", *span);
     xot.append(parent, node)?;
     if *relative {
         let m = element(xot, "relative", Span::point(span.line, span.column));
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     if let Some(p) = path { order.push(p.as_ref()); }
     for i in imports { order.push(i); }
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
@@ -1643,17 +1643,17 @@ fn render_ir_from(
 fn render_ir_from_import(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::FromImport { has_alias, name, alias, range, span } = ir else { unreachable!() };
+    let SyntaxTree::FromImport { has_alias, name, alias, range, span } = ir else { unreachable!() };
     let node = element(xot, "import", *span);
     xot.append(parent, node)?;
     if *has_alias {
         let m = element(xot, "alias", Span::point(span.line, span.column));
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = vec![name.as_ref()];
+    let mut order: Vec<&SyntaxTree> = vec![name.as_ref()];
     if let Some(a) = alias { order.push(a.as_ref()); }
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
         render_to_xot(xot, parent, child, source).map(|_| ())
@@ -1665,10 +1665,10 @@ fn render_ir_from_import(
 fn render_ir_path(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Path { segments, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Path { segments, range, span } = ir else { unreachable!() };
     let node = element(xot, "path", *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, segments, |xot, parent, child| {
@@ -1681,10 +1681,10 @@ fn render_ir_path(
 fn render_ir_aliased(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Aliased { inner, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Aliased { inner, range, span } = ir else { unreachable!() };
     let node = element(xot, "aliased", *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, std::slice::from_ref(inner.as_ref()),
@@ -1697,13 +1697,13 @@ fn render_ir_aliased(
 fn render_ir_call(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Call { callee, arguments, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Call { callee, arguments, range, span } = ir else { unreachable!() };
     let node = element(xot, "call", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = Vec::with_capacity(1 + arguments.len());
+    let mut order: Vec<&SyntaxTree> = Vec::with_capacity(1 + arguments.len());
     order.push(callee.as_ref());
     for arg in arguments { order.push(arg); }
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
@@ -1716,10 +1716,10 @@ fn render_ir_call(
 fn render_ir_module(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Module { element_name, children, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Module { element_name, children, range, span } = ir else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
@@ -1732,10 +1732,10 @@ fn render_ir_module(
 fn render_ir_expression(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Expression { inner, marker, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Expression { inner, marker, range, span } = ir else { unreachable!() };
     let node = element(xot, "expression", *span);
     xot.append(parent, node)?;
     if let Some(m) = marker {
@@ -1752,10 +1752,10 @@ fn render_ir_expression(
 fn render_ir_tuple(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Tuple { children, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Tuple { children, range, span } = ir else { unreachable!() };
     let node = element(xot, "tuple", *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, children, |xot, parent, child| {
@@ -1768,10 +1768,10 @@ fn render_ir_tuple(
 fn render_ir_list(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::List { children, range, span } = ir else { unreachable!() };
+    let SyntaxTree::List { children, range, span } = ir else { unreachable!() };
     let node = element(xot, "list", *span);
     xot.append(parent, node)?;
     let m = element(xot, "literal", *span);
@@ -1786,10 +1786,10 @@ fn render_ir_list(
 fn render_ir_set(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Set { children, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Set { children, range, span } = ir else { unreachable!() };
     let node = element(xot, "set", *span);
     xot.append(parent, node)?;
     let m = element(xot, "literal", *span);
@@ -1804,10 +1804,10 @@ fn render_ir_set(
 fn render_ir_dictionary(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Dictionary { pairs, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Dictionary { pairs, range, span } = ir else { unreachable!() };
     let node = element(xot, "dict", *span);
     xot.append(parent, node)?;
     let m = element(xot, "literal", *span);
@@ -1822,10 +1822,10 @@ fn render_ir_dictionary(
 fn render_ir_pair(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Pair { key, value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Pair { key, value, range, span } = ir else { unreachable!() };
     let node = element(xot, "pair", *span);
     xot.append(parent, node)?;
     let kr = key.range();
@@ -1842,10 +1842,10 @@ fn render_ir_pair(
 fn render_ir_else(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Else { body, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Else { body, range, span } = ir else { unreachable!() };
     let node = element(xot, "else", *span);
     xot.append(parent, node)?;
     let br = body.range();
@@ -1859,10 +1859,10 @@ fn render_ir_else(
 fn render_ir_simple_statement(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::SimpleStatement { element_name, modifiers, extra_markers, children, range, span } = ir
+    let SyntaxTree::SimpleStatement { element_name, modifiers, extra_markers, children, range, span } = ir
         else { unreachable!() };
     let node = element(xot, element_name, *span);
     xot.append(parent, node)?;
@@ -1884,10 +1884,10 @@ fn render_ir_simple_statement(
 fn render_ir_keyword_argument(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::KeywordArgument { name, value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::KeywordArgument { name, value, range, span } = ir else { unreachable!() };
     let node = element(xot, "keyword", *span);
     xot.append(parent, node)?;
     let nr = name.range();
@@ -1908,10 +1908,10 @@ fn render_ir_keyword_argument(
 fn render_ir_list_splat(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::ListSplat { inner, range, span } = ir else { unreachable!() };
+    let SyntaxTree::ListSplat { inner, range, span } = ir else { unreachable!() };
     let node = element(xot, "spread", *span);
     xot.append(parent, node)?;
     let m = element(xot, "list", *span);
@@ -1927,10 +1927,10 @@ fn render_ir_list_splat(
 fn render_ir_dict_splat(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::DictSplat { inner, range, span } = ir else { unreachable!() };
+    let SyntaxTree::DictSplat { inner, range, span } = ir else { unreachable!() };
     let node = element(xot, "spread", *span);
     xot.append(parent, node)?;
     let m = element(xot, "dict", *span);
@@ -1946,14 +1946,14 @@ fn render_ir_dict_splat(
 fn render_ir_object_creation(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::ObjectCreation { type_target, arguments, initializer, range, span } = ir
+    let SyntaxTree::ObjectCreation { type_target, arguments, initializer, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "new", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     if let Some(t) = type_target { order.push(t.as_ref()); }
     for a in arguments { order.push(a); }
     if let Some(i) = initializer { order.push(i.as_ref()); }
@@ -1968,10 +1968,10 @@ fn render_ir_object_creation(
 fn render_ir_decorator(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Decorator { inner, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Decorator { inner, range, span } = ir else { unreachable!() };
     let node = element(xot, "decorator", *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, std::slice::from_ref(inner.as_ref()),
@@ -1984,10 +1984,10 @@ fn render_ir_decorator(
 fn render_ir_generic(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Generic { items, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Generic { items, range, span } = ir else { unreachable!() };
     let node = element(xot, "generic", *span);
     xot.append(parent, node)?;
     render_with_gaps(xot, node, source, *range, items, |xot, parent, child| {
@@ -2000,13 +2000,13 @@ fn render_ir_generic(
 fn render_ir_type_parameter(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::TypeParameter { name, constraint, range, span } = ir else { unreachable!() };
+    let SyntaxTree::TypeParameter { name, constraint, range, span } = ir else { unreachable!() };
     let node = element(xot, "type", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = vec![name.as_ref()];
+    let mut order: Vec<&SyntaxTree> = vec![name.as_ref()];
     if let Some(c) = constraint { order.push(c.as_ref()); }
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
         render_to_xot(xot, parent, child, source).map(|_| ())
@@ -2018,10 +2018,10 @@ fn render_ir_type_parameter(
 fn render_ir_enum(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Enum { modifiers, decorators, name, underlying_type, members, range, span } = ir
+    let SyntaxTree::Enum { modifiers, decorators, name, underlying_type, members, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "enum", *span);
     xot.append(parent, node)?;
@@ -2029,7 +2029,7 @@ fn render_ir_enum(
         let m = element(xot, marker, *span);
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     order.push(name.as_ref());
     if let Some(t) = underlying_type { order.push(t.as_ref()); }
@@ -2045,13 +2045,13 @@ fn render_ir_enum(
 fn render_ir_enum_member(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::EnumMember { decorators, name, value, range, span } = ir else { unreachable!() };
+    let SyntaxTree::EnumMember { decorators, name, value, range, span } = ir else { unreachable!() };
     let node = element(xot, "constant", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     order.push(name.as_ref());
     if let Some(v) = value { order.push(v.as_ref()); }
@@ -2066,10 +2066,10 @@ fn render_ir_enum_member(
 fn render_ir_property(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Property { modifiers, decorators, type_ann, name, accessors, value, range, span } = ir
+    let SyntaxTree::Property { modifiers, decorators, type_ann, name, accessors, value, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "property", *span);
     xot.append(parent, node)?;
@@ -2084,7 +2084,7 @@ fn render_ir_property(
     // `<name>` sibling and the initializer expression was rendered
     // unwrapped — both are Principle #5 / #15 violations.
     #[derive(Clone, Copy)]
-    enum Slot<'a> { Decorator(&'a Ir), Type(&'a Ir), Name(&'a Ir), Accessor(&'a Ir), Value(&'a Ir) }
+    enum Slot<'a> { Decorator(&'a SyntaxTree), Type(&'a SyntaxTree), Name(&'a SyntaxTree), Accessor(&'a SyntaxTree), Value(&'a SyntaxTree) }
     let mut order: Vec<Slot> = Vec::new();
     for d in decorators { order.push(Slot::Decorator(d)); }
     if let Some(t) = type_ann { order.push(Slot::Type(t.as_ref())); }
@@ -2098,7 +2098,7 @@ fn render_ir_property(
 
     let mut cursor = range.start;
     for slot in &order {
-        let inner: &Ir = match slot {
+        let inner: &SyntaxTree = match slot {
             Slot::Decorator(i) | Slot::Type(i) | Slot::Name(i)
             | Slot::Accessor(i) | Slot::Value(i) => i,
         };
@@ -2110,8 +2110,8 @@ fn render_ir_property(
             }
             Slot::Type(_) => {
                 let already_typed = matches!(inner,
-                    Ir::GenericType { .. }
-                        | Ir::SimpleStatement { element_name: "type", .. }
+                    SyntaxTree::GenericType { .. }
+                        | SyntaxTree::SimpleStatement { element_name: "type", .. }
                 );
                 if already_typed {
                     render_to_xot(xot, node, inner, source)?;
@@ -2137,10 +2137,10 @@ fn render_ir_property(
 fn render_ir_accessor(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Accessor { modifiers, kind, body, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Accessor { modifiers, kind, body, range, span } = ir else { unreachable!() };
     let node = element(xot, kind, *span);
     xot.append(parent, node)?;
     for marker in modifiers.marker_names() {
@@ -2162,10 +2162,10 @@ fn render_ir_accessor(
 fn render_ir_constructor(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Constructor { modifiers, decorators, name, parameters, body, range, span } = ir
+    let SyntaxTree::Constructor { modifiers, decorators, name, parameters, body, range, span } = ir
         else { unreachable!() };
     let node = element(xot, "constructor", *span);
     xot.append(parent, node)?;
@@ -2173,7 +2173,7 @@ fn render_ir_constructor(
         let m = element(xot, marker, *span);
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     order.push(name.as_ref());
     for p in parameters { order.push(p); }
@@ -2189,14 +2189,14 @@ fn render_ir_constructor(
 fn render_ir_using(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Using { is_static, alias, path, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Using { is_static, alias, path, range, span } = ir else { unreachable!() };
     let _ = is_static;
     let node = element(xot, "import", *span);
     xot.append(parent, node)?;
-    let mut order: Vec<&Ir> = Vec::new();
+    let mut order: Vec<&SyntaxTree> = Vec::new();
     order.push(path.as_ref());
     if let Some(a) = alias { order.push(a.as_ref()); }
     order.sort_by_key(|c| c.range().start);
@@ -2210,17 +2210,17 @@ fn render_ir_using(
 fn render_ir_namespace(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Namespace { name, children, file_scoped, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Namespace { name, children, file_scoped, range, span } = ir else { unreachable!() };
     let node = element(xot, "namespace", *span);
     xot.append(parent, node)?;
     if *file_scoped {
         let m = element(xot, "file", *span);
         xot.append(node, m)?;
     }
-    let mut order: Vec<&Ir> = vec![name.as_ref()];
+    let mut order: Vec<&SyntaxTree> = vec![name.as_ref()];
     for c in children { order.push(c); }
     order.sort_by_key(|c| c.range().start);
     render_with_gaps(xot, node, source, *range, &order, |xot, parent, &child| {
@@ -2233,10 +2233,10 @@ fn render_ir_namespace(
 fn render_ir_unknown(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    let Ir::Unknown { kind, range, span } = ir else { unreachable!() };
+    let SyntaxTree::Unknown { kind, range, span } = ir else { unreachable!() };
     let node = element(xot, "unknown", *span);
     let kind_attr = xot.add_name("kind");
     xot.attributes_mut(node).insert(kind_attr, kind.clone());
@@ -2351,13 +2351,13 @@ fn render_segments_chain(
                 emit_gap(xot, node, source, seg_range.start, name_range.start)?;
                 leaf(xot, node, "name", source, name_range, ns)?;
                 emit_gap(xot, node, source, name_range.end, seg_range.end.min(name_range.end))?;
-                let inner_refs: Vec<&Ir> = arguments.iter().collect();
+                let inner_refs: Vec<&SyntaxTree> = arguments.iter().collect();
                 let arg_range = ByteRange::new(name_range.end, seg_range.end);
                 render_with_gaps(xot, node, source, arg_range, &inner_refs,
                     |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
                 )?;
             } else {
-                let inner_refs: Vec<&Ir> = arguments.iter().collect();
+                let inner_refs: Vec<&SyntaxTree> = arguments.iter().collect();
                 render_with_gaps(xot, node, source, seg_range, &inner_refs,
                     |xot, parent, &child| render_to_xot(xot, parent, child, source).map(|_| ()),
                 )?;
@@ -2414,13 +2414,13 @@ where
     Ok(())
 }
 
-/// Trait so `render_with_gaps` can take either `&Ir` or `&&Ir`.
+/// Trait so `render_with_gaps` can take either `&SyntaxTree` or `&&SyntaxTree`.
 trait HasRange {
     fn range(&self) -> ByteRange;
 }
 
-impl HasRange for Ir {
-    fn range(&self) -> ByteRange { Ir::range(self) }
+impl HasRange for SyntaxTree {
+    fn range(&self) -> ByteRange { SyntaxTree::range(self) }
 }
 
 impl<T: HasRange> HasRange for &T {

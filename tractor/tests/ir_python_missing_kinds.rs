@@ -1,5 +1,5 @@
 //! Diagnostic: list Python CST kinds that the IR pipeline lowers to
-//! `Ir::Unknown`. Run with `--ignored` and `--nocapture` to see the
+//! `SyntaxTree::Unknown`. Run with `--ignored` and `--nocapture` to see the
 //! list — the blueprint provides a representative corpus.
 
 #![cfg(feature = "native")]

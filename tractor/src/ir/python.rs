@@ -1,8 +1,8 @@
 //! Python tree-sitter CST → IR lowering.
 //!
 //! Pure function. No global state, no in-place mutation. Each
-//! tree-sitter kind maps to exactly one IR variant (or [`Ir::Unknown`]
-//! if not yet covered, or [`Ir::Inline`] if deliberately
+//! tree-sitter kind maps to exactly one IR variant (or [`SyntaxTree::Unknown`]
+//! if not yet covered, or [`SyntaxTree::Inline`] if deliberately
 //! shape-neutral).
 //!
 //! ## Initial coverage
@@ -18,24 +18,24 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{Access, AccessSegment, ByteRange, Ir, Modifiers, ParamKind};
+use super::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind};
 
-/// Lower a Python tree-sitter root node to [`Ir`].
+/// Lower a Python tree-sitter root node to [`SyntaxTree`].
 ///
 /// The root is expected to be `module`. Anything else is returned as
-/// [`Ir::Unknown`] so the parity test can spot the divergence
+/// [`SyntaxTree::Unknown`] so the parity test can spot the divergence
 /// immediately.
-pub fn lower_python_root(root: TsNode<'_>, source: &str) -> Ir {
+pub fn lower_python_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
-        "module" => Ir::Module {
+        "module" => SyntaxTree::Module {
             element_name: "module",
             children: merge_python_line_comments(lower_children(root, source), source),
             range,
             span,
         },
-        other => Ir::Unknown {
+        other => SyntaxTree::Unknown {
             kind: other.to_string(),
             range,
             span,
@@ -43,7 +43,7 @@ pub fn lower_python_root(root: TsNode<'_>, source: &str) -> Ir {
     }
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -74,7 +74,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     if bypass {
                         lower_node(*single, source)
                     } else {
-                        Ir::Expression {
+                        SyntaxTree::Expression {
                             inner: Box::new(lower_node(*single, source)),
                             marker: None,
                             range,
@@ -82,7 +82,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         }
                     }
                 }
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "expression_statement(multi)".to_string(),
                     range,
                     span,
@@ -126,11 +126,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         span,
                     };
                     match object_ir {
-                        Ir::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            Ir::Access { receiver, segments, range, span }
+                            SyntaxTree::Access { receiver, segments, range, span }
                         }
-                        other => Ir::Access {
+                        other => SyntaxTree::Access {
                             receiver: Box::new(other),
                             segments: vec![segment],
                             range,
@@ -138,7 +138,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         },
                     }
                 }
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "attribute(missing field)".to_string(),
                     range,
                     span,
@@ -161,7 +161,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 .named_children(&mut cursor)
                 .filter(|c| Some(c.id()) != value_node.map(|v| v.id()))
                 .collect();
-            let indices: Vec<Ir> = indices_ts.iter().map(|c| lower_node(*c, source)).collect();
+            let indices: Vec<SyntaxTree> = indices_ts.iter().map(|c| lower_node(*c, source)).collect();
             match value_node {
                 Some(object) => {
                     let object_ir = lower_node(object, source);
@@ -175,11 +175,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         span,
                     };
                     match object_ir {
-                        Ir::Access { receiver, mut segments, range: _, span: _ } => {
+                        SyntaxTree::Access { receiver, mut segments, range: _, span: _ } => {
                             segments.push(segment);
-                            Ir::Access { receiver, segments, range, span }
+                            SyntaxTree::Access { receiver, segments, range, span }
                         }
-                        other => Ir::Access {
+                        other => SyntaxTree::Access {
                             receiver: Box::new(other),
                             segments: vec![segment],
                             range,
@@ -187,7 +187,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         },
                     }
                 }
-                None => Ir::Unknown {
+                None => SyntaxTree::Unknown {
                     kind: "subscript(missing value)".to_string(),
                     range,
                     span,
@@ -205,13 +205,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let arguments_node = node.child_by_field_name("arguments");
             let callee = match function_node {
                 Some(f) => lower_node(f, source),
-                None => return Ir::Unknown {
+                None => return SyntaxTree::Unknown {
                     kind: "call(missing function)".to_string(),
                     range,
                     span,
                 },
             };
-            let arguments: Vec<Ir> = match arguments_node {
+            let arguments: Vec<SyntaxTree> = match arguments_node {
                 Some(a) => {
                     let mut cursor = a.walk();
                     a.named_children(&mut cursor)
@@ -221,9 +221,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 None => Vec::new(),
             };
             // Chain folding: when the callee is itself an
-            // Ir::Access chain (e.g. `obj.foo()`, `a.b.c()`), absorb
+            // SyntaxTree::Access chain (e.g. `obj.foo()`, `a.b.c()`), absorb
             // the call as the next segment instead of producing a
-            // separate Ir::Call wrapping the chain. The last
+            // separate SyntaxTree::Call wrapping the chain. The last
             // AccessSegment::Member's name becomes the call's
             // `<name>` so the rendered shape is
             // `<object><name>obj</name><call><name>foo</name>...</call>`
@@ -231,7 +231,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // Mirrors C#'s chain-inversion behaviour and matches the
             // imperative pipeline's chain shape.
             let callee_range = callee.range();
-            if let Ir::Access { receiver, mut segments, .. } = callee {
+            if let SyntaxTree::Access { receiver, mut segments, .. } = callee {
                 // Absorb the trailing Member's name into a new Call
                 // segment, OR append a bare Call if no preceding member.
                 let last_member = if let Some(AccessSegment::Member { property_range, property_span, .. }) = segments.last() {
@@ -266,9 +266,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     }
                 };
                 segments.push(call_segment);
-                return Ir::Access { receiver, segments, range, span };
+                return SyntaxTree::Access { receiver, segments, range, span };
             }
-            Ir::Call {
+            SyntaxTree::Call {
                 callee: Box::new(callee),
                 arguments,
                 range,
@@ -287,7 +287,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (left, right, op_marker(&op_text)) {
-                (Some(l), Some(r), Some(marker)) => Ir::Binary {
+                (Some(l), Some(r), Some(marker)) => SyntaxTree::Binary {
                     element_name: "binary",
                     op_text,
                     op_marker: marker,
@@ -297,7 +297,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     range,
                     span,
                 },
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "binary_operator(missing)".to_string(),
                     range,
                     span,
@@ -337,11 +337,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // branch.
         "if_clause" => {
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node
+            let children: Vec<SyntaxTree> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Inline { children, list_name: None, range, span }
+            SyntaxTree::Inline { children, list_name: None, range, span }
         }
         // `with` / `async with`. tree-sitter exposes the `async`
         // keyword as an unnamed child of with_statement; detect by
@@ -359,14 +359,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `with EXPR [as NAME]` as `with_item`. The imperative
         // pipeline flattens both wrappers (Rule::Flatten on
         // WithClause / WithItem) so the items become direct children
-        // of `<with>`. Mirror via Ir::Inline.
+        // of `<with>`. Mirror via SyntaxTree::Inline.
         "with_clause" | "with_item" => {
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node
+            let children: Vec<SyntaxTree> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Inline { children, list_name: None, range, span }
+            SyntaxTree::Inline { children, list_name: None, range, span }
         }
         "match_statement"           => simple_statement(node, "match",     source),
         // case_clause: `case PATTERN [if GUARD]: BODY`. Walk
@@ -376,15 +376,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // and the bare `if_clause` would otherwise lower to `<if>`.
         "case_clause" => {
             let mut cursor = node.walk();
-            let mut children: Vec<Ir> = Vec::new();
+            let mut children: Vec<SyntaxTree> = Vec::new();
             for c in node.named_children(&mut cursor) {
                 if c.kind() == "if_clause" {
                     // Lower the inner expression(s) into a `<guard>`.
                     let mut inner_cursor = c.walk();
-                    let inner: Vec<Ir> = c.named_children(&mut inner_cursor)
+                    let inner: Vec<SyntaxTree> = c.named_children(&mut inner_cursor)
                         .map(|n| lower_node(n, source))
                         .collect();
-                    children.push(Ir::SimpleStatement {
+                    children.push(SyntaxTree::SimpleStatement {
                         element_name: "guard",
                         modifiers: Modifiers::default(),
                         extra_markers: &[],
@@ -396,7 +396,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     children.push(lower_node(c, source));
                 }
             }
-            Ir::SimpleStatement {
+            SyntaxTree::SimpleStatement {
                 element_name: "arm",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
@@ -410,7 +410,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // don't double-wrap as `<pattern><pattern[dict]>`.
         "case_pattern" => {
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node.named_children(&mut cursor)
+            let children: Vec<SyntaxTree> = node.named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
             // If there's a single named child that's itself a typed
@@ -418,7 +418,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             if children.len() == 1 {
                 children.into_iter().next().unwrap()
             } else {
-                Ir::Inline { children, list_name: None, range, span }
+                SyntaxTree::Inline { children, list_name: None, range, span }
             }
         }
         "class_pattern"             => simple_statement(node, "pattern",   source),
@@ -432,14 +432,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // post-pass can list-tag them with `list="values"`.
         "dict_pattern" => {
             let mut cursor = node.walk();
-            let mut children: Vec<Ir> = Vec::new();
+            let mut children: Vec<SyntaxTree> = Vec::new();
             // Walk children and detect the field name from the parent.
             for (i, c) in node.children(&mut cursor).enumerate() {
                 if !c.is_named() { continue; }
                 let field_name = node.field_name_for_child(i as u32);
                 if field_name == Some("value") {
                     let inner = lower_node(c, source);
-                    children.push(Ir::SimpleStatement {
+                    children.push(SyntaxTree::SimpleStatement {
                         element_name: "value",
                         modifiers: Modifiers::default(),
                         extra_markers: &[],
@@ -451,7 +451,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     children.push(lower_node(c, source));
                 }
             }
-            Ir::SimpleStatement {
+            SyntaxTree::SimpleStatement {
                 element_name: "pattern",
                 modifiers: Modifiers::default(),
                 extra_markers: &["dict"],
@@ -471,7 +471,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "interpolation"             => simple_statement(node, "interpolation", source),
 
         // Simple keyword-prefixed statements that the old pipeline
-        // just renames. Each is lowered to Ir::SimpleStatement with
+        // just renames. Each is lowered to SyntaxTree::SimpleStatement with
         // the right element name and the named CST children.
         "assert_statement"  => simple_statement(node, "assert",   source),
         "raise_statement"   => lower_python_raise(node, source),
@@ -488,18 +488,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let params_node = node.child_by_field_name("parameters");
             let body_node = node.child_by_field_name("body");
             // lambda_parameters wraps parameter children; lower each.
-            let parameters: Vec<Ir> = match params_node {
+            let parameters: Vec<SyntaxTree> = match params_node {
                 Some(p) => lower_parameters(p, source),
                 None => Vec::new(),
             };
             let body = match body_node {
                 Some(b) => Box::new(lower_node(b, source)),
-                None => Box::new(Ir::Unknown {
+                None => Box::new(SyntaxTree::Unknown {
                     kind: "lambda(missing body)".to_string(),
                     range, span,
                 }),
             };
-            Ir::Lambda {
+            SyntaxTree::Lambda {
                 modifiers: Modifiers::default(),
                 parameters,
                 body,
@@ -514,7 +514,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // The `not` keyword is unnamed; locate its range.
             let kw_range = locate_token(source, range.start as usize, range.end as usize, "not");
             match arg {
-                Some(a) => Ir::Unary {
+                Some(a) => SyntaxTree::Unary {
                     op_text: "not".to_string(),
                     op_marker: "not",
                     op_range: kw_range,
@@ -522,7 +522,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     extra_markers: &[],
                     range, span,
                 },
-                None => Ir::Unknown {
+                None => SyntaxTree::Unknown {
                     kind: "not_operator(missing arg)".to_string(),
                     range, span,
                 },
@@ -535,12 +535,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::Inline {
+                Some(i) => SyntaxTree::Inline {
                     children: vec![lower_node(i, source)],
                     list_name: None,
                     range, span,
                 },
-                None => Ir::Unknown {
+                None => SyntaxTree::Unknown {
                     kind: "parenthesized_expression(empty)".to_string(),
                     range, span,
                 },
@@ -562,7 +562,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 _     => "and",  // fallback
             };
             match (left, right) {
-                (Some(l), Some(r)) => Ir::Binary {
+                (Some(l), Some(r)) => SyntaxTree::Binary {
                     element_name: "logical",
                     op_text,
                     op_marker: marker,
@@ -572,7 +572,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     range,
                     span,
                 },
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "boolean_operator(missing)".to_string(),
                     range, span,
                 },
@@ -590,7 +590,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             match (operand, op_marker(&op_text)) {
-                (Some(o), Some(marker)) => Ir::Unary {
+                (Some(o), Some(marker)) => SyntaxTree::Unary {
                     op_text,
                     op_marker: marker,
                     op_range,
@@ -599,7 +599,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     range,
                     span,
                 },
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "unary_operator(missing)".to_string(),
                     range,
                     span,
@@ -611,35 +611,35 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
         "tuple" => {
             let mut c = node.walk();
-            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
-            Ir::Tuple { children, range, span }
+            let children: Vec<SyntaxTree> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            SyntaxTree::Tuple { children, range, span }
         }
         "list" => {
             let mut c = node.walk();
-            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
-            Ir::List { children, range, span }
+            let children: Vec<SyntaxTree> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            SyntaxTree::List { children, range, span }
         }
         "set" => {
             let mut c = node.walk();
-            let children: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
-            Ir::Set { children, range, span }
+            let children: Vec<SyntaxTree> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            SyntaxTree::Set { children, range, span }
         }
         "dictionary" => {
             let mut c = node.walk();
-            let pairs: Vec<Ir> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
-            Ir::Dictionary { pairs, range, span }
+            let pairs: Vec<SyntaxTree> = node.named_children(&mut c).map(|n| lower_node(n, source)).collect();
+            SyntaxTree::Dictionary { pairs, range, span }
         }
         "pair" => {
             let key = node.child_by_field_name("key").map(|n| lower_node(n, source));
             let value = node.child_by_field_name("value").map(|n| lower_node(n, source));
             match (key, value) {
-                (Some(k), Some(v)) => Ir::Pair {
+                (Some(k), Some(v)) => SyntaxTree::Pair {
                     key: Box::new(k),
                     value: Box::new(v),
                     range,
                     span,
                 },
-                _ => Ir::Unknown { kind: "pair(missing)".to_string(), range, span },
+                _ => SyntaxTree::Unknown { kind: "pair(missing)".to_string(), range, span },
             }
         }
 
@@ -654,11 +654,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut children = node.named_children(&mut cur);
             let name = match children.next() {
                 Some(n) => Box::new(lower_node(n, source)),
-                None => return Ir::Unknown { kind: "generic_type(no name)".to_string(), range, span },
+                None => return SyntaxTree::Unknown { kind: "generic_type(no name)".to_string(), range, span },
             };
             // Remaining named children form the type-args list — but
             // they're often wrapped in a `type_parameter` container.
-            let mut params: Vec<Ir> = Vec::new();
+            let mut params: Vec<SyntaxTree> = Vec::new();
             for c in children {
                 if c.kind() == "type_parameter" {
                     let mut cc = c.walk();
@@ -669,7 +669,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     params.push(lower_type_arg(c, source));
                 }
             }
-            Ir::GenericType { name, params, range, span }
+            SyntaxTree::GenericType { name, params, range, span }
         }
 
         // ----- Comparisons -----------------------------------------------
@@ -694,7 +694,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 let op_text = source[between_start..between_end].trim().to_string();
                 let op_range = locate_token(source, between_start, between_end, &op_text);
                 let op_marker = comparison_op_marker(&op_text).unwrap_or("equal");
-                Ir::Comparison {
+                SyntaxTree::Comparison {
                     left: Box::new(left),
                     op_text,
                     op_marker,
@@ -704,7 +704,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     span,
                 }
             } else {
-                Ir::Unknown { kind: format!("comparison_operator({} operands)", named.len()), range, span }
+                SyntaxTree::Unknown { kind: format!("comparison_operator({} operands)", named.len()), range, span }
             }
         }
 
@@ -715,7 +715,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // multiple `alternative` fields each holding either an
             // elif_clause or else_clause. tree-sitter-python emits
             // them as flat siblings; we chain them into nested
-            // Ir::ElseIf / Ir::Else so the renderer can flatten back
+            // SyntaxTree::ElseIf / SyntaxTree::Else so the renderer can flatten back
             // into `<else_if>`/`<else>` sibling output.
             let cond = node.child_by_field_name("condition")
                 .map(|n| Box::new(lower_node(n, source)));
@@ -732,20 +732,20 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
             }
             // Build a nested chain right-to-left.
-            let mut else_branch: Option<Box<Ir>> = None;
+            let mut else_branch: Option<Box<SyntaxTree>> = None;
             for alt in alts.into_iter().rev() {
                 let lowered = lower_else_chain_with_tail(alt, else_branch.take(), source);
                 else_branch = Some(Box::new(lowered));
             }
             match (cond, body) {
-                (Some(c), Some(b)) => Ir::If {
+                (Some(c), Some(b)) => SyntaxTree::If {
                     condition: c,
                     body: b,
                     else_branch,
                     range,
                     span,
                 },
-                _ => Ir::Unknown { kind: "if_statement(missing field)".to_string(), range, span },
+                _ => SyntaxTree::Unknown { kind: "if_statement(missing field)".to_string(), range, span },
             }
         }
 
@@ -766,14 +766,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             };
             let body = match body {
                 Some(b) => Box::new(lower_block(b, source)),
-                None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
+                None => Box::new(SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
             };
             let else_body = alt.map(|a| {
                 // alternative is an else_clause; lower its inner body.
                 let inner = a.child_by_field_name("body").unwrap_or(a);
                 Box::new(lower_block(inner, source))
             });
-            Ir::For {
+            SyntaxTree::For {
                 is_async,
                 targets,
                 iterables,
@@ -792,11 +792,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let body_node = node.child_by_field_name("body");
             let try_body = body_node
                 .map(|b| Box::new(lower_block(b, source)))
-                .unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.start), span }));
+                .unwrap_or_else(|| Box::new(SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.start), span }));
             let mut cursor = node.walk();
-            let mut handlers: Vec<Ir> = Vec::new();
-            let mut else_body: Option<Box<Ir>> = None;
-            let mut finally_body: Option<Box<Ir>> = None;
+            let mut handlers: Vec<SyntaxTree> = Vec::new();
+            let mut else_body: Option<Box<SyntaxTree>> = None;
+            let mut finally_body: Option<Box<SyntaxTree>> = None;
             for c in node.named_children(&mut cursor) {
                 match c.kind() {
                     "except_clause" | "except_group_clause" => {
@@ -826,7 +826,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     _ => {}
                 }
             }
-            Ir::Try { try_body, handlers, else_body, finally_body, range, span }
+            SyntaxTree::Try { try_body, handlers, else_body, finally_body, range, span }
         }
 
         // PEP 695 type alias: `type Foo[T] = list[T]`. tree-sitter
@@ -846,14 +846,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             if kids.len() >= 2 {
                 let left = lower_node(unwrap_type(kids[0]), source);
                 let right = lower_node(unwrap_type(kids[kids.len() - 1]), source);
-                Ir::TypeAlias {
+                SyntaxTree::TypeAlias {
                     name: Box::new(left),
                     type_params: None,
                     value: Box::new(right),
                     range, span,
                 }
             } else {
-                Ir::Unknown {
+                SyntaxTree::Unknown {
                     kind: format!("type_alias_statement(arity={})", kids.len()),
                     range, span,
                 }
@@ -866,11 +866,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::ListSplat {
+                Some(i) => SyntaxTree::ListSplat {
                     inner: Box::new(lower_node(i, source)),
                     range, span,
                 },
-                None => Ir::Unknown {
+                None => SyntaxTree::Unknown {
                     kind: "list_splat(empty)".to_string(),
                     range, span,
                 },
@@ -882,11 +882,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::DictSplat {
+                Some(i) => SyntaxTree::DictSplat {
                     inner: Box::new(lower_node(i, source)),
                     range, span,
                 },
-                None => Ir::Unknown {
+                None => SyntaxTree::Unknown {
                     kind: "dictionary_splat(empty)".to_string(),
                     range, span,
                 },
@@ -898,12 +898,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let n = node.child_by_field_name("name");
             let v = node.child_by_field_name("value");
             match (n, v) {
-                (Some(nn), Some(vv)) => Ir::KeywordArgument {
-                    name: Box::new(Ir::Name { range: range_of(nn), span: span_of(nn) }),
+                (Some(nn), Some(vv)) => SyntaxTree::KeywordArgument {
+                    name: Box::new(SyntaxTree::Name { range: range_of(nn), span: span_of(nn) }),
                     value: Box::new(lower_node(vv, source)),
                     range, span,
                 },
-                _ => Ir::Unknown {
+                _ => SyntaxTree::Unknown {
                     kind: "keyword_argument(missing field)".to_string(),
                     range, span,
                 },
@@ -917,14 +917,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
             if kids.len() == 3 {
-                Ir::Ternary {
+                SyntaxTree::Ternary {
                     if_true: Box::new(lower_node(kids[0], source)),
                     condition: Box::new(lower_node(kids[1], source)),
                     if_false: Box::new(lower_node(kids[2], source)),
                     range, span,
                 }
             } else {
-                Ir::Unknown {
+                SyntaxTree::Unknown {
                     kind: format!("conditional_expression(arity={})", kids.len()),
                     range, span,
                 }
@@ -940,13 +940,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 Box::new(lower_block(inner, source))
             });
             match (cond, body) {
-                (Some(c), Some(b)) => Ir::While { condition: c, body: b, else_body, range, span },
-                _ => Ir::Unknown { kind: "while_statement(missing field)".to_string(), range, span },
+                (Some(c), Some(b)) => SyntaxTree::While { condition: c, body: b, else_body, range, span },
+                _ => SyntaxTree::Unknown { kind: "while_statement(missing field)".to_string(), range, span },
             }
         }
 
-        "break_statement" => Ir::Break { range, span },
-        "continue_statement" => Ir::Continue { range, span },
+        "break_statement" => SyntaxTree::Break { range, span },
+        "continue_statement" => SyntaxTree::Continue { range, span },
 
         // ----- Function / class declarations ----------------------------
 
@@ -971,7 +971,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // decorators into the inner def per the existing pipeline.
         "decorated_definition" => {
             let mut cursor = node.walk();
-            let mut decorators: Vec<Ir> = Vec::new();
+            let mut decorators: Vec<SyntaxTree> = Vec::new();
             let mut inner: Option<TsNode> = None;
             for c in node.named_children(&mut cursor) {
                 match c.kind() {
@@ -987,7 +987,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
                 Some(n) if n.kind() == "class_definition" => lower_class(n, source, decorators),
                 Some(n) => lower_node(n, source),
-                None => Ir::Unknown { kind: "decorated_definition(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "decorated_definition(empty)".to_string(), range, span },
             }
         }
 
@@ -995,7 +995,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "return_statement" => {
             let mut cursor = node.walk();
             let value = node.named_children(&mut cursor).next();
-            Ir::Return {
+            SyntaxTree::Return {
                 value: value.map(|v| Box::new(lower_node(v, source))),
                 range,
                 span,
@@ -1011,7 +1011,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // pass we'd need its own handling — to be added when a test surfaces it.
         // For now, treat as Unknown (won't fire because pass-only
         // bodies are caught in lower_block).
-        "pass_statement" => Ir::Unknown {
+        "pass_statement" => SyntaxTree::Unknown {
             kind: "pass_statement".to_string(),
             range,
             span,
@@ -1021,7 +1021,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // — the `merge_python_line_comments` post-pass on each block
         // classifies based on adjacency to the next/prev non-comment
         // sibling.
-        "comment" => Ir::Comment { trailing: false, leading: false, range, span },
+        "comment" => SyntaxTree::Comment { trailing: false, leading: false, range, span },
 
         // ----- Assignments ----------------------------------------------
 
@@ -1034,7 +1034,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // scanning the source between the children. Convention:
             // op_text = "=", op_range = position of `=` if present.
             let (op_text, op_range) = locate_assign_eq(node, source, left, type_ann, right);
-            Ir::Assign {
+            SyntaxTree::Assign {
                 targets: match left {
                     Some(n) => lower_assign_side(n, source),
                     None => vec![],
@@ -1060,7 +1060,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
             let op_markers = augmented_op_markers(&op_text);
-            Ir::Assign {
+            SyntaxTree::Assign {
                 targets: match left {
                     Some(n) => lower_assign_side(n, source),
                     None => vec![],
@@ -1083,7 +1083,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `import os` / `import sys as system` / `import a, b`
         "import_statement" => {
             let mut cursor = node.walk();
-            let mut children: Vec<Ir> = Vec::new();
+            let mut children: Vec<SyntaxTree> = Vec::new();
             let mut has_alias = false;
             for c in node.named_children(&mut cursor) {
                 match c.kind() {
@@ -1097,7 +1097,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     _ => children.push(lower_node(c, source)),
                 }
             }
-            Ir::Import { has_alias, children, range, span }
+            SyntaxTree::Import { has_alias, children, range, span }
         }
 
         // `from x import y` / `from . import x` / `from .x import y as z`
@@ -1125,7 +1125,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // wildcard markers. tree-sitter exposes them as the
             // `name` field (one or more) plus possibly a
             // `wildcard_import` child.
-            let mut imports: Vec<Ir> = Vec::new();
+            let mut imports: Vec<SyntaxTree> = Vec::new();
             let mut cursor2 = node.walk();
             for c in node.named_children(&mut cursor2) {
                 let same_as_module = module_name.map(|m| m.id()) == Some(c.id());
@@ -1134,9 +1134,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     "dotted_name" => {
                         // For `from x import y`, the imported name is a
                         // single-segment dotted_name. We unwrap to a
-                        // bare `Ir::Name`.
+                        // bare `SyntaxTree::Name`.
                         let name_node = lower_dotted_first_name(c, source);
-                        imports.push(Ir::FromImport {
+                        imports.push(SyntaxTree::FromImport {
                             has_alias: false,
                             name: Box::new(name_node),
                             alias: None,
@@ -1146,7 +1146,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     }
                     "aliased_import" => {
                         let (n, a) = lower_aliased_from(c, source);
-                        imports.push(Ir::FromImport {
+                        imports.push(SyntaxTree::FromImport {
                             has_alias: true,
                             name: Box::new(n),
                             alias: Some(Box::new(a)),
@@ -1157,18 +1157,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     "wildcard_import" => {
                         // `from x import *` — emit as a special
                         // marker-bearing import. For now, treat as
-                        // `Ir::FromImport` with a synthetic Name
+                        // `SyntaxTree::FromImport` with a synthetic Name
                         // covering `*`.
-                        imports.push(Ir::FromImport {
+                        imports.push(SyntaxTree::FromImport {
                             has_alias: false,
-                            name: Box::new(Ir::Name { range: range_of(c), span: span_of(c) }),
+                            name: Box::new(SyntaxTree::Name { range: range_of(c), span: span_of(c) }),
                             alias: None,
                             range: range_of(c),
                             span: span_of(c),
                         });
                     }
                     _ => {
-                        imports.push(Ir::Unknown {
+                        imports.push(SyntaxTree::Unknown {
                             kind: c.kind().to_string(),
                             range: range_of(c),
                             span: span_of(c),
@@ -1177,7 +1177,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
             }
 
-            Ir::From { relative, path, imports, range, span }
+            SyntaxTree::From { relative, path, imports, range, span }
         }
 
         // `dotted_name` outside of import context. Default lowering as
@@ -1186,7 +1186,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "dotted_name" => lower_dotted_as_path(node, source),
 
         // Atoms — leaf-level value carriers. Text is `source[range]`.
-        "identifier" => Ir::Name { range, span },
+        "identifier" => SyntaxTree::Name { range, span },
 
         // tree-sitter-python wraps type-position expressions in a
         // `type` node (parameter annotations, return types, generic
@@ -1199,7 +1199,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let inner = node.named_children(&mut cursor).next();
             match inner {
                 Some(i) => lower_node(i, source),
-                None => Ir::Unknown { kind: "type(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "type(empty)".to_string(), range, span },
             }
         }
 
@@ -1208,34 +1208,34 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `return a, b`, `for a, b in xs`, `a, b = pair`). The
         // imperative pipeline flattens both via Rule::Flatten so the
         // items become direct children of the enclosing
-        // `<return>`/`<for>`/`<assign>`. Mirror via Ir::Inline.
+        // `<return>`/`<for>`/`<assign>`. Mirror via SyntaxTree::Inline.
         "expression_list" | "pattern_list" => {
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node
+            let children: Vec<SyntaxTree> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Inline { children, list_name: None, range, span }
+            SyntaxTree::Inline { children, list_name: None, range, span }
         }
 
-        // `constrained_type` (`T: Bound`) — Ir::TypeParameter shape.
+        // `constrained_type` (`T: Bound`) — SyntaxTree::TypeParameter shape.
         "constrained_type" => {
             let mut cursor = node.walk();
             let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
             if kids.len() >= 2 {
-                Ir::TypeParameter {
+                SyntaxTree::TypeParameter {
                     name: Box::new(lower_node(kids[0], source)),
                     constraint: Some(Box::new(lower_node(kids[1], source))),
                     range, span,
                 }
             } else if kids.len() == 1 {
-                Ir::TypeParameter {
+                SyntaxTree::TypeParameter {
                     name: Box::new(lower_node(kids[0], source)),
                     constraint: None,
                     range, span,
                 }
             } else {
-                Ir::Unknown { kind: "constrained_type(empty)".to_string(), range, span }
+                SyntaxTree::Unknown { kind: "constrained_type(empty)".to_string(), range, span }
             }
         }
 
@@ -1245,11 +1245,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::ListSplat {
+                Some(i) => SyntaxTree::ListSplat {
                     inner: Box::new(lower_node(i, source)),
                     range, span,
                 },
-                None => Ir::Unknown { kind: "splat_type(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "splat_type(empty)".to_string(), range, span },
             }
         }
 
@@ -1259,11 +1259,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::ListSplat {
+                Some(i) => SyntaxTree::ListSplat {
                     inner: Box::new(lower_node(i, source)),
                     range, span,
                 },
-                None => Ir::Unknown { kind: "list_splat_pattern(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "list_splat_pattern(empty)".to_string(), range, span },
             }
         }
 
@@ -1280,38 +1280,38 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let inner = node.named_children(&mut cursor).next();
             match inner {
                 Some(i) => lower_node(i, source),
-                None => Ir::Unknown { kind: "as_pattern_target(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "as_pattern_target(empty)".to_string(), range, span },
             }
         }
 
         // `await x` in Python — tree-sitter exposes as `await` kind
-        // with the expression as a named child. Lower as Ir::Expression
+        // with the expression as a named child. Lower as SyntaxTree::Expression
         // with an `await` marker (matches the imperative pipeline's
         // `<expression[await]>` shape via Principle #15).
         "await" => {
             let mut cursor = node.walk();
             let inner = node.named_children(&mut cursor).next();
             match inner {
-                Some(i) => Ir::Expression {
+                Some(i) => SyntaxTree::Expression {
                     inner: Box::new(lower_node(i, source)),
                     marker: Some("await"),
                     range,
                     span,
                 },
-                None => Ir::Unknown { kind: "await(empty)".to_string(), range, span },
+                None => SyntaxTree::Unknown { kind: "await(empty)".to_string(), range, span },
             }
         }
 
         // tree-sitter sometimes exposes a bare `block` outside the
         // function/class body's normal slot (e.g. inside `try` /
-        // `with`). Lower as Ir::Body without block_wrap.
+        // `with`). Lower as SyntaxTree::Body without block_wrap.
         "block" => {
             let mut cursor = node.walk();
-            let children: Vec<Ir> = node
+            let children: Vec<SyntaxTree> = node
                 .named_children(&mut cursor)
                 .map(|c| lower_node(c, source))
                 .collect();
-            Ir::Body {
+            SyntaxTree::Body {
                 children,
                 pass_only: false,
                 block_wrap: false,
@@ -1319,8 +1319,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 span,
             }
         }
-        "integer"    => Ir::Int  { range, span },
-        "float"      => Ir::Float { range, span },
+        "integer"    => SyntaxTree::Int  { range, span },
+        "float"      => SyntaxTree::Float { range, span },
         // tree-sitter-python: `string` always has named children
         // (`string_start`, `string_content`, `string_end`, plus
         // optional `interpolation`/`escape_sequence`). Plain strings
@@ -1335,11 +1335,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             });
             if has_structured {
                 let mut c2 = node.walk();
-                let children: Vec<Ir> = node.named_children(&mut c2)
+                let children: Vec<SyntaxTree> = node.named_children(&mut c2)
                     .filter(|c| matches!(c.kind(), "interpolation" | "escape_sequence"))
                     .map(|c| lower_node(c, source))
                     .collect();
-                Ir::SimpleStatement {
+                SyntaxTree::SimpleStatement {
                     element_name: "string",
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
@@ -1348,14 +1348,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     span,
                 }
             } else {
-                Ir::String { range, span }
+                SyntaxTree::String { range, span }
             }
         }
-        "true"       => Ir::True { range, span },
-        "false"      => Ir::False { range, span },
-        "none"       => Ir::None { range, span },
+        "true"       => SyntaxTree::True { range, span },
+        "false"      => SyntaxTree::False { range, span },
+        "none"       => SyntaxTree::None { range, span },
 
-        other => Ir::Unknown {
+        other => SyntaxTree::Unknown {
             kind: other.to_string(),
             range,
             span,
@@ -1365,23 +1365,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
 
 /// Lower a type-argument expression in a generic type. Wraps in a
 /// `<type>` element by emitting the inner expression — the renderer
-/// for `Ir::GenericType` handles the actual `<type>` wrapping.
-fn lower_type_arg(node: TsNode<'_>, source: &str) -> Ir {
+/// for `SyntaxTree::GenericType` handles the actual `<type>` wrapping.
+fn lower_type_arg(node: TsNode<'_>, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
 /// Lower a keyword-prefixed simple statement (`assert`, `raise`,
-/// `delete`, `global`, `nonlocal`, `yield`) to `Ir::SimpleStatement`.
+/// `delete`, `global`, `nonlocal`, `yield`) to `SyntaxTree::SimpleStatement`.
 /// Children are the CST's named children, lowered recursively.
 /// Python statements don't carry modifiers; the field is empty.
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor)
+    let children: Vec<SyntaxTree> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
-    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
+    SyntaxTree::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers: &[], children, range, span }
 }
 
 /// Lower a Python `raise X` / `raise X from Y` so the raised
@@ -1390,11 +1390,11 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 /// trailing bare child for now — distinguishing it from the
 /// primary expression cleanly would need a `<from>` slot, which
 /// is a separate iter.
-fn lower_python_raise(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_python_raise(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     let mut first = true;
     for c in node.named_children(&mut cursor) {
         let inner = lower_node(c, source);
@@ -1403,7 +1403,7 @@ fn lower_python_raise(node: TsNode<'_>, source: &str) -> Ir {
             // shape `<return>` and `<yield>` use for their operands.
             let cr = inner.range();
             let cs = inner.span();
-            children.push(Ir::SimpleStatement {
+            children.push(SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
@@ -1416,7 +1416,7 @@ fn lower_python_raise(node: TsNode<'_>, source: &str) -> Ir {
             children.push(inner);
         }
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name: "raise",
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -1435,14 +1435,14 @@ fn lower_python_raise(node: TsNode<'_>, source: &str) -> Ir {
 /// The bare keyword form (`yield`, no operand) emits an empty
 /// `<yield>` with no expression child — the empty-element pass
 /// folds it into a marker on the parent statement.
-fn lower_python_yield(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_python_yield(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
-    let inner: Vec<Ir> = node.named_children(&mut cursor)
+    let inner: Vec<SyntaxTree> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
-    let children: Vec<Ir> = if inner.is_empty() {
+    let children: Vec<SyntaxTree> = if inner.is_empty() {
         Vec::new()
     } else {
         // Wrap the operand(s) in `<expression>` (mirrors `<return>`'s
@@ -1451,7 +1451,7 @@ fn lower_python_yield(node: TsNode<'_>, source: &str) -> Ir {
         let expr_start = inner.first().map(|i| i.range().start).unwrap_or(range.start);
         let expr_end = inner.last().map(|i| i.range().end).unwrap_or(range.end);
         let expr_range = ByteRange::new(expr_start, expr_end);
-        vec![Ir::SimpleStatement {
+        vec![SyntaxTree::SimpleStatement {
             element_name: "expression",
             modifiers: Modifiers::default(),
             extra_markers: &[],
@@ -1460,7 +1460,7 @@ fn lower_python_yield(node: TsNode<'_>, source: &str) -> Ir {
             span,
         }]
     };
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name: "yield",
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -1477,29 +1477,29 @@ fn simple_statement_marked(
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
-) -> Ir {
+) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor)
+    let children: Vec<SyntaxTree> = node.named_children(&mut cursor)
         .map(|c| lower_node(c, source))
         .collect();
-    Ir::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers, children, range, span }
+    SyntaxTree::SimpleStatement { element_name, modifiers: Modifiers::default(), extra_markers, children, range, span }
 }
 
-/// Lower a Python `except_clause` to `Ir::ExceptHandler` with
+/// Lower a Python `except_clause` to `SyntaxTree::ExceptHandler` with
 /// kind="except". Structure: `except [Type [as Name]]: body`.
 /// tree-sitter exposes positional children (no fields):
 ///   - optional type expression
 ///   - optional `as_pattern` for `as Name`
 ///   - the body block
-fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
-    let mut type_target: Option<Box<Ir>> = None;
-    let mut binding: Option<Box<Ir>> = None;
-    let mut body: Option<Box<Ir>> = None;
+    let mut type_target: Option<Box<SyntaxTree>> = None;
+    let mut binding: Option<Box<SyntaxTree>> = None;
+    let mut body: Option<Box<SyntaxTree>> = None;
     for c in node.named_children(&mut cursor) {
         match c.kind() {
             "block" if body.is_none() => {
@@ -1522,7 +1522,7 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
                         let n = last.named_children(&mut tc).next();
                         n.unwrap_or(last)
                     } else { last };
-                    binding = Some(Box::new(Ir::Name { range: range_of(inner), span: span_of(inner) }));
+                    binding = Some(Box::new(SyntaxTree::Name { range: range_of(inner), span: span_of(inner) }));
                 }
             }
             _ if type_target.is_none() && body.is_none() => {
@@ -1532,12 +1532,12 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
             _ => {}
         }
     }
-    Ir::ExceptHandler {
+    SyntaxTree::ExceptHandler {
         kind: "except",
         type_target,
         binding,
         filter: None,
-        body: body.unwrap_or_else(|| Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span })),
+        body: body.unwrap_or_else(|| Box::new(SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span })),
         range, span,
     }
 }
@@ -1547,9 +1547,9 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> Ir {
 /// `else_branch` slot.
 fn lower_else_chain_with_tail(
     node: TsNode<'_>,
-    tail: Option<Box<Ir>>,
+    tail: Option<Box<SyntaxTree>>,
     source: &str,
-) -> Ir {
+) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -1557,24 +1557,24 @@ fn lower_else_chain_with_tail(
             let cond = node.child_by_field_name("condition").map(|n| Box::new(lower_node(n, source)));
             let body = node.child_by_field_name("consequence").map(|n| Box::new(lower_block(n, source)));
             match (cond, body) {
-                (Some(c), Some(b)) => Ir::ElseIf {
+                (Some(c), Some(b)) => SyntaxTree::ElseIf {
                     condition: c,
                     body: b,
                     else_branch: tail,
                     range,
                     span,
                 },
-                _ => Ir::Unknown { kind: "elif_clause(missing)".to_string(), range, span },
+                _ => SyntaxTree::Unknown { kind: "elif_clause(missing)".to_string(), range, span },
             }
         }
         "else_clause" => {
             let body = node.child_by_field_name("body").map(|n| Box::new(lower_block(n, source)));
             match body {
-                Some(b) => Ir::Else { body: b, range, span },
-                None => Ir::Unknown { kind: "else_clause(missing body)".to_string(), range, span },
+                Some(b) => SyntaxTree::Else { body: b, range, span },
+                None => SyntaxTree::Unknown { kind: "else_clause(missing body)".to_string(), range, span },
             }
         }
-        _ => Ir::Unknown { kind: format!("else_chain({})", node.kind()), range, span },
+        _ => SyntaxTree::Unknown { kind: format!("else_chain({})", node.kind()), range, span },
     }
 }
 
@@ -1608,13 +1608,13 @@ fn comparison_op_marker(op: &str) -> Option<&'static str> {
     })
 }
 
-/// Lower a `function_definition` CST node into `Ir::Function`.
+/// Lower a `function_definition` CST node into `SyntaxTree::Function`.
 ///
 /// When called from a `decorated_definition` wrapper, the caller
 /// passes `outer_range` covering the whole decorated declaration so
 /// the decorators (whose source positions precede `def`) fall inside
 /// the function's range and gap rendering works.
-fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Vec<Ir>) -> Ir {
+fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Vec<SyntaxTree>) -> SyntaxTree {
     let span = span_of(node);
     let inner_range = range_of(node);
     // If decorators precede the inner def, the effective range starts
@@ -1636,8 +1636,8 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
         });
 
     let name = match name_node {
-        Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
-        None => Box::new(Ir::Unknown {
+        Some(n) => Box::new(SyntaxTree::Name { range: range_of(n), span: span_of(n) }),
+        None => Box::new(SyntaxTree::Unknown {
             kind: "function(missing name)".to_string(),
             range,
             span,
@@ -1648,15 +1648,15 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
 
     let parameters = params_node.map(|p| lower_parameters(p, source)).unwrap_or_default();
 
-    let returns = return_type_node.map(|rt| Box::new(Ir::Returns {
+    let returns = return_type_node.map(|rt| Box::new(SyntaxTree::Returns {
         type_ann: Box::new(lower_type_slot(rt, source)),
         range: range_of(rt),
         span: span_of(rt),
     }));
 
-    let body: Option<Box<Ir>> = body_node.map(|b| Box::new(lower_block(b, source)));
+    let body: Option<Box<SyntaxTree>> = body_node.map(|b| Box::new(lower_block(b, source)));
 
-    Ir::Function {
+    SyntaxTree::Function {
         element_name: "function",
         modifiers: Modifiers { async_: is_async, ..Modifiers::default() },
         decorators,
@@ -1670,9 +1670,9 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
     }
 }
 
-/// Lower a `class_definition` CST node into `Ir::Class`. As with
+/// Lower a `class_definition` CST node into `SyntaxTree::Class`. As with
 /// `lower_function`, decorators expand the effective range backward.
-fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
+fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<SyntaxTree>) -> SyntaxTree {
     let span = span_of(node);
     let inner_range = range_of(node);
     let range = if let Some(first_dec) = decorators.first() {
@@ -1691,8 +1691,8 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
         });
 
     let name = match name_node {
-        Some(n) => Box::new(Ir::Name { range: range_of(n), span: span_of(n) }),
-        None => Box::new(Ir::Unknown {
+        Some(n) => Box::new(SyntaxTree::Name { range: range_of(n), span: span_of(n) }),
+        None => Box::new(SyntaxTree::Unknown {
             kind: "class(missing name)".to_string(),
             range,
             span,
@@ -1708,17 +1708,17 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
 
     let mut body = match body_node {
         Some(b) => Box::new(lower_block(b, source)),
-        None => Box::new(Ir::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
+        None => Box::new(SyntaxTree::Body { children: Vec::new(), pass_only: false, block_wrap: false, range: ByteRange::empty_at(range.end), span }),
     };
     // Inject Python name-convention visibility (`__x__` public,
     // `__x` private, `_x` protected, `x` public) onto direct
     // function children. Replaces `inject_python_visibility_markers`
-    // post-walk; encoded at lowering time so the Ir::Function carries
+    // post-walk; encoded at lowering time so the SyntaxTree::Function carries
     // the access modifier and the renderer emits the marker via
     // `Modifiers::marker_names`.
     set_python_class_member_visibility(&mut body, source);
 
-    Ir::Class {
+    SyntaxTree::Class {
         kind: "class",
         // Python: no access modifiers, no static/abstract/etc on class.
         modifiers: Modifiers::default(),
@@ -1726,27 +1726,27 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<Ir>) -> Ir {
     }
 }
 
-/// Walk a class body's direct children, setting `Ir::Function.modifiers.access`
+/// Walk a class body's direct children, setting `SyntaxTree::Function.modifiers.access`
 /// based on Python name conventions. Only applies to direct
 /// children (Principle #9 — visibility scope is the immediate class
 /// body, not nested functions).
-fn set_python_class_member_visibility(body: &mut Ir, source: &str) {
+fn set_python_class_member_visibility(body: &mut SyntaxTree, source: &str) {
     let children = match body {
-        Ir::Body { children, .. } => children,
+        SyntaxTree::Body { children, .. } => children,
         _ => return,
     };
     for child in children {
-        // Decorated functions wrap Ir::Function in Ir::Decorated; reach into it.
-        let target: &mut Ir = match child {
-            Ir::Function { .. } => child,
+        // Decorated functions wrap SyntaxTree::Function in SyntaxTree::Decorated; reach into it.
+        let target: &mut SyntaxTree = match child {
+            SyntaxTree::Function { .. } => child,
             _ => continue,
         };
-        let Ir::Function { modifiers, name, .. } = target else { continue };
+        let SyntaxTree::Function { modifiers, name, .. } = target else { continue };
         if modifiers.access.is_some() {
             continue;
         }
         let name_text = match name.as_ref() {
-            Ir::Name { range, .. } => range.slice(source),
+            SyntaxTree::Name { range, .. } => range.slice(source),
             _ => continue,
         };
         let access = if name_text.starts_with("__") && name_text.ends_with("__") && name_text.len() > 4 {
@@ -1763,21 +1763,21 @@ fn set_python_class_member_visibility(body: &mut Ir, source: &str) {
 }
 
 /// Lower a `parameters` CST node — a parenthesized list of parameter
-/// kinds. Returns a flat Vec of `Ir::Parameter` /
-/// `Ir::PositionalSeparator` / `Ir::KeywordSeparator` in source
+/// kinds. Returns a flat Vec of `SyntaxTree::Parameter` /
+/// `SyntaxTree::PositionalSeparator` / `SyntaxTree::KeywordSeparator` in source
 /// order.
-fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
     let mut cursor = node.walk();
-    let mut out: Vec<Ir> = Vec::new();
+    let mut out: Vec<SyntaxTree> = Vec::new();
     for c in node.named_children(&mut cursor) {
         let span = span_of(c);
         let range = range_of(c);
         match c.kind() {
             "identifier" => {
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
-                    name: Box::new(Ir::Name { range, span }),
+                    name: Box::new(SyntaxTree::Name { range, span }),
                     type_ann: None,
                     default: None,
                     range,
@@ -1787,12 +1787,12 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
             "default_parameter" => {
                 let n = c.child_by_field_name("name");
                 let v = c.child_by_field_name("value");
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match n {
-                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                        None => Ir::Unknown { kind: "default_parameter(no name)".to_string(), range, span },
+                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        None => SyntaxTree::Unknown { kind: "default_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: None,
                     default: v.map(|n| Box::new(lower_node(n, source))),
@@ -1807,12 +1807,12 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                     if ch.kind() == "identifier" { name_n = Some(ch); break; }
                 }
                 let type_n = c.child_by_field_name("type");
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match name_n {
-                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                        None => Ir::Unknown { kind: "typed_parameter(no name)".to_string(), range, span },
+                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        None => SyntaxTree::Unknown { kind: "typed_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: type_n.map(|t| Box::new(lower_type_slot(t, source))),
                     default: None,
@@ -1824,12 +1824,12 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 let n = c.child_by_field_name("name");
                 let t = c.child_by_field_name("type");
                 let v = c.child_by_field_name("value");
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match n {
-                        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                        None => Ir::Unknown { kind: "typed_default_parameter(no name)".to_string(), range, span },
+                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        None => SyntaxTree::Unknown { kind: "typed_default_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: t.map(|t| Box::new(lower_type_slot(t, source))),
                     default: v.map(|n| Box::new(lower_node(n, source))),
@@ -1842,10 +1842,10 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 let mut cur = c.walk();
                 let inner = c.named_children(&mut cur).next();
                 let name = match inner {
-                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                    None => Ir::Unknown { kind: "list_splat(no name)".to_string(), range, span },
+                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    None => SyntaxTree::Unknown { kind: "list_splat(no name)".to_string(), range, span },
                 };
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Args, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(name),
@@ -1860,10 +1860,10 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 let mut cur = c.walk();
                 let inner = c.named_children(&mut cur).next();
                 let name = match inner {
-                    Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-                    None => Ir::Unknown { kind: "dict_splat(no name)".to_string(), range, span },
+                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    None => SyntaxTree::Unknown { kind: "dict_splat(no name)".to_string(), range, span },
                 };
-                out.push(Ir::Parameter {
+                out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Kwargs, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(name),
@@ -1874,13 +1874,13 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
                 });
             }
             "positional_separator" => {
-                out.push(Ir::PositionalSeparator { range, span });
+                out.push(SyntaxTree::PositionalSeparator { range, span });
             }
             "keyword_separator" => {
-                out.push(Ir::KeywordSeparator { range, span });
+                out.push(SyntaxTree::KeywordSeparator { range, span });
             }
             other => {
-                out.push(Ir::Unknown {
+                out.push(SyntaxTree::Unknown {
                     kind: format!("parameter({other})"),
                     range,
                     span,
@@ -1891,7 +1891,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
     out
 }
 
-/// Lower the type-parameter list `[T, U: bound, *Ts]` into `Ir::Generic`.
+/// Lower the type-parameter list `[T, U: bound, *Ts]` into `SyntaxTree::Generic`.
 ///
 /// The CST passed in is whatever the function/class field
 /// `type_parameters` returns. tree-sitter Python often wraps the list
@@ -1900,15 +1900,15 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<Ir> {
 /// nested cases by walking ALL named descendants until we find
 /// identifiers, splats, or constrained types — each becomes one
 /// IR::TypeParameter.
-fn lower_type_parameters(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_type_parameters(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut items: Vec<Ir> = Vec::new();
+    let mut items: Vec<SyntaxTree> = Vec::new();
     collect_type_param_items(node, source, &mut items);
-    Ir::Generic { items, range, span }
+    SyntaxTree::Generic { items, range, span }
 }
 
-fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
+fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<SyntaxTree>) {
     let mut cursor = node.walk();
     for c in node.named_children(&mut cursor) {
         let cspan = span_of(c);
@@ -1921,15 +1921,15 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
                 let inner = c.named_children(&mut cc).next();
                 let name = match inner {
                     Some(n) if n.kind() == "identifier" =>
-                        Ir::Name { range: range_of(n), span: span_of(n) },
+                        SyntaxTree::Name { range: range_of(n), span: span_of(n) },
                     Some(n) => lower_node(n, source),
-                    None => Ir::Unknown {
+                    None => SyntaxTree::Unknown {
                         kind: "type_param(empty type)".to_string(),
                         range: crange,
                         span: cspan,
                     },
                 };
-                out.push(Ir::TypeParameter {
+                out.push(SyntaxTree::TypeParameter {
                     name: Box::new(name),
                     constraint: None,
                     range: crange,
@@ -1937,15 +1937,15 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
                 });
             }
             "identifier" => {
-                out.push(Ir::TypeParameter {
-                    name: Box::new(Ir::Name { range: crange, span: cspan }),
+                out.push(SyntaxTree::TypeParameter {
+                    name: Box::new(SyntaxTree::Name { range: crange, span: cspan }),
                     constraint: None,
                     range: crange,
                     span: cspan,
                 });
             }
             "constrained_type" | "splat_type" => {
-                out.push(Ir::TypeParameter {
+                out.push(SyntaxTree::TypeParameter {
                     name: Box::new(lower_node(c, source)),
                     constraint: None,
                     range: crange,
@@ -1958,7 +1958,7 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
                 collect_type_param_items(c, source, out);
             }
             other => {
-                out.push(Ir::Unknown {
+                out.push(SyntaxTree::Unknown {
                     kind: format!("type_param_item({other})"),
                     range: crange,
                     span: cspan,
@@ -1968,22 +1968,22 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
     }
 }
 
-/// Lower a `block` CST node (function/class body) into `Ir::Body`.
+/// Lower a `block` CST node (function/class body) into `SyntaxTree::Body`.
 /// Recognises pass-only bodies (a single `pass_statement` child) and
 /// renders them as `<body[pass]>` empty.
-fn lower_block(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_block(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
     let named: Vec<TsNode> = node.named_children(&mut cursor).collect();
     let pass_only = named.len() == 1 && named[0].kind() == "pass_statement";
-    let children: Vec<Ir> = if pass_only {
+    let children: Vec<SyntaxTree> = if pass_only {
         Vec::new()
     } else {
         named.iter().filter(|n| n.kind() != "pass_statement").map(|n| lower_node(*n, source)).collect()
     };
     let children = merge_python_line_comments(children, source);
-    Ir::Body { children, pass_only, block_wrap: false, range, span }
+    SyntaxTree::Body { children, pass_only, block_wrap: false, range, span }
 }
 
 /// Group consecutive `#` line-comment children that sit on adjacent
@@ -1991,19 +1991,19 @@ fn lower_block(node: TsNode<'_>, source: &str) -> Ir {
 /// (same line as preceding code), `leading` (immediately precedes
 /// the next non-comment sibling on the next line), or floating
 /// (neither). Mirrors the imperative pipeline's `classify_and_group`.
-fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
-    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+fn merge_python_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<SyntaxTree> {
+    let mut out: Vec<SyntaxTree> = Vec::with_capacity(children.len());
     for child in children {
-        if let Ir::Comment { leading, trailing, range, span } = child {
+        if let SyntaxTree::Comment { leading, trailing, range, span } = child {
             let prev_non_comment = out.iter().rev()
-                .find(|c| !matches!(c, Ir::Comment { .. }));
+                .find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
                 let prev_end = prev.range().end as usize;
                 let between = &source[prev_end..range.start as usize];
                 !between.contains('\n')
             });
 
-            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+            if let Some(SyntaxTree::Comment { range: prev_range, .. }) = out.last() {
                 let gap = &source[prev_range.end as usize..range.start as usize];
                 let only_one_newline = gap.chars().filter(|&c| c == '\n').count() <= 1
                     && gap.chars().all(|c| c.is_whitespace());
@@ -2011,11 +2011,11 @@ fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
                     .trim_start().starts_with('#');
                 let curr_is_line_comment = source[range.start as usize..range.end as usize]
                     .trim_start().starts_with('#');
-                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: true, .. }));
                 if only_one_newline && prev_is_line_comment && curr_is_line_comment
                     && !prev_was_trailing && !curr_is_trailing
                 {
-                    if let Some(Ir::Comment { range: r, span: s, .. }) = out.last_mut() {
+                    if let Some(SyntaxTree::Comment { range: r, span: s, .. }) = out.last_mut() {
                         r.end = range.end;
                         s.end_line = span.end_line;
                         s.end_column = span.end_column;
@@ -2024,7 +2024,7 @@ fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
                 }
             }
             let trailing = trailing || curr_is_trailing;
-            out.push(Ir::Comment { leading, trailing, range, span });
+            out.push(SyntaxTree::Comment { leading, trailing, range, span });
         } else {
             out.push(child);
         }
@@ -2034,16 +2034,16 @@ fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
     // the very next line.
     let n = out.len();
     for i in 0..n {
-        if let Ir::Comment { trailing, range, .. } = &out[i] {
+        if let SyntaxTree::Comment { trailing, range, .. } = &out[i] {
             if *trailing { continue; }
             let comment_end = range.end as usize;
-            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             if let Some(next_ir) = next {
                 let next_start = next_ir.range().start as usize;
                 let between = &source[comment_end..next_start];
                 let newlines = between.chars().filter(|&c| c == '\n').count();
                 if newlines == 1 && between.chars().all(|c| c.is_whitespace()) {
-                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                    if let SyntaxTree::Comment { leading, .. } = &mut out[i] {
                         *leading = true;
                     }
                 }
@@ -2055,16 +2055,16 @@ fn merge_python_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
 
 /// Lower a `decorator` CST node. The decorator's inner is the
 /// expression being applied (a name, attribute, or call).
-fn lower_decorator(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_decorator(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut cursor = node.walk();
     let inner = node.named_children(&mut cursor).next();
     let inner_ir = match inner {
         Some(n) => lower_node(n, source),
-        None => Ir::Unknown { kind: "decorator(empty)".to_string(), range, span },
+        None => SyntaxTree::Unknown { kind: "decorator(empty)".to_string(), range, span },
     };
-    Ir::Decorator { inner: Box::new(inner_ir), range, span }
+    SyntaxTree::Decorator { inner: Box::new(inner_ir), range, span }
 }
 
 /// Lower an assignment side (LHS targets or RHS values). If the node
@@ -2074,7 +2074,7 @@ fn lower_decorator(node: TsNode<'_>, source: &str) -> Ir {
 /// / `<right><expression/>...</right>` layout for multi-target /
 /// multi-value assignments. Single-target / single-value cases return
 /// a one-element vec.
-fn lower_assign_side(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+fn lower_assign_side(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
     match node.kind() {
         "pattern_list" | "tuple_pattern" | "expression_list" => {
             let mut c = node.walk();
@@ -2086,7 +2086,7 @@ fn lower_assign_side(node: TsNode<'_>, source: &str) -> Vec<Ir> {
 
 /// Type-annotation slot lowering. tree-sitter Python wraps the type
 /// expression in a `type` node; we unwrap and lower the inner.
-fn lower_type_slot(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_type_slot(node: TsNode<'_>, source: &str) -> SyntaxTree {
     // The `type` field can be a `type` CST kind (with one named child)
     // or a bare expression. Unwrap if it's the wrapping `type` kind.
     if node.kind() == "type" {
@@ -2150,35 +2150,35 @@ fn augmented_op_markers(op: &str) -> Vec<&'static str> {
     }
 }
 
-/// Lower a `dotted_name` CST node to `Ir::Path` with one
-/// `Ir::Name` per segment. Single-segment dotted_names (`os`) become a
+/// Lower a `dotted_name` CST node to `SyntaxTree::Path` with one
+/// `SyntaxTree::Name` per segment. Single-segment dotted_names (`os`) become a
 /// `Path` with one segment, matching the existing pipeline shape
 /// (always wrap module paths in `<path>`).
-fn lower_dotted_as_path(node: TsNode<'_>, _source: &str) -> Ir {
+fn lower_dotted_as_path(node: TsNode<'_>, _source: &str) -> SyntaxTree {
     let mut cursor = node.walk();
-    let segments: Vec<Ir> = node
+    let segments: Vec<SyntaxTree> = node
         .named_children(&mut cursor)
-        .map(|c| Ir::Name { range: range_of(c), span: span_of(c) })
+        .map(|c| SyntaxTree::Name { range: range_of(c), span: span_of(c) })
         .collect();
-    Ir::Path {
+    SyntaxTree::Path {
         segments,
         range: range_of(node),
         span: span_of(node),
     }
 }
 
-/// Lower a `dotted_name` to its first name segment as a bare `Ir::Name`
+/// Lower a `dotted_name` to its first name segment as a bare `SyntaxTree::Name`
 /// (used in `from x import y` where each imported name is a
 /// dotted_name in the CST but renders as a bare `<name>` in the
 /// existing pipeline). Falls back to `Unknown` if the dotted_name has
 /// multiple segments (shouldn't happen for `from` imports).
-fn lower_dotted_first_name(node: TsNode<'_>, _source: &str) -> Ir {
+fn lower_dotted_first_name(node: TsNode<'_>, _source: &str) -> SyntaxTree {
     let mut cursor = node.walk();
     let mut iter = node.named_children(&mut cursor);
     if let Some(first) = iter.next() {
-        Ir::Name { range: range_of(first), span: span_of(first) }
+        SyntaxTree::Name { range: range_of(first), span: span_of(first) }
     } else {
-        Ir::Unknown {
+        SyntaxTree::Unknown {
             kind: "dotted_name(empty)".to_string(),
             range: range_of(node),
             span: span_of(node),
@@ -2187,28 +2187,28 @@ fn lower_dotted_first_name(node: TsNode<'_>, _source: &str) -> Ir {
 }
 
 /// Lower an `aliased_import` in *top-level* import context. Emits a
-/// pair: (`Ir::Path`, `Ir::Aliased`) — both become flat children of
+/// pair: (`SyntaxTree::Path`, `SyntaxTree::Aliased`) — both become flat children of
 /// the enclosing `<import>`.
-fn lower_aliased_top(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
+fn lower_aliased_top(node: TsNode<'_>, source: &str) -> (SyntaxTree, SyntaxTree) {
     // tree-sitter Python: aliased_import has `name` field (dotted_name)
     // and `alias` field (identifier).
     let name_node = node.child_by_field_name("name");
     let alias_node = node.child_by_field_name("alias");
     let path = match name_node {
         Some(n) => lower_dotted_as_path(n, source),
-        None => Ir::Unknown {
+        None => SyntaxTree::Unknown {
             kind: "aliased_import(missing name)".to_string(),
             range: range_of(node),
             span: span_of(node),
         },
     };
     let aliased = match alias_node {
-        Some(a) => Ir::Aliased {
-            inner: Box::new(Ir::Name { range: range_of(a), span: span_of(a) }),
+        Some(a) => SyntaxTree::Aliased {
+            inner: Box::new(SyntaxTree::Name { range: range_of(a), span: span_of(a) }),
             range: range_of(a),
             span: span_of(a),
         },
-        None => Ir::Unknown {
+        None => SyntaxTree::Unknown {
             kind: "aliased_import(missing alias)".to_string(),
             range: range_of(node),
             span: span_of(node),
@@ -2218,27 +2218,27 @@ fn lower_aliased_top(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
 }
 
 /// Lower an `aliased_import` inside a `from X import` context. Emits a
-/// pair: (bare `Ir::Name`, `Ir::Aliased`) — without `<path>` wrapping
+/// pair: (bare `SyntaxTree::Name`, `SyntaxTree::Aliased`) — without `<path>` wrapping
 /// on the imported name (that's how `from m import x as y` renders).
-fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
+fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (SyntaxTree, SyntaxTree) {
     let name_node = node.child_by_field_name("name");
     let alias_node = node.child_by_field_name("alias");
     let name = match name_node {
         Some(n) if n.kind() == "dotted_name" => lower_dotted_first_name(n, source),
-        Some(n) => Ir::Name { range: range_of(n), span: span_of(n) },
-        None => Ir::Unknown {
+        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+        None => SyntaxTree::Unknown {
             kind: "aliased_import(missing name)".to_string(),
             range: range_of(node),
             span: span_of(node),
         },
     };
     let aliased = match alias_node {
-        Some(a) => Ir::Aliased {
-            inner: Box::new(Ir::Name { range: range_of(a), span: span_of(a) }),
+        Some(a) => SyntaxTree::Aliased {
+            inner: Box::new(SyntaxTree::Name { range: range_of(a), span: span_of(a) }),
             range: range_of(a),
             span: span_of(a),
         },
-        None => Ir::Unknown {
+        None => SyntaxTree::Unknown {
             kind: "aliased_import(missing alias)".to_string(),
             range: range_of(node),
             span: span_of(node),
@@ -2247,7 +2247,7 @@ fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (Ir, Ir) {
     (name, aliased)
 }
 
-fn lower_children(parent: TsNode<'_>, source: &str) -> Vec<Ir> {
+fn lower_children(parent: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
     let mut cursor = parent.walk();
     parent
         .named_children(&mut cursor)

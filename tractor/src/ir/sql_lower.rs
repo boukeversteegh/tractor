@@ -1,6 +1,6 @@
 //! TSQL CST → [`SqlIr`] lowering.
 //!
-//! Parallel to `tsql.rs` (which emits the cross-language `Ir`).
+//! Parallel to `tsql.rs` (which emits the cross-language `SyntaxTree`).
 //! This module emits the typed [`SqlIr`] enum — every TSQL
 //! construct gets a typed variant with named slots, eliminating
 //! the generic-`SimpleStatement` ambiguity that drove the iter

@@ -2,7 +2,7 @@
 //!
 //! Round-trip identity (`to_source(ir, source) == source`) proves no
 //! source bytes were lost. But it doesn't catch the **silent
-//! structural drop** case: a typed parent IR (e.g. `Ir::Class`)
+//! structural drop** case: a typed parent IR (e.g. `SyntaxTree::Class`)
 //! lowers most of its CST children but forgets one (say,
 //! `attribute_list`). The dropped child's bytes still appear inside
 //! the parent's gap text, so round-trip passes — but no IR node
@@ -13,16 +13,16 @@
 //!
 //! - For each named CST node, classify it against the IR's coverage:
 //!   - **Typed** — an IR node has *exactly* this byte range and is
-//!     not `Ir::Unknown`. The kind is structurally represented.
-//!   - **Unknown** — an `Ir::Unknown` node has *exactly* this byte
+//!     not `SyntaxTree::Unknown`. The kind is structurally represented.
+//!   - **Unknown** — an `SyntaxTree::Unknown` node has *exactly* this byte
 //!     range. The kind is explicitly punted.
 //!   - **Under-typed** — a typed IR ancestor's range contains this
 //!     CST node but no IR has its exact range. Common case:
 //!     chain-folded structure (the inner `member_access_expression`
-//!     for `a.b` of `a.b.c` is folded into `Ir::Access`'s segment
+//!     for `a.b` of `a.b.c` is folded into `SyntaxTree::Access`'s segment
 //!     list). Acceptable when intentional; suspicious when it's
 //!     meaningful structure that got buried.
-//!   - **Under-unknown** — under an `Ir::Unknown`'s range. The whole
+//!   - **Under-unknown** — under an `SyntaxTree::Unknown`'s range. The whole
 //!     subtree is unhandled at a higher level.
 //!   - **Dropped** — no IR range covers this CST node at all.
 //!     Should *never* happen if round-trip identity holds; existence
@@ -47,20 +47,20 @@
 use std::collections::BTreeMap;
 use tree_sitter::Node as TsNode;
 
-use super::types::{ByteRange, Ir};
+use super::types::{ByteRange, SyntaxTree};
 
 /// Per-CST-node classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Coverage {
     /// An IR node has exactly this byte range and is not Unknown.
     Typed,
-    /// An `Ir::Unknown` has exactly this byte range.
+    /// An `SyntaxTree::Unknown` has exactly this byte range.
     Unknown,
     /// A typed IR ancestor's range contains this CST node, but no
     /// IR matches it exactly. E.g. inner CST nodes folded into an
     /// access chain.
     UnderTyped,
-    /// An `Ir::Unknown` ancestor covers this CST node.
+    /// An `SyntaxTree::Unknown` ancestor covers this CST node.
     UnderUnknown,
     /// No IR range covers this CST node. Should never happen if
     /// round-trip identity holds.
@@ -209,11 +209,11 @@ impl CoverageReport {
 }
 
 /// Walk the IR and collect every node's byte range with a flag for
-/// whether it's `Ir::Unknown`. Powered by `Ir::children()` — adding a
+/// whether it's `SyntaxTree::Unknown`. Powered by `SyntaxTree::children()` — adding a
 /// new variant requires no change here as long as the variant declares
 /// its children correctly.
-fn collect_ir_ranges(ir: &Ir, out: &mut Vec<(ByteRange, bool /* is_unknown */)>) {
-    out.push((ir.range(), matches!(ir, Ir::Unknown { .. })));
+fn collect_ir_ranges(ir: &SyntaxTree, out: &mut Vec<(ByteRange, bool /* is_unknown */)>) {
+    out.push((ir.range(), matches!(ir, SyntaxTree::Unknown { .. })));
     for c in ir.children() {
         collect_ir_ranges(c, out);
     }
@@ -235,7 +235,7 @@ fn walk_cst<F: FnMut(TsNode)>(node: TsNode, visit: &mut F) {
 /// rather than implicitly "supported." Pass `&[]` to opt out.
 pub fn audit_coverage(
     ts_root: TsNode,
-    ir: &Ir,
+    ir: &SyntaxTree,
     source: &str,
     known_kinds: &[&str],
 ) -> CoverageReport {
@@ -244,7 +244,7 @@ pub fn audit_coverage(
     collect_ir_ranges(ir, &mut ir_ranges);
 
     // For exact-range lookups, build a map from range to is_unknown.
-    // Multiple IR nodes can share a range (e.g. Ir::Module and a
+    // Multiple IR nodes can share a range (e.g. SyntaxTree::Module and a
     // single child whose range == module's). For exact-match, we
     // prefer the typed one.
     let mut exact: BTreeMap<(u32, u32), bool> = BTreeMap::new();

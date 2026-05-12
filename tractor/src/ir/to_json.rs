@@ -1,10 +1,10 @@
 //! IR → JSON renderer. Skips the XML intermediate.
 //!
-//! Walks the typed `Ir` tree directly and produces a `serde_json::Value`
+//! Walks the typed `SyntaxTree` tree directly and produces a `serde_json::Value`
 //! whose shape matches what the XML→JSON projection (`xml_to_json.rs`)
 //! would produce, but without going through Xot or `XmlNode`. The IR
 //! is the source of truth: list-cardinality decisions come from
-//! `Vec<Ir>` vs `Box<Ir>` field shapes, marker flags come from
+//! `Vec<SyntaxTree>` vs `Box<SyntaxTree>` field shapes, marker flags come from
 //! `Modifiers::marker_names()` and per-variant `extra_markers`.
 //!
 //! ## Output shape (kept compatible with `xml_to_json.rs` for snapshot
@@ -34,7 +34,7 @@
 
 use serde_json::{Map, Value};
 
-use crate::ir::types::{AccessSegment, Ir, Modifiers, ParamKind};
+use crate::ir::types::{AccessSegment, SyntaxTree, Modifiers, ParamKind};
 use crate::transform::helpers::pluralize_list_name;
 
 const KEY_TYPE: &str = "$type";
@@ -43,7 +43,7 @@ const KEY_TEXT: &str = "text";
 
 /// Top-level entry: convert an IR tree to a JSON value. The root is
 /// emitted with its `$type` (no parent context to strip it).
-pub fn ir_to_json(ir: &Ir, source: &str) -> Value {
+pub fn ir_to_json(ir: &SyntaxTree, source: &str) -> Value {
     Renderer::new(source).render_root(ir)
 }
 
@@ -56,7 +56,7 @@ impl<'a> Renderer<'a> {
         Self { source }
     }
 
-    fn render_root(&self, ir: &Ir) -> Value {
+    fn render_root(&self, ir: &SyntaxTree) -> Value {
         // Roots keep their $type — nothing above them sets a key.
         self.render(ir, /*strip_type=*/ false)
     }
@@ -65,7 +65,7 @@ impl<'a> Renderer<'a> {
     /// chosen key already conveys the type (list entry under plural
     /// key, or singleton under its own element name) — matches the
     /// XML→JSON `strip_top_level_type` behaviour.
-    fn render(&self, ir: &Ir, strip_type: bool) -> Value {
+    fn render(&self, ir: &SyntaxTree, strip_type: bool) -> Value {
         match self.try_render_scalar(ir) {
             Some(scalar) => scalar,
             None => {
@@ -80,23 +80,23 @@ impl<'a> Renderer<'a> {
     /// integer-literal → number, true/false → boolean, null → null).
     /// `xml_to_json.rs` collapses text-only-leaf elements to strings;
     /// we do the same here at render time.
-    fn try_render_scalar(&self, ir: &Ir) -> Option<Value> {
-        let text_scalar = |ir: &Ir| {
+    fn try_render_scalar(&self, ir: &SyntaxTree) -> Option<Value> {
+        let text_scalar = |ir: &SyntaxTree| {
             let text = ir.range().slice(self.source);
             Value::String(text.to_string())
         };
         match ir {
-            Ir::Name { .. }
-            | Ir::Atom { .. }
-            | Ir::Int { .. }
-            | Ir::Float { .. }
-            | Ir::String { .. }
-            | Ir::None { .. }
-            | Ir::Null { .. }
-            | Ir::True { .. }
-            | Ir::False { .. } => Some(text_scalar(ir)),
-            Ir::Skip { .. } => Some(Value::Null),
-            Ir::PositionalSeparator { .. } | Ir::KeywordSeparator { .. } => {
+            SyntaxTree::Name { .. }
+            | SyntaxTree::Atom { .. }
+            | SyntaxTree::Int { .. }
+            | SyntaxTree::Float { .. }
+            | SyntaxTree::String { .. }
+            | SyntaxTree::None { .. }
+            | SyntaxTree::Null { .. }
+            | SyntaxTree::True { .. }
+            | SyntaxTree::False { .. } => Some(text_scalar(ir)),
+            SyntaxTree::Skip { .. } => Some(Value::Null),
+            SyntaxTree::PositionalSeparator { .. } | SyntaxTree::KeywordSeparator { .. } => {
                 // Markers; rendered as flags by parents. Render as null
                 // when reached as a value.
                 Some(Value::Null)
@@ -108,158 +108,158 @@ impl<'a> Renderer<'a> {
     /// Element name (matches the XML element name for the same IR node).
     /// Used as the JSON `$type` and as the key when this node sits in
     /// its parent as a singleton or list entry.
-    fn element_name(&self, ir: &Ir) -> &'static str {
+    fn element_name(&self, ir: &SyntaxTree) -> &'static str {
         match ir {
-            Ir::Module { element_name, .. } => element_name,
-            Ir::Expression { .. } => "expression",
-            Ir::Access { .. } => "object",
-            Ir::Binary { element_name, .. } => element_name,
-            Ir::Unary { .. } => "unary",
-            Ir::Tuple { .. } => "tuple",
-            Ir::List { .. } => "list",
-            Ir::Set { .. } => "set",
-            Ir::Dictionary { .. } => "dict",
-            Ir::Pair { .. } => "pair",
-            Ir::GenericType { .. } => "type",
-            Ir::Comparison { .. } => "compare",
-            Ir::If { .. } => "if",
-            Ir::ElseIf { .. } => "else_if",
-            Ir::Else { .. } => "else",
-            Ir::For { .. } => "for",
-            Ir::While { .. } => "while",
-            Ir::Foreach { .. } => "foreach",
-            Ir::CFor { .. } => "for",
-            Ir::DoWhile { .. } => "do",
-            Ir::Break { .. } => "break",
-            Ir::Continue { .. } => "continue",
-            Ir::Lambda { .. } => "lambda",
-            Ir::ObjectCreation { .. } => "new",
-            Ir::Ternary { .. } => "ternary",
-            Ir::FieldWrap { wrapper, .. } => wrapper,
-            Ir::SimpleStatement { element_name, .. } => element_name,
-            Ir::Try { .. } => "try",
-            Ir::ExceptHandler { .. } => "catch",
-            Ir::TypeAlias { .. } => "type_alias",
-            Ir::KeywordArgument { .. } => "keyword_argument",
-            Ir::ListSplat { .. } => "spread",
-            Ir::DictSplat { .. } => "spread",
-            Ir::Function { element_name, .. } => element_name,
-            Ir::Class { kind, .. } => kind,
-            Ir::Body { .. } => "body",
-            Ir::Parameter { .. } => "parameter",
-            Ir::PositionalSeparator { .. } => "positional",
-            Ir::KeywordSeparator { .. } => "keyword",
-            Ir::Decorator { .. } => "decorator",
-            Ir::Returns { .. } => "returns",
-            Ir::Generic { .. } => "generic",
-            Ir::TypeParameter { .. } => "type",
-            Ir::Return { .. } => "return",
-            Ir::Comment { .. } => "comment",
-            Ir::Assign { .. } => "assign",
-            Ir::Import { .. } => "import",
-            Ir::From { .. } => "from",
-            Ir::FromImport { .. } => "import",
-            Ir::Path { .. } => "path",
-            Ir::Aliased { .. } => "aliased",
-            Ir::Name { .. } => "name",
-            Ir::Atom { element_name, .. } => element_name,
-            Ir::Int { .. } => "int",
-            Ir::Float { .. } => "float",
-            Ir::String { .. } => "string",
-            Ir::True { .. } => "true",
-            Ir::False { .. } => "false",
-            Ir::None { .. } => "none",
-            Ir::Enum { .. } => "enum",
-            Ir::EnumMember { .. } => "constant",
-            Ir::Property { .. } => "property",
-            Ir::Accessor { kind, .. } => kind,
-            Ir::Constructor { .. } => "constructor",
+            SyntaxTree::Module { element_name, .. } => element_name,
+            SyntaxTree::Expression { .. } => "expression",
+            SyntaxTree::Access { .. } => "object",
+            SyntaxTree::Binary { element_name, .. } => element_name,
+            SyntaxTree::Unary { .. } => "unary",
+            SyntaxTree::Tuple { .. } => "tuple",
+            SyntaxTree::List { .. } => "list",
+            SyntaxTree::Set { .. } => "set",
+            SyntaxTree::Dictionary { .. } => "dict",
+            SyntaxTree::Pair { .. } => "pair",
+            SyntaxTree::GenericType { .. } => "type",
+            SyntaxTree::Comparison { .. } => "compare",
+            SyntaxTree::If { .. } => "if",
+            SyntaxTree::ElseIf { .. } => "else_if",
+            SyntaxTree::Else { .. } => "else",
+            SyntaxTree::For { .. } => "for",
+            SyntaxTree::While { .. } => "while",
+            SyntaxTree::Foreach { .. } => "foreach",
+            SyntaxTree::CFor { .. } => "for",
+            SyntaxTree::DoWhile { .. } => "do",
+            SyntaxTree::Break { .. } => "break",
+            SyntaxTree::Continue { .. } => "continue",
+            SyntaxTree::Lambda { .. } => "lambda",
+            SyntaxTree::ObjectCreation { .. } => "new",
+            SyntaxTree::Ternary { .. } => "ternary",
+            SyntaxTree::FieldWrap { wrapper, .. } => wrapper,
+            SyntaxTree::SimpleStatement { element_name, .. } => element_name,
+            SyntaxTree::Try { .. } => "try",
+            SyntaxTree::ExceptHandler { .. } => "catch",
+            SyntaxTree::TypeAlias { .. } => "type_alias",
+            SyntaxTree::KeywordArgument { .. } => "keyword_argument",
+            SyntaxTree::ListSplat { .. } => "spread",
+            SyntaxTree::DictSplat { .. } => "spread",
+            SyntaxTree::Function { element_name, .. } => element_name,
+            SyntaxTree::Class { kind, .. } => kind,
+            SyntaxTree::Body { .. } => "body",
+            SyntaxTree::Parameter { .. } => "parameter",
+            SyntaxTree::PositionalSeparator { .. } => "positional",
+            SyntaxTree::KeywordSeparator { .. } => "keyword",
+            SyntaxTree::Decorator { .. } => "decorator",
+            SyntaxTree::Returns { .. } => "returns",
+            SyntaxTree::Generic { .. } => "generic",
+            SyntaxTree::TypeParameter { .. } => "type",
+            SyntaxTree::Return { .. } => "return",
+            SyntaxTree::Comment { .. } => "comment",
+            SyntaxTree::Assign { .. } => "assign",
+            SyntaxTree::Import { .. } => "import",
+            SyntaxTree::From { .. } => "from",
+            SyntaxTree::FromImport { .. } => "import",
+            SyntaxTree::Path { .. } => "path",
+            SyntaxTree::Aliased { .. } => "aliased",
+            SyntaxTree::Name { .. } => "name",
+            SyntaxTree::Atom { element_name, .. } => element_name,
+            SyntaxTree::Int { .. } => "int",
+            SyntaxTree::Float { .. } => "float",
+            SyntaxTree::String { .. } => "string",
+            SyntaxTree::True { .. } => "true",
+            SyntaxTree::False { .. } => "false",
+            SyntaxTree::None { .. } => "none",
+            SyntaxTree::Enum { .. } => "enum",
+            SyntaxTree::EnumMember { .. } => "constant",
+            SyntaxTree::Property { .. } => "property",
+            SyntaxTree::Accessor { kind, .. } => kind,
+            SyntaxTree::Constructor { .. } => "constructor",
             // C# `using_directive` is exposed in the imperative
             // pipeline (and JSON snapshots) as `<import>` — keep
             // ir_to_json on that name. Block-scoped `using_statement`
             // is a different kind (handled via SimpleStatement "using").
-            Ir::Using { .. } => "import",
-            Ir::Namespace { .. } => "namespace",
-            Ir::Variable { element_name, .. } => element_name,
-            Ir::Is { .. } => "is",
-            Ir::Cast { .. } => "cast",
-            Ir::Null { .. } => "null",
-            Ir::Inline { .. } => "$inline",
-            Ir::Skip { .. } => "$skip",
-            Ir::Unknown { .. } => "unknown",
-            Ir::Call { .. } => "call",
+            SyntaxTree::Using { .. } => "import",
+            SyntaxTree::Namespace { .. } => "namespace",
+            SyntaxTree::Variable { element_name, .. } => element_name,
+            SyntaxTree::Is { .. } => "is",
+            SyntaxTree::Cast { .. } => "cast",
+            SyntaxTree::Null { .. } => "null",
+            SyntaxTree::Inline { .. } => "$inline",
+            SyntaxTree::Skip { .. } => "$skip",
+            SyntaxTree::Unknown { .. } => "unknown",
+            SyntaxTree::Call { .. } => "call",
         }
     }
 
     /// Populate the shape with the IR's flags + child entries.
-    fn populate(&self, ir: &Ir, shape: &mut Shape) {
+    fn populate(&self, ir: &SyntaxTree, shape: &mut Shape) {
         match ir {
-            Ir::Module { children, .. } => {
+            SyntaxTree::Module { children, .. } => {
                 self.add_children(shape, children);
             }
-            Ir::Expression { inner, marker, .. } => {
+            SyntaxTree::Expression { inner, marker, .. } => {
                 if let Some(m) = marker {
                     shape.flag(m);
                 }
                 self.add_singleton_or_text(shape, inner);
             }
-            Ir::Access { receiver, segments, .. } => {
+            SyntaxTree::Access { receiver, segments, .. } => {
                 self.add_access_chain(shape, receiver, segments);
             }
-            Ir::Binary { left, op_text, op_marker, right, .. } => {
+            SyntaxTree::Binary { left, op_text, op_marker, right, .. } => {
                 shape.singleton("left", self.wrap_expression_host(left));
                 shape.singleton("op", self.op_value(op_text, op_marker));
                 shape.singleton("right", self.wrap_expression_host(right));
             }
-            Ir::Unary { op_text, op_marker, operand, extra_markers, .. } => {
+            SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, .. } => {
                 for m in *extra_markers {
                     shape.flag(m);
                 }
                 shape.singleton("op", self.op_value(op_text, op_marker));
                 self.add_singleton_or_text(shape, operand);
             }
-            Ir::Tuple { children, .. }
-            | Ir::List { children, .. }
-            | Ir::Set { children, .. } => {
+            SyntaxTree::Tuple { children, .. }
+            | SyntaxTree::List { children, .. }
+            | SyntaxTree::Set { children, .. } => {
                 self.add_children(shape, children);
             }
-            Ir::Dictionary { pairs, .. } => {
+            SyntaxTree::Dictionary { pairs, .. } => {
                 self.add_children(shape, pairs);
             }
-            Ir::Pair { key, value, .. } => {
+            SyntaxTree::Pair { key, value, .. } => {
                 shape.singleton("key", self.render(key, true));
                 shape.singleton("value", self.render(value, true));
             }
-            Ir::GenericType { name, params, .. } => {
+            SyntaxTree::GenericType { name, params, .. } => {
                 shape.flag("generic");
                 self.add_singleton_or_text(shape, name);
                 for p in params {
                     shape.list_with("type", self.render(p, true));
                 }
             }
-            Ir::Comparison { left, op_text, op_marker, right, .. } => {
+            SyntaxTree::Comparison { left, op_text, op_marker, right, .. } => {
                 shape.singleton("left", self.wrap_expression_host(left));
                 shape.singleton("op", self.op_value(op_text, op_marker));
                 shape.singleton("right", self.wrap_expression_host(right));
             }
-            Ir::If { condition, body, else_branch, .. } => {
+            SyntaxTree::If { condition, body, else_branch, .. } => {
                 shape.singleton("condition", self.wrap_expression_host(condition));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
                 }
             }
-            Ir::ElseIf { condition, body, else_branch, .. } => {
+            SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
                 shape.singleton("condition", self.wrap_expression_host(condition));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_branch {
                     self.add_else_chain(shape, e);
                 }
             }
-            Ir::Else { body, .. } => {
+            SyntaxTree::Else { body, .. } => {
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::For { is_async, targets, iterables, body, else_body, .. } => {
+            SyntaxTree::For { is_async, targets, iterables, body, else_body, .. } => {
                 if *is_async {
                     shape.flag("async");
                 }
@@ -280,14 +280,14 @@ impl<'a> Renderer<'a> {
                     shape.singleton("else", self.render(e, true));
                 }
             }
-            Ir::While { condition, body, else_body, .. } => {
+            SyntaxTree::While { condition, body, else_body, .. } => {
                 shape.singleton("condition", self.wrap_expression_host(condition));
                 shape.singleton("body", self.render(body, true));
                 if let Some(e) = else_body {
                     shape.singleton("else", self.render(e, true));
                 }
             }
-            Ir::Foreach { type_ann, target, iterable, body, .. } => {
+            SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
                 shape.flag("in");
                 if let Some(t) = type_ann {
                     shape.singleton("type", self.render_as_type(t));
@@ -296,7 +296,7 @@ impl<'a> Renderer<'a> {
                 shape.singleton("right", self.wrap_expression_host(iterable));
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::CFor { initializer, condition, updates, body, .. } => {
+            SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
                 if let Some(i) = initializer {
                     shape.list_with(self.element_name(i), self.render(i, true));
                 }
@@ -308,18 +308,18 @@ impl<'a> Renderer<'a> {
                 }
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::DoWhile { body, condition, .. } => {
+            SyntaxTree::DoWhile { body, condition, .. } => {
                 shape.singleton("body", self.render(body, true));
                 shape.singleton("condition", self.wrap_expression_host(condition));
             }
-            Ir::Break { .. } | Ir::Continue { .. } => {}
-            Ir::Lambda { parameters, body, .. } => {
+            SyntaxTree::Break { .. } | SyntaxTree::Continue { .. } => {}
+            SyntaxTree::Lambda { parameters, body, .. } => {
                 for p in parameters {
                     shape.list_with("parameter", self.render(p, true));
                 }
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::ObjectCreation { type_target, arguments, initializer, .. } => {
+            SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
                 if let Some(t) = type_target {
                     self.add_singleton_or_text(shape, t);
                 }
@@ -330,22 +330,22 @@ impl<'a> Renderer<'a> {
                     shape.singleton("literal", self.render(i, true));
                 }
             }
-            Ir::Ternary { condition, if_true, if_false, .. } => {
+            SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
                 shape.singleton("condition", self.wrap_expression_host(condition));
                 shape.singleton("then", self.wrap_expression_host(if_true));
                 shape.singleton("else", self.wrap_expression_host(if_false));
             }
-            Ir::FieldWrap { inner, .. } => {
+            SyntaxTree::FieldWrap { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);
             }
-            Ir::SimpleStatement { children, modifiers, extra_markers, .. } => {
+            SyntaxTree::SimpleStatement { children, modifiers, extra_markers, .. } => {
                 self.add_modifier_flags(shape, modifiers);
                 for m in *extra_markers {
                     shape.flag(m);
                 }
                 self.add_children(shape, children);
             }
-            Ir::Try { try_body, handlers, else_body, finally_body, .. } => {
+            SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
                 shape.singleton("body", self.render(try_body, true));
                 for h in handlers {
                     shape.list_with("catch", self.render(h, true));
@@ -357,7 +357,7 @@ impl<'a> Renderer<'a> {
                     shape.singleton("finally", self.render(f, true));
                 }
             }
-            Ir::ExceptHandler { type_target, binding, filter, body, .. } => {
+            SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
                 if let Some(t) = type_target {
                     shape.singleton("type", self.render_as_type(t));
                 }
@@ -369,21 +369,21 @@ impl<'a> Renderer<'a> {
                 }
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::TypeAlias { name, type_params, value, .. } => {
+            SyntaxTree::TypeAlias { name, type_params, value, .. } => {
                 self.add_singleton_or_text(shape, name);
                 if let Some(p) = type_params {
                     self.add_singleton_or_text(shape, p);
                 }
                 shape.singleton("value", self.wrap_expression_host(value));
             }
-            Ir::KeywordArgument { name, value, .. } => {
+            SyntaxTree::KeywordArgument { name, value, .. } => {
                 self.add_singleton_or_text(shape, name);
                 shape.singleton("value", self.wrap_expression_host(value));
             }
-            Ir::ListSplat { inner, .. } | Ir::DictSplat { inner, .. } => {
+            SyntaxTree::ListSplat { inner, .. } | SyntaxTree::DictSplat { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);
             }
-            Ir::Function {
+            SyntaxTree::Function {
                 modifiers, decorators, name, generics, parameters, returns, body, ..
             } => {
                 for d in decorators {
@@ -404,7 +404,7 @@ impl<'a> Renderer<'a> {
                     shape.singleton("body", self.render(b, true));
                 }
             }
-            Ir::Class {
+            SyntaxTree::Class {
                 modifiers, decorators, name, generics, bases, where_clauses: _, body, ..
             } => {
                 for d in decorators {
@@ -423,10 +423,10 @@ impl<'a> Renderer<'a> {
                 }
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::Body { children, .. } => {
+            SyntaxTree::Body { children, .. } => {
                 self.add_children(shape, children);
             }
-            Ir::Parameter { kind, extra_markers, modifiers, name, type_ann, default, .. } => {
+            SyntaxTree::Parameter { kind, extra_markers, modifiers, name, type_ann, default, .. } => {
                 match kind {
                     ParamKind::Args => shape.flag("args"),
                     ParamKind::Kwargs => shape.flag("kwargs"),
@@ -446,30 +446,30 @@ impl<'a> Renderer<'a> {
                     shape.singleton("value", self.wrap_expression_host(d));
                 }
             }
-            Ir::PositionalSeparator { .. } | Ir::KeywordSeparator { .. } => {}
-            Ir::Decorator { inner, .. } => {
+            SyntaxTree::PositionalSeparator { .. } | SyntaxTree::KeywordSeparator { .. } => {}
+            SyntaxTree::Decorator { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);
             }
-            Ir::Returns { type_ann, .. } => {
+            SyntaxTree::Returns { type_ann, .. } => {
                 shape.singleton("type", self.render_as_type(type_ann));
             }
-            Ir::Generic { items, .. } => {
+            SyntaxTree::Generic { items, .. } => {
                 for it in items {
                     shape.list_with(self.element_name(it), self.render(it, true));
                 }
             }
-            Ir::TypeParameter { name, constraint, .. } => {
+            SyntaxTree::TypeParameter { name, constraint, .. } => {
                 self.add_singleton_or_text(shape, name);
                 if let Some(c) = constraint {
                     self.add_singleton_or_text(shape, c);
                 }
             }
-            Ir::Return { value, .. } => {
+            SyntaxTree::Return { value, .. } => {
                 if let Some(v) = value {
                     shape.singleton("expression", self.wrap_expression_host(v));
                 }
             }
-            Ir::Comment { leading, trailing, range, .. } => {
+            SyntaxTree::Comment { leading, trailing, range, .. } => {
                 if *leading {
                     shape.flag("leading");
                 }
@@ -479,7 +479,7 @@ impl<'a> Renderer<'a> {
                 let text = range.slice(self.source).to_string();
                 shape.text(text);
             }
-            Ir::Assign { targets, type_annotation, op_text, op_markers, values, .. } => {
+            SyntaxTree::Assign { targets, type_annotation, op_text, op_markers, values, .. } => {
                 let _ = op_text;
                 for marker in op_markers.iter() {
                     shape.flag(marker);
@@ -506,10 +506,10 @@ impl<'a> Renderer<'a> {
                     shape.singleton("right", Value::Array(right_arr));
                 }
             }
-            Ir::Import { children, .. } => {
+            SyntaxTree::Import { children, .. } => {
                 self.add_children(shape, children);
             }
-            Ir::From { relative, path, imports, .. } => {
+            SyntaxTree::From { relative, path, imports, .. } => {
                 if *relative {
                     shape.flag("relative");
                 }
@@ -520,7 +520,7 @@ impl<'a> Renderer<'a> {
                     shape.list_with(self.element_name(it), self.render(it, true));
                 }
             }
-            Ir::FromImport { has_alias, name, alias, .. } => {
+            SyntaxTree::FromImport { has_alias, name, alias, .. } => {
                 if *has_alias {
                     shape.flag("alias");
                 }
@@ -529,17 +529,17 @@ impl<'a> Renderer<'a> {
                     shape.singleton("alias", self.render(a, true));
                 }
             }
-            Ir::Path { segments, .. } => {
+            SyntaxTree::Path { segments, .. } => {
                 let arr: Vec<Value> = segments
                     .iter()
                     .map(|s| Value::String(s.range().slice(self.source).to_string()))
                     .collect();
                 shape.put("names", Value::Array(arr));
             }
-            Ir::Aliased { inner, .. } => {
+            SyntaxTree::Aliased { inner, .. } => {
                 self.add_singleton_or_text(shape, inner);
             }
-            Ir::Enum { modifiers, decorators, name, underlying_type, members, .. } => {
+            SyntaxTree::Enum { modifiers, decorators, name, underlying_type, members, .. } => {
                 for d in decorators {
                     shape.list_with("attribute", self.render(d, true));
                 }
@@ -553,13 +553,13 @@ impl<'a> Renderer<'a> {
                     shape.list_with("constant", self.render(m, true));
                 }
             }
-            Ir::EnumMember { name, value, .. } => {
+            SyntaxTree::EnumMember { name, value, .. } => {
                 self.add_singleton_or_text(shape, name);
                 if let Some(v) = value {
                     shape.singleton("value", self.wrap_expression_host(v));
                 }
             }
-            Ir::Property { modifiers, decorators, type_ann, name, accessors, value, .. } => {
+            SyntaxTree::Property { modifiers, decorators, type_ann, name, accessors, value, .. } => {
                 for d in decorators {
                     shape.list_with("attribute", self.render(d, true));
                 }
@@ -575,13 +575,13 @@ impl<'a> Renderer<'a> {
                     shape.singleton("value", self.wrap_expression_host(v));
                 }
             }
-            Ir::Accessor { modifiers, body, .. } => {
+            SyntaxTree::Accessor { modifiers, body, .. } => {
                 self.add_modifier_flags(shape, modifiers);
                 if let Some(b) = body {
                     shape.singleton("body", self.render(b, true));
                 }
             }
-            Ir::Constructor { modifiers, decorators, name, parameters, body, .. } => {
+            SyntaxTree::Constructor { modifiers, decorators, name, parameters, body, .. } => {
                 for d in decorators {
                     shape.list_with("attribute", self.render(d, true));
                 }
@@ -592,7 +592,7 @@ impl<'a> Renderer<'a> {
                 }
                 shape.singleton("body", self.render(body, true));
             }
-            Ir::Using { is_static, alias, path, .. } => {
+            SyntaxTree::Using { is_static, alias, path, .. } => {
                 // Note: `is_static` is preserved on the IR for mutation
                 // surface, but the imperative pipeline emits the
                 // `static` keyword as gap text only — JSON projection
@@ -607,20 +607,20 @@ impl<'a> Renderer<'a> {
                 // segment (`using System.Collections.Generic;`) renders
                 // as `path: { names: [...] }`. Mirrors the imperative
                 // pipeline's `restructure_csharp_using`-style output.
-                if matches!(path.as_ref(), Ir::Name { .. }) {
+                if matches!(path.as_ref(), SyntaxTree::Name { .. }) {
                     shape.singleton("name", self.render(path, true));
                 } else {
                     shape.singleton("path", self.render(path, true));
                 }
             }
-            Ir::Namespace { file_scoped, name, children, .. } => {
+            SyntaxTree::Namespace { file_scoped, name, children, .. } => {
                 if *file_scoped {
                     shape.flag("file");
                 }
                 self.add_singleton_or_text(shape, name);
                 self.add_children(shape, children);
             }
-            Ir::Variable { modifiers, decorators, type_ann, name, value, .. } => {
+            SyntaxTree::Variable { modifiers, decorators, type_ann, name, value, .. } => {
                 for d in decorators {
                     shape.list_with("attribute", self.render(d, true));
                 }
@@ -633,15 +633,15 @@ impl<'a> Renderer<'a> {
                     shape.singleton("value", self.wrap_expression_host(&v.inner));
                 }
             }
-            Ir::Is { value, type_target, .. } => {
+            SyntaxTree::Is { value, type_target, .. } => {
                 shape.singleton("left", self.wrap_expression_host(value));
                 shape.singleton("right", self.render_as_type(type_target));
             }
-            Ir::Cast { type_ann, value, .. } => {
+            SyntaxTree::Cast { type_ann, value, .. } => {
                 shape.singleton("type", self.render_as_type(type_ann));
                 shape.singleton("value", self.wrap_expression_host(value));
             }
-            Ir::Inline { children, list_name, .. } => {
+            SyntaxTree::Inline { children, list_name, .. } => {
                 if let Some(list) = list_name {
                     let arr: Vec<Value> = children
                         .iter()
@@ -652,7 +652,7 @@ impl<'a> Renderer<'a> {
                     self.add_children(shape, children);
                 }
             }
-            Ir::Unknown { .. } => {
+            SyntaxTree::Unknown { .. } => {
                 // Unknown is opaque; carry the source text so consumers
                 // see what fell through.
                 let text = ir.range().slice(self.source).to_string();
@@ -660,7 +660,7 @@ impl<'a> Renderer<'a> {
                     shape.text(text);
                 }
             }
-            Ir::Call { callee, arguments, .. } => {
+            SyntaxTree::Call { callee, arguments, .. } => {
                 self.add_singleton_or_text(shape, callee);
                 for a in arguments {
                     shape.list_with(self.element_name(a), self.render(a, true));
@@ -668,24 +668,24 @@ impl<'a> Renderer<'a> {
             }
             // Scalar leaves are short-circuited in `try_render_scalar`
             // before reaching `populate` — guard the match exhaustively.
-            Ir::Name { .. }
-            | Ir::Atom { .. }
-            | Ir::Int { .. }
-            | Ir::Float { .. }
-            | Ir::String { .. }
-            | Ir::True { .. }
-            | Ir::False { .. }
-            | Ir::None { .. }
-            | Ir::Null { .. }
-            | Ir::Skip { .. } => {}
+            SyntaxTree::Name { .. }
+            | SyntaxTree::Atom { .. }
+            | SyntaxTree::Int { .. }
+            | SyntaxTree::Float { .. }
+            | SyntaxTree::String { .. }
+            | SyntaxTree::True { .. }
+            | SyntaxTree::False { .. }
+            | SyntaxTree::None { .. }
+            | SyntaxTree::Null { .. }
+            | SyntaxTree::Skip { .. } => {}
         }
     }
 
-    /// `Ir::Access` chain rendering — preserves the right-nested
+    /// `SyntaxTree::Access` chain rendering — preserves the right-nested
     /// `<object>` shape that `xml_to_json.rs` projects via list= /
     /// singleton rules. Each segment becomes a key on the previous
     /// segment's JSON object.
-    fn add_access_chain(&self, shape: &mut Shape, receiver: &Ir, segments: &[AccessSegment]) {
+    fn add_access_chain(&self, shape: &mut Shape, receiver: &SyntaxTree, segments: &[AccessSegment]) {
         shape.flag("access");
         // Rendered right-nested in XML; the IR walks segments in
         // source order. For JSON we emit the receiver at the
@@ -747,12 +747,12 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn add_else_chain(&self, shape: &mut Shape, ir: &Ir) {
+    fn add_else_chain(&self, shape: &mut Shape, ir: &SyntaxTree) {
         match ir {
-            Ir::ElseIf { .. } => {
+            SyntaxTree::ElseIf { .. } => {
                 shape.list_with("else_if", self.render(ir, true));
             }
-            Ir::Else { .. } => {
+            SyntaxTree::Else { .. } => {
                 shape.singleton("else", self.render(ir, true));
             }
             _ => {
@@ -761,8 +761,8 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn add_generics(&self, shape: &mut Shape, generics: &Ir) {
-        if let Ir::Generic { items, .. } = generics {
+    fn add_generics(&self, shape: &mut Shape, generics: &SyntaxTree) {
+        if let SyntaxTree::Generic { items, .. } = generics {
             for it in items {
                 shape.list_with(self.element_name(it), self.render(it, true));
             }
@@ -776,16 +776,16 @@ impl<'a> Renderer<'a> {
     /// object or a string. Mirrors `xml_to_json`'s behaviour where
     /// text-only-leaves collapse to scalars under their parent's chosen
     /// key.
-    fn add_singleton_or_text(&self, shape: &mut Shape, ir: &Ir) {
-        // `Ir::Inline` is a transparent wrapper — recurse into its
+    fn add_singleton_or_text(&self, shape: &mut Shape, ir: &SyntaxTree) {
+        // `SyntaxTree::Inline` is a transparent wrapper — recurse into its
         // children so they surface as direct keys on the parent
         // shape (otherwise we'd emit a `"\$inline": …` key, which
         // is meant for the rare case where an Inline is rendered
         // standalone, not as a sub-shape under a parent slot).
-        if let Ir::Inline { children, list_name, .. } = ir {
+        if let SyntaxTree::Inline { children, list_name, .. } = ir {
             if list_name.is_none() {
                 for c in children {
-                    if matches!(c, Ir::Skip { .. }) { continue; }
+                    if matches!(c, SyntaxTree::Skip { .. }) { continue; }
                     self.add_singleton_or_text(shape, c);
                 }
                 return;
@@ -799,7 +799,7 @@ impl<'a> Renderer<'a> {
     /// Render an IR as the value-side of a `<type>` slot. If the IR
     /// already produces a `<type>`-shaped value (GenericType,
     /// SimpleStatement::type), unwrap so the parent doesn't double-wrap.
-    fn render_as_type(&self, ir: &Ir) -> Value {
+    fn render_as_type(&self, ir: &SyntaxTree) -> Value {
         let element = self.element_name(ir);
         if element == "type" {
             // Already type-shaped — return the inner so the parent's
@@ -821,7 +821,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn wrap_expression_host(&self, ir: &Ir) -> Value {
+    fn wrap_expression_host(&self, ir: &SyntaxTree) -> Value {
         // Mirror the XML render's <expression> host wrapping. Skip the
         // wrapper when the inner already produces an `<expression>`-
         // shaped value, to avoid `expression > expression` nesting.
@@ -864,25 +864,25 @@ impl<'a> Renderer<'a> {
 
     /// Add a heterogeneous Vec of children to the shape, grouping by
     /// their JSON key name (= element name). Leaves without children
-    /// become scalar text under the same key. `Ir::Inline` is
+    /// become scalar text under the same key. `SyntaxTree::Inline` is
     /// transparent — its children flatten into the parent (matching
     /// the XML render behaviour).
-    fn add_children(&self, shape: &mut Shape, children: &[Ir]) {
+    fn add_children(&self, shape: &mut Shape, children: &[SyntaxTree]) {
         for c in children {
             // Markers (Break/Continue) collapse to flags when bare.
-            if matches!(c, Ir::Break { .. } | Ir::Continue { .. }) {
+            if matches!(c, SyntaxTree::Break { .. } | SyntaxTree::Continue { .. }) {
                 shape.flag(self.element_name(c));
                 continue;
             }
-            // `Ir::SimpleStatement` with no semantic children
-            // (kids empty OR every kid is `Ir::Skip`) is a synthetic
+            // `SyntaxTree::SimpleStatement` with no semantic children
+            // (kids empty OR every kid is `SyntaxTree::Skip`) is a synthetic
             // marker — e.g. T-SQL `SELECT *` (`<star>` with one
             // anonymous-`*` Skip), JOIN direction `<left/>`. It
             // folds to an XML marker chip via the empty-element
             // pass; in JSON, surface as a boolean flag rather than
             // `"\<name\>": {}`.
-            if let Ir::SimpleStatement { children: kids, modifiers, extra_markers, .. } = c {
-                let all_skip_or_empty = kids.iter().all(|k| matches!(k, Ir::Skip { .. }));
+            if let SyntaxTree::SimpleStatement { children: kids, modifiers, extra_markers, .. } = c {
+                let all_skip_or_empty = kids.iter().all(|k| matches!(k, SyntaxTree::Skip { .. }));
                 if all_skip_or_empty
                     && modifiers.marker_names().is_empty()
                     && extra_markers.is_empty()
@@ -894,7 +894,7 @@ impl<'a> Renderer<'a> {
             // Inline: transparent — recurse with its children. If
             // `list_name` is set, treat it as a flat list under that
             // key (matching the XML render's `list="X"` distribution).
-            if let Ir::Inline { children: inner, list_name, .. } = c {
+            if let SyntaxTree::Inline { children: inner, list_name, .. } = c {
                 if let Some(list) = list_name {
                     for ic in inner {
                         let val = self.render(ic, true);
@@ -955,7 +955,7 @@ impl Shape {
 
     /// Append a value under a fixed list key, creating the array on
     /// first call and reusing it on subsequent calls. Used for
-    /// `Ir::Inline { list_name }` flattening.
+    /// `SyntaxTree::Inline { list_name }` flattening.
     fn put_in_list(&mut self, list_key: &str, value: Value) {
         let value = strip_top_level_type(value);
         match self.obj.remove(list_key) {

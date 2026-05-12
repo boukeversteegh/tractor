@@ -1,9 +1,9 @@
 //! Data-language IR — a format-agnostic typed shape for JSON / YAML /
 //! TOML / INI.
 //!
-//! ## Why a separate type from [`crate::ir::Ir`]
+//! ## Why a separate type from [`crate::ir::SyntaxTree`]
 //!
-//! The programming-language IR ([`crate::ir::Ir`]) is built around
+//! The programming-language IR ([`crate::ir::SyntaxTree`]) is built around
 //! constructs like `Class`, `Function`, `If` — it carries semantic
 //! type information specific to programming-language ASTs.
 //!

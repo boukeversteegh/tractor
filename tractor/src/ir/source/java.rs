@@ -1,9 +1,9 @@
 //! Java: IR → source code (canonical, no-anchor).
 #![allow(dead_code)]
 use super::common::{write_ir, Indent, Syntax};
-use crate::ir::types::Ir;
+use crate::ir::types::SyntaxTree;
 
-pub fn render(ir: &Ir) -> String {
+pub fn render(ir: &SyntaxTree) -> String {
     let mut out = String::new();
     write_ir(ir, &mut out, Indent::SPACES_4, &java_syntax());
     out

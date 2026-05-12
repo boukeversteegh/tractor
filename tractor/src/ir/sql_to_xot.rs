@@ -15,7 +15,7 @@
 //! For now this renderer emits structural XML only (no gap-fill).
 //! Text-recovery via `string()` is added once the parser flips
 //! TSQL to this pipeline; until then, `tsql.rs` (cross-language
-//! `Ir`) handles XPath queries.
+//! `SyntaxTree`) handles XPath queries.
 
 #![cfg(feature = "native")]
 

@@ -106,9 +106,9 @@ pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 #[cfg(feature = "native")]
 pub type GrammarFn = fn() -> tree_sitter::Language;
 
-/// CST → [`Ir`](crate::ir::Ir) lowering function pointer (programming languages).
+/// CST → [`SyntaxTree`](crate::ir::SyntaxTree) lowering function pointer (programming languages).
 #[cfg(feature = "native")]
-pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::Ir;
+pub type LowerToIr = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::ir::SyntaxTree;
 
 /// CST → [`DataIr`](crate::ir::DataIr) lowering function pointer (data languages).
 #[cfg(feature = "native")]

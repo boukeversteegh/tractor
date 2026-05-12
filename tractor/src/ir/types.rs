@@ -38,8 +38,8 @@
 //!   no children). In the IR, marker-class variants (when added) carry
 //!   no children fields; the rule becomes `cargo check`.
 //! - **`container-has-content`** (a `ContainerOnly` name must have ≥1
-//!   child). Container variants have required `Box<Ir>` / non-empty
-//!   `Vec<Ir>` fields.
+//!   child). Container variants have required `Box<SyntaxTree>` / non-empty
+//!   `Vec<SyntaxTree>` fields.
 //! - **`no-marker-wrapper-collision`** (no parent has both `<X/>` empty
 //!   and `<X>...</X>` wrapper sibling). Markers and containers are
 //!   distinct variant *categories*; a single IR shape cannot produce
@@ -136,7 +136,7 @@ impl ByteRange {
 /// Initial slice is intentionally tiny. Variants are added as parity
 /// scope grows.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Ir {
+pub enum SyntaxTree {
     // ----- Containers -----------------------------------------------------
 
     /// `<module>` / `<unit>` / `<program>` — top-level program. The
@@ -151,7 +151,7 @@ pub enum Ir {
     /// per language to be revisited; we keep parity for now.
     Module {
         element_name: &'static str,
-        children: Vec<Ir>,
+        children: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -173,7 +173,7 @@ pub enum Ir {
     /// ALWAYS present in value positions; the marker decorates it
     /// rather than appearing on the bare inner name/expression.
     Expression {
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         marker: Option<&'static str>,
         range: ByteRange,
         span: Span,
@@ -193,7 +193,7 @@ pub enum Ir {
     /// verbatim — including the `.` / `[` / `]` punctuation that lives
     /// in the segments.
     Access {
-        receiver: Box<Ir>,
+        receiver: Box<SyntaxTree>,
         segments: Vec<AccessSegment>,
         range: ByteRange,
         span: Span,
@@ -214,8 +214,8 @@ pub enum Ir {
         op_text: String,
         op_marker: &'static str,
         op_range: ByteRange,
-        left: Box<Ir>,
-        right: Box<Ir>,
+        left: Box<SyntaxTree>,
+        right: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -227,7 +227,7 @@ pub enum Ir {
         op_text: String,
         op_marker: &'static str,
         op_range: ByteRange,
-        operand: Box<Ir>,
+        operand: Box<SyntaxTree>,
         /// Extra markers placed on the `<unary>` element itself
         /// (NOT on `<op>`). Used for `<prefix/>` on `++x`/`--x` to
         /// distinguish from postfix forms.
@@ -241,27 +241,27 @@ pub enum Ir {
     /// `<tuple>` — `(a, b, c)` parenthesized tuple. Children are
     /// expressions in source order (no `<expression>` host —
     /// matches existing pipeline shape `<tuple><name>a</name>...</tuple>`).
-    Tuple { children: Vec<Ir>, range: ByteRange, span: Span },
+    Tuple { children: Vec<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<list>` with `<literal/>` marker — `[a, b, c]` list literal.
-    List { children: Vec<Ir>, range: ByteRange, span: Span },
+    List { children: Vec<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<set>` with `<literal/>` marker — `{a, b}`.
-    Set { children: Vec<Ir>, range: ByteRange, span: Span },
+    Set { children: Vec<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<dictionary>` with `<literal/>` marker — `{k: v, ...}`.
-    Dictionary { pairs: Vec<Ir>, range: ByteRange, span: Span },
+    Dictionary { pairs: Vec<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<pair>` — `key: value` inside a dictionary.
-    Pair { key: Box<Ir>, value: Box<Ir>, range: ByteRange, span: Span },
+    Pair { key: Box<SyntaxTree>, value: Box<SyntaxTree>, range: ByteRange, span: Span },
 
     // ----- Generic types --------------------------------------------------
 
     /// `<type[generic]>` — `Name[T, U, ...]` generic type expression.
     /// `name` is the base type name; `params` are the type arguments.
     GenericType {
-        name: Box<Ir>,
-        params: Vec<Ir>,
+        name: Box<SyntaxTree>,
+        params: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -275,11 +275,11 @@ pub enum Ir {
     /// remaining as Unknown-wrapped — this works for the common
     /// two-operand case (`a < b`).
     Comparison {
-        left: Box<Ir>,
+        left: Box<SyntaxTree>,
         op_text: String,
         op_marker: &'static str,
         op_range: ByteRange,
-        right: Box<Ir>,
+        right: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -288,9 +288,9 @@ pub enum Ir {
 
     /// `<if>` — `if cond: ... [elif ...] [else ...]`.
     If {
-        condition: Box<Ir>,
-        body: Box<Ir>,             // Ir::Body
-        else_branch: Option<Box<Ir>>, // Ir::ElseIf or Ir::Else
+        condition: Box<SyntaxTree>,
+        body: Box<SyntaxTree>,             // SyntaxTree::Body
+        else_branch: Option<Box<SyntaxTree>>, // SyntaxTree::ElseIf or SyntaxTree::Else
         range: ByteRange,
         span: Span,
     },
@@ -298,49 +298,49 @@ pub enum Ir {
     /// `<else_if>` — `elif cond: body`. Used inside If's else_branch
     /// to keep elif chains flat.
     ElseIf {
-        condition: Box<Ir>,
-        body: Box<Ir>,
-        else_branch: Option<Box<Ir>>,
+        condition: Box<SyntaxTree>,
+        body: Box<SyntaxTree>,
+        else_branch: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<else>` — `else: body`.
-    Else { body: Box<Ir>, range: ByteRange, span: Span },
+    Else { body: Box<SyntaxTree>, range: ByteRange, span: Span },
 
     /// `<for>` — `for target in iter: body [else: body]`.
     /// `<for[async]>` adds an `<async/>` marker.
     For {
         is_async: bool,
-        targets: Vec<Ir>,
-        iterables: Vec<Ir>,
-        body: Box<Ir>,
-        else_body: Option<Box<Ir>>,
+        targets: Vec<SyntaxTree>,
+        iterables: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
+        else_body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<while>` — `while cond: body [else: body]`.
     While {
-        condition: Box<Ir>,
-        body: Box<Ir>,
-        else_body: Option<Box<Ir>>,
+        condition: Box<SyntaxTree>,
+        body: Box<SyntaxTree>,
+        else_body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<foreach>` — C# `foreach (T x in coll) body` / Java
     /// enhanced-for. Single target, single iterable, optional type
-    /// annotation. Distinct from [`Ir::For`] because Python's
+    /// annotation. Distinct from [`SyntaxTree::For`] because Python's
     /// `for x in iter` (a foreach by semantics) renders as `<for>`
     /// for parity with the existing pipeline; cross-language element
     /// naming asymmetry is allowed (Principle #5 scope is intra-
     /// language).
     Foreach {
-        type_ann: Option<Box<Ir>>,
-        target: Box<Ir>,
-        iterable: Box<Ir>,
-        body: Box<Ir>,
+        type_ann: Option<Box<SyntaxTree>>,
+        target: Box<SyntaxTree>,
+        iterable: Box<SyntaxTree>,
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -350,10 +350,10 @@ pub enum Ir {
     /// vec because C-style `for` allows comma-separated updates
     /// (`for(int i=0,j=10; i<j; i++,j--)`).
     CFor {
-        initializer: Option<Box<Ir>>,
-        condition: Option<Box<Ir>>,
-        updates: Vec<Ir>,
-        body: Box<Ir>,
+        initializer: Option<Box<SyntaxTree>>,
+        condition: Option<Box<SyntaxTree>>,
+        updates: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -361,8 +361,8 @@ pub enum Ir {
     /// `<do>` — `do body while(cond);`. Renders the keyword as gap
     /// text; body and condition are the only IR children.
     DoWhile {
-        body: Box<Ir>,
-        condition: Box<Ir>,
+        body: Box<SyntaxTree>,
+        condition: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -375,11 +375,11 @@ pub enum Ir {
     /// parity-track field-wrapping mechanism: when a CST child has
     /// a labelled `field=type` (or `name`, `value`, etc.) and that
     /// field has a wrapping in the language's table, lower it as
-    /// `Ir::FieldWrap { wrapper: "type", inner: ... }` so the
+    /// `SyntaxTree::FieldWrap { wrapper: "type", inner: ... }` so the
     /// rendered XML is `<type>{inner rendering}</type>`.
     FieldWrap {
         wrapper: &'static str,
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -408,7 +408,7 @@ pub enum Ir {
         /// text (Principle: every keyword in an element's text must
         /// have a corresponding marker sibling).
         extra_markers: &'static [&'static str],
-        children: Vec<Ir>,
+        children: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -419,10 +419,10 @@ pub enum Ir {
     /// block; `handlers` are catch/except clauses; `else_body` runs
     /// when no exception (Python only); `finally_body` always runs.
     Try {
-        try_body: Box<Ir>,
-        handlers: Vec<Ir>,
-        else_body: Option<Box<Ir>>,
-        finally_body: Option<Box<Ir>>,
+        try_body: Box<SyntaxTree>,
+        handlers: Vec<SyntaxTree>,
+        else_body: Option<Box<SyntaxTree>>,
+        finally_body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -433,10 +433,10 @@ pub enum Ir {
     /// `body` is the handler block.
     ExceptHandler {
         kind: &'static str,            // "except" | "catch"
-        type_target: Option<Box<Ir>>,
-        binding: Option<Box<Ir>>,
-        filter: Option<Box<Ir>>,
-        body: Box<Ir>,
+        type_target: Option<Box<SyntaxTree>>,
+        binding: Option<Box<SyntaxTree>>,
+        filter: Option<Box<SyntaxTree>>,
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -446,9 +446,9 @@ pub enum Ir {
     /// `type_params` is the optional generic list, `value` is the
     /// aliased type.
     TypeAlias {
-        name: Box<Ir>,
-        type_params: Option<Box<Ir>>,
-        value: Box<Ir>,
+        name: Box<SyntaxTree>,
+        type_params: Option<Box<SyntaxTree>>,
+        value: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -456,8 +456,8 @@ pub enum Ir {
     /// `<keyword>` — `name=value` keyword argument in a call (Python /
     /// C# named arg). `value` is the inner expression.
     KeywordArgument {
-        name: Box<Ir>,
-        value: Box<Ir>,
+        name: Box<SyntaxTree>,
+        value: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -465,7 +465,7 @@ pub enum Ir {
     /// `<splat>` with `<list/>` marker — `*x` (positional splat) in a
     /// call or list literal. Inner is the splatted expression.
     ListSplat {
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -473,7 +473,7 @@ pub enum Ir {
     /// `<splat>` with `<dict/>` marker — `**x` (keyword splat) in a
     /// call or dict literal.
     DictSplat {
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -483,9 +483,9 @@ pub enum Ir {
     /// regardless of source order; the renderer sorts children by
     /// `range().start` to weave gap text correctly.
     Ternary {
-        condition: Box<Ir>,
-        if_true: Box<Ir>,
-        if_false: Box<Ir>,
+        condition: Box<SyntaxTree>,
+        if_true: Box<SyntaxTree>,
+        if_false: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -493,12 +493,12 @@ pub enum Ir {
     /// `<new>` — `new Foo(args) { Init }` (C# / Java
      /// `new`-expression). `type_target` is `None` for C#'s
     /// target-typed `new()` form. `initializer` carries an
-    /// `Ir::Inline` of the brace-form initializer's children
+    /// `SyntaxTree::Inline` of the brace-form initializer's children
     /// (`{ A = 1, B = 2 }`) when present.
     ObjectCreation {
-        type_target: Option<Box<Ir>>,
-        arguments: Vec<Ir>,
-        initializer: Option<Box<Ir>>,
+        type_target: Option<Box<SyntaxTree>>,
+        arguments: Vec<SyntaxTree>,
+        initializer: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -506,13 +506,13 @@ pub enum Ir {
     /// `<lambda>` — `x => x*x`, `(x, y) => x+y`, `async x => ...`,
     /// `(x) => { return x; }`. Cross-language: C# lambda, Java
     /// lambda (`x -> x`), Python `lambda` (which has bare-param
-    /// syntax). `body` is `Ir::Body` for block-bodied lambdas
+    /// syntax). `body` is `SyntaxTree::Body` for block-bodied lambdas
     /// (renders `<body>`) or any expression IR for expression-bodied
     /// (renders `<value><expression>...</expression></value>`).
     Lambda {
         modifiers: Modifiers,
-        parameters: Vec<Ir>,
-        body: Box<Ir>,
+        parameters: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -534,12 +534,12 @@ pub enum Ir {
         /// users query `<method>` in C# and `<function>` in Python.
         element_name: &'static str,
         modifiers: Modifiers,
-        decorators: Vec<Ir>,
-        name: Box<Ir>,                  // Ir::Name
-        generics: Option<Box<Ir>>,      // Ir::Generic
-        parameters: Vec<Ir>,            // each Ir::Parameter / Ir::PositionalSeparator / Ir::KeywordSeparator
-        returns: Option<Box<Ir>>,       // Ir::Returns
-        body: Option<Box<Ir>>,          // Ir::Body — None for abstract / interface methods
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,                  // SyntaxTree::Name
+        generics: Option<Box<SyntaxTree>>,      // SyntaxTree::Generic
+        parameters: Vec<SyntaxTree>,            // each SyntaxTree::Parameter / SyntaxTree::PositionalSeparator / SyntaxTree::KeywordSeparator
+        returns: Option<Box<SyntaxTree>>,       // SyntaxTree::Returns
+        body: Option<Box<SyntaxTree>>,          // SyntaxTree::Body — None for abstract / interface methods
         range: ByteRange,
         span: Span,
     },
@@ -558,12 +558,12 @@ pub enum Ir {
     Class {
         kind: &'static str,            // "class" | "struct" | "interface" | "record"
         modifiers: Modifiers,
-        decorators: Vec<Ir>,
-        name: Box<Ir>,
-        generics: Option<Box<Ir>>,
-        bases: Vec<Ir>,                 // each is a base expression
-        where_clauses: Vec<Ir>,         // C# `where T : ...` constraints (other languages: empty)
-        body: Box<Ir>,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        generics: Option<Box<SyntaxTree>>,
+        bases: Vec<SyntaxTree>,                 // each is a base expression
+        where_clauses: Vec<SyntaxTree>,         // C# `where T : ...` constraints (other languages: empty)
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -576,7 +576,7 @@ pub enum Ir {
     /// `block` kind to produce body/block nesting). Python sets it
     /// false (its function bodies are flat under `<body>`).
     Body {
-        children: Vec<Ir>,
+        children: Vec<SyntaxTree>,
         pass_only: bool,
         block_wrap: bool,
         range: ByteRange,
@@ -594,9 +594,9 @@ pub enum Ir {
         kind: ParamKind,
         extra_markers: &'static [&'static str],
         modifiers: Modifiers,
-        name: Box<Ir>,                  // Ir::Name
-        type_ann: Option<Box<Ir>>,      // <type>...</type>
-        default: Option<Box<Ir>>,       // <value><expression>...</expression></value>
+        name: Box<SyntaxTree>,                  // SyntaxTree::Name
+        type_ann: Option<Box<SyntaxTree>>,      // <type>...</type>
+        default: Option<Box<SyntaxTree>>,       // <value><expression>...</expression></value>
         range: ByteRange,
         span: Span,
     },
@@ -620,23 +620,23 @@ pub enum Ir {
     /// `<decorator>` — `@expr` decorator above a function/class.
     /// Wraps any expression directly (no `<expression>` host).
     Decorator {
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<returns>` — return-type annotation slot. Wraps a `<type>`.
     Returns {
-        type_ann: Box<Ir>,
+        type_ann: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<generic>` — generic-parameter list (PEP 695 `def f[T]`).
-    /// Each item is an [`Ir::TypeParameter`] (renders as `<type>`
+    /// Each item is an [`SyntaxTree::TypeParameter`] (renders as `<type>`
     /// containing a `<name>`).
     Generic {
-        items: Vec<Ir>,
+        items: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -644,8 +644,8 @@ pub enum Ir {
     /// `<type>` — type-parameter slot inside `<generic>`. Has a name
     /// and optional constraint.
     TypeParameter {
-        name: Box<Ir>,
-        constraint: Option<Box<Ir>>,
+        name: Box<SyntaxTree>,
+        constraint: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -655,7 +655,7 @@ pub enum Ir {
     /// `<return><expression>...</expression></return>` when value is
     /// present.
     Return {
-        value: Option<Box<Ir>>,
+        value: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -691,12 +691,12 @@ pub enum Ir {
     /// `op_markers` are emitted as empty children of `<op>`:
     /// `[]` for plain `=`, `["assign", "plus"]` for `+=`, etc.
     Assign {
-        targets: Vec<Ir>,
-        type_annotation: Option<Box<Ir>>,
+        targets: Vec<SyntaxTree>,
+        type_annotation: Option<Box<SyntaxTree>>,
         op_text: String,
         op_range: ByteRange,
         op_markers: Vec<&'static str>,
-        values: Vec<Ir>,
+        values: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -707,22 +707,22 @@ pub enum Ir {
     /// `has_alias` adds an empty `<alias/>` marker child first; visible
     /// in the tree-text view as `<import[alias]>`.
     /// `children` are the import items in source order: each is an
-    /// [`Ir::Path`] (plain), or an [`Ir::Path`] followed by an
-    /// [`Ir::Aliased`] sibling (aliased — `import x as a`).
+    /// [`SyntaxTree::Path`] (plain), or an [`SyntaxTree::Path`] followed by an
+    /// [`SyntaxTree::Aliased`] sibling (aliased — `import x as a`).
     Import {
         has_alias: bool,
-        children: Vec<Ir>,
+        children: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<from>` — `from x import y` (with `<relative/>` marker if the
     /// path is relative). `path` is `None` for bare `from . import x`.
-    /// `imports` are one [`Ir::FromImport`] per imported name.
+    /// `imports` are one [`SyntaxTree::FromImport`] per imported name.
     From {
         relative: bool,
-        path: Option<Box<Ir>>,
-        imports: Vec<Ir>,
+        path: Option<Box<SyntaxTree>>,
+        imports: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -732,10 +732,10 @@ pub enum Ir {
     /// `has_alias` adds an empty `<alias/>` marker child first.
     FromImport {
         has_alias: bool,
-        /// Always an [`Ir::Name`] for the imported identifier.
-        name: Box<Ir>,
-        /// Some([`Ir::Aliased`]) if `... as X`.
-        alias: Option<Box<Ir>>,
+        /// Always an [`SyntaxTree::Name`] for the imported identifier.
+        name: Box<SyntaxTree>,
+        /// Some([`SyntaxTree::Aliased`]) if `... as X`.
+        alias: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -744,7 +744,7 @@ pub enum Ir {
     /// (later) other path positions. Segments are flat (Principle #19,
     /// iters 151-153).
     Path {
-        segments: Vec<Ir>,
+        segments: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -753,7 +753,7 @@ pub enum Ir {
     /// (`import x as a`, `from m import y as z`). Wraps the alias
     /// `<name>` to disambiguate from the original name.
     Aliased {
-        inner: Box<Ir>,
+        inner: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -761,11 +761,11 @@ pub enum Ir {
     /// `<call>` for a *standalone* call `f(args)` whose callee is a
     /// bare atom (typically `<name>`). When the callee is itself a
     /// chain (`a.b()`), lowering folds the call into an
-    /// [`Ir::Access`] chain segment instead. (Future: add
+    /// [`SyntaxTree::Access`] chain segment instead. (Future: add
     /// `AccessSegment::Call` and the chained-call lowering.)
     Call {
-        callee: Box<Ir>,
-        arguments: Vec<Ir>,
+        callee: Box<SyntaxTree>,
+        arguments: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -806,23 +806,23 @@ pub enum Ir {
         span: Span,
     },
     /// `<enum>` — `enum Name { Member1, Member2 = 5, ... }`. Members
-    /// are `Ir::EnumMember`. C# enums also accept an optional
+    /// are `SyntaxTree::EnumMember`. C# enums also accept an optional
     /// underlying type (`enum Trait : uint`).
     Enum {
         modifiers: Modifiers,
-        decorators: Vec<Ir>,
-        name: Box<Ir>,
-        underlying_type: Option<Box<Ir>>,  // C# `: uint`
-        members: Vec<Ir>,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        underlying_type: Option<Box<SyntaxTree>>,  // C# `: uint`
+        members: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<constant>` — one member of an enum (`Low`, `Medium = 5`).
     EnumMember {
-        decorators: Vec<Ir>,
-        name: Box<Ir>,
-        value: Option<Box<Ir>>,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,
+        value: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -833,11 +833,11 @@ pub enum Ir {
     /// `<property>{markers}<type>...<name>...{accessors}{value}</property>`.
     Property {
         modifiers: Modifiers,
-        decorators: Vec<Ir>,
-        type_ann: Option<Box<Ir>>,
-        name: Box<Ir>,
-        accessors: Vec<Ir>,                // each Ir::Accessor
-        value: Option<Box<Ir>>,            // initializer expression
+        decorators: Vec<SyntaxTree>,
+        type_ann: Option<Box<SyntaxTree>>,
+        name: Box<SyntaxTree>,
+        accessors: Vec<SyntaxTree>,                // each SyntaxTree::Accessor
+        value: Option<Box<SyntaxTree>>,            // initializer expression
         range: ByteRange,
         span: Span,
     },
@@ -848,7 +848,7 @@ pub enum Ir {
     Accessor {
         modifiers: Modifiers,              // Some accessors have their own access modifier
         kind: &'static str,                // "get" | "set" | "init"
-        body: Option<Box<Ir>>,
+        body: Option<Box<SyntaxTree>>,
         range: ByteRange,
         span: Span,
     },
@@ -858,10 +858,10 @@ pub enum Ir {
     /// Initializer `: base(...)` deferred.
     Constructor {
         modifiers: Modifiers,
-        decorators: Vec<Ir>,
-        name: Box<Ir>,                     // class name being constructed
-        parameters: Vec<Ir>,
-        body: Box<Ir>,
+        decorators: Vec<SyntaxTree>,
+        name: Box<SyntaxTree>,                     // class name being constructed
+        parameters: Vec<SyntaxTree>,
+        body: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -872,8 +872,8 @@ pub enum Ir {
     /// `alias` for `using X = Y;`.
     Using {
         is_static: bool,
-        alias: Option<Box<Ir>>,
-        path: Box<Ir>,
+        alias: Option<Box<SyntaxTree>>,
+        path: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -884,8 +884,8 @@ pub enum Ir {
     /// `unify_file_scoped_namespace` looks for to fold following
     /// siblings into the namespace's body.
     Namespace {
-        name: Box<Ir>,
-        children: Vec<Ir>,
+        name: Box<SyntaxTree>,
+        children: Vec<SyntaxTree>,
         file_scoped: bool,
         range: ByteRange,
         span: Span,
@@ -905,9 +905,9 @@ pub enum Ir {
         modifiers: Modifiers,
         /// Attributes/decorators on the declaration (C# `[Attr]` for
         /// fields, future Java annotations). Empty for locals.
-        decorators: Vec<Ir>,
-        type_ann: Option<Box<Ir>>,
-        name: Box<Ir>,
+        decorators: Vec<SyntaxTree>,
+        type_ann: Option<Box<SyntaxTree>>,
+        name: Box<SyntaxTree>,
         value: Option<Expression>,
         range: ByteRange,
         span: Span,
@@ -919,8 +919,8 @@ pub enum Ir {
     /// (Pattern-form `is Widget w` not yet covered — would extend
     /// `right` with a pattern variant.)
     Is {
-        value: Box<Ir>,
-        type_target: Box<Ir>,
+        value: Box<SyntaxTree>,
+        type_target: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -928,8 +928,8 @@ pub enum Ir {
     /// `<cast>` — `(Type)expr` type-cast expression (C#, Java, …).
     /// Renders as `<cast><type>...</type><value><expression>...</expression></value></cast>`.
     Cast {
-        type_ann: Box<Ir>,
-        value: Box<Ir>,
+        type_ann: Box<SyntaxTree>,
+        value: Box<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -956,7 +956,7 @@ pub enum Ir {
     /// JSON projection collects them under a plural key (e.g.
     /// `attributes: [...]`) instead of colliding on a singleton.
     Inline {
-        children: Vec<Ir>,
+        children: Vec<SyntaxTree>,
         list_name: Option<&'static str>,
         range: ByteRange,
         span: Span,
@@ -985,7 +985,7 @@ pub enum Ir {
 /// 3. **Marker swap is automatic.** `<public/>` becomes `<private/>`
 ///    by changing one enum value, not by hand-editing XML.
 ///
-/// `Option<Access>` on `Ir::Class` lets cross-language reuse stay
+/// `Option<Access>` on `SyntaxTree::Class` lets cross-language reuse stay
 /// clean: Python sets it to `None` (no access modifier concept);
 /// C# / Java / etc. always set `Some(...)` (the default is
 /// language-specific — `internal` for top-level C# class, `private`
@@ -1192,7 +1192,7 @@ impl Modifiers {
     }
 }
 
-/// `Ir::Parameter` kind discriminator.
+/// `SyntaxTree::Parameter` kind discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParamKind {
     /// Regular positional / keyword parameter `x` / `x=default` /
@@ -1204,7 +1204,7 @@ pub enum ParamKind {
     Kwargs,
 }
 
-/// One step in an [`Ir::Access`] chain.
+/// One step in an [`SyntaxTree::Access`] chain.
 ///
 /// The renderer emits these *right-nested*: the first segment is a
 /// child of `<object>`, the second is a child of the first, and so on.
@@ -1241,7 +1241,7 @@ pub enum AccessSegment {
     /// both the chain-segment case (`a[0]`) and the future standalone
     /// case.
     Index {
-        indices: Vec<Ir>,
+        indices: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -1252,11 +1252,11 @@ pub enum AccessSegment {
     /// `name` carries the method name range so the renderer folds
     /// the member+call into a single `<call><name>Method</name>...</call>`
     /// element — matches the imperative pipeline's chain inversion.
-    /// For bare invocations (`f()`), use `Ir::Call` instead.
+    /// For bare invocations (`f()`), use `SyntaxTree::Call` instead.
     Call {
         name: Option<ByteRange>,
         name_span: Option<Span>,
-        arguments: Vec<Ir>,
+        arguments: Vec<SyntaxTree>,
         range: ByteRange,
         span: Span,
     },
@@ -1280,28 +1280,28 @@ impl AccessSegment {
     }
 }
 
-/// Typed wrapper for expression-position slots (`Ir::Variable.value`,
-/// `Ir::If.condition`, `Ir::Binary.left/right`, `Ir::Return.value`, …).
+/// Typed wrapper for expression-position slots (`SyntaxTree::Variable.value`,
+/// `SyntaxTree::If.condition`, `SyntaxTree::Binary.left/right`, `SyntaxTree::Return.value`, …).
 /// The type system enforces Principle #15: anything in these slots
 /// renders as `<expression>` so XPath queries match a uniform parent
 /// regardless of inner shape.
 ///
 /// Construct via [`Expression::wrap`], which is idempotent: if the
-/// supplied `Ir` already renders as `<expression>` (`Ir::Expression`
-/// variant, or `Ir::SimpleStatement { element_name: "expression", … }`
+/// supplied `SyntaxTree` already renders as `<expression>` (`SyntaxTree::Expression`
+/// variant, or `SyntaxTree::SimpleStatement { element_name: "expression", … }`
 /// — used for `<expression[ref]>`/etc. with extra markers), the inner
-/// is stored as-is; otherwise it is wrapped in `Ir::Expression`. Either
+/// is stored as-is; otherwise it is wrapped in `SyntaxTree::Expression`. Either
 /// way, exactly one `<expression>` element renders per slot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expression {
-    pub inner: Box<Ir>,
+    pub inner: Box<SyntaxTree>,
 }
 
 impl Expression {
-    pub fn wrap(inner: Ir) -> Self {
+    pub fn wrap(inner: SyntaxTree) -> Self {
         let already = matches!(&inner,
-            Ir::Expression { .. }
-                | Ir::SimpleStatement { element_name: "expression", .. }
+            SyntaxTree::Expression { .. }
+                | SyntaxTree::SimpleStatement { element_name: "expression", .. }
         );
         if already {
             Self { inner: Box::new(inner) }
@@ -1309,7 +1309,7 @@ impl Expression {
             let range = inner.range();
             let span = inner.span();
             Self {
-                inner: Box::new(Ir::Expression {
+                inner: Box::new(SyntaxTree::Expression {
                     inner: Box::new(inner),
                     marker: None,
                     range,
@@ -1323,84 +1323,84 @@ impl Expression {
     pub fn span(&self) -> Span { self.inner.span() }
 }
 
-impl Ir {
+impl SyntaxTree {
     /// Source span of this node. Used for XML attribute emission.
     pub fn span(&self) -> Span {
         match self {
-            Ir::Module { span, .. }
-            | Ir::Expression { span, .. }
-            | Ir::Access { span, .. }
-            | Ir::Call { span, .. }
-            | Ir::Binary { span, .. }
-            | Ir::Unary { span, .. }
-            | Ir::Tuple { span, .. }
-            | Ir::List { span, .. }
-            | Ir::Set { span, .. }
-            | Ir::Dictionary { span, .. }
-            | Ir::Pair { span, .. }
-            | Ir::GenericType { span, .. }
-            | Ir::Comparison { span, .. }
-            | Ir::If { span, .. }
-            | Ir::ElseIf { span, .. }
-            | Ir::Else { span, .. }
-            | Ir::For { span, .. }
-            | Ir::Foreach { span, .. }
-            | Ir::CFor { span, .. }
-            | Ir::DoWhile { span, .. }
-            | Ir::While { span, .. }
-            | Ir::Break { span, .. }
-            | Ir::Continue { span, .. }
-            | Ir::Lambda { span, .. }
-            | Ir::ObjectCreation { span, .. }
-            | Ir::Ternary { span, .. }
-            | Ir::FieldWrap { span, .. }
-            | Ir::SimpleStatement { span, .. }
-            | Ir::Try { span, .. }
-            | Ir::ExceptHandler { span, .. }
-            | Ir::TypeAlias { span, .. }
-            | Ir::KeywordArgument { span, .. }
-            | Ir::ListSplat { span, .. }
-            | Ir::DictSplat { span, .. }
-            | Ir::Function { span, .. }
-            | Ir::Class { span, .. }
-            | Ir::Body { span, .. }
-            | Ir::Parameter { span, .. }
-            | Ir::Skip { span, .. }
-            | Ir::PositionalSeparator { span, .. }
-            | Ir::KeywordSeparator { span, .. }
-            | Ir::Decorator { span, .. }
-            | Ir::Returns { span, .. }
-            | Ir::Generic { span, .. }
-            | Ir::TypeParameter { span, .. }
-            | Ir::Return { span, .. }
-            | Ir::Comment { span, .. }
-            | Ir::Assign { span, .. }
-            | Ir::Import { span, .. }
-            | Ir::From { span, .. }
-            | Ir::FromImport { span, .. }
-            | Ir::Path { span, .. }
-            | Ir::Aliased { span, .. }
-            | Ir::Name { span, .. }
-            | Ir::Int { span, .. }
-            | Ir::Float { span, .. }
-            | Ir::String { span, .. }
-            | Ir::True { span, .. }
-            | Ir::False { span, .. }
-            | Ir::None { span, .. }
-            | Ir::Atom { span, .. }
-            | Ir::Enum { span, .. }
-            | Ir::EnumMember { span, .. }
-            | Ir::Property { span, .. }
-            | Ir::Accessor { span, .. }
-            | Ir::Constructor { span, .. }
-            | Ir::Using { span, .. }
-            | Ir::Namespace { span, .. }
-            | Ir::Variable { span, .. }
-            | Ir::Is { span, .. }
-            | Ir::Cast { span, .. }
-            | Ir::Null { span, .. }
-            | Ir::Inline { span, .. }
-            | Ir::Unknown { span, .. } => *span,
+            SyntaxTree::Module { span, .. }
+            | SyntaxTree::Expression { span, .. }
+            | SyntaxTree::Access { span, .. }
+            | SyntaxTree::Call { span, .. }
+            | SyntaxTree::Binary { span, .. }
+            | SyntaxTree::Unary { span, .. }
+            | SyntaxTree::Tuple { span, .. }
+            | SyntaxTree::List { span, .. }
+            | SyntaxTree::Set { span, .. }
+            | SyntaxTree::Dictionary { span, .. }
+            | SyntaxTree::Pair { span, .. }
+            | SyntaxTree::GenericType { span, .. }
+            | SyntaxTree::Comparison { span, .. }
+            | SyntaxTree::If { span, .. }
+            | SyntaxTree::ElseIf { span, .. }
+            | SyntaxTree::Else { span, .. }
+            | SyntaxTree::For { span, .. }
+            | SyntaxTree::Foreach { span, .. }
+            | SyntaxTree::CFor { span, .. }
+            | SyntaxTree::DoWhile { span, .. }
+            | SyntaxTree::While { span, .. }
+            | SyntaxTree::Break { span, .. }
+            | SyntaxTree::Continue { span, .. }
+            | SyntaxTree::Lambda { span, .. }
+            | SyntaxTree::ObjectCreation { span, .. }
+            | SyntaxTree::Ternary { span, .. }
+            | SyntaxTree::FieldWrap { span, .. }
+            | SyntaxTree::SimpleStatement { span, .. }
+            | SyntaxTree::Try { span, .. }
+            | SyntaxTree::ExceptHandler { span, .. }
+            | SyntaxTree::TypeAlias { span, .. }
+            | SyntaxTree::KeywordArgument { span, .. }
+            | SyntaxTree::ListSplat { span, .. }
+            | SyntaxTree::DictSplat { span, .. }
+            | SyntaxTree::Function { span, .. }
+            | SyntaxTree::Class { span, .. }
+            | SyntaxTree::Body { span, .. }
+            | SyntaxTree::Parameter { span, .. }
+            | SyntaxTree::Skip { span, .. }
+            | SyntaxTree::PositionalSeparator { span, .. }
+            | SyntaxTree::KeywordSeparator { span, .. }
+            | SyntaxTree::Decorator { span, .. }
+            | SyntaxTree::Returns { span, .. }
+            | SyntaxTree::Generic { span, .. }
+            | SyntaxTree::TypeParameter { span, .. }
+            | SyntaxTree::Return { span, .. }
+            | SyntaxTree::Comment { span, .. }
+            | SyntaxTree::Assign { span, .. }
+            | SyntaxTree::Import { span, .. }
+            | SyntaxTree::From { span, .. }
+            | SyntaxTree::FromImport { span, .. }
+            | SyntaxTree::Path { span, .. }
+            | SyntaxTree::Aliased { span, .. }
+            | SyntaxTree::Name { span, .. }
+            | SyntaxTree::Int { span, .. }
+            | SyntaxTree::Float { span, .. }
+            | SyntaxTree::String { span, .. }
+            | SyntaxTree::True { span, .. }
+            | SyntaxTree::False { span, .. }
+            | SyntaxTree::None { span, .. }
+            | SyntaxTree::Atom { span, .. }
+            | SyntaxTree::Enum { span, .. }
+            | SyntaxTree::EnumMember { span, .. }
+            | SyntaxTree::Property { span, .. }
+            | SyntaxTree::Accessor { span, .. }
+            | SyntaxTree::Constructor { span, .. }
+            | SyntaxTree::Using { span, .. }
+            | SyntaxTree::Namespace { span, .. }
+            | SyntaxTree::Variable { span, .. }
+            | SyntaxTree::Is { span, .. }
+            | SyntaxTree::Cast { span, .. }
+            | SyntaxTree::Null { span, .. }
+            | SyntaxTree::Inline { span, .. }
+            | SyntaxTree::Unknown { span, .. } => *span,
         }
     }
 
@@ -1409,85 +1409,85 @@ impl Ir {
     /// renderer.
     pub fn range(&self) -> ByteRange {
         match self {
-            Ir::Module { range, .. }
-            | Ir::Expression { range, .. }
-            | Ir::Access { range, .. }
-            | Ir::Call { range, .. }
-            | Ir::Binary { range, .. }
-            | Ir::Unary { range, .. }
-            | Ir::Tuple { range, .. }
-            | Ir::List { range, .. }
-            | Ir::Set { range, .. }
-            | Ir::Dictionary { range, .. }
-            | Ir::Pair { range, .. }
-            | Ir::GenericType { range, .. }
-            | Ir::Comparison { range, .. }
-            | Ir::If { range, .. }
-            | Ir::ElseIf { range, .. }
-            | Ir::Else { range, .. }
-            | Ir::For { range, .. }
-            | Ir::Foreach { range, .. }
-            | Ir::CFor { range, .. }
-            | Ir::DoWhile { range, .. }
-            | Ir::While { range, .. }
-            | Ir::Break { range, .. }
-            | Ir::Continue { range, .. }
-            | Ir::Lambda { range, .. }
-            | Ir::ObjectCreation { range, .. }
-            | Ir::Ternary { range, .. }
-            | Ir::FieldWrap { range, .. }
-            | Ir::SimpleStatement { range, .. }
-            | Ir::Try { range, .. }
-            | Ir::ExceptHandler { range, .. }
-            | Ir::TypeAlias { range, .. }
-            | Ir::KeywordArgument { range, .. }
-            | Ir::ListSplat { range, .. }
-            | Ir::DictSplat { range, .. }
-            | Ir::Function { range, .. }
-            | Ir::Class { range, .. }
-            | Ir::Body { range, .. }
-            | Ir::Parameter { range, .. }
-            | Ir::Skip { range, .. }
-            | Ir::PositionalSeparator { range, .. }
-            | Ir::KeywordSeparator { range, .. }
-            | Ir::Decorator { range, .. }
-            | Ir::Returns { range, .. }
-            | Ir::Generic { range, .. }
-            | Ir::TypeParameter { range, .. }
-            | Ir::Return { range, .. }
-            | Ir::Comment { range, .. }
-            | Ir::Assign { range, .. }
-            | Ir::Import { range, .. }
-            | Ir::From { range, .. }
-            | Ir::FromImport { range, .. }
-            | Ir::Path { range, .. }
-            | Ir::Aliased { range, .. }
-            | Ir::Name { range, .. }
-            | Ir::Int { range, .. }
-            | Ir::Float { range, .. }
-            | Ir::String { range, .. }
-            | Ir::True { range, .. }
-            | Ir::False { range, .. }
-            | Ir::None { range, .. }
-            | Ir::Atom { range, .. }
-            | Ir::Enum { range, .. }
-            | Ir::EnumMember { range, .. }
-            | Ir::Property { range, .. }
-            | Ir::Accessor { range, .. }
-            | Ir::Constructor { range, .. }
-            | Ir::Using { range, .. }
-            | Ir::Namespace { range, .. }
-            | Ir::Variable { range, .. }
-            | Ir::Is { range, .. }
-            | Ir::Cast { range, .. }
-            | Ir::Null { range, .. }
-            | Ir::Inline { range, .. }
-            | Ir::Unknown { range, .. } => *range,
+            SyntaxTree::Module { range, .. }
+            | SyntaxTree::Expression { range, .. }
+            | SyntaxTree::Access { range, .. }
+            | SyntaxTree::Call { range, .. }
+            | SyntaxTree::Binary { range, .. }
+            | SyntaxTree::Unary { range, .. }
+            | SyntaxTree::Tuple { range, .. }
+            | SyntaxTree::List { range, .. }
+            | SyntaxTree::Set { range, .. }
+            | SyntaxTree::Dictionary { range, .. }
+            | SyntaxTree::Pair { range, .. }
+            | SyntaxTree::GenericType { range, .. }
+            | SyntaxTree::Comparison { range, .. }
+            | SyntaxTree::If { range, .. }
+            | SyntaxTree::ElseIf { range, .. }
+            | SyntaxTree::Else { range, .. }
+            | SyntaxTree::For { range, .. }
+            | SyntaxTree::Foreach { range, .. }
+            | SyntaxTree::CFor { range, .. }
+            | SyntaxTree::DoWhile { range, .. }
+            | SyntaxTree::While { range, .. }
+            | SyntaxTree::Break { range, .. }
+            | SyntaxTree::Continue { range, .. }
+            | SyntaxTree::Lambda { range, .. }
+            | SyntaxTree::ObjectCreation { range, .. }
+            | SyntaxTree::Ternary { range, .. }
+            | SyntaxTree::FieldWrap { range, .. }
+            | SyntaxTree::SimpleStatement { range, .. }
+            | SyntaxTree::Try { range, .. }
+            | SyntaxTree::ExceptHandler { range, .. }
+            | SyntaxTree::TypeAlias { range, .. }
+            | SyntaxTree::KeywordArgument { range, .. }
+            | SyntaxTree::ListSplat { range, .. }
+            | SyntaxTree::DictSplat { range, .. }
+            | SyntaxTree::Function { range, .. }
+            | SyntaxTree::Class { range, .. }
+            | SyntaxTree::Body { range, .. }
+            | SyntaxTree::Parameter { range, .. }
+            | SyntaxTree::Skip { range, .. }
+            | SyntaxTree::PositionalSeparator { range, .. }
+            | SyntaxTree::KeywordSeparator { range, .. }
+            | SyntaxTree::Decorator { range, .. }
+            | SyntaxTree::Returns { range, .. }
+            | SyntaxTree::Generic { range, .. }
+            | SyntaxTree::TypeParameter { range, .. }
+            | SyntaxTree::Return { range, .. }
+            | SyntaxTree::Comment { range, .. }
+            | SyntaxTree::Assign { range, .. }
+            | SyntaxTree::Import { range, .. }
+            | SyntaxTree::From { range, .. }
+            | SyntaxTree::FromImport { range, .. }
+            | SyntaxTree::Path { range, .. }
+            | SyntaxTree::Aliased { range, .. }
+            | SyntaxTree::Name { range, .. }
+            | SyntaxTree::Int { range, .. }
+            | SyntaxTree::Float { range, .. }
+            | SyntaxTree::String { range, .. }
+            | SyntaxTree::True { range, .. }
+            | SyntaxTree::False { range, .. }
+            | SyntaxTree::None { range, .. }
+            | SyntaxTree::Atom { range, .. }
+            | SyntaxTree::Enum { range, .. }
+            | SyntaxTree::EnumMember { range, .. }
+            | SyntaxTree::Property { range, .. }
+            | SyntaxTree::Accessor { range, .. }
+            | SyntaxTree::Constructor { range, .. }
+            | SyntaxTree::Using { range, .. }
+            | SyntaxTree::Namespace { range, .. }
+            | SyntaxTree::Variable { range, .. }
+            | SyntaxTree::Is { range, .. }
+            | SyntaxTree::Cast { range, .. }
+            | SyntaxTree::Null { range, .. }
+            | SyntaxTree::Inline { range, .. }
+            | SyntaxTree::Unknown { range, .. } => *range,
         }
     }
 }
 
-impl Ir {
+impl SyntaxTree {
     /// Direct IR children, in source order. Excludes synthetic
     /// render-time wrappers (`<value>`, `<type>`, `<left>`/`<right>`,
     /// `<expression>` host) and modifier markers — those are
@@ -1499,9 +1499,9 @@ impl Ir {
     /// keeping this internal lets us refactor freely.
     ///
     /// ## What's included
-    /// - `Box<Ir>`, `Vec<Ir>`, `Option<Box<Ir>>` fields.
-    /// - `AccessSegment` children of `Ir::Access` (member's name is
-    ///   not an Ir; index/call have inner Ir children).
+    /// - `Box<SyntaxTree>`, `Vec<SyntaxTree>`, `Option<Box<SyntaxTree>>` fields.
+    /// - `AccessSegment` children of `SyntaxTree::Access` (member's name is
+    ///   not an SyntaxTree; index/call have inner SyntaxTree children).
     ///
     /// ## What's excluded
     /// - Markers / modifiers (flags, not children).
@@ -1509,105 +1509,105 @@ impl Ir {
     /// - Static field discriminators (`kind: &'static str` on
     ///   `Accessor`, etc.).
     /// - Comment leading flag, Body pass_only flag.
-    pub(crate) fn children(&self) -> Vec<&Ir> {
-        let mut v: Vec<&Ir> = Vec::new();
+    pub(crate) fn children(&self) -> Vec<&SyntaxTree> {
+        let mut v: Vec<&SyntaxTree> = Vec::new();
         match self {
-            Ir::Module { children, .. } => v.extend(children.iter()),
-            Ir::Expression { inner, .. } => v.push(inner),
-            Ir::Access { receiver, segments, .. } => {
+            SyntaxTree::Module { children, .. } => v.extend(children.iter()),
+            SyntaxTree::Expression { inner, .. } => v.push(inner),
+            SyntaxTree::Access { receiver, segments, .. } => {
                 v.push(receiver);
                 for s in segments {
                     match s {
-                        AccessSegment::Member { .. } => {} // property is not an Ir
+                        AccessSegment::Member { .. } => {} // property is not an SyntaxTree
                         AccessSegment::Index { indices, .. } => v.extend(indices.iter()),
                         AccessSegment::Call { arguments, .. } => v.extend(arguments.iter()),
                     }
                 }
             }
-            Ir::Call { callee, arguments, .. } => {
+            SyntaxTree::Call { callee, arguments, .. } => {
                 v.push(callee);
                 v.extend(arguments.iter());
             }
-            Ir::Binary { left, right, .. }
-            | Ir::Comparison { left, right, .. } => {
+            SyntaxTree::Binary { left, right, .. }
+            | SyntaxTree::Comparison { left, right, .. } => {
                 v.push(left);
                 v.push(right);
             }
-            Ir::Unary { operand, .. } => v.push(operand),
-            Ir::If { condition, body, else_branch, .. }
-            | Ir::ElseIf { condition, body, else_branch, .. } => {
+            SyntaxTree::Unary { operand, .. } => v.push(operand),
+            SyntaxTree::If { condition, body, else_branch, .. }
+            | SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
                 v.push(condition);
                 v.push(body);
                 if let Some(e) = else_branch { v.push(e); }
             }
-            Ir::Else { body, .. } => v.push(body),
-            Ir::For { targets, iterables, body, else_body, .. } => {
+            SyntaxTree::Else { body, .. } => v.push(body),
+            SyntaxTree::For { targets, iterables, body, else_body, .. } => {
                 v.extend(targets.iter());
                 v.extend(iterables.iter());
                 v.push(body);
                 if let Some(e) = else_body { v.push(e); }
             }
-            Ir::While { condition, body, else_body, .. } => {
+            SyntaxTree::While { condition, body, else_body, .. } => {
                 v.push(condition);
                 v.push(body);
                 if let Some(e) = else_body { v.push(e); }
             }
-            Ir::Foreach { type_ann, target, iterable, body, .. } => {
+            SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
                 if let Some(t) = type_ann { v.push(t); }
                 v.push(target);
                 v.push(iterable);
                 v.push(body);
             }
-            Ir::CFor { initializer, condition, updates, body, .. } => {
+            SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
                 if let Some(i) = initializer { v.push(i); }
                 if let Some(c) = condition { v.push(c); }
                 v.extend(updates.iter());
                 v.push(body);
             }
-            Ir::DoWhile { body, condition, .. } => {
+            SyntaxTree::DoWhile { body, condition, .. } => {
                 v.push(body);
                 v.push(condition);
             }
-            Ir::Lambda { parameters, body, .. } => {
+            SyntaxTree::Lambda { parameters, body, .. } => {
                 v.extend(parameters.iter());
                 v.push(body);
             }
-            Ir::ObjectCreation { type_target, arguments, initializer, .. } => {
+            SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
                 if let Some(t) = type_target { v.push(t); }
                 v.extend(arguments.iter());
                 if let Some(i) = initializer { v.push(i); }
             }
-            Ir::Ternary { condition, if_true, if_false, .. } => {
+            SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
                 v.push(condition);
                 v.push(if_true);
                 v.push(if_false);
             }
-            Ir::FieldWrap { inner, .. } => v.push(inner),
-            Ir::SimpleStatement { children, .. } => v.extend(children.iter()),
-            Ir::Try { try_body, handlers, else_body, finally_body, .. } => {
+            SyntaxTree::FieldWrap { inner, .. } => v.push(inner),
+            SyntaxTree::SimpleStatement { children, .. } => v.extend(children.iter()),
+            SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
                 v.push(try_body);
                 v.extend(handlers.iter());
                 if let Some(e) = else_body { v.push(e); }
                 if let Some(f) = finally_body { v.push(f); }
             }
-            Ir::ExceptHandler { type_target, binding, filter, body, .. } => {
+            SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
                 if let Some(t) = type_target { v.push(t); }
                 if let Some(b) = binding { v.push(b); }
                 if let Some(f) = filter { v.push(f); }
                 v.push(body);
             }
-            Ir::TypeAlias { name, type_params, value, .. } => {
+            SyntaxTree::TypeAlias { name, type_params, value, .. } => {
                 v.push(name);
                 if let Some(p) = type_params { v.push(p); }
                 v.push(value);
             }
-            Ir::KeywordArgument { name, value, .. } => {
+            SyntaxTree::KeywordArgument { name, value, .. } => {
                 v.push(name);
                 v.push(value);
             }
-            Ir::ListSplat { inner, .. } => v.push(inner),
-            Ir::DictSplat { inner, .. } => v.push(inner),
-            Ir::Function { decorators, name, generics, parameters, returns, body, .. } => {
+            SyntaxTree::ListSplat { inner, .. } => v.push(inner),
+            SyntaxTree::DictSplat { inner, .. } => v.push(inner),
+            SyntaxTree::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(g) = generics { v.push(g); }
@@ -1615,7 +1615,7 @@ impl Ir {
                 if let Some(r) = returns { v.push(r); }
                 if let Some(b) = body { v.push(b); }
             }
-            Ir::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
+            SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(g) = generics { v.push(g); }
@@ -1623,108 +1623,108 @@ impl Ir {
                 v.extend(where_clauses.iter());
                 v.push(body);
             }
-            Ir::Body { children, .. } => v.extend(children.iter()),
-            Ir::Parameter { name, type_ann, default, .. } => {
+            SyntaxTree::Body { children, .. } => v.extend(children.iter()),
+            SyntaxTree::Parameter { name, type_ann, default, .. } => {
                 v.push(name);
                 if let Some(t) = type_ann { v.push(t); }
                 if let Some(d) = default { v.push(d); }
             }
-            Ir::Decorator { inner, .. } => v.push(inner),
-            Ir::Returns { type_ann, .. } => v.push(type_ann),
-            Ir::Generic { items, .. } => v.extend(items.iter()),
-            Ir::TypeParameter { name, constraint, .. } => {
+            SyntaxTree::Decorator { inner, .. } => v.push(inner),
+            SyntaxTree::Returns { type_ann, .. } => v.push(type_ann),
+            SyntaxTree::Generic { items, .. } => v.extend(items.iter()),
+            SyntaxTree::TypeParameter { name, constraint, .. } => {
                 v.push(name);
                 if let Some(c) = constraint { v.push(c); }
             }
-            Ir::Return { value, .. } => {
+            SyntaxTree::Return { value, .. } => {
                 if let Some(val) = value { v.push(val); }
             }
-            Ir::Assign { targets, type_annotation, values, .. } => {
+            SyntaxTree::Assign { targets, type_annotation, values, .. } => {
                 v.extend(targets.iter());
                 if let Some(t) = type_annotation { v.push(t); }
                 v.extend(values.iter());
             }
-            Ir::Import { children, .. } => v.extend(children.iter()),
-            Ir::From { path, imports, .. } => {
+            SyntaxTree::Import { children, .. } => v.extend(children.iter()),
+            SyntaxTree::From { path, imports, .. } => {
                 if let Some(p) = path { v.push(p); }
                 v.extend(imports.iter());
             }
-            Ir::FromImport { name, alias, .. } => {
+            SyntaxTree::FromImport { name, alias, .. } => {
                 v.push(name);
                 if let Some(a) = alias { v.push(a); }
             }
-            Ir::Path { segments, .. } => v.extend(segments.iter()),
-            Ir::Aliased { inner, .. } => v.push(inner),
-            Ir::Tuple { children, .. }
-            | Ir::List { children, .. }
-            | Ir::Set { children, .. } => v.extend(children.iter()),
-            Ir::Dictionary { pairs, .. } => v.extend(pairs.iter()),
-            Ir::Pair { key, value, .. } => {
+            SyntaxTree::Path { segments, .. } => v.extend(segments.iter()),
+            SyntaxTree::Aliased { inner, .. } => v.push(inner),
+            SyntaxTree::Tuple { children, .. }
+            | SyntaxTree::List { children, .. }
+            | SyntaxTree::Set { children, .. } => v.extend(children.iter()),
+            SyntaxTree::Dictionary { pairs, .. } => v.extend(pairs.iter()),
+            SyntaxTree::Pair { key, value, .. } => {
                 v.push(key);
                 v.push(value);
             }
-            Ir::GenericType { name, params, .. } => {
+            SyntaxTree::GenericType { name, params, .. } => {
                 v.push(name);
                 v.extend(params.iter());
             }
-            Ir::Is { value, type_target, .. } => {
+            SyntaxTree::Is { value, type_target, .. } => {
                 v.push(value);
                 v.push(type_target);
             }
-            Ir::Cast { type_ann, value, .. } => {
+            SyntaxTree::Cast { type_ann, value, .. } => {
                 v.push(type_ann);
                 v.push(value);
             }
-            Ir::Enum { decorators, name, underlying_type, members, .. } => {
+            SyntaxTree::Enum { decorators, name, underlying_type, members, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(t) = underlying_type { v.push(t); }
                 v.extend(members.iter());
             }
-            Ir::EnumMember { decorators, name, value, .. } => {
+            SyntaxTree::EnumMember { decorators, name, value, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 if let Some(val) = value { v.push(val); }
             }
-            Ir::Property { decorators, type_ann, name, accessors, value, .. } => {
+            SyntaxTree::Property { decorators, type_ann, name, accessors, value, .. } => {
                 v.extend(decorators.iter());
                 if let Some(t) = type_ann { v.push(t); }
                 v.push(name);
                 v.extend(accessors.iter());
                 if let Some(val) = value { v.push(val); }
             }
-            Ir::Accessor { body, .. } => {
+            SyntaxTree::Accessor { body, .. } => {
                 if let Some(b) = body { v.push(b); }
             }
-            Ir::Constructor { decorators, name, parameters, body, .. } => {
+            SyntaxTree::Constructor { decorators, name, parameters, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
                 v.extend(parameters.iter());
                 v.push(body);
             }
-            Ir::Using { alias, path, .. } => {
+            SyntaxTree::Using { alias, path, .. } => {
                 v.push(path);
                 if let Some(a) = alias { v.push(a); }
             }
-            Ir::Namespace { name, children, file_scoped: _, .. } => {
+            SyntaxTree::Namespace { name, children, file_scoped: _, .. } => {
                 v.push(name);
                 v.extend(children.iter());
             }
-            Ir::Variable { decorators, type_ann, name, value, .. } => {
+            SyntaxTree::Variable { decorators, type_ann, name, value, .. } => {
                 v.extend(decorators.iter());
                 if let Some(t) = type_ann { v.push(t); }
                 v.push(name);
                 if let Some(val) = value { v.push(&val.inner); }
             }
-            Ir::Inline { children, .. } => v.extend(children.iter()),
-            // Leaves and markers — no Ir children.
-            Ir::Name { .. } | Ir::Int { .. } | Ir::Float { .. } | Ir::String { .. }
-            | Ir::True { .. } | Ir::False { .. } | Ir::None { .. } | Ir::Null { .. }
-            | Ir::Atom { .. }
-            | Ir::Skip { .. }
-            | Ir::Comment { .. } | Ir::PositionalSeparator { .. }
-            | Ir::KeywordSeparator { .. } | Ir::Break { .. } | Ir::Continue { .. }
-            | Ir::Unknown { .. } => {}
+            SyntaxTree::Inline { children, .. } => v.extend(children.iter()),
+            // Leaves and markers — no SyntaxTree children.
+            SyntaxTree::Name { .. } | SyntaxTree::Int { .. } | SyntaxTree::Float { .. } | SyntaxTree::String { .. }
+            | SyntaxTree::True { .. } | SyntaxTree::False { .. } | SyntaxTree::None { .. } | SyntaxTree::Null { .. }
+            | SyntaxTree::Atom { .. }
+            | SyntaxTree::Skip { .. }
+            | SyntaxTree::Comment { .. } | SyntaxTree::PositionalSeparator { .. }
+            | SyntaxTree::KeywordSeparator { .. } | SyntaxTree::Break { .. } | SyntaxTree::Continue { .. }
+            | SyntaxTree::Unknown { .. } => {}
         }
         // Sort by source order so consumers (renderer, audit walker)
         // don't have to repeat. Variants whose fields are already in
@@ -1741,6 +1741,6 @@ impl Ir {
 /// root IR's range covers the whole source). For sub-trees,
 /// `to_source(child, source)` is the verbatim source slice that
 /// produced `child`.
-pub fn to_source<'a>(ir: &Ir, source: &'a str) -> &'a str {
+pub fn to_source<'a>(ir: &SyntaxTree, source: &'a str) -> &'a str {
     ir.range().slice(source)
 }

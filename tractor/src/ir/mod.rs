@@ -10,7 +10,7 @@
 //! See `docs/design-transform-redesign-exploration.md` § 11 for the
 //! original design rationale.
 //!
-//! Languages on this IR (`Ir`):
+//! Languages on this IR (`SyntaxTree`):
 //! - C# (`csharp` / `cs`)
 //! - Python (`python` / `py`)
 //! - Java (`java`)
@@ -35,20 +35,20 @@
 //!
 //! ## Architecture
 //! ```text
-//!   tree-sitter CST  ──── lower_<lang>(·)  ───►  Ir  ───── render(·) ─────►  Xot/XML
+//!   tree-sitter CST  ──── lower_<lang>(·)  ───►  SyntaxTree  ───── render(·) ─────►  Xot/XML
 //! ```
 //!
 //! - `lower_<lang>` is a *pure function* per language: tree-sitter node
-//!   in, [`Ir`] out. Cross-language unification happens at the IR layer
+//!   in, [`SyntaxTree`] out. Cross-language unification happens at the IR layer
 //!   (every language lowers to the *same* IR variants).
 //! - `render` is mechanical: walks the IR and emits the corresponding
 //!   XML. No decisions live here.
 //! - Chain inversion is part of the lowering: every
-//!   `lower_<lang>_root` constructs left-deep [`Ir::Access`] directly
+//!   `lower_<lang>_root` constructs left-deep [`SyntaxTree::Access`] directly
 //!   when it encounters chained member / index / call expressions —
 //!   no separate post-walk step exists.
 //! - Other cross-cutting normalisations (expression-host wrapping,
-//!   marker placement) are *target* `Ir → Ir` rewrites that fit
+//!   marker placement) are *target* `SyntaxTree → SyntaxTree` rewrites that fit
 //!   between lowering and rendering. Per-language `post_transform`
 //!   passes (`languages/{lang}/post_transform.rs`) still mutate the
 //!   rendered xot tree for these — acceptable *only* as a
@@ -62,11 +62,11 @@
 //! per-language data + a single typed shape.
 //!
 //! ## What this module deliberately does not have
-//! No `Bag(Vec<Ir>)` variant. A bag punctures the contract. Two narrower
+//! No `Bag(Vec<SyntaxTree>)` variant. A bag punctures the contract. Two narrower
 //! variants serve the same purpose:
-//! - [`Ir::Inline`] — explicit "this CST kind contributes no shape;
+//! - [`SyntaxTree::Inline`] — explicit "this CST kind contributes no shape;
 //!   inline its children at the parent." Deliberate, named.
-//! - [`Ir::Unknown`] — last-resort hatch for an un-handled kind. Renders
+//! - [`SyntaxTree::Unknown`] — last-resort hatch for an un-handled kind. Renders
 //!   as a visible `<unknown kind="…"/>`. Ratchet-able to zero per
 //!   language.
 
@@ -105,13 +105,13 @@ pub mod markdown_data;
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
-// Programming-language `Ir` → `DataIr` projection. Replacing the
+// Programming-language `SyntaxTree` → `DataIr` projection. Replacing the
 // ad-hoc projection in `to_json.rs` per
 // `docs/design-projection-pipeline.md`.
 #[cfg(feature = "native")]
 pub mod to_data;
 // SQL-language IR — typed variants per construct. Parallel to
-// `Ir` (programming languages) and `DataIr` (data languages).
+// `SyntaxTree` (programming languages) and `DataIr` (data languages).
 // See module doc-comment for rationale.
 #[cfg(feature = "native")]
 pub mod sql;
@@ -134,7 +134,7 @@ pub mod source;
 #[cfg(feature = "native")]
 pub mod coverage;
 
-pub use types::{Access, AccessSegment, ByteRange, Expression, Ir, Modifiers, ParamKind, Span, to_source};
+pub use types::{Access, AccessSegment, ByteRange, Expression, SyntaxTree, Modifiers, ParamKind, Span, to_source};
 pub use to_xot::render_to_xot;
 pub use to_json::ir_to_json;
 #[cfg(feature = "native")]

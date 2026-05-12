@@ -80,7 +80,7 @@ pub struct Match {
 }
 
 /// The matched subtree representation. The architectural target is
-/// for every match to carry `Tree::Ir` (so all downstream rendering
+/// for every match to carry `Tree::SyntaxTree` (so all downstream rendering
 /// is a function from IR), but partial XPath matches need a
 /// xot↔IR mapping that's not yet built — for those cases the
 /// `Tree::Xml` variant remains as a transitional fallback.
@@ -99,8 +99,8 @@ pub enum Tree {
     /// Native-only: the `crate::ir` module is gated behind the
     /// `native` feature, so WASM builds skip this variant.
     #[cfg(feature = "native")]
-    Ir {
-        ir: Arc<crate::ir::Ir>,
+    SyntaxTree {
+        ir: Arc<crate::ir::SyntaxTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -130,11 +130,11 @@ pub enum Tree {
 
 impl Tree {
     /// Render the matched tree to a JSON value. JSON-typed shape
-    /// (arrays for `Vec<Ir>` slots, singletons for `Box<Ir>` slots)
+    /// (arrays for `Vec<SyntaxTree>` slots, singletons for `Box<SyntaxTree>` slots)
     /// comes from the typed renderers; `Tree::Xml` falls back to
     /// the XML→JSON projection until partial matches carry IR too.
     ///
-    /// **`Tree::Ir` dispatch (S5C).** Programming-language IR
+    /// **`Tree::SyntaxTree` dispatch (S5C).** Programming-language IR
     /// renders through `lower_to_data_ir → data_to_json` once the
     /// projection covers every variant in the tree. While S5A is
     /// in progress, documents containing unhandled variants still
@@ -146,7 +146,7 @@ impl Tree {
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
             #[cfg(feature = "native")]
-            Tree::Ir { ir, source, .. } => {
+            Tree::SyntaxTree { ir, source, .. } => {
                 let data = crate::ir::lower_to_data_ir(ir, source);
                 if crate::ir::has_unhandled(&data) {
                     crate::ir::ir_to_json(ir, source)
@@ -170,7 +170,7 @@ impl Tree {
         match self {
             Tree::Xml(node) => node,
             #[cfg(feature = "native")]
-            Tree::Ir { xml, .. } => xml,
+            Tree::SyntaxTree { xml, .. } => xml,
             #[cfg(feature = "native")]
             Tree::DataIr { xml, .. } => xml,
             #[cfg(feature = "native")]
@@ -216,7 +216,7 @@ impl Match {
         }
     }
 
-    /// Attach the matched tree (`Tree::Ir`, `Tree::DataIr`, or
+    /// Attach the matched tree (`Tree::SyntaxTree`, `Tree::DataIr`, or
     /// `Tree::Xml` for partial matches / XPath atomic results).
     pub fn with_tree(mut self, tree: Tree) -> Self {
         self.tree = Some(tree);

@@ -1,11 +1,11 @@
-//! `Ir` → [`DataIr`] projection — programming-language IR rendered
+//! `SyntaxTree` → [`DataIr`] projection — programming-language IR rendered
 //! into the structured-data IR that JSON / YAML / TOML serializers
 //! consume.
 //!
 //! ## Why
 //!
 //! `tractor/src/ir/to_json.rs` historically owned a ~1000 LOC
-//! ad-hoc projection from `Ir` directly to `serde_json::Value`,
+//! ad-hoc projection from `SyntaxTree` directly to `serde_json::Value`,
 //! mixing IR-walking with JSON-shape decisions. Recent iters
 //! 29-36 layered on heuristics in `add_children` to fix
 //! `$`-prefixed leaks (`$inline`, `$skip`, `$type": "expression"`,
@@ -17,14 +17,14 @@
 //!
 //! ## Approach
 //!
-//! Every `Ir` variant projects to a `DataIr` shape via uniform
+//! Every `SyntaxTree` variant projects to a `DataIr` shape via uniform
 //! rules. JSON, YAML, etc. then read the projection trivially.
 //!
-//! - `Ir::Skip` → omitted from the parent's children
-//! - `Ir::Inline { list_name: None }` → flattened into parent
-//! - `Ir::Inline { list_name: Some(k) }` → `Pair(k, Sequence)` on parent
+//! - `SyntaxTree::Skip` → omitted from the parent's children
+//! - `SyntaxTree::Inline { list_name: None }` → flattened into parent
+//! - `SyntaxTree::Inline { list_name: Some(k) }` → `Pair(k, Sequence)` on parent
 //! - Scalar leaves (`Atom`, `Name`, `Int`, ...) → matching `DataIr` scalar
-//! - `Ir::Class` / `Function` / etc. → `Mapping` with modifier flag
+//! - `SyntaxTree::Class` / `Function` / etc. → `Mapping` with modifier flag
 //!   pairs and typed slot pairs
 //! - Synthetic markers (zero-width or Skip-only `SimpleStatement`)
 //!   → flag pair `(name, Bool(true))` on parent
@@ -34,7 +34,7 @@
 //! ## Status
 //!
 //! This module is being built up incrementally per the slice plan.
-//! Slice 1 covers `Ir::Class` and reachable scalar leaves —
+//! Slice 1 covers `SyntaxTree::Class` and reachable scalar leaves —
 //! enough to project a class declaration through `data_to_json`
 //! and verify the architecture is sound.
 //!
@@ -45,13 +45,13 @@
 #![cfg(feature = "native")]
 
 use super::data::DataIr;
-use super::types::{Ir, Modifiers};
+use super::types::{SyntaxTree, Modifiers};
 
-/// Project an `Ir` tree into a [`DataIr`] tree.
+/// Project an `SyntaxTree` tree into a [`DataIr`] tree.
 ///
 /// `source` is the original parse input — used to slice atom and
 /// scalar text from byte ranges.
-pub fn lower_to_data_ir(ir: &Ir, source: &str) -> DataIr {
+pub fn lower_to_data_ir(ir: &SyntaxTree, source: &str) -> DataIr {
     project(ir, source)
 }
 
@@ -79,26 +79,26 @@ pub fn has_unhandled(ir: &DataIr) -> bool {
     }
 }
 
-fn project(ir: &Ir, source: &str) -> DataIr {
+fn project(ir: &SyntaxTree, source: &str) -> DataIr {
     match ir {
         // ----- Scalar leaves --------------------------------------------
-        Ir::Name { range, span } => DataIr::String {
+        SyntaxTree::Name { range, span } => DataIr::String {
             value: range.slice(source).to_string(),
             range: *range,
             span: *span,
         },
-        Ir::Atom { range, span, .. } => DataIr::String {
+        SyntaxTree::Atom { range, span, .. } => DataIr::String {
             value: range.slice(source).to_string(),
             range: *range,
             span: *span,
         },
 
         // ----- Containers -----------------------------------------------
-        Ir::Module { children, range, span, .. } => {
+        SyntaxTree::Module { children, range, span, .. } => {
             let pairs = collect_member_pairs(children, source);
             DataIr::Mapping { pairs, range: *range, span: *span }
         }
-        Ir::Class {
+        SyntaxTree::Class {
             kind: _,
             modifiers,
             decorators: _,
@@ -117,7 +117,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             // (methods, properties, fields, nested types). The body
             // itself is not a separate slot in JSON — its children
             // are the class's members.
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 let body_pairs = collect_member_pairs(children, source);
                 pairs.extend(body_pairs);
             }
@@ -129,19 +129,19 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // them here means a direct project() call on a Skip/Inline,
         // which shouldn't happen in practice — emit Unknown so it's
         // visible in tests.)
-        Ir::Skip { range, span } => DataIr::Unknown {
+        SyntaxTree::Skip { range, span } => DataIr::Unknown {
             kind: "skip".into(),
             range: *range,
             span: *span,
         },
-        Ir::Inline { range, span, children, list_name } => {
+        SyntaxTree::Inline { range, span, children, list_name } => {
             // Inline at the top level: emit a Mapping (or list) so
             // we don't lose its contents. Mirrors the projection
             // rule for Inline-as-child but at the root.
             if let Some(list) = list_name {
                 let items: Vec<DataIr> = children
                     .iter()
-                    .filter(|c| !matches!(c, Ir::Skip { .. }))
+                    .filter(|c| !matches!(c, SyntaxTree::Skip { .. }))
                     .map(|c| project(c, source))
                     .collect();
                 DataIr::Mapping {
@@ -164,7 +164,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // Function slot), emit a Mapping containing those pairs. The
         // typical use is via `collect_member_pairs(body.children)` at
         // the parent level, but standalone projection still works.
-        Ir::Body { children, range, span, .. } => {
+        SyntaxTree::Body { children, range, span, .. } => {
             let pairs = collect_member_pairs(children, source);
             DataIr::Mapping { pairs, range: *range, span: *span }
         }
@@ -172,7 +172,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Function — modifier flags + name + parameters list +
         // returns + body member pairs. Mirrors the legacy projection
         // shape but without `$type`.
-        Ir::Function {
+        SyntaxTree::Function {
             element_name: _,
             modifiers,
             decorators: _,
@@ -194,7 +194,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
                 pairs.push(make_pair("returns", project(r, source), r.range(), r.span()));
             }
             if let Some(b) = body {
-                if let Ir::Body { children, .. } = b.as_ref() {
+                if let SyntaxTree::Body { children, .. } = b.as_ref() {
                     pairs.extend(collect_member_pairs(children, source));
                 }
             }
@@ -202,7 +202,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ----- Variable — modifier flags + type? + name + value?.
-        Ir::Variable {
+        SyntaxTree::Variable {
             element_name: _,
             modifiers,
             decorators: _,
@@ -229,7 +229,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // value?. Each accessor renders by its kind ("get" / "set" /
         // "init") as a pair under that name; multiple of the same kind
         // are pluralized by `pluralize_pairs`.
-        Ir::Property {
+        SyntaxTree::Property {
             modifiers,
             decorators: _,
             type_ann,
@@ -256,7 +256,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ----- Returns — wrapper around a type-annotation slot.
-        Ir::Returns { type_ann, range, span } => {
+        SyntaxTree::Returns { type_ann, range, span } => {
             DataIr::Mapping {
                 pairs: vec![make_pair(
                     "type",
@@ -271,7 +271,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // ----- Parameter — kind/extra/modifier flags, type?, name,
         // default?. Mirrors legacy modulo `$type`.
-        Ir::Parameter {
+        SyntaxTree::Parameter {
             kind,
             extra_markers,
             modifiers,
@@ -305,7 +305,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // extra markers + children as keyed pairs. Marker-only cases
         // are folded by `synthetic_marker_name` at the parent level
         // and never reach here as a project() call.
-        Ir::SimpleStatement {
+        SyntaxTree::SimpleStatement {
             element_name: _,
             modifiers,
             extra_markers,
@@ -326,55 +326,55 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // maps to its natural DataIr scalar variant; the JSON output
         // becomes a bare value (number / string / bool / null) at
         // that position rather than a wrapper object.
-        Ir::Int { range, span } => DataIr::Number {
+        SyntaxTree::Int { range, span } => DataIr::Number {
             text: range.slice(source).to_string(),
             range: *range,
             span: *span,
         },
-        Ir::Float { range, span } => DataIr::Number {
+        SyntaxTree::Float { range, span } => DataIr::Number {
             text: range.slice(source).to_string(),
             range: *range,
             span: *span,
         },
-        Ir::String { range, span } => DataIr::String {
+        SyntaxTree::String { range, span } => DataIr::String {
             value: range.slice(source).to_string(),
             range: *range,
             span: *span,
         },
-        Ir::True { range, span } => DataIr::Bool {
+        SyntaxTree::True { range, span } => DataIr::Bool {
             value: true,
             range: *range,
             span: *span,
         },
-        Ir::False { range, span } => DataIr::Bool {
+        SyntaxTree::False { range, span } => DataIr::Bool {
             value: false,
             range: *range,
             span: *span,
         },
-        Ir::None { range, span } => DataIr::Null { range: *range, span: *span },
-        Ir::Null { range, span } => DataIr::Null { range: *range, span: *span },
+        SyntaxTree::None { range, span } => DataIr::Null { range: *range, span: *span },
+        SyntaxTree::Null { range, span } => DataIr::Null { range: *range, span: *span },
 
         // ----- Tuple / List / Set — anonymous-ordered collections.
         // JSON renders as an array of projected children.
-        Ir::Tuple { children, range, span }
-        | Ir::List { children, range, span }
-        | Ir::Set { children, range, span } => DataIr::Sequence {
+        SyntaxTree::Tuple { children, range, span }
+        | SyntaxTree::List { children, range, span }
+        | SyntaxTree::Set { children, range, span } => DataIr::Sequence {
             items: children
                 .iter()
-                .filter(|c| !matches!(c, Ir::Skip { .. }))
+                .filter(|c| !matches!(c, SyntaxTree::Skip { .. }))
                 .map(|c| project(c, source))
                 .collect(),
             range: *range,
             span: *span,
         },
 
-        // ----- Dictionary — keyed pairs. Each `Ir::Pair { key, value }`
+        // ----- Dictionary — keyed pairs. Each `SyntaxTree::Pair { key, value }`
         // projects to `DataIr::Pair`; the dictionary itself becomes a
         // Mapping over those pairs.
-        Ir::Dictionary { pairs, range, span } => DataIr::Mapping {
+        SyntaxTree::Dictionary { pairs, range, span } => DataIr::Mapping {
             pairs: pairs
                 .iter()
-                .filter(|p| !matches!(p, Ir::Skip { .. }))
+                .filter(|p| !matches!(p, SyntaxTree::Skip { .. }))
                 .map(|p| project(p, source))
                 .collect(),
             range: *range,
@@ -385,7 +385,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // so that an enclosing `Dictionary` projects cleanly to a
         // JSON object. (Distinct from the structural `make_pair`
         // helper used at the parent-of-class level.)
-        Ir::Pair { key, value, range, span } => DataIr::Pair {
+        SyntaxTree::Pair { key, value, range, span } => DataIr::Pair {
             key: Box::new(project(key, source)),
             value: Box::new(project(value, source)),
             range: *range,
@@ -399,7 +399,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // as a flag, then merge the inner's projected pairs (if it
         // projects to a Mapping) or place the inner under its
         // element-name slot.
-        Ir::Expression { inner, marker, range, span } => match marker {
+        SyntaxTree::Expression { inner, marker, range, span } => match marker {
             None => project(inner, source),
             Some(m) => {
                 let mut pairs: Vec<DataIr> = vec![make_flag(m, *range, *span)];
@@ -419,8 +419,8 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // boolean flag (e.g. `{ text: "+", plus: true }`). Operands
         // are projected directly without an `<expression>` wrapper
         // (the wrapper has no JSON role per the design).
-        Ir::Binary { left, op_text, op_marker, right, range, span, .. }
-        | Ir::Comparison { left, op_text, op_marker, right, range, span, .. } => {
+        SyntaxTree::Binary { left, op_text, op_marker, right, range, span, .. }
+        | SyntaxTree::Comparison { left, op_text, op_marker, right, range, span, .. } => {
             DataIr::Mapping {
                 pairs: vec![
                     make_pair("left", project(left, source), left.range(), left.span()),
@@ -433,7 +433,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ----- Unary — op + extra-marker flags + operand.
-        Ir::Unary { op_text, op_marker, operand, extra_markers, range, span, .. } => {
+        SyntaxTree::Unary { op_text, op_marker, operand, extra_markers, range, span, .. } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             for m in *extra_markers {
                 pairs.push(make_flag(m, *range, *span));
@@ -444,7 +444,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ----- Ternary — `<condition><then><else>` shape.
-        Ir::Ternary { condition, if_true, if_false, range, span } => DataIr::Mapping {
+        SyntaxTree::Ternary { condition, if_true, if_false, range, span } => DataIr::Mapping {
             pairs: vec![
                 make_pair("condition", project(condition, source), condition.range(), condition.span()),
                 make_pair("then", project(if_true, source), if_true.range(), if_true.span()),
@@ -457,7 +457,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Is — `value is type_target`. Projects to a Mapping
         // with `left` (value) and `right` (type) for symmetry with
         // Binary / Comparison.
-        Ir::Is { value, type_target, range, span } => DataIr::Mapping {
+        SyntaxTree::Is { value, type_target, range, span } => DataIr::Mapping {
             pairs: vec![
                 make_pair("left", project(value, source), value.range(), value.span()),
                 make_pair("right", project(type_target, source), type_target.range(), type_target.span()),
@@ -467,7 +467,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         },
 
         // ----- Cast — `(Type)expr`. Mapping with `type` and `value`.
-        Ir::Cast { type_ann, value, range, span } => DataIr::Mapping {
+        SyntaxTree::Cast { type_ann, value, range, span } => DataIr::Mapping {
             pairs: vec![
                 make_pair("type", project(type_ann, source), type_ann.range(), type_ann.span()),
                 make_pair("value", project(value, source), value.range(), value.span()),
@@ -479,7 +479,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Call — callee + arguments. Each argument projects
         // under its own element-name; pluralization groups multiple
         // same-keyed siblings (e.g. `name: [...]`).
-        Ir::Call { callee, arguments, range, span } => {
+        SyntaxTree::Call { callee, arguments, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("callee", project(callee, source), callee.range(), callee.span()));
             for a in arguments {
@@ -491,7 +491,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // ----- KeywordArgument — `name=value` named argument.
         // Mapping with `name` + `value` slots.
-        Ir::KeywordArgument { name, value, range, span } => DataIr::Mapping {
+        SyntaxTree::KeywordArgument { name, value, range, span } => DataIr::Mapping {
             pairs: vec![
                 make_pair("name", project(name, source), name.range(), name.span()),
                 make_pair("value", project(value, source), value.range(), value.span()),
@@ -504,17 +504,17 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // the inner expression directly; the splat marker is dropped
         // from the JSON view. (The `<spread[list]/>` / `<spread[dict]/>`
         // distinction is XML-only structure for queryability.)
-        Ir::ListSplat { inner, .. } | Ir::DictSplat { inner, .. } => project(inner, source),
+        SyntaxTree::ListSplat { inner, .. } | SyntaxTree::DictSplat { inner, .. } => project(inner, source),
 
         // ----- Control flow ----------------------------------------------
 
         // If / ElseIf — `condition`, `body` (member pairs flattened),
         // optional `else_branch`. ElseIf chains stay flat (each one
         // is its own pair under the parent if's `else_if` slot).
-        Ir::If { condition, body, else_branch, range, span } => {
+        SyntaxTree::If { condition, body, else_branch, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -525,10 +525,10 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             }
             DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
         }
-        Ir::ElseIf { condition, body, else_branch, range, span } => {
+        SyntaxTree::ElseIf { condition, body, else_branch, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -539,8 +539,8 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             }
             DataIr::Mapping { pairs: pluralize_pairs(pairs), range: *range, span: *span }
         }
-        Ir::Else { body, range, span } => {
-            let pairs = if let Ir::Body { children, .. } = body.as_ref() {
+        SyntaxTree::Else { body, range, span } => {
+            let pairs = if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 collect_member_pairs(children, source)
             } else {
                 vec![make_pair("body", project(body, source), body.range(), body.span())]
@@ -551,7 +551,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // For — Python `for target in iter: body [else]`. `is_async`
         // becomes a flag; multiple targets / iterables stay as
         // sibling pairs (pluralized).
-        Ir::For { is_async, targets, iterables, body, else_body, range, span } => {
+        SyntaxTree::For { is_async, targets, iterables, body, else_body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if *is_async {
                 pairs.push(make_flag("async", *range, *span));
@@ -562,7 +562,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             for i in iterables {
                 pairs.push(make_pair("right", project(i, source), i.range(), i.span()));
             }
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -574,10 +574,10 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // While — `condition`, body members flat, optional `else`.
-        Ir::While { condition, body, else_body, range, span } => {
+        SyntaxTree::While { condition, body, else_body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("condition", project(condition, source), condition.range(), condition.span()));
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -590,7 +590,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // Foreach — C#/Java `foreach`. Optional type, single target,
         // single iterable, body. `in` flag for parity with legacy.
-        Ir::Foreach { type_ann, target, iterable, body, range, span } => {
+        SyntaxTree::Foreach { type_ann, target, iterable, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_flag("in", *range, *span));
             if let Some(t) = type_ann {
@@ -598,7 +598,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             }
             pairs.push(make_pair("left", project(target, source), target.range(), target.span()));
             pairs.push(make_pair("right", project(iterable, source), iterable.range(), iterable.span()));
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -607,7 +607,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // CFor — C-style `for(init; cond; update) body`.
-        Ir::CFor { initializer, condition, updates, body, range, span } => {
+        SyntaxTree::CFor { initializer, condition, updates, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if let Some(i) = initializer {
                 let key = element_name_for_pair(i);
@@ -620,7 +620,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
                 let key = element_name_for_pair(u);
                 pairs.push(make_pair(key, project(u, source), u.range(), u.span()));
             }
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -629,9 +629,9 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // DoWhile — body + condition (legacy renders body first).
-        Ir::DoWhile { body, condition, range, span } => {
+        SyntaxTree::DoWhile { body, condition, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -641,14 +641,14 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // Break / Continue — bare keyword statements; empty Mapping.
-        Ir::Break { range, span } | Ir::Continue { range, span } => {
+        SyntaxTree::Break { range, span } | SyntaxTree::Continue { range, span } => {
             DataIr::Mapping { pairs: vec![], range: *range, span: *span }
         }
 
         // Try — protected body + handlers + optional else / finally.
-        Ir::Try { try_body, handlers, else_body, finally_body, range, span } => {
+        SyntaxTree::Try { try_body, handlers, else_body, finally_body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
-            if let Ir::Body { children, .. } = try_body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = try_body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(try_body, source), try_body.range(), try_body.span()));
@@ -667,7 +667,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ExceptHandler / catch.
-        Ir::ExceptHandler { kind: _, type_target, binding, filter, body, range, span } => {
+        SyntaxTree::ExceptHandler { kind: _, type_target, binding, filter, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if let Some(t) = type_target {
                 pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
@@ -678,7 +678,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
             if let Some(f) = filter {
                 pairs.push(make_pair("filter", project(f, source), f.range(), f.span()));
             }
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -689,13 +689,13 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Misc tail --------------------------------------------------
 
         // Lambda — modifier flags + parameters + body.
-        Ir::Lambda { modifiers, parameters, body, range, span } => {
+        SyntaxTree::Lambda { modifiers, parameters, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
             for p in parameters {
                 pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
             }
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -704,7 +704,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // ObjectCreation — `new Type(args) { Init }`.
-        Ir::ObjectCreation { type_target, arguments, initializer, range, span } => {
+        SyntaxTree::ObjectCreation { type_target, arguments, initializer, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if let Some(t) = type_target {
                 pairs.push(make_pair("type", project(t, source), t.range(), t.span()));
@@ -720,14 +720,14 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // Constructor — modifier flags + name + parameters + body.
-        Ir::Constructor { modifiers, decorators: _, name, parameters, body, range, span } => {
+        SyntaxTree::Constructor { modifiers, decorators: _, name, parameters, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
             for p in parameters {
                 pairs.push(make_pair("parameter", project(p, source), p.range(), p.span()));
             }
-            if let Ir::Body { children, .. } = body.as_ref() {
+            if let SyntaxTree::Body { children, .. } = body.as_ref() {
                 pairs.extend(collect_member_pairs(children, source));
             } else {
                 pairs.push(make_pair("body", project(body, source), body.range(), body.span()));
@@ -737,7 +737,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // Generic — flat list of TypeParameter items. Each renders
         // under its element name (`type`); pluralization groups them.
-        Ir::Generic { items, range, span } => {
+        SyntaxTree::Generic { items, range, span } => {
             let pairs: Vec<DataIr> = items
                 .iter()
                 .map(|it| {
@@ -749,7 +749,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // TypeParameter — name + optional constraint.
-        Ir::TypeParameter { name, constraint, range, span } => {
+        SyntaxTree::TypeParameter { name, constraint, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
             if let Some(c) = constraint {
@@ -762,7 +762,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // GenericType — `Name[T, U]` instantiation. `generic` flag +
         // base name + each param under its element name (typically
         // "type"; pluralized).
-        Ir::GenericType { name, params, range, span } => {
+        SyntaxTree::GenericType { name, params, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_flag("generic", *range, *span));
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
@@ -774,7 +774,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // TypeAlias — `type Foo[T] = Bar`. name + type_params? + value.
-        Ir::TypeAlias { name, type_params, value, range, span } => {
+        SyntaxTree::TypeAlias { name, type_params, value, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
             if let Some(t) = type_params {
@@ -786,7 +786,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // Enum — modifier flags + name + optional underlying type +
         // members (each EnumMember).
-        Ir::Enum { modifiers, decorators: _, name, underlying_type, members, range, span } => {
+        SyntaxTree::Enum { modifiers, decorators: _, name, underlying_type, members, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
@@ -800,7 +800,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // EnumMember — name + optional value.
-        Ir::EnumMember { decorators: _, name, value, range, span } => {
+        SyntaxTree::EnumMember { decorators: _, name, value, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_pair("name", project(name, source), name.range(), name.span()));
             if let Some(v) = value {
@@ -810,11 +810,11 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // Accessor — modifier flags + optional body.
-        Ir::Accessor { modifiers, kind: _, body, range, span } => {
+        SyntaxTree::Accessor { modifiers, kind: _, body, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             push_modifier_flags(&mut pairs, modifiers, *range, *span);
             if let Some(b) = body {
-                if let Ir::Body { children, .. } = b.as_ref() {
+                if let SyntaxTree::Body { children, .. } = b.as_ref() {
                     pairs.extend(collect_member_pairs(children, source));
                 } else {
                     pairs.push(make_pair("body", project(b, source), b.range(), b.span()));
@@ -824,7 +824,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // Using — C# `using System;`. is_static flag + path + alias?.
-        Ir::Using { is_static, alias, path, range, span } => {
+        SyntaxTree::Using { is_static, alias, path, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if *is_static {
                 pairs.push(make_flag("static", *range, *span));
@@ -837,7 +837,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // Namespace — name + member children + file_scoped flag.
-        Ir::Namespace { name, children, file_scoped, range, span } => {
+        SyntaxTree::Namespace { name, children, file_scoped, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if *file_scoped {
                 pairs.push(make_flag("file", *range, *span));
@@ -849,7 +849,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // From — Python `from x import y`. relative flag + path? +
         // imports list (each FromImport).
-        Ir::From { relative, path, imports, range, span } => {
+        SyntaxTree::From { relative, path, imports, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if *relative {
                 pairs.push(make_flag("relative", *range, *span));
@@ -865,7 +865,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         }
 
         // FromImport — has_alias flag + name + alias?.
-        Ir::FromImport { has_alias, name, alias, range, span } => {
+        SyntaxTree::FromImport { has_alias, name, alias, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if *has_alias {
                 pairs.push(make_flag("alias", *range, *span));
@@ -879,7 +879,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // Path — flat segment list. Renders each segment as a "name"
         // pair; pluralization → `names: [...]`.
-        Ir::Path { segments, range, span } => {
+        SyntaxTree::Path { segments, range, span } => {
             let pairs: Vec<DataIr> = segments
                 .iter()
                 .map(|s| {
@@ -892,11 +892,11 @@ fn project(ir: &Ir, source: &str) -> DataIr {
 
         // Aliased — wrapper around the renamed-target identifier.
         // Project transparently to the inner.
-        Ir::Aliased { inner, .. } => project(inner, source),
+        SyntaxTree::Aliased { inner, .. } => project(inner, source),
 
         // Assign — `target = value` / `t1, t2 = v1, v2` / `t: T = v`.
         // op_markers as flags + optional type + left(s) + right(s).
-        Ir::Assign { targets, type_annotation, op_markers, values, range, span, .. } => {
+        SyntaxTree::Assign { targets, type_annotation, op_markers, values, range, span, .. } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             for m in op_markers {
                 pairs.push(make_flag(m, *range, *span));
@@ -917,16 +917,16 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // Project transparently to the inner; the wrapper is XML-only
         // for queryability (the parent's slot key already conveys the
         // role at JSON level).
-        Ir::FieldWrap { inner, .. } => project(inner, source),
+        SyntaxTree::FieldWrap { inner, .. } => project(inner, source),
 
         // PositionalSeparator / KeywordSeparator — pure-syntax markers
         // (`/` and `*` in Python parameter lists). No JSON content.
-        Ir::PositionalSeparator { range, span } | Ir::KeywordSeparator { range, span } => {
+        SyntaxTree::PositionalSeparator { range, span } | SyntaxTree::KeywordSeparator { range, span } => {
             DataIr::Null { range: *range, span: *span }
         }
 
         // Unknown — keep the kind visible so coverage gaps surface.
-        Ir::Unknown { kind, range, span } => DataIr::Unknown {
+        SyntaxTree::Unknown { kind, range, span } => DataIr::Unknown {
             kind: format!("ir-unknown:{}", kind),
             range: *range,
             span: *span,
@@ -937,7 +937,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // path emits `access` flag, then unfolds receiver into the
         // outer object's properties, then each segment as a
         // pluralized pair under `member` / `index` / `call`.
-        Ir::Access { receiver, segments, range, span } => {
+        SyntaxTree::Access { receiver, segments, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             pairs.push(make_flag("access", *range, *span));
             pairs.push(make_pair(
@@ -960,7 +960,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // their parent. Leading/trailing positional info is dropped
         // from the JSON shape (it lives on the IR for tree-text
         // rendering, but isn't part of the data view).
-        Ir::Comment { range, span, .. } => DataIr::String {
+        SyntaxTree::Comment { range, span, .. } => DataIr::String {
             value: range.slice(source).to_string(),
             range: *range,
             span: *span,
@@ -969,7 +969,7 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Return — `<return><value>...</value></return>` → a
         // Mapping with one `expression` slot pair when a value is
         // present; an empty Mapping for bare `return;`.
-        Ir::Return { value, range, span } => {
+        SyntaxTree::Return { value, range, span } => {
             let mut pairs: Vec<DataIr> = Vec::new();
             if let Some(v) = value {
                 pairs.push(make_pair(
@@ -985,19 +985,19 @@ fn project(ir: &Ir, source: &str) -> DataIr {
         // ----- Decorator — wraps an inner expression. Project the
         // inner directly under the parent's `decorator` slot; the
         // decorator wrapper itself adds nothing the JSON view needs.
-        Ir::Decorator { inner, range: _, span: _ } => project(inner, source),
+        SyntaxTree::Decorator { inner, range: _, span: _ } => project(inner, source),
 
         // ----- Import — its children are key/value pairs (path,
         // alias, etc.) that flatten directly under the parent. Same
         // shape as Module / Body.
-        Ir::Import { children, range, span, .. } => {
+        SyntaxTree::Import { children, range, span, .. } => {
             let pairs = collect_member_pairs(children, source);
             DataIr::Mapping { pairs, range: *range, span: *span }
         }
 
         // ----- Exhaustiveness checkpoint (S5A-Z7) ---------------------
-        // No catch-all arm: every `Ir` variant has its own
-        // projection rule above. Adding a new variant to `Ir`
+        // No catch-all arm: every `SyntaxTree` variant has its own
+        // projection rule above. Adding a new variant to `SyntaxTree`
         // forces the compiler to surface it here, which prevents
         // silent miscompiles back to "all-unknown" output. The
         // `has_unhandled` runtime predicate stays for the
@@ -1108,19 +1108,19 @@ fn make_op_mapping(
 /// Repeat-keyed pairs get pluralized in a final pass so that
 /// `[Pair("column", v1), Pair("column", v2)]` becomes
 /// `[Pair("columns", Sequence([v1, v2]))]`.
-fn collect_member_pairs(children: &[Ir], source: &str) -> Vec<DataIr> {
+fn collect_member_pairs(children: &[SyntaxTree], source: &str) -> Vec<DataIr> {
     let mut out: Vec<DataIr> = Vec::new();
     for c in children {
         match c {
-            Ir::Skip { .. } => continue,
-            Ir::Inline { children: inner, list_name: None, .. } => {
+            SyntaxTree::Skip { .. } => continue,
+            SyntaxTree::Inline { children: inner, list_name: None, .. } => {
                 let nested = collect_member_pairs(inner, source);
                 out.extend(nested);
             }
-            Ir::Inline { children: inner, list_name: Some(list), range, span } => {
+            SyntaxTree::Inline { children: inner, list_name: Some(list), range, span } => {
                 let items: Vec<DataIr> = inner
                     .iter()
-                    .filter(|i| !matches!(i, Ir::Skip { .. }))
+                    .filter(|i| !matches!(i, SyntaxTree::Skip { .. }))
                     .map(|i| project(i, source))
                     .collect();
                 out.push(make_pair(list, DataIr::Sequence {
@@ -1154,9 +1154,9 @@ fn collect_member_pairs(children: &[Ir], source: &str) -> Vec<DataIr> {
 /// carry no semantic content (no children OR children all Skip,
 /// no modifier flags, no extra markers). These collapse to
 /// `Bool(true)` flag pairs at the parent level.
-fn synthetic_marker_name(ir: &Ir) -> Option<&'static str> {
-    if let Ir::SimpleStatement { element_name, children, modifiers, extra_markers, .. } = ir {
-        let all_skip_or_empty = children.iter().all(|k| matches!(k, Ir::Skip { .. }));
+fn synthetic_marker_name(ir: &SyntaxTree) -> Option<&'static str> {
+    if let SyntaxTree::SimpleStatement { element_name, children, modifiers, extra_markers, .. } = ir {
+        let all_skip_or_empty = children.iter().all(|k| matches!(k, SyntaxTree::Skip { .. }));
         if all_skip_or_empty
             && modifiers.marker_names().is_empty()
             && extra_markers.is_empty()
@@ -1278,20 +1278,20 @@ fn push_modifier_flags(
 /// The element name a child should occupy in the parent's mapping.
 /// Parallels (and is a subset of) `to_json::element_name` — kept
 /// independent so this module doesn't depend on the legacy renderer.
-fn element_name_for_pair(ir: &Ir) -> &'static str {
+fn element_name_for_pair(ir: &SyntaxTree) -> &'static str {
     match ir {
-        Ir::Module { element_name, .. } => element_name,
-        Ir::SimpleStatement { element_name, .. } => element_name,
-        Ir::Atom { element_name, .. } => element_name,
-        Ir::Class { kind, .. } => kind,
-        Ir::Body { .. } => "body",
-        Ir::Function { element_name, .. } => element_name,
-        Ir::Property { .. } => "property",
-        Ir::Constructor { .. } => "constructor",
-        Ir::EnumMember { .. } => "constant",
-        Ir::Enum { .. } => "enum",
-        Ir::Name { .. } => "name",
-        Ir::Comment { .. } => "comment",
+        SyntaxTree::Module { element_name, .. } => element_name,
+        SyntaxTree::SimpleStatement { element_name, .. } => element_name,
+        SyntaxTree::Atom { element_name, .. } => element_name,
+        SyntaxTree::Class { kind, .. } => kind,
+        SyntaxTree::Body { .. } => "body",
+        SyntaxTree::Function { element_name, .. } => element_name,
+        SyntaxTree::Property { .. } => "property",
+        SyntaxTree::Constructor { .. } => "constructor",
+        SyntaxTree::EnumMember { .. } => "constant",
+        SyntaxTree::Enum { .. } => "enum",
+        SyntaxTree::Name { .. } => "name",
+        SyntaxTree::Comment { .. } => "comment",
         // Catch-all: variants we haven't taught yet. The parent
         // pair will use this generic key; once we cover the
         // variant in `project()` the projection becomes lossless.
@@ -1299,29 +1299,29 @@ fn element_name_for_pair(ir: &Ir) -> &'static str {
     }
 }
 
-fn ir_variant_name(ir: &Ir) -> &'static str {
+fn ir_variant_name(ir: &SyntaxTree) -> &'static str {
     match ir {
-        Ir::Module { .. } => "Module",
-        Ir::Class { .. } => "Class",
-        Ir::Function { .. } => "Function",
-        Ir::Property { .. } => "Property",
-        Ir::Body { .. } => "Body",
-        Ir::Atom { .. } => "Atom",
-        Ir::Name { .. } => "Name",
-        Ir::Skip { .. } => "Skip",
-        Ir::Inline { .. } => "Inline",
-        Ir::SimpleStatement { .. } => "SimpleStatement",
-        Ir::Binary { .. } => "Binary",
-        Ir::Unary { .. } => "Unary",
-        Ir::If { .. } => "If",
-        Ir::For { .. } => "For",
-        Ir::While { .. } => "While",
-        Ir::Pair { .. } => "Pair",
-        Ir::Tuple { .. } => "Tuple",
-        Ir::List { .. } => "List",
-        Ir::Set { .. } => "Set",
-        Ir::Dictionary { .. } => "Dictionary",
-        Ir::Comment { .. } => "Comment",
+        SyntaxTree::Module { .. } => "Module",
+        SyntaxTree::Class { .. } => "Class",
+        SyntaxTree::Function { .. } => "Function",
+        SyntaxTree::Property { .. } => "Property",
+        SyntaxTree::Body { .. } => "Body",
+        SyntaxTree::Atom { .. } => "Atom",
+        SyntaxTree::Name { .. } => "Name",
+        SyntaxTree::Skip { .. } => "Skip",
+        SyntaxTree::Inline { .. } => "Inline",
+        SyntaxTree::SimpleStatement { .. } => "SimpleStatement",
+        SyntaxTree::Binary { .. } => "Binary",
+        SyntaxTree::Unary { .. } => "Unary",
+        SyntaxTree::If { .. } => "If",
+        SyntaxTree::For { .. } => "For",
+        SyntaxTree::While { .. } => "While",
+        SyntaxTree::Pair { .. } => "Pair",
+        SyntaxTree::Tuple { .. } => "Tuple",
+        SyntaxTree::List { .. } => "List",
+        SyntaxTree::Set { .. } => "Set",
+        SyntaxTree::Dictionary { .. } => "Dictionary",
+        SyntaxTree::Comment { .. } => "Comment",
         _ => "Other",
     }
 }
@@ -1350,14 +1350,14 @@ mod tests {
     fn pos(start: u32, end: u32) -> ByteRange { ByteRange::new(start, end) }
     fn sp() -> Span { Span::point(1, 1) }
 
-    fn name(text: &str) -> Ir {
-        Ir::Name { range: pos(0, text.len() as u32), span: sp() }
+    fn name(text: &str) -> SyntaxTree {
+        SyntaxTree::Name { range: pos(0, text.len() as u32), span: sp() }
     }
 
     #[test]
     fn class_with_public_modifier_projects_to_mapping_with_flag_and_name() {
         let source = "Foo";
-        let class = Ir::Class {
+        let class = SyntaxTree::Class {
             kind: "class",
             modifiers: Modifiers { access: Some(Access::Public), ..Modifiers::default() },
             decorators: vec![],
@@ -1365,7 +1365,7 @@ mod tests {
             generics: None,
             bases: vec![],
             where_clauses: vec![],
-            body: Box::new(Ir::Body {
+            body: Box::new(SyntaxTree::Body {
                 children: vec![],
                 pass_only: false,
                 block_wrap: true,
@@ -1390,7 +1390,7 @@ mod tests {
         // `has_unhandled` walks the DataIr looking for the
         // `unhandled:<variant>` coverage-gap marker. After S5A-Z7
         // the projection has zero arms that emit such markers (the
-        // `Ir::project` match is exhaustive — compiler-checked), so
+        // `SyntaxTree::project` match is exhaustive — compiler-checked), so
         // any test must construct the DataIr by hand.
         use super::super::types::{ByteRange, Span};
         let r = ByteRange::new(0, 1);
@@ -1411,7 +1411,7 @@ mod tests {
         assert!(has_unhandled(&nested), "should walk into pair values");
 
         // Non-`unhandled:` Unknown (e.g. `ir-unknown:` from the
-        // typed `Ir::Unknown` projection) is NOT a coverage gap.
+        // typed `SyntaxTree::Unknown` projection) is NOT a coverage gap.
         let benign = DataIr::Unknown { kind: "ir-unknown:foo_kind".into(), range: r, span: s };
         assert!(!has_unhandled(&benign));
     }
@@ -1423,7 +1423,7 @@ mod tests {
         // accidental re-introduction of an `unhandled:` arm
         // surfaces as a test failure instead of a silent regression.
         let source = "Foo";
-        let class = Ir::Class {
+        let class = SyntaxTree::Class {
             kind: "class",
             modifiers: Modifiers { access: Some(Access::Public), ..Modifiers::default() },
             decorators: vec![],
@@ -1431,7 +1431,7 @@ mod tests {
             generics: None,
             bases: vec![],
             where_clauses: vec![],
-            body: Box::new(Ir::Body {
+            body: Box::new(SyntaxTree::Body {
                 children: vec![],
                 pass_only: false,
                 block_wrap: true,
@@ -1448,7 +1448,7 @@ mod tests {
     #[test]
     fn skip_children_are_omitted() {
         let source = "Foo";
-        let class = Ir::Class {
+        let class = SyntaxTree::Class {
             kind: "class",
             modifiers: Modifiers::default(),
             decorators: vec![],
@@ -1456,10 +1456,10 @@ mod tests {
             generics: None,
             bases: vec![],
             where_clauses: vec![],
-            body: Box::new(Ir::Body {
+            body: Box::new(SyntaxTree::Body {
                 children: vec![
-                    Ir::Skip { range: pos(3, 4), span: sp() },
-                    Ir::Skip { range: pos(4, 5), span: sp() },
+                    SyntaxTree::Skip { range: pos(3, 4), span: sp() },
+                    SyntaxTree::Skip { range: pos(4, 5), span: sp() },
                 ],
                 pass_only: false,
                 block_wrap: true,

@@ -286,14 +286,14 @@ fn passthrough_kinds_per_language() -> Vec<(&'static str, Vec<&'static str>)> {
     vec![
         // TS / JS / TSX / JSX / C# / Python moved off the imperative
         // pipeline: rule tables no longer exist. The IR pipeline owns
-        // its own dispatch; the `Ir::Unknown` fall-through covers the
+        // its own dispatch; the `SyntaxTree::Unknown` fall-through covers the
         // same diagnostic.
         // Go moved off the imperative pipeline: rule table no longer
-        // exists. `Ir::Unknown` covers the diagnostic.
+        // exists. `SyntaxTree::Unknown` covers the diagnostic.
         // Rust / Java / Ruby moved off the imperative pipeline: rule
-        // tables no longer exist. `Ir::Unknown` covers the diagnostic.
+        // tables no longer exist. `SyntaxTree::Unknown` covers the diagnostic.
         // PHP moved off the imperative pipeline: rule table no longer
-        // exists. `Ir::Unknown` covers the diagnostic.
+        // exists. `SyntaxTree::Unknown` covers the diagnostic.
         // TOML / INI / env / markdown moved off the imperative
         // pipeline: rule tables no longer exist. The IR pipeline
         // (crate::ir::{toml_data, ini_data, markdown_data}) owns

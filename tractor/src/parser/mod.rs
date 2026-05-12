@@ -51,9 +51,9 @@ pub struct XotParseResult {
     /// instead of going through `xml_to_json`. That lets us drop the
     /// `list=` / `field=` XML scaffolding the imperative pipeline
     /// relied on for cardinality inference: the IR's typed slots
-    /// (Vec<Ir> = list, Box<Ir> = singleton) carry the same
+    /// (Vec<SyntaxTree> = list, Box<SyntaxTree> = singleton) carry the same
     /// information at the right semantic layer.
-    pub ir: Option<Box<crate::ir::Ir>>,
+    pub ir: Option<Box<crate::ir::SyntaxTree>>,
 
     /// Typed `DataIr` root for data languages (JSON / YAML / TOML /
     /// INI / env / markdown). `Some` only when the IR pipeline took
@@ -64,7 +64,7 @@ pub struct XotParseResult {
     /// `Some` only when the IR pipeline took the SQL branch. SQL has
     /// its own typed IR per-construct (Select/Insert/Update/...) so
     /// JSON / XML output reads typed slots directly without the
-    /// projection heuristics that the cross-language `Ir` requires
+    /// projection heuristics that the cross-language `SyntaxTree` requires
     /// for generic SimpleStatement wrappers.
     #[cfg(feature = "native")]
     pub sql_ir: Option<Box<crate::ir::sql::SqlIr>>,
@@ -419,7 +419,7 @@ fn parse_with_ir_pipeline_to_xee(
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
-            xml_node.map(|x| crate::xpath::Tree::Ir {
+            xml_node.map(|x| crate::xpath::Tree::SyntaxTree {
                 ir: std::sync::Arc::new(ir_tree),
                 source: source_arc,
                 xml: x,

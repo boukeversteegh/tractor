@@ -6,7 +6,7 @@
 
 #![allow(dead_code)]
 
-use crate::ir::types::{AccessSegment, Ir};
+use crate::ir::types::{AccessSegment, SyntaxTree};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Indent {
@@ -72,7 +72,7 @@ impl Default for Syntax {
     }
 }
 
-pub fn render_generic(ir: &Ir) -> String {
+pub fn render_generic(ir: &SyntaxTree) -> String {
     let mut out = String::new();
     write_ir(ir, &mut out, Indent::SPACES_4, &Syntax::default());
     out
@@ -84,9 +84,9 @@ pub fn render_generic(ir: &Ir) -> String {
 /// reconstruct atom text. For from-scratch canonical rendering, atom
 /// text would need to ride alongside the IR — out of scope for this
 /// scaffold.
-pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
+pub fn write_ir(ir: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
     match ir {
-        Ir::Module { children, .. } => {
+        SyntaxTree::Module { children, .. } => {
             for c in children {
                 indent.write(out);
                 write_ir(c, out, indent, sx);
@@ -94,7 +94,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 out.push('\n');
             }
         }
-        Ir::Namespace { name, children, .. } => {
+        SyntaxTree::Namespace { name, children, .. } => {
             out.push_str("namespace ");
             write_ir(name, out, indent, sx);
             out.push_str(sx.block_open);
@@ -108,7 +108,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             indent.write(out);
             out.push_str(sx.block_close);
         }
-        Ir::Class { kind, name, generics, bases, body, .. } => {
+        SyntaxTree::Class { kind, name, generics, bases, body, .. } => {
             out.push_str(kind);
             out.push(' ');
             write_ir(name, out, indent, sx);
@@ -132,7 +132,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 out.push_str(sx.block_close);
             }
         }
-        Ir::Function { name, generics, parameters, returns, body, .. } => {
+        SyntaxTree::Function { name, generics, parameters, returns, body, .. } => {
             if !sx.typed_param_pre || returns.is_none() {
                 out.push_str(sx.fn_keyword);
                 out.push(' ');
@@ -170,7 +170,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 out.push_str(sx.statement_terminator);
             }
         }
-        Ir::Body { children, .. } => {
+        SyntaxTree::Body { children, .. } => {
             for c in children {
                 indent.write(out);
                 write_ir(c, out, indent, sx);
@@ -178,7 +178,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 out.push('\n');
             }
         }
-        Ir::Parameter { name, type_ann, default, .. } => {
+        SyntaxTree::Parameter { name, type_ann, default, .. } => {
             if sx.typed_param_pre {
                 if let Some(t) = type_ann { write_ir(t, out, indent, sx); out.push(' '); }
                 write_ir(name, out, indent, sx);
@@ -188,33 +188,33 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             }
             if let Some(d) = default { out.push_str(" = "); write_ir(d, out, indent, sx); }
         }
-        Ir::Returns { type_ann, .. } => write_ir(type_ann, out, indent, sx),
-        Ir::Return { value, .. } => {
+        SyntaxTree::Returns { type_ann, .. } => write_ir(type_ann, out, indent, sx),
+        SyntaxTree::Return { value, .. } => {
             out.push_str(sx.return_keyword);
             if let Some(v) = value { out.push(' '); write_ir(v, out, indent, sx); }
         }
-        Ir::If { condition, body, else_branch, .. } => {
+        SyntaxTree::If { condition, body, else_branch, .. } => {
             out.push_str(sx.if_keyword);
             cond_inline(condition, out, indent, sx);
             emit_block(body, out, indent, sx);
             if let Some(branch) = else_branch { out.push(' '); write_ir(branch, out, indent, sx); }
         }
-        Ir::ElseIf { condition, body, else_branch, .. } => {
+        SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
             out.push_str(sx.elif_keyword);
             cond_inline(condition, out, indent, sx);
             emit_block(body, out, indent, sx);
             if let Some(branch) = else_branch { out.push(' '); write_ir(branch, out, indent, sx); }
         }
-        Ir::Else { body, .. } => {
+        SyntaxTree::Else { body, .. } => {
             out.push_str(sx.else_keyword);
             emit_block(body, out, indent, sx);
         }
-        Ir::While { condition, body, .. } => {
+        SyntaxTree::While { condition, body, .. } => {
             out.push_str(sx.while_keyword);
             cond_inline(condition, out, indent, sx);
             emit_block(body, out, indent, sx);
         }
-        Ir::Foreach { type_ann, target, iterable, body, .. } => {
+        SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
             out.push_str(sx.foreach_keyword);
             let inner = |out: &mut String| {
                 if let Some(t) = type_ann { write_ir(t, out, indent, sx); out.push(' '); }
@@ -232,7 +232,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             }
             emit_block(body, out, indent, sx);
         }
-        Ir::For { targets, iterables, body, .. } => {
+        SyntaxTree::For { targets, iterables, body, .. } => {
             out.push_str(sx.for_keyword);
             out.push(' ');
             for (i, t) in targets.iter().enumerate() {
@@ -246,7 +246,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             }
             emit_block(body, out, indent, sx);
         }
-        Ir::CFor { initializer, condition, updates, body, .. } => {
+        SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
             out.push_str(sx.for_keyword);
             out.push_str(" (");
             if let Some(init) = initializer { write_ir(init, out, indent, sx); }
@@ -260,22 +260,22 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             out.push(')');
             emit_block(body, out, indent, sx);
         }
-        Ir::Break { .. } => out.push_str(sx.break_keyword),
-        Ir::Continue { .. } => out.push_str(sx.continue_keyword),
-        Ir::Binary { op_text, left, right, .. } => {
+        SyntaxTree::Break { .. } => out.push_str(sx.break_keyword),
+        SyntaxTree::Continue { .. } => out.push_str(sx.continue_keyword),
+        SyntaxTree::Binary { op_text, left, right, .. } => {
             write_ir(left, out, indent, sx); out.push(' ');
             out.push_str(op_text); out.push(' ');
             write_ir(right, out, indent, sx);
         }
-        Ir::Unary { op_text, operand, .. } => {
+        SyntaxTree::Unary { op_text, operand, .. } => {
             out.push_str(op_text); write_ir(operand, out, indent, sx);
         }
-        Ir::Comparison { left, op_text, right, .. } => {
+        SyntaxTree::Comparison { left, op_text, right, .. } => {
             write_ir(left, out, indent, sx); out.push(' ');
             out.push_str(op_text); out.push(' ');
             write_ir(right, out, indent, sx);
         }
-        Ir::Assign { targets, op_text, values, .. } => {
+        SyntaxTree::Assign { targets, op_text, values, .. } => {
             for (i, t) in targets.iter().enumerate() {
                 if i > 0 { out.push_str(", "); }
                 write_ir(t, out, indent, sx);
@@ -286,7 +286,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 write_ir(v, out, indent, sx);
             }
         }
-        Ir::Call { callee, arguments, .. } => {
+        SyntaxTree::Call { callee, arguments, .. } => {
             write_ir(callee, out, indent, sx);
             out.push('(');
             for (i, a) in arguments.iter().enumerate() {
@@ -295,11 +295,11 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             }
             out.push(')');
         }
-        Ir::Access { receiver, segments, .. } => {
+        SyntaxTree::Access { receiver, segments, .. } => {
             write_ir(receiver, out, indent, sx);
             for seg in segments { write_segment(seg, out, indent, sx); }
         }
-        Ir::ObjectCreation { type_target, arguments, initializer, .. } => {
+        SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
             out.push_str(sx.new_keyword);
             if let Some(t) = type_target { out.push(' '); write_ir(t, out, indent, sx); }
             out.push('(');
@@ -314,8 +314,8 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
                 out.push_str(" }");
             }
         }
-        Ir::List { children, .. } => list_like('[', ']', children, out, indent, sx),
-        Ir::Tuple { children, .. } => {
+        SyntaxTree::List { children, .. } => list_like('[', ']', children, out, indent, sx),
+        SyntaxTree::Tuple { children, .. } => {
             out.push('(');
             for (i, c) in children.iter().enumerate() {
                 if i > 0 { out.push_str(", "); }
@@ -324,19 +324,19 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             if children.len() == 1 { out.push(','); }
             out.push(')');
         }
-        Ir::Dictionary { pairs, .. } => list_like('{', '}', pairs, out, indent, sx),
-        Ir::Set { children, .. } => list_like('{', '}', children, out, indent, sx),
-        Ir::Pair { key, value, .. } => {
+        SyntaxTree::Dictionary { pairs, .. } => list_like('{', '}', pairs, out, indent, sx),
+        SyntaxTree::Set { children, .. } => list_like('{', '}', children, out, indent, sx),
+        SyntaxTree::Pair { key, value, .. } => {
             write_ir(key, out, indent, sx);
             out.push_str(": ");
             write_ir(value, out, indent, sx);
         }
-        Ir::Ternary { condition, if_true, if_false, .. } => {
+        SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
             write_ir(condition, out, indent, sx); out.push_str(" ? ");
             write_ir(if_true, out, indent, sx); out.push_str(" : ");
             write_ir(if_false, out, indent, sx);
         }
-        Ir::Lambda { parameters, body, .. } => {
+        SyntaxTree::Lambda { parameters, body, .. } => {
             out.push('(');
             for (i, p) in parameters.iter().enumerate() {
                 if i > 0 { out.push_str(", "); }
@@ -345,19 +345,19 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
             out.push_str(") => ");
             write_ir(body, out, indent, sx);
         }
-        Ir::Inline { children, .. } => {
+        SyntaxTree::Inline { children, .. } => {
             for c in children { write_ir(c, out, indent, sx); }
         }
-        Ir::Expression { inner, .. } => write_ir(inner, out, indent, sx),
-        Ir::Comment { .. } => { out.push_str(sx.comment_line); out.push_str(" (comment)"); }
-        Ir::Null { .. } | Ir::None { .. } => out.push_str(sx.null_keyword),
-        Ir::True { .. } => out.push_str(sx.true_keyword),
-        Ir::False { .. } => out.push_str(sx.false_keyword),
-        Ir::Name { .. } => out.push_str("«name»"),
-        Ir::Int { .. } => out.push('0'),
-        Ir::Float { .. } => out.push_str("0.0"),
-        Ir::String { .. } => out.push_str("\"\""),
-        Ir::SimpleStatement { children, .. } => {
+        SyntaxTree::Expression { inner, .. } => write_ir(inner, out, indent, sx),
+        SyntaxTree::Comment { .. } => { out.push_str(sx.comment_line); out.push_str(" (comment)"); }
+        SyntaxTree::Null { .. } | SyntaxTree::None { .. } => out.push_str(sx.null_keyword),
+        SyntaxTree::True { .. } => out.push_str(sx.true_keyword),
+        SyntaxTree::False { .. } => out.push_str(sx.false_keyword),
+        SyntaxTree::Name { .. } => out.push_str("«name»"),
+        SyntaxTree::Int { .. } => out.push('0'),
+        SyntaxTree::Float { .. } => out.push_str("0.0"),
+        SyntaxTree::String { .. } => out.push_str("\"\""),
+        SyntaxTree::SimpleStatement { children, .. } => {
             for (i, c) in children.iter().enumerate() {
                 if i > 0 { out.push(' '); }
                 write_ir(c, out, indent, sx);
@@ -367,7 +367,7 @@ pub fn write_ir(ir: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
     }
 }
 
-fn list_like(open: char, close: char, items: &[Ir], out: &mut String, indent: Indent, sx: &Syntax) {
+fn list_like(open: char, close: char, items: &[SyntaxTree], out: &mut String, indent: Indent, sx: &Syntax) {
     out.push(open);
     for (i, c) in items.iter().enumerate() {
         if i > 0 { out.push_str(", "); }
@@ -376,7 +376,7 @@ fn list_like(open: char, close: char, items: &[Ir], out: &mut String, indent: In
     out.push(close);
 }
 
-fn cond_inline(condition: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
+fn cond_inline(condition: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
     if sx.paren_conditions {
         out.push_str(" (");
         write_ir(condition, out, indent, sx);
@@ -387,7 +387,7 @@ fn cond_inline(condition: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
     }
 }
 
-fn emit_block(body: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
+fn emit_block(body: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
     if sx.indent_blocks {
         out.push_str(sx.block_intro);
         out.push('\n');
@@ -401,13 +401,13 @@ fn emit_block(body: &Ir, out: &mut String, indent: Indent, sx: &Syntax) {
     }
 }
 
-fn needs_terminator(ir: &Ir, sx: &Syntax) -> bool {
+fn needs_terminator(ir: &SyntaxTree, sx: &Syntax) -> bool {
     if sx.statement_terminator.is_empty() { return false; }
     !matches!(
         ir,
-        Ir::If { .. } | Ir::While { .. } | Ir::Foreach { .. } | Ir::CFor { .. }
-            | Ir::For { .. } | Ir::Function { .. } | Ir::Class { .. }
-            | Ir::Namespace { .. } | Ir::Try { .. } | Ir::Comment { .. }
+        SyntaxTree::If { .. } | SyntaxTree::While { .. } | SyntaxTree::Foreach { .. } | SyntaxTree::CFor { .. }
+            | SyntaxTree::For { .. } | SyntaxTree::Function { .. } | SyntaxTree::Class { .. }
+            | SyntaxTree::Namespace { .. } | SyntaxTree::Try { .. } | SyntaxTree::Comment { .. }
     )
 }
 

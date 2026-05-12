@@ -5,7 +5,7 @@
 //! No projection heuristics — the typed IR shape carries the
 //! semantic information directly.
 //!
-//! Contrast with `to_json.rs` (cross-language `Ir`): that renderer
+//! Contrast with `to_json.rs` (cross-language `SyntaxTree`): that renderer
 //! grew ~9 special-case branches in `add_children` to fix
 //! `\$`-prefixed leaks (Skip filter, Inline transparency,
 //! plural-of-self collapse, marker-vs-leaf ambiguity, op_marker

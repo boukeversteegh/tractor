@@ -36,7 +36,7 @@ mod support;
 const LANGUAGE_FILES: &[&[&str]] = &[
     // C# / Python / Java / PHP moved entirely to the IR pipeline —
     // `transform.rs` retired. The lint scans for `map_element_name`
-    // strings; on the IR side every element name is wired via `Ir`
+    // strings; on the IR side every element name is wired via `SyntaxTree`
     // variant fields and doesn't need a string-keyed match arm. Skip
     // those languages here.
     &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],

@@ -839,7 +839,7 @@ pub static RULES: &[ShapeRule] = &[
         // The count rose as each language dropped its
         // `post_transform` (S3B-Z1c…Z9) — the post-pass-driven
         // `list=` tagging that masked these children-overflow sites
-        // went with it. Cardinality now flows from typed `Vec<Ir>`
+        // went with it. Cardinality now flows from typed `Vec<SyntaxTree>`
         // slots through `to_xot`/`to_json`; the rule's job is to
         // surface remaining XPath shape sites where the typed slot
         // has not yet caught up with what the JSON projection would

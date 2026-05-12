@@ -1,5 +1,5 @@
 //! IR → source code rendering. Per-language source emitters that walk
-//! the typed [`Ir`](crate::ir::Ir) tree and produce source code text.
+//! the typed [`SyntaxTree`](crate::ir::SyntaxTree) tree and produce source code text.
 //!
 //! ## Two rendering modes
 //!
@@ -54,7 +54,7 @@ pub mod ruby;
 pub mod php;
 // SQL-family languages use their own typed IR (`SqlIr`) and a
 // separate renderer entrypoint `render_sql`. Iter 53 retired the
-// legacy `Ir`-based TSQL pipeline.
+// legacy `SyntaxTree`-based TSQL pipeline.
 pub mod sql;
 // Data-language IR-direct source emitters (S4B-Z2). Read [`DataIr`]
 // directly and produce JSON / YAML text with optional span tracking
@@ -63,7 +63,7 @@ pub mod sql;
 pub mod data_json;
 pub mod data_yaml;
 
-use super::Ir;
+use super::SyntaxTree;
 
 /// Render an IR tree to source code for the named language.
 ///
@@ -71,7 +71,7 @@ use super::Ir;
 /// supplied, gap-text slicing is used to preserve original whitespace
 /// / comments / formatting (anchored mode). Pass `None` for canonical
 /// from-scratch rendering.
-pub fn render(ir: &Ir, lang: &str, source_anchor: Option<&str>) -> String {
+pub fn render(ir: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> String {
     if let Some(source) = source_anchor {
         return super::to_source(ir, source).to_string();
     }
@@ -84,7 +84,7 @@ pub fn render(ir: &Ir, lang: &str, source_anchor: Option<&str>) -> String {
         "go" => go_lang::render(ir),
         "ruby" => ruby::render(ir),
         "php" => php::render(ir),
-        // T-SQL uses `SqlIr`, not `Ir` — call `render_sql` instead.
+        // T-SQL uses `SqlIr`, not `SyntaxTree` — call `render_sql` instead.
         // This arm exists so users passing "tsql" get a clear panic
         // rather than silently falling through to generic.
         "tsql" => panic!("tsql uses SqlIr; call render_sql instead"),

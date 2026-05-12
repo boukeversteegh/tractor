@@ -1,14 +1,14 @@
 //! SQL-language IR — a fully typed representation of T-SQL (and
 //! eventually MySQL / PostgreSQL / SQLite) constructs. Parallel to
-//! [`crate::ir::Ir`] (programming languages) and [`crate::ir::data::DataIr`]
+//! [`crate::ir::SyntaxTree`] (programming languages) and [`crate::ir::data::DataIr`]
 //! (data languages).
 //!
 //! ## Why a separate IR
 //!
-//! Forcing SQL into the cross-language [`Ir`] enum either:
-//! - bloats `Ir` with SQL-specific variants (Insert, Select, Where,
+//! Forcing SQL into the cross-language [`SyntaxTree`] enum either:
+//! - bloats `SyntaxTree` with SQL-specific variants (Insert, Select, Where,
 //!   Subquery, Cte, …) that no programming language uses, OR
-//! - forces SQL into the generic `Ir::SimpleStatement` catch-all,
+//! - forces SQL into the generic `SyntaxTree::SimpleStatement` catch-all,
 //!   which loses typed-slot semantics — the source of the JSON
 //!   projection heuristics in iters 29-36.
 //!

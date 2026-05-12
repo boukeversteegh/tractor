@@ -32,7 +32,7 @@ use xot::{Node as XotNode, Xot};
 
 /// Named kinds the C# IR pipeline knows how to lower. The list is
 /// hand-curated for the ignored coverage tests below; the IR fall-
-/// through (`Ir::Unknown`) is the source of truth for what's NOT
+/// through (`SyntaxTree::Unknown`) is the source of truth for what's NOT
 /// supported. Kept for diagnostic parity between the pre-IR test
 /// surface and the new pipeline. Empty list means "no claim about
 /// known kinds" — the diagnostic tests handle missing kinds gracefully.
@@ -1071,7 +1071,7 @@ fn assert_expression_parity(expr: &str, label: &str) {
     // expression somewhere.
     let _ = cur_view;
     let _ = label;
-    // TODO: once Ir::Class / Ir::Method / Ir::Variable are added,
+    // TODO: once SyntaxTree::Class / SyntaxTree::Method / SyntaxTree::Variable are added,
     //       compare cur_expr against IR's variable-value subtree.
 }
 
@@ -1182,7 +1182,7 @@ fn conditional_access_chains() {
 //
 // The existing pipeline emits `<expression[non_null]>` — marker on
 // the expression host. The IR achieves the same by extending
-// `Ir::Expression` with an optional `marker` field.
+// `SyntaxTree::Expression` with an optional `marker` field.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -1290,12 +1290,12 @@ fn access_marker_swap_via_enum_mutation() {
     let mut ir = lower_csharp_root(tree.root_node(), s);
 
     // Locate the class IR.
-    fn find_class(ir: &mut tractor::ir::Ir) -> Option<&mut tractor::ir::Ir> {
-        use tractor::ir::Ir;
-        if matches!(ir, Ir::Class { .. }) { return Some(ir); }
+    fn find_class(ir: &mut tractor::ir::SyntaxTree) -> Option<&mut tractor::ir::SyntaxTree> {
+        use tractor::ir::SyntaxTree;
+        if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
         match ir {
-            Ir::Module { children, .. } | Ir::Inline { children, .. }
-            | Ir::Body { children, .. } => {
+            SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
+            | SyntaxTree::Body { children, .. } => {
                 for c in children {
                     if let Some(f) = find_class(c) { return Some(f); }
                 }
@@ -1304,16 +1304,16 @@ fn access_marker_swap_via_enum_mutation() {
             _ => None,
         }
     }
-    let class = find_class(&mut ir).expect("Ir::Class in tree");
+    let class = find_class(&mut ir).expect("SyntaxTree::Class in tree");
 
     // Verify it parsed with modifiers.access = Public.
-    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
         assert_eq!(modifiers.access, Some(tractor::ir::Access::Public),
             "expected `public class Foo` to lower to Access::Public");
     }
 
     // Render before mutation.
-    fn render_view(ir: &tractor::ir::Ir, src: &str) -> String {
+    fn render_view(ir: &tractor::ir::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
@@ -1327,7 +1327,7 @@ fn access_marker_swap_via_enum_mutation() {
 
     // Mutation: flip access to Private. ONE FIELD CHANGE.
     let class = find_class(&mut ir).unwrap();
-    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
         modifiers.access = Some(tractor::ir::Access::Private);
     }
 
@@ -1359,12 +1359,12 @@ fn static_marker_via_modifiers_mutation() {
     let tree = p.parse(s, None).unwrap();
     let mut ir = lower_csharp_root(tree.root_node(), s);
 
-    fn find_class(ir: &mut tractor::ir::Ir) -> Option<&mut tractor::ir::Ir> {
-        use tractor::ir::Ir;
-        if matches!(ir, Ir::Class { .. }) { return Some(ir); }
+    fn find_class(ir: &mut tractor::ir::SyntaxTree) -> Option<&mut tractor::ir::SyntaxTree> {
+        use tractor::ir::SyntaxTree;
+        if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
         match ir {
-            Ir::Module { children, .. } | Ir::Inline { children, .. }
-            | Ir::Body { children, .. } => {
+            SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
+            | SyntaxTree::Body { children, .. } => {
                 for c in children {
                     if let Some(f) = find_class(c) { return Some(f); }
                 }
@@ -1373,13 +1373,13 @@ fn static_marker_via_modifiers_mutation() {
             _ => None,
         }
     }
-    let class = find_class(&mut ir).expect("Ir::Class");
-    if let tractor::ir::Ir::Class { modifiers, .. } = class {
+    let class = find_class(&mut ir).expect("SyntaxTree::Class");
+    if let tractor::ir::SyntaxTree::Class { modifiers, .. } = class {
         assert!(!modifiers.static_, "should not be static initially");
         modifiers.static_ = true;
     }
 
-    fn render_view(ir: &tractor::ir::Ir, src: &str) -> String {
+    fn render_view(ir: &tractor::ir::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);

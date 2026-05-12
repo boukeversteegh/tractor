@@ -10,34 +10,34 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{AccessSegment, ByteRange, Ir, Modifiers};
+use super::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
 
-pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> Ir {
+pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
-        "program" => Ir::Module {
+        "program" => SyntaxTree::Module {
             element_name: "program",
             children: merge_ruby_line_comments(lower_children(root, source), source),
             range, span,
         },
-        other => Ir::Unknown { kind: other.to_string(), range, span },
+        other => SyntaxTree::Unknown { kind: other.to_string(), range, span },
     }
 }
 
 /// Classify Ruby comments. Ruby uses `#` for line comments. Tree-sitter
 /// ruby includes the trailing \n in the comment range like rust/go.
-fn merge_ruby_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
-    let mut out: Vec<Ir> = Vec::with_capacity(children.len());
+fn merge_ruby_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<SyntaxTree> {
+    let mut out: Vec<SyntaxTree> = Vec::with_capacity(children.len());
     for child in children {
-        if let Ir::Comment { leading, trailing, range, span } = child {
-            let prev_non_comment = out.iter().rev().find(|c| !matches!(c, Ir::Comment { .. }));
+        if let SyntaxTree::Comment { leading, trailing, range, span } = child {
+            let prev_non_comment = out.iter().rev().find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             let curr_is_trailing = prev_non_comment.map_or(false, |prev| {
                 let prev_end = prev.range().end as usize;
                 let between = &source[prev_end..range.start as usize];
                 !between.contains('\n')
             });
-            if let Some(Ir::Comment { range: prev_range, .. }) = out.last() {
+            if let Some(SyntaxTree::Comment { range: prev_range, .. }) = out.last() {
                 let gap = &source[prev_range.end as usize..range.start as usize];
                 // Ruby's tree-sitter comment range excludes the trailing \n,
                 // so adjacent line comments separated by exactly one newline
@@ -48,14 +48,14 @@ fn merge_ruby_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
                 let curr_text = &source[range.start as usize..range.end as usize];
                 let prev_is_line_comment = prev_text.trim_start().starts_with('#');
                 let curr_is_line_comment = curr_text.trim_start().starts_with('#');
-                let prev_was_trailing = matches!(out.last(), Some(Ir::Comment { trailing: true, .. }));
+                let prev_was_trailing = matches!(out.last(), Some(SyntaxTree::Comment { trailing: true, .. }));
                 if only_one_newline
                     && prev_is_line_comment
                     && curr_is_line_comment
                     && !prev_was_trailing
                     && !curr_is_trailing
                 {
-                    if let Some(Ir::Comment { range: r, span: s, .. }) = out.last_mut() {
+                    if let Some(SyntaxTree::Comment { range: r, span: s, .. }) = out.last_mut() {
                         r.end = range.end;
                         s.end_line = span.end_line;
                         s.end_column = span.end_column;
@@ -64,23 +64,23 @@ fn merge_ruby_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
                 }
             }
             let trailing = trailing || curr_is_trailing;
-            out.push(Ir::Comment { leading, trailing, range, span });
+            out.push(SyntaxTree::Comment { leading, trailing, range, span });
         } else {
             out.push(child);
         }
     }
     let n = out.len();
     for i in 0..n {
-        if let Ir::Comment { trailing, range, .. } = &out[i] {
+        if let SyntaxTree::Comment { trailing, range, .. } = &out[i] {
             if *trailing { continue; }
             let comment_end = range.end as usize;
-            let next = out.iter().skip(i + 1).find(|c| !matches!(c, Ir::Comment { .. }));
+            let next = out.iter().skip(i + 1).find(|c| !matches!(c, SyntaxTree::Comment { .. }));
             if let Some(next_ir) = next {
                 let next_start = next_ir.range().start as usize;
                 let between = &source[comment_end..next_start];
                 let newlines = between.chars().filter(|&c| c == '\n').count();
                 if newlines <= 1 && between.chars().all(|c| c.is_whitespace()) {
-                    if let Ir::Comment { leading, .. } = &mut out[i] {
+                    if let SyntaxTree::Comment { leading, .. } = &mut out[i] {
                         *leading = true;
                     }
                 }
@@ -90,11 +90,11 @@ fn merge_ruby_line_comments(children: Vec<Ir>, source: &str) -> Vec<Ir> {
     out
 }
 
-pub fn lower_ruby_node(node: TsNode<'_>, source: &str) -> Ir {
+pub fn lower_ruby_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
+fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -102,10 +102,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "identifier" | "constant" | "global_variable" | "instance_variable"
         | "class_variable" | "self" | "method_identifier"
         | "encoding" | "file" | "line" | "setter" | "subshell"
-        | "super" | "uninterpreted" => Ir::Name { range, span },
+        | "super" | "uninterpreted" => SyntaxTree::Name { range, span },
 
-        "integer" => Ir::Int { range, span },
-        "float" | "complex" | "rational" => Ir::Float { range, span },
+        "integer" => SyntaxTree::Int { range, span },
+        "float" | "complex" | "rational" => SyntaxTree::Float { range, span },
         "string" => {
             // Ruby strings can have `interpolation` children — for those
             // emit `<string>` with interpolation children. Plain strings
@@ -114,14 +114,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             let has_interp = node.named_children(&mut cursor)
                 .any(|c| c.kind() == "interpolation");
             if !has_interp {
-                Ir::String { range, span }
+                SyntaxTree::String { range, span }
             } else {
                 let mut cursor2 = node.walk();
-                let children: Vec<Ir> = node
+                let children: Vec<SyntaxTree> = node
                     .named_children(&mut cursor2)
                     .map(|c| lower_node(c, source))
                     .collect();
-                Ir::SimpleStatement {
+                SyntaxTree::SimpleStatement {
                     element_name: "string",
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
@@ -130,18 +130,18 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 }
             }
         }
-        "character" => Ir::String { range, span },
+        "character" => SyntaxTree::String { range, span },
         "regex" => simple_statement(node, "regex", source),
-        "true" => Ir::True { range, span },
-        "false" => Ir::False { range, span },
-        "nil" => Ir::SimpleStatement {
+        "true" => SyntaxTree::True { range, span },
+        "false" => SyntaxTree::False { range, span },
+        "nil" => SyntaxTree::SimpleStatement {
             element_name: "nil",
             modifiers: Modifiers::default(),
             extra_markers: &[],
             children: Vec::new(),
             range, span,
         },
-        "comment" => Ir::Comment { leading: false, trailing: false, range, span },
+        "comment" => SyntaxTree::Comment { leading: false, trailing: false, range, span },
 
         // ----- Symbols -------------------------------------------------
         "simple_symbol" | "hash_key_symbol" => simple_statement(node, "symbol", source),
@@ -160,14 +160,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // Wrap bare identifier children in `<parameter>` so the
             // shape is uniform with `keyword_parameter` / `optional_parameter`.
             let mut cursor = node.walk();
-            let kids: Vec<Ir> = node.named_children(&mut cursor)
+            let kids: Vec<SyntaxTree> = node.named_children(&mut cursor)
                 .map(|c| {
                     if matches!(c.kind(), "identifier") {
-                        Ir::SimpleStatement {
+                        SyntaxTree::SimpleStatement {
                             element_name: "parameter",
                             modifiers: Modifiers::default(),
                             extra_markers: &[],
-                            children: vec![Ir::Name { range: range_of(c), span: span_of(c) }],
+                            children: vec![SyntaxTree::Name { range: range_of(c), span: span_of(c) }],
                             range: range_of(c),
                             span: span_of(c),
                         }
@@ -176,7 +176,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     }
                 })
                 .collect();
-            Ir::Inline {
+            SyntaxTree::Inline {
                 children: kids,
                 list_name: Some("parameters"),
                 range, span,
@@ -261,7 +261,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 _ => "",
             };
             match (left, right) {
-                (Some(l), Some(r)) if !marker.is_empty() => Ir::Binary {
+                (Some(l), Some(r)) if !marker.is_empty() => SyntaxTree::Binary {
                     element_name: if matches!(op_text.as_str(), "&&" | "||" | "and" | "or") { "logical" } else { "binary" },
                     op_text,
                     op_marker: marker,
@@ -298,7 +298,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                 _ => "",
             };
             match operand {
-                Some(o) if !marker.is_empty() => Ir::Unary {
+                Some(o) if !marker.is_empty() => SyntaxTree::Unary {
                     op_text,
                     op_marker: marker,
                     op_range: op_byte_range,
@@ -310,12 +310,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             }
         }
         // Ruby `.foo` and `&.foo` (safe-nav) — every member access is a
-        // call. Fold into Ir::Access mirroring TS/Rust/Go/PHP.
+        // call. Fold into SyntaxTree::Access mirroring TS/Rust/Go/PHP.
         "call" => {
             let receiver_node = node.child_by_field_name("receiver");
             let method_node = node.child_by_field_name("method");
             let args_node = node.child_by_field_name("arguments");
-            let arguments: Vec<Ir> = match args_node {
+            let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
                     let mut ac = a.walk();
                     a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
@@ -340,11 +340,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                         span,
                     };
                     match object_ir {
-                        Ir::Access { receiver, mut segments, .. } => {
+                        SyntaxTree::Access { receiver, mut segments, .. } => {
                             segments.push(segment);
-                            Ir::Access { receiver, segments, range, span }
+                            SyntaxTree::Access { receiver, segments, range, span }
                         }
-                        other => Ir::Access {
+                        other => SyntaxTree::Access {
                             receiver: Box::new(other),
                             segments: vec![segment],
                             range, span,
@@ -359,7 +359,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
             // slot wrappers around `<expression>` hosts.
             let mut cursor = node.walk();
             let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
-            let mut children: Vec<Ir> = Vec::new();
+            let mut children: Vec<SyntaxTree> = Vec::new();
             for (i, c) in kids.iter().enumerate() {
                 let slot = match i {
                     0 => "condition",
@@ -368,11 +368,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     _ => "expression",
                 };
                 let inner = lower_node(*c, source);
-                children.push(Ir::SimpleStatement {
+                children.push(SyntaxTree::SimpleStatement {
                     element_name: slot,
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
-                    children: vec![Ir::SimpleStatement {
+                    children: vec![SyntaxTree::SimpleStatement {
                         element_name: "expression",
                         modifiers: Modifiers::default(),
                         extra_markers: &[],
@@ -384,7 +384,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
                     span: span_of(*c),
                 });
             }
-            Ir::SimpleStatement {
+            SyntaxTree::SimpleStatement {
                 element_name: "ternary",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
@@ -415,14 +415,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "match_pattern" => simple_statement_marked(node, "pattern", &["match"], source),
         "test_pattern" => simple_statement_marked(node, "pattern", &["test"], source),
         "variable_reference_pattern" => simple_statement_marked(node, "pattern", &["variable"], source),
-        "parenthesized_pattern" => Ir::Inline {
+        "parenthesized_pattern" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
         },
 
         // ----- Arguments / spread --------------------------------------
-        "argument_list" => Ir::Inline {
+        "argument_list" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: Some("arguments"),
             range, span,
@@ -437,12 +437,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         "body_statement" | "block_body" | "parenthesized_statements"
         | "string_content" | "escape_sequence" | "bare_string" | "bare_symbol"
         | "heredoc_beginning" | "heredoc_body" | "heredoc_content" | "heredoc_end"
-        | "in" | "left_assignment_list" => Ir::Inline {
+        | "in" | "left_assignment_list" => SyntaxTree::Inline {
             children: lower_children(node, source),
             list_name: None,
             range, span,
         },
-        "empty_statement" => Ir::Inline {
+        "empty_statement" => SyntaxTree::Inline {
             children: Vec::new(),
             list_name: None,
             range, span,
@@ -462,9 +462,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> Ir {
         // `operator` is a tree-sitter node for `def +(other)` style
         // operator method names. Lower as `<name>` so the method's name
         // child stays a name leaf.
-        "operator" => Ir::Name { range, span },
+        "operator" => SyntaxTree::Name { range, span },
 
-        other => Ir::Unknown { kind: other.to_string(), range, span },
+        other => SyntaxTree::Unknown { kind: other.to_string(), range, span },
     }
 }
 
@@ -473,18 +473,18 @@ fn ruby_param_with_value(
     node: TsNode<'_>,
     extra_markers: &'static [&'static str],
     source: &str,
-) -> Ir {
+) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let name_node = node.child_by_field_name("name");
     let value_node = node.child_by_field_name("value");
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(n) = name_node {
-        children.push(Ir::Name { range: range_of(n), span: span_of(n) });
+        children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
     }
     if let Some(v) = value_node {
         let inner = lower_node(v, source);
-        children.push(Ir::SimpleStatement {
+        children.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
             extra_markers: &[],
@@ -493,7 +493,7 @@ fn ruby_param_with_value(
             span: span_of(v),
         });
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name: "parameter",
         modifiers: Modifiers::default(),
         extra_markers,
@@ -506,10 +506,10 @@ fn ruby_param_with_value(
 /// `<if> condition body* <else_if/>* <else/>? </if>`. Tree-sitter
 /// nests the alternatives (`if.alternative = elsif.alternative = else`);
 /// this fn walks that chain and emits siblings of the outer `<if>`.
-fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     let mut cursor = node.walk();
     for c in node.named_children(&mut cursor) {
         match c.kind() {
@@ -528,7 +528,7 @@ fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> 
             _ => children.push(lower_node(c, source)),
         }
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -540,10 +540,10 @@ fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> 
 
 /// Lower an `elsif` node, EXCLUDING any nested `elsif`/`else`
 /// alternative — the caller appends those as siblings.
-fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> Ir {
+fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     let mut cursor = node.walk();
     for c in node.named_children(&mut cursor) {
         if matches!(c.kind(), "elsif" | "else") {
@@ -551,7 +551,7 @@ fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> Ir {
         }
         children.push(lower_node(c, source));
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name: "else_if",
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -563,7 +563,7 @@ fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> Ir {
 
 /// Walk a Ruby `if`-alternative chain (an `elsif` or terminal `else`)
 /// and append the flattened sequence to `out`.
-fn append_ruby_alternative_chain(node: TsNode<'_>, source: &str, out: &mut Vec<Ir>) {
+fn append_ruby_alternative_chain(node: TsNode<'_>, source: &str, out: &mut Vec<SyntaxTree>) {
     match node.kind() {
         "elsif" => {
             out.push(flatten_ruby_elsif_chain(node, source));
@@ -590,19 +590,19 @@ fn ruby_alternative_child<'a>(node: TsNode<'a>) -> Option<TsNode<'a>> {
 
 /// Lower a Ruby while/until loop with `<condition><expression>` and
 /// `<body>` slot wrapping.
-fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
     let body_node = node.child_by_field_name("body");
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(c) = cond_node {
         let inner = lower_node(c, source);
-        children.push(Ir::SimpleStatement {
+        children.push(SyntaxTree::SimpleStatement {
             element_name: "condition",
             modifiers: Modifiers::default(),
             extra_markers: &[],
-            children: vec![Ir::SimpleStatement {
+            children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
@@ -616,11 +616,11 @@ fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) 
     }
     if let Some(b) = body_node {
         let mut bc = b.walk();
-        let body_children: Vec<Ir> = b
+        let body_children: Vec<SyntaxTree> = b
             .named_children(&mut bc)
             .map(|s| lower_node(s, source))
             .collect();
-        children.push(Ir::SimpleStatement {
+        children.push(SyntaxTree::SimpleStatement {
             element_name: "body",
             modifiers: Modifiers::default(),
             extra_markers: &[],
@@ -629,7 +629,7 @@ fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) 
             span: span_of(b),
         });
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -641,13 +641,13 @@ fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) 
 /// Lower a Ruby for-in: `for X in items do ... end`.
 /// pattern → bare name; value (the `in items`) → `<value><expression>items</expression></value>`;
 /// body → `<body>` (do block contents).
-fn ruby_for(node: TsNode<'_>, source: &str) -> Ir {
+fn ruby_for(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let pattern_node = node.child_by_field_name("pattern");
     let value_node = node.child_by_field_name("value");
     let body_node = node.child_by_field_name("body");
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(p) = pattern_node {
         children.push(lower_node(p, source));
     }
@@ -656,11 +656,11 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> Ir {
         let mut vc = v.walk();
         let inner = v.named_children(&mut vc).next().unwrap_or(v);
         let inner_ir = lower_node(inner, source);
-        children.push(Ir::SimpleStatement {
+        children.push(SyntaxTree::SimpleStatement {
             element_name: "value",
             modifiers: Modifiers::default(),
             extra_markers: &[],
-            children: vec![Ir::SimpleStatement {
+            children: vec![SyntaxTree::SimpleStatement {
                 element_name: "expression",
                 modifiers: Modifiers::default(),
                 extra_markers: &[],
@@ -674,11 +674,11 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> Ir {
     }
     if let Some(b) = body_node {
         let mut bc = b.walk();
-        let body_children: Vec<Ir> = b
+        let body_children: Vec<SyntaxTree> = b
             .named_children(&mut bc)
             .map(|s| lower_node(s, source))
             .collect();
-        children.push(Ir::SimpleStatement {
+        children.push(SyntaxTree::SimpleStatement {
             element_name: "body",
             modifiers: Modifiers::default(),
             extra_markers: &[],
@@ -687,7 +687,7 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> Ir {
             span: span_of(b),
         });
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name: "for",
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -702,21 +702,21 @@ fn ruby_method(
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
-) -> Ir {
+) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     let mut cursor = node.walk();
-    let mut children: Vec<Ir> = Vec::new();
+    let mut children: Vec<SyntaxTree> = Vec::new();
     for c in node.named_children(&mut cursor) {
         if let Some(b) = body_node {
             if c.id() == b.id() {
                 let mut bc = c.walk();
-                let body_children: Vec<Ir> = c
+                let body_children: Vec<SyntaxTree> = c
                     .named_children(&mut bc)
                     .map(|s| lower_node(s, source))
                     .collect();
-                children.push(Ir::SimpleStatement {
+                children.push(SyntaxTree::SimpleStatement {
                     element_name: "body",
                     modifiers: Modifiers::default(),
                     extra_markers: &[],
@@ -729,7 +729,7 @@ fn ruby_method(
         }
         children.push(lower_node(c, source));
     }
-    Ir::SimpleStatement {
+    SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
         extra_markers,
@@ -738,10 +738,10 @@ fn ruby_method(
     }
 }
 
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> Ir {
+fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
-    Ir::SimpleStatement {
+    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+    SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
         extra_markers: &[],
@@ -756,10 +756,10 @@ fn simple_statement_marked(
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
-) -> Ir {
+) -> SyntaxTree {
     let mut cursor = node.walk();
-    let children: Vec<Ir> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
-    Ir::SimpleStatement {
+    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+    SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
         extra_markers,
@@ -769,7 +769,7 @@ fn simple_statement_marked(
     }
 }
 
-fn lower_children(node: TsNode<'_>, source: &str) -> Vec<Ir> {
+fn lower_children(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
     let mut cursor = node.walk();
     node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
 }
