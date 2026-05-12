@@ -29,8 +29,8 @@ pub mod xpath;
 pub mod output;
 // `render` module retired by S4C/S4D — the tree-pipeline reverse path
 // owns this surface now: programming languages render through
-// `tree::source::*`, data languages through
-// `tree::source::data_{json,yaml}`.
+// `tree::render::*`, data languages through
+// `tree::render::data_{json,yaml}`.
 
 // Core data types
 pub mod model;

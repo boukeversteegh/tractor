@@ -39,7 +39,7 @@
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
 //!    is captured by [`QuoteStyle`] on the atom variant; `value` is
 //!    the parsed unquoted text. Implemented as the canonical-mode
-//!    arm of [`crate::tree::source::render_sql`] in `source/sql.rs`,
+//!    arm of [`crate::tree::render::render_sql`] in `source/sql.rs`,
 //!    fitting the existing per-language source-rendering convention.
 
 #![cfg(feature = "native")]

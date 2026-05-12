@@ -329,20 +329,20 @@ fn render_data_ir_with_spans(
     let (indent, newline) = detect_indent_and_newline(source);
     match lang {
         "json" => {
-            let opts = crate::tree::source::data_json::JsonRenderOptions {
+            let opts = crate::tree::render::data_json::JsonRenderOptions {
                 indent,
                 newline,
                 indent_level: 0,
             };
-            crate::tree::source::data_json::render_json_with_spans(tree, &opts)
+            crate::tree::render::data_json::render_json_with_spans(tree, &opts)
         }
         "yaml" | "yml" => {
-            let opts = crate::tree::source::data_yaml::YamlRenderOptions {
+            let opts = crate::tree::render::data_yaml::YamlRenderOptions {
                 indent,
                 newline,
                 indent_level: 0,
             };
-            crate::tree::source::data_yaml::render_yaml_with_spans(tree, &opts)
+            crate::tree::render::data_yaml::render_yaml_with_spans(tree, &opts)
         }
         _ => unreachable!("render_data_ir_with_spans called for non-data language: {}", lang),
     }

@@ -4,7 +4,7 @@
 //! braces), no `;` between statements, no parens around conditions.
 //! Modeled via empty `block_open` and `end` as `block_close`.
 #![allow(dead_code)]
-use crate::tree::source::common::{write_ir, Indent, Syntax};
+use crate::tree::render::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {

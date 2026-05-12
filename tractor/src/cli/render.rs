@@ -7,7 +7,7 @@ use tractor::parser::parse_string_to_xot;
 ///
 /// The `render` command parses source through the typed-tree pipeline
 /// and re-emits it via the tree-aware source renderer
-/// (`tree::source::render`). In anchored mode (the default) this is a
+/// (`tree::render::render`). In anchored mode (the default) this is a
 /// byte-for-byte identity — useful for verifying lossless parse and as
 /// the substrate that `tractor set` / `tractor update` build on.
 #[derive(Args, Debug)]
@@ -38,12 +38,12 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let rendered = if let Some(tree) = &parsed.tree {
         // Syntax tree: anchored render slices the source
         // verbatim, so the round-trip is byte-identical.
-        tractor::tree::source::render(tree, &lang, Some(&parsed.source))
+        tractor::tree::render::render(tree, &lang, Some(&parsed.source))
     } else if let Some(data_tree) = &parsed.data_tree {
         // Data-language tree: anchored slice via DataTree::to_source.
         data_tree.to_source(&parsed.source).to_string()
     } else if let Some(sql_tree) = &parsed.sql_tree {
-        tractor::tree::source::render_sql(sql_tree, Some(&parsed.source))
+        tractor::tree::render::render_sql(sql_tree, Some(&parsed.source))
     } else {
         return Err(format!(
             "language '{}' is not on the tree pipeline; render is only available \

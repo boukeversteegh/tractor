@@ -1,7 +1,7 @@
 //! T-SQL: SqlTree → source code (canonical, no-anchor).
 //!
-//! Per-language entry under `crate::tree::source` for SQL-family
-//! languages. Called via [`crate::tree::source::render_sql`] which
+//! Per-language entry under `crate::tree::render` for SQL-family
+//! languages. Called via [`crate::tree::render::render_sql`] which
 //! handles both anchored mode (uses `SqlTree.to_source(s)` for byte-
 //! identical output) and from-scratch canonical mode (this module).
 //!

@@ -103,7 +103,7 @@ pub mod sql;
 #[cfg(feature = "native")]
 pub mod lower_helpers;
 #[cfg(feature = "native")]
-pub mod source;
+pub mod render;
 #[cfg(feature = "native")]
 pub mod coverage;
 
