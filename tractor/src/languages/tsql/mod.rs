@@ -6,7 +6,7 @@
 //!   - [`transformations`] — named functions for Rule::Custom + wrappers.
 //!   - [`transform`]      — orchestrator.
 
-pub mod input;
+pub mod kinds;
 pub mod output;
 pub mod rules;
 pub mod transform;

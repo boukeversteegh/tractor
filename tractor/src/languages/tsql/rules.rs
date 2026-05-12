@@ -13,7 +13,7 @@
 
 use crate::languages::rule::Rule;
 
-use super::input::TsqlKind;
+use super::kinds::TsqlKind;
 use super::output::TractorNode::{self, *};
 use super::transformations;
 

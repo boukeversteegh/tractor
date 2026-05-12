@@ -1,7 +1,7 @@
 //! Output element names — tractor's C# XML vocabulary after transform.
 //! These are the names that appear in tractor's output and that the
 //! renderer reads. The tree-sitter kind strings are external vocabulary,
-//! surfaced as the typed [`super::input::CsKind`] enum. The kind→output
+//! surfaced as the typed [`super::kinds::CsKind`] enum. The kind→output
 //! table lives in [`super::rules::rule`].
 //!
 //! Each variant of [`TractorNode`] is one element name the C# transform can

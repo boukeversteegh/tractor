@@ -9,7 +9,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::input::TsqlKind;
+use super::kinds::TsqlKind;
 use super::output::TractorNode::{self, Alias, Name, Schema, Temp, Var};
 
 /// Builder-inserted field wrappers `<value>`, `<left>`, `<right>` —

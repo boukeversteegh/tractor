@@ -5,7 +5,7 @@
 //! `rules.rs` / `transformations.rs` / `transform.rs` modules have
 //! been retired.
 
-pub mod input;
+pub mod kinds;
 pub mod output;
 
 use crate::output::syntax_highlight::SyntaxCategory;

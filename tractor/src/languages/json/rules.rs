@@ -6,7 +6,7 @@
 
 use crate::languages::rule::Rule;
 
-use super::input::JsonKind;
+use super::kinds::JsonKind;
 use super::transformations::*;
 
 /// Syntax-branch rule. Produces the unified

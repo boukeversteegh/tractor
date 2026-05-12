@@ -5,7 +5,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::operators::is_operator_marker;
 use crate::output::syntax_highlight::SyntaxCategory;
 
-use super::input::TsqlKind;
+use super::kinds::TsqlKind;
 
 /// Transform a T-SQL AST node.
 ///

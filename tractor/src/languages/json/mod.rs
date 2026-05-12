@@ -20,7 +20,7 @@
 //!                          kind and dispatch via the shared rule
 //!                          executor.
 
-pub mod input;
+pub mod kinds;
 pub mod output;
 pub mod rules;
 pub mod transformations;

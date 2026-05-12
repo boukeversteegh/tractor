@@ -13,7 +13,7 @@ use crate::transform::operators::is_operator_marker;
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
-pub mod input;
+pub mod kinds;
 pub mod output;
 
 #[cfg(feature = "native")]

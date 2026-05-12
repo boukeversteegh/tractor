@@ -26,7 +26,7 @@ fn fixture_path(dir: &str, file: &str) -> PathBuf {
 
 #[test]
 fn go_catalogue_covers_blueprint() {
-    use tractor::languages::go::input::GoKind;
+    use tractor::languages::go::kinds::GoKind;
 
     let path = fixture_path("go", "blueprint.go");
     let source = std::fs::read_to_string(&path)
@@ -57,7 +57,7 @@ fn go_node_metadata_is_well_formed() {
 
 #[test]
 fn csharp_catalogue_covers_blueprint() {
-    use tractor::languages::csharp::input::CsKind;
+    use tractor::languages::csharp::kinds::CsKind;
 
     let path = fixture_path("csharp", "blueprint.cs");
     let source = std::fs::read_to_string(&path)
@@ -88,7 +88,7 @@ fn csharp_node_metadata_is_well_formed() {
 
 #[test]
 fn java_catalogue_covers_blueprint() {
-    use tractor::languages::java::input::JavaKind;
+    use tractor::languages::java::kinds::JavaKind;
 
     let path = fixture_path("java", "blueprint.java");
     let source = std::fs::read_to_string(&path)
@@ -119,7 +119,7 @@ fn java_node_metadata_is_well_formed() {
 
 #[test]
 fn php_catalogue_covers_blueprint() {
-    use tractor::languages::php::input::PhpKind;
+    use tractor::languages::php::kinds::PhpKind;
 
     let path = fixture_path("php", "blueprint.php");
     let source = std::fs::read_to_string(&path)
@@ -150,7 +150,7 @@ fn php_node_metadata_is_well_formed() {
 
 #[test]
 fn python_catalogue_covers_blueprint() {
-    use tractor::languages::python::input::PyKind;
+    use tractor::languages::python::kinds::PyKind;
 
     let path = fixture_path("python", "blueprint.py");
     let source = std::fs::read_to_string(&path)
@@ -181,7 +181,7 @@ fn python_node_metadata_is_well_formed() {
 
 #[test]
 fn rust_catalogue_covers_blueprint() {
-    use tractor::languages::rust_lang::input::RustKind;
+    use tractor::languages::rust_lang::kinds::RustKind;
 
     let path = fixture_path("rust", "blueprint.rs");
     let source = std::fs::read_to_string(&path)
@@ -212,7 +212,7 @@ fn rust_node_metadata_is_well_formed() {
 
 #[test]
 fn typescript_catalogue_covers_blueprint() {
-    use tractor::languages::typescript::input::TsKind;
+    use tractor::languages::typescript::kinds::TsKind;
 
     let path = fixture_path("typescript", "blueprint.ts");
     let source = std::fs::read_to_string(&path)
@@ -243,7 +243,7 @@ fn typescript_node_metadata_is_well_formed() {
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    use tractor::languages::ruby::input::RubyKind;
+    use tractor::languages::ruby::kinds::RubyKind;
 
     let path = fixture_path("ruby", "blueprint.rb");
     let source = std::fs::read_to_string(&path)
@@ -274,7 +274,7 @@ fn ruby_node_metadata_is_well_formed() {
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    use tractor::languages::tsql::input::TsqlKind;
+    use tractor::languages::tsql::kinds::TsqlKind;
 
     let path = fixture_path("tsql", "blueprint.sql");
     let source = std::fs::read_to_string(&path)

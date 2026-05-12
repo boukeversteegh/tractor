@@ -11,7 +11,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::data_keys::*;
 
 use super::{extract_string_content, extract_decoded_string_content};
-use super::input::JsonKind;
+use super::kinds::JsonKind;
 use super::output::*;
 
 // =============================================================================

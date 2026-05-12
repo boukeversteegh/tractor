@@ -22,7 +22,7 @@
 //!                          handles the builder-inserted `<value>`
 //!                          wrapper by element name.
 
-pub mod input;
+pub mod kinds;
 pub mod output;
 pub mod rules;
 pub mod transformations;

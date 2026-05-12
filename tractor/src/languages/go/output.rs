@@ -1,7 +1,7 @@
 //! Output element names — tractor's Go XML vocabulary after transform.
 //! These are the names that appear in tractor's output. The tree-sitter
 //! kind strings are external vocabulary, surfaced as the typed
-//! [`super::input::GoKind`] enum. The kind→output table lives in
+//! [`super::kinds::GoKind`] enum. The kind→output table lives in
 //! [`super::rules::rule`].
 //!
 //! Each variant of [`TractorNode`] is one element name the Go transform can

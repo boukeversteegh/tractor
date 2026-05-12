@@ -7,7 +7,7 @@
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
-use super::input::JsonKind;
+use super::kinds::JsonKind;
 
 pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind_str = match get_kind(xot, node) {

@@ -8,7 +8,7 @@
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 
-use super::input::YamlKind;
+use super::kinds::YamlKind;
 use super::transformations::strip_punct_flatten;
 
 pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

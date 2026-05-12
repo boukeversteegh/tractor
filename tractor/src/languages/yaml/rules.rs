@@ -6,7 +6,7 @@
 
 use crate::languages::rule::Rule;
 
-use super::input::YamlKind;
+use super::kinds::YamlKind;
 use super::transformations::*;
 
 /// Syntax-branch rule. Produces the JSON-shared

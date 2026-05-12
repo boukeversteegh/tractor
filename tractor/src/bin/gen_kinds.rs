@@ -26,32 +26,32 @@ const LANGUAGES: &[LangCodegen] = &[
     LangCodegen {
         enum_name: "GoKind",
         node_types_sources: &[tree_sitter_go::NODE_TYPES],
-        output_path: "tractor/src/languages/go/input.rs",
+        output_path: "tractor/src/languages/go/kinds.rs",
     },
     LangCodegen {
         enum_name: "CsKind",
         node_types_sources: &[tree_sitter_c_sharp::NODE_TYPES],
-        output_path: "tractor/src/languages/csharp/input.rs",
+        output_path: "tractor/src/languages/csharp/kinds.rs",
     },
     LangCodegen {
         enum_name: "JavaKind",
         node_types_sources: &[tree_sitter_java::NODE_TYPES],
-        output_path: "tractor/src/languages/java/input.rs",
+        output_path: "tractor/src/languages/java/kinds.rs",
     },
     LangCodegen {
         enum_name: "PhpKind",
         node_types_sources: &[tree_sitter_php::PHP_NODE_TYPES],
-        output_path: "tractor/src/languages/php/input.rs",
+        output_path: "tractor/src/languages/php/kinds.rs",
     },
     LangCodegen {
         enum_name: "PyKind",
         node_types_sources: &[tree_sitter_python::NODE_TYPES],
-        output_path: "tractor/src/languages/python/input.rs",
+        output_path: "tractor/src/languages/python/kinds.rs",
     },
     LangCodegen {
         enum_name: "RustKind",
         node_types_sources: &[tree_sitter_rust::NODE_TYPES],
-        output_path: "tractor/src/languages/rust_lang/input.rs",
+        output_path: "tractor/src/languages/rust_lang/kinds.rs",
     },
     LangCodegen {
         enum_name: "TsKind",
@@ -62,37 +62,37 @@ const LANGUAGES: &[LangCodegen] = &[
             tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
             tree_sitter_typescript::TSX_NODE_TYPES,
         ],
-        output_path: "tractor/src/languages/typescript/input.rs",
+        output_path: "tractor/src/languages/typescript/kinds.rs",
     },
     LangCodegen {
         enum_name: "RubyKind",
         node_types_sources: &[tree_sitter_ruby::NODE_TYPES],
-        output_path: "tractor/src/languages/ruby/input.rs",
+        output_path: "tractor/src/languages/ruby/kinds.rs",
     },
     LangCodegen {
         enum_name: "TsqlKind",
         node_types_sources: &[tree_sitter_sequel_tsql::NODE_TYPES],
-        output_path: "tractor/src/languages/tsql/input.rs",
+        output_path: "tractor/src/languages/tsql/kinds.rs",
     },
     LangCodegen {
         enum_name: "JsonKind",
         node_types_sources: &[tree_sitter_json::NODE_TYPES],
-        output_path: "tractor/src/languages/json/input.rs",
+        output_path: "tractor/src/languages/json/kinds.rs",
     },
     LangCodegen {
         enum_name: "YamlKind",
         node_types_sources: &[tree_sitter_yaml::NODE_TYPES],
-        output_path: "tractor/src/languages/yaml/input.rs",
+        output_path: "tractor/src/languages/yaml/kinds.rs",
     },
     LangCodegen {
         enum_name: "TomlKind",
         node_types_sources: &[tree_sitter_toml_ng::NODE_TYPES],
-        output_path: "tractor/src/languages/toml/input.rs",
+        output_path: "tractor/src/languages/toml/kinds.rs",
     },
     LangCodegen {
         enum_name: "IniKind",
         node_types_sources: &[tree_sitter_ini::NODE_TYPES],
-        output_path: "tractor/src/languages/ini/input.rs",
+        output_path: "tractor/src/languages/ini/kinds.rs",
     },
     LangCodegen {
         enum_name: "MdKind",
@@ -103,12 +103,12 @@ const LANGUAGES: &[LangCodegen] = &[
             tree_sitter_md::NODE_TYPES_BLOCK,
             tree_sitter_md::NODE_TYPES_INLINE,
         ],
-        output_path: "tractor/src/languages/markdown/input.rs",
+        output_path: "tractor/src/languages/markdown/kinds.rs",
     },
     // env: no codegen entry. .env files are parsed by tree-sitter-bash
     // but the env transform only cares about a tiny subset (program,
     // variable_assignment, declaration_command, comment, …). A
-    // hand-curated `EnvKind` lives in `languages/env/input.rs` —
+    // hand-curated `EnvKind` lives in `languages/env/kinds.rs` —
     // listing every bash kind would be 59 arms of passthrough noise.
 ];
 

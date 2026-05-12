@@ -12,7 +12,7 @@ use crate::output::syntax_highlight::SyntaxCategory;
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
-pub mod input;
+pub mod kinds;
 pub mod output;
 
 #[cfg(feature = "native")]

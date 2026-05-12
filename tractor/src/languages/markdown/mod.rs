@@ -8,7 +8,7 @@
 //!                   catalogue.
 //!   - [`output`]  — element-name vocabulary used by syntax_category.
 
-pub mod input;
+pub mod kinds;
 pub mod output;
 
 use crate::output::syntax_highlight::SyntaxCategory;

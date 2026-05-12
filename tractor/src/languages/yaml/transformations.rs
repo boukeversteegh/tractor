@@ -12,7 +12,7 @@ use crate::transform::data_keys::*;
 
 use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar,
             decode_yaml_double_quote_escapes, decode_yaml_single_quote_escapes};
-use super::input::YamlKind;
+use super::kinds::YamlKind;
 use super::output::*;
 
 // =============================================================================
