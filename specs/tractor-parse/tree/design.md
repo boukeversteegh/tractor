@@ -6,6 +6,8 @@ priority: 0
 This document defines the design goals, guiding principles, and decisions for
 transforming TreeSitter syntax trees into semantic XML.
 
+> **Companion: [`renderings.md`](renderings.md)** defines the layer ownership between the tree itself and each of its renderings (XML, JSON, source). It re-buckets the principles below into three groups: principles that describe the tree (Bucket A), principles that describe how `to_xot` projects the tree into XML (Bucket B), and goals that span both (Bucket C). Until that re-bucketing lifts each principle into its own spec, read both docs together.
+
 ## Design Goals
 
 Outcomes we want to achieve, regardless of implementation.
