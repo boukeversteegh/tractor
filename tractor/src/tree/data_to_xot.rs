@@ -46,17 +46,17 @@ use super::types::Span;
 /// imperative-pipeline shape (which used `remove_text_children`
 /// + `extract_string_content` to strip).
 ///
-/// `range`-anchored round-trip via `to_source(data_ir, source)`
+/// `range`-anchored round-trip via `to_source(data_tree, source)`
 /// still works — the IR carries source ranges; the renderer just
 /// chooses a clean projection.
 pub fn render_data_to_xot_json(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &DataTree,
+    tree: &DataTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     let _ = source; // unused: structure-only render, no gap text.
-    match ir {
+    match tree {
         DataTree::Document { children, span, .. } => {
             let node = element(xot, "document", *span);
             xot.append(parent, node)?;
@@ -215,10 +215,10 @@ pub fn render_data_to_xot_json(
 pub fn render_data_to_xot_keyed(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &DataTree,
+    tree: &DataTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    match ir {
+    match tree {
         DataTree::Document { children, span, .. } => {
             // YAML's tree-sitter `stream` and `document` both lower to
             // `DataTree::Document`; when the children are themselves
@@ -478,14 +478,14 @@ fn render_keyed_value(
 
 /// Pull the textual content out of a scalar DataTree (for use as a
 /// keyed element name). Returns None for non-scalar IRs.
-fn scalar_text<'a>(ir: &'a DataTree, source: &'a str) -> Option<String> {
-    match ir {
+fn scalar_text<'a>(tree: &'a DataTree, source: &'a str) -> Option<String> {
+    match tree {
         DataTree::String { value, .. } => Some(value.clone()),
         DataTree::Number { text, .. } => Some(text.clone()),
         DataTree::Bool { value, .. } => Some(value.to_string()),
         DataTree::Null { .. } => Some("null".to_string()),
         // Allow any leaf-ish IR by sliding source bytes.
-        _ => Some(ir.range().slice(source).trim().to_string()),
+        _ => Some(tree.range().slice(source).trim().to_string()),
     }
 }
 

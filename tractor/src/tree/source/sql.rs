@@ -36,8 +36,8 @@ use crate::tree::sql::{QuoteStyle, SqlTree};
 /// **Invariant:** `parse(render(parse(s))) == parse(s)` — the
 /// canonical text re-parses to the same IR. Weaker than byte-
 /// identical round-trip but stronger than just-not-crashing.
-pub fn render(ir: &SqlTree) -> String {
-    match ir {
+pub fn render(tree: &SqlTree) -> String {
+    match tree {
         // ----- Atoms with quoting --------------------------------------
         SqlTree::Identifier { value, quoting, .. } => quoting.wrap(value),
         SqlTree::Schema { value, quoting, .. } => quoting.wrap(value),
@@ -66,8 +66,8 @@ fn range_placeholder(_range: &crate::tree::types::ByteRange) -> String {
     "/*range*/".to_string()
 }
 
-fn variant_name(ir: &SqlTree) -> &'static str {
-    match ir {
+fn variant_name(tree: &SqlTree) -> &'static str {
+    match tree {
         SqlTree::File { .. } => "File",
         SqlTree::Statement { .. } => "Statement",
         SqlTree::Select { .. } => "Select",
@@ -101,47 +101,47 @@ mod tests {
 
     #[test]
     fn bare_identifier_canonical() {
-        let ir = ident("dbo", QuoteStyle::None);
-        assert_eq!(render(&ir), "dbo");
+        let tree = ident("dbo", QuoteStyle::None);
+        assert_eq!(render(&tree), "dbo");
     }
 
     #[test]
     fn bracketed_identifier_canonical() {
-        let ir = ident("dbo", QuoteStyle::Brackets);
-        assert_eq!(render(&ir), "[dbo]");
+        let tree = ident("dbo", QuoteStyle::Brackets);
+        assert_eq!(render(&tree), "[dbo]");
     }
 
     #[test]
     fn double_quoted_identifier_canonical() {
-        let ir = ident("dbo", QuoteStyle::DoubleQuote);
-        assert_eq!(render(&ir), "\"dbo\"");
+        let tree = ident("dbo", QuoteStyle::DoubleQuote);
+        assert_eq!(render(&tree), "\"dbo\"");
     }
 
     #[test]
     fn backticked_identifier_canonical() {
-        let ir = ident("dbo", QuoteStyle::Backtick);
-        assert_eq!(render(&ir), "`dbo`");
+        let tree = ident("dbo", QuoteStyle::Backtick);
+        assert_eq!(render(&tree), "`dbo`");
     }
 
     #[test]
     fn schema_canonical_uses_quoting() {
-        let ir = SqlTree::Schema {
+        let tree = SqlTree::Schema {
             value: "dbo".into(),
             quoting: QuoteStyle::Brackets,
             range: ByteRange::new(0, 5),
             span: Span::point(1, 1),
         };
-        assert_eq!(render(&ir), "[dbo]");
+        assert_eq!(render(&tree), "[dbo]");
     }
 
     #[test]
     fn alias_canonical_uses_quoting() {
-        let ir = SqlTree::Alias {
+        let tree = SqlTree::Alias {
             value: "u".into(),
             quoting: QuoteStyle::None,
             range: ByteRange::new(0, 1),
             span: Span::point(1, 1),
         };
-        assert_eq!(render(&ir), "u");
+        assert_eq!(render(&tree), "u");
     }
 }

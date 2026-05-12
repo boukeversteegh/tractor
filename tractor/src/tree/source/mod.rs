@@ -3,12 +3,12 @@
 //!
 //! ## Two rendering modes
 //!
-//! 1. **Anchored** (`render(ir, lang, Some(source))`): Uses the IR's
+//! 1. **Anchored** (`render(tree, lang, Some(source))`): Uses the IR's
 //!    byte ranges to slice gap text from the original source, the same
 //!    mechanism as [`crate::tree::to_source`]. Output is byte-for-byte
 //!    identical to the input source.
 //!
-//! 2. **From-scratch** (`render(ir, lang, None)`): Renders source from
+//! 2. **From-scratch** (`render(tree, lang, None)`): Renders source from
 //!    IR alone with canonical formatting rules per language. The
 //!    output should `lower_<lang>_root(parse(.))` back to a
 //!    structurally-equivalent IR.
@@ -71,24 +71,24 @@ use super::SyntaxTree;
 /// supplied, gap-text slicing is used to preserve original whitespace
 /// / comments / formatting (anchored mode). Pass `None` for canonical
 /// from-scratch rendering.
-pub fn render(ir: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> String {
+pub fn render(tree: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> String {
     if let Some(source) = source_anchor {
-        return super::to_source(ir, source).to_string();
+        return super::to_source(tree, source).to_string();
     }
     match lang {
-        "csharp" => csharp::render(ir),
-        "java" => java::render(ir),
-        "python" => python::render(ir),
-        "typescript" => typescript::render(ir),
-        "rust" => rust_lang::render(ir),
-        "go" => go_lang::render(ir),
-        "ruby" => ruby::render(ir),
-        "php" => php::render(ir),
+        "csharp" => csharp::render(tree),
+        "java" => java::render(tree),
+        "python" => python::render(tree),
+        "typescript" => typescript::render(tree),
+        "rust" => rust_lang::render(tree),
+        "go" => go_lang::render(tree),
+        "ruby" => ruby::render(tree),
+        "php" => php::render(tree),
         // T-SQL uses `SqlTree`, not `SyntaxTree` — call `render_sql` instead.
         // This arm exists so users passing "tsql" get a clear panic
         // rather than silently falling through to generic.
         "tsql" => panic!("tsql uses SqlTree; call render_sql instead"),
-        _ => common::render_generic(ir),
+        _ => common::render_generic(tree),
     }
 }
 
@@ -98,9 +98,9 @@ pub fn render(ir: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> Strin
 /// supplied, gap-text slicing returns the original bytes verbatim
 /// (anchored / lossless mode). Pass `None` for canonical from-scratch
 /// rendering.
-pub fn render_sql(ir: &super::sql::SqlTree, source_anchor: Option<&str>) -> String {
+pub fn render_sql(tree: &super::sql::SqlTree, source_anchor: Option<&str>) -> String {
     if let Some(source) = source_anchor {
-        return ir.to_source(source).to_string();
+        return tree.to_source(source).to_string();
     }
-    sql::render(ir)
+    sql::render(tree)
 }

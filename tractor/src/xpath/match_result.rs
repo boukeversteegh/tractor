@@ -89,25 +89,25 @@ pub struct Match {
 /// xot subtree alongside the typed IR. The `xml` field is the same
 /// representation `Tree::Xml` uses, captured at parse time from the
 /// xot tree the XPath engine queries against. JSON / YAML rendering
-/// goes through the typed IR (`ir_to_json` / `data_to_json`); XML
+/// goes through the typed IR (`tree_to_json` / `data_to_json`); XML
 /// and text rendering walk the captured `xml`. Both views describe
 /// the same document; once the legacy XML shape catches up to the
 /// IR's typed shape the `xml` field can retire.
 #[derive(Debug, Clone)]
 pub enum Tree {
     /// Programming-language IR (root-document match).
-    /// Native-only: the `crate::ir` module is gated behind the
+    /// Native-only: the `crate::tree` module is gated behind the
     /// `native` feature, so WASM builds skip this variant.
     #[cfg(feature = "native")]
     SyntaxTree {
-        ir: Arc<crate::tree::SyntaxTree>,
+        tree: Arc<crate::tree::SyntaxTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
     /// Data-language IR (root-document match). Native-only.
     #[cfg(feature = "native")]
     DataTree {
-        ir: Arc<crate::tree::DataTree>,
+        tree: Arc<crate::tree::DataTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -115,7 +115,7 @@ pub enum Tree {
     /// Renders via `sql_to_xot` for XML and `sql_to_json` for JSON.
     #[cfg(feature = "native")]
     Sql {
-        ir: Arc<crate::tree::sql::SqlTree>,
+        tree: Arc<crate::tree::sql::SqlTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
@@ -138,7 +138,7 @@ impl Tree {
     /// renders through `lower_to_data_ir → data_to_json` once the
     /// projection covers every variant in the tree. While S5A is
     /// in progress, documents containing unhandled variants still
-    /// fall back to the legacy heuristic `ir_to_json` — coverage
+    /// fall back to the legacy heuristic `tree_to_json` — coverage
     /// flips per-document to the new path as `to_data::project`'s
     /// arms grow. The legacy path retires when `has_unhandled`
     /// returns false for every test fixture (S5A's closing
@@ -146,18 +146,18 @@ impl Tree {
     pub fn to_json(&self, max_depth: Option<usize>) -> serde_json::Value {
         match self {
             #[cfg(feature = "native")]
-            Tree::SyntaxTree { ir, source, .. } => {
-                let data = crate::tree::lower_to_data_ir(ir, source);
+            Tree::SyntaxTree { tree, source, .. } => {
+                let data = crate::tree::lower_to_data_ir(tree, source);
                 if crate::tree::has_unhandled(&data) {
-                    crate::tree::ir_to_json(ir, source)
+                    crate::tree::tree_to_json(tree, source)
                 } else {
                     crate::tree::data_to_json(&data)
                 }
             }
             #[cfg(feature = "native")]
-            Tree::DataTree { ir, .. } => crate::tree::data_to_json(ir),
+            Tree::DataTree { tree, .. } => crate::tree::data_to_json(tree),
             #[cfg(feature = "native")]
-            Tree::Sql { ir, source, .. } => crate::tree::sql_to_json::sql_to_json(ir, source),
+            Tree::Sql { tree, source, .. } => crate::tree::sql_to_json::sql_to_json(tree, source),
             Tree::Xml(node) => crate::output::xml_node_to_json(node, max_depth),
         }
     }

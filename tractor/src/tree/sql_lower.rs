@@ -1997,9 +1997,9 @@ mod tests {
     fn select_star_from_users_lowers_to_typed_select() {
         let source = "SELECT * FROM Users";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else {
-            panic!("expected File, got {ir:?}");
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else {
+            panic!("expected File, got {tree:?}");
         };
         assert_eq!(statements.len(), 1, "{statements:?}");
         let SqlTree::Statement { inner, .. } = &statements[0] else {
@@ -2016,8 +2016,8 @@ mod tests {
     fn insert_lowers_with_typed_columns_and_values() {
         let source = "INSERT INTO L (a, b) VALUES (1, 'x')";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Insert { table, columns, values, .. } = inner.as_ref() else {
             panic!("expected Insert, got {inner:?}");
@@ -2031,8 +2031,8 @@ mod tests {
     fn update_with_set_and_where_lowers_to_typed_update() {
         let source = "UPDATE Users SET Active = 0 WHERE ID = 1";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Update { table, assignments, where_, .. } = inner.as_ref() else {
             panic!("expected Update, got {inner:?}");
@@ -2047,8 +2047,8 @@ mod tests {
     fn create_table_lowers_to_typed_create_with_column_defs() {
         let source = "CREATE TABLE T (id INT, name VARCHAR(100))";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Create { kind, body, .. } = inner.as_ref() else {
             panic!("expected Create, got {inner:?}");
@@ -2062,8 +2062,8 @@ mod tests {
     fn drop_table_lowers_to_typed_drop() {
         let source = "DROP TABLE T";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Drop { kind, .. } = inner.as_ref() else {
             panic!("expected Drop, got {inner:?}");
@@ -2075,8 +2075,8 @@ mod tests {
     fn between_expression_lowers_to_typed_between() {
         let source = "SELECT a BETWEEN 1 AND 10 FROM x";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Select { columns, .. } = inner.as_ref() else { panic!(); };
         // The first column item should be a Column wrapping a Between
@@ -2095,8 +2095,8 @@ mod tests {
     fn exec_lowers_to_typed_exec() {
         let source = "EXEC sp_helpdb";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Exec { target, .. } = inner.as_ref() else {
             panic!("expected Exec, got {inner:?}");
@@ -2108,8 +2108,8 @@ mod tests {
     fn set_variable_lowers_to_typed_set() {
         let source = "SET @x = 1";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Set { target, .. } = inner.as_ref() else {
             panic!("expected Set, got {inner:?}");
@@ -2121,8 +2121,8 @@ mod tests {
     fn transaction_lowers_to_typed_transaction() {
         let source = "BEGIN TRANSACTION; UPDATE T SET v = 1; COMMIT";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Transaction { statements: inner, .. } = &statements[0] else {
             panic!("expected Transaction, got {:?}", statements[0]);
         };
@@ -2133,8 +2133,8 @@ mod tests {
     fn merge_lowers_to_typed_merge() {
         let source = "MERGE INTO T AS t USING S AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Merge { whens, .. } = inner.as_ref() else {
             panic!("expected Merge, got {inner:?}");
@@ -2147,8 +2147,8 @@ mod tests {
     fn create_function_lowers_to_typed_function() {
         let source = "CREATE FUNCTION dbo.GetAge(@b DATE) RETURNS INT AS BEGIN RETURN 1 END";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Function { schema, name: _, parameters, .. } = inner.as_ref() else {
             panic!("expected Function, got {inner:?}");
@@ -2161,8 +2161,8 @@ mod tests {
     fn left_join_lowers_with_typed_join_kind() {
         let source = "SELECT * FROM A LEFT JOIN B ON A.id = B.id";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Select { from, .. } = inner.as_ref() else { panic!(); };
         let from = from.as_ref().expect("from");
@@ -2178,8 +2178,8 @@ mod tests {
     fn order_by_with_desc_lowers_to_typed_order_target() {
         let source = "SELECT * FROM x ORDER BY name DESC";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Select { order_by, .. } = inner.as_ref() else { panic!(); };
         let order_by = order_by.as_ref().expect("order_by");
@@ -2195,8 +2195,8 @@ mod tests {
     fn case_when_then_else_lowers_to_typed_case() {
         let source = "SELECT CASE WHEN a > 0 THEN 'P' ELSE 'N' END FROM x";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Select { columns, .. } = inner.as_ref() else { panic!(); };
         let case_ir = match columns.first() {
@@ -2215,8 +2215,8 @@ mod tests {
     fn delete_with_where_lowers_to_typed_delete() {
         let source = "DELETE FROM Old WHERE Created < '2020'";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Delete { from, where_, .. } = inner.as_ref() else {
             panic!("expected Delete, got {inner:?}");
@@ -2229,8 +2229,8 @@ mod tests {
     fn where_with_compare_lowers_to_typed_compare() {
         let source = "SELECT * FROM U WHERE Active = 1";
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let tree = lower_sql_root(tree.root_node(), source);
+        let SqlTree::File { statements, .. } = tree else { panic!(); };
         let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
         let SqlTree::Select { where_, .. } = inner.as_ref() else { panic!(); };
         let where_ = where_.as_ref().expect("where present");

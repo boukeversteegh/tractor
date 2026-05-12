@@ -1,6 +1,6 @@
 //! IR coverage audit.
 //!
-//! Round-trip identity (`to_source(ir, source) == source`) proves no
+//! Round-trip identity (`to_source(tree, source) == source`) proves no
 //! source bytes were lost. But it doesn't catch the **silent
 //! structural drop** case: a typed parent IR (e.g. `SyntaxTree::Class`)
 //! lowers most of its CST children but forgets one (say,
@@ -212,9 +212,9 @@ impl CoverageReport {
 /// whether it's `SyntaxTree::Unknown`. Powered by `SyntaxTree::children()` — adding a
 /// new variant requires no change here as long as the variant declares
 /// its children correctly.
-fn collect_ir_ranges(ir: &SyntaxTree, out: &mut Vec<(ByteRange, bool /* is_unknown */)>) {
-    out.push((ir.range(), matches!(ir, SyntaxTree::Unknown { .. })));
-    for c in ir.children() {
+fn collect_ir_ranges(tree: &SyntaxTree, out: &mut Vec<(ByteRange, bool /* is_unknown */)>) {
+    out.push((tree.range(), matches!(tree, SyntaxTree::Unknown { .. })));
+    for c in tree.children() {
         collect_ir_ranges(c, out);
     }
 }
@@ -235,13 +235,13 @@ fn walk_cst<F: FnMut(TsNode)>(node: TsNode, visit: &mut F) {
 /// rather than implicitly "supported." Pass `&[]` to opt out.
 pub fn audit_coverage(
     ts_root: TsNode,
-    ir: &SyntaxTree,
+    tree: &SyntaxTree,
     source: &str,
     known_kinds: &[&str],
 ) -> CoverageReport {
     // Step 1: collect all IR ranges with their typed/unknown status.
     let mut ir_ranges: Vec<(ByteRange, bool)> = Vec::new();
-    collect_ir_ranges(ir, &mut ir_ranges);
+    collect_ir_ranges(tree, &mut ir_ranges);
 
     // For exact-range lookups, build a map from range to is_unknown.
     // Multiple IR nodes can share a range (e.g. SyntaxTree::Module and a

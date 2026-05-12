@@ -275,10 +275,10 @@ fn collapse_array_of_tables(children: Vec<DataTree>) -> Vec<DataTree> {
     out
 }
 
-/// If `ir` is a `[[name]]` array-of-tables Section (i.e. starts
+/// If `tree` is a `[[name]]` array-of-tables Section (i.e. starts
 /// with `__array_of_tables__: true`), return its name + ranges.
-fn aot_key(ir: &DataTree) -> Option<(String, ByteRange, Span)> {
-    let DataTree::Section { name, children, .. } = ir else { return None };
+fn aot_key(tree: &DataTree) -> Option<(String, ByteRange, Span)> {
+    let DataTree::Section { name, children, .. } = tree else { return None };
     let DataTree::String { value: name_str, range, span } = name.as_ref() else { return None };
     let first = children.first()?;
     let DataTree::Pair { key, value, .. } = first else { return None };

@@ -21,10 +21,10 @@ fn python_missing_kinds() {
 
     let mut p = Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_python_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_python_root(cst.root_node(), &source);
 
-    let report = audit_coverage(tree.root_node(), &ir, &source, &[]);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(
         "Python coverage: {} kinds; {} CST nodes",
         report.by_kind.len(),
@@ -48,7 +48,7 @@ fn python_missing_kinds() {
     // inner-handler fallthrough (the audit only sees outer kinds).
     let mut xot = xot::Xot::new();
     let doc = xot.new_document();
-    tractor::tree::render_to_xot(&mut xot, doc, &ir, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, doc, &tree, &source).expect("render");
     let xml = xot.to_string(doc).unwrap();
     let mut counts = std::collections::BTreeMap::<String, usize>::new();
     for token in xml.split("<unknown kind=\"").skip(1) {
@@ -145,7 +145,7 @@ fn dump_fstring_format_cst() {
     let s = "x = f\"hello {name!r}, value={n:>05d} nested={f'{name}'}\"\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -154,7 +154,7 @@ fn dump_fstring_format_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn dump_dict_pattern_cst() {
     let s = "match x:\n    case {\"a\": 1, \"b\": 2}:\n        pass\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -182,7 +182,7 @@ fn dump_dict_pattern_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]

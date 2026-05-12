@@ -136,7 +136,7 @@ pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Expression, SyntaxTree, Modifiers, ParamKind, Span, to_source};
 pub use to_xot::render_to_xot;
-pub use to_json::ir_to_json;
+pub use to_json::tree_to_json;
 #[cfg(feature = "native")]
 pub use python::lower_python_root;
 #[cfg(feature = "native")]

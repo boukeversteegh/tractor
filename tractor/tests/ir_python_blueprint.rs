@@ -65,17 +65,17 @@ fn current_view(source: &str) -> String {
 fn ir_view(source: &str) -> (String, String, usize) {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
-    let ir = lower_python_root(tree.root_node(), source);
+    let cst = p.parse(source, None).unwrap();
+    let tree = lower_python_root(cst.root_node(), source);
 
     // Round-trip identity must hold even if structural parity is partial.
-    let recovered = to_source(&ir, source);
+    let recovered = to_source(&tree, source);
     assert_eq!(recovered, source, "round-trip identity broken");
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     // Count Unknown elements as a coverage signal.
@@ -143,7 +143,7 @@ fn dump_type_alias_cst() {
     let source = "type Vec[T] = list[T]\ntype Vec2 = list[int]\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
+    let cst = p.parse(source, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -154,7 +154,7 @@ fn dump_type_alias_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, source.as_bytes());
+    walk(cst.root_node(), 0, source.as_bytes());
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn dump_type_params() {
     let source = "def identity[T](v: T) -> T:\n    return v\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
+    let cst = p.parse(source, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -173,7 +173,7 @@ fn dump_type_params() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, source.as_bytes());
+    walk(cst.root_node(), 0, source.as_bytes());
 }
 
 #[test]
@@ -184,9 +184,9 @@ fn kinds_in_blueprint() {
         .expect("blueprint.py");
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
+    let cst = p.parse(&source, None).unwrap();
     let mut kinds: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
-    walk_kinds(tree.root_node(), &mut kinds);
+    walk_kinds(cst.root_node(), &mut kinds);
     let mut sorted: Vec<(String, usize)> = kinds.into_iter().collect();
     sorted.sort_by(|a, b| b.1.cmp(&a.1));
     for (k, v) in sorted {
@@ -208,12 +208,12 @@ fn blueprint_parity() {
         .or_else(|_| std::fs::read_to_string("tests/integration/languages/python/blueprint.py"))
         .expect("blueprint.py");
     let cur = current_view(&source);
-    let (ir, xpath_text, unknowns) = ir_view(&source);
+    let (tree, xpath_text, unknowns) = ir_view(&source);
 
     eprintln!("=== blueprint structural-parity check ===");
     eprintln!("source bytes: {}", source.len());
     eprintln!("current pipeline view bytes: {}", cur.len());
-    eprintln!("IR pipeline view bytes:      {}", ir.len());
+    eprintln!("IR pipeline view bytes:      {}", tree.len());
     eprintln!("Unknown nodes in IR output:  {}", unknowns);
     eprintln!("IR string(.) == source:      {}", xpath_text == source);
 
@@ -221,8 +221,8 @@ fn blueprint_parity() {
     assert_eq!(xpath_text, source, "IR text-content recovery broken");
 
     // Structural parity: failure shows where to extend coverage.
-    if cur != ir {
-        panic!("\n{}", first_diff(&cur, &ir));
+    if cur != tree {
+        panic!("\n{}", first_diff(&cur, &tree));
     }
 }
 
@@ -243,16 +243,16 @@ fn blueprint_coverage_audit() {
 
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_python_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_python_root(cst.root_node(), &source);
 
     // Round-trip + XPath invariants on the FULL blueprint.
-    assert_eq!(to_source(&ir, &source), source, "round-trip identity broken");
+    assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 
     let mut xot = xot::Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    tractor::tree::render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    tractor::tree::render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken");
@@ -262,7 +262,7 @@ fn blueprint_coverage_audit() {
     // silently "supported by absence").
     let known_kinds = python_known_kinds();
     let known_refs: Vec<&str> = known_kinds.iter().map(|s| s.as_ref()).collect();
-    let report = audit_coverage(tree.root_node(), &ir, &source, &known_refs);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &known_refs);
     eprintln!("\n{}", report.summary());
 
     // Hard invariant: no dropped CST nodes (renderer bug detector).

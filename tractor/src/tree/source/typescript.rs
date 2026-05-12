@@ -3,9 +3,9 @@
 use super::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
-pub fn render(ir: &SyntaxTree) -> String {
+pub fn render(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(ir, &mut out, Indent::SPACES_2, &ts_syntax());
+    write_ir(tree, &mut out, Indent::SPACES_2, &ts_syntax());
     out
 }
 

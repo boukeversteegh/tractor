@@ -45,8 +45,8 @@ use super::data::DataTree;
 ///   | Null               | null                                    |
 ///   | Comment            | (skipped — not part of the data shape)  |
 ///   | Unknown            | object `{ "$unknown": <kind> }`         |
-pub fn data_to_json(ir: &DataTree) -> Value {
-    match ir {
+pub fn data_to_json(tree: &DataTree) -> Value {
+    match tree {
         DataTree::Document { children, .. } => {
             // A YAML "stream" can have multiple documents — for now,
             // single-document case: collect top-level pairs into one
@@ -81,7 +81,7 @@ pub fn data_to_json(ir: &DataTree) -> Value {
             // always a child of a Mapping/Section. Falling here
             // means a misuse: emit a single-pair object.
             let mut obj = Map::new();
-            collect_pairs(&mut obj, std::slice::from_ref(ir));
+            collect_pairs(&mut obj, std::slice::from_ref(tree));
             Value::Object(obj)
         }
         DataTree::Section { name, children, .. } => {
@@ -194,8 +194,8 @@ fn insert_or_append(obj: &mut Map<String, Value>, key: String, value: Value) {
 
 /// Pull a string-shaped value out of a scalar IR for use as a JSON
 /// object key.
-fn scalar_str(ir: &DataTree) -> Option<String> {
-    match ir {
+fn scalar_str(tree: &DataTree) -> Option<String> {
+    match tree {
         DataTree::String { value, .. } => Some(value.clone()),
         DataTree::Number { text, .. } => Some(text.clone()),
         DataTree::Bool { value, .. } => Some(value.to_string()),

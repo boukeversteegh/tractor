@@ -45,7 +45,7 @@ pub struct XotParseResult {
     /// Typed IR root retained through to render time. `Some` for
     /// programming languages on the IR pipeline; `None` for the
     /// imperative path (and for data languages — they keep their
-    /// `DataTree` separately, see `data_ir`).
+    /// `DataTree` separately, see `data_tree`).
     ///
     /// JSON / YAML / structured-format output renders from this
     /// instead of going through `xml_to_json`. That lets us drop the
@@ -53,12 +53,12 @@ pub struct XotParseResult {
     /// relied on for cardinality inference: the IR's typed slots
     /// (Vec<SyntaxTree> = list, Box<SyntaxTree> = singleton) carry the same
     /// information at the right semantic layer.
-    pub ir: Option<Box<crate::tree::SyntaxTree>>,
+    pub tree: Option<Box<crate::tree::SyntaxTree>>,
 
     /// Typed `DataTree` root for data languages (JSON / YAML / TOML /
     /// INI / env / markdown). `Some` only when the IR pipeline took
     /// the data-language branch.
-    pub data_ir: Option<Box<crate::tree::DataTree>>,
+    pub data_tree: Option<Box<crate::tree::DataTree>>,
 
     /// Typed `SqlTree` root for SQL-family languages (TSQL today).
     /// `Some` only when the IR pipeline took the SQL branch. SQL has
@@ -67,9 +67,9 @@ pub struct XotParseResult {
     /// projection heuristics that the cross-language `SyntaxTree` requires
     /// for generic SimpleStatement wrappers.
     #[cfg(feature = "native")]
-    pub sql_ir: Option<Box<crate::tree::sql::SqlTree>>,
+    pub sql_tree: Option<Box<crate::tree::sql::SqlTree>>,
 
-    /// The original source text. Needed alongside `ir` / `data_ir`
+    /// The original source text. Needed alongside `tree` / `data_tree`
     /// because both reference source byte ranges for leaf text
     /// reconstruction; the IR-to-JSON renderers slice into this at
     /// format time.
@@ -258,10 +258,10 @@ pub fn parse_string_to_xot_with_options(
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,
         language: lang.to_string(),
-        ir: None,
-        data_ir: None,
+        tree: None,
+        data_tree: None,
         #[cfg(feature = "native")]
-        sql_ir: None,
+        sql_tree: None,
         source: source.to_string(),
     })
 }
@@ -309,10 +309,10 @@ fn parse_with_ir_pipeline(
                 source_lines,
                 file_path,
                 language: lang.to_string(),
-                ir: Some(Box::new(ir_tree)),
-                data_ir: None,
+                tree: Some(Box::new(ir_tree)),
+                data_tree: None,
                 #[cfg(feature = "native")]
-                sql_ir: None,
+                sql_tree: None,
                 source: source.to_string(),
             })
         }
@@ -328,8 +328,8 @@ fn parse_with_ir_pipeline(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let data_ir = (parser.lower)(tree.root_node(), source);
-            (parser.render)(&mut xot, doc, &data_ir, source)
+            let data_tree = (parser.lower)(tree.root_node(), source);
+            (parser.render)(&mut xot, doc, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
@@ -337,16 +337,16 @@ fn parse_with_ir_pipeline(
                 source_lines,
                 file_path,
                 language: lang.to_string(),
-                ir: None,
-                data_ir: Some(Box::new(data_ir)),
+                tree: None,
+                data_tree: Some(Box::new(data_tree)),
                 #[cfg(feature = "native")]
-                sql_ir: None,
+                sql_tree: None,
                 source: source.to_string(),
             })
         }
         TreeKind::Sql(lower) => {
-            let sql_ir = lower(tree.root_node(), source);
-            tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
+            let sql_tree = lower(tree.root_node(), source);
+            tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
@@ -354,10 +354,10 @@ fn parse_with_ir_pipeline(
                 source_lines,
                 file_path,
                 language: lang.to_string(),
-                ir: None,
-                data_ir: None,
+                tree: None,
+                data_tree: None,
                 #[cfg(feature = "native")]
-                sql_ir: Some(Box::new(sql_ir)),
+                sql_tree: Some(Box::new(sql_tree)),
                 source: source.to_string(),
             })
         }
@@ -420,7 +420,7 @@ fn parse_with_ir_pipeline_to_xee(
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
             xml_node.map(|x| crate::xpath::Tree::SyntaxTree {
-                ir: std::sync::Arc::new(ir_tree),
+                tree: std::sync::Arc::new(ir_tree),
                 source: source_arc,
                 xml: x,
             })
@@ -435,29 +435,29 @@ fn parse_with_ir_pipeline_to_xee(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let data_ir = (parser.lower)(tree.root_node(), source);
-            (parser.render)(&mut xot, holding, &data_ir, source)
+            let data_tree = (parser.lower)(tree.root_node(), source);
+            (parser.render)(&mut xot, holding, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
             xml_node.map(|x| crate::xpath::Tree::DataTree {
-                ir: std::sync::Arc::new(data_ir),
+                tree: std::sync::Arc::new(data_tree),
                 source: source_arc,
                 xml: x,
             })
         }
         TreeKind::Sql(lower) => {
-            let sql_ir = lower(tree.root_node(), source);
-            tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
+            let sql_tree = lower(tree.root_node(), source);
+            tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
             let source_arc = std::sync::Arc::new(source.to_string());
             xml_node.map(|x| crate::xpath::Tree::Sql {
-                ir: std::sync::Arc::new(sql_ir),
+                tree: std::sync::Arc::new(sql_tree),
                 source: source_arc,
                 xml: x,
             })

@@ -27,13 +27,13 @@
 //!
 //! ## Invariants
 //!
-//! 1. **Round-trip identity** — `to_source(sql_ir, source) == source`.
+//! 1. **Round-trip identity** — `to_source(sql_tree, source) == source`.
 //! 2. **XPath text recovery** — `string(rendered_root) == source`.
 //! 3. **No silent drops** — un-handled CST kinds fall through to
 //!    [`SqlTree::Unknown`].
 //! 4. **Canonical reconstruction without source** —
-//!    `parse(render_sql(ir, None)) == parse(s)` where
-//!    `ir = lower_sql_root(parse(s), &s)`. The IR carries every
+//!    `parse(render_sql(tree, None)) == parse(s)` where
+//!    `tree = lower_sql_root(parse(s), &s)`. The IR carries every
 //!    semantic distinction needed to regenerate equivalent source
 //!    from scratch, without consulting source byte ranges.
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)

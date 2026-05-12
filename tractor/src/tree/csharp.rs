@@ -562,7 +562,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // twice: once by `fold_csharp_where_clauses_into_generics`,
             // which translates each constraint and appends it to the
             // matching `<generic>` item; once for `where_clauses` so
-            // its source-range bytes flow through `render_ir_class`
+            // its source-range bytes flow through `render_tree_class`
             // (which renders C# where clauses as gap text — the
             // structural query path runs through the merged generics).
             let mut wc_walk = node.walk();
@@ -2459,7 +2459,7 @@ fn csharp_generic_item_name(item: &SyntaxTree, source: &str) -> Option<String> {
 ///   detected by source text) → empty marker by that name
 ///
 /// Returned IR uses zero-width ranges anchored at `range.start` so the
-/// markers contribute no source text — `render_ir_class` emits the
+/// markers contribute no source text — `render_tree_class` emits the
 /// where-clause source bytes as gap text under `<class>` (see the
 /// `CSlot::Where` branch), and these merged markers add structure
 /// without duplicating bytes.

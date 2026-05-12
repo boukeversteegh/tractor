@@ -28,7 +28,7 @@
 //!
 //! ## Invariants (parsed mode)
 //!
-//! 1. **Round-trip identity** — `to_source(data_ir, source) ==
+//! 1. **Round-trip identity** — `to_source(data_tree, source) ==
 //!    source`. The renderer that targets the *original* format
 //!    preserves bytes verbatim via `range`-anchored gap text.
 //!    Cross-format render (e.g. JSON → YAML) breaks round-trip by
@@ -503,9 +503,9 @@ mod mutation_tests {
     #[test]
     fn find_at_offset_drills_to_deepest_match() {
         let src = r#"{"name": "Alice"}"#;
-        let ir = lower(src);
+        let tree = lower(src);
         // The String "Alice" starts at byte 9 (the opening quote).
-        let at_value = ir.find_at_offset(9).expect("value found");
+        let at_value = tree.find_at_offset(9).expect("value found");
         match at_value {
             DataTree::String { value, .. } => assert_eq!(value, "Alice"),
             other => panic!("expected String, got {:?}", other),
@@ -515,12 +515,12 @@ mod mutation_tests {
     #[test]
     fn set_scalar_replaces_in_place_preserving_range() {
         let src = r#"{"name": "Alice"}"#;
-        let mut ir = lower(src);
+        let mut tree = lower(src);
         let value_offset = 9;
-        let original_range = ir.find_at_offset(value_offset).unwrap().range();
-        let target = ir.find_at_offset_mut(value_offset).unwrap();
+        let original_range = tree.find_at_offset(value_offset).unwrap().range();
+        let target = tree.find_at_offset_mut(value_offset).unwrap();
         target.set_scalar("Bob", ScalarKind::String).unwrap();
-        let after = ir.find_at_offset(value_offset).unwrap();
+        let after = tree.find_at_offset(value_offset).unwrap();
         assert_eq!(after.range(), original_range);
         match after {
             DataTree::String { value, .. } => assert_eq!(value, "Bob"),
@@ -531,17 +531,17 @@ mod mutation_tests {
     #[test]
     fn set_scalar_errors_on_non_scalar() {
         let src = r#"{"name": "Alice"}"#;
-        let mut ir = lower(src);
-        let err = ir.set_scalar("oops", ScalarKind::String).unwrap_err();
+        let mut tree = lower(src);
+        let err = tree.set_scalar("oops", ScalarKind::String).unwrap_err();
         assert!(err.contains("not a scalar"));
     }
 
     #[test]
     fn insert_nested_pair_extends_top_level_mapping() {
         let src = r#"{"name": "Alice"}"#;
-        let mut ir = lower(src);
+        let mut tree = lower(src);
         // Find the top-level mapping (it's a child of Document).
-        let mapping = match &mut ir {
+        let mapping = match &mut tree {
             DataTree::Document { children, .. } => &mut children[0],
             _ => panic!("expected Document"),
         };
@@ -573,8 +573,8 @@ mod mutation_tests {
     #[test]
     fn insert_nested_pair_creates_inner_mapping_for_multi_key_path() {
         let src = r#"{"name": "Alice"}"#;
-        let mut ir = lower(src);
-        let mapping = match &mut ir {
+        let mut tree = lower(src);
+        let mapping = match &mut tree {
             DataTree::Document { children, .. } => &mut children[0],
             _ => panic!("expected Document"),
         };

@@ -4,7 +4,7 @@
 //!
 //! ## Why
 //!
-//! `tractor/src/ir/to_json.rs` historically owned a ~1000 LOC
+//! `tractor/src/tree/to_json.rs` historically owned a ~1000 LOC
 //! ad-hoc projection from `SyntaxTree` directly to `serde_json::Value`,
 //! mixing IR-walking with JSON-shape decisions. Recent iters
 //! 29-36 layered on heuristics in `add_children` to fix
@@ -51,23 +51,23 @@ use super::types::{SyntaxTree, Modifiers};
 ///
 /// `source` is the original parse input — used to slice atom and
 /// scalar text from byte ranges.
-pub fn lower_to_data_ir(ir: &SyntaxTree, source: &str) -> DataTree {
-    project(ir, source)
+pub fn lower_to_data_ir(tree: &SyntaxTree, source: &str) -> DataTree {
+    project(tree, source)
 }
 
 /// Walk a projected [`DataTree`] tree and return `true` if any node is
 /// the `unhandled:<variant>` coverage-gap marker (see the catch-all
 /// arm in `project`). Used by the JSON dispatch path to decide
 /// whether to flow through the new `to_data` → `data_to_json` path
-/// or fall back to the legacy heuristic `ir_to_json` for documents
+/// or fall back to the legacy heuristic `tree_to_json` for documents
 /// the projection doesn't yet cover end-to-end.
-pub fn has_unhandled(ir: &DataTree) -> bool {
-    if let DataTree::Unknown { kind, .. } = ir {
+pub fn has_unhandled(tree: &DataTree) -> bool {
+    if let DataTree::Unknown { kind, .. } = tree {
         if kind.starts_with("unhandled:") {
             return true;
         }
     }
-    match ir {
+    match tree {
         DataTree::Document { children, .. }
         | DataTree::Sequence { items: children, .. }
         | DataTree::Section { children, .. }
@@ -79,8 +79,8 @@ pub fn has_unhandled(ir: &DataTree) -> bool {
     }
 }
 
-fn project(ir: &SyntaxTree, source: &str) -> DataTree {
-    match ir {
+fn project(tree: &SyntaxTree, source: &str) -> DataTree {
+    match tree {
         // ----- Scalar leaves --------------------------------------------
         SyntaxTree::Name { range, span } => DataTree::String {
             value: range.slice(source).to_string(),
@@ -927,7 +927,7 @@ fn project(ir: &SyntaxTree, source: &str) -> DataTree {
 
         // Unknown — keep the kind visible so coverage gaps surface.
         SyntaxTree::Unknown { kind, range, span } => DataTree::Unknown {
-            kind: format!("ir-unknown:{}", kind),
+            kind: format!("tree-unknown:{}", kind),
             range: *range,
             span: *span,
         },
@@ -1154,8 +1154,8 @@ fn collect_member_pairs(children: &[SyntaxTree], source: &str) -> Vec<DataTree> 
 /// carry no semantic content (no children OR children all Skip,
 /// no modifier flags, no extra markers). These collapse to
 /// `Bool(true)` flag pairs at the parent level.
-fn synthetic_marker_name(ir: &SyntaxTree) -> Option<&'static str> {
-    if let SyntaxTree::SimpleStatement { element_name, children, modifiers, extra_markers, .. } = ir {
+fn synthetic_marker_name(tree: &SyntaxTree) -> Option<&'static str> {
+    if let SyntaxTree::SimpleStatement { element_name, children, modifiers, extra_markers, .. } = tree {
         let all_skip_or_empty = children.iter().all(|k| matches!(k, SyntaxTree::Skip { .. }));
         if all_skip_or_empty
             && modifiers.marker_names().is_empty()
@@ -1241,8 +1241,8 @@ fn make_pair(
     }
 }
 
-fn pair_key_string(ir: &DataTree) -> Option<String> {
-    if let DataTree::Pair { key, .. } = ir {
+fn pair_key_string(tree: &DataTree) -> Option<String> {
+    if let DataTree::Pair { key, .. } = tree {
         if let DataTree::String { value, .. } = key.as_ref() {
             return Some(value.clone());
         }
@@ -1250,11 +1250,11 @@ fn pair_key_string(ir: &DataTree) -> Option<String> {
     None
 }
 
-fn pair_take_value(ir: DataTree) -> DataTree {
-    if let DataTree::Pair { value, .. } = ir {
+fn pair_take_value(tree: DataTree) -> DataTree {
+    if let DataTree::Pair { value, .. } = tree {
         *value
     } else {
-        ir
+        tree
     }
 }
 
@@ -1278,8 +1278,8 @@ fn push_modifier_flags(
 /// The element name a child should occupy in the parent's mapping.
 /// Parallels (and is a subset of) `to_json::element_name` — kept
 /// independent so this module doesn't depend on the legacy renderer.
-fn element_name_for_pair(ir: &SyntaxTree) -> &'static str {
-    match ir {
+fn element_name_for_pair(tree: &SyntaxTree) -> &'static str {
+    match tree {
         SyntaxTree::Module { element_name, .. } => element_name,
         SyntaxTree::SimpleStatement { element_name, .. } => element_name,
         SyntaxTree::Atom { element_name, .. } => element_name,
@@ -1299,8 +1299,8 @@ fn element_name_for_pair(ir: &SyntaxTree) -> &'static str {
     }
 }
 
-fn ir_variant_name(ir: &SyntaxTree) -> &'static str {
-    match ir {
+fn tree_node_name(tree: &SyntaxTree) -> &'static str {
+    match tree {
         SyntaxTree::Module { .. } => "Module",
         SyntaxTree::Class { .. } => "Class",
         SyntaxTree::Function { .. } => "Function",
@@ -1410,9 +1410,9 @@ mod tests {
         };
         assert!(has_unhandled(&nested), "should walk into pair values");
 
-        // Non-`unhandled:` Unknown (e.g. `ir-unknown:` from the
+        // Non-`unhandled:` Unknown (e.g. `tree-unknown:` from the
         // typed `SyntaxTree::Unknown` projection) is NOT a coverage gap.
-        let benign = DataTree::Unknown { kind: "ir-unknown:foo_kind".into(), range: r, span: s };
+        let benign = DataTree::Unknown { kind: "tree-unknown:foo_kind".into(), range: r, span: s };
         assert!(!has_unhandled(&benign));
     }
 

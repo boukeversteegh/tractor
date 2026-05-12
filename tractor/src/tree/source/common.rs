@@ -72,9 +72,9 @@ impl Default for Syntax {
     }
 }
 
-pub fn render_generic(ir: &SyntaxTree) -> String {
+pub fn render_generic(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(ir, &mut out, Indent::SPACES_4, &Syntax::default());
+    write_ir(tree, &mut out, Indent::SPACES_4, &Syntax::default());
     out
 }
 
@@ -84,8 +84,8 @@ pub fn render_generic(ir: &SyntaxTree) -> String {
 /// reconstruct atom text. For from-scratch canonical rendering, atom
 /// text would need to ride alongside the IR — out of scope for this
 /// scaffold.
-pub fn write_ir(ir: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
-    match ir {
+pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
+    match tree {
         SyntaxTree::Module { children, .. } => {
             for c in children {
                 indent.write(out);
@@ -401,10 +401,10 @@ fn emit_block(body: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) 
     }
 }
 
-fn needs_terminator(ir: &SyntaxTree, sx: &Syntax) -> bool {
+fn needs_terminator(tree: &SyntaxTree, sx: &Syntax) -> bool {
     if sx.statement_terminator.is_empty() { return false; }
     !matches!(
-        ir,
+        tree,
         SyntaxTree::If { .. } | SyntaxTree::While { .. } | SyntaxTree::Foreach { .. } | SyntaxTree::CFor { .. }
             | SyntaxTree::For { .. } | SyntaxTree::Function { .. } | SyntaxTree::Class { .. }
             | SyntaxTree::Namespace { .. } | SyntaxTree::Try { .. } | SyntaxTree::Comment { .. }

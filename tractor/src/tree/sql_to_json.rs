@@ -34,8 +34,8 @@ use super::sql::{
 };
 
 /// Render a [`SqlTree`] tree to a JSON value.
-pub fn sql_to_json(ir: &SqlTree, source: &str) -> Value {
-    match ir {
+pub fn sql_to_json(tree: &SqlTree, source: &str) -> Value {
+    match tree {
         // ----- Top level ------------------------------------------------
         SqlTree::File { statements, .. } => {
             let mut obj = Map::new();
@@ -503,8 +503,8 @@ where
 /// Render an atom node as a plain string scalar. Identifier-class
 /// atoms use the parsed `value` (quoting stripped); literals/variables
 /// keep the raw source slice.
-fn scalar_text(ir: &SqlTree, source: &str) -> Value {
-    match ir {
+fn scalar_text(tree: &SqlTree, source: &str) -> Value {
+    match tree {
         SqlTree::Identifier { value, .. }
         | SqlTree::Schema { value, .. }
         | SqlTree::Alias { value, .. } => Value::String(value.clone()),
@@ -608,8 +608,8 @@ mod tests {
 
     fn render(source: &str) -> Value {
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
-        sql_to_json(&ir, source)
+        let tree = lower_sql_root(tree.root_node(), source);
+        sql_to_json(&tree, source)
     }
 
     #[test]

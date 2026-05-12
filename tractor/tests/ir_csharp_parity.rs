@@ -11,7 +11,7 @@
 //!
 //! 1. **Architectural invariants must hold on arbitrary C# input.**
 //!    For any source we feed in:
-//!    - Round-trip identity: `to_source(ir, source) == source`.
+//!    - Round-trip identity: `to_source(tree, source) == source`.
 //!    - Lossless XPath text recovery: `string(IR_root) == source`.
 //!    These are the same invariants we hold on Python, regardless of
 //!    structural coverage. They prove byte-range threading + gap-text
@@ -84,18 +84,18 @@ fn walk_text(xot: &Xot, node: XotNode, out: &mut String) {
 fn assert_ir_invariants(source: &str, label: &str) {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), source);
+    let cst = p.parse(source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), source);
 
     // Invariant 1: round-trip identity.
-    let recovered = to_source(&ir, source);
+    let recovered = to_source(&tree, source);
     assert_eq!(recovered, source, "round-trip identity broken for {label}");
 
     // Render and verify XPath string(.) recovery.
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath_text = text_concat(&xot, root);
     assert_eq!(xpath_text, source, "XPath text-content recovery broken for {label}");
@@ -157,12 +157,12 @@ fn find_unknown_kinds_in_blueprint_ir() {
         .expect("blueprint.cs");
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     fn walk(xot: &Xot, node: XotNode, counts: &mut std::collections::BTreeMap<String, usize>) {
         if let Some(elem) = xot.element(node) {
@@ -190,7 +190,7 @@ fn dump_global_attribute_cst() {
     let s = "[assembly: System.Reflection.AssemblyDescription(\"x\")]\nclass C { }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -201,7 +201,7 @@ fn dump_global_attribute_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -210,7 +210,7 @@ fn dump_for_cst() {
     let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -231,7 +231,7 @@ fn dump_for_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -241,12 +241,12 @@ fn dump_for_raw_xml() {
     let s = "class C { void M() { for (int i = 0; i < 3; i++) { } } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), s);
+    let cst = p.parse(s, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), s);
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
-    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s).expect("render");
     let xml = xot.to_string(dr).unwrap();
     eprintln!("{xml}");
 }
@@ -280,7 +280,7 @@ fn dump_foreach_cst() {
     let s = "class C { void M() { foreach (var item in items) { Handle(item); } } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -296,7 +296,7 @@ fn dump_foreach_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -370,7 +370,7 @@ fn dump_csharp_attr_cst() {
     let s = "class X { [Obsolete] [MaxLength(50)] public string Name; }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -386,7 +386,7 @@ fn dump_csharp_attr_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -395,7 +395,7 @@ fn dump_csharp_where_cst() {
     let s = "class Repo<T> where T : class, IComparable<T>, new() { }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -411,7 +411,7 @@ fn dump_csharp_where_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -472,7 +472,7 @@ fn dump_from_clause_cst() {
     let s = "class C { void M() { var x = from n in numbers select n; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -493,7 +493,7 @@ fn dump_from_clause_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -502,7 +502,7 @@ fn dump_multiarg_indexer_cst() {
     let s = "class C { void M() { var x = arr[1, 2, 3]; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -523,7 +523,7 @@ fn dump_multiarg_indexer_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -564,7 +564,7 @@ fn dump_file_scoped_ns_cst() {
     let s = "namespace File;\nclass A {}\nclass B {}";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -575,7 +575,7 @@ fn dump_file_scoped_ns_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -584,7 +584,7 @@ fn dump_ifelse_cst() {
     let s = "class C { void M(int x) { if (x > 0) { } else if (x < 0) { } else { } } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -605,7 +605,7 @@ fn dump_ifelse_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -617,12 +617,12 @@ fn dump_ifelse_render() {
     let s = "class C { void M(int x) { if (x > 0) { } else if (x < 0) { } else { } } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), s);
+    let cst = p.parse(s, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), s);
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
-    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xml_node = xot_node_to_xml_node(&xot, root);
     let mut opts = RenderOptions::new();
@@ -636,7 +636,7 @@ fn dump_collection_expr_cst() {
     let s = "class C { void M() { return [this]; var x = [1, 2, 3]; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -647,7 +647,7 @@ fn dump_collection_expr_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -658,7 +658,7 @@ fn find_blueprint_error_nodes() {
         .expect("blueprint.cs");
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
+    let cst = p.parse(&source, None).unwrap();
     fn walk(node: tree_sitter::Node, src: &[u8]) {
         if node.kind() == "ERROR" {
             let line = node.start_position().row + 1;
@@ -668,7 +668,7 @@ fn find_blueprint_error_nodes() {
         let mut c = node.walk();
         for child in node.children(&mut c) { walk(child, src); }
     }
-    walk(tree.root_node(), source.as_bytes());
+    walk(cst.root_node(), source.as_bytes());
 }
 
 #[test]
@@ -677,7 +677,7 @@ fn dump_delegate_cst() {
     let s = "public delegate TResult Transformer<T, TResult>(T input);";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -701,7 +701,7 @@ fn dump_delegate_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -710,7 +710,7 @@ fn dump_paren_pattern() {
     let s = "class C { void M() { object o = 1; var x = o switch { (1) => 1, var v => 2 }; } }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -721,7 +721,7 @@ fn dump_paren_pattern() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -730,7 +730,7 @@ fn dump_prefix_unary() {
     let s = "class C { void M() { var a = ++i; var b = --i; var c = -i; var d = !i; var e = ~i; var f = +i; var g = &i; var h = *i; } }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -741,7 +741,7 @@ fn dump_prefix_unary() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -750,7 +750,7 @@ fn dump_object_creation_cst() {
     let s = "class C { void M() { var x = new Foo(1, 2); var y = new(); var z = new Foo(){A=1}; var a = new[]{1,2}; } }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -761,7 +761,7 @@ fn dump_object_creation_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -770,7 +770,7 @@ fn dump_lambda_cst() {
     let s = "class C { void M() { System.Func<int,int> f = x => x * 2; } }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -781,7 +781,7 @@ fn dump_lambda_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, s.as_bytes());
+    walk(cst.root_node(), 0, s.as_bytes());
 }
 
 #[test]
@@ -808,12 +808,12 @@ fn ir_tree_render() {
     let source = "// leading comment\nclass Foo { void M() { var x = 1 + 2; /* trailing */ } }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), source);
+    let cst = p.parse(source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     let xml_node = xot_node_to_xml_node(&xot, root);
@@ -853,12 +853,12 @@ fn blueprint_tree_parity() {
     // IR pipeline tree.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let ir_xml = xot_node_to_xml_node(&xot, ir_root);
     let ir_render = render_query_tree_node(&ir_xml, &opts);
@@ -909,12 +909,12 @@ fn blueprint_parity() {
     // IR pipeline view.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let ir_view = structural_view(&xot, ir_root);
 
@@ -965,15 +965,15 @@ fn blueprint_coverage_audit() {
 
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
 
-    assert_eq!(to_source(&ir, &source), source, "round-trip identity broken");
+    assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let xpath = text_concat(&xot, root);
     if xpath != source {
@@ -996,7 +996,7 @@ fn blueprint_coverage_audit() {
     }
 
     let known = csharp_known_kinds();
-    let report = audit_coverage(tree.root_node(), &ir, &source, &known);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &known);
     eprintln!("\n{}", report.summary());
     assert_eq!(report.dropped, 0,
         "{} CST nodes dropped (renderer bug)",
@@ -1049,16 +1049,16 @@ fn assert_expression_parity(expr: &str, label: &str) {
     // IR pipeline.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
 
-    let recovered = to_source(&ir, &source);
+    let recovered = to_source(&tree, &source);
     assert_eq!(recovered, source, "round-trip identity broken for {label}");
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, &source).expect("render");
+    render_to_xot(&mut xot, dr, &tree, &source).expect("render");
     let ir_root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
 
     let xpath_text = text_concat(&xot, ir_root);
@@ -1121,7 +1121,7 @@ fn conditional_access_isomorphism() {
     fn ir_access_view(source: &str) -> String {
         let mut p = tree_sitter::Parser::new();
         p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-        let tree = p.parse(source, None).unwrap();
+        let cst = p.parse(source, None).unwrap();
         fn find<'t>(node: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
             if matches!(node.kind(), "member_access_expression" | "conditional_access_expression") {
                 return Some(node);
@@ -1132,7 +1132,7 @@ fn conditional_access_isomorphism() {
             }
             None
         }
-        let target = find(tree.root_node()).expect("access expression");
+        let target = find(cst.root_node()).expect("access expression");
         let access = tractor::tree::lower_csharp_node(target, source);
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
@@ -1193,7 +1193,7 @@ fn non_null_assertion() {
     // Lower the postfix expression directly.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
         if n.kind() == "postfix_unary_expression" { return Some(n); }
         let mut c = n.walk();
@@ -1202,13 +1202,13 @@ fn non_null_assertion() {
         }
         None
     }
-    let target = find(tree.root_node()).expect("postfix_unary");
-    let ir = tractor::tree::lower_csharp_node(target, s);
+    let target = find(cst.root_node()).expect("postfix_unary");
+    let tree = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- obj! ---\n{view}");
@@ -1219,7 +1219,7 @@ fn non_null_assertion() {
     assert!(view.contains("name"), "must contain inner <name>");
 
     // Round-trip text recovery.
-    let recovered = to_source(&ir, s);
+    let recovered = to_source(&tree, s);
     assert!(recovered.contains("obj!"), "round-trip must preserve `obj!`");
 }
 
@@ -1234,7 +1234,7 @@ fn is_type_test() {
 
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
         if n.kind() == "is_expression" { return Some(n); }
         let mut c = n.walk();
@@ -1243,13 +1243,13 @@ fn is_type_test() {
         }
         None
     }
-    let target = find(tree.root_node()).expect("is_expression");
-    let ir = tractor::tree::lower_csharp_node(target, s);
+    let target = find(cst.root_node()).expect("is_expression");
+    let tree = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- x is int ---\n{view}");
@@ -1268,7 +1268,7 @@ fn is_type_test() {
     assert!(view.contains("right"), "must contain <right>");
     assert!(view.contains("type"), "must wrap target in <type>");
 
-    let recovered = to_source(&ir, s);
+    let recovered = to_source(&tree, s);
     assert!(recovered.contains("x is int"), "round-trip must preserve `x is int`");
 }
 
@@ -1286,14 +1286,14 @@ fn access_marker_swap_via_enum_mutation() {
     let s = "public class Foo { }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
-    let mut ir = lower_csharp_root(tree.root_node(), s);
+    let cst = p.parse(s, None).unwrap();
+    let mut tree = lower_csharp_root(cst.root_node(), s);
 
     // Locate the class IR.
-    fn find_class(ir: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
+    fn find_class(tree: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
         use tractor::tree::SyntaxTree;
-        if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
-        match ir {
+        if matches!(tree, SyntaxTree::Class { .. }) { return Some(tree); }
+        match tree {
             SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
             | SyntaxTree::Body { children, .. } => {
                 for c in children {
@@ -1304,7 +1304,7 @@ fn access_marker_swap_via_enum_mutation() {
             _ => None,
         }
     }
-    let class = find_class(&mut ir).expect("SyntaxTree::Class in tree");
+    let class = find_class(&mut tree).expect("SyntaxTree::Class in tree");
 
     // Verify it parsed with modifiers.access = Public.
     if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
@@ -1313,27 +1313,27 @@ fn access_marker_swap_via_enum_mutation() {
     }
 
     // Render before mutation.
-    fn render_view(ir: &tractor::tree::SyntaxTree, src: &str) -> String {
+    fn render_view(tree: &tractor::tree::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
-        render_to_xot(&mut xot, dr, ir, src).expect("render");
+        render_to_xot(&mut xot, dr, tree, src).expect("render");
         let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
         structural_view(&xot, root)
     }
-    let before = render_view(&ir, s);
+    let before = render_view(&tree, s);
     eprintln!("--- before (access=Public) ---\n{before}");
     assert!(before.contains("public"), "before-view must contain <public/> marker");
 
     // Mutation: flip access to Private. ONE FIELD CHANGE.
-    let class = find_class(&mut ir).unwrap();
+    let class = find_class(&mut tree).unwrap();
     if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
         modifiers.access = Some(tractor::tree::Access::Private);
     }
 
     // Re-render. Marker swapped by construction — no XML-level
     // rewrite, no imperative pass.
-    let after = render_view(&ir, s);
+    let after = render_view(&tree, s);
     eprintln!("--- after (access=Private) ---\n{after}");
     assert!(after.contains("private"), "after-view must contain <private/> marker");
     assert!(!after.contains("public"), "after-view must NOT contain <public/> marker");
@@ -1356,13 +1356,13 @@ fn static_marker_via_modifiers_mutation() {
     let s = "public class Foo { }\n";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
-    let mut ir = lower_csharp_root(tree.root_node(), s);
+    let cst = p.parse(s, None).unwrap();
+    let mut tree = lower_csharp_root(cst.root_node(), s);
 
-    fn find_class(ir: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
+    fn find_class(tree: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
         use tractor::tree::SyntaxTree;
-        if matches!(ir, SyntaxTree::Class { .. }) { return Some(ir); }
-        match ir {
+        if matches!(tree, SyntaxTree::Class { .. }) { return Some(tree); }
+        match tree {
             SyntaxTree::Module { children, .. } | SyntaxTree::Inline { children, .. }
             | SyntaxTree::Body { children, .. } => {
                 for c in children {
@@ -1373,21 +1373,21 @@ fn static_marker_via_modifiers_mutation() {
             _ => None,
         }
     }
-    let class = find_class(&mut ir).expect("SyntaxTree::Class");
+    let class = find_class(&mut tree).expect("SyntaxTree::Class");
     if let tractor::tree::SyntaxTree::Class { modifiers, .. } = class {
         assert!(!modifiers.static_, "should not be static initially");
         modifiers.static_ = true;
     }
 
-    fn render_view(ir: &tractor::tree::SyntaxTree, src: &str) -> String {
+    fn render_view(tree: &tractor::tree::SyntaxTree, src: &str) -> String {
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
         let dr = xot.new_element(dr_name);
-        render_to_xot(&mut xot, dr, ir, src).expect("render");
+        render_to_xot(&mut xot, dr, tree, src).expect("render");
         let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
         structural_view(&xot, root)
     }
-    let view = render_view(&ir, s);
+    let view = render_view(&tree, s);
     eprintln!("--- after static=true ---\n{view}");
     assert!(view.contains("static"), "view must contain <static/> marker");
     assert!(view.contains("public"), "view must still contain <public/> marker");
@@ -1426,7 +1426,7 @@ fn cast_expression() {
 
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
         if n.kind() == "cast_expression" { return Some(n); }
         let mut c = n.walk();
@@ -1435,13 +1435,13 @@ fn cast_expression() {
         }
         None
     }
-    let target = find(tree.root_node()).expect("cast");
-    let ir = tractor::tree::lower_csharp_node(target, s);
+    let target = find(cst.root_node()).expect("cast");
+    let tree = tractor::tree::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
-    render_to_xot(&mut xot, dr, &ir, s).expect("render");
+    render_to_xot(&mut xot, dr, &tree, s).expect("render");
     let root = xot.children(dr).find(|&c| xot.element(c).is_some()).unwrap();
     let view = structural_view(&xot, root);
     eprintln!("--- (int)y ---\n{view}");
@@ -1451,7 +1451,7 @@ fn cast_expression() {
     assert!(view.contains("type"), "must contain <type> slot");
     assert!(view.contains("value"), "must contain <value> slot");
 
-    let recovered = to_source(&ir, s);
+    let recovered = to_source(&tree, s);
     assert!(recovered.contains("(int)y"), "round-trip must preserve `(int)y`");
 }
 
@@ -1472,7 +1472,7 @@ fn dump_csharp_misc() {
     let source = "class C { void M() { var a = obj!; var b = (int)x; var c = x is int; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
+    let cst = p.parse(source, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -1483,7 +1483,7 @@ fn dump_csharp_misc() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, source.as_bytes());
+    walk(cst.root_node(), 0, source.as_bytes());
 }
 
 #[test]
@@ -1492,7 +1492,7 @@ fn dump_csharp_conditional() {
     let source = "class C { void M() { var x = a?.b.c; var y = a.b?.c; var z = a?.b?.c; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
+    let cst = p.parse(source, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -1503,7 +1503,7 @@ fn dump_csharp_conditional() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, source.as_bytes());
+    walk(cst.root_node(), 0, source.as_bytes());
 }
 
 /// Dump the C# CST shape of a small snippet.
@@ -1513,7 +1513,7 @@ fn dump_csharp_cst() {
     let source = "class C { void M() { var x = a.b.c; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(source, None).unwrap();
+    let cst = p.parse(source, None).unwrap();
     fn walk(node: tree_sitter::Node, depth: usize, src: &[u8]) {
         let indent = "  ".repeat(depth);
         let text = node.utf8_text(src).unwrap_or("?");
@@ -1524,5 +1524,5 @@ fn dump_csharp_cst() {
             if child.is_named() { walk(child, depth + 1, src); }
         }
     }
-    walk(tree.root_node(), 0, source.as_bytes());
+    walk(cst.root_node(), 0, source.as_bytes());
 }

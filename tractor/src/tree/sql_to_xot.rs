@@ -29,10 +29,10 @@ use super::sql::{
 pub fn render_sql_to_xot(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &SqlTree,
+    tree: &SqlTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
-    match ir {
+    match tree {
         // ----- Top level ------------------------------------------------
         SqlTree::File { statements, .. } => {
             let node = element(xot, "file")?;
@@ -856,12 +856,12 @@ mod tests {
 
     fn render(source: &str) -> String {
         let tree = parse_tsql(source);
-        let ir = lower_sql_root(tree.root_node(), source);
+        let tree = lower_sql_root(tree.root_node(), source);
         let mut xot = Xot::new();
         let root_name = xot.add_name("root");
         let root_el = xot.new_element(root_name);
         let doc = xot.new_document_with_element(root_el).unwrap();
-        render_sql_to_xot(&mut xot, root_el, &ir, source).unwrap();
+        render_sql_to_xot(&mut xot, root_el, &tree, source).unwrap();
         xot.to_string(doc).unwrap()
     }
 

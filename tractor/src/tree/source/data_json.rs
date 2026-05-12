@@ -61,29 +61,29 @@ impl JsonRenderOptions {
 /// The trailing newline is appended after the final `}` / `]` /
 /// scalar, matching [`crate::render::json::render_node_tracked`].
 pub fn render_json_with_spans(
-    ir: &DataTree,
+    tree: &DataTree,
     opts: &JsonRenderOptions,
 ) -> (String, DataSpanMap) {
     let mut buf = String::new();
     let mut spans = DataSpanMap::new();
-    render_value(ir, opts, &mut buf, &mut spans);
+    render_value(tree, opts, &mut buf, &mut spans);
     buf.push_str(&opts.newline);
     (buf, spans)
 }
 
 /// Convenience: render JSON without keeping the span map.
-pub fn render_json(ir: &DataTree, opts: &JsonRenderOptions) -> String {
-    render_json_with_spans(ir, opts).0
+pub fn render_json(tree: &DataTree, opts: &JsonRenderOptions) -> String {
+    render_json_with_spans(tree, opts).0
 }
 
 fn render_value(
-    ir: &DataTree,
+    tree: &DataTree,
     opts: &JsonRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
 ) {
     let start = buf.len();
-    match ir {
+    match tree {
         DataTree::Document { children, .. } => {
             // Top-level document is a transparent wrapper. Render the
             // first non-comment child as the JSON value; everything
@@ -137,7 +137,7 @@ fn render_value(
     }
     let end = buf.len();
     if end > start {
-        let span = ir.span();
+        let span = tree.span();
         spans.insert((span.line, span.column), (start, end));
     }
 }
@@ -218,8 +218,8 @@ fn render_array(
     buf.push(']');
 }
 
-fn scalar_text(ir: &DataTree) -> String {
-    match ir {
+fn scalar_text(tree: &DataTree) -> String {
+    match tree {
         DataTree::String { value, .. } => value.clone(),
         DataTree::Number { text, .. } => text.clone(),
         DataTree::Bool { value, .. } => {
@@ -269,8 +269,8 @@ mod tests {
 
     #[test]
     fn flat_object_renders_canonically() {
-        let ir = lower(r#"{"name": "Alice", "age": 30}"#);
-        let out = render_json(&ir, &JsonRenderOptions::default());
+        let tree = lower(r#"{"name": "Alice", "age": 30}"#);
+        let out = render_json(&tree, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed["name"], "Alice");
         assert_eq!(parsed["age"], 30);
@@ -278,8 +278,8 @@ mod tests {
 
     #[test]
     fn nested_object() {
-        let ir = lower(r#"{"db": {"host": "localhost", "port": 5432}}"#);
-        let out = render_json(&ir, &JsonRenderOptions::default());
+        let tree = lower(r#"{"db": {"host": "localhost", "port": 5432}}"#);
+        let out = render_json(&tree, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed["db"]["host"], "localhost");
         assert_eq!(parsed["db"]["port"], 5432);
@@ -287,8 +287,8 @@ mod tests {
 
     #[test]
     fn array_with_mixed_scalars() {
-        let ir = lower(r#"{"tags": ["a", "b", "c"]}"#);
-        let out = render_json(&ir, &JsonRenderOptions::default());
+        let tree = lower(r#"{"tags": ["a", "b", "c"]}"#);
+        let out = render_json(&tree, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed["tags"][0], "a");
         assert_eq!(parsed["tags"][2], "c");
@@ -296,8 +296,8 @@ mod tests {
 
     #[test]
     fn bool_and_null() {
-        let ir = lower(r#"{"a": true, "b": false, "c": null}"#);
-        let out = render_json(&ir, &JsonRenderOptions::default());
+        let tree = lower(r#"{"a": true, "b": false, "c": null}"#);
+        let out = render_json(&tree, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed["a"], true);
         assert_eq!(parsed["b"], false);
@@ -307,13 +307,13 @@ mod tests {
     #[test]
     fn string_escaping() {
         // Bytes: `{"msg": "hello"}` — value's opening quote is at 8.
-        let ir = lower(r#"{"msg": "hello"}"#);
-        let mut ir = ir;
-        let target = ir.find_at_offset_mut(8).unwrap();
+        let tree = lower(r#"{"msg": "hello"}"#);
+        let mut tree = tree;
+        let target = tree.find_at_offset_mut(8).unwrap();
         target
             .set_scalar("hi \"world\"\nbye", crate::tree::data::ScalarKind::String)
             .unwrap();
-        let out = render_json(&ir, &JsonRenderOptions::default());
+        let out = render_json(&tree, &JsonRenderOptions::default());
         let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed["msg"], "hi \"world\"\nbye");
     }
@@ -321,13 +321,13 @@ mod tests {
     #[test]
     fn span_map_records_value_range_keyed_by_value_span() {
         let src = r#"{"name": "Alice"}"#;
-        let ir = lower(src);
-        let (out, spans) = render_json_with_spans(&ir, &JsonRenderOptions::default());
+        let tree = lower(src);
+        let (out, spans) = render_json_with_spans(&tree, &JsonRenderOptions::default());
 
         // The String "Alice" has span at the original source position
         // of its opening quote (line 1, column 10 — 1-based column).
         // Look up the value span directly.
-        let value_node = ir.find_at_offset(9).unwrap();
+        let value_node = tree.find_at_offset(9).unwrap();
         let span = value_node.span();
         let key = (span.line, span.column);
         let (start, end) = spans.get(&key).unwrap_or_else(|| {
@@ -339,13 +339,13 @@ mod tests {
     #[test]
     fn span_map_handles_nested_object_value() {
         let src = r#"{"db": {"host": "localhost"}}"#;
-        let ir = lower(src);
-        let (out, spans) = render_json_with_spans(&ir, &JsonRenderOptions::default());
+        let tree = lower(src);
+        let (out, spans) = render_json_with_spans(&tree, &JsonRenderOptions::default());
 
         // The inner Mapping {"host": "localhost"} is the value of
         // the outer "db" pair. Find it via offset (the opening brace
         // of the inner object is at byte 7).
-        let inner = ir.find_at_offset(7).unwrap();
+        let inner = tree.find_at_offset(7).unwrap();
         let span = inner.span();
         let key = (span.line, span.column);
         let (start, end) = spans
@@ -363,21 +363,21 @@ mod tests {
         // primitives, re-render, and use the span map to splice the
         // new bytes back into the original source.
         let src = r#"{"name": "Alice", "age": 30}"#;
-        let mut ir = lower(src);
+        let mut tree = lower(src);
 
         // Locate value's original span before mutating (the offsets
         // are preserved through `set_scalar`).
         let value_offset_in_src = 9; // opening quote of "Alice"
-        let pre = ir.find_at_offset(value_offset_in_src).unwrap();
+        let pre = tree.find_at_offset(value_offset_in_src).unwrap();
         let pre_span = pre.span();
         let pre_range = pre.range();
 
-        ir.find_at_offset_mut(value_offset_in_src)
+        tree.find_at_offset_mut(value_offset_in_src)
             .unwrap()
             .set_scalar("Bob", crate::tree::data::ScalarKind::String)
             .unwrap();
 
-        let (rendered, spans) = render_json_with_spans(&ir, &JsonRenderOptions::default());
+        let (rendered, spans) = render_json_with_spans(&tree, &JsonRenderOptions::default());
         let key = (pre_span.line, pre_span.column);
         let (rs, re) = spans.get(&key).unwrap();
         let new_value_bytes = &rendered[*rs..*re];

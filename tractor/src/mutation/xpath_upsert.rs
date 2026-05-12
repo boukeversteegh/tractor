@@ -236,7 +236,7 @@ fn update_existing_via_data_ir(
         Some(TreeMode::Data),
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    let mut ir = *parsed.data_ir.ok_or_else(|| {
+    let mut tree = *parsed.data_tree.ok_or_else(|| {
         UpsertError::Parse(format!(
             "language '{}' did not produce a DataTree on the IR pipeline",
             lang,
@@ -255,7 +255,7 @@ fn update_existing_via_data_ir(
         let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
             .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-        let target = ir.find_at_offset_mut(orig_start as u32).ok_or_else(|| {
+        let target = tree.find_at_offset_mut(orig_start as u32).ok_or_else(|| {
             UpsertError::NoInsertionPoint(format!(
                 "could not locate node at byte offset {} in DataTree",
                 orig_start,
@@ -277,7 +277,7 @@ fn update_existing_via_data_ir(
     }
 
     // Step 2: Render the modified IR with span tracking.
-    let (rendered, span_map) = render_data_ir_with_spans(&ir, lang, source);
+    let (rendered, span_map) = render_data_ir_with_spans(&tree, lang, source);
 
     // Step 3: Sort splices by descending position and apply.
     splice_info.sort_by(|a, b| b.0.cmp(&a.0));
@@ -310,8 +310,8 @@ fn update_existing_via_data_ir(
 }
 
 #[cfg(feature = "native")]
-fn scalar_kind_of(ir: &DataTree) -> ScalarKind {
-    match ir {
+fn scalar_kind_of(tree: &DataTree) -> ScalarKind {
+    match tree {
         DataTree::String { .. } => ScalarKind::String,
         DataTree::Number { .. } => ScalarKind::Number,
         DataTree::Bool { .. } => ScalarKind::Bool,
@@ -322,7 +322,7 @@ fn scalar_kind_of(ir: &DataTree) -> ScalarKind {
 
 #[cfg(feature = "native")]
 fn render_data_ir_with_spans(
-    ir: &DataTree,
+    tree: &DataTree,
     lang: &str,
     source: &str,
 ) -> (String, std::collections::HashMap<(u32, u32), (usize, usize)>) {
@@ -334,7 +334,7 @@ fn render_data_ir_with_spans(
                 newline,
                 indent_level: 0,
             };
-            crate::tree::source::data_json::render_json_with_spans(ir, &opts)
+            crate::tree::source::data_json::render_json_with_spans(tree, &opts)
         }
         "yaml" | "yml" => {
             let opts = crate::tree::source::data_yaml::YamlRenderOptions {
@@ -342,7 +342,7 @@ fn render_data_ir_with_spans(
                 newline,
                 indent_level: 0,
             };
-            crate::tree::source::data_yaml::render_yaml_with_spans(ir, &opts)
+            crate::tree::source::data_yaml::render_yaml_with_spans(tree, &opts)
         }
         _ => unreachable!("render_data_ir_with_spans called for non-data language: {}", lang),
     }
@@ -443,7 +443,7 @@ fn insert_new_via_data_ir(
         Some(TreeMode::Data),
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
-    let mut ir = *parsed.data_ir.ok_or_else(|| {
+    let mut tree = *parsed.data_tree.ok_or_else(|| {
         UpsertError::Parse(format!(
             "language '{}' did not produce a DataTree on the IR pipeline",
             lang,
@@ -454,7 +454,7 @@ fn insert_new_via_data_ir(
     // (Mapping / Sequence / Section) whose source range starts at
     // the ancestor offset (or `0` for root splice).
     let target_offset = if is_root_splice { 0 } else { ancestor_offset };
-    let target = find_insertion_target_at_offset(&mut ir, target_offset).ok_or_else(|| {
+    let target = find_insertion_target_at_offset(&mut tree, target_offset).ok_or_else(|| {
         UpsertError::NoInsertionPoint(format!(
             "could not locate container at byte offset {} in DataTree",
             target_offset,
@@ -466,7 +466,7 @@ fn insert_new_via_data_ir(
         .insert_nested_pair(&missing, value, kind)
         .map_err(|e| UpsertError::Render(format!("insert_nested_pair: {}", e)))?;
 
-    let (rendered, span_map) = render_data_ir_with_spans(&ir, lang, source);
+    let (rendered, span_map) = render_data_ir_with_spans(&tree, lang, source);
 
     let new_content = if is_root_splice {
         rendered.trim_end().to_string()
@@ -488,7 +488,7 @@ fn insert_new_via_data_ir(
         // ancestor's value span. We don't have the xot end_line / end_col
         // here directly, but we can recover them by re-querying the
         // ancestor span via DataTree's range.
-        let target = ir.find_at_offset(ancestor_offset).ok_or_else(|| {
+        let target = tree.find_at_offset(ancestor_offset).ok_or_else(|| {
             UpsertError::NoInsertionPoint(
                 "ancestor disappeared from DataTree after insert".into(),
             )
@@ -537,17 +537,17 @@ fn scalar_kind_from_str(kind: Option<&str>) -> ScalarKind {
 /// scalar) but wrong for insertion (where the target is the
 /// surrounding container).
 #[cfg(feature = "native")]
-fn find_insertion_target_at_offset(ir: &mut DataTree, offset: u32) -> Option<&mut DataTree> {
+fn find_insertion_target_at_offset(tree: &mut DataTree, offset: u32) -> Option<&mut DataTree> {
     // Two-phase walk to keep the borrow checker happy: an immutable
     // pre-pass decides whether to descend (a deeper container
     // matches) or return `self`; the mutable descent commits to
     // exactly one borrow path.
-    let has_deeper = ir
+    let has_deeper = tree
         .children_iter()
         .any(|c| has_container_at(c, offset));
 
     if has_deeper {
-        match ir {
+        match tree {
             DataTree::Document { children, .. }
             | DataTree::Sequence { items: children, .. }
             | DataTree::Section { children, .. } => {
@@ -576,11 +576,11 @@ fn find_insertion_target_at_offset(ir: &mut DataTree, offset: u32) -> Option<&mu
         }
     } else {
         let is_container = matches!(
-            ir,
+            tree,
             DataTree::Mapping { .. } | DataTree::Sequence { .. } | DataTree::Section { .. }
         );
-        if is_container && ir.range().start == offset {
-            Some(ir)
+        if is_container && tree.range().start == offset {
+            Some(tree)
         } else {
             None
         }
@@ -588,15 +588,15 @@ fn find_insertion_target_at_offset(ir: &mut DataTree, offset: u32) -> Option<&mu
 }
 
 #[cfg(feature = "native")]
-fn has_container_at(ir: &DataTree, offset: u32) -> bool {
+fn has_container_at(tree: &DataTree, offset: u32) -> bool {
     let is_container = matches!(
-        ir,
+        tree,
         DataTree::Mapping { .. } | DataTree::Sequence { .. } | DataTree::Section { .. }
     );
-    if is_container && ir.range().start == offset {
+    if is_container && tree.range().start == offset {
         return true;
     }
-    ir.children_iter().any(|c| has_container_at(c, offset))
+    tree.children_iter().any(|c| has_container_at(c, offset))
 }
 
 // ---------------------------------------------------------------------------

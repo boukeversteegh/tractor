@@ -10,7 +10,7 @@
 //! Owned `text: String` fields are *not* stored on the IR — leaf text is
 //! derived from `&source[range]` at render time. This guarantees:
 //!
-//! 1. **Round-trip identity.** `&source[ir.range]` is, by construction,
+//! 1. **Round-trip identity.** `&source[tree.range]` is, by construction,
 //!    the verbatim source slice that produced this IR. Recovering the
 //!    full source text is `source[root_ir.range]`. Recovering any
 //!    sub-tree's source is one slice operation.
@@ -18,7 +18,7 @@
 //!    (anonymous tokens like `(`, `)`, `.`, `,`, `;`, `=`, plus
 //!    whitespace and comments) into the XML between source-derived
 //!    children, so that `string(.)` on any rendered element equals
-//!    `source[ir.range]`. This makes
+//!    `source[tree.range]`. This makes
 //!    `//call[.='foobar()']` a valid query — match a node by its
 //!    literal source text.
 //!
@@ -1735,12 +1735,12 @@ impl SyntaxTree {
 }
 
 /// Round-trip helper: recover the original source slice covered by
-/// this IR node. Equivalent to `ir.range().slice(source)`.
+/// this IR node. Equivalent to `tree.range().slice(source)`.
 ///
 /// **Round-trip identity:** `to_source(lower(parse(s)), s) == s` (the
 /// root IR's range covers the whole source). For sub-trees,
 /// `to_source(child, source)` is the verbatim source slice that
 /// produced `child`.
-pub fn to_source<'a>(ir: &SyntaxTree, source: &'a str) -> &'a str {
-    ir.range().slice(source)
+pub fn to_source<'a>(tree: &SyntaxTree, source: &'a str) -> &'a str {
+    tree.range().slice(source)
 }

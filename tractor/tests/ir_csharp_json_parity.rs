@@ -10,7 +10,7 @@ use std::fs;
 use serde_json::Value;
 use tree_sitter::Parser;
 
-use tractor::tree::{ir_to_json, lower_csharp_root};
+use tractor::tree::{tree_to_json, lower_csharp_root};
 
 fn blueprint_path() -> String {
     let candidates = [
@@ -44,9 +44,9 @@ fn ir_json_matches_snapshot() {
     let source = fs::read_to_string(blueprint_path()).expect("blueprint");
     let mut p = Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
-    let json = ir_to_json(&ir, &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
+    let json = tree_to_json(&tree, &source);
 
     let snap = fs::read_to_string(snapshot_path()).expect("snapshot");
     let expected: Value = serde_json::from_str(&snap).expect("parse snapshot");
@@ -76,8 +76,8 @@ fn dump_ir_json() {
     let source = fs::read_to_string(blueprint_path()).expect("blueprint");
     let mut p = Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_csharp_root(tree.root_node(), &source);
-    let json = ir_to_json(&ir, &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_csharp_root(cst.root_node(), &source);
+    let json = tree_to_json(&tree, &source);
     println!("{}", serde_json::to_string_pretty(&json).unwrap());
 }

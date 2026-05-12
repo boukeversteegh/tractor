@@ -49,12 +49,12 @@ impl YamlRenderOptions {
 
 /// Render a [`DataTree`] to YAML source text and a span map.
 pub fn render_yaml_with_spans(
-    ir: &DataTree,
+    tree: &DataTree,
     opts: &YamlRenderOptions,
 ) -> (String, DataSpanMap) {
     let mut buf = String::new();
     let mut spans = DataSpanMap::new();
-    render_top(ir, opts, &mut buf, &mut spans);
+    render_top(tree, opts, &mut buf, &mut spans);
     if !buf.ends_with('\n') {
         buf.push_str(&opts.newline);
     }
@@ -62,17 +62,17 @@ pub fn render_yaml_with_spans(
 }
 
 /// Convenience: render YAML without keeping the span map.
-pub fn render_yaml(ir: &DataTree, opts: &YamlRenderOptions) -> String {
-    render_yaml_with_spans(ir, opts).0
+pub fn render_yaml(tree: &DataTree, opts: &YamlRenderOptions) -> String {
+    render_yaml_with_spans(tree, opts).0
 }
 
 fn render_top(
-    ir: &DataTree,
+    tree: &DataTree,
     opts: &YamlRenderOptions,
     buf: &mut String,
     spans: &mut DataSpanMap,
 ) {
-    match ir {
+    match tree {
         DataTree::Document { children, .. } => {
             // Stream of documents (multi-doc YAML): each child is itself
             // a Document, emit `---` between them.
@@ -96,20 +96,20 @@ fn render_top(
             }
         }
         _ => {
-            render_value(ir, opts, buf, true, spans);
+            render_value(tree, opts, buf, true, spans);
         }
     }
 }
 
 fn render_value(
-    ir: &DataTree,
+    tree: &DataTree,
     opts: &YamlRenderOptions,
     buf: &mut String,
     at_top: bool,
     spans: &mut DataSpanMap,
 ) {
     let start = buf.len();
-    match ir {
+    match tree {
         DataTree::Mapping { pairs, .. } => {
             if pairs.iter().all(|p| !matches!(p, DataTree::Pair { .. })) {
                 buf.push_str("{}");
@@ -142,7 +142,7 @@ fn render_value(
         }
         DataTree::Document { .. } => {
             // Nested document — render via render_top.
-            render_top(ir, opts, buf, spans);
+            render_top(tree, opts, buf, spans);
         }
         DataTree::Section { children, .. } | DataTree::Directive { children, .. } => {
             let pairs: Vec<&DataTree> = children
@@ -176,7 +176,7 @@ fn render_value(
     }
     let end = buf.len();
     if end > start {
-        let span = ir.span();
+        let span = tree.span();
         spans.insert((span.line, span.column), (start, end));
     }
 }
@@ -305,8 +305,8 @@ fn render_sequence_mapping_item(
     }
 }
 
-fn render_inline_value(ir: &DataTree, buf: &mut String) {
-    match ir {
+fn render_inline_value(tree: &DataTree, buf: &mut String) {
+    match tree {
         DataTree::String { value, .. } => emit_scalar_string(value, buf),
         DataTree::Number { text, .. } => buf.push_str(text),
         DataTree::Bool { value, .. } => {
@@ -346,8 +346,8 @@ fn record_value_span(
     }
 }
 
-fn scalar_text(ir: &DataTree) -> String {
-    match ir {
+fn scalar_text(tree: &DataTree) -> String {
+    match tree {
         DataTree::String { value, .. } => value.clone(),
         DataTree::Number { text, .. } => text.clone(),
         DataTree::Bool { value, .. } => {
@@ -438,16 +438,16 @@ mod tests {
     #[test]
     fn flat_mapping() {
         let src = "name: Alice\nage: 30\n";
-        let ir = lower(src);
-        let out = render_yaml(&ir, &YamlRenderOptions::default());
+        let tree = lower(src);
+        let out = render_yaml(&tree, &YamlRenderOptions::default());
         assert_eq!(out, "name: Alice\nage: 30\n");
     }
 
     #[test]
     fn nested_mapping() {
         let src = "db:\n  host: localhost\n  port: 5432\n";
-        let ir = lower(src);
-        let out = render_yaml(&ir, &YamlRenderOptions::default());
+        let tree = lower(src);
+        let out = render_yaml(&tree, &YamlRenderOptions::default());
         assert!(out.contains("db:"));
         assert!(out.contains("  host: localhost"));
         assert!(out.contains("  port: 5432"));
@@ -456,8 +456,8 @@ mod tests {
     #[test]
     fn sequence_value() {
         let src = "tags:\n  - a\n  - b\n";
-        let ir = lower(src);
-        let out = render_yaml(&ir, &YamlRenderOptions::default());
+        let tree = lower(src);
+        let out = render_yaml(&tree, &YamlRenderOptions::default());
         assert!(out.contains("tags:"));
         assert!(out.contains("  - a"));
         assert!(out.contains("  - b"));
@@ -466,13 +466,13 @@ mod tests {
     #[test]
     fn boolean_string_quoting() {
         let src = "name: Alice\n";
-        let mut ir = lower(src);
+        let mut tree = lower(src);
         // Replace value with the string "true" — must be quoted.
-        let target = ir.find_at_offset_mut(6).unwrap();
+        let target = tree.find_at_offset_mut(6).unwrap();
         target
             .set_scalar("true", crate::tree::data::ScalarKind::String)
             .unwrap();
-        let out = render_yaml(&ir, &YamlRenderOptions::default());
+        let out = render_yaml(&tree, &YamlRenderOptions::default());
         assert!(
             out.contains("\"true\""),
             "expected quoted boolean string, got: {}",
@@ -483,11 +483,11 @@ mod tests {
     #[test]
     fn span_map_records_scalar_value_span() {
         let src = "name: Alice\n";
-        let ir = lower(src);
-        let (out, spans) = render_yaml_with_spans(&ir, &YamlRenderOptions::default());
+        let tree = lower(src);
+        let (out, spans) = render_yaml_with_spans(&tree, &YamlRenderOptions::default());
 
         // Find the value of the only pair via byte offset (start of "Alice")
-        let value_node = ir.find_at_offset(6).unwrap();
+        let value_node = tree.find_at_offset(6).unwrap();
         let span = value_node.span();
         let key = (span.line, span.column);
         let (start, end) = spans
@@ -499,19 +499,19 @@ mod tests {
     #[test]
     fn mutation_then_render_roundtrips_via_span_map() {
         let src = "name: Alice\nage: 30\n";
-        let mut ir = lower(src);
+        let mut tree = lower(src);
 
         let value_offset = 6;
-        let pre = ir.find_at_offset(value_offset).unwrap();
+        let pre = tree.find_at_offset(value_offset).unwrap();
         let pre_span = pre.span();
         let pre_range = pre.range();
 
-        ir.find_at_offset_mut(value_offset)
+        tree.find_at_offset_mut(value_offset)
             .unwrap()
             .set_scalar("Bob", crate::tree::data::ScalarKind::String)
             .unwrap();
 
-        let (rendered, spans) = render_yaml_with_spans(&ir, &YamlRenderOptions::default());
+        let (rendered, spans) = render_yaml_with_spans(&tree, &YamlRenderOptions::default());
         let key = (pre_span.line, pre_span.column);
         let (rs, re) = spans.get(&key).unwrap();
         let new_value_bytes = &rendered[*rs..*re];

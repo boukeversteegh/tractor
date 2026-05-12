@@ -16,7 +16,7 @@
 //!    `[.='foo()']`-by-source-text invariant: a query like
 //!    `//call[.='f(x)']` works on the IR-rendered tree.
 //!
-//! 3. **Round-trip identity.** `to_source(ir, source) == source` for
+//! 3. **Round-trip identity.** `to_source(tree, source) == source` for
 //!    every test input — every byte of source is recoverable from the
 //!    IR via its byte range.
 
@@ -113,25 +113,25 @@ fn ir_pipeline_view(source: &str) -> (String, XotResult) {
     parser
         .set_language(&tree_sitter_python::LANGUAGE.into())
         .expect("set python lang");
-    let tree = parser.parse(source, None).expect("ts parse");
-    let ir = lower_python_root(tree.root_node(), source);
+    let cst = parser.parse(source, None).expect("ts parse");
+    let tree = lower_python_root(cst.root_node(), source);
 
     // Round-trip invariant — assert at every test call.
-    let recovered = to_source(&ir, source);
+    let recovered = to_source(&tree, source);
     assert_eq!(
         recovered, source,
-        "round-trip identity broken: to_source(ir, s) != s",
+        "round-trip identity broken: to_source(tree, s) != s",
     );
 
     let mut xot = Xot::new();
     let doc_root_name = xot.add_name("_doc_root");
     let doc_root = xot.new_element(doc_root_name);
-    render_to_xot(&mut xot, doc_root, &ir, source).expect("render");
+    render_to_xot(&mut xot, doc_root, &tree, source).expect("render");
     // The structural view starts at the IR-emitted root.
     let ir_root = xot
         .children(doc_root)
         .find(|&c| xot.element(c).is_some())
-        .expect("ir root present");
+        .expect("tree root present");
     let view = structural_view(&xot, ir_root);
     (view, XotResult { xot, root: ir_root })
 }

@@ -17,12 +17,12 @@ fn go_missing_kinds() {
 
     let mut p = Parser::new();
     p.set_language(&tree_sitter_go::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_go_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_go_root(cst.root_node(), &source);
 
-    assert_eq!(to_source(&ir, &source), source, "round-trip identity broken");
+    assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 
-    let report = audit_coverage(tree.root_node(), &ir, &source, &[]);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(
         "Go coverage: {} kinds; {} CST nodes; {} dropped",
         report.by_kind.len(), report.total_named_cst_nodes, report.dropped,

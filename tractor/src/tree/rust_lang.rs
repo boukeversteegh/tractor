@@ -1358,7 +1358,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             }
             for c in &kids {
                 let inner = lower_node(*c, source);
-                let ir = match op_byte {
+                let tree = match op_byte {
                     Some(op) if (c.start_byte() as u32) < op => {
                         SyntaxTree::SimpleStatement {
                             element_name: "from",
@@ -1379,7 +1379,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     },
                     None => inner,
                 };
-                children.push(ir);
+                children.push(tree);
             }
             let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
             SyntaxTree::SimpleStatement {
@@ -1437,7 +1437,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let mut children: Vec<SyntaxTree> = Vec::new();
             for c in &kids {
                 let inner = lower_node(*c, source);
-                let ir = match op_byte {
+                let tree = match op_byte {
                     Some(op) if (c.start_byte() as u32) < op => SyntaxTree::SimpleStatement {
                         element_name: "from",
                         modifiers: Modifiers::default(),
@@ -1456,7 +1456,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     },
                     None => inner,
                 };
-                children.push(ir);
+                children.push(tree);
             }
             let extra_markers: &'static [&'static str] = if inclusive { &["inclusive"] } else { &["exclusive"] };
             SyntaxTree::SimpleStatement {
@@ -1748,8 +1748,8 @@ fn split_path_and_leaf(scope: TsNode<'_>, segments: Vec<SyntaxTree>, _source: &s
     ]
 }
 
-fn clone_ir(ir: &SyntaxTree) -> SyntaxTree {
-    ir.clone()
+fn clone_ir(tree: &SyntaxTree) -> SyntaxTree {
+    tree.clone()
 }
 
 fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {

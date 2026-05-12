@@ -43,8 +43,8 @@ const KEY_TEXT: &str = "text";
 
 /// Top-level entry: convert an IR tree to a JSON value. The root is
 /// emitted with its `$type` (no parent context to strip it).
-pub fn ir_to_json(ir: &SyntaxTree, source: &str) -> Value {
-    Renderer::new(source).render_root(ir)
+pub fn tree_to_json(tree: &SyntaxTree, source: &str) -> Value {
+    Renderer::new(source).render_root(tree)
 }
 
 struct Renderer<'a> {
@@ -56,21 +56,21 @@ impl<'a> Renderer<'a> {
         Self { source }
     }
 
-    fn render_root(&self, ir: &SyntaxTree) -> Value {
+    fn render_root(&self, tree: &SyntaxTree) -> Value {
         // Roots keep their $type — nothing above them sets a key.
-        self.render(ir, /*strip_type=*/ false)
+        self.render(tree, /*strip_type=*/ false)
     }
 
     /// Render an IR node. `strip_type` is true when the parent's
     /// chosen key already conveys the type (list entry under plural
     /// key, or singleton under its own element name) — matches the
     /// XML→JSON `strip_top_level_type` behaviour.
-    fn render(&self, ir: &SyntaxTree, strip_type: bool) -> Value {
-        match self.try_render_scalar(ir) {
+    fn render(&self, tree: &SyntaxTree, strip_type: bool) -> Value {
+        match self.try_render_scalar(tree) {
             Some(scalar) => scalar,
             None => {
-                let mut shape = Shape::new(self.element_name(ir));
-                self.populate(ir, &mut shape);
+                let mut shape = Shape::new(self.element_name(tree));
+                self.populate(tree, &mut shape);
                 shape.into_value(strip_type)
             }
         }
@@ -80,12 +80,12 @@ impl<'a> Renderer<'a> {
     /// integer-literal → number, true/false → boolean, null → null).
     /// `xml_to_json.rs` collapses text-only-leaf elements to strings;
     /// we do the same here at render time.
-    fn try_render_scalar(&self, ir: &SyntaxTree) -> Option<Value> {
-        let text_scalar = |ir: &SyntaxTree| {
-            let text = ir.range().slice(self.source);
+    fn try_render_scalar(&self, tree: &SyntaxTree) -> Option<Value> {
+        let text_scalar = |tree: &SyntaxTree| {
+            let text = tree.range().slice(self.source);
             Value::String(text.to_string())
         };
-        match ir {
+        match tree {
             SyntaxTree::Name { .. }
             | SyntaxTree::Atom { .. }
             | SyntaxTree::Int { .. }
@@ -94,7 +94,7 @@ impl<'a> Renderer<'a> {
             | SyntaxTree::None { .. }
             | SyntaxTree::Null { .. }
             | SyntaxTree::True { .. }
-            | SyntaxTree::False { .. } => Some(text_scalar(ir)),
+            | SyntaxTree::False { .. } => Some(text_scalar(tree)),
             SyntaxTree::Skip { .. } => Some(Value::Null),
             SyntaxTree::PositionalSeparator { .. } | SyntaxTree::KeywordSeparator { .. } => {
                 // Markers; rendered as flags by parents. Render as null
@@ -108,8 +108,8 @@ impl<'a> Renderer<'a> {
     /// Element name (matches the XML element name for the same IR node).
     /// Used as the JSON `$type` and as the key when this node sits in
     /// its parent as a singleton or list entry.
-    fn element_name(&self, ir: &SyntaxTree) -> &'static str {
-        match ir {
+    fn element_name(&self, tree: &SyntaxTree) -> &'static str {
+        match tree {
             SyntaxTree::Module { element_name, .. } => element_name,
             SyntaxTree::Expression { .. } => "expression",
             SyntaxTree::Access { .. } => "object",
@@ -176,7 +176,7 @@ impl<'a> Renderer<'a> {
             SyntaxTree::Constructor { .. } => "constructor",
             // C# `using_directive` is exposed in the imperative
             // pipeline (and JSON snapshots) as `<import>` — keep
-            // ir_to_json on that name. Block-scoped `using_statement`
+            // tree_to_json on that name. Block-scoped `using_statement`
             // is a different kind (handled via SimpleStatement "using").
             SyntaxTree::Using { .. } => "import",
             SyntaxTree::Namespace { .. } => "namespace",
@@ -192,8 +192,8 @@ impl<'a> Renderer<'a> {
     }
 
     /// Populate the shape with the IR's flags + child entries.
-    fn populate(&self, ir: &SyntaxTree, shape: &mut Shape) {
-        match ir {
+    fn populate(&self, tree: &SyntaxTree, shape: &mut Shape) {
+        match tree {
             SyntaxTree::Module { children, .. } => {
                 self.add_children(shape, children);
             }
@@ -655,7 +655,7 @@ impl<'a> Renderer<'a> {
             SyntaxTree::Unknown { .. } => {
                 // Unknown is opaque; carry the source text so consumers
                 // see what fell through.
-                let text = ir.range().slice(self.source).to_string();
+                let text = tree.range().slice(self.source).to_string();
                 if !text.is_empty() {
                     shape.text(text);
                 }
@@ -747,16 +747,16 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn add_else_chain(&self, shape: &mut Shape, ir: &SyntaxTree) {
-        match ir {
+    fn add_else_chain(&self, shape: &mut Shape, tree: &SyntaxTree) {
+        match tree {
             SyntaxTree::ElseIf { .. } => {
-                shape.list_with("else_if", self.render(ir, true));
+                shape.list_with("else_if", self.render(tree, true));
             }
             SyntaxTree::Else { .. } => {
-                shape.singleton("else", self.render(ir, true));
+                shape.singleton("else", self.render(tree, true));
             }
             _ => {
-                shape.singleton("else", self.render(ir, true));
+                shape.singleton("else", self.render(tree, true));
             }
         }
     }
@@ -776,13 +776,13 @@ impl<'a> Renderer<'a> {
     /// object or a string. Mirrors `xml_to_json`'s behaviour where
     /// text-only-leaves collapse to scalars under their parent's chosen
     /// key.
-    fn add_singleton_or_text(&self, shape: &mut Shape, ir: &SyntaxTree) {
+    fn add_singleton_or_text(&self, shape: &mut Shape, tree: &SyntaxTree) {
         // `SyntaxTree::Inline` is a transparent wrapper — recurse into its
         // children so they surface as direct keys on the parent
         // shape (otherwise we'd emit a `"\$inline": …` key, which
         // is meant for the rare case where an Inline is rendered
         // standalone, not as a sub-shape under a parent slot).
-        if let SyntaxTree::Inline { children, list_name, .. } = ir {
+        if let SyntaxTree::Inline { children, list_name, .. } = tree {
             if list_name.is_none() {
                 for c in children {
                     if matches!(c, SyntaxTree::Skip { .. }) { continue; }
@@ -791,24 +791,24 @@ impl<'a> Renderer<'a> {
                 return;
             }
         }
-        let key = self.element_name(ir);
-        let val = self.render(ir, true);
+        let key = self.element_name(tree);
+        let val = self.render(tree, true);
         shape.singleton(key, val);
     }
 
     /// Render an IR as the value-side of a `<type>` slot. If the IR
     /// already produces a `<type>`-shaped value (GenericType,
     /// SimpleStatement::type), unwrap so the parent doesn't double-wrap.
-    fn render_as_type(&self, ir: &SyntaxTree) -> Value {
-        let element = self.element_name(ir);
+    fn render_as_type(&self, tree: &SyntaxTree) -> Value {
+        let element = self.element_name(tree);
         if element == "type" {
             // Already type-shaped — return the inner so the parent's
             // explicit "type" key holds it directly.
-            self.render(ir, true)
+            self.render(tree, true)
         } else {
             // Not type-shaped — wrap in a `{ "$type": "type", inner }`
             // object. Use a scalar for the inner if it renders as text.
-            let inner = self.render(ir, true);
+            let inner = self.render(tree, true);
             match inner {
                 Value::String(s) => {
                     let mut obj = Map::new();
@@ -821,15 +821,15 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn wrap_expression_host(&self, ir: &SyntaxTree) -> Value {
+    fn wrap_expression_host(&self, tree: &SyntaxTree) -> Value {
         // Mirror the XML render's <expression> host wrapping. Skip the
         // wrapper when the inner already produces an `<expression>`-
         // shaped value, to avoid `expression > expression` nesting.
-        let inner_kind = self.element_name(ir);
+        let inner_kind = self.element_name(tree);
         if matches!(inner_kind, "expression") {
-            return self.render(ir, true);
+            return self.render(tree, true);
         }
-        let inner = self.render(ir, true);
+        let inner = self.render(tree, true);
         match inner {
             Value::Object(map) if !map.is_empty() => {
                 // Lift inner into expression host without `$type`

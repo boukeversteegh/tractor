@@ -35,15 +35,15 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let parsed = parse_string_to_xot(&input, &lang, file_label, None)
         .map_err(|e| format!("parse failed: {e}"))?;
 
-    let rendered = if let Some(ir) = &parsed.ir {
+    let rendered = if let Some(tree) = &parsed.tree {
         // Programming-language IR: anchored render slices the source
         // verbatim, so the round-trip is byte-identical.
-        tractor::tree::source::render(ir, &lang, Some(&parsed.source))
-    } else if let Some(data_ir) = &parsed.data_ir {
+        tractor::tree::source::render(tree, &lang, Some(&parsed.source))
+    } else if let Some(data_tree) = &parsed.data_tree {
         // Data-language IR: anchored slice via DataTree::to_source.
-        data_ir.to_source(&parsed.source).to_string()
-    } else if let Some(sql_ir) = &parsed.sql_ir {
-        tractor::tree::source::render_sql(sql_ir, Some(&parsed.source))
+        data_tree.to_source(&parsed.source).to_string()
+    } else if let Some(sql_tree) = &parsed.sql_tree {
+        tractor::tree::source::render_sql(sql_tree, Some(&parsed.source))
     } else {
         return Err(format!(
             "language '{}' is not on the IR pipeline; render is only available \

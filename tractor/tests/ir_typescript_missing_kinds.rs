@@ -25,10 +25,10 @@ fn typescript_missing_kinds() {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
         .unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_typescript_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_typescript_root(cst.root_node(), &source);
 
-    let report = audit_coverage(tree.root_node(), &ir, &source, &[]);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(
         "TypeScript coverage: {} kinds; {} CST nodes",
         report.by_kind.len(),

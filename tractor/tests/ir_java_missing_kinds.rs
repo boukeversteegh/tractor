@@ -20,10 +20,10 @@ fn java_missing_kinds() {
 
     let mut p = Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(&source, None).unwrap();
-    let ir = lower_java_root(tree.root_node(), &source);
+    let cst = p.parse(&source, None).unwrap();
+    let tree = lower_java_root(cst.root_node(), &source);
 
-    let report = audit_coverage(tree.root_node(), &ir, &source, &[]);
+    let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(
         "Java coverage: {} kinds; {} CST nodes",
         report.by_kind.len(),
@@ -85,7 +85,7 @@ fn dump_java_generic_bound_cst() {
     let s = "class Dog<T extends Animal> { }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -94,7 +94,7 @@ fn dump_java_generic_bound_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn dump_java_type_pattern_cst() {
     let s = "class T { String f(Object o) { return switch (o) { case Integer i -> \"int\"; default -> \"other\"; }; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -112,7 +112,7 @@ fn dump_java_type_pattern_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -121,9 +121,9 @@ fn dump_java_type_pattern_ir_only() {
     let s = "class T { String f(Object o) { return switch (o) { case Integer i -> \"int\"; default -> \"other\"; }; } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
-    let ir = tractor::tree::lower_java_root(tree.root_node(), s);
-    eprintln!("{:#?}", ir);
+    let cst = p.parse(s, None).unwrap();
+    let tree = tractor::tree::lower_java_root(cst.root_node(), s);
+    eprintln!("{:#?}", tree);
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn dump_java_type_pattern_inner_cst() {
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
     let _ = p.parse(s, None).unwrap();
     let s2 = "class T { String f(Object o) { return switch (o) { case Integer i -> \"int\"; default -> \"other\"; }; } }";
-    let tree = p.parse(s2, None).unwrap();
+    let cst = p.parse(s2, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -150,7 +150,7 @@ fn dump_java_type_pattern_inner_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s2.as_bytes(), 0);
+    walk(cst.root_node(), s2.as_bytes(), 0);
 }
 
 #[test]
@@ -159,7 +159,7 @@ fn dump_java_variadic_cst() {
     let s = "class T { void f(int... xs) { } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -175,7 +175,7 @@ fn dump_java_variadic_cst() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn dump_java_super_method() {
     let s = "class X { Object f() { return super.toString(); } }";
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
-    let tree = p.parse(s, None).unwrap();
+    let cst = p.parse(s, None).unwrap();
     fn walk(n: tree_sitter::Node, src: &[u8], depth: usize) {
         let indent = "  ".repeat(depth);
         let txt = n.utf8_text(src).unwrap_or("?");
@@ -244,7 +244,7 @@ fn dump_java_super_method() {
         let mut c = n.walk();
         for ch in n.children(&mut c) { walk(ch, src, depth + 1); }
     }
-    walk(tree.root_node(), s.as_bytes(), 0);
+    walk(cst.root_node(), s.as_bytes(), 0);
 }
 
 #[test]
