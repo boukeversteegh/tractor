@@ -3,7 +3,8 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::tree::{audit_coverage, lower_typescript_root};
+use tractor::tree::audit_coverage;
+use tractor::languages::typescript::lower_typescript_root;
 
 /// Coverage diagnostic for the TypeScript tree pipeline.
 /// Run with `cargo test --test ir_typescript_missing_kinds -- --ignored --nocapture`

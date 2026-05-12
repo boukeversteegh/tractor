@@ -3,7 +3,8 @@
 use std::fs;
 use tree_sitter::Parser;
 
-use tractor::tree::{audit_coverage, lower_ruby_root, to_source};
+use tractor::tree::{audit_coverage, to_source};
+use tractor::languages::ruby::lower_ruby_root;
 
 #[test]
 #[ignore]

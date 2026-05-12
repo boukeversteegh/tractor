@@ -9,8 +9,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
+use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
 
 pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(root);

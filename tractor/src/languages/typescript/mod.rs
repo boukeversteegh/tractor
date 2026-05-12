@@ -10,8 +10,13 @@
 use crate::output::syntax_highlight::SyntaxCategory;
 use crate::transform::operators::is_operator_marker;
 
+#[cfg(feature = "native")]
+pub mod lower;
 pub mod input;
 pub mod output;
+
+#[cfg(feature = "native")]
+pub use lower::{lower_typescript_root, lower_typescript_node};
 
 /// Map a transformed element name to a syntax category for highlighting.
 pub fn syntax_category(element: &str) -> SyntaxCategory {

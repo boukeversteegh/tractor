@@ -269,7 +269,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_typescript,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -286,7 +286,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_tsx,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -303,7 +303,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_javascript,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_typescript_root),
+        tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
@@ -359,7 +359,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_go,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_go_root),
+        tree_kind: TreeKind::Syntax(crate::languages::go::lower_go_root),
         transform: passthrough_transform,
         syntax_category: go::syntax_category,
         field_wrappings: GO_FIELD_WRAPPINGS,
@@ -376,7 +376,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_rust,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_rust_root),
+        tree_kind: TreeKind::Syntax(crate::languages::rust_lang::lower_rust_root),
         transform: passthrough_transform,
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
@@ -393,7 +393,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_java,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_java_root),
+        tree_kind: TreeKind::Syntax(crate::languages::java::lower_java_root),
         transform: passthrough_transform,
         syntax_category: java::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -410,7 +410,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_ruby,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_ruby_root),
+        tree_kind: TreeKind::Syntax(crate::languages::ruby::lower_ruby_root),
         transform: passthrough_transform,
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
@@ -427,7 +427,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         #[cfg(feature = "native")]
         grammar: ts_php,
         #[cfg(feature = "native")]
-        tree_kind: TreeKind::Syntax(crate::tree::lower_php_root),
+        tree_kind: TreeKind::Syntax(crate::languages::php::lower_php_root),
         // PHP flows entirely through `crate::tree::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
         // registry contract.

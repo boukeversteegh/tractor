@@ -78,12 +78,6 @@ pub mod types;
 // - `source/` : original byte-anchored or canonical source text.
 pub mod to_xot;
 pub mod to_json;
-pub mod java;
-pub mod typescript;
-pub mod rust_lang;
-pub mod go_lang;
-pub mod ruby;
-pub mod php;
 // Data-language tree — a separate, simpler typed shape for JSON /
 // YAML / TOML / INI. Format-agnostic: a single `DataTree` tree can
 // be rendered to any of XML / JSON / YAML / TOML.
@@ -135,19 +129,6 @@ pub mod coverage;
 pub use types::{Access, AccessSegment, ByteRange, Expression, SyntaxTree, Modifiers, ParamKind, Span, to_source};
 pub use to_xot::render_to_xot;
 pub use to_json::tree_to_json;
-#[cfg(feature = "native")]
-pub use java::{lower_java_root, lower_java_node};
-#[cfg(feature = "native")]
-pub use typescript::{lower_typescript_root, lower_typescript_node};
-#[cfg(feature = "native")]
-pub use rust_lang::{lower_rust_root, lower_rust_node};
-#[cfg(feature = "native")]
-pub use go_lang::{lower_go_root, lower_go_node};
-#[cfg(feature = "native")]
-pub use ruby::{lower_ruby_root, lower_ruby_node};
-#[cfg(feature = "native")]
-pub use php::{lower_php_root, lower_php_node};
-#[cfg(feature = "native")]
 #[cfg(feature = "native")]
 pub use data::DataTree;
 #[cfg(feature = "native")]

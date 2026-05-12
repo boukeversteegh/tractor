@@ -9,8 +9,8 @@
 
 use tree_sitter::Node as TsNode;
 
-use super::lower_helpers::{range_of, span_of, text_of};
-use super::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
+use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
 
 pub fn lower_php_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(root);
