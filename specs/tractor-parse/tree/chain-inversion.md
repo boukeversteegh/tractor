@@ -4,7 +4,7 @@ priority: 1
 ---
 
 > **Status: shipped.** Left-deep `<object[access]>` chains are produced
-> natively by each language's IR lowering (`Ir::Access { receiver,
+> natively by each language's syntax-tree lowering (`SyntaxTree::Access { receiver,
 > segments }`). There is no separate chain-inversion transform pass —
 > the previous `transform::chain_inversion` post-walk was deleted once
 > every language's lowering constructed the shape directly. See the
@@ -222,7 +222,7 @@ Keeping them separate avoids forcing one element to carry both meanings — Prin
 > rollout. This section exists so the chain shape is forward-
 > compatible: when Dart joins the supported languages, the
 > extension below can land without redesigning what's already
-> shipped. The 8 IR-supported languages (TS, Python, Java, C#, Go,
+> shipped. The 8 syntax-tree-supported languages (TS, Python, Java, C#, Go,
 > Rust, Ruby, PHP) only have linear chains and don't need any of
 > this.
 
@@ -269,21 +269,21 @@ For mixed cascade and normal chain `obj..a().b..c()..d()` (cascade `a()` on obj,
 
 When Dart arrives, the Dart `lower_dart_root` will need to recognise `..` and emit a `<cascades>` segment, consuming consecutive cascade operators into one wrapper. The design is captured here so the eventual implementer knows the target shape.
 
-## Implementation notes (IR lowering)
+## Implementation notes (syntax-tree lowering)
 
-The shape above is produced directly by each language's `Ir::Access { receiver, segments: Vec<AccessSegment> }` construction in its `lower_<lang>_root`. There is no separate transform pass.
+The shape above is produced directly by each language's `SyntaxTree::Access { receiver, segments: Vec<AccessSegment> }` construction in its `lower_<lang>_root`. There is no separate transform pass.
 
-`AccessSegment` (`tractor/src/ir/types.rs`) variants:
+`AccessSegment` (`tractor/src/tree/types.rs`) variants:
 
 - `Member { name, optional }` — `.foo`, `?.foo`.
 - `Call { name, args, optional }` — `.foo(args)`, `?.foo(args)`. `name = None` is the result-invocation case.
 - `Subscript { index, optional }` — `[expr]`, `?.[expr]`.
 
-The left-deep emission is mechanical: walk the right-deep CST shape from the outermost node inwards, push segments to a `Vec`, then construct `Ir::Access { receiver, segments }` with the segments in source order. `to_xot` translates each segment into the nested `<member>` / `<call>` / `<subscript>` step element in the standard way.
+The left-deep emission is mechanical: walk the right-deep CST shape from the outermost node inwards, push segments to a `Vec`, then construct `SyntaxTree::Access { receiver, segments }` with the segments in source order. `to_xot` translates each segment into the nested `<member>` / `<call>` / `<subscript>` step element in the standard way.
 
 ### Useful-chain guard
 
-`Ir::Access` is constructed only when there is at least one access step. A bare identifier `a` lowers to `Ir::Name`, not `Ir::Access { receiver, segments: [] }`. A lone top-level `Ir::Call` with no name (e.g. `f(args)`) also stays as `Ir::Call`, not `Ir::Access`. Wrapping these would add noise without informational value.
+`SyntaxTree::Access` is constructed only when there is at least one access step. A bare identifier `a` lowers to `SyntaxTree::Name`, not `SyntaxTree::Access { receiver, segments: [] }`. A lone top-level `SyntaxTree::Call` with no name (e.g. `f(args)`) also stays as `SyntaxTree::Call`, not `SyntaxTree::Access`. Wrapping these would add noise without informational value.
 
 ### Source-location threading
 
@@ -293,12 +293,12 @@ The left-deep emission is mechanical: walk the right-deep CST shape from the out
 
 ### Test coverage
 
-- Per-language IR lowering tests: `tractor/tests/ir_<lang>_parity.rs`, `tractor/tests/ir_<lang>_missing_kinds.rs`.
-- Cross-language uniformity: `tractor/tests/cross_language_index_access_chain_inverts.rs` exercises subscript-in-chain across the 7 IR languages (TS, Python, Java, C#, Go, Rust, Ruby, PHP) and pins them to the same shape.
+- Per-language syntax-tree lowering tests: `tractor/tests/ir_<lang>_parity.rs`, `tractor/tests/ir_<lang>_missing_kinds.rs`.
+- Cross-language uniformity: `tractor/tests/cross_language_index_access_chain_inverts.rs` exercises subscript-in-chain across the 7 tree languages (TS, Python, Java, C#, Go, Rust, Ruby, PHP) and pins them to the same shape.
 - Per-language snapshot fixtures under `tractor/tests/fixtures/` cover the chain shape in real code.
 
 ## References
 
 - `specs/tractor-parse/tree/design.md` — Principles #5, #11, #15; § "Hierarchical access nests top-down" (the high-level decision).
-- `tractor/src/ir/types.rs` — `Ir::Access` + `AccessSegment` variants.
-- `tractor/src/ir/<lang>.rs` — per-language lowering that constructs `Ir::Access` directly from right-deep CST.
+- `tractor/src/tree/types.rs` — `SyntaxTree::Access` + `AccessSegment` variants.
+- `tractor/src/tree/<lang>.rs` — per-language lowering that constructs `SyntaxTree::Access` directly from right-deep CST.
