@@ -63,7 +63,7 @@ pub enum TractorNode {
     // Chain inversion (iter 244): `[access]` distinguishes
     // member-access chains from object literals.
     Access,
-    // Java IR-pipeline additions:
+    // Java tree-pipeline additions:
     //   `<is>` — `instanceof` expression
     //   `<lock>` — `synchronized (expr) { … }` statement
     //   `<literal>` — marker on array initializers (`{1, 2, 3}`)

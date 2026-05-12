@@ -1,8 +1,8 @@
-//! IR → JSON renderer. Skips the XML intermediate.
+//! tree → JSON renderer. Skips the XML intermediate.
 //!
 //! Walks the typed `SyntaxTree` tree directly and produces a `serde_json::Value`
 //! whose shape matches what the XML→JSON projection (`xml_to_json.rs`)
-//! would produce, but without going through Xot or `XmlNode`. The IR
+//! would produce, but without going through Xot or `XmlNode`. The tree
 //! is the source of truth: list-cardinality decisions come from
 //! `Vec<SyntaxTree>` vs `Box<SyntaxTree>` field shapes, marker flags come from
 //! `Modifiers::marker_names()` and per-variant `extra_markers`.
@@ -24,13 +24,13 @@
 //!
 //! ## Why skip XML
 //!
-//! The IR already encodes every projection decision (Vec → array, Box
+//! The tree already encodes every projection decision (Vec → array, Box
 //! → singleton, modifiers → flags). Routing through XML adds an
 //! intermediate `list="X"` attribute step that's purely a serializer
 //! affordance for the XML-driven JSON projector — and it costs us
 //! flexibility (the XML attribute namespace clutters queries and
 //! pre-supposes a particular plural-name spelling). Going direct lets
-//! the IR define the JSON contract without that detour.
+//! the tree define the JSON contract without that detour.
 
 use serde_json::{Map, Value};
 
@@ -41,7 +41,7 @@ const KEY_TYPE: &str = "$type";
 const KEY_CHILDREN: &str = "$children";
 const KEY_TEXT: &str = "text";
 
-/// Top-level entry: convert an IR tree to a JSON value. The root is
+/// Top-level entry: convert an tree tree to a JSON value. The root is
 /// emitted with its `$type` (no parent context to strip it).
 pub fn tree_to_json(tree: &SyntaxTree, source: &str) -> Value {
     Renderer::new(source).render_root(tree)
@@ -61,7 +61,7 @@ impl<'a> Renderer<'a> {
         self.render(tree, /*strip_type=*/ false)
     }
 
-    /// Render an IR node. `strip_type` is true when the parent's
+    /// Render an tree node. `strip_type` is true when the parent's
     /// chosen key already conveys the type (list entry under plural
     /// key, or singleton under its own element name) — matches the
     /// XML→JSON `strip_top_level_type` behaviour.
@@ -76,7 +76,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// Some IR nodes naturally render as scalars (Name → string,
+    /// Some tree nodes naturally render as scalars (Name → string,
     /// integer-literal → number, true/false → boolean, null → null).
     /// `xml_to_json.rs` collapses text-only-leaf elements to strings;
     /// we do the same here at render time.
@@ -105,7 +105,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// Element name (matches the XML element name for the same IR node).
+    /// Element name (matches the XML element name for the same tree node).
     /// Used as the JSON `$type` and as the key when this node sits in
     /// its parent as a singleton or list entry.
     fn element_name(&self, tree: &SyntaxTree) -> &'static str {
@@ -191,7 +191,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    /// Populate the shape with the IR's flags + child entries.
+    /// Populate the shape with the tree's flags + child entries.
     fn populate(&self, tree: &SyntaxTree, shape: &mut Shape) {
         match tree {
             SyntaxTree::Module { children, .. } => {
@@ -593,7 +593,7 @@ impl<'a> Renderer<'a> {
                 shape.singleton("body", self.render(body, true));
             }
             SyntaxTree::Using { is_static, alias, path, .. } => {
-                // Note: `is_static` is preserved on the IR for mutation
+                // Note: `is_static` is preserved on the tree for mutation
                 // surface, but the imperative pipeline emits the
                 // `static` keyword as gap text only — JSON projection
                 // doesn't surface a `"static": true` flag. Stay
@@ -687,7 +687,7 @@ impl<'a> Renderer<'a> {
     /// segment's JSON object.
     fn add_access_chain(&self, shape: &mut Shape, receiver: &SyntaxTree, segments: &[AccessSegment]) {
         shape.flag("access");
-        // Rendered right-nested in XML; the IR walks segments in
+        // Rendered right-nested in XML; the tree walks segments in
         // source order. For JSON we emit the receiver at the
         // outermost level, then each segment as a child key on the
         // accumulated object.
@@ -796,7 +796,7 @@ impl<'a> Renderer<'a> {
         shape.singleton(key, val);
     }
 
-    /// Render an IR as the value-side of a `<type>` slot. If the IR
+    /// Render an tree as the value-side of a `<type>` slot. If the tree
     /// already produces a `<type>`-shaped value (GenericType,
     /// SimpleStatement::type), unwrap so the parent doesn't double-wrap.
     fn render_as_type(&self, tree: &SyntaxTree) -> Value {

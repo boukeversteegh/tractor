@@ -9,7 +9,7 @@
 //! - **Detection**: identifies which keys had sequence values (for diagnostics).
 //! - **XPath snippet extraction**: finds the problematic expression in the user's query.
 //!
-//! Ideally we'd convert `Function → XmlNode` IR directly, but xee's `Map` type
+//! Ideally we'd convert `Function → XmlNode` tree directly, but xee's `Map` type
 //! has all iteration methods marked `pub(crate)`. This XPath-based normalization
 //! is a workaround until upstream exposes public map introspection APIs.
 

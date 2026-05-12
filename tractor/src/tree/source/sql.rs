@@ -8,14 +8,14 @@
 //! Reconstructs syntactically valid SQL source from a `SqlTree` tree
 //! WITHOUT consulting the original `source: &str` byte ranges. This
 //! is a stronger statement than round-trip identity — it asserts
-//! that the IR carries every semantic distinction needed to
+//! that the tree carries every semantic distinction needed to
 //! regenerate equivalent source from scratch.
 //!
 //! ## Why
 //!
-//! Per the project principle (sql.rs invariant 4): if the IR loses
+//! Per the project principle (sql.rs invariant 4): if the tree loses
 //! any syntactic distinction (e.g. `[dbo]` vs `dbo`) by relying on
-//! the source range to reconstruct text, the IR is incomplete. This
+//! the source range to reconstruct text, the tree is incomplete. This
 //! renderer exercises that — its output may differ in whitespace /
 //! comment placement / case from the input but must be *semantically
 //! equivalent* (parses to the same `SqlTree`).
@@ -34,7 +34,7 @@ use crate::tree::sql::{QuoteStyle, SqlTree};
 /// Render a [`SqlTree`] tree as canonical SQL source text.
 ///
 /// **Invariant:** `parse(render(parse(s))) == parse(s)` — the
-/// canonical text re-parses to the same IR. Weaker than byte-
+/// canonical text re-parses to the same tree. Weaker than byte-
 /// identical round-trip but stronger than just-not-crashing.
 pub fn render(tree: &SqlTree) -> String {
     match tree {

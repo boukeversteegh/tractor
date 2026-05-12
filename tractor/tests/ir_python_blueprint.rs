@@ -1,4 +1,4 @@
-//! Full-blueprint parity test for the typed-IR pipeline.
+//! Full-blueprint parity test for the typed-tree pipeline.
 //!
 //! Runs both pipelines against `tests/integration/languages/python/blueprint.py`
 //! and reports the first divergence so coverage can be expanded
@@ -7,7 +7,7 @@
 //! ## Goal
 //! Reach structural parity (or strict superset) on the full Python
 //! blueprint. While coverage is incomplete this test is allowed to
-//! fail; each failure names the next IR variant or lowering arm to
+//! fail; each failure names the next tree variant or lowering arm to
 //! add.
 
 #![cfg(feature = "native")]
@@ -16,7 +16,7 @@ use tractor::tree::{audit_coverage, lower_python_root, render_to_xot, to_source}
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
-/// Empty list — `PyKind` no longer exists post-IR-migration; the
+/// Empty list — `PyKind` no longer exists post-tree-migration; the
 /// audit's `known_kinds` argument is optional and zero-length is
 /// fine (just disables the "kind seen but not exercised" diagnostic).
 #[allow(dead_code)]
@@ -117,7 +117,7 @@ fn first_diff(a: &str, b: &str) -> String {
             return format!(
                 "first diff at line {} (1-based: {})\n\
                  ----- current pipeline -----\n{}\n\
-                 ----- IR pipeline -----\n{}",
+                 ----- tree pipeline -----\n{}",
                 i, i + 1,
                 ctx_a.join("\n"),
                 ctx_b.join("\n"),
@@ -127,13 +127,13 @@ fn first_diff(a: &str, b: &str) -> String {
     let len_a = a.lines().count();
     let len_b = b.lines().count();
     if len_a != len_b {
-        return format!("length differs: current={len_a}, IR={len_b}");
+        return format!("length differs: current={len_a}, tree={len_b}");
     }
     "(identical)".to_string()
 }
 
 /// Enumerate all named CST kinds in the blueprint, sorted by count.
-/// Useful for triaging which kinds to add to the IR next. Marked
+/// Useful for triaging which kinds to add to the tree next. Marked
 /// #[ignore] so it doesn't run by default; invoke with
 /// `cargo test --test ir_python_blueprint kinds_in_blueprint -- --ignored --nocapture`.
 /// Dump the CST shape of a small snippet for debugging.
@@ -213,12 +213,12 @@ fn blueprint_parity() {
     eprintln!("=== blueprint structural-parity check ===");
     eprintln!("source bytes: {}", source.len());
     eprintln!("current pipeline view bytes: {}", cur.len());
-    eprintln!("IR pipeline view bytes:      {}", tree.len());
-    eprintln!("Unknown nodes in IR output:  {}", unknowns);
-    eprintln!("IR string(.) == source:      {}", xpath_text == source);
+    eprintln!("tree pipeline view bytes:      {}", tree.len());
+    eprintln!("Unknown nodes in tree output:  {}", unknowns);
+    eprintln!("tree string(.) == source:      {}", xpath_text == source);
 
-    // Always assert the IR's lossless invariant.
-    assert_eq!(xpath_text, source, "IR text-content recovery broken");
+    // Always assert the tree's lossless invariant.
+    assert_eq!(xpath_text, source, "tree text-content recovery broken");
 
     // Structural parity: failure shows where to extend coverage.
     if cur != tree {

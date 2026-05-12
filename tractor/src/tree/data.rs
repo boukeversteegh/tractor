@@ -1,14 +1,14 @@
-//! Data-language IR — a format-agnostic typed shape for JSON / YAML /
+//! Data-language tree — a format-agnostic typed shape for JSON / YAML /
 //! TOML / INI.
 //!
 //! ## Why a separate type from [`crate::tree::SyntaxTree`]
 //!
-//! The programming-language IR ([`crate::tree::SyntaxTree`]) is built around
+//! The programming-language tree ([`crate::tree::SyntaxTree`]) is built around
 //! constructs like `Class`, `Function`, `If` — it carries semantic
 //! type information specific to programming-language ASTs.
 //!
 //! Data languages have a much smaller, simpler universe — mappings,
-//! sequences, scalars. Reusing the programming-language IR would
+//! sequences, scalars. Reusing the programming-language tree would
 //! introduce noise; a focused [`DataTree`] type lets each variant
 //! carry only what data languages need.
 //!
@@ -22,7 +22,7 @@
 //! - canonical JSON / YAML / TOML text
 //!
 //! The renderer chooses element names + serialization conventions;
-//! the IR is purely structural. Mirrors how Xot serves as a shared
+//! the tree is purely structural. Mirrors how Xot serves as a shared
 //! container today, but with type-checked variants instead of
 //! string-keyed elements.
 //!
@@ -43,7 +43,7 @@
 
 use super::types::{ByteRange, Span};
 
-/// Format-agnostic data-language IR.
+/// Format-agnostic data-language tree.
 #[derive(Debug, Clone)]
 pub enum DataTree {
     /// Top-level document. The CST root.
@@ -269,7 +269,7 @@ impl DataTree {
 
     /// Walk this tree and return the deepest descendant whose range
     /// starts at exactly `byte_offset`. Used by mutation paths to map
-    /// an XPath-derived position back to the typed IR.
+    /// an XPath-derived position back to the typed tree.
     pub fn find_at_offset(&self, byte_offset: u32) -> Option<&DataTree> {
         // Prefer the deepest match: try children first, fall back to self.
         for child in self.children_iter() {

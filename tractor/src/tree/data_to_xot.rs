@@ -47,7 +47,7 @@ use super::types::Span;
 /// + `extract_string_content` to strip).
 ///
 /// `range`-anchored round-trip via `to_source(data_tree, source)`
-/// still works — the IR carries source ranges; the renderer just
+/// still works — the tree carries source ranges; the renderer just
 /// chooses a clean projection.
 pub fn render_data_to_xot_json(
     xot: &mut Xot,
@@ -484,7 +484,7 @@ fn scalar_text<'a>(tree: &'a DataTree, source: &'a str) -> Option<String> {
         DataTree::Number { text, .. } => Some(text.clone()),
         DataTree::Bool { value, .. } => Some(value.to_string()),
         DataTree::Null { .. } => Some("null".to_string()),
-        // Allow any leaf-ish IR by sliding source bytes.
+        // Allow any leaf-ish tree by sliding source bytes.
         _ => Some(tree.range().slice(source).trim().to_string()),
     }
 }

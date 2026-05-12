@@ -18,7 +18,7 @@ use crate::tree::data::DataTree;
 ///
 /// Same shape as [`crate::render::SpanMap`] so callers can lookup
 /// using the same `(line, column)` keys they already harvest from the
-/// IR's xot rendering.
+/// tree's xot rendering.
 pub type DataSpanMap = HashMap<(u32, u32), (usize, usize)>;
 
 /// Options for JSON output formatting.

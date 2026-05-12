@@ -1,4 +1,4 @@
-//! Python: IR → source code (canonical, no-anchor).
+//! Python: tree → source code (canonical, no-anchor).
 //!
 //! Python uses `:`-introduced indented blocks, no statement
 //! terminators, no parens around conditions.

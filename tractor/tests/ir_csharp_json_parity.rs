@@ -1,5 +1,5 @@
-//! Compare IR→JSON output against the legacy XML→JSON snapshot for
-//! the C# blueprint. As the IR-direct path matures, this test pins
+//! Compare tree→JSON output against the legacy XML→JSON snapshot for
+//! the C# blueprint. As the tree-direct path matures, this test pins
 //! its output against the existing JSON snapshot — both paths must
 //! agree byte-for-byte until the legacy snapshot is updated.
 
@@ -61,7 +61,7 @@ fn ir_json_matches_snapshot() {
         let to_a = (mismatch + 200).min(actual.len());
         let to_e = (mismatch + 200).min(expected.len());
         panic!(
-            "IR→JSON differs from snapshot at byte {mismatch}\n\
+            "tree→JSON differs from snapshot at byte {mismatch}\n\
              ----- got -----\n{}\n\
              ----- want ----\n{}\n",
             &actual[from..to_a],

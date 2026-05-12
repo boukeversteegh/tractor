@@ -88,7 +88,7 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
     }
 }
 
-/// Walk an xot node tree and build a native `XmlNode` IR.
+/// Walk an xot node tree and build a native `XmlNode` tree.
 pub fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
     match xot.value(node) {
         Value::Element(element) => {
@@ -157,7 +157,7 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 /// Convert a `serde_json::Value` into an `XmlNode` tree.
 ///
 /// This is the robust bridge between xee's JSON serializer (the only public
-/// API for inspecting map/array contents) and our native IR. The JSON string
+/// API for inspecting map/array contents) and our native tree. The JSON string
 /// is parsed exactly once at query time; downstream renderers work with the
 /// structured `XmlNode` directly.
 ///
@@ -229,7 +229,7 @@ fn tractor_variables(file_path: &str) -> Variables {
 ///
 /// `root_tree`, when supplied, is attached to any match whose xot
 /// node is the document root — letting format renderers walk the
-/// typed IR for type-driven cardinality decisions instead of
+/// typed tree for type-driven cardinality decisions instead of
 /// inferring shape from XML attributes.
 fn execute_direct_query(
     xpath: &str,
@@ -293,7 +293,7 @@ fn execute_direct_query(
                     let ts0 = Instant::now();
                     let value = xot.string_value(node);
                     let ts1 = Instant::now();
-                    // Build native XmlNode IR (no XML string serialization)
+                    // Build native XmlNode tree (no XML string serialization)
                     let xml_node = xot_node_to_xml_node(xot, node);
                     let ts2 = Instant::now();
 
@@ -302,9 +302,9 @@ fn execute_direct_query(
 
                     // Detect document-root match — the xot node's
                     // parent is the document wrapper. Root matches
-                    // attach the typed IR; partial matches keep the
-                    // raw XML subtree (until a xot↔IR mapping lets
-                    // us recover IR for inner nodes).
+                    // attach the typed tree; partial matches keep the
+                    // raw XML subtree (until a xot↔tree mapping lets
+                    // us recover tree for inner nodes).
                     let is_root = root_tree.is_some()
                         && xot.parent(node).map(|p| xot.is_document(p)).unwrap_or(false);
 
@@ -332,7 +332,7 @@ fn execute_direct_query(
                 xee_xpath::Item::Function(func) => {
                     let json_str = function_to_json_string(&func, documents.xot_mut());
                     let mut m = Match::new(file_path.to_string(), String::new());
-                    // Parse the JSON into structured XmlNode IR — value stays empty,
+                    // Parse the JSON into structured XmlNode tree — value stays empty,
                     // all data lives in the tree field.
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
                         m.tree = Some(crate::xpath::Tree::Xml(json_value_to_xml_node(&parsed)));
@@ -435,7 +435,7 @@ impl XPathEngine {
 
     /// Like `query_documents`, but also attaches `root_tree` to any
     /// match whose xot node is the document root. The format layer
-    /// then walks the typed IR for principled JSON / YAML / etc.
+    /// then walks the typed tree for principled JSON / YAML / etc.
     /// shape decisions rather than going through the XML→JSON
     /// inference.
     pub fn query_documents_with_root_tree(

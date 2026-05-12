@@ -5,7 +5,7 @@ use tree_sitter::Parser;
 
 use tractor::tree::{audit_coverage, lower_typescript_root};
 
-/// Coverage diagnostic for the TypeScript IR pipeline.
+/// Coverage diagnostic for the TypeScript tree pipeline.
 /// Run with `cargo test --test ir_typescript_missing_kinds -- --ignored --nocapture`
 /// to see typed-vs-untyped CST kind counts and any unknowns leaking
 /// through to the final pipeline output.

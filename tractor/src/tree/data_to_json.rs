@@ -6,7 +6,7 @@
 //! → xml_to_json → JSON`. Xot serves as a shared container, but
 //! that means JSON output depends on XML attributes (`list="X"`)
 //! that the renderer-pair (`data_to_xot` + `xml_to_json`) has to
-//! coordinate. The IR is supposed to be the source of truth — Xot
+//! coordinate. The tree is supposed to be the source of truth — Xot
 //! shouldn't sit in the middle of *every* format conversion.
 //!
 //! This module provides a direct path:
@@ -16,7 +16,7 @@
 //! ```
 //!
 //! No Xot, no `list=` attrs, no XML-to-JSON projection rules. The
-//! IR's structural typing (`Sequence<DataTree>`, `Mapping<Pair>`)
+//! tree's structural typing (`Sequence<DataTree>`, `Mapping<Pair>`)
 //! gives JSON its array-vs-object decisions for free.
 //!
 //! Same approach applies to YAML / TOML output (separate
@@ -30,7 +30,7 @@ use serde_json::{Map, Value};
 use super::data::DataTree;
 
 /// Render a [`DataTree`] tree to a `serde_json::Value`. The structural
-/// IR variants map cleanly onto JSON's universe:
+/// tree variants map cleanly onto JSON's universe:
 ///
 ///   | DataTree             | JSON                                    |
 ///   |--------------------|-----------------------------------------|
@@ -192,7 +192,7 @@ fn insert_or_append(obj: &mut Map<String, Value>, key: String, value: Value) {
     }
 }
 
-/// Pull a string-shaped value out of a scalar IR for use as a JSON
+/// Pull a string-shaped value out of a scalar tree for use as a JSON
 /// object key.
 fn scalar_str(tree: &DataTree) -> Option<String> {
     match tree {

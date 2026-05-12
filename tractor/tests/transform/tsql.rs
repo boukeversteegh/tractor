@@ -204,7 +204,7 @@ fn tsql_create_table_with_definitions() {
 
     claim("CREATE renders as <create>", &mut tree, "//create", 1);
     // Typed SqlTree emits each column definition as `<column>` (the
-    // typed-IR singular slot for a column shape, applied uniformly
+    // typed-tree singular slot for a column shape, applied uniformly
     // across SELECT and CREATE TABLE positions per Principle #5).
     claim("each column produces a <column>", &mut tree, "//column", 3);
 }

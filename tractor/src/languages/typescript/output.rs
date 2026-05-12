@@ -114,7 +114,7 @@ impl TractorNode {
             | Self::Let | Self::Const | Self::Var                                  => (true, false, Keyword),
             // `Await` is dual-use: marker on the unary form `await x`
             // surfaces in `<unary[await]>`, AND structural container
-            // `<await><call>...</call></await>` for the IR-pipeline form.
+            // `<await><call>...</call></await>` for the tree-pipeline form.
             Self::Await                                                            => (true, true, Keyword),
             Self::NonNull                                                          => (true, true, Operator),
             Self::Cast | Self::Arm                                                 => (false, true, Default),

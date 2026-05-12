@@ -1,6 +1,6 @@
 //! Shared helpers for `lower_<lang>` modules — converting tree-sitter
 //! [`Node`](tree_sitter::Node) source positions / byte ranges into
-//! the IR's [`ByteRange`] / [`Span`] types, plus borrowing source
+//! the tree's [`ByteRange`] / [`Span`] types, plus borrowing source
 //! text by byte range.
 //!
 //! Each per-language lower module previously redeclared these same
@@ -31,13 +31,13 @@ pub fn text_borrow<'s>(node: TsNode<'_>, source: &'s str) -> &'s str {
     node.utf8_text(source.as_bytes()).unwrap_or("")
 }
 
-/// `node`'s byte range as the IR's compact [`ByteRange`] (u32 pair).
+/// `node`'s byte range as the tree's compact [`ByteRange`] (u32 pair).
 pub fn range_of(node: TsNode<'_>) -> ByteRange {
     let r = node.byte_range();
     ByteRange::new(r.start as u32, r.end as u32)
 }
 
-/// `node`'s start / end source position as the IR's [`Span`]. Lines
+/// `node`'s start / end source position as the tree's [`Span`]. Lines
 /// and columns are 1-based to match user-visible diagnostics; the
 /// tree-sitter API exposes 0-based, so we adjust.
 pub fn span_of(node: TsNode<'_>) -> Span {

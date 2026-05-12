@@ -1,6 +1,6 @@
-//! Go tree-sitter CST → IR lowering.
+//! Go tree-sitter CST → tree lowering.
 //!
-//! Mirrors the Rust IR pipeline pattern. Each per-kind arm
+//! Mirrors the Rust tree pipeline pattern. Each per-kind arm
 //! recursively lowers children; unhandled kinds fall through to
 //! `SyntaxTree::Unknown`. The renderer in `crate::tree::to_xot` is shared.
 //!

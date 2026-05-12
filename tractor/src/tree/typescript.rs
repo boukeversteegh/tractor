@@ -1,4 +1,4 @@
-//! TypeScript / JavaScript / TSX / JSX tree-sitter CST → IR lowering.
+//! TypeScript / JavaScript / TSX / JSX tree-sitter CST → tree lowering.
 //!
 //! Single lower function handles all four flavours — the TS / JS / TSX
 //! grammars share most node kinds (TS is a superset, TSX adds JSX-only

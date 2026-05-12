@@ -42,27 +42,27 @@ pub struct XotParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
-    /// Typed IR root retained through to render time. `Some` for
-    /// programming languages on the IR pipeline; `None` for the
+    /// Typed tree root retained through to render time. `Some` for
+    /// programming languages on the tree pipeline; `None` for the
     /// imperative path (and for data languages — they keep their
     /// `DataTree` separately, see `data_tree`).
     ///
     /// JSON / YAML / structured-format output renders from this
     /// instead of going through `xml_to_json`. That lets us drop the
     /// `list=` / `field=` XML scaffolding the imperative pipeline
-    /// relied on for cardinality inference: the IR's typed slots
+    /// relied on for cardinality inference: the tree's typed slots
     /// (Vec<SyntaxTree> = list, Box<SyntaxTree> = singleton) carry the same
     /// information at the right semantic layer.
     pub tree: Option<Box<crate::tree::SyntaxTree>>,
 
     /// Typed `DataTree` root for data languages (JSON / YAML / TOML /
-    /// INI / env / markdown). `Some` only when the IR pipeline took
+    /// INI / env / markdown). `Some` only when the tree pipeline took
     /// the data-language branch.
     pub data_tree: Option<Box<crate::tree::DataTree>>,
 
     /// Typed `SqlTree` root for SQL-family languages (TSQL today).
-    /// `Some` only when the IR pipeline took the SQL branch. SQL has
-    /// its own typed IR per-construct (Select/Insert/Update/...) so
+    /// `Some` only when the tree pipeline took the SQL branch. SQL has
+    /// its own typed tree per-construct (Select/Insert/Update/...) so
     /// JSON / XML output reads typed slots directly without the
     /// projection heuristics that the cross-language `SyntaxTree` requires
     /// for generic SimpleStatement wrappers.
@@ -71,7 +71,7 @@ pub struct XotParseResult {
 
     /// The original source text. Needed alongside `tree` / `data_tree`
     /// because both reference source byte ranges for leaf text
-    /// reconstruction; the IR-to-JSON renderers slice into this at
+    /// reconstruction; the tree-to-JSON renderers slice into this at
     /// format time.
     pub source: String,
 }
@@ -215,9 +215,9 @@ pub fn parse_string_to_xot_with_options(
     let resolved = TreeMode::resolve(tree_mode, lang)
         .map_err(ParseError::Parse)?;
 
-    // Honour explicit Raw tree-mode requests by bypassing the IR
+    // Honour explicit Raw tree-mode requests by bypassing the tree
     // pipeline. Raw mode emits raw tree-sitter kind names (e.g.
-    // `let_declaration`) — the IR pipeline replaces those with the
+    // `let_declaration`) — the tree pipeline replaces those with the
     // semantic vocabulary (`<let>`).
     if crate::languages::get_language(lang).map(|l| l.uses_tree(resolved)).unwrap_or(false) {
         return parse_with_ir_pipeline(source, lang, file_path, resolved);
@@ -266,7 +266,7 @@ pub fn parse_string_to_xot_with_options(
     })
 }
 
-/// Parse via the typed-IR pipeline. Lowers tree-sitter CST through
+/// Parse via the typed-tree pipeline. Lowers tree-sitter CST through
 /// `tractor::tree::lower_<lang>_root`, then renders to xot using
 /// `render_to_xot`. The result is wrapped in a document so xot
 /// queries treat it like the imperative pipeline's output.
@@ -302,7 +302,7 @@ fn parse_with_ir_pipeline(
         TreeKind::Syntax(lower) => {
             let ir_tree = lower(tree.root_node(), source);
             tree::render_to_xot(&mut xot, doc, &ir_tree, source)
-                .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
                 root: doc,
@@ -362,7 +362,7 @@ fn parse_with_ir_pipeline(
             })
         }
         TreeKind::None => Err(ParseError::Parse(format!(
-            "IR pipeline not yet wired for language {lang}"
+            "tree pipeline not yet wired for language {lang}"
         ))),
     }
 }
@@ -374,12 +374,12 @@ fn parse_with_ir_pipeline(
     _file_path: String,
 ) -> Result<XotParseResult, ParseError> {
     Err(ParseError::Parse(
-        "IR pipeline requires the `native` feature".to_string(),
+        "tree pipeline requires the `native` feature".to_string(),
     ))
 }
 
-/// Parse via the typed-IR pipeline and return an `XeeParseResult`
-/// (the fast-query path used by `parse(...)`). Lowers CST → IR →
+/// Parse via the typed-tree pipeline and return an `XeeParseResult`
+/// (the fast-query path used by `parse(...)`). Lowers CST → tree →
 /// xot, then serializes the xot document and re-parses it into an
 /// xee `Documents`. The serialize/reparse step is a v1 stepping
 /// stone; a future optimization can build directly into Documents.
@@ -407,14 +407,14 @@ fn parse_with_ir_pipeline_to_xee(
     let mut xot = xot::Xot::new();
     let holding = xot.new_document();
 
-    // Render to xot via the IR family-specific lower + render pair,
+    // Render to xot via the tree family-specific lower + render pair,
     // then capture the result as an `XmlNode` (for legacy XML / text
-    // renderers) and a `Tree::*` (for IR-aware renderers).
+    // renderers) and a `Tree::*` (for tree-aware renderers).
     let root_tree = match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
             let ir_tree = lower(tree.root_node(), source);
             tree::render_to_xot(&mut xot, holding, &ir_tree, source)
-                .map_err(|e| ParseError::Parse(format!("IR render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));
@@ -464,7 +464,7 @@ fn parse_with_ir_pipeline_to_xee(
         }
         TreeKind::None => {
             return Err(ParseError::Parse(format!(
-                "IR pipeline not yet wired for language {lang}"
+                "tree pipeline not yet wired for language {lang}"
             )));
         }
     };
@@ -472,7 +472,7 @@ fn parse_with_ir_pipeline_to_xee(
     // Serialize xot → string → re-parse into xee Documents (the v1
     // stepping stone; future S7 work eliminates this round-trip).
     let xml = xot.to_string(holding)
-        .map_err(|e| ParseError::Parse(format!("IR serialize failed: {e}")))?;
+        .map_err(|e| ParseError::Parse(format!("tree serialize failed: {e}")))?;
     let mut documents = Documents::new();
     let doc_handle = documents.add_string(
         "file:///source".try_into().unwrap(),
@@ -497,7 +497,7 @@ fn parse_with_ir_pipeline_to_xee(
     _file_path: String,
 ) -> Result<XeeParseResult, ParseError> {
     Err(ParseError::Parse(
-        "IR pipeline requires the `native` feature".to_string(),
+        "tree pipeline requires the `native` feature".to_string(),
     ))
 }
 
@@ -513,10 +513,10 @@ pub struct XeeParseResult {
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
-    /// Typed IR for the document root, retained from parse so the
+    /// Typed tree for the document root, retained from parse so the
     /// format layer can render JSON / YAML / etc. directly from the
-    /// IR instead of going through `xml_to_json`. `Some` only when
-    /// the parser took the IR pipeline.
+    /// tree instead of going through `xml_to_json`. `Some` only when
+    /// the parser took the tree pipeline.
     pub root_tree: Option<crate::xpath::Tree>,
 }
 
@@ -524,7 +524,7 @@ impl XeeParseResult {
     /// Execute an XPath query on the parsed document.
     ///
     /// Forwards `root_tree` to the engine so root-document matches
-    /// carry the typed IR for principled JSON / YAML rendering at
+    /// carry the typed tree for principled JSON / YAML rendering at
     /// format time.
     pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
         let engine = crate::xpath::XPathEngine::new();
@@ -642,7 +642,7 @@ pub fn parse_string_to_xee_with_options(
         source_lines,
         file_path,
         language: lang.to_string(),
-        // Imperative path: no IR retained — root JSON falls back to xml_to_json.
+        // Imperative path: no tree retained — root JSON falls back to xml_to_json.
         root_tree: None,
     })
 }

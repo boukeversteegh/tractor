@@ -1,17 +1,17 @@
-//! IR variants.
+//! tree variants.
 //!
 //! Each variant corresponds to a *semantic-tree* concept (the cross-language
 //! shape declared in `specs/tractor-parse/semantic-tree/design.md`).
-//! The IR is the schema by construction: if there's no variant, no
+//! The tree is the schema by construction: if there's no variant, no
 //! language can emit it.
 //!
 //! ## Source as the single source of truth
-//! Every IR node carries a [`ByteRange`] over the original source.
-//! Owned `text: String` fields are *not* stored on the IR — leaf text is
+//! Every tree node carries a [`ByteRange`] over the original source.
+//! Owned `text: String` fields are *not* stored on the tree — leaf text is
 //! derived from `&source[range]` at render time. This guarantees:
 //!
 //! 1. **Round-trip identity.** `&source[tree.range]` is, by construction,
-//!    the verbatim source slice that produced this IR. Recovering the
+//!    the verbatim source slice that produced this tree. Recovering the
 //!    full source text is `source[root_ir.range]`. Recovering any
 //!    sub-tree's source is one slice operation.
 //! 2. **XPath text-content matching.** The renderer weaves "gap text"
@@ -22,30 +22,30 @@
 //!    `//call[.='foobar()']` a valid query — match a node by its
 //!    literal source text.
 //!
-//! Synthetic IR (added by shape decisions, not by source — e.g. an
+//! Synthetic tree (added by shape decisions, not by source — e.g. an
 //! `<access/>` marker, or a slot-wrapper element like `<left>`) has a
 //! zero-width range *or* sits inside a parent variant whose renderer
-//! puts it at a deterministic position. Synthetic IR contributes no
+//! puts it at a deterministic position. Synthetic tree contributes no
 //! text, so it doesn't disturb XPath text-concatenation.
 //!
 //! ## Shape contracts as types
 //! Several runtime shape rules in
 //! `tractor/src/transform/shape_contracts.rs` exist to catch shape bugs
-//! produced by imperative mutation. The IR makes most of them
+//! produced by imperative mutation. The tree makes most of them
 //! *unrepresentable*:
 //!
 //! - **`marker-stays-empty`** (a name declared `MarkerOnly` must have
-//!   no children). In the IR, marker-class variants (when added) carry
+//!   no children). In the tree, marker-class variants (when added) carry
 //!   no children fields; the rule becomes `cargo check`.
 //! - **`container-has-content`** (a `ContainerOnly` name must have ≥1
 //!   child). Container variants have required `Box<SyntaxTree>` / non-empty
 //!   `Vec<SyntaxTree>` fields.
 //! - **`no-marker-wrapper-collision`** (no parent has both `<X/>` empty
 //!   and `<X>...</X>` wrapper sibling). Markers and containers are
-//!   distinct variant *categories*; a single IR shape cannot produce
+//!   distinct variant *categories*; a single tree shape cannot produce
 //!   both for the same name.
 //! - **`name-declared-in-semantic-module`** (every emitted name is
-//!   declared in the language's enum). The IR enum *is* the
+//!   declared in the language's enum). The tree enum *is* the
 //!   declaration.
 //! - **`no-grammar-kind-suffix`** / **`node-name-lowercase`** /
 //!   **`no-dash-in-node-name`**. Each variant has an explicit
@@ -56,17 +56,17 @@
 //! cardinality decisions / source-text correlation:
 //!
 //! - **`no-children-overflow`** (≥2 untagged same-name siblings = JSON
-//!   collision). Rendering decides cardinality from the IR; a fast
+//!   collision). Rendering decides cardinality from the tree; a fast
 //!   structural check at render-time replaces the post-hoc walker.
 //! - **`op-marker-matches-text`** — operator-text correlation; needs
 //!   source.
 //! - **`no-anonymous-keyword-leak`** — handled by lowering: tree-sitter
 //!   anonymous nodes are explicitly mapped or dropped at lowering time,
 //!   never rendered as text.
-//! - **`no-repeated-parent-child-name`** — depends on IR shape; can be
+//! - **`no-repeated-parent-child-name`** — depends on tree shape; can be
 //!   asserted at render-time.
 
-/// Source-location span carried on every IR node.
+/// Source-location span carried on every tree node.
 ///
 /// Mirrors what the imperative builder threads through `xot.with_source_location_from`.
 /// All four fields are 1-based to match tree-sitter / xot conventions.
@@ -103,7 +103,7 @@ impl ByteRange {
         Self { start, end }
     }
 
-    /// Zero-width range at `at`. Used for synthetic IR (markers, slot
+    /// Zero-width range at `at`. Used for synthetic tree (markers, slot
     /// wrappers) that has no source coverage but needs a `range` field.
     pub const fn empty_at(at: u32) -> Self {
         Self { start: at, end: at }
@@ -124,7 +124,7 @@ impl ByteRange {
     }
 }
 
-/// One IR node.
+/// One tree node.
 ///
 /// Variants are clustered by semantic role:
 ///
@@ -141,7 +141,7 @@ pub enum SyntaxTree {
 
     /// `<module>` / `<unit>` / `<program>` — top-level program. The
     /// CST root for languages that have one. Children are
-    /// statement-or-declaration IR. `element_name` lets each language
+    /// statement-or-declaration tree. `element_name` lets each language
     /// pick its own name to match the existing pipeline:
     /// - Python: `"module"`
     /// - C# / TypeScript: `"unit"` or `"program"` (TBD per language)
@@ -271,7 +271,7 @@ pub enum SyntaxTree {
     /// `<binary>` for chained comparisons like `a < b < c`. tree-sitter
     /// has a dedicated `comparison_operator` kind; we model it as a
     /// binary chain. For simplicity in the experiment, we emit a
-    /// binary IR with the *first* operator and concatenate the
+    /// binary tree with the *first* operator and concatenate the
     /// remaining as Unknown-wrapped — this works for the common
     /// two-operand case (`a < b`).
     Comparison {
@@ -359,7 +359,7 @@ pub enum SyntaxTree {
     },
 
     /// `<do>` — `do body while(cond);`. Renders the keyword as gap
-    /// text; body and condition are the only IR children.
+    /// text; body and condition are the only tree children.
     DoWhile {
         body: Box<SyntaxTree>,
         condition: Box<SyntaxTree>,
@@ -371,7 +371,7 @@ pub enum SyntaxTree {
     Break { range: ByteRange, span: Span },
     Continue { range: ByteRange, span: Span },
 
-    /// Wrap an inner IR node in a single element. Used as the
+    /// Wrap an inner tree node in a single element. Used as the
     /// parity-track field-wrapping mechanism: when a CST child has
     /// a labelled `field=type` (or `name`, `value`, etc.) and that
     /// field has a wrapping in the language's table, lower it as
@@ -507,7 +507,7 @@ pub enum SyntaxTree {
     /// `(x) => { return x; }`. Cross-language: C# lambda, Java
     /// lambda (`x -> x`), Python `lambda` (which has bare-param
     /// syntax). `body` is `SyntaxTree::Body` for block-bodied lambdas
-    /// (renders `<body>`) or any expression IR for expression-bodied
+    /// (renders `<body>`) or any expression tree for expression-bodied
     /// (renders `<value><expression>...</expression></value>`).
     Lambda {
         modifiers: Modifiers,
@@ -547,7 +547,7 @@ pub enum SyntaxTree {
     /// `<class>` / `<struct>` / `<interface>` / `<record>` — type
     /// declaration. `kind` selects the element name; structurally all
     /// four shapes are the same (modifiers, decorators, name,
-    /// generics, bases, body), so they share one IR variant. Python
+    /// generics, bases, body), so they share one tree variant. Python
     /// always sets `kind = "class"`; C# picks per CST kind.
     ///
     /// `modifiers` carries access + flags. Empty for languages
@@ -867,7 +867,7 @@ pub enum SyntaxTree {
     },
 
     /// `<using>` — C#'s `using System;` / `using static System.Math;`
-    /// / `using A = B;`. The IR mirrors Python's import shape but
+    /// / `using A = B;`. The tree mirrors Python's import shape but
     /// with `<using>` element name. `static_` flag for `using static`,
     /// `alias` for `using X = Y;`.
     Using {
@@ -898,7 +898,7 @@ pub enum SyntaxTree {
     Variable {
         /// Element name. "variable" for local declarations; "field"
         /// for class-level field declarations. C# uses both; Python
-        /// uses neither (assignments take a different IR path).
+        /// uses neither (assignments take a different tree path).
         element_name: &'static str,
         /// Access + flag modifiers. Empty for locals (their modifiers
         /// like `const` are very limited); fields use them fully.
@@ -1227,7 +1227,7 @@ pub enum AccessSegment {
     /// marker — exactly Principle #15. The existing C# pipeline has a
     /// deferred design problem here (`<member[conditional]>` parent +
     /// `<condition>` wrapper, see `todo/39-…md` lesson 5d); the
-    /// typed-IR architecture sidesteps it by construction.
+    /// typed-tree architecture sidesteps it by construction.
     Member {
         property_range: ByteRange,
         property_span: Span,
@@ -1237,7 +1237,7 @@ pub enum AccessSegment {
     },
 
     /// `[indices...]` — emits `<index>{gap}{indices}{gap}...</index>`.
-    /// Iter 345 renamed `subscript` → `index`; one IR variant covers
+    /// Iter 345 renamed `subscript` → `index`; one tree variant covers
     /// both the chain-segment case (`a[0]`) and the future standalone
     /// case.
     Index {
@@ -1488,10 +1488,10 @@ impl SyntaxTree {
 }
 
 impl SyntaxTree {
-    /// Direct IR children, in source order. Excludes synthetic
+    /// Direct tree children, in source order. Excludes synthetic
     /// render-time wrappers (`<value>`, `<type>`, `<left>`/`<right>`,
     /// `<expression>` host) and modifier markers — those are
-    /// rendering metadata, not IR.
+    /// rendering metadata, not tree.
     ///
     /// **Internal walker helper, not a public API contract.**
     /// `pub(crate)` until a downstream consumer demands stability.
@@ -1735,10 +1735,10 @@ impl SyntaxTree {
 }
 
 /// Round-trip helper: recover the original source slice covered by
-/// this IR node. Equivalent to `tree.range().slice(source)`.
+/// this tree node. Equivalent to `tree.range().slice(source)`.
 ///
 /// **Round-trip identity:** `to_source(lower(parse(s)), s) == s` (the
-/// root IR's range covers the whole source). For sub-trees,
+/// root tree's range covers the whole source). For sub-trees,
 /// `to_source(child, source)` is the verbatim source slice that
 /// produced `child`.
 pub fn to_source<'a>(tree: &SyntaxTree, source: &'a str) -> &'a str {

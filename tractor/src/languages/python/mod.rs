@@ -6,7 +6,7 @@
 //!                   catalogue for `tests/kind_catalogue.rs`.
 //!   - [`output`]  — semantic-name vocabulary (`TractorNode` enum +
 //!                   `NODES_TABLE`) shared by shape contracts and the
-//!                   IR's element naming.
+//!                   tree's element naming.
 
 pub mod input;
 pub mod output;

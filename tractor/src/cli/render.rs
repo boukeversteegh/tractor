@@ -3,10 +3,10 @@ use clap::Args;
 use tractor::language_info::{get_language_info, get_language_for_extension};
 use tractor::parser::parse_string_to_xot;
 
-/// Render mode: round-trip parse source → IR → source.
+/// Render mode: round-trip parse source → tree → source.
 ///
-/// The `render` command parses source through the typed-IR pipeline
-/// and re-emits it via the IR-aware source renderer
+/// The `render` command parses source through the typed-tree pipeline
+/// and re-emits it via the tree-aware source renderer
 /// (`tree::source::render`). In anchored mode (the default) this is a
 /// byte-for-byte identity — useful for verifying lossless parse and as
 /// the substrate that `tractor set` / `tractor update` build on.
@@ -36,18 +36,18 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("parse failed: {e}"))?;
 
     let rendered = if let Some(tree) = &parsed.tree {
-        // Programming-language IR: anchored render slices the source
+        // Syntax tree: anchored render slices the source
         // verbatim, so the round-trip is byte-identical.
         tractor::tree::source::render(tree, &lang, Some(&parsed.source))
     } else if let Some(data_tree) = &parsed.data_tree {
-        // Data-language IR: anchored slice via DataTree::to_source.
+        // Data-language tree: anchored slice via DataTree::to_source.
         data_tree.to_source(&parsed.source).to_string()
     } else if let Some(sql_tree) = &parsed.sql_tree {
         tractor::tree::source::render_sql(sql_tree, Some(&parsed.source))
     } else {
         return Err(format!(
-            "language '{}' is not on the IR pipeline; render is only available \
-             for IR-supported languages",
+            "language '{}' is not on the tree pipeline; render is only available \
+             for tree-supported languages",
             lang,
         ).into());
     };

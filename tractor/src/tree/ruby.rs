@@ -1,4 +1,4 @@
-//! Ruby tree-sitter CST → IR lowering.
+//! Ruby tree-sitter CST → tree lowering.
 //!
 //! Production parser routes Ruby through this lowering end-to-end
 //! (see `parser::use_ir_pipeline`). The legacy imperative
@@ -193,7 +193,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // ----- Control flow --------------------------------------------
         // Ruby `if cond then x elsif c2 then y else z end` is nested in
         // the CST (`if -> alternative=elsif -> alternative=else`). Flatten
-        // at lowering time so the IR carries a flat `<if>[else_if][else]`
+        // at lowering time so the tree carries a flat `<if>[else_if][else]`
         // shape — replaces the `collapse_conditionals` post-walk for Ruby.
         "if" | "if_modifier" => lower_ruby_if(node, "if", source),
         "unless" | "unless_modifier" => lower_ruby_if(node, "unless", source),
@@ -502,7 +502,7 @@ fn ruby_param_with_value(
     }
 }
 
-/// Lower a Ruby `if`/`unless` to a flat IR shape:
+/// Lower a Ruby `if`/`unless` to a flat tree shape:
 /// `<if> condition body* <else_if/>* <else/>? </if>`. Tree-sitter
 /// nests the alternatives (`if.alternative = elsif.alternative = else`);
 /// this fn walks that chain and emits siblings of the outer `<if>`.

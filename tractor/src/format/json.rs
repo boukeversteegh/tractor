@@ -193,7 +193,7 @@ fn project_match_field_to_json(
     render_opts: &RenderOptions,
 ) -> Option<Value> {
     match projection {
-        // Tree projection: dispatch on the matched-tree variant. IR
+        // Tree projection: dispatch on the matched-tree variant. tree
         // / DataTree → walk the typed renderers (type-driven shape);
         // Xml → fall back to xml_to_json. JSON serialisation
         // (string output) happens later in `render_json_output`.

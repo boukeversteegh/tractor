@@ -55,7 +55,7 @@ pub enum TractorNode {
     Path, Blank, Dot,
     // Marker-only
     Raw, Short, Exported, Unexported, Approximation, Generic, Implicit,
-    // IR-pipeline additions: Spec wraps each import_spec / type_spec /
+    // tree-pipeline additions: Spec wraps each import_spec / type_spec /
     // var_spec / const_spec; Variadic marks `...T` parameters; Postfix
     // marks `i++`/`i--` post-increment/-decrement unary forms.
     Spec, Variadic, Postfix,

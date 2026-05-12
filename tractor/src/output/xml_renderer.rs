@@ -543,7 +543,7 @@ pub fn render_xml_string(xml: &str, options: &RenderOptions) -> String {
 
 /// Render an XmlNode tree to a string with optional colors.
 ///
-/// This is the native-IR equivalent of `render_xml_string` — it renders
+/// This is the native-tree equivalent of `render_xml_string` — it renders
 /// directly from the XmlNode tree without parsing an XML string.
 pub fn render_xml_node(node: &XmlNode, options: &RenderOptions) -> String {
     let mut output = String::new();

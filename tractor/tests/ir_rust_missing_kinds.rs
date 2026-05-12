@@ -5,8 +5,8 @@ use tree_sitter::Parser;
 
 use tractor::tree::{audit_coverage, lower_rust_root, to_source};
 
-/// Diagnostic for the Rust IR pipeline. Reports CST kind coverage,
-/// roundtrip identity, and any unknowns in the IR. The production
+/// Diagnostic for the Rust tree pipeline. Reports CST kind coverage,
+/// roundtrip identity, and any unknowns in the tree. The production
 /// pipeline does NOT yet route Rust through this lowering.
 #[test]
 #[ignore]

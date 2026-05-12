@@ -1,4 +1,4 @@
-//! Rust: IR → source code (canonical, no-anchor).
+//! Rust: tree → source code (canonical, no-anchor).
 #![allow(dead_code)]
 use super::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;

@@ -1,4 +1,4 @@
-//! C#: IR → source code (canonical, no-anchor).
+//! C#: tree → source code (canonical, no-anchor).
 //!
 //! C# uses braced blocks with `;` terminators and typed-pre method
 //! signatures (`int Foo()` not `function Foo() -> int`).

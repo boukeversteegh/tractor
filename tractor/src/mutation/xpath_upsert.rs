@@ -26,7 +26,7 @@ pub use crate::xpath::Match;
 use crate::tree::data::{DataTree, ScalarKind};
 
 /// Languages whose upsert path is implemented (`json` / `yaml` /
-/// `yml`, all via the typed-IR pipeline). Other languages return
+/// `yml`, all via the typed-tree pipeline). Other languages return
 /// [`UpsertError::UnsupportedLanguage`] so the executor's fallback
 /// (text-replacement for string values) can take over.
 fn lang_supports_upsert(lang: &str) -> bool {
@@ -219,7 +219,7 @@ fn update_existing(
     }
 }
 
-/// IR-direct update for data languages (json / yaml). Mirror of
+/// tree-direct update for data languages (json / yaml). Mirror of
 /// [`update_existing`]'s splice loop but reading the typed
 /// [`DataTree`] tree — no `XmlNode` intermediate.
 #[cfg(feature = "native")]
@@ -238,14 +238,14 @@ fn update_existing_via_data_ir(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
     let mut tree = *parsed.data_tree.ok_or_else(|| {
         UpsertError::Parse(format!(
-            "language '{}' did not produce a DataTree on the IR pipeline",
+            "language '{}' did not produce a DataTree on the tree pipeline",
             lang,
         ))
     })?;
 
     // Step 1: Record original byte spans and mutate every matched
-    // value in the typed IR. Each match's source position lines up
-    // with the value-scalar leaf in `DataTree` (the IR's keyed render
+    // value in the typed tree. Each match's source position lines up
+    // with the value-scalar leaf in `DataTree` (the tree's keyed render
     // sets element line/col to value.span()).
     let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new();
 
@@ -276,7 +276,7 @@ fn update_existing_via_data_ir(
         splice_info.push((orig_start, orig_end, span_key));
     }
 
-    // Step 2: Render the modified IR with span tracking.
+    // Step 2: Render the modified tree with span tracking.
     let (rendered, span_map) = render_data_ir_with_spans(&tree, lang, source);
 
     // Step 3: Sort splices by descending position and apply.
@@ -288,7 +288,7 @@ fn update_existing_via_data_ir(
     for (orig_start, orig_end, span_key) in &splice_info {
         let (new_start, new_end) = span_map.get(span_key).ok_or_else(|| {
             UpsertError::NoInsertionPoint(format!(
-                "node at {}:{} not found in IR span map",
+                "node at {}:{} not found in tree span map",
                 span_key.0, span_key.1,
             ))
         })?;
@@ -371,7 +371,7 @@ fn insert_new(
     }
 }
 
-/// IR-direct insert for data languages (json / yaml). The xee XPath
+/// tree-direct insert for data languages (json / yaml). The xee XPath
 /// engine resolves the deepest matching prefix the same way as the
 /// legacy path; mutation + render flows through [`DataTree`] only.
 #[cfg(feature = "native")]
@@ -445,7 +445,7 @@ fn insert_new_via_data_ir(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
     let mut tree = *parsed.data_tree.ok_or_else(|| {
         UpsertError::Parse(format!(
-            "language '{}' did not produce a DataTree on the IR pipeline",
+            "language '{}' did not produce a DataTree on the tree pipeline",
             lang,
         ))
     })?;
@@ -474,7 +474,7 @@ fn insert_new_via_data_ir(
         let span_key = ancestor_span_key.expect("ancestor_span_key set when !is_root_splice");
         let (new_start, new_end) = span_map.get(&span_key).ok_or_else(|| {
             UpsertError::NoInsertionPoint(format!(
-                "ancestor at {}:{} not found in IR span map",
+                "ancestor at {}:{} not found in tree span map",
                 span_key.0, span_key.1,
             ))
         })?;

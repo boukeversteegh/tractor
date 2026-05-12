@@ -1,4 +1,4 @@
-//! Ruby: IR → source code (canonical, no-anchor).
+//! Ruby: tree → source code (canonical, no-anchor).
 //!
 //! Ruby uses `def`/`class`/`module`, `end`-terminated blocks (no
 //! braces), no `;` between statements, no parens around conditions.

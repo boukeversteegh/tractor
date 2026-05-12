@@ -96,7 +96,7 @@ pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
 /// Type alias for per-language TractorNodeSpec lookup.
 pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 
-// --- Tree-sitter and IR metadata (native only) -------------------------------
+// --- Tree-sitter and tree metadata (native only) -------------------------------
 
 /// Function pointer that produces a tree-sitter [`Language`](tree_sitter::Language)
 /// for a row in [`LANGUAGES`]. One thin shim per language wraps the
@@ -140,10 +140,10 @@ pub struct DataParser {
 }
 
 /// Which language family a language belongs to. The variant carries
-/// the per-language CST→IR lower fn(s) so dispatch never needs a
+/// the per-language CST→tree lower fn(s) so dispatch never needs a
 /// separate match by language name.
 ///
-/// `Programming` and `Sql` are single-lowering: only one tree mode
+/// `Syntax` and `Sql` are single-lowering: only one tree mode
 /// (Structure) makes sense, and the lower fn is unique.
 ///
 /// `Data` is two-lowering: data languages support both
@@ -169,7 +169,7 @@ pub enum TreeKind {
 
 #[cfg(feature = "native")]
 impl LanguageOps {
-    /// True iff this language should run through the typed-IR pipeline
+    /// True iff this language should run through the typed-tree pipeline
     /// at the given tree mode. Reads `tree_kind` from the registry —
     /// no per-language match needed at the call site.
     ///
@@ -229,7 +229,7 @@ pub struct LanguageOps {
     /// Tree-sitter grammar producer. See [`GrammarFn`].
     #[cfg(feature = "native")]
     pub grammar: GrammarFn,
-    /// Which IR family this language lowers to (and the lower fn). See
+    /// Which tree family this language lowers to (and the lower fn). See
     /// [`TreeKind`]. `None` means the language stays on the legacy
     /// imperative path.
     #[cfg(feature = "native")]
@@ -257,7 +257,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
     // ----- TypeScript / JSX / JavaScript family -----------------------------
     // TS / JS / TSX / JSX all flow through `crate::tree::typescript` —
     // tree-sitter's TS / JS / TSX grammars share most node kinds and
-    // TS is a superset; the IR's lower_node arms handle the JSX-only
+    // TS is a superset; the tree's lower_node arms handle the JSX-only
     // kinds (jsx_element, jsx_attribute, jsx_text, …) too. They share
     // every transform/post-transform/vocabulary; only the grammar and
     // canonical name differ, which is why the family is three rows
@@ -528,7 +528,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
             },
         },
         // TOML flows entirely through `crate::tree::toml_data` (parser
-        // dispatches to `parse_with_ir_pipeline`). The IR's data
+        // dispatches to `parse_with_ir_pipeline`). The tree's data
         // lowering already collapses array-of-tables; no post-pass
         // needed.
         transform: passthrough_transform,
@@ -788,7 +788,7 @@ const RUBY_FIELD_WRAPPINGS: &[(&str, &str)] = &[
 ];
 
 /// Field wrappings for the given language — applied after the raw
-/// builder pass, before the per-language transform. Programming
+/// builder pass, before the per-language transform. Syntax-tree
 /// languages with language-specific mappings override; everything else
 /// (including data/config formats) gets the common defaults, since
 /// JSON/YAML/TOML data transforms still rely on the `<value>` wrapper

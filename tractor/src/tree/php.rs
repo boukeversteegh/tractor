@@ -1,4 +1,4 @@
-//! PHP tree-sitter CST → IR lowering.
+//! PHP tree-sitter CST → tree lowering.
 //!
 //! Production parser routes PHP through this lowering end-to-end
 //! (see `parser::use_ir_pipeline`). The legacy imperative
@@ -27,7 +27,7 @@ pub fn lower_php_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Classify PHP comments (line `//`, line `#`, block `/* */`).
 /// Adjacent line comments separated by a single newline merge into one
-/// `<comment>` block. Pattern lifted from rust_lang/ruby IR.
+/// `<comment>` block. Pattern lifted from rust_lang/ruby tree.
 fn merge_php_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<SyntaxTree> {
     let mut out: Vec<SyntaxTree> = Vec::with_capacity(children.len());
     for child in children {

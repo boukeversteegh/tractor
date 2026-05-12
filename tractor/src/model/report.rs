@@ -130,7 +130,7 @@ pub struct ReportMatch {
 
     // Content fields — Some only if selected by resolved ViewSet
     /// The matched subtree. Format renderers dispatch on the variant:
-    ///   - `Tree::SyntaxTree` / `Tree::DataTree` → walk the typed IR for
+    ///   - `Tree::SyntaxTree` / `Tree::DataTree` → walk the typed tree for
     ///     principled JSON / YAML / etc. shape decisions.
     ///   - `Tree::Xml` → fall back to the XML→JSON projection for
     ///     partial matches and XPath atomic / map / array results.

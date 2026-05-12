@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
-// XmlNode — native IR for matched XML fragments and XPath data types
+// XmlNode — native tree for matched XML fragments and XPath data types
 // ---------------------------------------------------------------------------
 
 /// A native representation of an XML node tree or XPath value.
@@ -72,7 +72,7 @@ pub struct Match {
     pub value: String,
     /// Original source lines for location-based output (Arc for cheap cloning)
     pub source_lines: Arc<Vec<String>>,
-    /// The matched tree — typed IR for root-document matches, raw
+    /// The matched tree — typed tree for root-document matches, raw
     /// XML for partial matches and XPath atomic / map / array
     /// results. Format renderers (JSON / YAML / XML / source-text)
     /// dispatch on the variant.
@@ -81,21 +81,21 @@ pub struct Match {
 
 /// The matched subtree representation. The architectural target is
 /// for every match to carry `Tree::SyntaxTree` (so all downstream rendering
-/// is a function from IR), but partial XPath matches need a
-/// xot↔IR mapping that's not yet built — for those cases the
+/// is a function from tree), but partial XPath matches need a
+/// xot↔tree mapping that's not yet built — for those cases the
 /// `Tree::Xml` variant remains as a transitional fallback.
 ///
-/// Both IR variants carry an `xml` snapshot of the post-transformed
-/// xot subtree alongside the typed IR. The `xml` field is the same
+/// Both tree variants carry an `xml` snapshot of the post-transformed
+/// xot subtree alongside the typed tree. The `xml` field is the same
 /// representation `Tree::Xml` uses, captured at parse time from the
 /// xot tree the XPath engine queries against. JSON / YAML rendering
-/// goes through the typed IR (`tree_to_json` / `data_to_json`); XML
+/// goes through the typed tree (`tree_to_json` / `data_to_json`); XML
 /// and text rendering walk the captured `xml`. Both views describe
 /// the same document; once the legacy XML shape catches up to the
-/// IR's typed shape the `xml` field can retire.
+/// tree's typed shape the `xml` field can retire.
 #[derive(Debug, Clone)]
 pub enum Tree {
-    /// Programming-language IR (root-document match).
+    /// Syntax tree (root-document match).
     /// Native-only: the `crate::tree` module is gated behind the
     /// `native` feature, so WASM builds skip this variant.
     #[cfg(feature = "native")]
@@ -104,14 +104,14 @@ pub enum Tree {
         source: Arc<String>,
         xml: XmlNode,
     },
-    /// Data-language IR (root-document match). Native-only.
+    /// Data-language tree (root-document match). Native-only.
     #[cfg(feature = "native")]
     DataTree {
         tree: Arc<crate::tree::DataTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
-    /// SQL-language IR (root-document match). Native-only.
+    /// SQL-language tree (root-document match). Native-only.
     /// Renders via `sql_to_xot` for XML and `sql_to_json` for JSON.
     #[cfg(feature = "native")]
     Sql {
@@ -121,9 +121,9 @@ pub enum Tree {
     },
     /// Raw XML / XPath structured data — used for partial matches
     /// (XPath returning an inner subtree) and for XPath
-    /// atomic/map/array results that have no direct IR analogue.
-    /// Transitional: once xot↔IR mapping is wired, partial matches
-    /// can carry IR too and this variant retires to just the
+    /// atomic/map/array results that have no direct tree analogue.
+    /// Transitional: once xot↔tree mapping is wired, partial matches
+    /// can carry tree too and this variant retires to just the
     /// XPath-structured-data case.
     Xml(XmlNode),
 }
@@ -132,9 +132,9 @@ impl Tree {
     /// Render the matched tree to a JSON value. JSON-typed shape
     /// (arrays for `Vec<SyntaxTree>` slots, singletons for `Box<SyntaxTree>` slots)
     /// comes from the typed renderers; `Tree::Xml` falls back to
-    /// the XML→JSON projection until partial matches carry IR too.
+    /// the XML→JSON projection until partial matches carry tree too.
     ///
-    /// **`Tree::SyntaxTree` dispatch (S5C).** Programming-language IR
+    /// **`Tree::SyntaxTree` dispatch (S5C).** Syntax tree
     /// renders through `lower_to_data_ir → data_to_json` once the
     /// projection covers every variant in the tree. While S5A is
     /// in progress, documents containing unhandled variants still
@@ -163,9 +163,9 @@ impl Tree {
     }
 
     /// Borrow the matched tree as an `XmlNode`. Every variant has
-    /// one available: the IR variants stash the post-transformed xot
+    /// one available: the tree variants stash the post-transformed xot
     /// subtree at parse time so legacy XML / text renderers can keep
-    /// using it without re-rendering the IR.
+    /// using it without re-rendering the tree.
     pub fn as_xml_node(&self) -> &XmlNode {
         match self {
             Tree::Xml(node) => node,
@@ -226,7 +226,7 @@ impl Match {
     /// Borrow the matched tree's underlying `XmlNode`. Returns
     /// `None` only when the match has no tree at all (e.g. an
     /// XPath atomic value like `count(...)`); for tree variants the
-    /// `XmlNode` is always available — IR variants stash a snapshot
+    /// `XmlNode` is always available — tree variants stash a snapshot
     /// at parse time.
     pub fn xml_node(&self) -> Option<&XmlNode> {
         self.tree.as_ref().map(|t| t.as_xml_node())

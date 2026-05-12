@@ -2,7 +2,7 @@
 //!
 //! Each per-language module supplies a [`Syntax`] config plus optional
 //! override hooks; the shared [`write_ir`] engine handles the bulk of
-//! IR variant dispatch.
+//! tree variant dispatch.
 
 #![allow(dead_code)]
 
@@ -78,11 +78,11 @@ pub fn render_generic(tree: &SyntaxTree) -> String {
     out
 }
 
-/// Shared IR walker used by every per-language emitter. Atom rendering
-/// emits placeholders (`«name»` / `0` / `""`) because the IR atoms
+/// Shared tree walker used by every per-language emitter. Atom rendering
+/// emits placeholders (`«name»` / `0` / `""`) because the tree atoms
 /// only carry byte ranges; the source-anchor path is the way to
 /// reconstruct atom text. For from-scratch canonical rendering, atom
-/// text would need to ride alongside the IR — out of scope for this
+/// text would need to ride alongside the tree — out of scope for this
 /// scaffold.
 pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
     match tree {

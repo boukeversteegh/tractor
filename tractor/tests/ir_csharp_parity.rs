@@ -1,4 +1,4 @@
-//! Parity test for the experimental typed-IR pipeline (C# slice).
+//! Parity test for the experimental typed-tree pipeline (C# slice).
 //!
 //! C# is the language with the most whack-a-mole iterations against
 //! the existing pipeline (86 commits, the unsolved `?.` conditional-
@@ -7,7 +7,7 @@
 //!
 //! Unlike Python, C# tree-sitter requires syntactic context (a class
 //! with a method) before it accepts an expression. So we validate the
-//! IR architecture differently:
+//! tree architecture differently:
 //!
 //! 1. **Architectural invariants must hold on arbitrary C# input.**
 //!    For any source we feed in:
@@ -20,7 +20,7 @@
 //! 2. **Expression-subtree parity.** When we wrap a test expression
 //!    in `class C { void M() { var x = <expr>; } }`, we navigate
 //!    both pipelines to the inner expression and compare *those*
-//!    subtrees. This validates that the IR's expression vocabulary
+//!    subtrees. This validates that the tree's expression vocabulary
 //!    (Access, Call, Binary, Unary, atoms) handles C# correctly,
 //!    independently of the surrounding declaration shape.
 
@@ -30,10 +30,10 @@ use tractor::tree::{audit_coverage, lower_csharp_root, render_to_xot, to_source}
 use tractor::parser::parse_string_to_xot;
 use xot::{Node as XotNode, Xot};
 
-/// Named kinds the C# IR pipeline knows how to lower. The list is
-/// hand-curated for the ignored coverage tests below; the IR fall-
+/// Named kinds the C# tree pipeline knows how to lower. The list is
+/// hand-curated for the ignored coverage tests below; the tree fall-
 /// through (`SyntaxTree::Unknown`) is the source of truth for what's NOT
-/// supported. Kept for diagnostic parity between the pre-IR test
+/// supported. Kept for diagnostic parity between the pre-tree test
 /// surface and the new pipeline. Empty list means "no claim about
 /// known kinds" — the diagnostic tests handle missing kinds gracefully.
 #[allow(dead_code)]
@@ -103,7 +103,7 @@ fn assert_ir_invariants(source: &str, label: &str) {
 
 // ---------------------------------------------------------------------------
 // Architectural invariants on a variety of C# constructs.
-// These tests pass regardless of how much structural coverage the IR
+// These tests pass regardless of how much structural coverage the tree
 // has — they only validate that source flows through losslessly.
 // ---------------------------------------------------------------------------
 
@@ -795,7 +795,7 @@ fn invariants_blueprint() {
     assert_ir_invariants(&source, "C# blueprint.cs");
 }
 
-/// Render the IR pipeline output via tractor's actual tree
+/// Render the tree pipeline output via tractor's actual tree
 /// renderer. Sanity check that comment text + element structure
 /// pass through to the renderer correctly. Marked `#[ignore]`;
 /// invoke with `cargo test ir_tree_render -- --ignored --nocapture`.
@@ -819,12 +819,12 @@ fn ir_tree_render() {
     let xml_node = xot_node_to_xml_node(&xot, root);
     let opts = RenderOptions::new();
     let rendered = render_query_tree_node(&xml_node, &opts);
-    eprintln!("=== IR pipeline tree render ===");
+    eprintln!("=== tree pipeline tree render ===");
     eprintln!("{}", rendered);
 }
 
 /// Tree-render parity: compare the actual tractor tree-renderer
-/// output between imperative and IR pipelines. This is the
+/// output between imperative and tree pipelines. This is the
 /// integration the user runs (`tractor file.cs` defaults to tree
 /// rendering). Marked `#[ignore]`; prints the first diff so we can
 /// iterate.
@@ -850,7 +850,7 @@ fn blueprint_tree_parity() {
     let cur_xml = xot_node_to_xml_node(&cur.xot, cur_root);
     let cur_render = render_query_tree_node(&cur_xml, &opts);
 
-    // IR pipeline tree.
+    // tree pipeline tree.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
@@ -864,7 +864,7 @@ fn blueprint_tree_parity() {
     let ir_render = render_query_tree_node(&ir_xml, &opts);
 
     eprintln!("imperative bytes: {}", cur_render.len());
-    eprintln!("IR bytes:         {}", ir_render.len());
+    eprintln!("tree bytes:         {}", ir_render.len());
 
     if cur_render != ir_render {
         for (i, (la, lb)) in cur_render.lines().zip(ir_render.lines()).enumerate() {
@@ -876,18 +876,18 @@ fn blueprint_tree_parity() {
                 panic!(
                     "first diff at line {}\n\
                      ----- imperative -----\n{}\n\
-                     ----- IR -----\n{}",
+                     ----- tree -----\n{}",
                     i + 1,
                     ctx_a.join("\n"),
                     ctx_b.join("\n"),
                 );
             }
         }
-        panic!("length differs: imperative={}, IR={}", cur_render.lines().count(), ir_render.lines().count());
+        panic!("length differs: imperative={}, tree={}", cur_render.lines().count(), ir_render.lines().count());
     }
 }
 
-/// Compare the IR pipeline's structural view of the C# blueprint
+/// Compare the tree pipeline's structural view of the C# blueprint
 /// against the existing imperative pipeline. Marked `#[ignore]` while
 /// shape parity is incomplete; counts Unknown nodes and prints the
 /// first divergence so we can iterate toward parity.
@@ -906,7 +906,7 @@ fn blueprint_parity() {
     } else { cur_result.root };
     let cur_view = structural_view(&cur_result.xot, cur_root);
 
-    // IR pipeline view.
+    // tree pipeline view.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
@@ -931,8 +931,8 @@ fn blueprint_parity() {
     eprintln!("=== C# blueprint structural-parity check ===");
     eprintln!("source bytes:        {}", source.len());
     eprintln!("current view bytes:  {}", cur_view.len());
-    eprintln!("IR view bytes:       {}", ir_view.len());
-    eprintln!("Unknown in IR:       {}", unknowns);
+    eprintln!("tree view bytes:       {}", ir_view.len());
+    eprintln!("Unknown in tree:       {}", unknowns);
 
     if cur_view != ir_view {
         for (i, (la, lb)) in cur_view.lines().zip(ir_view.lines()).enumerate() {
@@ -944,14 +944,14 @@ fn blueprint_parity() {
                 panic!(
                     "first diff at line {} (1-based: {})\n\
                      ----- current pipeline -----\n{}\n\
-                     ----- IR pipeline -----\n{}",
+                     ----- tree pipeline -----\n{}",
                     i, i + 1,
                     ctx_a.join("\n"),
                     ctx_b.join("\n"),
                 );
             }
         }
-        panic!("length differs: current={}, IR={}", cur_view.lines().count(), ir_view.lines().count());
+        panic!("length differs: current={}, tree={}", cur_view.lines().count(), ir_view.lines().count());
     }
 }
 
@@ -988,7 +988,7 @@ fn blueprint_coverage_audit() {
         let end_b = (idx + 60).min(source.len());
         panic!(
             "XPath text-content recovery broken at byte {idx}\n\
-             ----- IR (got)    -----\n{:?}\n\
+             ----- tree (got)    -----\n{:?}\n\
              ----- source (want) -----\n{:?}",
             &xpath[start..end_a],
             &source[start..end_b],
@@ -1046,7 +1046,7 @@ fn assert_expression_parity(expr: &str, label: &str) {
         .expect("current pipeline: expression subtree not found");
     let cur_view = structural_view(&r.xot, cur_expr);
 
-    // IR pipeline.
+    // tree pipeline.
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
@@ -1066,13 +1066,13 @@ fn assert_expression_parity(expr: &str, label: &str) {
 
     // Note: structural parity at this slice is not yet expected to
     // hold because we haven't lowered class/method/variable yet.
-    // Once those land, find_expression_subtree will work on the IR
-    // side too. For now, just check that the IR contains the
+    // Once those land, find_expression_subtree will work on the tree
+    // side too. For now, just check that the tree contains the
     // expression somewhere.
     let _ = cur_view;
     let _ = label;
     // TODO: once SyntaxTree::Class / SyntaxTree::Method / SyntaxTree::Variable are added,
-    //       compare cur_expr against IR's variable-value subtree.
+    //       compare cur_expr against tree's variable-value subtree.
 }
 
 #[test]
@@ -1098,13 +1098,13 @@ fn expression_call()      { assert_expression_parity("f(x)", "call"); }
 // `a?.b` (`<member[conditional]>` parent + `<condition>` wrapper),
 // and the design problem was deferred.
 //
-// In the typed-IR world, conditional access is just a
+// In the typed-tree world, conditional access is just a
 // `optional: true` flag on an `AccessSegment::Member` — same shape
 // as regular access, plus an `<optional/>` marker. Principle #15
 // is satisfied by construction.
 // ---------------------------------------------------------------------------
 
-/// Verify that `a.b` and `a?.b` produce structurally identical IR
+/// Verify that `a.b` and `a?.b` produce structurally identical tree
 /// trees except for the presence/absence of `<optional/>`.
 #[test]
 fn conditional_access_isomorphism() {
@@ -1181,7 +1181,7 @@ fn conditional_access_chains() {
 // Whack-a-mole: `obj!` non-null assertion (postfix unary).
 //
 // The existing pipeline emits `<expression[non_null]>` — marker on
-// the expression host. The IR achieves the same by extending
+// the expression host. The tree achieves the same by extending
 // `SyntaxTree::Expression` with an optional `marker` field.
 // ---------------------------------------------------------------------------
 
@@ -1278,7 +1278,7 @@ fn is_type_test() {
 // This is the architectural payoff for the "variations marked
 // exhaustively → enum field" principle. Instead of XML-level marker
 // rewrites (`drop <public/>, inject <private/>`), the user changes
-// one IR field; the renderer's marker is derived from the enum.
+// one tree field; the renderer's marker is derived from the enum.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -1289,7 +1289,7 @@ fn access_marker_swap_via_enum_mutation() {
     let cst = p.parse(s, None).unwrap();
     let mut tree = lower_csharp_root(cst.root_node(), s);
 
-    // Locate the class IR.
+    // Locate the class tree.
     fn find_class(tree: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
         use tractor::tree::SyntaxTree;
         if matches!(tree, SyntaxTree::Class { .. }) { return Some(tree); }

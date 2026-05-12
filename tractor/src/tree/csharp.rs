@@ -1,10 +1,10 @@
-//! C# tree-sitter CST → IR lowering.
+//! C# tree-sitter CST → tree lowering.
 //!
 //! Pure function. No global state, no in-place mutation. C# is the
 //! whack-a-mole champion of the existing pipeline (86 commits, the
 //! unsolved `?.` conditional-access design problem, the chain-inversion
 //! adapter, plus operator-extraction quirks). A successful slice here
-//! is strong evidence that the typed-IR architecture handles
+//! is strong evidence that the typed-tree architecture handles
 //! cross-language reuse: most variants are shared with Python, with
 //! C#-specific additions (e.g. `SyntaxTree::Null`) only where the construct
 //! genuinely differs.
@@ -12,7 +12,7 @@
 //! ## Initial coverage
 //! Atoms (identifier, literals, null), member access (single +
 //! chained), subscript, calls, binary, unary. No statements, no
-//! declarations yet — proves the IR vocabulary works for the
+//! declarations yet — proves the tree vocabulary works for the
 //! expression core before tackling C#'s syntactic surface.
 
 #![cfg(feature = "native")]
@@ -108,7 +108,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // This is the concrete answer to backlog 5d (todo/39…md):
         // the deferred C# design problem (`Root.MaybeProperty?.Property`
         // not isomorphic to `Root.MaybeProperty.Property`) ceases to
-        // exist in the typed-IR world.
+        // exist in the typed-tree world.
         "conditional_access_expression" => {
             let mut cursor = node.walk();
             let kids: Vec<TsNode> = node.named_children(&mut cursor).collect();
@@ -1561,7 +1561,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             match inner {
                 Some(n) => {
                     // Bypass list: kinds that already produce their own
-                    // statement-shaped IR or expression wrapper.
+                    // statement-shaped tree or expression wrapper.
                     // postfix_unary_expression, await_expression and
                     // is_pattern_expression all produce SyntaxTree::Expression
                     // hosts themselves — wrapping again would yield
@@ -2396,7 +2396,7 @@ fn simple_statement_marked(
 /// `SimpleStatement::constraint` children are translated into markers
 /// and `<extends>` wrappers and appended to the matching item's
 /// children. Mirrors the (now-removed) `attach_ir_where_clauses` post
-/// transform, but operates on typed IR before xot rendering — so the
+/// transform, but operates on typed tree before xot rendering — so the
 /// generic param renders with its constraints already attached.
 fn fold_csharp_where_clauses_into_generics(
     generics: Option<Box<SyntaxTree>>,
@@ -2458,7 +2458,7 @@ fn csharp_generic_item_name(item: &SyntaxTree, source: &str) -> Option<String> {
 /// - bare keyword (`class` / `struct` / `notnull` / `unmanaged` —
 ///   detected by source text) → empty marker by that name
 ///
-/// Returned IR uses zero-width ranges anchored at `range.start` so the
+/// Returned tree uses zero-width ranges anchored at `range.start` so the
 /// markers contribute no source text — `render_tree_class` emits the
 /// where-clause source bytes as gap text under `<class>` (see the
 /// `CSlot::Where` branch), and these merged markers add structure
@@ -2526,10 +2526,10 @@ fn empty_csharp_marker(element_name: &'static str, range: ByteRange, span: Span)
     }
 }
 
-/// Wrap an IR node in `SyntaxTree::FieldWrap` if its tree-sitter field name
+/// Wrap an tree node in `SyntaxTree::FieldWrap` if its tree-sitter field name
 /// has an entry in the C# field-wrapping table. Mirrors the
 /// imperative pipeline's `apply_field_wrappings` pass, but applied
-/// at lowering time so the IR is already correctly nested.
+/// at lowering time so the tree is already correctly nested.
 fn maybe_wrap_field(field_name: Option<&str>, inner: SyntaxTree) -> SyntaxTree {
     let Some(field) = field_name else { return inner };
     // Same table as `CSHARP_FIELD_WRAPPINGS` in src/languages/mod.rs.
@@ -2547,7 +2547,7 @@ fn maybe_wrap_field(field_name: Option<&str>, inner: SyntaxTree) -> SyntaxTree {
     };
     // Skip the wrap when it would produce nested same-name elements
     // (e.g. `<name><name>Foo</name></name>` for a `name=identifier`
-    // field). The inner IR already renders as the wrapper name, so
+    // field). The inner tree already renders as the wrapper name, so
     // wrapping again is pure noise — appears in JSON as the
     // `"name": {"name": "Foo"}` shape that the user explicitly
     // flagged as forbidden.
@@ -2900,7 +2900,7 @@ fn lower_binding_to_segments(node: TsNode<'_>, source: &str, optional_first: boo
                 None => Vec::new(),
             };
             // Index segment doesn't currently support optional — but
-            // we tag the eventual IR variant with optionality on the
+            // we tag the eventual tree variant with optionality on the
             // PARENT chain. For this slice we wire it through a
             // future `optional` field on Index when we add it. For
             // now, mark Member-style optional only.

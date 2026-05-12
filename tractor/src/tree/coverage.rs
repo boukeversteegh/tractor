@@ -1,30 +1,30 @@
-//! IR coverage audit.
+//! tree coverage audit.
 //!
 //! Round-trip identity (`to_source(tree, source) == source`) proves no
 //! source bytes were lost. But it doesn't catch the **silent
-//! structural drop** case: a typed parent IR (e.g. `SyntaxTree::Class`)
+//! structural drop** case: a typed parent tree (e.g. `SyntaxTree::Class`)
 //! lowers most of its CST children but forgets one (say,
 //! `attribute_list`). The dropped child's bytes still appear inside
-//! the parent's gap text, so round-trip passes — but no IR node
+//! the parent's gap text, so round-trip passes — but no tree node
 //! represents the dropped kind, so XPath structural queries can't
 //! find it.
 //!
 //! The audit walks both trees in lockstep:
 //!
-//! - For each named CST node, classify it against the IR's coverage:
-//!   - **Typed** — an IR node has *exactly* this byte range and is
+//! - For each named CST node, classify it against the tree's coverage:
+//!   - **Typed** — an tree node has *exactly* this byte range and is
 //!     not `SyntaxTree::Unknown`. The kind is structurally represented.
 //!   - **Unknown** — an `SyntaxTree::Unknown` node has *exactly* this byte
 //!     range. The kind is explicitly punted.
-//!   - **Under-typed** — a typed IR ancestor's range contains this
-//!     CST node but no IR has its exact range. Common case:
+//!   - **Under-typed** — a typed tree ancestor's range contains this
+//!     CST node but no tree has its exact range. Common case:
 //!     chain-folded structure (the inner `member_access_expression`
 //!     for `a.b` of `a.b.c` is folded into `SyntaxTree::Access`'s segment
 //!     list). Acceptable when intentional; suspicious when it's
 //!     meaningful structure that got buried.
 //!   - **Under-unknown** — under an `SyntaxTree::Unknown`'s range. The whole
 //!     subtree is unhandled at a higher level.
-//!   - **Dropped** — no IR range covers this CST node at all.
+//!   - **Dropped** — no tree range covers this CST node at all.
 //!     Should *never* happen if round-trip identity holds; existence
 //!     would indicate a renderer bug.
 //!
@@ -35,7 +35,7 @@
 //!   thin blueprint cannot inflate the score.
 //! - **Blueprint completeness** — fraction of grammar-known kinds the
 //!   corpus exercises at all (typed-or-not). A corpus-quality metric:
-//!   when this is well below 100% the IR's coverage of unsampled
+//!   when this is well below 100% the tree's coverage of unsampled
 //!   kinds is *unknown*, not implicitly supported.
 //! - **Node coverage** — fraction of named CST nodes (instances)
 //!   that landed in Typed or Under-typed buckets. Real-world
@@ -52,22 +52,22 @@ use super::types::{ByteRange, SyntaxTree};
 /// Per-CST-node classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Coverage {
-    /// An IR node has exactly this byte range and is not Unknown.
+    /// An tree node has exactly this byte range and is not Unknown.
     Typed,
     /// An `SyntaxTree::Unknown` has exactly this byte range.
     Unknown,
-    /// A typed IR ancestor's range contains this CST node, but no
-    /// IR matches it exactly. E.g. inner CST nodes folded into an
+    /// A typed tree ancestor's range contains this CST node, but no
+    /// tree matches it exactly. E.g. inner CST nodes folded into an
     /// access chain.
     UnderTyped,
     /// An `SyntaxTree::Unknown` ancestor covers this CST node.
     UnderUnknown,
-    /// No IR range covers this CST node. Should never happen if
+    /// No tree range covers this CST node. Should never happen if
     /// round-trip identity holds.
     Dropped,
 }
 
-/// Coverage report for one (CST, IR) pair.
+/// Coverage report for one (CST, tree) pair.
 #[derive(Debug, Default)]
 pub struct CoverageReport {
     pub source_bytes: usize,
@@ -125,7 +125,7 @@ impl CoverageReport {
 
     /// Fraction of grammar-known kinds the corpus exercises at all
     /// (any bucket). Below 100% means the blueprint doesn't sample
-    /// every grammar kind — the IR's coverage of those kinds is
+    /// every grammar kind — the tree's coverage of those kinds is
     /// `unknown`, not "supported by absence."
     pub fn blueprint_completeness_pct(&self) -> f64 {
         let denom = self.kind_denominator();
@@ -154,7 +154,7 @@ impl CoverageReport {
         let typed_kinds = self.by_kind.values().filter(|k| k.typed > 0).count();
         let exercised_kinds = self.by_kind.values().filter(|k| k.total() > 0).count();
         s.push_str(&format!(
-            "=== IR coverage report ===\n\
+            "=== tree coverage report ===\n\
              source bytes:          {}\n\
              named CST nodes:       {}\n\
              kind coverage:         {:.1}% ({} of {} grammar kinds typed at least once)\n\
@@ -208,7 +208,7 @@ impl CoverageReport {
     }
 }
 
-/// Walk the IR and collect every node's byte range with a flag for
+/// Walk the tree and collect every node's byte range with a flag for
 /// whether it's `SyntaxTree::Unknown`. Powered by `SyntaxTree::children()` — adding a
 /// new variant requires no change here as long as the variant declares
 /// its children correctly.
@@ -239,12 +239,12 @@ pub fn audit_coverage(
     source: &str,
     known_kinds: &[&str],
 ) -> CoverageReport {
-    // Step 1: collect all IR ranges with their typed/unknown status.
+    // Step 1: collect all tree ranges with their typed/unknown status.
     let mut ir_ranges: Vec<(ByteRange, bool)> = Vec::new();
     collect_ir_ranges(tree, &mut ir_ranges);
 
     // For exact-range lookups, build a map from range to is_unknown.
-    // Multiple IR nodes can share a range (e.g. SyntaxTree::Module and a
+    // Multiple tree nodes can share a range (e.g. SyntaxTree::Module and a
     // single child whose range == module's). For exact-match, we
     // prefer the typed one.
     let mut exact: BTreeMap<(u32, u32), bool> = BTreeMap::new();
@@ -289,7 +289,7 @@ pub fn audit_coverage(
         let coverage = if let Some(&unk) = exact.get(&key) {
             if unk { Coverage::Unknown } else { Coverage::Typed }
         } else {
-            // Find the smallest IR range that strictly contains us.
+            // Find the smallest tree range that strictly contains us.
             let mut best: Option<(u32, bool)> = None;
             for (ir_r, unk) in &ir_ranges {
                 if ir_r.start <= key.0 && ir_r.end >= key.1

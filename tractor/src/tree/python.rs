@@ -1,7 +1,7 @@
-//! Python tree-sitter CST → IR lowering.
+//! Python tree-sitter CST → tree lowering.
 //!
 //! Pure function. No global state, no in-place mutation. Each
-//! tree-sitter kind maps to exactly one IR variant (or [`SyntaxTree::Unknown`]
+//! tree-sitter kind maps to exactly one tree variant (or [`SyntaxTree::Unknown`]
 //! if not yet covered, or [`SyntaxTree::Inline`] if deliberately
 //! shape-neutral).
 //!
@@ -346,7 +346,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // `with` / `async with`. tree-sitter exposes the `async`
         // keyword as an unnamed child of with_statement; detect by
         // scanning the source slice prefix and add an `<async/>`
-        // marker on the IR.
+        // marker on the tree.
         "with_statement" => {
             let leading = range.slice(source).trim_start();
             if leading.starts_with("async") {
@@ -1190,7 +1190,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
         // tree-sitter-python wraps type-position expressions in a
         // `type` node (parameter annotations, return types, generic
-        // arguments). The IR's typed shape has no `<type>` wrapping
+        // arguments). The tree's typed shape has no `<type>` wrapping
         // here — the renderer adds it when emitting via a
         // `type_ann`/`Returns` slot. Unwrap to the inner expression
         // and lower it directly.
@@ -1273,7 +1273,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // both surface.
         "as_pattern" => simple_statement(node, "as", source),
         // `as_pattern_target` is the binding-side name in `as NAME` —
-        // imperative pipeline wraps it. For the IR we just unwrap and
+        // imperative pipeline wraps it. For the tree we just unwrap and
         // recurse.
         "as_pattern_target" => {
             let mut cursor = node.walk();
@@ -1899,7 +1899,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
 /// items (PEP 695 grammar quirk). We handle both single-level and
 /// nested cases by walking ALL named descendants until we find
 /// identifiers, splats, or constrained types — each becomes one
-/// IR::TypeParameter.
+/// tree::TypeParameter.
 fn lower_type_parameters(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);

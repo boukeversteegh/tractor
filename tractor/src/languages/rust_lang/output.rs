@@ -103,7 +103,7 @@ impl TractorNode {
             | Self::Extern | Self::Gen                                                 => (true, false, Keyword),
             // `Await` dual-use: marker `<await/>` on `<expression[await]>`
             // host (imperative iter), AND structural `<await>operand</await>`
-            // wrapper from the IR pipeline's `await_expression` lowering
+            // wrapper from the tree pipeline's `await_expression` lowering
             // when no surrounding expression host is present.
             Self::Await                                                                => (true, true, Keyword),
             // `Crate` and `Super` are dual-use:

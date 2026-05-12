@@ -1,9 +1,9 @@
-//! Rust tree-sitter CST → IR lowering.
+//! Rust tree-sitter CST → tree lowering.
 //!
-//! Mirrors the C#/Java/TypeScript IR pipeline patterns. Each per-kind
+//! Mirrors the C#/Java/TypeScript tree pipeline patterns. Each per-kind
 //! arm recursively lowers children; unhandled kinds fall through to
 //! `SyntaxTree::Unknown`. The renderer in `crate::tree::to_xot` is shared with
-//! the other IR languages.
+//! the other tree languages.
 //!
 //! Production parser routes Rust through this lowering end-to-end
 //! (see `parser::use_ir_pipeline`). The legacy imperative

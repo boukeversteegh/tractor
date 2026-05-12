@@ -1,4 +1,4 @@
-//! Typed semantic-tree IR (experimental).
+//! Typed semantic-tree tree (experimental).
 //!
 //! ## Status
 //! Production path for the languages listed below. The legacy
@@ -10,7 +10,7 @@
 //! See `docs/design-transform-redesign-exploration.md` § 11 for the
 //! original design rationale.
 //!
-//! Languages on this IR (`SyntaxTree`):
+//! Languages on this tree (`SyntaxTree`):
 //! - C# (`csharp` / `cs`)
 //! - Python (`python` / `py`)
 //! - Java (`java`)
@@ -28,9 +28,9 @@
 //! Languages on the parallel `SqlTree` (see [`sql`]):
 //! T-SQL (`tsql` / `mssql` / `sql`).
 //!
-//! Raw tree-sitter mode (`TreeMode::Raw`) bypasses every IR and
+//! Raw tree-sitter mode (`TreeMode::Raw`) bypasses every tree and
 //! returns the bare CST through the legacy builder. Languages without
-//! an IR family registered (c, cpp, html, css, bash, scala, lua,
+//! an tree family registered (c, cpp, html, css, bash, scala, lua,
 //! haskell, ocaml, r, julia) also flow through the legacy builder.
 //!
 //! ## Architecture
@@ -39,9 +39,9 @@
 //! ```
 //!
 //! - `lower_<lang>` is a *pure function* per language: tree-sitter node
-//!   in, [`SyntaxTree`] out. Cross-language unification happens at the IR layer
-//!   (every language lowers to the *same* IR variants).
-//! - `render` is mechanical: walks the IR and emits the corresponding
+//!   in, [`SyntaxTree`] out. Cross-language unification happens at the tree layer
+//!   (every language lowers to the *same* tree variants).
+//! - `render` is mechanical: walks the tree and emits the corresponding
 //!   XML. No decisions live here.
 //! - Chain inversion is part of the lowering: every
 //!   `lower_<lang>_root` constructs left-deep [`SyntaxTree::Access`] directly
@@ -71,10 +71,10 @@
 //!   language.
 
 pub mod types;
-// IR rendering targets — each module renders the IR tree to one
+// tree rendering targets — each module renders the tree tree to one
 // concrete representation:
 // - `to_xot`  : Xot tree (XML).
-// - `to_json` : `serde_json::Value` (skips Xot for IR-direct JSON).
+// - `to_json` : `serde_json::Value` (skips Xot for tree-direct JSON).
 // - `source/` : original byte-anchored or canonical source text.
 pub mod to_xot;
 pub mod to_json;
@@ -86,7 +86,7 @@ pub mod rust_lang;
 pub mod go_lang;
 pub mod ruby;
 pub mod php;
-// Data-language IR — a separate, simpler typed shape for JSON /
+// Data-language tree — a separate, simpler typed shape for JSON /
 // YAML / TOML / INI. Format-agnostic: a single `DataTree` tree can
 // be rendered to any of XML / JSON / YAML / TOML.
 #[cfg(feature = "native")]
@@ -105,12 +105,12 @@ pub mod markdown_data;
 pub mod data_to_xot;
 #[cfg(feature = "native")]
 pub mod data_to_json;
-// Programming-language `SyntaxTree` → `DataTree` projection. Replacing the
+// `SyntaxTree` → `DataTree` projection. Replacing the
 // ad-hoc projection in `to_json.rs` per
 // `docs/design-projection-pipeline.md`.
 #[cfg(feature = "native")]
 pub mod to_data;
-// SQL-language IR — typed variants per construct. Parallel to
+// SQL-language tree — typed variants per construct. Parallel to
 // `SyntaxTree` (programming languages) and `DataTree` (data languages).
 // See module doc-comment for rationale.
 #[cfg(feature = "native")]

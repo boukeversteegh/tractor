@@ -1,6 +1,6 @@
 //! `DataTree → serde_json::Value` direct-path tests.
 //!
-//! These tests confirm the format-agnostic IR can be converted
+//! These tests confirm the format-agnostic tree can be converted
 //! to JSON without going through Xot. The same `DataTree` tree
 //! also goes through `data_to_xot` for queries, so the two paths
 //! must agree on the *data* (xot adds source-attribute noise

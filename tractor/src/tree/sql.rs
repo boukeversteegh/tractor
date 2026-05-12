@@ -1,9 +1,9 @@
-//! SQL-language IR — a fully typed representation of T-SQL (and
+//! SQL-language tree — a fully typed representation of T-SQL (and
 //! eventually MySQL / PostgreSQL / SQLite) constructs. Parallel to
 //! [`crate::tree::SyntaxTree`] (programming languages) and [`crate::tree::data::DataTree`]
 //! (data languages).
 //!
-//! ## Why a separate IR
+//! ## Why a separate tree
 //!
 //! Forcing SQL into the cross-language [`SyntaxTree`] enum either:
 //! - bloats `SyntaxTree` with SQL-specific variants (Insert, Select, Where,
@@ -13,7 +13,7 @@
 //!   projection heuristics in iters 29-36.
 //!
 //! Per user direction (2026-05-07): "there is absolutely no rule
-//! that says that all languages should use the same IR".
+//! that says that all languages should use the same tree".
 //!
 //! `SqlTree` gives every SQL construct a typed shape. Both XML and
 //! JSON output read typed slots directly — no projection rules
@@ -33,7 +33,7 @@
 //!    [`SqlTree::Unknown`].
 //! 4. **Canonical reconstruction without source** —
 //!    `parse(render_sql(tree, None)) == parse(s)` where
-//!    `tree = lower_sql_root(parse(s), &s)`. The IR carries every
+//!    `tree = lower_sql_root(parse(s), &s)`. The tree carries every
 //!    semantic distinction needed to regenerate equivalent source
 //!    from scratch, without consulting source byte ranges.
 //!    Identifier quoting style (`[name]` / `"name"` / `` `name` ``)
@@ -46,7 +46,7 @@
 
 use super::types::{ByteRange, Span};
 
-/// Typed SQL IR.
+/// Typed SQL tree.
 #[derive(Debug, Clone)]
 pub enum SqlTree {
     // ----- Top level -----------------------------------------------------
@@ -446,7 +446,7 @@ pub enum SqlTree {
     /// `<name>` — identifier text leaf. Always rendered as a text-only
     /// `<name>` element (per the cross-language `name-is-text-leaf`
     /// shape contract). Quoting style (T-SQL `[name]`, ANSI `"name"`,
-    /// MySQL `` `name` ``) is captured in `quoting` so the IR carries
+    /// MySQL `` `name` ``) is captured in `quoting` so the tree carries
     /// the syntactic distinction without relying on the source range.
     /// The `value` field carries the parsed (unquoted) identifier text;
     /// renderers read this directly rather than slicing source.
@@ -493,9 +493,9 @@ pub enum SortDirection {
 }
 
 /// Quoting style for identifier-class atoms (`Identifier`, `Schema`,
-/// `Alias`). Captures the syntactic distinction explicitly in the IR
+/// `Alias`). Captures the syntactic distinction explicitly in the tree
 /// so that a fully semantically equivalent source can be reconstructed
-/// from the IR alone — without relying on byte ranges into the
+/// from the tree alone — without relying on byte ranges into the
 /// original source string. (See module-level invariant 4.)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuoteStyle {

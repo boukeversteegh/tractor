@@ -2,7 +2,7 @@
 //!
 //! Direct typed-slot serialization. Each `SqlTree` variant has named
 //! slots that map 1-1 to JSON keys; collections render as arrays.
-//! No projection heuristics — the typed IR shape carries the
+//! No projection heuristics — the typed tree shape carries the
 //! semantic information directly.
 //!
 //! Contrast with `to_json.rs` (cross-language `SyntaxTree`): that renderer
@@ -18,7 +18,7 @@
 //!   `{ "op": { "text": "=" } }` — no empty-marker key, no
 //!   `\$type": "expression"` wrapper.
 //! - There is no Skip / Inline / SimpleStatement to filter — the
-//!   IR doesn't have generic catch-alls.
+//!   tree doesn't have generic catch-alls.
 //!
 //! ## Status
 //!

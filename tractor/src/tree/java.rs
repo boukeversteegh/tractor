@@ -1,9 +1,9 @@
-//! Java tree-sitter CST → IR lowering.
+//! Java tree-sitter CST → tree lowering.
 //!
-//! Mirrors the C# IR closely — Java and C# share most CST shapes
+//! Mirrors the C# tree closely — Java and C# share most CST shapes
 //! (class/method/field declarations, modifiers, generics, blocks).
 //! Per-kind arms recursively lower children; the renderer in
-//! `crate::tree::to_xot` is shared with all other IR-pipeline languages.
+//! `crate::tree::to_xot` is shared with all other tree-pipeline languages.
 //!
 //! Coverage is incremental: each unhandled kind falls through to
 //! `SyntaxTree::Unknown`. The diagnostic test

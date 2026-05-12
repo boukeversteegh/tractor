@@ -1,4 +1,4 @@
-//! Diagnostic: list Python CST kinds that the IR pipeline lowers to
+//! Diagnostic: list Python CST kinds that the tree pipeline lowers to
 //! `SyntaxTree::Unknown`. Run with `--ignored` and `--nocapture` to see the
 //! list — the blueprint provides a representative corpus.
 
@@ -62,7 +62,7 @@ fn python_missing_kinds() {
     }
 
     // Final-pipeline check: parse via the actual parser entry
-    // (which runs IR + post_transform) and grep the final XML for
+    // (which runs tree + post_transform) and grep the final XML for
     // `<unknown` to see what survives the full pipeline.
     let parsed = tractor::parser::parse_string_to_xot(
         &source,

@@ -1,16 +1,16 @@
-//! `SyntaxTree` → [`DataTree`] projection — programming-language IR rendered
-//! into the structured-data IR that JSON / YAML / TOML serializers
+//! `SyntaxTree` → [`DataTree`] projection — programming-language tree rendered
+//! into the structured-data tree that JSON / YAML / TOML serializers
 //! consume.
 //!
 //! ## Why
 //!
 //! `tractor/src/tree/to_json.rs` historically owned a ~1000 LOC
 //! ad-hoc projection from `SyntaxTree` directly to `serde_json::Value`,
-//! mixing IR-walking with JSON-shape decisions. Recent iters
+//! mixing tree-walking with JSON-shape decisions. Recent iters
 //! 29-36 layered on heuristics in `add_children` to fix
 //! `$`-prefixed leaks (`$inline`, `$skip`, `$type": "expression"`,
 //! plural-of-self collapse, marker-vs-leaf ambiguity) — each one a
-//! special case papering over IR/JSON impedance mismatch.
+//! special case papering over tree/JSON impedance mismatch.
 //!
 //! See `docs/design-projection-pipeline.md` for the architectural
 //! rationale and slice plan.
@@ -958,7 +958,7 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // ----- Comment — emit the source text as a String scalar.
         // Comments appear as `Pair("comment", String("// ..."))` under
         // their parent. Leading/trailing positional info is dropped
-        // from the JSON shape (it lives on the IR for tree-text
+        // from the JSON shape (it lives on the tree for tree-text
         // rendering, but isn't part of the data view).
         SyntaxTree::Comment { range, span, .. } => DataTree::String {
             value: range.slice(source).to_string(),
@@ -1074,7 +1074,7 @@ fn project_access_segment(
 
 /// Build the `<op>` Mapping for Binary / Unary / Comparison: a
 /// `text` pair (the literal operator) plus a boolean flag named for
-/// the IR's `op_marker` (e.g. `plus`, `minus`, `lt`). Mirrors
+/// the tree's `op_marker` (e.g. `plus`, `minus`, `lt`). Mirrors
 /// `to_json::Renderer::op_value`.
 fn make_op_mapping(
     op_text: &str,

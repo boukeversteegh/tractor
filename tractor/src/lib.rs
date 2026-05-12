@@ -16,7 +16,7 @@ pub mod parser;
 pub mod transform;
 pub mod languages;
 
-// Experimental: typed-IR transform pipeline.
+// Experimental: typed-tree transform pipeline.
 // Parallel to `transform`; not yet wired into production paths.
 // See `docs/design-transform-redesign-exploration.md` § 11.
 #[cfg(feature = "native")]
@@ -27,7 +27,7 @@ pub mod xpath;
 
 // Output & rendering
 pub mod output;
-// `render` module retired by S4C/S4D — the IR-pipeline reverse path
+// `render` module retired by S4C/S4D — the tree-pipeline reverse path
 // owns this surface now: programming languages render through
 // `tree::source::*`, data languages through
 // `tree::source::data_{json,yaml}`.

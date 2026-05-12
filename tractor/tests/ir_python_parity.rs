@@ -1,4 +1,4 @@
-//! Parity test for the experimental typed-IR pipeline (Python slice).
+//! Parity test for the experimental typed-tree pipeline (Python slice).
 //!
 //! Approach: take a Python source string, run *both* pipelines, compare
 //! the structural shape AND the verbatim text recovery of the produced
@@ -11,14 +11,14 @@
 //!    are intentionally out of scope for this first cut.
 //!
 //! 2. **Text-content recovery (XPath `string(.)` parity).** For every
-//!    test source `s`, the IR-rendered root element's
+//!    test source `s`, the tree-rendered root element's
 //!    text-concatenation equals `s`. This is the
 //!    `[.='foo()']`-by-source-text invariant: a query like
-//!    `//call[.='f(x)']` works on the IR-rendered tree.
+//!    `//call[.='f(x)']` works on the tree-rendered tree.
 //!
 //! 3. **Round-trip identity.** `to_source(tree, source) == source` for
 //!    every test input — every byte of source is recoverable from the
-//!    IR via its byte range.
+//!    tree via its byte range.
 
 #![cfg(feature = "native")]
 
@@ -32,12 +32,12 @@ use xot::{Node as XotNode, Xot};
 ///
 /// Inter-child gap text (parens, dots, commas, whitespace, etc.) is
 /// hidden in this view because that is exactly the place where the
-/// IR pipeline and the existing pipeline diverge: the IR pipeline
+/// tree pipeline and the existing pipeline diverge: the tree pipeline
 /// preserves all gaps for source recovery; the existing pipeline is
 /// lossy on chain-inversion punctuation. Hiding gaps lets us assert
 /// structural parity on what both pipelines agree about (element
 /// names, nesting, leaf text), while the separate text-content
-/// invariant verifies that IR's preservation works.
+/// invariant verifies that tree's preservation works.
 fn structural_view(xot: &Xot, root: XotNode) -> String {
     let mut out = String::new();
     render_structural(xot, root, 0, &mut out);
@@ -107,7 +107,7 @@ struct XotResult {
     root: XotNode,
 }
 
-/// Run the IR pipeline. Returns (structural_view, xot_result).
+/// Run the tree pipeline. Returns (structural_view, xot_result).
 fn ir_pipeline_view(source: &str) -> (String, XotResult) {
     let mut parser = tree_sitter::Parser::new();
     parser
@@ -127,7 +127,7 @@ fn ir_pipeline_view(source: &str) -> (String, XotResult) {
     let doc_root_name = xot.add_name("_doc_root");
     let doc_root = xot.new_element(doc_root_name);
     render_to_xot(&mut xot, doc_root, &tree, source).expect("render");
-    // The structural view starts at the IR-emitted root.
+    // The structural view starts at the tree-emitted root.
     let ir_root = xot
         .children(doc_root)
         .find(|&c| xot.element(c).is_some())
@@ -140,30 +140,30 @@ fn assert_parity(source: &str, label: &str) {
     let (cur, _) = current_pipeline_view(source);
     let (new, ir_xot) = ir_pipeline_view(source);
 
-    // IR invariant 1: lossless source recovery. XPath string(.) on the
-    // IR root must equal the source verbatim. This is the
+    // tree invariant 1: lossless source recovery. XPath string(.) on the
+    // tree root must equal the source verbatim. This is the
     // `[.='foo()']`-by-source-text contract the user asked for.
     let ir_text = text_content(&ir_xot.xot, ir_xot.root);
     if ir_text != source {
         panic!(
-            "IR text-content invariant broken for {label}\n\
+            "tree text-content invariant broken for {label}\n\
              expected (source): {source:?}\n\
              got     (string.):  {ir_text:?}\n\
-             ----- IR view -----\n{new}\
+             ----- tree view -----\n{new}\
              -------------------"
         );
     }
 
-    // Structural parity (leaf-text view, gap-text hidden): IR and the
+    // Structural parity (leaf-text view, gap-text hidden): tree and the
     // existing pipeline must agree on element names, nesting, and
-    // leaf-text contents. Gap text divergence (where IR preserves and
+    // leaf-text contents. Gap text divergence (where tree preserves and
     // existing drops) is *outside* this view by design.
     if cur != new {
         panic!(
             "structural parity divergence for {label}\n\
              ----- source -----\n{source}\n\
              ----- current pipeline -----\n{cur}\
-             ----- IR pipeline -----\n{new}\
+             ----- tree pipeline -----\n{new}\
              -------------------"
         );
     }
@@ -195,7 +195,7 @@ fn none_literal()     { assert_parity("None\n",    "none literal"); }
 fn name_reference()   { assert_parity("foo\n",     "name reference"); }
 
 // ---------------------------------------------------------------------------
-// Compound expressions — added incrementally as IR + lowering grow.
+// Compound expressions — added incrementally as tree + lowering grow.
 // ---------------------------------------------------------------------------
 
 #[test]

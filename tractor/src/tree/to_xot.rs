@@ -1,11 +1,11 @@
-//! IR → Xot rendering.
+//! tree → Xot rendering.
 //!
 //! Mechanical translation: given an [`SyntaxTree`] tree and the original
 //! `source` string, build the corresponding Xot tree. No decisions
-//! live here — every shape choice is encoded in the IR variants.
+//! live here — every shape choice is encoded in the tree variants.
 //!
 //! ## Invariants
-//! For every IR node `n` rendered to XML element `E`:
+//! For every tree node `n` rendered to XML element `E`:
 //!
 //! 1. **Text recovery.** XPath `string(E)` (concatenation of all
 //!    descendant text in document order) equals `source[n.range]`.
@@ -14,11 +14,11 @@
 //! 2. **Source attributes.** `E` carries `line`, `column`, `end_line`,
 //!    `end_column` matching `n.span`.
 //! 3. **No source loss.** Every byte of `source` covered by the root
-//!    IR ends up in *some* descendant text node of the root element,
+//!    tree ends up in *some* descendant text node of the root element,
 //!    in source order.
 //!
 //! ## How gap text works
-//! For a container IR node with byte range `[P_start, P_end)` and
+//! For a container tree node with byte range `[P_start, P_end)` and
 //! source-derived children with ranges `[c0..c1) [c2..c3) ...` (in
 //! source order):
 //!
@@ -28,7 +28,7 @@
 //! - Trailing gap: `source[c_last_end .. P_end]` — emitted after the
 //!   last child.
 //!
-//! Synthetic IR (markers like `<access/>`, slot wrappers like `<left>`)
+//! Synthetic tree (markers like `<access/>`, slot wrappers like `<left>`)
 //! is emitted at variant-determined positions and contributes zero
 //! text. It does not participate in gap calculation.
 
@@ -39,7 +39,7 @@ use super::types::{AccessSegment, ByteRange, SyntaxTree, ParamKind, Span};
 /// Render an [`SyntaxTree`] tree as a child of `parent` in the given Xot
 /// document. Returns the root node of the rendered subtree.
 ///
-/// `source` must be the same string the IR was lowered from.
+/// `source` must be the same string the tree was lowered from.
 pub fn render_to_xot(
     xot: &mut Xot,
     parent: XotNode,
@@ -158,7 +158,7 @@ pub fn render_to_xot(
 // the dispatcher's frame — that's the whole point: the dispatcher's
 // match becomes a thin jump table rather than a wide-frame function
 // reserving stack space worst-case across every arm. Recursive
-// IR walks at depth 20-30+ now run on default 2 MiB thread stacks
+// tree walks at depth 20-30+ now run on default 2 MiB thread stacks
 // instead of overflowing.
 
 #[inline(never)]
@@ -331,7 +331,7 @@ fn render_tree_class(
             emit_gap(xot, node, source, cr.start, cr.end)?;
         } else if matches!(slot, CSlot::Base(_)) {
             // Bases wrap in `<extends><type>...</type></extends>`
-            // — when the inner is already a type-shaped IR
+            // — when the inner is already a type-shaped tree
             // (GenericType produces its own `<type>`), don't
             // double-wrap. When the inner is itself an
             // `<implements>` SimpleStatement (Java's
@@ -1018,7 +1018,7 @@ fn render_tree_variable(
                 // (Principle #5 / #15). The `<expression>` host is
                 // added by `wrap_expression_positions` post-pass.
                 //
-                // Skip the wrap when the IR is already a
+                // Skip the wrap when the tree is already a
                 // `SimpleStatement{ element_name: "value" }` —
                 // several per-language lowerings construct that
                 // shape directly so the post-pass would find it
