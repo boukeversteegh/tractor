@@ -1,12 +1,23 @@
-# Chain Inversion
+---
+title: Chain Inversion
+priority: 1
+---
+
+> **Status: shipped.** Left-deep `<object[access]>` chains are produced
+> natively by each language's IR lowering (`Ir::Access { receiver,
+> segments }`). There is no separate chain-inversion transform pass —
+> the previous `transform::chain_inversion` post-walk was deleted once
+> every language's lowering constructed the shape directly. See the
+> design rationale below; cross-language uniformity is enforced by
+> `tractor/tests/cross_language_index_access_chain_inverts.rs`.
 
 ## Purpose
 
 Tractor's mission — *"Write a rule once. Enforce it everywhere."* — depends on the semantic tree mirroring the developer's mental model of the source. Where the tree disagrees with how a programmer reads code, rules become awkward to write and silently miss cases.
 
-Member-access and method-call chains (`a.b.c.d()`) are one of the largest such mismatches. Tree-sitter parses them right-deep by operator precedence — the LAST source token (the invocation) becomes the outermost element, and the FIRST source token (the receiver) is the deepest leaf. Programmers read them left-to-right: "start with `a`, then access `.b`, then `.c`, then call `.d()`". This document specifies the inverted shape that tractor emits, ratified by the project owner mid-iter-234.
+Member-access and method-call chains (`a.b.c.d()`) are one of the largest such mismatches. Tree-sitter parses them right-deep by operator precedence — the LAST source token (the invocation) becomes the outermost element, and the FIRST source token (the receiver) is the deepest leaf. Programmers read them left-to-right: "start with `a`, then access `.b`, then `.c`, then call `.d()`". This document specifies the inverted shape that tractor emits.
 
-## Current right-deep shape
+## Source right-deep shape (what tree-sitter produces)
 
 For TypeScript `a.b.c.d()`:
 
@@ -70,7 +81,7 @@ The marker form is recommended — explicit and short. Both are valid.
 - `<member>` — `.foo` access. Children: `<name>foo</name>` plus optional next-step element.
 - `<call>` — `.foo(...)` method call OR `(args)` result-invocation. Children: `<name>foo</name>` (absent for result-invocation) + zero or more `<argument>` siblings + optional next-step element.
 - `<subscript>` — `[expr]` index access. Children: index expression + optional next-step element.
-- `<cascades>` *(future, Dart only)* — wrapper holding sibling cascade steps. See "Cascades" section below.
+- `<cascades>` *(future, Dart only — see § Cascades)* — wrapper holding sibling cascade steps.
 
 ### Examples
 
@@ -171,7 +182,7 @@ The marker rides on the step element where the operator appears, not on the rece
 
 ## Why nested rather than flat
 
-The first proposal (iter 232) was a FLAT shape with sibling chain segments under a single wrapper. After comparing query patterns side-by-side, NESTED won on the strength of **declaration-call query symmetry**:
+The first proposal was a FLAT shape with sibling chain segments under a single wrapper. After comparing query patterns side-by-side, NESTED won on the strength of **declaration-call query symmetry**:
 
 | Query | Declaration | Chain (nested) | Chain (flat) |
 |---|---|---|---|
@@ -193,9 +204,9 @@ Examples of per-step markers that DO carry information:
 
 Examples of per-step markers that should NOT exist (rejected as redundant):
 - `<member[access]>` / `<call[access]>` — would just repeat the root.
-- `<member[instance]>` (C#/PHP, dropped iter 255) — was added unconditionally to every member-access derived from the `member_access_expression` tree-sitter kind, but since static-vs-instance is not actually distinguished (both syntactic forms get the marker), the marker carried no information. The chain-root `[access]` already says "this is access," and the element name `<member>` already says "this is `.`-style." The `[instance]` marker was vestigial from pre-chain-inversion days when there was no chain-root marker.
+- `<member[instance]>` (C#/PHP, rejected) — would be added unconditionally to every member-access derived from the `member_access_expression` tree-sitter kind, but since static-vs-instance is not actually distinguished (both syntactic forms get the marker), the marker carries no information. The chain-root `[access]` already says "this is access," and the element name `<member>` already says "this is `.`-style."
 
-The general rule: **add a per-step marker only when there's a meaningful syntactic alternative that lacks it.** `[optional]` qualifies (some steps are nullable, others aren't). `[instance]` did not (every step was equally "instance" in the marker sense).
+The general rule: **add a per-step marker only when there's a meaningful syntactic alternative that lacks it.** `[optional]` qualifies (some steps are nullable, others aren't). `[instance]` did not (every step is equally "instance" in the marker sense).
 
 ## Element name: `<object[access]>`
 
@@ -211,7 +222,7 @@ Keeping them separate avoids forcing one element to carry both meanings — Prin
 > rollout. This section exists so the chain shape is forward-
 > compatible: when Dart joins the supported languages, the
 > extension below can land without redesigning what's already
-> shipped. The current 8 languages (TS, Python, Java, C#, Go,
+> shipped. The 8 IR-supported languages (TS, Python, Java, C#, Go,
 > Rust, Ruby, PHP) only have linear chains and don't need any of
 > this.
 
@@ -256,118 +267,38 @@ For mixed cascade and normal chain `obj..a().b..c()..d()` (cascade `a()` on obj,
 
 `<cascades>` blocks are siblings of regular chain steps. They compose with the rest of the spine.
 
-When Dart arrives, the inverter gains a `ChainSegment::Cascade` variant and `emit_chain` groups consecutive cascades under a single `<cascades>` element. No code lives for cascades in the current implementation — `chain_inversion.rs` does not have a `Cascade` variant, the helper does not recognize `..`, and no tests cover this path. The design is captured here only so the eventual implementer knows the target shape.
+When Dart arrives, the Dart `lower_dart_root` will need to recognise `..` and emit a `<cascades>` segment, consuming consecutive cascade operators into one wrapper. The design is captured here so the eventual implementer knows the target shape.
 
-## Helper API
+## Implementation notes (IR lowering)
 
-Module: `tractor/src/transform/chain_inversion.rs`.
+The shape above is produced directly by each language's `Ir::Access { receiver, segments: Vec<AccessSegment> }` construction in its `lower_<lang>_root`. There is no separate transform pass.
 
-```rust
-pub enum ChainSegment {
-    Receiver(XotNode),
-    Member { name_node: XotNode, markers: Vec<XotNode> },
-    Call {
-        name_node: Option<XotNode>,
-        args: Vec<XotNode>,
-        markers: Vec<XotNode>,
-    },
-    Subscript { index_node: XotNode, markers: Vec<XotNode> },
-    // future: Cascade { ... }
-}
+`AccessSegment` (`tractor/src/ir/types.rs`) variants:
 
-/// Walk a right-deep canonical input and produce a segment list
-/// in source order (leftmost-first). Non-mutating.
-pub fn extract_chain(xot: &Xot, node: XotNode) -> Vec<ChainSegment>;
+- `Member { name, optional }` — `.foo`, `?.foo`.
+- `Call { name, args, optional }` — `.foo(args)`, `?.foo(args)`. `name = None` is the result-invocation case.
+- `Subscript { index, optional }` — `[expr]`, `?.[expr]`.
 
-/// Build the inverted `<object[access]>` tree from a segment list. Returns
-/// the new `<object[access]>` element. Pre: ≥2 segments, first is Receiver.
-pub fn emit_chain(xot: &mut Xot, segments: Vec<ChainSegment>)
-    -> Result<XotNode, xot::Error>;
-
-/// In-place: extract → detach → emit → replace. Returns the new
-/// `<object[access]>` on success, or None if the input wasn't a useful
-/// chain (and was left untouched).
-pub fn invert_chain_nesting(xot: &mut Xot, node: XotNode)
-    -> Result<Option<XotNode>, xot::Error>;
-```
-
-### Canonical input shape
-
-The extractor expects a right-deep input with these conventions:
-
-```
-<member>
-  <object>RECEIVER</object>            -- receiver subtree (recursive)
-  <property><name>X</name></property>  -- the .X access
-</member>
-
-<call>
-  CALLEE                               -- first non-marker element child:
-                                         (a) <member> for method call
-                                         (b) <call> for result-invocation
-                                         (c) any other element for top-level call
-  <argument>...</argument>*            -- args follow as siblings
-</call>
-```
-
-Languages whose current shape doesn't match (Java's flat call, TypeScript's `<callee>` wrapper) need a small per-language normalization pass before invoking `invert_chain_nesting`. Languages whose shape already matches (Python, Go) can adopt directly.
+The left-deep emission is mechanical: walk the right-deep CST shape from the outermost node inwards, push segments to a `Vec`, then construct `Ir::Access { receiver, segments }` with the segments in source order. `to_xot` translates each segment into the nested `<member>` / `<call>` / `<subscript>` step element in the standard way.
 
 ### Useful-chain guard
 
-`invert_chain_nesting` refuses to wrap when:
-- there are fewer than 2 segments (just a receiver, e.g. a bare identifier), or
-- the only step is a nameless top-level Call (e.g. `f(args)`).
-
-Wrapping these in `<object[access]>` would add noise without informational value.
+`Ir::Access` is constructed only when there is at least one access step. A bare identifier `a` lowers to `Ir::Name`, not `Ir::Access { receiver, segments: [] }`. A lone top-level `Ir::Call` with no name (e.g. `f(args)`) also stays as `Ir::Call`, not `Ir::Access`. Wrapping these would add noise without informational value.
 
 ### Source-location threading
 
-- `<object[access]>` inherits `line`/`column`/`end_line`/`end_column` from the receiver node (the leftmost source token).
+- `<object[access]>` inherits `line`/`column`/`end_line`/`end_column` from the receiver (the leftmost source token).
 - Each step element inherits from its primary node — the access name for `<member>`, the method name for `<call>`, the index expression for `<subscript>`.
-- For result-invocation `<call>` segments (no `name_node`), the step has no source location attached automatically — callers can attach later if needed.
+- For result-invocation `<call>` segments (no `name`), the step has no source location attached automatically.
 
-## Test coverage
+### Test coverage
 
-`tractor/src/transform/chain_inversion.rs` ships with 36 unit tests covering the 16 design-doc edge cases and the round-trip pipeline:
-- 14 emit cases (receiver-only chain, terminal call, multi-link, mixed, args, markers, subscript, complex receiver, result-invocation, source-location threading, pre-condition guards).
-- 11 extract cases (the same shapes, walked from right-deep input).
-- 11 round-trip cases (full extract → detach → emit → replace pipeline, including no-op guards for non-chains and idempotency on already-inverted input).
-
-Future Dart cascade work will add tests in the same module.
-
-## Per-language rollout
-
-Each language's post-transform pass needs a chain-root finder + `invert_chain_nesting` invocation per chain root. A "chain root" is a `<member>` or `<call>` whose parent is NOT inside another chain — specifically:
-- `<member>` is a chain root iff its parent is not `<object>` and not the callee position of a `<call>`.
-- `<call>` is a chain root iff its parent is not `<object>`.
-
-The walker visits chain roots top-down; each invocation extracts the full chain into a flat segment list, so nested chains (e.g. `obj.method(x).other.thing()` where the inner `obj.method(x)` is also a chain) are consumed as part of the outer extraction. There's no double-processing.
-
-### Languages with canonical input (no normalization needed)
-
-- **Python** — `<call><member><object/><property/></member>...args</call>`.
-- **Go** — same shape as Python.
-
-### Languages needing a normalization pass first
-
-- **TypeScript** — currently wraps the callee in `<callee>`. Unwrap before extraction.
-- **Java** — currently flat `<call><object/>NAME...args</call>`. Wrap NAME in a `<member>` synthetic element first.
-- **C#** — TBD (sample blueprint to be reviewed during the C# pilot iter).
-- **Rust** — `obj.method().field` — TBD.
-- **Ruby** — TBD.
-- **PHP** — `$obj->method()->prop` — `->` operator instead of `.`, but otherwise similar shape — TBD.
-
-### Render module update
-
-The renderer (`tractor/src/render/<lang>.rs`) currently reconstructs source from the right-deep shape. After inversion, each per-language renderer needs an `<object[access]>` traversal that emits source with the correct operator (`.`, `->`, `::`) between segments. One render iter per language, batched as needed.
-
-### Design.md update
-
-After the per-language rollout completes, the global design.md needs a Decision section documenting the chain shape as canonical. Per the self-improvement loop's rules, design.md edits require explicit user approval — that iter is held until the rollout is mature enough to commit.
+- Per-language IR lowering tests: `tractor/tests/ir_<lang>_parity.rs`, `tractor/tests/ir_<lang>_missing_kinds.rs`.
+- Cross-language uniformity: `tractor/tests/cross_language_index_access_chain_inverts.rs` exercises subscript-in-chain across the 7 IR languages (TS, Python, Java, C#, Go, Rust, Ruby, PHP) and pins them to the same shape.
+- Per-language snapshot fixtures under `tractor/tests/fixtures/` cover the chain shape in real code.
 
 ## References
 
-- `tractor/src/transform/chain_inversion.rs` — implementation + tests.
-- `todo/40-chain-inversion-implementation.md` — running implementation checklist.
-- `specs/tractor-parse/semantic-tree/design.md` — Principles #5, #11, #15 (rationale grounding).
-- `docs/design-transformation-expression-hosts-analysis.md` — companion design note for stable expression hosts (Principle #15), the cousin transform that this work composes with.
+- `specs/tractor-parse/semantic-tree/design.md` — Principles #5, #11, #15; § "Hierarchical access nests top-down" (the high-level decision).
+- `tractor/src/ir/types.rs` — `Ir::Access` + `AccessSegment` variants.
+- `tractor/src/ir/<lang>.rs` — per-language lowering that constructs `Ir::Access` directly from right-deep CST.

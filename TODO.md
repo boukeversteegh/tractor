@@ -21,23 +21,11 @@ Each slice introduces one or more invariants. Slices are ordered by recommended 
 **Editing this list.**
 - Append `??` to a line you want clarified. On the next turn Claude rewrites that single line and removes the `??`.
 - Append `++` to a line you want decomposed. Sub-task checkboxes appear underneath; the parent line stays as the tracker.
+- Appending -- means it should be less decomposed, more high level
+- DROP means we drop this, you can remove it, and so you know that it was removed.
 - Reordering or merging happens only on explicit request.
 
-## Status snapshot
-
-| Slice | Status | Size | Next action |
-|---|---|---|---|
-| S1 — IR docs reflect production | closed | XS | — |
-| S2 — one language registry | in progress (~70%) | L | S2-Z4: collapse the four `parse_with_ir_pipeline*` match arms |
-| S3 — eliminate xot post-passes | in progress (S3A closed; S3B-Z1a in progress) | XL | S3B-Z1a: attach `where`-clauses during lowering; then scope S3B-Z1b (shared-helpers pipeline) |
-| S4 — IR-based reverse rendering | open | M | S4A: `tractor render` calls `ir::source::render` |
-| S5 — single JSON projection | open | M | S5A: extend `to_data` to cover every `Ir` variant |
-| S6 — WASM uses unified parse | open | M | S6A: capture WASM↔CLI divergence fixtures |
-| S7 — drop xot serialise/reparse | open | S | S7A: confirm xee Documents ingestion path |
-| S8 — split `XmlNode` from atoms | open | S | S8A: define `XmlMarkup` / `XpathValue` types |
-| S9 — retire old parse API | open | S | S9A: migrate tests off legacy parse fns |
-| S10 — per-language consolidation | open | L | After S3B-Z1c; pure structural moves |
-| C1–C5 (side cleanups) | open | XS each | Interleave |
+**Choose-one decisions.** When Claude presents options for a decision the user needs to make, the parent line carries an `OPTIONS:` prefix and the options are written as checkbox children. Pick one by marking it `[x]`; that signals approval and Claude proceeds with that option. Mark with `[/]` to start work on the chosen option. Other (unchosen) options stay `[ ]` for context; once the decision is made and acted on, Claude collapses the unchosen ones with a one-line "rejected — <reason>" note (or removes them if the rationale is already captured in the chosen entry).
 
 ## Findings — pipeline as it actually runs
 
@@ -100,26 +88,12 @@ The IR design itself (typed slots, byte-range anchoring, `Inline`/`Unknown` esca
 
 ### Tasks
 
-- [x] [S2-Z1] **`LanguageOps` carries `extensions`, `grammar`, `ir_family` for every existing row.**
-  - New enum `IrFamily { None | Programming(LowerToIr) | Data(LowerToDataIr) | Sql(LowerToSqlIr) }` declared alongside.
-  - 17 grammar shim fns (`fn ts_csharp() -> tree_sitter::Language { tree_sitter_c_sharp::LANGUAGE.into() }`).
-  - Note: TS/TSX/JS split into 3 rows because grammars differ — `["typescript","ts"]`, `["tsx"]`, `["javascript","js","jsx"]`. Same transforms; only `grammar`, `extensions`, `ids` differ.
-  - Done: `cargo check --features native` and `cargo check --no-default-features --features wasm --target wasm32-unknown-unknown` both clean.
-
-- [x] [S2-Z3] **`parser::SUPPORTED_LANGUAGES`, `detect_language`, `get_tree_sitter_language`, `get_language_abi_versions` derive from `LANGUAGES`.**
-  - XML kept as a one-line passthrough special case in `detect_language` (no tree-sitter grammar).
-  - Done: `cargo check` (native + wasm) clean; `cargo test --lib` 373/373 pass.
-  - Surfaced: `tractor/src/languages/info.rs::LANGUAGES` is a *second* `LANGUAGES` array (with `aliases`, `has_transforms`, `grammar_file` for web). Tracked as **C5**.
-
-- [/] [S2-Z4] **No language-keyed `match lang { … }` arm exists in `parse_with_ir_pipeline*`; dispatch reads `match l.ir_family { IrFamily::Programming(f) => f(node, source), … }`.**
-  - Half done: `use_ir_pipeline` is gone. Four match arms at `parser/mod.rs:520, :574, :660, :741` still pattern-match on language id and need to collapse.
-  - Companion: the `match lang { … }` in `ir/source/mod.rs::render` is the same family — collapse it the same way as part of S10B (which adds `render_canonical: Option<RenderCanonicalFn>` to `LanguageOps`).
-
-- [x] [UKNUK] [S2C] **`parser::use_ir_pipeline` does not exist; both callers consult `LanguageOps::uses_ir(TreeMode)`.**
-  - Done: function deleted. Callers (lines 441 and 918) now do `crate::languages::get_language(lang).map(|l| l.uses_ir(resolved)).unwrap_or(false)`. The mode-aware decision lives on a new `LanguageOps::uses_ir(TreeMode)` method that reads `ir_family` from the registry.
-
-- [x] [S2-Z5] **Build green; `cargo test --lib` passes after the consolidation.**
-  - Done: 373/373 pass after S2-Z1 + S2C + S2-Z3.
+- [x] [S2-Z1] **`LanguageOps` carries `extensions`, `grammar`, `ir_family` for every existing row.** Done — `IrFamily { None | Programming | Data | Sql }` enum + 17 grammar shim fns; TS/TSX/JS split into 3 rows.
+- [x] [S2-Z3] **`parser::SUPPORTED_LANGUAGES`, `detect_language`, `get_tree_sitter_language`, `get_language_abi_versions` derive from `LANGUAGES`.** Done — XML kept as one-line passthrough; surfaced `info.rs::LANGUAGES` as a second registry (tracked as C5).
+- [x] [S2-Z4] **No language-keyed `match lang { … }` arm exists in `parse_with_ir_pipeline*`; dispatch reads `match l.ir_family { … }`.**
+  - Done 2026-05-08. Reshaped `IrFamily::Data { structure: DataParser, content: DataParser }` to model two tree modes per data lang. Wired Data mode through the IR pipeline; data-branch shape now spec-compliant (no `<object>`/`<array>` wrappers; `list="<key>"` per Principle #12). Companion: collapse the `match lang { … }` in `ir/source/mod.rs::render` as part of S10B.
+- [x] [S2C] **`parser::use_ir_pipeline` does not exist; both callers consult `LanguageOps::uses_ir(TreeMode)`.** Done — function deleted; new mode-aware `uses_ir` method on `LanguageOps`.
+- [x] [S2-Z5] **Build green; `cargo test --lib` passes after the consolidation.** Done — 373/373.
 
 - ~~S2-Z2~~ **(dropped 2026-05-08)** — c/cpp/html/css/bash/scala/lua/haskell/ocaml/r/julia/xml aren't really supported; don't promote them to `LANGUAGES`.
 
@@ -158,66 +132,33 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [x] [WGWS0] [S3A] **No `chain_inversion` module exists; every language's lowering constructs left-deep `Ir::Access` directly from right-deep CST.**
-  - Done: all 8 `chain_inversion::*` callsites removed (csharp/go/typescript/rust_lang plus ruby×2 and php×2). Two genuine gaps surfaced when the post-walk was disabled — Go's `index_expression` and PHP's `subscript_expression` produced flat `Ir::SimpleStatement` for single-step `arr[0]`; both rewritten to fold into `Ir::Access` (mirroring the existing TS / C# / Rust pattern). `tractor/src/transform/chain_inversion.rs` (1826 LOC) and `tractor/tests/chain_inversion_emits.rs` deleted; `pub mod chain_inversion;` removed from `transform/mod.rs`. All 26 test binaries (~1100 tests including the 7-language `cross_language_index_access_chain_inverts` loop) pass; native + WASM builds clean.
+- [x] [S3A] **No `chain_inversion` module exists; every language's lowering constructs left-deep `Ir::Access` directly from right-deep CST.**
+  - Done. `tractor/src/transform/chain_inversion.rs` (1826 LOC) and its tests deleted; all 8 callsites removed; Go/PHP single-step `arr[0]` rewritten to fold into `Ir::Access`.
 
-- [/] [XZ64] [S3B] **No `languages/<lang>/post_transform.rs` file exists; per-language shape decisions live in the lowering or in typed `Ir` variants; no global post-render pipeline survives either.**
+- [x] [S3B] **No `languages/<lang>/post_transform.rs` file exists; per-language shape decisions live in the lowering or in typed `Ir` variants; no global post-render pipeline survives either.**
+  - Done 2026-05-08. All 9 per-lang sub-tasks closed; conditionals module deleted; `LanguageOps::post_transform` field removed.
 
-  - [/] [S3B-Z1] **C#: lowering produces canonical IR end-to-end; `languages/csharp/post_transform.rs` does not exist. (Pathfinder for the per-language fold + shared-helper consolidation pattern.)**
-    - **Scope finding (2026-05-08):** the four passes named in this slice's original draft (`csharp_normalize_conditional_access`, `unify_file_scoped_namespace`, `attach_where_clause_constraints`, `append_constraint_to_generic`) were already gone — folded into the IR lowering in earlier iters. The only genuinely C#-specific pass remaining is `attach_ir_where_clauses` (~115 LOC). The other ~200 lines of `csharp_post_transform` are calls to **shared cross-language transforms** (`collapse_conditionals`, `tag_multi_role_children`, `wrap_expression_positions`, `flatten_nested_paths`, `strip_body_braces`, `wrap_relationship_targets_in_type`, `flatten_single_declarator_children`, `distribute_member_list_attrs`) parameterised by C#-specific data lists. The same factoring applies to Z2…Z9 — none of those files can be deleted by per-language work alone.
+  - [x] [S3B-Z1] **C#: lowering produces canonical IR end-to-end.** Done — closed by Z1a + Z1c.
+    - [x] [S3B-Z1a] **C# `where T : ...` constraints attach during lowering; no `attach_ir_where_clauses` post-walk.** Done — `fold_csharp_where_clauses_into_generics` in IR lowering.
+    - [ ] [S3B-Z1b] **~~~Shared cross-language post-render helpers run from a single registry-driven pipeline.~~~** Superseded by the delete-and-fix path used for Z1a/Z1c.
+    - [x] [S3B-Z1c] **`languages/csharp/post_transform.rs` does not exist.** Done — fixed `csharp_null_forgiving_postfix_unary` by typifying `Ir::Variable.value: Option<Expression>`.
 
-    - [x] [S3B-Z1a] **C# `where T : ...` constraints attach to their target generics during lowering; `attach_ir_where_clauses` post-walk does not exist.**
-      - Done via shape (i): `fold_csharp_where_clauses_into_generics` in `tractor/src/ir/csharp.rs` runs at the end of the `class_declaration` lowering arm, translating each `<constraint>` into zero-width markers (`<class/>`/`<new/>`/`<struct/>`/`<notnull/>`/`<unmanaged/>`) or `<extends>` wrappers and appending them to the matching `Ir::SimpleStatement::generic` item. `where_clauses` stays populated on `Ir::Class` so `render_ir_class` can flush the where-clause source bytes as gap text under `<class>` (new `CSlot::Where` branch in `tractor/src/ir/to_xot.rs`) — no `<where>` element in output.
-      - The only remaining content of `csharp/post_transform.rs` is calls to shared cross-language transforms with C#-specific data lists.
+  - [x] [S3B-Z2] **Rust lowering produces canonical IR; `languages/rust_lang/post_transform.rs` does not exist.** Done — `lower_rust_use` replaces post-walk; ratchet 609→639.
+  - [x] [S3B-Z3] **TypeScript/JS/TSX lowering produces canonical IR; `languages/typescript/post_transform.rs` does not exist.** Done — `Expression::wrap` in `lower_ts_declarator_parts` fixes the one breakage.
+  - [x] [S3B-Z4] **Python lowering produces canonical IR; `languages/python/post_transform.rs` does not exist.** Done — `set_python_class_member_visibility` in `lower_class`; ratchet 603→605.
+  - [x] [S3B-Z5] **Java lowering produces canonical IR; `languages/java/post_transform.rs` does not exist.** Done — `scoped_identifier` recursion + `Expression::wrap` in for/declarator slots; ratchet 600→603.
+  - [x] [S3B-Z6] **Go lowering produces canonical IR; `languages/go/post_transform.rs` does not exist.** Done — `Expression::wrap` per returned value in `return_statement`.
+  - [x] [S3B-Z7] **T-SQL lowering produces canonical SqlIr; `languages/tsql/post_transform.rs` does not exist.** Done — zero tests broke.
+  - [x] [S3B-Z8] **PHP lowering produces canonical IR; `languages/php/post_transform.rs` does not exist.** Done; ratchet 607→609.
+  - [x] [S3B-Z9] **Ruby lowering produces canonical IR; `languages/ruby/post_transform.rs` does not exist.** Done — promoted `collapse_conditionals` to unconditional cross-language pass; ratchet 605→607.
+  - [x] [S3B-Z10] **The flat conditional shape (`<if><else_if/><else/>`) is produced by lowering or `to_xot`, not by a separate xot walk.** Done — added `lower_ruby_if`; `transform/conditionals.rs` deleted.
+  - [x] [S3B-Z11] **`LanguageOps::post_transform` field does not exist; no post-pass runs in the IR pipeline.** Done — field, type alias, and call sites removed.
 
-    - [ ] [S3B-Z1b] **Shared cross-language post-render helpers run from a single registry-driven pipeline, with their per-language data lists carried as `LanguageOps` fields. No language declares its own copy of `tag_multi_role_children`-style invocations.** *(Sibling concern — not C#-specific. Unblocks Z1c and Z2…Z9's file-deletion steps.)*
-      - **Approach revised 2026-05-08:** rather than designing a unified pipeline + per-language data tables, follow the experimental delete-and-fix path used for Z1a/Z1c — for each language, set `post_transform: None`, run the suite, and fix breakages by encoding the missing knowledge in the IR (typed slots, struct wrappers like `Expression`, or enum-variant metadata). The shared helpers either become redundant (cardinality already in `Vec<Ir>` slots — closed by S3D) or move into IR construction (e.g. `Expression::wrap` at value-position lowering). Z2…Z9 each delete their own `post_transform.rs` directly.
-      - Open work: typify the remaining expression-position slots as `Box<Expression>` / `Option<Box<Expression>>` for cross-language coverage — currently only `Ir::Variable.value` is typed. Affected fields: `Ir::If.condition`, `Ir::Binary.left/right`, `Ir::Return.value`, `Ir::Comparison.left/right`, `Ir::Logical.left/right` (if exists), `Ir::Yield.value`, `Ir::Cast.inner`, `Ir::While.condition`, `Ir::Match.subject`, `Ir::Ternary.condition/then/else`. Migration is mechanical: change field type, update construction sites to `Expression::wrap(...)`, deref in renderer/walker.
-      - Coordinate with **S3D** (drop `list="X"` attribute pass once `to_xot` reads cardinality from typed IR slots).
+- [x] [S3C] **`parse_with_ir_pipeline*` invokes no post-pass on rendered xot.** Done — closed by S3B-Z11.
 
-    - [x] [S3B-Z1c] **`languages/csharp/post_transform.rs` does not exist; csharp's `LANGUAGES` row has `post_transform: None`.**
-      - Done: file deleted, `csharp::csharp_post_transform` reference removed from `LANGUAGES`, `csharp::mod` no longer reexports it. Only one test failed (`csharp_null_forgiving_postfix_unary`); the fix was to typify `Ir::Variable.value: Option<Expression>` so `<value><expression>...</expression></value>` is produced at IR construction (via `Expression::wrap`) instead of by `wrap_expression_positions` post-walk. Java/TS lowerings updated correspondingly.
+- [x] [S3D] **`to_xot` emits cardinality from typed slots; no `list="X"` attribute pass exists for IR languages.** Done — four no-op post-pass helpers + `ROLE_MIXED_PARENTS` deleted (~130 LOC). Legacy `Rule::Flatten` retained for unmigrated walk_transform langs.
 
-  - [x] [S3B-Z2] **Rust lowering produces canonical IR end-to-end; `languages/rust_lang/post_transform.rs` does not exist.**
-    - Done 2026-05-08. Three tests broke (`rust_use_group_lists_inner_uses`, `cross_language_import_path_flat_segments`, `rust_scoped_path`); fixed by `lower_rust_use` — a custom `use_declaration` lowering that flattens nested `scoped_identifier`s, lifts the trailing leaf out of `<path>` as a sibling `<name>`, expands `use a::{b, c}` group syntax into `<use[group]>` with inner `<use>` siblings, and handles `*` wildcard / `as` alias / `pub use` re-export markers — replaces `rust_restructure_use` post-walk. `rust_normalize_field_expression` and `rust_normalize_lifetime_names` were not load-bearing for the cargo test surface. Ratchet bumped 609 → 639 (Rust contributes the most untagged-children sites).
-
-  - [x] [S3B-Z3] **TypeScript / JS / TSX lowering produces canonical IR end-to-end; `languages/typescript/post_transform.rs` does not exist.**
-    - Done 2026-05-08. All three TS-family rows have `post_transform: None`. Single test broke (`xpath::engine::test_query_parsed_typescript`); fixed by wrapping declarator's value in `Expression::wrap` inside `lower_ts_declarator_parts`. `typescript_unwrap_callee` and `typescript_restructure_import` were not load-bearing for the cargo test surface (may affect snapshots — to be regenerated separately). No ratchet bump.
-
-  - [x] [S3B-Z4] **Python lowering produces canonical IR end-to-end; `languages/python/post_transform.rs` does not exist.**
-    - Done 2026-05-08. One test broke (`visibility::python`); fixed by `set_python_class_member_visibility` running at end of `lower_class`, setting `Modifiers::access` on direct `Ir::Function` children based on Python name conventions (`__x__` public, `__x` private, `_x` protected, `x` public). Replaces `inject_python_visibility_markers` post-walk. Other helpers (`python_tag_from_imports_uniform`, `python_restructure_imports`, `python_alias_pairs`, `python_flatten_dotted_name`) were not load-bearing for the cargo test surface. Ratchet bumped 603 → 605.
-
-  - [x] [S3B-Z5] **Java lowering produces canonical IR end-to-end; `languages/java/post_transform.rs` does not exist.**
-    - Done 2026-05-08. `scoped_identifier` lowering recurses to flatten nested paths (folds in `flatten_nested_paths` + `java_unwrap_type_in_path`). `enhanced_for_statement` and `lower_java_multi_declarator` wrap value-position content via `Expression::wrap` (folds in `wrap_expression_positions` for those slots). Ratchet bumped 600→603 — three new advisory `no-children-overflow` sites pending S3D.
-
-  - [x] [S3B-Z6] **Go lowering produces canonical IR end-to-end; `languages/go/post_transform.rs` does not exist.**
-    - Done 2026-05-08. Single test broke (`go_multi_value_return_lists_expressions`); fixed by lowering `return_statement` with `Expression::wrap` per returned value (multi-return → multiple `<expression>` siblings under `<return>`). `go_retag_singleton_closure_body` was already redundant — IR closure rendering covers the case. No ratchet bump.
-
-  - [x] [S3B-Z7] **T-SQL lowering produces canonical SqlIr end-to-end; `languages/tsql/post_transform.rs` does not exist.**
-    - Done 2026-05-08. Zero tests broke — `tsql_wrap_binary_operands` and `tsql_tag_select_columns` were not load-bearing for the current test surface (SqlIr lowering already produces the right shapes). Deleted the file and the module reference. No ratchet bump.
-
-  - [x] [S3B-Z8] **PHP lowering produces canonical IR end-to-end; `languages/php/post_transform.rs` does not exist.**
-    - Done 2026-05-08. Zero functional tests broke — `php_wrap_member_call_slots` and `php_restructure_use` were not load-bearing for the cargo test surface. Ratchet bumped 607 → 609.
-
-  - [x] [S3B-Z9] **Ruby lowering produces canonical IR end-to-end; `languages/ruby/post_transform.rs` does not exist.**
-    - Done 2026-05-08. Two tests broke (`if_else::ruby` and `if_else::cross_language_elseif_chain_flattens_uniformly`); fixed by promoting `collapse_conditionals` from a per-language post-transform call to an unconditional cross-language pass in `parser/mod.rs` (it carries no per-language data — same archetype as Z10 anticipates). Other Ruby helpers (`ruby_tag_case_when_lists`, `ruby_retag_singleton_block_body`, `ruby_collapse_lambda_body`, `ruby_extract_pair_keys`) were not load-bearing for the cargo test surface. Ratchet bumped 605 → 607.
-
-  - [x] [S3B-Z10] **The flat conditional shape (`<if><else_if/><else/>`) is produced by lowering or `to_xot`, not by a separate xot walk.**
-    - Done 2026-05-08. Each language's lowering already produces flat IR for if/elsif/else (C# via `lower_csharp_else_chain`, others via the natural CST shape) — except Ruby, whose CST nests alternatives. Added `lower_ruby_if` + `flatten_ruby_elsif_chain` so Ruby produces the flat shape at IR construction. `languages/mod.rs::collapse_conditionals`, `collect_if_nodes`, and the entire `tractor/src/transform/conditionals.rs` module are deleted.
-
-  - [x] [S3B-Z11] **`LanguageOps::post_transform` field does not exist; no post-pass runs in the IR pipeline.**
-    - Done 2026-05-08. With every language migrated (Z1c, Z2–Z9), the field, its initializers, the `PostTransformFn` type alias, `get_post_transform()`, and all three call sites in `parser/mod.rs` (plus the legacy-imperative call site in `transform/builder.rs`) are removed. The IR pipeline runs `lower → render_to_xot` and stops; no post-pass remains.
-    - After: `languages/<lang>/` for every migrated language contains `mod.rs`, `input.rs` (kinds), `output.rs` (vocabulary). S10A then adds `lower.rs`; S10B adds `render_source.rs`.
-
-- [ ] [3C72S] [S3C] **`parse_with_ir_pipeline*` invokes no post-pass on rendered xot.**
-  - The block at `parser/mod.rs:602–609` (and matching ones in data/SQL branches) does not exist.
-  - Depends on S3B-Z11.
-
-- [ ] [3IIU] [S3D] **`to_xot` emits cardinality from typed slots; no `list="X"` attribute pass exists for IR languages.**
-  - `Box<Ir>` → singleton; `Vec<Ir>` → list. The current attribute pass is removed for IR languages (legacy XeeBuilder path keeps it for unmigrated ones).
-  - Coordinated with S3B-Z1b — once cardinality flows from typed slots, the `tag_*` helpers shrink or disappear.
-
-- [ ] [DZRA9N] [S3E] **`transform::shape_contracts` runtime walks are minimised; provable rules live at the type level.**
+- [ ] [S3E] **`transform::shape_contracts` runtime walks are minimised; provable rules live at the type level.**
   - Most rules become unrepresentable at the `Ir` enum level (per `ir/types.rs:31`). Keep runtime-only walks for genuinely runtime rules (e.g. `op-marker-matches-text`).
 
 ---
@@ -244,17 +185,22 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [J60X] [S4A] **`tractor render` reads source, parses to IR, and emits via `ir::source::render(ir, lang, anchor)`.**
-  - Edit `cli/render.rs` to read source (stdin / `--string` / file), call `parse()`, then `ir::source::render`.
+- [x] [S4A] **`tractor render` reads source, parses to IR, and emits via `ir::source::render(ir, lang, anchor)`.** Done — `cli/render.rs` dispatches by IR family; anchored mode byte-identical; non-IR languages return a clear error.
 
-- [ ] [21DT] [S4B] **`mutation/xpath_upsert.rs` value-rewrite uses anchored IR re-render with span tracking, not `render_with_spans(xml_node, lang, TreeMode::Data, …)`.**
-  - Today: `mutation/xpath_upsert.rs:252,390`. After: speaks IR + source anchor.
+- [ ] [S4B] **`mutation/xpath_upsert.rs` value-rewrite uses anchored IR re-render with span tracking, not `render_with_spans(xml_node, lang, TreeMode::Data, …)`.**
+  - Today: `mutation/xpath_upsert.rs` calls `render::render_with_spans` 9× over a `XmlNode` derived from xot. Works today because of transitional shims in `render::json`/`render::yaml` (`is_property_element` accepts `field`/`list` or `name != "item"`; `property_key` priority adds `list`).
+  - After: mutation finds the matched IR node by byte position, mutates `Ir`/`DataIr` directly, re-renders the modified subtree via an IR-aware span-tracking renderer, splices into original source.
+  - Decomposes into:
+    - [x] [S4B-Z1] **DataIr mutation primitives.** Done — `ScalarKind`, `synthetic_scalar`, `find_at_offset[_mut]`, `set_scalar`, `set_pair_value`, `insert_nested_pair` on `DataIr`; 7 unit tests.
+    - [x] [S4B-Z2] **IR-aware span-tracking render for `DataIr`.** Done — `ir/source/data_json.rs` and `ir/source/data_yaml.rs` expose `render_*_with_spans -> (String, DataSpanMap)` keyed by `(line, col)`; 14 unit tests including end-to-end mutate→render→splice roundtrip.
+    - [x] [S4B-Z3] **Wire upsert json/yaml paths.** Done — `mutation/xpath_upsert.rs` `update_existing` and `insert_new` branch to `*_via_data_ir` helpers for json/yaml/yml. Insert path uses two-phase `find_insertion_target_at_offset` (deepest-container, not deepest-leaf).
+    - [ ] [S4B-Z4] **csharp upsert via `Ir`.** Same wiring for the C# code path (`render::render_with_spans(xml_node, "csharp", …)`) — uses `Ir` instead of `DataIr`. Reuses `ir::source::render` for anchored rendering, adds span tracking.
+      - **Deferred 2026-05-08.** No driving tests; legacy path was already broken (empty `SpanMap`). Needs `Ir` mutation primitives + `Ir`-direct span-tracking renderer (both L-sized). Reopen when a workflow requires it.
+    - [x] [S4B-Z5] **Retire transitional shims in `render::json`/`render::yaml`.** Done — strict `field=` checks restored; `render::yaml::tests::sequence` rewritten to legacy shape. (Modules deleted entirely at S4D shortly after.)
 
-- [ ] [KOLKFS] [S4C] **`render::parse_xml` and `render::parse_json` do not exist.**
-  - Depends on S4A + S4B (nothing reads `XmlNode`-from-text any more).
+- [x] [S4C] **`render::parse_xml` and `render::parse_json` do not exist.** Done — removed alongside S4D.
 
-- [ ] [3WO0Y] [S4D] **`render/{csharp,json,yaml}.rs` do not exist (~1800 LOC deleted).**
-  - Optional fallback flag for languages still without IR, with a sunset comment, if anyone needs it.
+- [x] [S4D] **`render/{csharp,json,yaml}.rs` do not exist (~1800 LOC deleted).** Done — whole `tractor/src/render/` directory retired (~2200 LOC); `xpath_upsert.rs` slimmed in lockstep; new `lang_supports_upsert` allowlist (json/yaml/yml).
 
 ---
 
@@ -279,18 +225,33 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [RYLH] [S5A] **`ir::to_data::lower_to_data_ir` covers every `Ir` variant deterministically.**
-  - Today: covers `Ir::Class` + scalar leaves (`ir/to_data.rs:37`). Slice plan in `docs/design-projection-pipeline.md`.
+- [/] [S5A] **`ir::to_data::lower_to_data_ir` covers every `Ir` variant deterministically.**
+  - **Direction (chosen 2026-05-08).** Wire S5C first (done — see below) with a `has_unhandled` fallback that keeps documents on `ir_to_json` while any of their variants still hit the catch-all. Migrate variants here incrementally; documents flip to the typed path organically as their last unhandled variant gets covered, giving per-variant snapshot bisectability. The strict invariant ("no fixture ever trips `has_unhandled`") closes the slice and lets S5D delete `ir_to_json`.
+    - [x] [S5A-Z1] **Foundation: `Name`, `Atom`, `Module`, `Class`, `Inline`, `Skip` projected.** Done in iter 39 + S5A start.
+    - [x] [S5A-Z2] **Declarations batch: `Body`, `Function`, `Variable`, `Property`, `Returns`, `Parameter`, `SimpleStatement` (non-marker), `Comment`, `Return`, `Decorator`, `Import`.** Done 2026-05-08.
+    - [x] [S5A-Z3] **Expressions batch: `Expression`, `Binary`, `Unary`, `Comparison`, `Call`, `Ternary`, `Is`, `Cast`, `KeywordArgument`, `ListSplat`, `DictSplat`, `Pair`.** Done 2026-05-08 (`Access` deferred to Z6). New `make_op_mapping` helper for op-bearing variants.
+    - [x] [S5A-Z4] **Collections + scalar literals: `Tuple`, `List`, `Set`, `Dictionary`, `Int`, `Float`, `String`, `True`, `False`, `None`, `Null`.** Done 2026-05-08. Scalars map to natural `DataIr` variants; collections to `Sequence`/`Mapping`.
+    - [x] [S5A-Z5] **Control flow: `If`, `ElseIf`, `Else`, `For`, `Foreach`, `CFor`, `While`, `DoWhile`, `Break`, `Continue`, `Try`, `ExceptHandler`.** Done 2026-05-08. Body's children flatten directly into the parent.
+    - [x] [S5A-Z6] **Misc tail: `Lambda`, `ObjectCreation`, `Constructor`, `Generic`, `TypeParameter`, `GenericType`, `TypeAlias`, `Enum`, `EnumMember`, `Accessor`, `Using`, `Namespace`, `From`, `FromImport`, `Path`, `Aliased`, `Assign`, `FieldWrap`, `PositionalSeparator`, `KeywordSeparator`, `Unknown` + the `Access` chain.** Done 2026-05-08. New `project_access_segment` helper.
+    - [x] [S5A-Z7] **`has_unhandled` returns `false` for every fixture; `Tree::Ir::to_json` reaches `ir_to_json` from no test path.**
+      - Done 2026-05-08. Catch-all removed from `project()`; Rust's exhaustiveness check enforces every `Ir` variant has its own arm. Legacy `ir_to_json` fallback unreachable. New tests: `has_unhandled_predicate_trips_on_unhandled_marker`, `projection_is_exhaustive_for_all_ir_variants`.
+    - [ ] [S5A-Z8] **Snapshot reconciliation: any JSON snapshots that move when fixtures flip from legacy to typed path are reviewed and updated.**
+      - Status: needs audit. New path is LIVE post-Z7 but no snapshots broke under `cargo test` — likely because most snapshot tests render via XPath→XmlNode→`xml_node_to_json` rather than `Tree::Ir::to_json` (only reached via `format::json.rs::Projection::Tree`, i.e. `--projection=tree`). Enumerate fixtures that hit that path, regenerate, review diff. Expected: `$type` keys disappear; `$inline` / `$skip` / plural-of-self cease to exist.
+  - **Coverage status.** Complete after Z7: every `Ir` variant has its own arm in `tractor/src/ir/to_data.rs::project`; compile-enforced exhaustiveness.
+  - **OPTIONS: Boilerplate reduction in `to_data.rs`** (2026-05-08, raised by user). The `project` function is ~500 LOC of mechanically-similar match arms — declaration variants do `push_modifier_flags + named slots`, control-flow variants do `condition + body-flatten + else?`, op-bearing expressions do `op + operands`, etc. Three plausible reduction approaches; pick one (mark `[x]`) to commit.
+    - [ ] **(a) `project!` macro.** Takes a variant name and a list of `(slot_key, expr)` pairs, expands to the boilerplate. Reduces 5–10 lines per variant to 2–3. Cost: introduces a macro layer that obscures projection rules; harder to step-through with a debugger.
+    - [ ] **(b) `MappingBuilder` helper toolkit (recommended).** Extend `make_pair` / `make_flag` / `push_modifier_flags` / `collect_member_pairs` with a small builder API: `MappingBuilder::new(range, span).flag(name).pair(key, value).inline_body(body).build()`. Codifies the four recurring shapes (`flags + name + slots`, `condition + body`, `op + operands`, `transparent passthrough`) without macros. ~30% verbosity reduction. Each arm becomes a few-line builder pipeline; `project` stays as the dispatch.
+    - [ ] **(c) Per-variant `Ir::project_to_data` methods.** Move each arm to where the variant is defined in `types.rs`. Pro: variant-local. Con: scatters the projection ruleset across `types.rs` (meant to be data-only), and breaks "one place to read all projection rules".
 
-- [ ] [FJYNZN] [S5B] **All JSON shape decisions (`$inline`, `$skip`, `$type:"expression"`, plural-of-self collapse, marker-vs-leaf) live as uniform projection rules in `to_data`, not in `to_json`.**
+- [ ] [S5B] **All JSON shape decisions (`$inline`, `$skip`, `$type:"expression"`, plural-of-self collapse, marker-vs-leaf) live as uniform projection rules in `to_data`, not in `to_json`.**
 
-- [ ] [AP9K0B] [S5C] **`Tree::to_json` for the `Tree::Ir` arm calls `data_to_json(to_data(ir, source))`.**
-  - `Tree::DataIr` keeps direct `data_to_json`; `Tree::Sql` keeps `sql_to_json` until S5E.
+- [x] [S5C] **`Tree::to_json` for the `Tree::Ir` arm calls `data_to_json(to_data(ir, source))`.**
+  - Done 2026-05-08. Hybrid dispatch in `xpath/match_result.rs`: project via `lower_to_data_ir` first; if `has_unhandled` is false render via `data_to_json`, else fall back to legacy `ir_to_json`. After S5A-Z7 the fallback is unreachable. `Tree::DataIr` keeps direct `data_to_json`; `Tree::Sql` keeps `sql_to_json` until S5E.
 
-- [ ] [UCMC] [S5D] **`tractor/src/ir/to_json.rs` does not exist.**
+- [ ] [S5D] **`tractor/src/ir/to_json.rs` does not exist.**
   - Depends on S5C (no caller).
 
-- [ ] [X8UX] [S5E] **`SqlIr` JSON output flows through `DataIr` projection.**
+- [ ] [S5E] **`SqlIr` JSON output flows through `DataIr` projection.**
   - All three IR families share one JSON projection algorithm with three entry points.
 
 ---
@@ -314,13 +275,13 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [6B4STY] [S6A] **A fixture set under `tests/wasm_parity/` captures concrete WASM↔CLI divergences for migrated languages.**
+- [ ] [S6A] **A fixture set under `tests/wasm_parity/` captures concrete WASM↔CLI divergences for migrated languages.**
   - Small input file per language; expected = CLI output; observed = WASM output. Used by S6C as the parity oracle.
 
-- [ ] [RE5EF5] [S6B] **`wasm::parse_to_xml` runs the IR pipeline.**
+- [ ] [S6B] **`wasm::parse_to_xml` runs the IR pipeline.**
   - Either build a `tree_sitter::Tree`-shaped input from `SerializedNode` on the Rust side, or extract a WASM-friendly variant of `parse_with_ir_pipeline_to_xee`.
 
-- [ ] [ZA8RL] [S6C] **The S6A fixtures pass: web ↔ CLI divergence is zero for every migrated language.**
+- [ ] [S6C] **The S6A fixtures pass: web ↔ CLI divergence is zero for every migrated language.**
 
 ---
 
@@ -343,13 +304,13 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [EPJZN] [S7A] **A clear yes/no answer exists on whether xee `Documents` can ingest an existing `xot::Xot` + node handle today.**
+- [ ] [S7A] **A clear yes/no answer exists on whether xee `Documents` can ingest an existing `xot::Xot` + node handle today.**
   - Documented at the top of S7B's PR. May require xee upstream change.
 
-- [ ] [55W1IP] [S7B] **Direct IR → xee Documents construction is implemented.**
+- [ ] [S7B] **Direct IR → xee Documents construction is implemented.**
   - Replaces the `xot::Xot::new()` → render → `to_string()` → `documents.add_string()` chain.
 
-- [ ] [ZX824I] [S7C] **The `xot.to_string(...) → documents.add_string(...)` block at `parser/mod.rs:776` does not exist.**
+- [ ] [S7C] **The `xot.to_string(...) → documents.add_string(...)` block at `parser/mod.rs:776` does not exist.**
   - Depends on S7B.
 
 ---
@@ -374,11 +335,11 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [VO169] [S8A] **`XmlMarkup` and `XpathValue` types exist; `XmlNode` is `XmlMarkup` only.**
+- [ ] [S8A] **`XmlMarkup` and `XpathValue` types exist; `XmlNode` is `XmlMarkup` only.**
 
-- [ ] [2KKHE] [S8B] **`Tree` is `Tree::Xml(XmlMarkup) | Tree::Atom(XpathValue) | Tree::Ir{..} | Tree::DataIr{..} | Tree::Sql{..}`.**
+- [ ] [S8B] **`Tree` is `Tree::Xml(XmlMarkup) | Tree::Atom(XpathValue) | Tree::Ir{..} | Tree::DataIr{..} | Tree::Sql{..}`.**
 
-- [ ] [X7WKK] [S8C] **No renderer branches on `XmlNode::{Map, Array, Number, Boolean, Null}`.**
+- [ ] [S8C] **No renderer branches on `XmlNode::{Map, Array, Number, Boolean, Null}`.**
   - Likely sites: `format/json.rs`, `format/xml.rs`, `output/*`.
 
 ---
@@ -403,13 +364,13 @@ The slice closes when both halves leave nothing standing — no per-language `po
 
 ### Tasks
 
-- [ ] [X2N5] [S9A] **No test calls `parse_string_to_xot` / `parse_file_to_xee` / their variants.**
+- [ ] [S9A] **No test calls `parse_string_to_xot` / `parse_file_to_xee` / their variants.**
   - Files: `tests/ir_csharp_parity.rs`, `tests/ir_python_parity.rs`, `tests/ir_python_blueprint.rs`, `tests/ir_*_missing_kinds.rs`, `tests/coverage_report.rs`.
 
-- [ ] [QWGMKD] [S9B] **`lib.rs` does not re-export the legacy parse functions.**
+- [ ] [S9B] **`lib.rs` does not re-export the legacy parse functions.**
   - Targets at `lib.rs:87–99`. Depends on S9A.
 
-- [ ] [TR47] [S9C] **`parse_*_with_options` functions do not exist in `parser/mod.rs`; only `parse()` remains.**
+- [ ] [S9C] **`parse_*_with_options` functions do not exist in `parser/mod.rs`; only `parse()` remains.**
   - Depends on S9B.
 
 ---
@@ -439,7 +400,7 @@ The shared IR machinery — `ir/types.rs` (the unified `Ir` enum), `ir/to_xot.rs
 
 ### Tasks
 
-- [ ] [LZ8K] [S10A] **No `ir/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
+- [ ] [S10A] **No `ir/<lang>.rs` lowering file exists for any programming language; `languages/<lang>/lower.rs` exists in its place.**
   - Each move: `git mv ir/<lang>.rs languages/<lang>/lower.rs`; add `pub mod lower;` to `languages/<lang>/mod.rs`; drop `pub mod <lang>;` from `ir/mod.rs`; update the `ir_family: Programming(<lang>::lower::lower_<lang>_root)` pointer in the `LANGUAGES` registry.
   - Per-language sub-tasks:
     - [ ] [S10A-Z1] csharp — `ir/csharp.rs` (2886 LOC) → `languages/csharp/lower.rs`.
@@ -451,32 +412,155 @@ The shared IR machinery — `ir/types.rs` (the unified `Ir` enum), `ir/to_xot.rs
     - [ ] [S10A-Z7] ruby — `ir/ruby.rs` (688 LOC) → `languages/ruby/lower.rs`.
     - [ ] [S10A-Z8] php — `ir/php.rs` (1563 LOC) → `languages/php/lower.rs`.
 
-- [ ] [M3VR] [S10B] **No `ir/source/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place. `LanguageOps` carries a `render_canonical: Option<RenderCanonicalFn>` field; `ir/source/mod.rs::render`'s match dispatch is gone.**
+- [ ] [S10B] **No `ir/source/<lang>.rs` per-language emitter exists; `languages/<lang>/render_source.rs` exists in its place. `LanguageOps` carries a `render_canonical: Option<RenderCanonicalFn>` field; `ir/source/mod.rs::render`'s match dispatch is gone.**
   - Each per-language emitter is small (~26–31 LOC: `Syntax` struct + `render` fn calling `super::common::write_ir`). Shared `write_ir` engine in `ir/source/common.rs` stays put.
   - Per-language sub-tasks: [S10B-Z1..Z8] csharp / java / python / typescript / rust_lang / go / ruby / php.
   - SQL is handled by S10D.
 
-- [ ] [N7TH] [S10C] **`ir/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `ir/` root do not exist.**
+- [ ] [S10C] **`ir/data/` is a directory; the nine flat `data*.rs` / `*_data.rs` files at `ir/` root do not exist.**
   - Today's flat layout: `data.rs` (226), `data_to_xot.rs` (501), `data_to_json.rs` (222), `to_data.rs` (465 — `Ir → DataIr` projection, stays at IR root), `json_data.rs` (187), `yaml_data.rs` (265), `toml_data.rs` (367), `ini_data.rs` (152), `markdown_data.rs` (324).
   - Target: `ir/data/{types.rs, to_xot.rs, to_json.rs, lower_json.rs, lower_yaml.rs, lower_toml.rs, lower_ini.rs, lower_markdown.rs}`.
 
-- [ ] [P2QX] [S10D] **`ir/sql/` is a directory; the five flat `sql*.rs` files at `ir/` root and `ir/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
+- [ ] [S10D] **`ir/sql/` is a directory; the five flat `sql*.rs` files at `ir/` root and `ir/source/sql.rs` do not exist. T-SQL lowering lives at `languages/tsql/lower.rs`.**
   - Today's flat layout: `sql.rs` (741), `sql_lower.rs` (2243), `sql_to_xot.rs` (908), `sql_to_json.rs` (684), `ir/source/sql.rs` (147).
   - Target: `ir/sql/{types.rs, to_xot.rs, to_json.rs, render_source.rs}` + `languages/tsql/lower.rs`.
 
-- [ ] [Q4WB] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
+- [ ] [S10E] **No `languages/<lang>/input.rs` file exists; `kinds.rs` exists in its place.**
   - Files contain only the generated `CsKind` / `PyKind` / `JavaKind` / etc. enum (CST-kind catalogue), used by `tests/kind_catalogue.rs` and the `Ir::Unknown` audit. The "input" name dates from the retired imperative pipeline.
   - Update `task gen:kinds` codegen to write `kinds.rs`. Update test imports.
 
-- [ ] [R5DM] [S10F] **No `languages/<lang>/output.rs` file exists; `vocabulary.rs` exists in its place (or contents are folded into `mod.rs`).**
+- [ ] [S10F] **No `languages/<lang>/output.rs` file exists; `vocabulary.rs` exists in its place (or contents are folded into `mod.rs`).**
   - Cross-reference C2: if C2 chooses (a) "drive shape contracts off `Ir` variants alone and delete `TractorNode`", S10F is moot — delete the files instead.
 
-- [ ] [W9KS] [S10G] **`ir/source/` does not exist; `ir/render/` exists in its place (or `ir/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
+- [ ] [S10G] **`ir/source/` does not exist; `ir/render/` exists in its place (or `ir/source/mod.rs::render` is gone entirely if S10B's registry field replaces it).**
 
-- [ ] [V3QM] [S10H] **Either `transform/` has a clear sole-purpose role (with a name that matches), or it is gone.**
+- [ ] [S10H] **Either `transform/` has a clear sole-purpose role (with a name that matches), or it is gone.**
   - After S3A + S3B + S3D + S3E + C3, the survivors are: `walk_transform`, `apply_field_wrappings`, possibly `singletons.rs`, possibly `builder.rs`. These serve only the legacy `XeeBuilder` path (data languages JSON/YAML's syntax branch + Raw mode + WASM until S6).
   - Decide: rename `transform/` to `legacy_xot/` (or similar) to mark it non-IR, or delete what's actually dead.
   - Depends on S3, S6, C3.
+
+---
+
+## S11 — IR-as-data-shape: drop accidental wrappers, normalize fields (kills the `to_data.rs` boilerplate at the source)
+
+**Goal.** The `Ir` variants ARE the data shape. Reading `Ir::If` tells you exactly what the JSON output looks like. Wrappers exist only when the data view needs them; XML-only structural wrappers (`<body>`, `<expression>`, `<decorator>`) get inserted at xot-render time, not stored in IR. Field names match output keys. Boolean fields become marker arrays. Operator text+marker collapses to enum.
+
+**Why now.** S5A finished projection coverage with ~700 LOC of mechanically-similar match arms. Audit (2026-05-09 conversation) showed most of the per-variant logic encodes accidental IR-shape ↔ data-shape mismatches, not real domain distinctions. The boilerplate-reduction OPTIONS under S5A (macro / MappingBuilder / per-variant methods) all paper over those mismatches. Fixing them at the IR layer makes the data projection trivial AND simplifies queries (the IR is the answer to "what shape is the data?", not a separate Rust-ergonomic shape).
+
+**Depends on.** S5A-Z7 (exhaustiveness landed) + S5C (caller wired) — both done. Each Z step is independently mergeable.
+**Unblocks.** Replaces S5A's "OPTIONS: Boilerplate reduction" with a structural fix; drops `to_data.rs` from ~700 LOC → ~150 LOC of genuine special cases (atoms, sequence vs mapping shape).
+**Independent of.** S2 (registry), S6 (WASM parity), S7 (xee-direct), S8 (XmlNode split), S9 (parse API).
+
+**Size.** L. ~10 surgical IR refactors, each touching every language's lowering. Each Z is small but the slice is wide.
+**Reversibility.** Per-Z high (revert one wrapper-removal commit). Slice-level medium — once committed, queries that target the dropped wrappers break.
+
+**OPTIONS: Scope of the slice.** Pick one (mark `[x]`).
+
+- [ ] **(a) Full IR redesign + matching XML shape changes.** Drop wrappers from IR AND from xot output. Pro: cleanest end state — IR, XML, and JSON all share one shape. Con: breaks every external XPath query that targets `//body` / `//expression` / `//decorator`; snapshots shift across XML, JSON, tree-text. Months of work + downstream coordination.
+- [ ] **(b) IR redesign with XML stability preserved (recommended).** Drop wrappers from IR; have `to_xot` re-insert them at render time so XML output stays bit-identical. Pro: no XPath query breakage; gain "IR == data shape" principle; data-side projection collapses. Con: `to_xot` grows the wrapping logic that used to live in IR variants — the wrapping moves but doesn't disappear. Net LOC about flat; cleanly partitioned.
+- [ ] **(c) Stay the course (S5A's OPTIONS).** Keep IR shape; reduce data-projection boilerplate via macro/builder/per-variant-method. Pro: small, contained. Con: never resolves the IR-shape ↔ data-shape mismatch; future variants keep adding boilerplate.
+
+**Invariants when closed (under option b):**
+- No `Ir::Body`, `Ir::Expression`, `Ir::Decorator`, `Ir::FieldWrap`, `Ir::Aliased` variants exist.
+- `Modifiers` struct does not exist; modifiers are `Vec<Modifier>` (enum).
+- No `is_X: bool` fields on `Ir` variants; bool flags become marker entries.
+- `Ir::Binary` / `Unary` / `Comparison` carry `op: BinaryOp` (enum) instead of `op_text: String + op_marker: &'static str`.
+- IR field names match JSON key names (`if_true → then_`, `iterables → right`, etc.).
+- `to_data::project` is < 200 LOC: scalar atoms, sequence-shape (anonymous-vec variants), mapping-shape (everything else, fields → pairs via mechanical convention).
+- XML output (`to_xot`) bit-identical to pre-slice for every blueprint — wrappers re-inserted at render time.
+
+### Tasks
+
+Listed roughly by blast radius (smaller first). Each Z step:
+- Updates `Ir` types (one variant or one struct).
+- Updates every language's lowering site that constructs the affected variant.
+- Updates `to_xot` to insert the moved wrapper at render time (option b only).
+- Updates `to_data::project` to drop the now-unnecessary special case.
+- Verifies XML snapshots unchanged; JSON snapshots may shift (those are the wins).
+
+- [ ] [S11-Z1] **No `is_X: bool` fields on `Ir` variants; bool flags carry through as `&'static str` markers in a `markers: Vec<&'static str>` slot or equivalent.**
+  - Targets: `Ir::For.is_async`, `Ir::Foreach` (the `in` flag is already a marker), `Ir::From.relative`, `Ir::Import.has_alias`, `Ir::FromImport.has_alias`, `Ir::Namespace.file_scoped`, `Ir::Using.is_static`, `Ir::Comment.{leading, trailing}`. Replace each with marker-list membership; lowering sites push `"async"` / `"relative"` / `"alias"` / `"file"` / `"static"` / `"leading"` / `"trailing"` literally instead of toggling a bool.
+  - Smallest blast radius — purely additive on the IR side; `to_data::project` arms drop their `if *is_async { … }` branches and read the marker list mechanically.
+
+- [ ] [S11-Z2] **`Modifiers` struct does not exist; modifiers are `Vec<Modifier>` where `Modifier` is an enum.**
+  - `enum Modifier { Public, Private, Protected, Internal, Static, Async, Override, Abstract, Sealed, Const, Readonly, … }`. `Ir::Class.modifiers: Vec<Modifier>`. Lowering sites push enum values directly; no `Modifiers::default()` + setter dance.
+  - `to_data::project` arms drop `push_modifier_flags`; modifier projection becomes `for m in modifiers { pairs.push(make_flag(m.as_str(), …)) }` — but even that collapses into the generic Vec-of-enum convention.
+  - Larger blast: every declaration variant + every lang's lowering touches `Modifiers`.
+
+- [ ] [S11-Z3] **`Ir::Decorator` does not exist; `decorators: Vec<Ir>` slots carry expressions directly.**
+  - Lowering sites that construct `Decorator { inner: x }` simplify to pushing `x` itself into the `decorators` slot. `to_xot` wraps each decorator child in `<decorator>` at render time (option b) or drops the wrapper (option a).
+  - Probably the cleanest single-variant removal — Decorator is purely a positional wrapper.
+
+- [ ] [S11-Z4] **`Ir::FieldWrap` does not exist.** Pure parity-track holdover; remove the variant. Each construction site rewrites to express the wrapped slot via the parent's typed field. `to_xot` keeps the original element name when applicable.
+
+- [ ] [S11-Z5] **`Ir::Aliased` does not exist; aliasing carries on the parent variant (`Import { name, alias: Option<Box<Ir>> }`, `FromImport` already has `alias`).**
+  - Replace `Aliased { inner }` siblings with the parent's `alias` slot. Lowering simplifies; rendering unchanged.
+
+- [ ] [S11-Z6] **`Ir::Expression` does not exist as a stored IR variant; `<expression>` host appears at xot-render time only.**
+  - The biggest of the wrapper removals. `Expression` today wraps every value-position slot per Principle #15. To honor stable-XPath-host semantics: have `to_xot` insert `<expression>` automatically when rendering value-position slots (`Variable.value`, `Binary.left/right`, `Return.value`, ...). The `Expression::wrap` helper retires; lowering sites pass the raw inner expression directly into typed slots.
+  - Marker case (`non_null` / `await`): the marker becomes a sibling slot or an enum variant on the parent; explicit at the lowering layer.
+  - Largest internal refactor in the slice — touches every value-position lowering across all 9 languages.
+
+- [ ] [S11-Z7] **`Ir::Body` does not exist; declaration variants carry `children: Vec<Ir>` directly.**
+  - `Class { children, ... }`, `Function { body: Option<Vec<Ir>>, ... }`, `If { body: Vec<Ir>, ... }`, etc. The `<body>` wrapper appears at xot-render time when the language convention requires (Python: `<body>` always; C#: `<body>` only inside method/property accessors).
+  - `to_data::project` arms for Class/Function/If/While/For collapse — no body-inlining special case; `children` are simply the variant's pairs.
+  - High value: removes the body-inlining override that today is the most awkward convention exception.
+
+- [ ] [S11-Z8] **`Ir::Binary` / `Unary` / `Comparison` carry `op: BinaryOp` (or per-variant `Op*` enum) instead of `op_text: String + op_marker: &'static str + op_range: ByteRange`.**
+  - `enum BinaryOp { Plus, Minus, Lt, Gt, Eq, Ne, And, Or, … }`. Range stored separately (`op_range: ByteRange`); display text derived from `op.as_str()` or from `range.slice(source)` for source preservation.
+  - `to_data::project` arms drop the `make_op_mapping` helper; op projection becomes a generic enum-to-marker pair.
+
+- [ ] [S11-Z9] **IR field names match JSON key names.**
+  - Renames: `If.if_true → then_`, `If.if_false → else_`, `Ternary` same, `For.targets → left`, `For.iterables → right`, `Foreach.target → left`, `Foreach.iterable → right`, `Foreach.type_ann → type`, `Returns.type_ann → type`, `Variable.type_ann → type`, etc.
+  - Rust keyword conflicts (`then`, `else`, `type`) get a trailing underscore; the data projector strips it. (`then_` → `then` JSON key.)
+  - Pure mechanical search-and-replace; no semantic change.
+
+- [ ] [S11-Z10] **(optional) Scalar literals unify into `Ir::Scalar { kind: ScalarKind, range, span }`.**
+  - Drops `Ir::Int`, `Float`, `String`, `True`, `False`, `None`, `Null` in favor of one variant. Cost: loses exhaustive-match-by-literal-kind; future per-kind substructure (concatenated strings, f-strings) needs a different mechanism (e.g. `Scalar::FString { parts }`).
+  - Lowest priority — the seven separate variants are mostly fine, the projection is already trivial for them.
+
+- [ ] [S11-Z11] **`to_data::project` is < 200 LOC; the only special cases are scalar atoms + sequence-shape variants. Mapping-shape variants project via a generic field-walker.**
+  - The closing condition. Once Z1–Z9 (and optionally Z10) land, the special cases enumerated under "Genuinely fundamental" earlier in this convo are the only arms that remain. The rest fall through to the generic walker.
+
+---
+
+## S12 — Terminology rename: `Tree` / `TreeNode` (kills the `Ir` framing)
+
+**Goal.** Rename Rust types and module paths so user-facing names match the design vocabulary. `Ir → TreeNode`, `crate::ir → crate::tree`, "variant" → "node" in docs. Per the decision recorded in `docs/design-ir-and-renderings.md` §9 (2026-05-11).
+
+**Why now.** Design-doc rewrite (S11 + the ir-and-renderings doc) commits to "TreeNode" / "tree" as the user-facing vocabulary. Keeping the Rust types named `Ir` while docs say "TreeNode" creates a permanent translation tax for new readers and complicates principle-doc rewrites. Easier to rename once than to maintain the divergence.
+
+**Depends on.** None structural — pure mechanical rename. Coordinate with S11 (in-flight): if both are happening, do S12 first so S11's variant work uses the new names.
+**Unblocks.** Cleaner spec docs (no need for a "TreeNode means `Ir` in code" note); fresh-reader onboarding.
+**Independent of.** S1–S10, S11's structural changes (S12 is pure rename; S11 is shape).
+
+**Size.** L (~50 files touched, but mechanical). One big commit or per-Z-step.
+**Reversibility.** High — git revert restores the old names. Public API churn for anyone using `tractor::ir::*` externally.
+
+**Invariants when closed:**
+- `crate::tree::TreeNode` exists; `crate::ir::Ir` does not.
+- `crate::tree::DataTreeNode` (or `tree::data::TreeNode`) exists; `crate::ir::DataIr` does not.
+- `crate::tree::sql::SqlTreeNode` (or `tree::sql::TreeNode`) exists; `crate::ir::sql::SqlIr` does not.
+- `crate::tree` module path replaces `crate::ir`.
+- Doc comments and TODO references use "tree node" / "tree" rather than "IR variant" / "IR".
+- All tests pass under the new names.
+
+### Tasks
+
+- [ ] [S12-Z1] **`Ir` enum renamed to `TreeNode`; `Ir::*` constructors renamed to `TreeNode::*`.**
+  - Find-replace across `tractor/src/` and `tractor/tests/`. ~50 files; the bulk of the work.
+  - Module path stays `crate::ir::*` for this step (it's just the type name).
+  - Verify: `cargo check` clean; `cargo test` green.
+- [ ] [S12-Z2] **`crate::ir` module renamed to `crate::tree`; `pub mod ir;` → `pub mod tree;`.**
+  - `git mv tractor/src/ir tractor/src/tree`; update `tractor/src/lib.rs`.
+  - Update every `use crate::ir::*` to `use crate::tree::*` (find-replace).
+  - Verify: `cargo check`, `cargo test`.
+- [ ] [S12-Z3] **`DataIr` renamed to `DataTreeNode` (or moved to `tree::data::TreeNode`).**
+  - Decide between flat naming (`DataTreeNode` at the top level) and nested (`tree::data::TreeNode`).
+  - Same mechanical pattern as Z1+Z2.
+- [ ] [S12-Z4] **`SqlIr` renamed to `SqlTreeNode` (or `tree::sql::TreeNode`).** Same pattern as Z3.
+- [ ] [S12-Z5] **Module-level renames flow through: `IrFamily → TreeFamily`, `to_xot::render_ir_* → render_tree_*`, etc.** Audit `crate::ir::*` re-exports and supporting type aliases. Doc comments scan: "IR" → "tree node" where appropriate.
+- [ ] [S12-Z6] **TODO.md and design docs scrubbed.** Replace mentions of "IR variant" → "tree node", "IR shape" → "tree structure", `Ir::*` → `TreeNode::*` where they describe the code (leave historical "Done — fixed X in `Ir::Variable`" notes intact since they reference the code at the time).
 
 ---
 
@@ -484,13 +568,13 @@ The shared IR machinery — `ir/types.rs` (the unified `Ir` enum), `ir/to_xot.rs
 
 Each is one closeable invariant. No full slice header — too small to warrant one.
 
-- [ ] [HS78] [C1] **No `LanguageOps` entry on the IR path declares `field_wrappings` (read only by the legacy `XeeBuilder`).**
+- [ ] [C1] **No `LanguageOps` entry on the IR path declares `field_wrappings` (read only by the legacy `XeeBuilder`).**
   - Depends on S2 routing IR languages away from `XeeBuilder`. Languages still on the legacy path retain their wrappings.
 
-- [ ] [A2WV] [C2] **One source of truth for emitted element names: either `Ir` variants alone (per-language `TractorNode` enums deleted), or `TractorNode` generated from `Ir`.**
+- [ ] [C2] **One source of truth for emitted element names: either `Ir` variants alone (per-language `TractorNode` enums deleted), or `TractorNode` generated from `Ir`.**
   - Decision point. The choice cascades into S10F and the shape-contract walks in S3E.
 
-- [ ] [76SDP] [C3] **`transform::builder::XotBuilder` does not exist.**
+- [ ] [C3] **`transform::builder::XotBuilder` does not exist.**
   - Depends on S6 (WASM moved off it) and S2 (legacy languages routed through `XeeBuilder` only).
 
 - [ ] [C4] **`output::xml_node_to_json` is reachable only by genuine XPath partial matches; the legacy IR/DataIr fallthrough is gone.**

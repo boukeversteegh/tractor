@@ -1317,8 +1317,9 @@ vary with step count or modifier set).
   live in stable predictable locations, not be replicated down
   the spine.
 
-Implementation rationale, per-language pre-passes, and the
-forward-compatible plan for cascade operators (Dart-style `..`)
-live in [`docs/design-chain-inversion.md`](../../../docs/design-chain-inversion.md).
+Detailed examples (subscript in chain, optional chaining, complex
+receivers, mixed mid-chain calls), the per-step marker discipline,
+and the forward-compatible plan for cascade operators (Dart-style
+`..`) live in [`chain-inversion.md`](chain-inversion.md).
 
 *See child specs for language-specific and feature-specific decisions.*

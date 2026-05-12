@@ -1,5 +1,26 @@
 # Transform pipeline — alternative-design exploration
 
+> **Status: ADOPTED — historical record, no longer load-bearing.**
+>
+> The direction proposed mid-exploration (§11: abandon in-place Xot
+> mutation; introduce a typed parallel IR; render to XML afterwards)
+> was adopted. The IR pipeline is the production path for 8
+> programming languages, 6 data languages, and T-SQL. Operational
+> work on it tracks under `TODO.md` (slices S2–S10).
+>
+> This document is kept as the rationale archive — why we changed
+> direction, what alternatives were considered, what the design
+> commitment is — not as the place to look for current state. For
+> "what is the pipeline today", see `docs/pipeline-architecture.md`.
+> For active work, see `TODO.md`. For the IR design contract, see
+> `tractor/src/ir/types.rs` doc-comment.
+>
+> No further reading of the alternatives (§§ 1–10) is needed unless
+> you're investigating *why* the IR was chosen over the in-place
+> mutation refinements that were also on the table.
+
+---
+
 Status: **exploration / experiment proposal**, not a decided plan.
 Scope: rethink the entire transform pipeline with desired output shape held constant.
 Audience: future-me (re-loading context) + the user (evaluating directions).
