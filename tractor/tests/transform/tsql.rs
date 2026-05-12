@@ -138,7 +138,7 @@ fn tsql_window_with_partition_by() {
 
     claim("OVER (...) renders as <window>", &mut tree, "//window", 1);
     claim("PARTITION BY renders as <partition>", &mut tree, "//partition", 1);
-    // Typed SqlIr renders sort direction as a typed marker
+    // Typed SqlTree renders sort direction as a typed marker
     // (`<asc/>` / `<desc/>` empty element on `<target>`) rather
     // than a text-bearing `<direction>` (Principle #2: no syntax
     // leaks into output text).
@@ -203,7 +203,7 @@ fn tsql_create_table_with_definitions() {
     "#);
 
     claim("CREATE renders as <create>", &mut tree, "//create", 1);
-    // Typed SqlIr emits each column definition as `<column>` (the
+    // Typed SqlTree emits each column definition as `<column>` (the
     // typed-IR singular slot for a column shape, applied uniformly
     // across SELECT and CREATE TABLE positions per Principle #5).
     claim("each column produces a <column>", &mut tree, "//column", 3);

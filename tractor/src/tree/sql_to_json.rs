@@ -1,6 +1,6 @@
-//! [`SqlIr`] → `serde_json::Value` rendering.
+//! [`SqlTree`] → `serde_json::Value` rendering.
 //!
-//! Direct typed-slot serialization. Each `SqlIr` variant has named
+//! Direct typed-slot serialization. Each `SqlTree` variant has named
 //! slots that map 1-1 to JSON keys; collections render as arrays.
 //! No projection heuristics — the typed IR shape carries the
 //! semantic information directly.
@@ -11,10 +11,10 @@
 //! plural-of-self collapse, marker-vs-leaf ambiguity, op_marker
 //! emptiness). All of those evaporate here because:
 //!
-//! - `SqlIr::Insert { columns, values }` produces
+//! - `SqlTree::Insert { columns, values }` produces
 //!   `{ "columns": [...], "values": [...] }` directly — no
 //!   plural-of-self double-wrap.
-//! - `SqlIr::Compare { op: ComparisonOp::Equal }` produces
+//! - `SqlTree::Compare { op: ComparisonOp::Equal }` produces
 //!   `{ "op": { "text": "=" } }` — no empty-marker key, no
 //!   `\$type": "expression"` wrapper.
 //! - There is no Skip / Inline / SimpleStatement to filter — the
@@ -30,14 +30,14 @@
 use serde_json::{Map, Value};
 
 use super::sql::{
-    BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlIr, UnaryOp,
+    BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree, UnaryOp,
 };
 
-/// Render a [`SqlIr`] tree to a JSON value.
-pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
+/// Render a [`SqlTree`] tree to a JSON value.
+pub fn sql_to_json(ir: &SqlTree, source: &str) -> Value {
     match ir {
         // ----- Top level ------------------------------------------------
-        SqlIr::File { statements, .. } => {
+        SqlTree::File { statements, .. } => {
             let mut obj = Map::new();
             obj.insert(
                 "statements".into(),
@@ -45,13 +45,13 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             );
             Value::Object(obj)
         }
-        SqlIr::Statement { inner, .. } => sql_to_json(inner, source),
-        SqlIr::Go { .. } => json_obj([("$type", Value::String("go".into()))]),
-        SqlIr::Exec { target, .. } => json_obj([(
+        SqlTree::Statement { inner, .. } => sql_to_json(inner, source),
+        SqlTree::Go { .. } => json_obj([("$type", Value::String("go".into()))]),
+        SqlTree::Exec { target, .. } => json_obj([(
             "exec",
             json_obj([("target", sql_to_json(target, source))]),
         )]),
-        SqlIr::Set { target, value, .. } => json_obj([(
+        SqlTree::Set { target, value, .. } => json_obj([(
             "set",
             json_obj([
                 ("target", sql_to_json(target, source)),
@@ -60,7 +60,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         )]),
 
         // ----- DML ------------------------------------------------------
-        SqlIr::Select {
+        SqlTree::Select {
             ctes,
             columns,
             into,
@@ -103,7 +103,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("select", Value::Object(select))])
         }
-        SqlIr::Insert {
+        SqlTree::Insert {
             table,
             columns,
             values,
@@ -125,7 +125,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("insert", Value::Object(insert))])
         }
-        SqlIr::Update {
+        SqlTree::Update {
             table,
             assignments,
             where_,
@@ -142,7 +142,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("update", Value::Object(update))])
         }
-        SqlIr::Delete { from, where_, .. } => {
+        SqlTree::Delete { from, where_, .. } => {
             let mut del = Map::new();
             if let Some(f) = from {
                 del.insert("from".into(), sql_to_json(f, source));
@@ -152,13 +152,13 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("delete", Value::Object(del))])
         }
-        SqlIr::Merge { .. } | SqlIr::MergeWhen { .. } | SqlIr::Transaction { .. } => {
+        SqlTree::Merge { .. } | SqlTree::MergeWhen { .. } | SqlTree::Transaction { .. } => {
             // Coverage gaps in this slice.
             json_obj([("$type", Value::String("todo".into()))])
         }
 
         // ----- Clauses --------------------------------------------------
-        SqlIr::From { relations, .. } => {
+        SqlTree::From { relations, .. } => {
             // Single relation → render directly; multiple → array.
             if relations.len() == 1 {
                 sql_to_json(&relations[0], source)
@@ -166,15 +166,15 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
                 Value::Array(relations.iter().map(|r| sql_to_json(r, source)).collect())
             }
         }
-        SqlIr::Where { condition, .. } => sql_to_json(condition, source),
-        SqlIr::GroupBy { keys, .. } => {
+        SqlTree::Where { condition, .. } => sql_to_json(condition, source),
+        SqlTree::GroupBy { keys, .. } => {
             Value::Array(keys.iter().map(|k| sql_to_json(k, source)).collect())
         }
-        SqlIr::Having { condition, .. } => sql_to_json(condition, source),
-        SqlIr::OrderBy { targets, .. } => {
+        SqlTree::Having { condition, .. } => sql_to_json(condition, source),
+        SqlTree::OrderBy { targets, .. } => {
             Value::Array(targets.iter().map(|t| sql_to_json(t, source)).collect())
         }
-        SqlIr::OrderTarget {
+        SqlTree::OrderTarget {
             expression,
             direction,
             ..
@@ -192,10 +192,10 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             Value::Object(obj)
         }
-        SqlIr::PartitionBy { keys, .. } => {
+        SqlTree::PartitionBy { keys, .. } => {
             Value::Array(keys.iter().map(|k| sql_to_json(k, source)).collect())
         }
-        SqlIr::Join { kind, relation, on, .. } => {
+        SqlTree::Join { kind, relation, on, .. } => {
             let mut obj = Map::new();
             // Render JoinKind as boolean flags (left: true, etc.).
             for marker in join_kind_flags(*kind) {
@@ -209,7 +209,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         }
 
         // ----- References -----------------------------------------------
-        SqlIr::Relation { schema, name, alias, .. } => {
+        SqlTree::Relation { schema, name, alias, .. } => {
             let mut obj = Map::new();
             if let Some(s) = schema {
                 obj.insert("schema".into(), scalar_text(s, source));
@@ -220,7 +220,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             Value::Object(obj)
         }
-        SqlIr::Column { expression, alias, .. } => {
+        SqlTree::Column { expression, alias, .. } => {
             let expr = sql_to_json(expression, source);
             if let Some(a) = alias {
                 let mut obj = Map::new();
@@ -237,7 +237,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
                 expr
             }
         }
-        SqlIr::Star { qualifier, .. } => {
+        SqlTree::Star { qualifier, .. } => {
             if let Some(q) = qualifier {
                 json_obj([
                     ("star", Value::Bool(true)),
@@ -247,7 +247,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
                 json_obj([("star", Value::Bool(true))])
             }
         }
-        SqlIr::Reference { parts, .. } => {
+        SqlTree::Reference { parts, .. } => {
             // Multiple-part qualified reference renders as array of names.
             let names: Vec<Value> = parts
                 .iter()
@@ -257,7 +257,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         }
 
         // ----- Expressions ----------------------------------------------
-        SqlIr::Compare {
+        SqlTree::Compare {
             left, op, right, ..
         } => {
             let mut op_obj = Map::new();
@@ -271,27 +271,27 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
                 ("right", sql_to_json(right, source)),
             ]))])
         }
-        SqlIr::Binary { left, op, right, .. } => {
+        SqlTree::Binary { left, op, right, .. } => {
             json_obj([("binary", json_obj([
                 ("left", sql_to_json(left, source)),
                 ("op", Value::String(binary_op_text(*op).into())),
                 ("right", sql_to_json(right, source)),
             ]))])
         }
-        SqlIr::Unary { op, operand, .. } => {
+        SqlTree::Unary { op, operand, .. } => {
             json_obj([("unary", json_obj([
                 ("op", Value::String(unary_op_text(*op).into())),
                 ("operand", sql_to_json(operand, source)),
             ]))])
         }
-        SqlIr::Assign { target, value, .. } => json_obj([(
+        SqlTree::Assign { target, value, .. } => json_obj([(
             "assign",
             json_obj([
                 ("target", sql_to_json(target, source)),
                 ("value", sql_to_json(value, source)),
             ]),
         )]),
-        SqlIr::Between { value, low, high, .. } => json_obj([(
+        SqlTree::Between { value, low, high, .. } => json_obj([(
             "between",
             json_obj([
                 ("value", sql_to_json(value, source)),
@@ -299,8 +299,8 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
                 ("high", sql_to_json(high, source)),
             ]),
         )]),
-        SqlIr::Exists { subquery, .. } => json_obj([("exists", sql_to_json(subquery, source))]),
-        SqlIr::Case { whens, else_, .. } => {
+        SqlTree::Exists { subquery, .. } => json_obj([("exists", sql_to_json(subquery, source))]),
+        SqlTree::Case { whens, else_, .. } => {
             let mut case_obj = Map::new();
             case_obj.insert(
                 "whens".into(),
@@ -311,18 +311,18 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("case", Value::Object(case_obj))])
         }
-        SqlIr::When { condition, value, .. } => json_obj([
+        SqlTree::When { condition, value, .. } => json_obj([
             ("condition", sql_to_json(condition, source)),
             ("value", sql_to_json(value, source)),
         ]),
-        SqlIr::Cast { value, type_, .. } => json_obj([(
+        SqlTree::Cast { value, type_, .. } => json_obj([(
             "cast",
             json_obj([
                 ("value", sql_to_json(value, source)),
                 ("type", sql_to_json(type_, source)),
             ]),
         )]),
-        SqlIr::Call { callee, arguments, .. } => {
+        SqlTree::Call { callee, arguments, .. } => {
             let mut obj = Map::new();
             obj.insert("callee".into(), sql_to_json(callee, source));
             if !arguments.is_empty() {
@@ -333,14 +333,14 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("call", Value::Object(obj))])
         }
-        SqlIr::Window { call, over, .. } => json_obj([(
+        SqlTree::Window { call, over, .. } => json_obj([(
             "window",
             json_obj([
                 ("call", sql_to_json(call, source)),
                 ("over", sql_to_json(over, source)),
             ]),
         )]),
-        SqlIr::Over {
+        SqlTree::Over {
             partition_by,
             order_by,
             ..
@@ -354,8 +354,8 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             Value::Object(obj)
         }
-        SqlIr::Subquery { select, .. } => json_obj([("subquery", sql_to_json(select, source))]),
-        SqlIr::Union { all, selects, .. } => {
+        SqlTree::Subquery { select, .. } => json_obj([("subquery", sql_to_json(select, source))]),
+        SqlTree::Union { all, selects, .. } => {
             let mut obj = Map::new();
             obj.insert("all".into(), Value::Bool(*all));
             obj.insert(
@@ -364,17 +364,17 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             );
             json_obj([("union", Value::Object(obj))])
         }
-        SqlIr::Cte { name, query, .. } => json_obj([(
+        SqlTree::Cte { name, query, .. } => json_obj([(
             "cte",
             json_obj([
                 ("name", sql_to_json(name, source)),
                 ("query", sql_to_json(query, source)),
             ]),
         )]),
-        SqlIr::Tuple { items, .. } => Value::Array(items.iter().map(|i| sql_to_json(i, source)).collect()),
+        SqlTree::Tuple { items, .. } => Value::Array(items.iter().map(|i| sql_to_json(i, source)).collect()),
 
         // ----- DDL ------------------------------------------------------
-        SqlIr::Create { kind, name, body, .. } => {
+        SqlTree::Create { kind, name, body, .. } => {
             let mut obj = Map::new();
             obj.insert(
                 create_kind_marker(*kind).into(),
@@ -389,20 +389,20 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             json_obj([("create", Value::Object(obj))])
         }
-        SqlIr::Drop { kind, name, .. } => {
+        SqlTree::Drop { kind, name, .. } => {
             let mut obj = Map::new();
             obj.insert(drop_kind_marker(*kind).into(), Value::Bool(true));
             obj.insert("name".into(), sql_to_json(name, source));
             json_obj([("drop", Value::Object(obj))])
         }
-        SqlIr::Alter { name, operation, .. } => json_obj([(
+        SqlTree::Alter { name, operation, .. } => json_obj([(
             "alter",
             json_obj([
                 ("name", sql_to_json(name, source)),
                 ("operation", sql_to_json(operation, source)),
             ]),
         )]),
-        SqlIr::ColumnDef {
+        SqlTree::ColumnDef {
             name,
             type_,
             constraints,
@@ -419,7 +419,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             }
             Value::Object(obj)
         }
-        SqlIr::Constraint { name, body, .. } => {
+        SqlTree::Constraint { name, body, .. } => {
             let mut obj = Map::new();
             if let Some(n) = name {
                 obj.insert("name".into(), sql_to_json(n, source));
@@ -430,11 +430,11 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
             );
             json_obj([("constraint", Value::Object(obj))])
         }
-        SqlIr::AddColumn { column, .. } => json_obj([("add", sql_to_json(column, source))]),
-        SqlIr::AddConstraint { constraint, .. } => {
+        SqlTree::AddColumn { column, .. } => json_obj([("add", sql_to_json(column, source))]),
+        SqlTree::AddConstraint { constraint, .. } => {
             json_obj([("add", sql_to_json(constraint, source))])
         }
-        SqlIr::Function {
+        SqlTree::Function {
             schema,
             name,
             parameters,
@@ -459,7 +459,7 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         }
 
         // ----- Types ----------------------------------------------------
-        SqlIr::DataType { name, length, range, .. } => {
+        SqlTree::DataType { name, length, range, .. } => {
             if let Some(len) = length {
                 json_obj([(*name, sql_to_json(len, source))])
             } else {
@@ -473,16 +473,16 @@ pub fn sql_to_json(ir: &SqlIr, source: &str) -> Value {
         // (Relation/Reference/Column.alias) but flattens to a plain
         // string when rendered standalone — JSON consumers querying
         // by identity see `"dbo"`, not `"[dbo]"`.
-        SqlIr::Identifier { value, .. } => Value::String(value.clone()),
-        SqlIr::Schema { value, .. } => Value::String(value.clone()),
-        SqlIr::Alias { value, .. } => Value::String(value.clone()),
-        SqlIr::Temp { name, .. } => json_obj([("temp", sql_to_json(name, source))]),
-        SqlIr::Variable { range, .. } => Value::String(range.slice(source).to_string()),
-        SqlIr::Literal { range, .. } => Value::String(range.slice(source).to_string()),
-        SqlIr::Comment { range, .. } => Value::String(range.slice(source).to_string()),
+        SqlTree::Identifier { value, .. } => Value::String(value.clone()),
+        SqlTree::Schema { value, .. } => Value::String(value.clone()),
+        SqlTree::Alias { value, .. } => Value::String(value.clone()),
+        SqlTree::Temp { name, .. } => json_obj([("temp", sql_to_json(name, source))]),
+        SqlTree::Variable { range, .. } => Value::String(range.slice(source).to_string()),
+        SqlTree::Literal { range, .. } => Value::String(range.slice(source).to_string()),
+        SqlTree::Comment { range, .. } => Value::String(range.slice(source).to_string()),
 
         // ----- Escape hatch --------------------------------------------
-        SqlIr::Unknown { kind, .. } => json_obj([("unknown", Value::String(kind.clone()))]),
+        SqlTree::Unknown { kind, .. } => json_obj([("unknown", Value::String(kind.clone()))]),
     }
 }
 
@@ -503,13 +503,13 @@ where
 /// Render an atom node as a plain string scalar. Identifier-class
 /// atoms use the parsed `value` (quoting stripped); literals/variables
 /// keep the raw source slice.
-fn scalar_text(ir: &SqlIr, source: &str) -> Value {
+fn scalar_text(ir: &SqlTree, source: &str) -> Value {
     match ir {
-        SqlIr::Identifier { value, .. }
-        | SqlIr::Schema { value, .. }
-        | SqlIr::Alias { value, .. } => Value::String(value.clone()),
-        SqlIr::Variable { range, .. }
-        | SqlIr::Literal { range, .. } => Value::String(range.slice(source).to_string()),
+        SqlTree::Identifier { value, .. }
+        | SqlTree::Schema { value, .. }
+        | SqlTree::Alias { value, .. } => Value::String(value.clone()),
+        SqlTree::Variable { range, .. }
+        | SqlTree::Literal { range, .. } => Value::String(range.slice(source).to_string()),
         other => sql_to_json(other, source),
     }
 }

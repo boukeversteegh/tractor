@@ -1,11 +1,11 @@
-//! T-SQL: SqlIr → source code (canonical, no-anchor).
+//! T-SQL: SqlTree → source code (canonical, no-anchor).
 //!
 //! Per-language entry under `crate::tree::source` for SQL-family
 //! languages. Called via [`crate::tree::source::render_sql`] which
-//! handles both anchored mode (uses `SqlIr.to_source(s)` for byte-
+//! handles both anchored mode (uses `SqlTree.to_source(s)` for byte-
 //! identical output) and from-scratch canonical mode (this module).
 //!
-//! Reconstructs syntactically valid SQL source from a `SqlIr` tree
+//! Reconstructs syntactically valid SQL source from a `SqlTree` tree
 //! WITHOUT consulting the original `source: &str` byte ranges. This
 //! is a stronger statement than round-trip identity — it asserts
 //! that the IR carries every semantic distinction needed to
@@ -18,7 +18,7 @@
 //! the source range to reconstruct text, the IR is incomplete. This
 //! renderer exercises that — its output may differ in whitespace /
 //! comment placement / case from the input but must be *semantically
-//! equivalent* (parses to the same `SqlIr`).
+//! equivalent* (parses to the same `SqlTree`).
 //!
 //! ## Status
 //!
@@ -29,26 +29,26 @@
 
 #![cfg(feature = "native")]
 
-use crate::tree::sql::{QuoteStyle, SqlIr};
+use crate::tree::sql::{QuoteStyle, SqlTree};
 
-/// Render a [`SqlIr`] tree as canonical SQL source text.
+/// Render a [`SqlTree`] tree as canonical SQL source text.
 ///
 /// **Invariant:** `parse(render(parse(s))) == parse(s)` — the
 /// canonical text re-parses to the same IR. Weaker than byte-
 /// identical round-trip but stronger than just-not-crashing.
-pub fn render(ir: &SqlIr) -> String {
+pub fn render(ir: &SqlTree) -> String {
     match ir {
         // ----- Atoms with quoting --------------------------------------
-        SqlIr::Identifier { value, quoting, .. } => quoting.wrap(value),
-        SqlIr::Schema { value, quoting, .. } => quoting.wrap(value),
-        SqlIr::Alias { value, quoting, .. } => quoting.wrap(value),
+        SqlTree::Identifier { value, quoting, .. } => quoting.wrap(value),
+        SqlTree::Schema { value, quoting, .. } => quoting.wrap(value),
+        SqlTree::Alias { value, quoting, .. } => quoting.wrap(value),
 
         // ----- Other atoms (use range slice for now) -------------------
         // These don't yet capture full syntactic info, so canonical
         // form falls back to the source slice. Future iters extend.
-        SqlIr::Variable { range, span: _ } => format!("@{}", range_placeholder(range)),
-        SqlIr::Literal { range, .. } => range_placeholder(range),
-        SqlIr::Comment { range, .. } => range_placeholder(range),
+        SqlTree::Variable { range, span: _ } => format!("@{}", range_placeholder(range)),
+        SqlTree::Literal { range, .. } => range_placeholder(range),
+        SqlTree::Comment { range, .. } => range_placeholder(range),
 
         // ----- Composite shapes (placeholders for now) ----------------
         // The principle is satisfied for atoms in this slice; composite
@@ -66,21 +66,21 @@ fn range_placeholder(_range: &crate::tree::types::ByteRange) -> String {
     "/*range*/".to_string()
 }
 
-fn variant_name(ir: &SqlIr) -> &'static str {
+fn variant_name(ir: &SqlTree) -> &'static str {
     match ir {
-        SqlIr::File { .. } => "File",
-        SqlIr::Statement { .. } => "Statement",
-        SqlIr::Select { .. } => "Select",
-        SqlIr::Insert { .. } => "Insert",
-        SqlIr::Update { .. } => "Update",
-        SqlIr::Delete { .. } => "Delete",
-        SqlIr::Compare { .. } => "Compare",
-        SqlIr::Where { .. } => "Where",
-        SqlIr::From { .. } => "From",
-        SqlIr::Relation { .. } => "Relation",
-        SqlIr::Reference { .. } => "Reference",
-        SqlIr::Column { .. } => "Column",
-        SqlIr::Star { .. } => "Star",
+        SqlTree::File { .. } => "File",
+        SqlTree::Statement { .. } => "Statement",
+        SqlTree::Select { .. } => "Select",
+        SqlTree::Insert { .. } => "Insert",
+        SqlTree::Update { .. } => "Update",
+        SqlTree::Delete { .. } => "Delete",
+        SqlTree::Compare { .. } => "Compare",
+        SqlTree::Where { .. } => "Where",
+        SqlTree::From { .. } => "From",
+        SqlTree::Relation { .. } => "Relation",
+        SqlTree::Reference { .. } => "Reference",
+        SqlTree::Column { .. } => "Column",
+        SqlTree::Star { .. } => "Star",
         _ => "Other",
     }
 }
@@ -90,8 +90,8 @@ mod tests {
     use super::*;
     use crate::tree::types::{ByteRange, Span};
 
-    fn ident(value: &str, q: QuoteStyle) -> SqlIr {
-        SqlIr::Identifier {
+    fn ident(value: &str, q: QuoteStyle) -> SqlTree {
+        SqlTree::Identifier {
             value: value.to_string(),
             quoting: q,
             range: ByteRange::new(0, value.len() as u32),
@@ -125,7 +125,7 @@ mod tests {
 
     #[test]
     fn schema_canonical_uses_quoting() {
-        let ir = SqlIr::Schema {
+        let ir = SqlTree::Schema {
             value: "dbo".into(),
             quoting: QuoteStyle::Brackets,
             range: ByteRange::new(0, 5),
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn alias_canonical_uses_quoting() {
-        let ir = SqlIr::Alias {
+        let ir = SqlTree::Alias {
             value: "u".into(),
             quoting: QuoteStyle::None,
             range: ByteRange::new(0, 1),

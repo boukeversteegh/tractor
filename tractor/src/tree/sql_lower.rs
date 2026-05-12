@@ -1,7 +1,7 @@
-//! TSQL CST → [`SqlIr`] lowering.
+//! TSQL CST → [`SqlTree`] lowering.
 //!
 //! Parallel to `tsql.rs` (which emits the cross-language `SyntaxTree`).
-//! This module emits the typed [`SqlIr`] enum — every TSQL
+//! This module emits the typed [`SqlTree`] enum — every TSQL
 //! construct gets a typed variant with named slots, eliminating
 //! the generic-`SimpleStatement` ambiguity that drove the iter
 //! 29-36 JSON projection heuristics.
@@ -16,7 +16,7 @@
 use tree_sitter::Node as TsNode;
 
 use super::lower_helpers::{range_of, span_of};
-use super::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlIr};
+use super::sql::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlTree};
 
 /// Detect `QuoteStyle` from raw source text and return the parsed
 /// (unquoted) identifier value alongside it. Bracket / double-quote /
@@ -37,46 +37,46 @@ fn parse_id_quoting(text: &str) -> (String, QuoteStyle) {
     (text.to_string(), QuoteStyle::None)
 }
 
-/// Build `SqlIr::Identifier` from a CST node, parsing quoting style
+/// Build `SqlTree::Identifier` from a CST node, parsing quoting style
 /// out of the source text.
-fn ident_at(node: TsNode<'_>, source: &str) -> SqlIr {
+fn ident_at(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let (value, quoting) = parse_id_quoting(range.slice(source));
-    SqlIr::Identifier { value, quoting, range, span: span_of(node) }
+    SqlTree::Identifier { value, quoting, range, span: span_of(node) }
 }
 
-/// Build `SqlIr::Schema` from a CST node.
-fn schema_at(node: TsNode<'_>, source: &str) -> SqlIr {
+/// Build `SqlTree::Schema` from a CST node.
+fn schema_at(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let (value, quoting) = parse_id_quoting(range.slice(source));
-    SqlIr::Schema { value, quoting, range, span: span_of(node) }
+    SqlTree::Schema { value, quoting, range, span: span_of(node) }
 }
 
-/// Build `SqlIr::Alias` from a CST node.
-fn alias_at(node: TsNode<'_>, source: &str) -> SqlIr {
+/// Build `SqlTree::Alias` from a CST node.
+fn alias_at(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let (value, quoting) = parse_id_quoting(range.slice(source));
-    SqlIr::Alias { value, quoting, range, span: span_of(node) }
+    SqlTree::Alias { value, quoting, range, span: span_of(node) }
 }
 
-/// Lower a T-SQL `program` CST root to [`SqlIr::File`].
-pub fn lower_sql_root(root: TsNode<'_>, source: &str) -> SqlIr {
+/// Lower a T-SQL `program` CST root to [`SqlTree::File`].
+pub fn lower_sql_root(root: TsNode<'_>, source: &str) -> SqlTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
         "program" => {
             let mut cur = root.walk();
-            let statements: Vec<SqlIr> = root
+            let statements: Vec<SqlTree> = root
                 .named_children(&mut cur)
                 .map(|c| lower_node(c, source))
                 .collect();
-            SqlIr::File { statements, range, span }
+            SqlTree::File { statements, range, span }
         }
-        other => SqlIr::Unknown { kind: other.to_string(), range, span },
+        other => SqlTree::Unknown { kind: other.to_string(), range, span },
     }
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_node(node: TsNode<'_>, source: &str) -> SqlTree {
     let span = span_of(node);
     let range = range_of(node);
     let kind = node.kind();
@@ -84,7 +84,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
     match kind {
         // ----- Top-level wrapping ------------------------------------
         "statement" => lower_statement(node, source),
-        "go_statement" => SqlIr::Go { range, span },
+        "go_statement" => SqlTree::Go { range, span },
         "execute_statement" => lower_exec(node, source),
         "set_statement" => lower_set(node, source),
         "transaction" => lower_transaction(node, source),
@@ -97,14 +97,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         "identifier" => {
             let text = range.slice(source);
             if text.starts_with('@') {
-                SqlIr::Variable { range, span }
+                SqlTree::Variable { range, span }
             } else {
                 ident_at(node, source)
             }
         }
-        "literal" => SqlIr::Literal { range, span },
-        "string" | "national_string" => SqlIr::Literal { range, span },
-        "comment" | "line_comment" | "block_comment" => SqlIr::Comment { range, span },
+        "literal" => SqlTree::Literal { range, span },
+        "string" | "national_string" => SqlTree::Literal { range, span },
+        "comment" | "line_comment" | "block_comment" => SqlTree::Comment { range, span },
 
         // ----- DML statements ----------------------------------------
         "select" => lower_select(node, source),
@@ -130,7 +130,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         // ----- References / columns ----------------------------------
         "object_reference" => lower_object_reference(node, source),
         "column_reference" | "field" => lower_column_reference(node, source),
-        "all_fields" => SqlIr::Star { qualifier: None, range, span },
+        "all_fields" => SqlTree::Star { qualifier: None, range, span },
         "term" => lower_term(node, source),
         "relation" => lower_relation(node, source),
         // `column` (CST) — appears inside INSERT column lists,
@@ -168,13 +168,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
         "column_definition" => lower_column_def(node, source),
 
         // ----- Data types ---------------------------------------------
-        "int" => SqlIr::DataType { name: "int", length: None, range, span },
+        "int" => SqlTree::DataType { name: "int", length: None, range, span },
         "varchar" => lower_data_type(node, "varchar", source),
         "nvarchar" => lower_data_type(node, "nvarchar", source),
-        "datetime" => SqlIr::DataType { name: "datetime", length: None, range, span },
+        "datetime" => SqlTree::DataType { name: "datetime", length: None, range, span },
 
         // ----- Fallback ----------------------------------------------
-        other => SqlIr::Unknown {
+        other => SqlTree::Unknown {
             kind: other.to_string(),
             range,
             span,
@@ -182,14 +182,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `statement` CST → typed statement wrapped in `SqlIr::Statement`.
+/// `statement` CST → typed statement wrapped in `SqlTree::Statement`.
 ///
 /// The TSQL grammar puts the `<select>` clause and its companion
 /// clauses (`<from>`, `<where>`, etc.) as SIBLINGS under the
 /// `<statement>` node. `lower_statement` looks at all children to
 /// determine the statement kind and gathers the clauses into a
 /// single typed variant.
-fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_statement(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -202,17 +202,17 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
     // when grammar uses it directly).
     if kinds.iter().any(|k| *k == "select" || *k == "select_expression") {
         let inner = aggregate_select(node, source);
-        return SqlIr::Statement { inner: Box::new(inner), range, span };
+        return SqlTree::Statement { inner: Box::new(inner), range, span };
     }
     // UPDATE statement: aggregate `update` + `from` (where lives nested).
     if kinds.iter().any(|k| *k == "update") {
         let inner = aggregate_update(node, source);
-        return SqlIr::Statement { inner: Box::new(inner), range, span };
+        return SqlTree::Statement { inner: Box::new(inner), range, span };
     }
     // DELETE statement: aggregate `delete` + `from` (where nested).
     if kinds.iter().any(|k| *k == "delete") {
         let inner = aggregate_delete(node, source);
-        return SqlIr::Statement { inner: Box::new(inner), range, span };
+        return SqlTree::Statement { inner: Box::new(inner), range, span };
     }
     // MERGE statement: detected by a `keyword_merge` child. The
     // `<statement>` itself holds all the merge body (target/source
@@ -223,7 +223,7 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
         .any(|c| c.kind() == "keyword_merge");
     if has_merge_keyword {
         let inner = aggregate_merge(node, source);
-        return SqlIr::Statement { inner: Box::new(inner), range, span };
+        return SqlTree::Statement { inner: Box::new(inner), range, span };
     }
     // INSERT statement: a single `insert` child does the work.
     if kinds.iter().any(|k| *k == "insert") {
@@ -232,7 +232,7 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
             .find(|c| c.kind() == "insert")
         {
             let inner = lower_insert(insert_node, source);
-            return SqlIr::Statement { inner: Box::new(inner), range, span };
+            return SqlTree::Statement { inner: Box::new(inner), range, span };
         }
     }
     // Fallback: lower the first named child as the statement body.
@@ -240,23 +240,23 @@ fn lower_statement(node: TsNode<'_>, source: &str) -> SqlIr {
     let first_named = node.named_children(&mut cur2).next();
     let inner = first_named
         .map(|c| lower_node(c, source))
-        .unwrap_or_else(|| SqlIr::Unknown {
+        .unwrap_or_else(|| SqlTree::Unknown {
             kind: "empty_statement".into(),
             range,
             span,
         });
-    SqlIr::Statement { inner: Box::new(inner), range, span }
+    SqlTree::Statement { inner: Box::new(inner), range, span }
 }
 
 /// Aggregate `update` + nested `from`/`where` clauses into a
-/// `SqlIr::Update`. The TSQL grammar emits `update` as a sibling
+/// `SqlTree::Update`. The TSQL grammar emits `update` as a sibling
 /// of `from` under `<statement>`, with `from` carrying `where` etc.
-fn aggregate_update(stmt: TsNode<'_>, source: &str) -> SqlIr {
+fn aggregate_update(stmt: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(stmt);
     let span = span_of(stmt);
-    let mut table: Option<SqlIr> = None;
-    let mut assignments: Vec<SqlIr> = Vec::new();
-    let mut where_: Option<Box<SqlIr>> = None;
+    let mut table: Option<SqlTree> = None;
+    let mut assignments: Vec<SqlTree> = Vec::new();
+    let mut where_: Option<Box<SqlTree>> = None;
 
     let mut cur = stmt.walk();
     for c in stmt.named_children(&mut cur) {
@@ -303,12 +303,12 @@ fn aggregate_update(stmt: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    let table = Box::new(table.unwrap_or(SqlIr::Unknown {
+    let table = Box::new(table.unwrap_or(SqlTree::Unknown {
         kind: "missing_update_table".into(),
         range,
         span,
     }));
-    SqlIr::Update {
+    SqlTree::Update {
         table,
         assignments,
         where_,
@@ -317,12 +317,12 @@ fn aggregate_update(stmt: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// Aggregate `delete` + nested `from`/`where` into `SqlIr::Delete`.
-fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlIr {
+/// Aggregate `delete` + nested `from`/`where` into `SqlTree::Delete`.
+fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(stmt);
     let span = span_of(stmt);
-    let mut from: Option<Box<SqlIr>> = None;
-    let mut where_: Option<Box<SqlIr>> = None;
+    let mut from: Option<Box<SqlTree>> = None;
+    let mut where_: Option<Box<SqlTree>> = None;
 
     let mut cur = stmt.walk();
     for c in stmt.named_children(&mut cur) {
@@ -343,11 +343,11 @@ fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlIr {
                         _ => relation_nodes.push(inner),
                     }
                 }
-                let relations: Vec<SqlIr> = relation_nodes
+                let relations: Vec<SqlTree> = relation_nodes
                     .into_iter()
                     .map(|n| lower_node(n, source))
                     .collect();
-                from = Some(Box::new(SqlIr::From {
+                from = Some(Box::new(SqlTree::From {
                     relations,
                     range: range_of(c),
                     span: span_of(c),
@@ -358,7 +358,7 @@ fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    SqlIr::Delete {
+    SqlTree::Delete {
         from,
         where_,
         range,
@@ -366,9 +366,9 @@ fn aggregate_delete(stmt: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `assignment` CST → `SqlIr::Assign { target, value }`. Used in
+/// `assignment` CST → `SqlTree::Assign { target, value }`. Used in
 /// UPDATE SET and SET @var = val.
-fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -381,7 +381,7 @@ fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlIr {
     let target = operands
         .first()
         .map(|c| lower_node(*c, source))
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "missing_assign_target".into(),
             range,
             span,
@@ -389,12 +389,12 @@ fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlIr {
     let value = operands
         .get(1)
         .map(|c| lower_node(*c, source))
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "missing_assign_value".into(),
             range,
             span,
         });
-    SqlIr::Assign {
+    SqlTree::Assign {
         target: Box::new(target),
         value: Box::new(value),
         range,
@@ -404,17 +404,17 @@ fn lower_assignment(node: TsNode<'_>, source: &str) -> SqlIr {
 
 /// `update` CST as a direct lowering target — fallback when called
 /// outside `aggregate_update`'s context.
-fn lower_update(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_update(node: TsNode<'_>, source: &str) -> SqlTree {
     aggregate_update(node, source)
 }
 
 /// `delete` CST — fallback.
-fn lower_delete(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_delete(node: TsNode<'_>, source: &str) -> SqlTree {
     aggregate_delete(node, source)
 }
 
-/// `subquery` CST → `SqlIr::Subquery { select }`.
-fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `subquery` CST → `SqlTree::Subquery { select }`.
+fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     // A subquery's body is a Select. The CST may have it directly
@@ -430,12 +430,12 @@ fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlIr {
                 lower_node(c, source)
             }
         })
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "empty_subquery".into(),
             range,
             span,
         });
-    SqlIr::Subquery {
+    SqlTree::Subquery {
         select: Box::new(inner),
         range,
         span,
@@ -443,18 +443,18 @@ fn lower_subquery(node: TsNode<'_>, source: &str) -> SqlIr {
 }
 
 /// Aggregate `select`/`from`/`where`/`group_by`/`having`/`order_by`
-/// children of a `statement` node into a single `SqlIr::Select`.
-fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
+/// children of a `statement` node into a single `SqlTree::Select`.
+fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(stmt);
     let span = span_of(stmt);
-    let mut ctes: Vec<SqlIr> = Vec::new();
-    let mut columns: Vec<SqlIr> = Vec::new();
-    let mut into: Option<Box<SqlIr>> = None;
-    let mut from: Option<Box<SqlIr>> = None;
-    let mut where_: Option<Box<SqlIr>> = None;
-    let mut group_by: Option<Box<SqlIr>> = None;
-    let mut having: Option<Box<SqlIr>> = None;
-    let mut order_by: Option<Box<SqlIr>> = None;
+    let mut ctes: Vec<SqlTree> = Vec::new();
+    let mut columns: Vec<SqlTree> = Vec::new();
+    let mut into: Option<Box<SqlTree>> = None;
+    let mut from: Option<Box<SqlTree>> = None;
+    let mut where_: Option<Box<SqlTree>> = None;
+    let mut group_by: Option<Box<SqlTree>> = None;
+    let mut having: Option<Box<SqlTree>> = None;
+    let mut order_by: Option<Box<SqlTree>> = None;
 
     // Track whether we just saw `keyword_into` so the next
     // `select_expression` becomes the INTO target.
@@ -498,7 +498,7 @@ fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
                             }
                         }
                         "all_fields" => {
-                            columns.push(SqlIr::Star {
+                            columns.push(SqlTree::Star {
                                 qualifier: None,
                                 range: range_of(inner),
                                 span: span_of(inner),
@@ -528,11 +528,11 @@ fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
                     }
                 }
                 // Build From from the relation children only.
-                let relations: Vec<SqlIr> = relation_nodes
+                let relations: Vec<SqlTree> = relation_nodes
                     .into_iter()
                     .map(|n| lower_node(n, source))
                     .collect();
-                from = Some(Box::new(SqlIr::From {
+                from = Some(Box::new(SqlTree::From {
                     relations,
                     range: range_of(c),
                     span: span_of(c),
@@ -547,7 +547,7 @@ fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    SqlIr::Select {
+    SqlTree::Select {
         ctes,
         columns,
         into,
@@ -561,19 +561,19 @@ fn aggregate_select(stmt: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `select` CST → `SqlIr::Select`. Walks named children and assigns
+/// `select` CST → `SqlTree::Select`. Walks named children and assigns
 /// each to its typed slot based on CST kind. Anonymous tokens
-/// (commas) are ignored — they aren't needed in `SqlIr`.
-fn lower_select(node: TsNode<'_>, source: &str) -> SqlIr {
+/// (commas) are ignored — they aren't needed in `SqlTree`.
+fn lower_select(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut columns: Vec<SqlIr> = Vec::new();
-    let mut into: Option<Box<SqlIr>> = None;
-    let mut from: Option<Box<SqlIr>> = None;
-    let mut where_: Option<Box<SqlIr>> = None;
-    let mut group_by: Option<Box<SqlIr>> = None;
-    let mut having: Option<Box<SqlIr>> = None;
-    let mut order_by: Option<Box<SqlIr>> = None;
+    let mut columns: Vec<SqlTree> = Vec::new();
+    let mut into: Option<Box<SqlTree>> = None;
+    let mut from: Option<Box<SqlTree>> = None;
+    let mut where_: Option<Box<SqlTree>> = None;
+    let mut group_by: Option<Box<SqlTree>> = None;
+    let mut having: Option<Box<SqlTree>> = None;
+    let mut order_by: Option<Box<SqlTree>> = None;
 
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
@@ -599,7 +599,7 @@ fn lower_select(node: TsNode<'_>, source: &str) -> SqlIr {
     }
     let _ = (&into, &group_by, &having, &order_by);
 
-    SqlIr::Select {
+    SqlTree::Select {
         ctes: Vec::new(),
         columns,
         into,
@@ -613,15 +613,15 @@ fn lower_select(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `insert` CST → `SqlIr::Insert`. The CST is flat: `keyword_insert`,
+/// `insert` CST → `SqlTree::Insert`. The CST is flat: `keyword_insert`,
 /// `keyword_into`, `object_reference` (table), `list` (columns,
 /// before VALUES), `keyword_values`, `list` (values, after VALUES).
-fn lower_insert(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_insert(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut table: Option<SqlIr> = None;
-    let mut columns: Vec<SqlIr> = Vec::new();
-    let mut values: Vec<SqlIr> = Vec::new();
+    let mut table: Option<SqlTree> = None;
+    let mut columns: Vec<SqlTree> = Vec::new();
+    let mut values: Vec<SqlTree> = Vec::new();
     let mut seen_values_kw = false;
 
     let mut cur = node.walk();
@@ -654,30 +654,30 @@ fn lower_insert(node: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    let table = Box::new(table.unwrap_or_else(|| SqlIr::Unknown {
+    let table = Box::new(table.unwrap_or_else(|| SqlTree::Unknown {
         kind: "missing_table".into(),
         range,
         span,
     }));
-    SqlIr::Insert { table, columns, values, range, span }
+    SqlTree::Insert { table, columns, values, range, span }
 }
 
-/// `from` CST → `SqlIr::From`. Children are relations; the first is
+/// `from` CST → `SqlTree::From`. Children are relations; the first is
 /// the base, subsequent ones may be JOINs.
-fn lower_from(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_from(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut relations: Vec<SqlIr> = Vec::new();
+    let mut relations: Vec<SqlTree> = Vec::new();
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
         relations.push(lower_node(c, source));
     }
-    SqlIr::From { relations, range, span }
+    SqlTree::From { relations, range, span }
 }
 
-/// `where` CST → `SqlIr::Where`. The first non-keyword named child
+/// `where` CST → `SqlTree::Where`. The first non-keyword named child
 /// is the condition expression.
-fn lower_where(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_where(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -686,64 +686,64 @@ fn lower_where(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_"))
         .next()
         .map(|c| lower_node(c, source))
-        .unwrap_or_else(|| SqlIr::Unknown {
+        .unwrap_or_else(|| SqlTree::Unknown {
             kind: "missing_where_condition".into(),
             range,
             span,
         });
-    SqlIr::Where { condition: Box::new(condition), range, span }
+    SqlTree::Where { condition: Box::new(condition), range, span }
 }
 
 /// `object_reference` (in a relation context) becomes a
-/// `SqlIr::Relation` with a single name and no schema/alias.
-/// In other contexts it becomes a `SqlIr::Reference`.
-fn lower_object_reference(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `SqlTree::Relation` with a single name and no schema/alias.
+/// In other contexts it becomes a `SqlTree::Reference`.
+fn lower_object_reference(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let parts: Vec<SqlIr> = node
+    let parts: Vec<SqlTree> = node
         .named_children(&mut cur)
         .map(|c| lower_node(c, source))
         .collect();
     if parts.len() == 1 {
         // Single identifier — return it directly.
-        parts.into_iter().next().unwrap_or(SqlIr::Unknown {
+        parts.into_iter().next().unwrap_or(SqlTree::Unknown {
             kind: "empty_object_reference".into(),
             range,
             span,
         })
     } else {
-        SqlIr::Reference { parts, range, span }
+        SqlTree::Reference { parts, range, span }
     }
 }
 
-/// `column_reference` / `field` CST → `SqlIr::Reference` or a single
+/// `column_reference` / `field` CST → `SqlTree::Reference` or a single
 /// `Identifier`/`Variable` when the chain has one segment.
-fn lower_column_reference(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_column_reference(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let text = range.slice(source);
     if text.starts_with('@') {
-        return SqlIr::Variable { range, span };
+        return SqlTree::Variable { range, span };
     }
     let mut cur = node.walk();
     let named: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
     if named.len() == 1 && named[0].kind() == "identifier" {
         return ident_at(node, source);
     }
-    let parts: Vec<SqlIr> = named.into_iter().map(|c| lower_node(c, source)).collect();
-    SqlIr::Reference { parts, range, span }
+    let parts: Vec<SqlTree> = named.into_iter().map(|c| lower_node(c, source)).collect();
+    SqlTree::Reference { parts, range, span }
 }
 
 /// Lower a single SELECT column item. The CST puts each item under
-/// a `term` wrapper, but for `*` we want a bare `SqlIr::Star`
+/// a `term` wrapper, but for `*` we want a bare `SqlTree::Star`
 /// rather than `Column { expression: Star }`.
-fn lower_column_item(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_column_item(node: TsNode<'_>, source: &str) -> SqlTree {
     if node.kind() == "term" {
         let mut sub = node.walk();
         let named: Vec<TsNode<'_>> = node.named_children(&mut sub).collect();
         if named.len() == 1 && named[0].kind() == "all_fields" {
-            return SqlIr::Star {
+            return SqlTree::Star {
                 qualifier: None,
                 range: range_of(named[0]),
                 span: span_of(named[0]),
@@ -753,15 +753,15 @@ fn lower_column_item(node: TsNode<'_>, source: &str) -> SqlIr {
     lower_node(node, source)
 }
 
-/// `term` (a SELECT column item) → `SqlIr::Column`. May contain an
+/// `term` (a SELECT column item) → `SqlTree::Column`. May contain an
 /// alias (trailing identifier after AS) and an expression.
-fn lower_term(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_term(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
     let named: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
-    let mut alias: Option<Box<SqlIr>> = None;
-    let mut expression: Option<SqlIr> = None;
+    let mut alias: Option<Box<SqlTree>> = None;
+    let mut expression: Option<SqlTree> = None;
     if named.len() >= 2 {
         // Last child as alias, first as expression. Crude but
         // matches the common case; fancier alias detection lands
@@ -776,26 +776,26 @@ fn lower_term(node: TsNode<'_>, source: &str) -> SqlIr {
         // No alias detected — first named child is the expression.
         expression = named.first().map(|c| lower_node(*c, source));
     }
-    let expression = Box::new(expression.unwrap_or(SqlIr::Unknown {
+    let expression = Box::new(expression.unwrap_or(SqlTree::Unknown {
         kind: "empty_term".into(),
         range,
         span,
     }));
-    SqlIr::Column { expression, alias, range, span }
+    SqlTree::Column { expression, alias, range, span }
 }
 
-/// `relation` CST → `SqlIr::Relation`. Captures schema, name, alias.
-fn lower_relation(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `relation` CST → `SqlTree::Relation`. Captures schema, name, alias.
+fn lower_relation(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
     let named: Vec<TsNode<'_>> = node.named_children(&mut cur).collect();
     // A relation is typically `[schema.]name [alias]`.
-    let mut schema: Option<Box<SqlIr>> = None;
-    let mut alias: Option<Box<SqlIr>> = None;
+    let mut schema: Option<Box<SqlTree>> = None;
+    let mut alias: Option<Box<SqlTree>> = None;
 
     let name_idx = match named.len() {
-        0 => return SqlIr::Unknown { kind: "empty_relation".into(), range, span },
+        0 => return SqlTree::Unknown { kind: "empty_relation".into(), range, span },
         1 => 0,
         2 => {
             // Either `schema.name` or `name alias`. Heuristic: if the
@@ -831,12 +831,12 @@ fn lower_relation(node: TsNode<'_>, source: &str) -> SqlIr {
         Box::new(ident_at(name_node, source))
     };
 
-    SqlIr::Relation { schema, name, alias, range, span }
+    SqlTree::Relation { schema, name, alias, range, span }
 }
 
-/// `binary_expression` CST → `SqlIr::Compare` (when the operator is
-/// a comparison) or `SqlIr::Binary` (arithmetic / logical / bitwise).
-fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `binary_expression` CST → `SqlTree::Compare` (when the operator is
+/// a comparison) or `SqlTree::Binary` (arithmetic / logical / bitwise).
+fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -890,7 +890,7 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
     let left = operands
         .first()
         .map(|c| lower_node(**c, source))
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "missing_left".into(),
             range,
             span,
@@ -898,14 +898,14 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
     let right = operands
         .get(1)
         .map(|c| lower_node(**c, source))
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "missing_right".into(),
             range,
             span,
         });
 
     if let Some(cmp_op) = comparison_op_from_text(op_text) {
-        return SqlIr::Compare {
+        return SqlTree::Compare {
             left: Box::new(left),
             op: cmp_op,
             right: Box::new(right),
@@ -916,7 +916,7 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
     // Otherwise fall through to Binary — once BinaryOp parsing is
     // implemented. For now, treat as Unknown.
     let _ = (left, right);
-    SqlIr::Unknown {
+    SqlTree::Unknown {
         kind: format!("binary_op_unhandled:{}", op_text),
         range,
         span,
@@ -924,10 +924,10 @@ fn lower_binary_or_compare(node: TsNode<'_>, source: &str) -> SqlIr {
 }
 
 /// `unary_expression` CST. T-SQL uses `#x` for local temp tables
-/// and `##x` for global temp tables — both lower to `SqlIr::Temp
+/// and `##x` for global temp tables — both lower to `SqlTree::Temp
 /// { name }`. Other unary operators (NOT, -, +) lower to
-/// `SqlIr::Unary` (TODO when needed).
-fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `SqlTree::Unary` (TODO when needed).
+fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -959,13 +959,13 @@ fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlIr {
                 ident_at(c, source)
             }
         } else {
-            SqlIr::Unknown {
+            SqlTree::Unknown {
                 kind: "missing_temp_name".into(),
                 range,
                 span,
             }
         };
-        return SqlIr::Temp {
+        return SqlTree::Temp {
             name: Box::new(operand),
             range,
             span,
@@ -973,15 +973,15 @@ fn lower_unary_or_temp(node: TsNode<'_>, source: &str) -> SqlIr {
     }
     // Generic unary fallback — render as Unknown for now until
     // typed operators are needed.
-    SqlIr::Unknown {
+    SqlTree::Unknown {
         kind: format!("unary_op_unhandled:{}", op_text),
         range,
         span,
     }
 }
 
-/// `between_expression` CST → `SqlIr::Between { value, low, high }`.
-fn lower_between(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `between_expression` CST → `SqlTree::Between { value, low, high }`.
+fn lower_between(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -994,16 +994,16 @@ fn lower_between(node: TsNode<'_>, source: &str) -> SqlIr {
     let value = operands
         .first()
         .map(|c| lower_node(*c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "missing_between_value".into(), range, span });
+        .unwrap_or(SqlTree::Unknown { kind: "missing_between_value".into(), range, span });
     let low = operands
         .get(1)
         .map(|c| lower_node(*c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "missing_between_low".into(), range, span });
+        .unwrap_or(SqlTree::Unknown { kind: "missing_between_low".into(), range, span });
     let high = operands
         .get(2)
         .map(|c| lower_node(*c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "missing_between_high".into(), range, span });
-    SqlIr::Between {
+        .unwrap_or(SqlTree::Unknown { kind: "missing_between_high".into(), range, span });
+    SqlTree::Between {
         value: Box::new(value),
         low: Box::new(low),
         high: Box::new(high),
@@ -1012,20 +1012,20 @@ fn lower_between(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `case` CST → `SqlIr::Case { whens, else_ }`. The flat CST
+/// `case` CST → `SqlTree::Case { whens, else_ }`. The flat CST
 /// (keyword_when, cond, keyword_then, value, [keyword_when ...
 /// keyword_else], elseval, keyword_end) is grouped into typed
 /// When { condition, value } arms.
-fn lower_case(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_case(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut whens: Vec<SqlIr> = Vec::new();
-    let mut else_: Option<Box<SqlIr>> = None;
+    let mut whens: Vec<SqlTree> = Vec::new();
+    let mut else_: Option<Box<SqlTree>> = None;
 
     #[derive(Copy, Clone, PartialEq)]
     enum State { Before, AfterWhen, AfterThen, AfterElse }
     let mut state = State::Before;
-    let mut cond_buffer: Option<SqlIr> = None;
+    let mut cond_buffer: Option<SqlTree> = None;
     let mut when_start: super::types::ByteRange =
         super::types::ByteRange::empty_at(range.start);
 
@@ -1063,14 +1063,14 @@ fn lower_case(node: TsNode<'_>, source: &str) -> SqlIr {
                 cond_buffer = Some(lower_node(c, source));
             }
             State::AfterThen => {
-                let cond = cond_buffer.take().unwrap_or(SqlIr::Unknown {
+                let cond = cond_buffer.take().unwrap_or(SqlTree::Unknown {
                     kind: "missing_when_condition".into(),
                     range,
                     span,
                 });
                 let value = lower_node(c, source);
                 let v_end = value.range().end;
-                whens.push(SqlIr::When {
+                whens.push(SqlTree::When {
                     condition: Box::new(cond),
                     value: Box::new(value),
                     range: super::types::ByteRange::new(when_start.start, v_end),
@@ -1084,11 +1084,11 @@ fn lower_case(node: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    SqlIr::Case { whens, else_, range, span }
+    SqlTree::Case { whens, else_, range, span }
 }
 
-/// `exists` CST → `SqlIr::Exists { subquery }`.
-fn lower_exists(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `exists` CST → `SqlTree::Exists { subquery }`.
+fn lower_exists(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1097,12 +1097,12 @@ fn lower_exists(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_"))
         .next()
         .map(|c| lower_node(c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "empty_exists".into(), range, span });
-    SqlIr::Exists { subquery: Box::new(inner), range, span }
+        .unwrap_or(SqlTree::Unknown { kind: "empty_exists".into(), range, span });
+    SqlTree::Exists { subquery: Box::new(inner), range, span }
 }
 
-/// `cast` CST → `SqlIr::Cast { value, type_ }`.
-fn lower_cast(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `cast` CST → `SqlTree::Cast { value, type_ }`.
+fn lower_cast(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1111,12 +1111,12 @@ fn lower_cast(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
     let value = named.first().map(|c| lower_node(*c, source)).unwrap_or(
-        SqlIr::Unknown { kind: "missing_cast_value".into(), range, span },
+        SqlTree::Unknown { kind: "missing_cast_value".into(), range, span },
     );
     let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
-        SqlIr::Unknown { kind: "missing_cast_type".into(), range, span },
+        SqlTree::Unknown { kind: "missing_cast_type".into(), range, span },
     );
-    SqlIr::Cast {
+    SqlTree::Cast {
         value: Box::new(value),
         type_: Box::new(type_),
         range,
@@ -1124,8 +1124,8 @@ fn lower_cast(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `invocation` CST → `SqlIr::Call { callee, arguments }`.
-fn lower_call(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `invocation` CST → `SqlTree::Call { callee, arguments }`.
+fn lower_call(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1134,10 +1134,10 @@ fn lower_call(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
     let callee = named.first().map(|c| lower_node(*c, source)).unwrap_or(
-        SqlIr::Unknown { kind: "missing_call_callee".into(), range, span },
+        SqlTree::Unknown { kind: "missing_call_callee".into(), range, span },
     );
-    let arguments: Vec<SqlIr> = named.iter().skip(1).map(|c| lower_node(*c, source)).collect();
-    SqlIr::Call {
+    let arguments: Vec<SqlTree> = named.iter().skip(1).map(|c| lower_node(*c, source)).collect();
+    SqlTree::Call {
         callee: Box::new(callee),
         arguments,
         range,
@@ -1145,8 +1145,8 @@ fn lower_call(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `create_table` / `create_view` / `create_index` → `SqlIr::Create`.
-fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
+/// `create_table` / `create_view` / `create_index` → `SqlTree::Create`.
+fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1163,11 +1163,11 @@ fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
         } else {
             ident_at(*c, source)
         }
-    }).unwrap_or(SqlIr::Unknown { kind: "missing_create_name".into(), range, span });
+    }).unwrap_or(SqlTree::Unknown { kind: "missing_create_name".into(), range, span });
     // Body collects the substantive children. For CREATE TABLE the
     // grammar wraps column definitions in `column_definitions`; we
     // inline its children so `body` is a flat list of `ColumnDef`.
-    let mut body: Vec<SqlIr> = Vec::new();
+    let mut body: Vec<SqlTree> = Vec::new();
     for c in named.iter().skip(1) {
         if c.kind() == "column_definitions" {
             let mut sub = c.walk();
@@ -1180,7 +1180,7 @@ fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
             body.push(lower_node(*c, source));
         }
     }
-    SqlIr::Create {
+    SqlTree::Create {
         kind,
         name: Box::new(name),
         body,
@@ -1189,8 +1189,8 @@ fn lower_create(node: TsNode<'_>, kind: CreateKind, source: &str) -> SqlIr {
     }
 }
 
-/// `drop_table` / `drop_index` → `SqlIr::Drop`.
-fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlIr {
+/// `drop_table` / `drop_index` → `SqlTree::Drop`.
+fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1206,9 +1206,9 @@ fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlIr {
         } else {
             ident_at(*c, source)
         }
-    }).unwrap_or(SqlIr::Unknown { kind: "missing_drop_name".into(), range, span });
+    }).unwrap_or(SqlTree::Unknown { kind: "missing_drop_name".into(), range, span });
     let _ = source;
-    SqlIr::Drop {
+    SqlTree::Drop {
         kind,
         name: Box::new(name),
         range,
@@ -1216,8 +1216,8 @@ fn lower_drop(node: TsNode<'_>, kind: DropKind, source: &str) -> SqlIr {
     }
 }
 
-/// `alter_table` → `SqlIr::Alter { name, operation }`.
-fn lower_alter(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `alter_table` → `SqlTree::Alter { name, operation }`.
+fn lower_alter(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1233,11 +1233,11 @@ fn lower_alter(node: TsNode<'_>, source: &str) -> SqlIr {
         } else {
             ident_at(*c, source)
         }
-    }).unwrap_or(SqlIr::Unknown { kind: "missing_alter_name".into(), range, span });
+    }).unwrap_or(SqlTree::Unknown { kind: "missing_alter_name".into(), range, span });
     let operation = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
-        SqlIr::Unknown { kind: "missing_alter_operation".into(), range, span },
+        SqlTree::Unknown { kind: "missing_alter_operation".into(), range, span },
     );
-    SqlIr::Alter {
+    SqlTree::Alter {
         name: Box::new(name),
         operation: Box::new(operation),
         range,
@@ -1245,8 +1245,8 @@ fn lower_alter(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `add_column` CST → `SqlIr::AddColumn { column }`.
-fn lower_add_column(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `add_column` CST → `SqlTree::AddColumn { column }`.
+fn lower_add_column(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1255,16 +1255,16 @@ fn lower_add_column(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_"))
         .next()
         .map(|c| lower_node(c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "missing_add_column".into(), range, span });
-    SqlIr::AddColumn {
+        .unwrap_or(SqlTree::Unknown { kind: "missing_add_column".into(), range, span });
+    SqlTree::AddColumn {
         column: Box::new(column),
         range,
         span,
     }
 }
 
-/// `column_definition` CST → `SqlIr::ColumnDef { name, type_, constraints }`.
-fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `column_definition` CST → `SqlTree::ColumnDef { name, type_, constraints }`.
+fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1272,12 +1272,12 @@ fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlIr {
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
-    let name = named.first().map(|c| ident_at(*c, source)).unwrap_or(SqlIr::Unknown { kind: "missing_column_name".into(), range, span });
+    let name = named.first().map(|c| ident_at(*c, source)).unwrap_or(SqlTree::Unknown { kind: "missing_column_name".into(), range, span });
     let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(
-        SqlIr::Unknown { kind: "missing_column_type".into(), range, span },
+        SqlTree::Unknown { kind: "missing_column_type".into(), range, span },
     );
-    let constraints: Vec<SqlIr> = named.iter().skip(2).map(|c| lower_node(*c, source)).collect();
-    SqlIr::ColumnDef {
+    let constraints: Vec<SqlTree> = named.iter().skip(2).map(|c| lower_node(*c, source)).collect();
+    SqlTree::ColumnDef {
         name: Box::new(name),
         type_: Box::new(type_),
         constraints,
@@ -1287,7 +1287,7 @@ fn lower_column_def(node: TsNode<'_>, source: &str) -> SqlIr {
 }
 
 /// `varchar` / `nvarchar` etc. with optional length — `VARCHAR(100)`.
-fn lower_data_type(node: TsNode<'_>, name: &'static str, source: &str) -> SqlIr {
+fn lower_data_type(node: TsNode<'_>, name: &'static str, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1296,7 +1296,7 @@ fn lower_data_type(node: TsNode<'_>, name: &'static str, source: &str) -> SqlIr 
         .filter(|c| !c.kind().starts_with("keyword_"))
         .next()
         .map(|c| Box::new(lower_node(c, source)));
-    SqlIr::DataType {
+    SqlTree::DataType {
         name,
         length,
         range,
@@ -1304,21 +1304,21 @@ fn lower_data_type(node: TsNode<'_>, name: &'static str, source: &str) -> SqlIr 
     }
 }
 
-/// `group_by` CST → `SqlIr::GroupBy { keys }`.
-fn lower_group_by(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `group_by` CST → `SqlTree::GroupBy { keys }`.
+fn lower_group_by(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let keys: Vec<SqlIr> = node
+    let keys: Vec<SqlTree> = node
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_"))
         .map(|c| lower_node(c, source))
         .collect();
-    SqlIr::GroupBy { keys, range, span }
+    SqlTree::GroupBy { keys, range, span }
 }
 
-/// `having` CST → `SqlIr::Having { condition }`.
-fn lower_having(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `having` CST → `SqlTree::Having { condition }`.
+fn lower_having(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1327,29 +1327,29 @@ fn lower_having(node: TsNode<'_>, source: &str) -> SqlIr {
         .filter(|c| !c.kind().starts_with("keyword_"))
         .next()
         .map(|c| lower_node(c, source))
-        .unwrap_or(SqlIr::Unknown { kind: "missing_having".into(), range, span });
-    SqlIr::Having { condition: Box::new(condition), range, span }
+        .unwrap_or(SqlTree::Unknown { kind: "missing_having".into(), range, span });
+    SqlTree::Having { condition: Box::new(condition), range, span }
 }
 
-/// `order_by` CST → `SqlIr::OrderBy { targets }`.
-fn lower_order_by(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `order_by` CST → `SqlTree::OrderBy { targets }`.
+fn lower_order_by(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let targets: Vec<SqlIr> = node
+    let targets: Vec<SqlTree> = node
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .map(|c| lower_node(c, source))
         .collect();
-    SqlIr::OrderBy { targets, range, span }
+    SqlTree::OrderBy { targets, range, span }
 }
 
-/// `order_target` CST → `SqlIr::OrderTarget { expression, direction }`.
-fn lower_order_target(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `order_target` CST → `SqlTree::OrderTarget { expression, direction }`.
+fn lower_order_target(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let mut expression: Option<SqlIr> = None;
+    let mut expression: Option<SqlTree> = None;
     let mut direction: Option<SortDirection> = None;
     for c in node.named_children(&mut cur) {
         let kind = c.kind();
@@ -1369,12 +1369,12 @@ fn lower_order_target(node: TsNode<'_>, source: &str) -> SqlIr {
             expression = Some(lower_node(c, source));
         }
     }
-    let expression = Box::new(expression.unwrap_or(SqlIr::Unknown {
+    let expression = Box::new(expression.unwrap_or(SqlTree::Unknown {
         kind: "missing_order_target".into(),
         range,
         span,
     }));
-    SqlIr::OrderTarget {
+    SqlTree::OrderTarget {
         expression,
         direction,
         range,
@@ -1382,22 +1382,22 @@ fn lower_order_target(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `partition_by` CST → `SqlIr::PartitionBy { keys }`.
-fn lower_partition_by(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `partition_by` CST → `SqlTree::PartitionBy { keys }`.
+fn lower_partition_by(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let keys: Vec<SqlIr> = node
+    let keys: Vec<SqlTree> = node
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_") && !c.kind().starts_with("op_"))
         .map(|c| lower_node(c, source))
         .collect();
-    SqlIr::PartitionBy { keys, range, span }
+    SqlTree::PartitionBy { keys, range, span }
 }
 
-/// `join` CST → `SqlIr::Join { kind, relation, on }` with typed
+/// `join` CST → `SqlTree::Join { kind, relation, on }` with typed
 /// JoinKind detected from the keyword children.
-fn lower_join(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_join(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut kind = JoinKind::Inner;
@@ -1406,8 +1406,8 @@ fn lower_join(node: TsNode<'_>, source: &str) -> SqlIr {
     let mut full = false;
     let mut outer = false;
     let mut cross = false;
-    let mut relation: Option<SqlIr> = None;
-    let mut on: Option<Box<SqlIr>> = None;
+    let mut relation: Option<SqlTree> = None;
+    let mut on: Option<Box<SqlTree>> = None;
 
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
@@ -1439,12 +1439,12 @@ fn lower_join(node: TsNode<'_>, source: &str) -> SqlIr {
         (_, _, true, _, _) => JoinKind::Full,
         _ => kind,
     };
-    let relation = Box::new(relation.unwrap_or(SqlIr::Unknown {
+    let relation = Box::new(relation.unwrap_or(SqlTree::Unknown {
         kind: "missing_join_relation".into(),
         range,
         span,
     }));
-    SqlIr::Join {
+    SqlTree::Join {
         kind,
         relation,
         on,
@@ -1453,8 +1453,8 @@ fn lower_join(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `cte` CST → `SqlIr::Cte { name, query }`.
-fn lower_cte(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `cte` CST → `SqlTree::Cte { name, query }`.
+fn lower_cte(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1462,7 +1462,7 @@ fn lower_cte(node: TsNode<'_>, source: &str) -> SqlIr {
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
-    let name = named.first().map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+    let name = named.first().map(|c| lower_node(*c, source)).unwrap_or(SqlTree::Unknown {
         kind: "missing_cte_name".into(),
         range,
         span,
@@ -1473,12 +1473,12 @@ fn lower_cte(node: TsNode<'_>, source: &str) -> SqlIr {
         } else {
             lower_node(*c, source)
         }
-    }).unwrap_or(SqlIr::Unknown {
+    }).unwrap_or(SqlTree::Unknown {
         kind: "missing_cte_query".into(),
         range,
         span,
     });
-    SqlIr::Cte {
+    SqlTree::Cte {
         name: Box::new(name),
         query: Box::new(query),
         range,
@@ -1486,13 +1486,13 @@ fn lower_cte(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `set_operation` CST → `SqlIr::Union { all, selects }`. Detects
+/// `set_operation` CST → `SqlTree::Union { all, selects }`. Detects
 /// the ALL variant from the keyword children.
-fn lower_set_operation(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_set_operation(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut all = false;
-    let mut selects: Vec<SqlIr> = Vec::new();
+    let mut selects: Vec<SqlTree> = Vec::new();
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
         match c.kind() {
@@ -1501,7 +1501,7 @@ fn lower_set_operation(node: TsNode<'_>, source: &str) -> SqlIr {
             _ => selects.push(lower_node(c, source)),
         }
     }
-    SqlIr::Union {
+    SqlTree::Union {
         all,
         selects,
         range,
@@ -1509,8 +1509,8 @@ fn lower_set_operation(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `window_function` CST → `SqlIr::Window { call, over }`.
-fn lower_window(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `window_function` CST → `SqlTree::Window { call, over }`.
+fn lower_window(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1518,17 +1518,17 @@ fn lower_window(node: TsNode<'_>, source: &str) -> SqlIr {
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .collect();
-    let call = named.first().map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+    let call = named.first().map(|c| lower_node(*c, source)).unwrap_or(SqlTree::Unknown {
         kind: "missing_window_call".into(),
         range,
         span,
     });
-    let over = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+    let over = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlTree::Unknown {
         kind: "missing_window_over".into(),
         range,
         span,
     });
-    SqlIr::Window {
+    SqlTree::Window {
         call: Box::new(call),
         over: Box::new(over),
         range,
@@ -1536,12 +1536,12 @@ fn lower_window(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `window_specification` CST → `SqlIr::Over { partition_by, order_by }`.
-fn lower_over(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `window_specification` CST → `SqlTree::Over { partition_by, order_by }`.
+fn lower_over(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut partition_by: Option<Box<SqlIr>> = None;
-    let mut order_by: Option<Box<SqlIr>> = None;
+    let mut partition_by: Option<Box<SqlTree>> = None;
+    let mut order_by: Option<Box<SqlTree>> = None;
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
         match c.kind() {
@@ -1550,7 +1550,7 @@ fn lower_over(node: TsNode<'_>, source: &str) -> SqlIr {
             _ => {}
         }
     }
-    SqlIr::Over {
+    SqlTree::Over {
         partition_by,
         order_by,
         range,
@@ -1558,8 +1558,8 @@ fn lower_over(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `execute_statement` CST → `SqlIr::Exec { target }`.
-fn lower_exec(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `execute_statement` CST → `SqlTree::Exec { target }`.
+fn lower_exec(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1578,20 +1578,20 @@ fn lower_exec(node: TsNode<'_>, source: &str) -> SqlIr {
             }
             lower_node(c, source)
         })
-        .unwrap_or(SqlIr::Unknown {
+        .unwrap_or(SqlTree::Unknown {
             kind: "missing_exec_target".into(),
             range,
             span,
         });
-    SqlIr::Exec {
+    SqlTree::Exec {
         target: Box::new(target),
         range,
         span,
     }
 }
 
-/// `set_statement` CST → `SqlIr::Set { target, value }`.
-fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `set_statement` CST → `SqlTree::Set { target, value }`.
+fn lower_set(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1608,7 +1608,7 @@ fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
             if let Some(only) = parts.first() {
                 let text = range_of(*only).slice(source);
                 if text.starts_with('@') {
-                    return SqlIr::Variable {
+                    return SqlTree::Variable {
                         range: range_of(*only),
                         span: span_of(*only),
                     };
@@ -1617,17 +1617,17 @@ fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
             }
         }
         lower_node(*c, source)
-    }).unwrap_or(SqlIr::Unknown {
+    }).unwrap_or(SqlTree::Unknown {
         kind: "missing_set_target".into(),
         range,
         span,
     });
-    let value = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+    let value = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlTree::Unknown {
         kind: "missing_set_value".into(),
         range,
         span,
     });
-    SqlIr::Set {
+    SqlTree::Set {
         target: Box::new(target),
         value: Box::new(value),
         range,
@@ -1635,35 +1635,35 @@ fn lower_set(node: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// `transaction` CST → `SqlIr::Transaction { statements }`. Walks
+/// `transaction` CST → `SqlTree::Transaction { statements }`. Walks
 /// inner statements, dropping BEGIN / COMMIT / ROLLBACK keywords.
-fn lower_transaction(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_transaction(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let statements: Vec<SqlIr> = node
+    let statements: Vec<SqlTree> = node
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .map(|c| lower_node(c, source))
         .collect();
-    SqlIr::Transaction {
+    SqlTree::Transaction {
         statements,
         range,
         span,
     }
 }
 
-/// `create_function` CST → `SqlIr::Function`. Children: optional
+/// `create_function` CST → `SqlTree::Function`. Children: optional
 /// schema-qualified name, function_arguments, RETURNS type,
 /// function_body.
-fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
-    let mut schema: Option<Box<SqlIr>> = None;
-    let mut name_ir: Option<SqlIr> = None;
-    let mut parameters: Vec<SqlIr> = Vec::new();
-    let mut return_type: Option<Box<SqlIr>> = None;
-    let mut body: Option<SqlIr> = None;
+    let mut schema: Option<Box<SqlTree>> = None;
+    let mut name_ir: Option<SqlTree> = None;
+    let mut parameters: Vec<SqlTree> = Vec::new();
+    let mut return_type: Option<Box<SqlTree>> = None;
+    let mut body: Option<SqlTree> = None;
 
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
@@ -1699,17 +1699,17 @@ fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    let name = Box::new(name_ir.unwrap_or(SqlIr::Unknown {
+    let name = Box::new(name_ir.unwrap_or(SqlTree::Unknown {
         kind: "missing_function_name".into(),
         range,
         span,
     }));
-    let body = Box::new(body.unwrap_or(SqlIr::Unknown {
+    let body = Box::new(body.unwrap_or(SqlTree::Unknown {
         kind: "missing_function_body".into(),
         range,
         span,
     }));
-    SqlIr::Function {
+    SqlTree::Function {
         schema,
         name,
         parameters,
@@ -1722,7 +1722,7 @@ fn lower_create_function(node: TsNode<'_>, source: &str) -> SqlIr {
 
 /// `function_argument` CST → reuse the cross-language `Column` /
 /// `ColumnDef` shape — emit `ColumnDef { name, type_ }`.
-fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1733,21 +1733,21 @@ fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlIr {
     let name = named.first().map(|c| {
         let text = range_of(*c).slice(source);
         if text.starts_with('@') {
-            SqlIr::Variable { range: range_of(*c), span: span_of(*c) }
+            SqlTree::Variable { range: range_of(*c), span: span_of(*c) }
         } else {
             ident_at(*c, source)
         }
-    }).unwrap_or(SqlIr::Unknown {
+    }).unwrap_or(SqlTree::Unknown {
         kind: "missing_arg_name".into(),
         range,
         span,
     });
-    let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlIr::Unknown {
+    let type_ = named.get(1).map(|c| lower_node(*c, source)).unwrap_or(SqlTree::Unknown {
         kind: "missing_arg_type".into(),
         range,
         span,
     });
-    SqlIr::ColumnDef {
+    SqlTree::ColumnDef {
         name: Box::new(name),
         type_: Box::new(type_),
         constraints: Vec::new(),
@@ -1759,11 +1759,11 @@ fn lower_function_argument(node: TsNode<'_>, source: &str) -> SqlIr {
 /// `function_body` CST → wrap the inner expression(s) as a typed
 /// body. For now, just collect non-keyword children into a Tuple
 /// (or single child unwrapped).
-fn lower_function_body(node: TsNode<'_>, source: &str) -> SqlIr {
+fn lower_function_body(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
-    let inner: Vec<SqlIr> = node
+    let inner: Vec<SqlTree> = node
         .named_children(&mut cur)
         .filter(|c| !c.kind().starts_with("keyword_"))
         .map(|c| lower_node(c, source))
@@ -1771,7 +1771,7 @@ fn lower_function_body(node: TsNode<'_>, source: &str) -> SqlIr {
     if inner.len() == 1 {
         inner.into_iter().next().unwrap()
     } else {
-        SqlIr::Tuple { items: inner, range, span }
+        SqlTree::Tuple { items: inner, range, span }
     }
 }
 
@@ -1780,16 +1780,16 @@ fn lower_function_body(node: TsNode<'_>, source: &str) -> SqlIr {
 /// keyword_as, identifier (target alias), keyword_using,
 /// object_reference (source), keyword_as, identifier (source alias),
 /// keyword_on, binary_expression (ON condition), when_clause(s).
-fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
+fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(stmt);
     let span = span_of(stmt);
     #[derive(Copy, Clone, PartialEq)]
     enum State { Initial, AfterInto, AfterUsing, AfterOn }
     let mut state = State::Initial;
-    let mut target: Option<SqlIr> = None;
-    let mut source_rel: Option<SqlIr> = None;
-    let mut on: Option<SqlIr> = None;
-    let mut whens: Vec<SqlIr> = Vec::new();
+    let mut target: Option<SqlTree> = None;
+    let mut source_rel: Option<SqlTree> = None;
+    let mut on: Option<SqlTree> = None;
+    let mut whens: Vec<SqlTree> = Vec::new();
 
     // Track whether we've consumed the `<as> <identifier>` alias for
     // the current relation context.
@@ -1817,16 +1817,16 @@ fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
                 let alias = alias_at(c, source);
                 match state {
                     State::AfterInto => {
-                        if let Some(SqlIr::Relation { schema, name, alias: _, range, span }) = target.take() {
-                            target = Some(SqlIr::Relation {
+                        if let Some(SqlTree::Relation { schema, name, alias: _, range, span }) = target.take() {
+                            target = Some(SqlTree::Relation {
                                 schema, name, alias: Some(Box::new(alias)),
                                 range, span,
                             });
                         }
                     }
                     State::AfterUsing => {
-                        if let Some(SqlIr::Relation { schema, name, alias: _, range, span }) = source_rel.take() {
-                            source_rel = Some(SqlIr::Relation {
+                        if let Some(SqlTree::Relation { schema, name, alias: _, range, span }) = source_rel.take() {
+                            source_rel = Some(SqlTree::Relation {
                                 schema, name, alias: Some(Box::new(alias)),
                                 range, span,
                             });
@@ -1846,22 +1846,22 @@ fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    let target = Box::new(target.unwrap_or(SqlIr::Unknown {
+    let target = Box::new(target.unwrap_or(SqlTree::Unknown {
         kind: "missing_merge_target".into(),
         range,
         span,
     }));
-    let source_rel = Box::new(source_rel.unwrap_or(SqlIr::Unknown {
+    let source_rel = Box::new(source_rel.unwrap_or(SqlTree::Unknown {
         kind: "missing_merge_source".into(),
         range,
         span,
     }));
-    let on = Box::new(on.unwrap_or(SqlIr::Unknown {
+    let on = Box::new(on.unwrap_or(SqlTree::Unknown {
         kind: "missing_merge_on".into(),
         range,
         span,
     }));
-    SqlIr::Merge {
+    SqlTree::Merge {
         target,
         source: source_rel,
         on,
@@ -1871,8 +1871,8 @@ fn aggregate_merge(stmt: TsNode<'_>, source: &str) -> SqlIr {
     }
 }
 
-/// Build a `SqlIr::Relation` from an object_reference CST node.
-fn build_relation_from_object_reference(node: TsNode<'_>, source: &str) -> SqlIr {
+/// Build a `SqlTree::Relation` from an object_reference CST node.
+fn build_relation_from_object_reference(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut cur = node.walk();
@@ -1885,13 +1885,13 @@ fn build_relation_from_object_reference(node: TsNode<'_>, source: &str) -> SqlIr
     } else if let Some(only) = parts.first() {
         (None, Box::new(ident_at(*only, source)))
     } else {
-        return SqlIr::Unknown {
+        return SqlTree::Unknown {
             kind: "empty_object_reference".into(),
             range,
             span,
         };
     };
-    SqlIr::Relation {
+    SqlTree::Relation {
         schema,
         name,
         alias: None,
@@ -1900,12 +1900,12 @@ fn build_relation_from_object_reference(node: TsNode<'_>, source: &str) -> SqlIr
     }
 }
 
-/// `when_clause` (in MERGE) → `SqlIr::MergeWhen { matched, action }`.
-fn lower_merge_when(node: TsNode<'_>, source: &str) -> SqlIr {
+/// `when_clause` (in MERGE) → `SqlTree::MergeWhen { matched, action }`.
+fn lower_merge_when(node: TsNode<'_>, source: &str) -> SqlTree {
     let range = range_of(node);
     let span = span_of(node);
     let mut matched = true;
-    let mut action: Option<SqlIr> = None;
+    let mut action: Option<SqlTree> = None;
 
     let mut cur = node.walk();
     for c in node.named_children(&mut cur) {
@@ -1921,8 +1921,8 @@ fn lower_merge_when(node: TsNode<'_>, source: &str) -> SqlIr {
                 // For `WHEN MATCHED THEN UPDATE SET ...`, this is the
                 // assignment. Wrap in an Update without table.
                 if action.is_none() {
-                    action = Some(SqlIr::Update {
-                        table: Box::new(SqlIr::Unknown {
+                    action = Some(SqlTree::Update {
+                        table: Box::new(SqlTree::Unknown {
                             kind: "merge_update_no_explicit_table".into(),
                             range: range_of(c),
                             span: span_of(c),
@@ -1950,12 +1950,12 @@ fn lower_merge_when(node: TsNode<'_>, source: &str) -> SqlIr {
         }
     }
 
-    let action = Box::new(action.unwrap_or(SqlIr::Unknown {
+    let action = Box::new(action.unwrap_or(SqlTree::Unknown {
         kind: "merge_when_no_action".into(),
         range,
         span,
     }));
-    SqlIr::MergeWhen {
+    SqlTree::MergeWhen {
         matched,
         action,
         range,
@@ -1998,17 +1998,17 @@ mod tests {
         let source = "SELECT * FROM Users";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else {
+        let SqlTree::File { statements, .. } = ir else {
             panic!("expected File, got {ir:?}");
         };
         assert_eq!(statements.len(), 1, "{statements:?}");
-        let SqlIr::Statement { inner, .. } = &statements[0] else {
+        let SqlTree::Statement { inner, .. } = &statements[0] else {
             panic!("expected Statement");
         };
-        let SqlIr::Select { columns, from, .. } = inner.as_ref() else {
+        let SqlTree::Select { columns, from, .. } = inner.as_ref() else {
             panic!("expected Select, got {inner:?}");
         };
-        assert!(matches!(columns.first(), Some(SqlIr::Column { .. }) | Some(SqlIr::Star { .. })));
+        assert!(matches!(columns.first(), Some(SqlTree::Column { .. }) | Some(SqlTree::Star { .. })));
         assert!(from.is_some());
     }
 
@@ -2017,12 +2017,12 @@ mod tests {
         let source = "INSERT INTO L (a, b) VALUES (1, 'x')";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Insert { table, columns, values, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Insert { table, columns, values, .. } = inner.as_ref() else {
             panic!("expected Insert, got {inner:?}");
         };
-        assert!(matches!(table.as_ref(), SqlIr::Relation { .. }));
+        assert!(matches!(table.as_ref(), SqlTree::Relation { .. }));
         assert_eq!(columns.len(), 2, "columns: {columns:?}");
         assert_eq!(values.len(), 2, "values: {values:?}");
     }
@@ -2032,14 +2032,14 @@ mod tests {
         let source = "UPDATE Users SET Active = 0 WHERE ID = 1";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Update { table, assignments, where_, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Update { table, assignments, where_, .. } = inner.as_ref() else {
             panic!("expected Update, got {inner:?}");
         };
-        assert!(matches!(table.as_ref(), SqlIr::Relation { .. }));
+        assert!(matches!(table.as_ref(), SqlTree::Relation { .. }));
         assert_eq!(assignments.len(), 1);
-        assert!(matches!(&assignments[0], SqlIr::Assign { .. }));
+        assert!(matches!(&assignments[0], SqlTree::Assign { .. }));
         assert!(where_.is_some());
     }
 
@@ -2048,14 +2048,14 @@ mod tests {
         let source = "CREATE TABLE T (id INT, name VARCHAR(100))";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Create { kind, body, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Create { kind, body, .. } = inner.as_ref() else {
             panic!("expected Create, got {inner:?}");
         };
         assert_eq!(*kind, super::super::sql::CreateKind::Table);
         assert_eq!(body.len(), 2);
-        assert!(body.iter().all(|c| matches!(c, SqlIr::ColumnDef { .. })));
+        assert!(body.iter().all(|c| matches!(c, SqlTree::ColumnDef { .. })));
     }
 
     #[test]
@@ -2063,9 +2063,9 @@ mod tests {
         let source = "DROP TABLE T";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Drop { kind, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Drop { kind, .. } = inner.as_ref() else {
             panic!("expected Drop, got {inner:?}");
         };
         assert_eq!(*kind, super::super::sql::DropKind::Table);
@@ -2076,17 +2076,17 @@ mod tests {
         let source = "SELECT a BETWEEN 1 AND 10 FROM x";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Select { columns, .. } = inner.as_ref() else { panic!(); };
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Select { columns, .. } = inner.as_ref() else { panic!(); };
         // The first column item should be a Column wrapping a Between
         // (or Between directly if term unwrapping is added later).
         match columns.first() {
-            Some(SqlIr::Column { expression, .. }) => {
-                assert!(matches!(expression.as_ref(), SqlIr::Between { .. }),
+            Some(SqlTree::Column { expression, .. }) => {
+                assert!(matches!(expression.as_ref(), SqlTree::Between { .. }),
                     "column expression: {expression:?}");
             }
-            Some(SqlIr::Between { .. }) => {}
+            Some(SqlTree::Between { .. }) => {}
             other => panic!("unexpected column: {other:?}"),
         }
     }
@@ -2096,12 +2096,12 @@ mod tests {
         let source = "EXEC sp_helpdb";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Exec { target, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Exec { target, .. } = inner.as_ref() else {
             panic!("expected Exec, got {inner:?}");
         };
-        assert!(matches!(target.as_ref(), SqlIr::Identifier { .. }));
+        assert!(matches!(target.as_ref(), SqlTree::Identifier { .. }));
     }
 
     #[test]
@@ -2109,12 +2109,12 @@ mod tests {
         let source = "SET @x = 1";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Set { target, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Set { target, .. } = inner.as_ref() else {
             panic!("expected Set, got {inner:?}");
         };
-        assert!(matches!(target.as_ref(), SqlIr::Variable { .. }));
+        assert!(matches!(target.as_ref(), SqlTree::Variable { .. }));
     }
 
     #[test]
@@ -2122,8 +2122,8 @@ mod tests {
         let source = "BEGIN TRANSACTION; UPDATE T SET v = 1; COMMIT";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Transaction { statements: inner, .. } = &statements[0] else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Transaction { statements: inner, .. } = &statements[0] else {
             panic!("expected Transaction, got {:?}", statements[0]);
         };
         assert!(!inner.is_empty(), "transaction has no inner statements");
@@ -2134,13 +2134,13 @@ mod tests {
         let source = "MERGE INTO T AS t USING S AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Merge { whens, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Merge { whens, .. } = inner.as_ref() else {
             panic!("expected Merge, got {inner:?}");
         };
         assert!(!whens.is_empty());
-        assert!(matches!(&whens[0], SqlIr::MergeWhen { .. }));
+        assert!(matches!(&whens[0], SqlTree::MergeWhen { .. }));
     }
 
     #[test]
@@ -2148,9 +2148,9 @@ mod tests {
         let source = "CREATE FUNCTION dbo.GetAge(@b DATE) RETURNS INT AS BEGIN RETURN 1 END";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Function { schema, name: _, parameters, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Function { schema, name: _, parameters, .. } = inner.as_ref() else {
             panic!("expected Function, got {inner:?}");
         };
         assert!(schema.is_some(), "schema missing");
@@ -2162,14 +2162,14 @@ mod tests {
         let source = "SELECT * FROM A LEFT JOIN B ON A.id = B.id";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Select { from, .. } = inner.as_ref() else { panic!(); };
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Select { from, .. } = inner.as_ref() else { panic!(); };
         let from = from.as_ref().expect("from");
-        let SqlIr::From { relations, .. } = from.as_ref() else { panic!(); };
+        let SqlTree::From { relations, .. } = from.as_ref() else { panic!(); };
         // Find a Join in relations.
-        let join = relations.iter().find(|r| matches!(r, SqlIr::Join { .. }));
-        let SqlIr::Join { kind, on, .. } = join.expect("join") else { panic!(); };
+        let join = relations.iter().find(|r| matches!(r, SqlTree::Join { .. }));
+        let SqlTree::Join { kind, on, .. } = join.expect("join") else { panic!(); };
         assert_eq!(*kind, super::super::sql::JoinKind::Left);
         assert!(on.is_some());
     }
@@ -2179,13 +2179,13 @@ mod tests {
         let source = "SELECT * FROM x ORDER BY name DESC";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Select { order_by, .. } = inner.as_ref() else { panic!(); };
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Select { order_by, .. } = inner.as_ref() else { panic!(); };
         let order_by = order_by.as_ref().expect("order_by");
-        let SqlIr::OrderBy { targets, .. } = order_by.as_ref() else { panic!(); };
+        let SqlTree::OrderBy { targets, .. } = order_by.as_ref() else { panic!(); };
         assert_eq!(targets.len(), 1);
-        let SqlIr::OrderTarget { direction, .. } = &targets[0] else { panic!(); };
+        let SqlTree::OrderTarget { direction, .. } = &targets[0] else { panic!(); };
         // DESC may not be detected if grammar doesn't expose `direction`
         // — at least assert the OrderTarget shape.
         let _ = direction;
@@ -2196,15 +2196,15 @@ mod tests {
         let source = "SELECT CASE WHEN a > 0 THEN 'P' ELSE 'N' END FROM x";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Select { columns, .. } = inner.as_ref() else { panic!(); };
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Select { columns, .. } = inner.as_ref() else { panic!(); };
         let case_ir = match columns.first() {
-            Some(SqlIr::Column { expression, .. }) => expression.as_ref(),
+            Some(SqlTree::Column { expression, .. }) => expression.as_ref(),
             Some(other) => other,
             None => panic!("no columns"),
         };
-        let SqlIr::Case { whens, else_, .. } = case_ir else {
+        let SqlTree::Case { whens, else_, .. } = case_ir else {
             panic!("expected Case, got {case_ir:?}");
         };
         assert_eq!(whens.len(), 1);
@@ -2216,9 +2216,9 @@ mod tests {
         let source = "DELETE FROM Old WHERE Created < '2020'";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Delete { from, where_, .. } = inner.as_ref() else {
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Delete { from, where_, .. } = inner.as_ref() else {
             panic!("expected Delete, got {inner:?}");
         };
         assert!(from.is_some(), "from missing");
@@ -2230,12 +2230,12 @@ mod tests {
         let source = "SELECT * FROM U WHERE Active = 1";
         let tree = parse_tsql(source);
         let ir = lower_sql_root(tree.root_node(), source);
-        let SqlIr::File { statements, .. } = ir else { panic!(); };
-        let SqlIr::Statement { inner, .. } = &statements[0] else { panic!(); };
-        let SqlIr::Select { where_, .. } = inner.as_ref() else { panic!(); };
+        let SqlTree::File { statements, .. } = ir else { panic!(); };
+        let SqlTree::Statement { inner, .. } = &statements[0] else { panic!(); };
+        let SqlTree::Select { where_, .. } = inner.as_ref() else { panic!(); };
         let where_ = where_.as_ref().expect("where present");
-        let SqlIr::Where { condition, .. } = where_.as_ref() else { panic!(); };
-        let SqlIr::Compare { op, .. } = condition.as_ref() else {
+        let SqlTree::Where { condition, .. } = where_.as_ref() else { panic!(); };
+        let SqlTree::Compare { op, .. } = condition.as_ref() else {
             panic!("expected Compare, got {condition:?}");
         };
         assert_eq!(*op, ComparisonOp::Equal);

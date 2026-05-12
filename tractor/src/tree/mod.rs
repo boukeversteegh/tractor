@@ -25,7 +25,7 @@
 //! JSON, YAML, TOML, INI, `.env`, Markdown — in their default
 //! `Structure` mode.
 //!
-//! Languages on the parallel `SqlIr` (see [`sql`]):
+//! Languages on the parallel `SqlTree` (see [`sql`]):
 //! T-SQL (`tsql` / `mssql` / `sql`).
 //!
 //! Raw tree-sitter mode (`TreeMode::Raw`) bypasses every IR and
@@ -115,13 +115,13 @@ pub mod to_data;
 // See module doc-comment for rationale.
 #[cfg(feature = "native")]
 pub mod sql;
-// TSQL CST → SqlIr lowering.
+// TSQL CST → SqlTree lowering.
 #[cfg(feature = "native")]
 pub mod sql_lower;
-// SqlIr → Xot rendering.
+// SqlTree → Xot rendering.
 #[cfg(feature = "native")]
 pub mod sql_to_xot;
-// SqlIr → JSON rendering.
+// SqlTree → JSON rendering.
 #[cfg(feature = "native")]
 pub mod sql_to_json;
 // Shared helpers for `lower_<lang>` modules — text/range/span

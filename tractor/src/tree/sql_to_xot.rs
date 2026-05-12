@@ -1,4 +1,4 @@
-//! [`SqlIr`] → Xot rendering. Produces the queryable XML surface
+//! [`SqlTree`] → Xot rendering. Produces the queryable XML surface
 //! for SQL inputs.
 //!
 //! Mirrors the existing `<select>/<from>/<where>/<compare>/<column>/
@@ -7,7 +7,7 @@
 //! ## Status
 //!
 //! Initial slice covers the SELECT / DML / DDL paths exercised by
-//! the unit tests in `sql_lower.rs`. Each SqlIr variant has one
+//! the unit tests in `sql_lower.rs`. Each SqlTree variant has one
 //! deterministic XML shape — no heuristics, no post-passes.
 //!
 //! ## Source-text recovery
@@ -22,19 +22,19 @@
 use xot::{Node as XotNode, Xot};
 
 use super::sql::{
-    BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlIr, UnaryOp,
+    BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree, UnaryOp,
 };
 
-/// Render a [`SqlIr`] tree as a child of `parent` in `xot`.
+/// Render a [`SqlTree`] tree as a child of `parent` in `xot`.
 pub fn render_sql_to_xot(
     xot: &mut Xot,
     parent: XotNode,
-    ir: &SqlIr,
+    ir: &SqlTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     match ir {
         // ----- Top level ------------------------------------------------
-        SqlIr::File { statements, .. } => {
+        SqlTree::File { statements, .. } => {
             let node = element(xot, "file")?;
             xot.append(parent, node)?;
             for s in statements {
@@ -42,20 +42,20 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Statement { inner, .. } => {
+        SqlTree::Statement { inner, .. } => {
             let node = element(xot, "statement")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, inner, source)?;
             Ok(node)
         }
-        SqlIr::Go { .. } => leaf(xot, parent, "go", "GO"),
-        SqlIr::Exec { target, .. } => {
+        SqlTree::Go { .. } => leaf(xot, parent, "go", "GO"),
+        SqlTree::Exec { target, .. } => {
             let node = element(xot, "exec")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, target, source)?;
             Ok(node)
         }
-        SqlIr::Set { target, value, .. } => {
+        SqlTree::Set { target, value, .. } => {
             let node = element(xot, "set")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, target, source)?;
@@ -64,7 +64,7 @@ pub fn render_sql_to_xot(
         }
 
         // ----- DML ------------------------------------------------------
-        SqlIr::Select {
+        SqlTree::Select {
             ctes,
             columns,
             into,
@@ -112,7 +112,7 @@ pub fn render_sql_to_xot(
             }
             Ok(select_node)
         }
-        SqlIr::Insert {
+        SqlTree::Insert {
             table,
             columns,
             values,
@@ -137,7 +137,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Update {
+        SqlTree::Update {
             table,
             assignments,
             where_,
@@ -154,7 +154,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Delete { from, where_, .. } => {
+        SqlTree::Delete { from, where_, .. } => {
             let node = element(xot, "delete")?;
             xot.append(parent, node)?;
             if let Some(f) = from {
@@ -165,7 +165,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Merge { target, source: src, on, whens, .. } => {
+        SqlTree::Merge { target, source: src, on, whens, .. } => {
             let node = element(xot, "merge")?;
             xot.append(parent, node)?;
             // Render target/source relations as <relation> children.
@@ -179,7 +179,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::MergeWhen { matched, action, .. } => {
+        SqlTree::MergeWhen { matched, action, .. } => {
             let node = element(xot, "when")?;
             xot.append(parent, node)?;
             // Markers — `<matched/>` always, `<not/>` for the NOT MATCHED
@@ -194,7 +194,7 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, node, action, source)?;
             Ok(node)
         }
-        SqlIr::Transaction { statements, .. } => {
+        SqlTree::Transaction { statements, .. } => {
             let node = element(xot, "transaction")?;
             xot.append(parent, node)?;
             for s in statements {
@@ -204,7 +204,7 @@ pub fn render_sql_to_xot(
         }
 
         // ----- Clauses --------------------------------------------------
-        SqlIr::From { relations, .. } => {
+        SqlTree::From { relations, .. } => {
             let node = element(xot, "from")?;
             xot.append(parent, node)?;
             for r in relations {
@@ -212,13 +212,13 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Where { condition, .. } => {
+        SqlTree::Where { condition, .. } => {
             let node = element(xot, "where")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, condition, source)?;
             Ok(node)
         }
-        SqlIr::GroupBy { keys, .. } => {
+        SqlTree::GroupBy { keys, .. } => {
             let node = element(xot, "group")?;
             xot.append(parent, node)?;
             for k in keys {
@@ -226,13 +226,13 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Having { condition, .. } => {
+        SqlTree::Having { condition, .. } => {
             let node = element(xot, "having")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, condition, source)?;
             Ok(node)
         }
-        SqlIr::OrderBy { targets, .. } => {
+        SqlTree::OrderBy { targets, .. } => {
             let node = element(xot, "order")?;
             xot.append(parent, node)?;
             for t in targets {
@@ -240,7 +240,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::OrderTarget {
+        SqlTree::OrderTarget {
             expression,
             direction,
             ..
@@ -260,7 +260,7 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, node, expression, source)?;
             Ok(node)
         }
-        SqlIr::PartitionBy { keys, .. } => {
+        SqlTree::PartitionBy { keys, .. } => {
             let node = element(xot, "partition")?;
             xot.append(parent, node)?;
             for k in keys {
@@ -268,7 +268,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Join { kind, relation, on, .. } => {
+        SqlTree::Join { kind, relation, on, .. } => {
             let node = element(xot, "join")?;
             xot.append(parent, node)?;
             for marker in join_markers(*kind) {
@@ -283,12 +283,12 @@ pub fn render_sql_to_xot(
         }
 
         // ----- References -----------------------------------------------
-        SqlIr::Relation { schema, name, alias, .. } => {
+        SqlTree::Relation { schema, name, alias, .. } => {
             let node = element(xot, "relation")?;
             xot.append(parent, node)?;
             // Schema (when present): <schema><bracketed/><name>dbo</name></schema>
             if let Some(s) = schema {
-                if let SqlIr::Schema { value, quoting, .. } = s.as_ref() {
+                if let SqlTree::Schema { value, quoting, .. } = s.as_ref() {
                     let sn = element(xot, "schema")?;
                     xot.append(node, sn)?;
                     if let Some(marker) = quoting.marker_name() {
@@ -304,7 +304,7 @@ pub fn render_sql_to_xot(
             // Name (always): <part><bracketed?/><name>Users</name></part>
             // — wrapping in <part> so quoting markers can attach
             // without violating name-is-text-leaf.
-            if let SqlIr::Identifier { value, quoting, .. } = name.as_ref() {
+            if let SqlTree::Identifier { value, quoting, .. } = name.as_ref() {
                 let pn = element(xot, "part")?;
                 xot.append(node, pn)?;
                 if let Some(marker) = quoting.marker_name() {
@@ -320,7 +320,7 @@ pub fn render_sql_to_xot(
             }
             // Alias: <alias><bracketed?/><name>u</name></alias>
             if let Some(a) = alias {
-                if let SqlIr::Alias { value, quoting, .. } = a.as_ref() {
+                if let SqlTree::Alias { value, quoting, .. } = a.as_ref() {
                     let an = element(xot, "alias")?;
                     xot.append(node, an)?;
                     if let Some(marker) = quoting.marker_name() {
@@ -335,12 +335,12 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Column { expression, alias, .. } => {
+        SqlTree::Column { expression, alias, .. } => {
             let node = element(xot, "column")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, expression, source)?;
             if let Some(a) = alias {
-                if let SqlIr::Alias { value, quoting, .. } = a.as_ref() {
+                if let SqlTree::Alias { value, quoting, .. } = a.as_ref() {
                     let an = element(xot, "alias")?;
                     xot.append(node, an)?;
                     if let Some(marker) = quoting.marker_name() {
@@ -355,7 +355,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Star { qualifier, .. } => {
+        SqlTree::Star { qualifier, .. } => {
             let node = element(xot, "star")?;
             xot.append(parent, node)?;
             if let Some(q) = qualifier {
@@ -363,7 +363,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Reference { parts, .. } => {
+        SqlTree::Reference { parts, .. } => {
             // Render each part as <part><bracketed?/><name>text</name></part>
             // — uniform wrapper so quoting markers attach without
             // violating name-is-text-leaf. Roles aren't determinable
@@ -371,7 +371,7 @@ pub fn render_sql_to_xot(
             // dbo.SomeTable.SomeColumn could be schema.table.column
             // OR alias.table.column), so parts stay anonymous.
             for p in parts {
-                if let SqlIr::Identifier { value, quoting, .. } = p {
+                if let SqlTree::Identifier { value, quoting, .. } = p {
                     let pn = element(xot, "part")?;
                     xot.append(parent, pn)?;
                     if let Some(marker) = quoting.marker_name() {
@@ -390,7 +390,7 @@ pub fn render_sql_to_xot(
         }
 
         // ----- Expressions ----------------------------------------------
-        SqlIr::Compare { left, op, right, .. } => {
+        SqlTree::Compare { left, op, right, .. } => {
             let node = element(xot, "compare")?;
             xot.append(parent, node)?;
             let l = element(xot, "left")?;
@@ -410,7 +410,7 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, r, right, source)?;
             Ok(node)
         }
-        SqlIr::Binary { left, op, right, .. } => {
+        SqlTree::Binary { left, op, right, .. } => {
             let node = element(xot, "binary")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, left, source)?;
@@ -421,7 +421,7 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, node, right, source)?;
             Ok(node)
         }
-        SqlIr::Unary { op, operand, .. } => {
+        SqlTree::Unary { op, operand, .. } => {
             let node = element(xot, "unary")?;
             xot.append(parent, node)?;
             let op_n = element(xot, "op")?;
@@ -431,14 +431,14 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, node, operand, source)?;
             Ok(node)
         }
-        SqlIr::Assign { target, value, .. } => {
+        SqlTree::Assign { target, value, .. } => {
             let node = element(xot, "assign")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, target, source)?;
             value_render(xot, node, value, source)?;
             Ok(node)
         }
-        SqlIr::Between { value, low, high, .. } => {
+        SqlTree::Between { value, low, high, .. } => {
             let node = element(xot, "between")?;
             xot.append(parent, node)?;
             wrap_render(xot, node, "value", value, source)?;
@@ -446,13 +446,13 @@ pub fn render_sql_to_xot(
             wrap_render(xot, node, "high", high, source)?;
             Ok(node)
         }
-        SqlIr::Exists { subquery, .. } => {
+        SqlTree::Exists { subquery, .. } => {
             let node = element(xot, "exists")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, subquery, source)?;
             Ok(node)
         }
-        SqlIr::Case { whens, else_, .. } => {
+        SqlTree::Case { whens, else_, .. } => {
             let node = element(xot, "case")?;
             xot.append(parent, node)?;
             for w in whens {
@@ -465,21 +465,21 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::When { condition, value, .. } => {
+        SqlTree::When { condition, value, .. } => {
             let node = element(xot, "when")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, condition, source)?;
             render_sql_to_xot(xot, node, value, source)?;
             Ok(node)
         }
-        SqlIr::Cast { value, type_, .. } => {
+        SqlTree::Cast { value, type_, .. } => {
             let node = element(xot, "cast")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, value, source)?;
             render_sql_to_xot(xot, node, type_, source)?;
             Ok(node)
         }
-        SqlIr::Call { callee, arguments, .. } => {
+        SqlTree::Call { callee, arguments, .. } => {
             let node = element(xot, "call")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, callee, source)?;
@@ -488,14 +488,14 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Window { call, over, .. } => {
+        SqlTree::Window { call, over, .. } => {
             let node = element(xot, "window")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, call, source)?;
             render_sql_to_xot(xot, node, over, source)?;
             Ok(node)
         }
-        SqlIr::Over {
+        SqlTree::Over {
             partition_by,
             order_by,
             ..
@@ -510,13 +510,13 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Subquery { select, .. } => {
+        SqlTree::Subquery { select, .. } => {
             let node = element(xot, "subquery")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, select, source)?;
             Ok(node)
         }
-        SqlIr::Union { selects, .. } => {
+        SqlTree::Union { selects, .. } => {
             let node = element(xot, "union")?;
             xot.append(parent, node)?;
             for s in selects {
@@ -524,14 +524,14 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Cte { name, query, .. } => {
+        SqlTree::Cte { name, query, .. } => {
             let node = element(xot, "cte")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, name, source)?;
             render_sql_to_xot(xot, node, query, source)?;
             Ok(node)
         }
-        SqlIr::Tuple { items, .. } => {
+        SqlTree::Tuple { items, .. } => {
             let node = element(xot, "tuple")?;
             xot.append(parent, node)?;
             for i in items {
@@ -541,7 +541,7 @@ pub fn render_sql_to_xot(
         }
 
         // ----- DDL ------------------------------------------------------
-        SqlIr::Create { kind, name, body, .. } => {
+        SqlTree::Create { kind, name, body, .. } => {
             let node = element(xot, "create")?;
             xot.append(parent, node)?;
             let m = element(xot, create_kind_marker(*kind))?;
@@ -552,7 +552,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Drop { kind, name, .. } => {
+        SqlTree::Drop { kind, name, .. } => {
             let node = element(xot, "drop")?;
             xot.append(parent, node)?;
             let m = element(xot, drop_kind_marker(*kind))?;
@@ -560,14 +560,14 @@ pub fn render_sql_to_xot(
             render_sql_to_xot(xot, node, name, source)?;
             Ok(node)
         }
-        SqlIr::Alter { name, operation, .. } => {
+        SqlTree::Alter { name, operation, .. } => {
             let node = element(xot, "alter")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, name, source)?;
             render_sql_to_xot(xot, node, operation, source)?;
             Ok(node)
         }
-        SqlIr::ColumnDef {
+        SqlTree::ColumnDef {
             name,
             type_,
             constraints,
@@ -582,7 +582,7 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::Constraint { name, body, .. } => {
+        SqlTree::Constraint { name, body, .. } => {
             let node = element(xot, "constraint")?;
             xot.append(parent, node)?;
             if let Some(n) = name {
@@ -593,19 +593,19 @@ pub fn render_sql_to_xot(
             }
             Ok(node)
         }
-        SqlIr::AddColumn { column, .. } => {
+        SqlTree::AddColumn { column, .. } => {
             let node = element(xot, "add")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, column, source)?;
             Ok(node)
         }
-        SqlIr::AddConstraint { constraint, .. } => {
+        SqlTree::AddConstraint { constraint, .. } => {
             let node = element(xot, "add")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, constraint, source)?;
             Ok(node)
         }
-        SqlIr::Function {
+        SqlTree::Function {
             schema,
             name,
             parameters,
@@ -630,7 +630,7 @@ pub fn render_sql_to_xot(
         }
 
         // ----- Types ----------------------------------------------------
-        SqlIr::DataType { name, length, range, .. } => {
+        SqlTree::DataType { name, length, range, .. } => {
             let node = element(xot, name)?;
             xot.append(parent, node)?;
             if let Some(len) = length {
@@ -649,7 +649,7 @@ pub fn render_sql_to_xot(
         // is rendered without a wrapping context (Relation / Reference /
         // Column.alias). Wrap with the role-named element to hold any
         // quoting markers; <name> always stays a text-only leaf.
-        SqlIr::Identifier { value, quoting, .. } => {
+        SqlTree::Identifier { value, quoting, .. } => {
             // Bare identifier — emit <name>value</name>; if quoted,
             // wrap in <part><bracketed/>...</part> to give markers a
             // home. Standalone bare identifier with no quoting is a
@@ -668,7 +668,7 @@ pub fn render_sql_to_xot(
                 leaf(xot, parent, "name", value)
             }
         }
-        SqlIr::Schema { value, quoting, .. } => {
+        SqlTree::Schema { value, quoting, .. } => {
             let sn = element(xot, "schema")?;
             xot.append(parent, sn)?;
             if let Some(marker) = quoting.marker_name() {
@@ -681,7 +681,7 @@ pub fn render_sql_to_xot(
             xot.append(nn, t)?;
             Ok(sn)
         }
-        SqlIr::Alias { value, quoting, .. } => {
+        SqlTree::Alias { value, quoting, .. } => {
             let an = element(xot, "alias")?;
             xot.append(parent, an)?;
             if let Some(marker) = quoting.marker_name() {
@@ -694,18 +694,18 @@ pub fn render_sql_to_xot(
             xot.append(nn, t)?;
             Ok(an)
         }
-        SqlIr::Temp { name, .. } => {
+        SqlTree::Temp { name, .. } => {
             let node = element(xot, "temp")?;
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, name, source)?;
             Ok(node)
         }
-        SqlIr::Variable { range, .. } => leaf(xot, parent, "var", range.slice(source)),
-        SqlIr::Literal { range, .. } => leaf(xot, parent, "literal", range.slice(source)),
-        SqlIr::Comment { range, .. } => leaf(xot, parent, "comment", range.slice(source)),
+        SqlTree::Variable { range, .. } => leaf(xot, parent, "var", range.slice(source)),
+        SqlTree::Literal { range, .. } => leaf(xot, parent, "literal", range.slice(source)),
+        SqlTree::Comment { range, .. } => leaf(xot, parent, "comment", range.slice(source)),
 
         // ----- Escape hatch --------------------------------------------
-        SqlIr::Unknown { kind, .. } => unknown(xot, parent, kind, source),
+        SqlTree::Unknown { kind, .. } => unknown(xot, parent, kind, source),
     }
 }
 
@@ -743,7 +743,7 @@ fn wrap_render(
     xot: &mut Xot,
     parent: XotNode,
     wrap_name: &str,
-    inner: &SqlIr,
+    inner: &SqlTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     let n = element(xot, wrap_name)?;
@@ -755,7 +755,7 @@ fn wrap_render(
 fn value_render(
     xot: &mut Xot,
     parent: XotNode,
-    inner: &SqlIr,
+    inner: &SqlTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
     wrap_render(xot, parent, "value", inner, source)

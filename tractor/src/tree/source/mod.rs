@@ -52,7 +52,7 @@ pub mod rust_lang;
 pub mod go_lang;
 pub mod ruby;
 pub mod php;
-// SQL-family languages use their own typed IR (`SqlIr`) and a
+// SQL-family languages use their own typed IR (`SqlTree`) and a
 // separate renderer entrypoint `render_sql`. Iter 53 retired the
 // legacy `SyntaxTree`-based TSQL pipeline.
 pub mod sql;
@@ -84,21 +84,21 @@ pub fn render(ir: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> Strin
         "go" => go_lang::render(ir),
         "ruby" => ruby::render(ir),
         "php" => php::render(ir),
-        // T-SQL uses `SqlIr`, not `SyntaxTree` — call `render_sql` instead.
+        // T-SQL uses `SqlTree`, not `SyntaxTree` — call `render_sql` instead.
         // This arm exists so users passing "tsql" get a clear panic
         // rather than silently falling through to generic.
-        "tsql" => panic!("tsql uses SqlIr; call render_sql instead"),
+        "tsql" => panic!("tsql uses SqlTree; call render_sql instead"),
         _ => common::render_generic(ir),
     }
 }
 
-/// Render a SQL [`SqlIr`](crate::tree::sql::SqlIr) tree to source text.
+/// Render a SQL [`SqlTree`](crate::tree::sql::SqlTree) tree to source text.
 ///
 /// `source_anchor`: the original source the IR was lowered from. When
 /// supplied, gap-text slicing returns the original bytes verbatim
 /// (anchored / lossless mode). Pass `None` for canonical from-scratch
 /// rendering.
-pub fn render_sql(ir: &super::sql::SqlIr, source_anchor: Option<&str>) -> String {
+pub fn render_sql(ir: &super::sql::SqlTree, source_anchor: Option<&str>) -> String {
     if let Some(source) = source_anchor {
         return ir.to_source(source).to_string();
     }

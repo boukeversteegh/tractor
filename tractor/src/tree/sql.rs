@@ -15,7 +15,7 @@
 //! Per user direction (2026-05-07): "there is absolutely no rule
 //! that says that all languages should use the same IR".
 //!
-//! `SqlIr` gives every SQL construct a typed shape. Both XML and
+//! `SqlTree` gives every SQL construct a typed shape. Both XML and
 //! JSON output read typed slots directly — no projection rules
 //! needed.
 //!
@@ -30,7 +30,7 @@
 //! 1. **Round-trip identity** — `to_source(sql_ir, source) == source`.
 //! 2. **XPath text recovery** — `string(rendered_root) == source`.
 //! 3. **No silent drops** — un-handled CST kinds fall through to
-//!    [`SqlIr::Unknown`].
+//!    [`SqlTree::Unknown`].
 //! 4. **Canonical reconstruction without source** —
 //!    `parse(render_sql(ir, None)) == parse(s)` where
 //!    `ir = lower_sql_root(parse(s), &s)`. The IR carries every
@@ -48,12 +48,12 @@ use super::types::{ByteRange, Span};
 
 /// Typed SQL IR.
 #[derive(Debug, Clone)]
-pub enum SqlIr {
+pub enum SqlTree {
     // ----- Top level -----------------------------------------------------
 
     /// `<file>` — top-level container of statements.
     File {
-        statements: Vec<SqlIr>,
+        statements: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -61,9 +61,9 @@ pub enum SqlIr {
     /// `<statement>` — a generic wrapper for a statement node when
     /// the inner kind is one of the typed variants below. Renders
     /// as `<statement>{inner_render}</statement>`. The inner is
-    /// any other `SqlIr` variant.
+    /// any other `SqlTree` variant.
     Statement {
-        inner: Box<SqlIr>,
+        inner: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -73,15 +73,15 @@ pub enum SqlIr {
 
     /// `<exec>` — `EXEC sp_helpdb`.
     Exec {
-        target: Box<SqlIr>,           // SqlIr::Identifier or SqlIr::Call
+        target: Box<SqlTree>,           // SqlTree::Identifier or SqlTree::Call
         range: ByteRange,
         span: Span,
     },
 
     /// `<set>` — `SET @var = expr`.
     Set {
-        target: Box<SqlIr>,           // SqlIr::Variable
-        value: Box<SqlIr>,
+        target: Box<SqlTree>,           // SqlTree::Variable
+        value: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -91,50 +91,50 @@ pub enum SqlIr {
     /// `<select>` — `SELECT cols FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY ...`.
     /// Each clause is its own typed slot.
     Select {
-        ctes: Vec<SqlIr>,             // WITH ... AS (...) CTE clauses (each SqlIr::Cte)
-        columns: Vec<SqlIr>,          // each is SqlIr::Column or SqlIr::Star
-        into: Option<Box<SqlIr>>,     // SELECT ... INTO #temp
-        from: Option<Box<SqlIr>>,     // SqlIr::From
-        where_: Option<Box<SqlIr>>,   // SqlIr::Where
-        group_by: Option<Box<SqlIr>>, // SqlIr::GroupBy
-        having: Option<Box<SqlIr>>,   // SqlIr::Having
-        order_by: Option<Box<SqlIr>>, // SqlIr::OrderBy
+        ctes: Vec<SqlTree>,             // WITH ... AS (...) CTE clauses (each SqlTree::Cte)
+        columns: Vec<SqlTree>,          // each is SqlTree::Column or SqlTree::Star
+        into: Option<Box<SqlTree>>,     // SELECT ... INTO #temp
+        from: Option<Box<SqlTree>>,     // SqlTree::From
+        where_: Option<Box<SqlTree>>,   // SqlTree::Where
+        group_by: Option<Box<SqlTree>>, // SqlTree::GroupBy
+        having: Option<Box<SqlTree>>,   // SqlTree::Having
+        order_by: Option<Box<SqlTree>>, // SqlTree::OrderBy
         range: ByteRange,
         span: Span,
     },
 
     /// `<insert>` — `INSERT INTO table (cols) VALUES (vals)`.
     Insert {
-        table: Box<SqlIr>,            // SqlIr::Relation
-        columns: Vec<SqlIr>,          // empty when columns omitted
-        values: Vec<SqlIr>,           // each row is a SqlIr::Tuple
+        table: Box<SqlTree>,            // SqlTree::Relation
+        columns: Vec<SqlTree>,          // empty when columns omitted
+        values: Vec<SqlTree>,           // each row is a SqlTree::Tuple
         range: ByteRange,
         span: Span,
     },
 
     /// `<update>` — `UPDATE table SET col=val,... WHERE ...`.
     Update {
-        table: Box<SqlIr>,
-        assignments: Vec<SqlIr>,      // each is SqlIr::Assign
-        where_: Option<Box<SqlIr>>,
+        table: Box<SqlTree>,
+        assignments: Vec<SqlTree>,      // each is SqlTree::Assign
+        where_: Option<Box<SqlTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<delete>` — `DELETE FROM table WHERE ...`.
     Delete {
-        from: Option<Box<SqlIr>>,
-        where_: Option<Box<SqlIr>>,
+        from: Option<Box<SqlTree>>,
+        where_: Option<Box<SqlTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<merge>` — `MERGE INTO target USING source ON ... WHEN ...`.
     Merge {
-        target: Box<SqlIr>,           // SqlIr::Relation
-        source: Box<SqlIr>,           // SqlIr::Relation or SqlIr::Subquery
-        on: Box<SqlIr>,               // join condition
-        whens: Vec<SqlIr>,            // each is SqlIr::MergeWhen
+        target: Box<SqlTree>,           // SqlTree::Relation
+        source: Box<SqlTree>,           // SqlTree::Relation or SqlTree::Subquery
+        on: Box<SqlTree>,               // join condition
+        whens: Vec<SqlTree>,            // each is SqlTree::MergeWhen
         range: ByteRange,
         span: Span,
     },
@@ -142,14 +142,14 @@ pub enum SqlIr {
     /// `<when>` inside MERGE — `WHEN MATCHED THEN UPDATE ...` / `WHEN NOT MATCHED THEN INSERT ...`.
     MergeWhen {
         matched: bool,                 // MATCHED vs NOT MATCHED
-        action: Box<SqlIr>,            // SqlIr::Update / SqlIr::Insert / SqlIr::Delete
+        action: Box<SqlTree>,            // SqlTree::Update / SqlTree::Insert / SqlTree::Delete
         range: ByteRange,
         span: Span,
     },
 
     /// `<transaction>` — `BEGIN TRANSACTION ... COMMIT`.
     Transaction {
-        statements: Vec<SqlIr>,
+        statements: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -158,39 +158,39 @@ pub enum SqlIr {
 
     /// `<from>` — `FROM relation [JOIN ...]`.
     From {
-        relations: Vec<SqlIr>,         // first is base; subsequent are joins
+        relations: Vec<SqlTree>,         // first is base; subsequent are joins
         range: ByteRange,
         span: Span,
     },
 
     /// `<where>` — `WHERE condition`.
-    Where { condition: Box<SqlIr>, range: ByteRange, span: Span },
+    Where { condition: Box<SqlTree>, range: ByteRange, span: Span },
 
     /// `<group>` — `GROUP BY col, col, ...`.
-    GroupBy { keys: Vec<SqlIr>, range: ByteRange, span: Span },
+    GroupBy { keys: Vec<SqlTree>, range: ByteRange, span: Span },
 
     /// `<having>` — `HAVING condition`.
-    Having { condition: Box<SqlIr>, range: ByteRange, span: Span },
+    Having { condition: Box<SqlTree>, range: ByteRange, span: Span },
 
     /// `<order>` — `ORDER BY target [ASC|DESC], ...`.
-    OrderBy { targets: Vec<SqlIr>, range: ByteRange, span: Span },
+    OrderBy { targets: Vec<SqlTree>, range: ByteRange, span: Span },
 
     /// `<target>` — one item in ORDER BY: `expr [ASC|DESC]`.
     OrderTarget {
-        expression: Box<SqlIr>,
+        expression: Box<SqlTree>,
         direction: Option<SortDirection>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<partition>` — `PARTITION BY col, col, ...` inside OVER().
-    PartitionBy { keys: Vec<SqlIr>, range: ByteRange, span: Span },
+    PartitionBy { keys: Vec<SqlTree>, range: ByteRange, span: Span },
 
     /// `<join>` — one JOIN clause: `[LEFT|RIGHT|FULL|INNER|CROSS] JOIN relation ON cond`.
     Join {
         kind: JoinKind,
-        relation: Box<SqlIr>,
-        on: Option<Box<SqlIr>>,        // None for CROSS JOIN
+        relation: Box<SqlTree>,
+        on: Option<Box<SqlTree>>,        // None for CROSS JOIN
         range: ByteRange,
         span: Span,
     },
@@ -199,24 +199,24 @@ pub enum SqlIr {
 
     /// `<relation>` — a table reference, optionally aliased and schema-qualified.
     Relation {
-        schema: Option<Box<SqlIr>>,    // SqlIr::Identifier
-        name: Box<SqlIr>,              // SqlIr::Identifier
-        alias: Option<Box<SqlIr>>,     // SqlIr::Identifier
+        schema: Option<Box<SqlTree>>,    // SqlTree::Identifier
+        name: Box<SqlTree>,              // SqlTree::Identifier
+        alias: Option<Box<SqlTree>>,     // SqlTree::Identifier
         range: ByteRange,
         span: Span,
     },
 
     /// `<column>` in SELECT clause — `expr [AS alias]`.
     Column {
-        expression: Box<SqlIr>,
-        alias: Option<Box<SqlIr>>,
+        expression: Box<SqlTree>,
+        alias: Option<Box<SqlTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<star>` — `*` (unqualified or `relation.*`).
     Star {
-        qualifier: Option<Box<SqlIr>>, // for `t.*`
+        qualifier: Option<Box<SqlTree>>, // for `t.*`
         range: ByteRange,
         span: Span,
     },
@@ -224,7 +224,7 @@ pub enum SqlIr {
     /// `<reference>` — column reference, possibly qualified:
     /// `name`, `t.name`, `dbo.t.name`, etc.
     Reference {
-        parts: Vec<SqlIr>,             // each is SqlIr::Identifier
+        parts: Vec<SqlTree>,             // each is SqlTree::Identifier
         range: ByteRange,
         span: Span,
     },
@@ -233,18 +233,18 @@ pub enum SqlIr {
 
     /// `<compare>` — binary comparison: `a = b`, `a > b`, `a IN (...)`, etc.
     Compare {
-        left: Box<SqlIr>,
+        left: Box<SqlTree>,
         op: ComparisonOp,
-        right: Box<SqlIr>,
+        right: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<binary>` — arithmetic or logical: `a + b`, `a AND b`.
     Binary {
-        left: Box<SqlIr>,
+        left: Box<SqlTree>,
         op: BinaryOp,
-        right: Box<SqlIr>,
+        right: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -252,86 +252,86 @@ pub enum SqlIr {
     /// `<unary>` — `NOT expr`, `-expr`.
     Unary {
         op: UnaryOp,
-        operand: Box<SqlIr>,
+        operand: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<assign>` — `SET col = expr` (in UPDATE) or `SET @var = expr`.
     Assign {
-        target: Box<SqlIr>,
-        value: Box<SqlIr>,
+        target: Box<SqlTree>,
+        value: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<between>` — `expr BETWEEN low AND high`.
     Between {
-        value: Box<SqlIr>,
-        low: Box<SqlIr>,
-        high: Box<SqlIr>,
+        value: Box<SqlTree>,
+        low: Box<SqlTree>,
+        high: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<exists>` — `EXISTS (subquery)`.
     Exists {
-        subquery: Box<SqlIr>,
+        subquery: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<case>` — `CASE WHEN ... THEN ... [ELSE ...] END`.
     Case {
-        whens: Vec<SqlIr>,             // each is SqlIr::When
-        else_: Option<Box<SqlIr>>,
+        whens: Vec<SqlTree>,             // each is SqlTree::When
+        else_: Option<Box<SqlTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<when>` — one `WHEN cond THEN value` arm in a CASE.
     When {
-        condition: Box<SqlIr>,
-        value: Box<SqlIr>,
+        condition: Box<SqlTree>,
+        value: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<cast>` — `CAST(expr AS type)`.
     Cast {
-        value: Box<SqlIr>,
-        type_: Box<SqlIr>,             // SqlIr::DataType
+        value: Box<SqlTree>,
+        type_: Box<SqlTree>,             // SqlTree::DataType
         range: ByteRange,
         span: Span,
     },
 
     /// `<call>` — function invocation: `LOWER(x)`, `COUNT(*)`, etc.
     Call {
-        callee: Box<SqlIr>,            // SqlIr::Identifier
-        arguments: Vec<SqlIr>,
+        callee: Box<SqlTree>,            // SqlTree::Identifier
+        arguments: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<window>` — windowed aggregate: `func() OVER (...)`.
     Window {
-        call: Box<SqlIr>,              // SqlIr::Call
-        over: Box<SqlIr>,              // SqlIr::Over
+        call: Box<SqlTree>,              // SqlTree::Call
+        over: Box<SqlTree>,              // SqlTree::Over
         range: ByteRange,
         span: Span,
     },
 
     /// `<over>` — `OVER (PARTITION BY ... ORDER BY ...)`.
     Over {
-        partition_by: Option<Box<SqlIr>>,
-        order_by: Option<Box<SqlIr>>,
+        partition_by: Option<Box<SqlTree>>,
+        order_by: Option<Box<SqlTree>>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<subquery>` — parenthesized SELECT.
     Subquery {
-        select: Box<SqlIr>,
+        select: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -339,15 +339,15 @@ pub enum SqlIr {
     /// `<union>` — `SELECT ... UNION [ALL] SELECT ...`.
     Union {
         all: bool,
-        selects: Vec<SqlIr>,
+        selects: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<cte>` — `WITH name AS (SELECT ...)`.
     Cte {
-        name: Box<SqlIr>,
-        query: Box<SqlIr>,             // SqlIr::Select
+        name: Box<SqlTree>,
+        query: Box<SqlTree>,             // SqlTree::Select
         range: ByteRange,
         span: Span,
     },
@@ -355,7 +355,7 @@ pub enum SqlIr {
     /// `<tuple>` — `(a, b, c)` value list (used in INSERT VALUES rows
     /// and IN lists).
     Tuple {
-        items: Vec<SqlIr>,
+        items: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -365,8 +365,8 @@ pub enum SqlIr {
     /// `<create>` — `CREATE TABLE / VIEW / INDEX name ...`.
     Create {
         kind: CreateKind,
-        name: Box<SqlIr>,              // SqlIr::Identifier
-        body: Vec<SqlIr>,              // columns / select / index_fields
+        name: Box<SqlTree>,              // SqlTree::Identifier
+        body: Vec<SqlTree>,              // columns / select / index_fields
         range: ByteRange,
         span: Span,
     },
@@ -374,57 +374,57 @@ pub enum SqlIr {
     /// `<drop>` — `DROP TABLE / INDEX name`.
     Drop {
         kind: DropKind,
-        name: Box<SqlIr>,
+        name: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<alter>` — `ALTER TABLE name operation`.
     Alter {
-        name: Box<SqlIr>,
-        operation: Box<SqlIr>,         // SqlIr::AddColumn / SqlIr::AddConstraint / ...
+        name: Box<SqlTree>,
+        operation: Box<SqlTree>,         // SqlTree::AddColumn / SqlTree::AddConstraint / ...
         range: ByteRange,
         span: Span,
     },
 
     /// `<column>` (DDL) — column definition in CREATE TABLE.
     ColumnDef {
-        name: Box<SqlIr>,
-        type_: Box<SqlIr>,
-        constraints: Vec<SqlIr>,
+        name: Box<SqlTree>,
+        type_: Box<SqlTree>,
+        constraints: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<constraint>` — table constraint (PRIMARY KEY, FOREIGN KEY, …).
     Constraint {
-        name: Option<Box<SqlIr>>,
-        body: Vec<SqlIr>,
+        name: Option<Box<SqlTree>>,
+        body: Vec<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<add>` — `ADD COLUMN col TYPE` operation in ALTER TABLE.
     AddColumn {
-        column: Box<SqlIr>,            // SqlIr::ColumnDef
+        column: Box<SqlTree>,            // SqlTree::ColumnDef
         range: ByteRange,
         span: Span,
     },
 
     /// `<add>` for constraints — `ADD CONSTRAINT name ...`.
     AddConstraint {
-        constraint: Box<SqlIr>,
+        constraint: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
 
     /// `<function>` — `CREATE FUNCTION ... AS BEGIN ... END`.
     Function {
-        schema: Option<Box<SqlIr>>,
-        name: Box<SqlIr>,
-        parameters: Vec<SqlIr>,
-        return_type: Option<Box<SqlIr>>,
-        body: Box<SqlIr>,
+        schema: Option<Box<SqlTree>>,
+        name: Box<SqlTree>,
+        parameters: Vec<SqlTree>,
+        return_type: Option<Box<SqlTree>>,
+        body: Box<SqlTree>,
         range: ByteRange,
         span: Span,
     },
@@ -436,7 +436,7 @@ pub enum SqlIr {
     /// fixed-width types.
     DataType {
         name: &'static str,            // "int", "varchar", "datetime", ...
-        length: Option<Box<SqlIr>>,    // SqlIr::Integer
+        length: Option<Box<SqlTree>>,    // SqlTree::Integer
         range: ByteRange,
         span: Span,
     },
@@ -462,7 +462,7 @@ pub enum SqlIr {
     Alias { value: String, quoting: QuoteStyle, range: ByteRange, span: Span },
 
     /// `<temp>` — temp-table qualifier `#name` / `##name`.
-    Temp { name: Box<SqlIr>, range: ByteRange, span: Span },
+    Temp { name: Box<SqlTree>, range: ByteRange, span: Span },
 
     /// `<var>` — `@variable` reference.
     Variable { range: ByteRange, span: Span },
@@ -606,130 +606,130 @@ pub enum DropKind {
     Index,
 }
 
-impl SqlIr {
+impl SqlTree {
     /// Source byte range covered by this node.
     pub fn range(&self) -> ByteRange {
         match self {
-            SqlIr::File { range, .. }
-            | SqlIr::Statement { range, .. }
-            | SqlIr::Go { range, .. }
-            | SqlIr::Exec { range, .. }
-            | SqlIr::Set { range, .. }
-            | SqlIr::Select { range, .. }
-            | SqlIr::Insert { range, .. }
-            | SqlIr::Update { range, .. }
-            | SqlIr::Delete { range, .. }
-            | SqlIr::Merge { range, .. }
-            | SqlIr::MergeWhen { range, .. }
-            | SqlIr::Transaction { range, .. }
-            | SqlIr::From { range, .. }
-            | SqlIr::Where { range, .. }
-            | SqlIr::GroupBy { range, .. }
-            | SqlIr::Having { range, .. }
-            | SqlIr::OrderBy { range, .. }
-            | SqlIr::OrderTarget { range, .. }
-            | SqlIr::PartitionBy { range, .. }
-            | SqlIr::Join { range, .. }
-            | SqlIr::Relation { range, .. }
-            | SqlIr::Column { range, .. }
-            | SqlIr::Star { range, .. }
-            | SqlIr::Reference { range, .. }
-            | SqlIr::Compare { range, .. }
-            | SqlIr::Binary { range, .. }
-            | SqlIr::Unary { range, .. }
-            | SqlIr::Assign { range, .. }
-            | SqlIr::Between { range, .. }
-            | SqlIr::Exists { range, .. }
-            | SqlIr::Case { range, .. }
-            | SqlIr::When { range, .. }
-            | SqlIr::Cast { range, .. }
-            | SqlIr::Call { range, .. }
-            | SqlIr::Window { range, .. }
-            | SqlIr::Over { range, .. }
-            | SqlIr::Subquery { range, .. }
-            | SqlIr::Union { range, .. }
-            | SqlIr::Cte { range, .. }
-            | SqlIr::Tuple { range, .. }
-            | SqlIr::Create { range, .. }
-            | SqlIr::Drop { range, .. }
-            | SqlIr::Alter { range, .. }
-            | SqlIr::ColumnDef { range, .. }
-            | SqlIr::Constraint { range, .. }
-            | SqlIr::AddColumn { range, .. }
-            | SqlIr::AddConstraint { range, .. }
-            | SqlIr::Function { range, .. }
-            | SqlIr::DataType { range, .. }
-            | SqlIr::Identifier { range, .. }
-            | SqlIr::Schema { range, .. }
-            | SqlIr::Alias { range, .. }
-            | SqlIr::Temp { range, .. }
-            | SqlIr::Variable { range, .. }
-            | SqlIr::Literal { range, .. }
-            | SqlIr::Comment { range, .. }
-            | SqlIr::Unknown { range, .. } => *range,
+            SqlTree::File { range, .. }
+            | SqlTree::Statement { range, .. }
+            | SqlTree::Go { range, .. }
+            | SqlTree::Exec { range, .. }
+            | SqlTree::Set { range, .. }
+            | SqlTree::Select { range, .. }
+            | SqlTree::Insert { range, .. }
+            | SqlTree::Update { range, .. }
+            | SqlTree::Delete { range, .. }
+            | SqlTree::Merge { range, .. }
+            | SqlTree::MergeWhen { range, .. }
+            | SqlTree::Transaction { range, .. }
+            | SqlTree::From { range, .. }
+            | SqlTree::Where { range, .. }
+            | SqlTree::GroupBy { range, .. }
+            | SqlTree::Having { range, .. }
+            | SqlTree::OrderBy { range, .. }
+            | SqlTree::OrderTarget { range, .. }
+            | SqlTree::PartitionBy { range, .. }
+            | SqlTree::Join { range, .. }
+            | SqlTree::Relation { range, .. }
+            | SqlTree::Column { range, .. }
+            | SqlTree::Star { range, .. }
+            | SqlTree::Reference { range, .. }
+            | SqlTree::Compare { range, .. }
+            | SqlTree::Binary { range, .. }
+            | SqlTree::Unary { range, .. }
+            | SqlTree::Assign { range, .. }
+            | SqlTree::Between { range, .. }
+            | SqlTree::Exists { range, .. }
+            | SqlTree::Case { range, .. }
+            | SqlTree::When { range, .. }
+            | SqlTree::Cast { range, .. }
+            | SqlTree::Call { range, .. }
+            | SqlTree::Window { range, .. }
+            | SqlTree::Over { range, .. }
+            | SqlTree::Subquery { range, .. }
+            | SqlTree::Union { range, .. }
+            | SqlTree::Cte { range, .. }
+            | SqlTree::Tuple { range, .. }
+            | SqlTree::Create { range, .. }
+            | SqlTree::Drop { range, .. }
+            | SqlTree::Alter { range, .. }
+            | SqlTree::ColumnDef { range, .. }
+            | SqlTree::Constraint { range, .. }
+            | SqlTree::AddColumn { range, .. }
+            | SqlTree::AddConstraint { range, .. }
+            | SqlTree::Function { range, .. }
+            | SqlTree::DataType { range, .. }
+            | SqlTree::Identifier { range, .. }
+            | SqlTree::Schema { range, .. }
+            | SqlTree::Alias { range, .. }
+            | SqlTree::Temp { range, .. }
+            | SqlTree::Variable { range, .. }
+            | SqlTree::Literal { range, .. }
+            | SqlTree::Comment { range, .. }
+            | SqlTree::Unknown { range, .. } => *range,
         }
     }
 
     /// Source-location span (line / column).
     pub fn span(&self) -> Span {
         match self {
-            SqlIr::File { span, .. }
-            | SqlIr::Statement { span, .. }
-            | SqlIr::Go { span, .. }
-            | SqlIr::Exec { span, .. }
-            | SqlIr::Set { span, .. }
-            | SqlIr::Select { span, .. }
-            | SqlIr::Insert { span, .. }
-            | SqlIr::Update { span, .. }
-            | SqlIr::Delete { span, .. }
-            | SqlIr::Merge { span, .. }
-            | SqlIr::MergeWhen { span, .. }
-            | SqlIr::Transaction { span, .. }
-            | SqlIr::From { span, .. }
-            | SqlIr::Where { span, .. }
-            | SqlIr::GroupBy { span, .. }
-            | SqlIr::Having { span, .. }
-            | SqlIr::OrderBy { span, .. }
-            | SqlIr::OrderTarget { span, .. }
-            | SqlIr::PartitionBy { span, .. }
-            | SqlIr::Join { span, .. }
-            | SqlIr::Relation { span, .. }
-            | SqlIr::Column { span, .. }
-            | SqlIr::Star { span, .. }
-            | SqlIr::Reference { span, .. }
-            | SqlIr::Compare { span, .. }
-            | SqlIr::Binary { span, .. }
-            | SqlIr::Unary { span, .. }
-            | SqlIr::Assign { span, .. }
-            | SqlIr::Between { span, .. }
-            | SqlIr::Exists { span, .. }
-            | SqlIr::Case { span, .. }
-            | SqlIr::When { span, .. }
-            | SqlIr::Cast { span, .. }
-            | SqlIr::Call { span, .. }
-            | SqlIr::Window { span, .. }
-            | SqlIr::Over { span, .. }
-            | SqlIr::Subquery { span, .. }
-            | SqlIr::Union { span, .. }
-            | SqlIr::Cte { span, .. }
-            | SqlIr::Tuple { span, .. }
-            | SqlIr::Create { span, .. }
-            | SqlIr::Drop { span, .. }
-            | SqlIr::Alter { span, .. }
-            | SqlIr::ColumnDef { span, .. }
-            | SqlIr::Constraint { span, .. }
-            | SqlIr::AddColumn { span, .. }
-            | SqlIr::AddConstraint { span, .. }
-            | SqlIr::Function { span, .. }
-            | SqlIr::DataType { span, .. }
-            | SqlIr::Identifier { span, .. }
-            | SqlIr::Schema { span, .. }
-            | SqlIr::Alias { span, .. }
-            | SqlIr::Temp { span, .. }
-            | SqlIr::Variable { span, .. }
-            | SqlIr::Literal { span, .. }
-            | SqlIr::Comment { span, .. }
-            | SqlIr::Unknown { span, .. } => *span,
+            SqlTree::File { span, .. }
+            | SqlTree::Statement { span, .. }
+            | SqlTree::Go { span, .. }
+            | SqlTree::Exec { span, .. }
+            | SqlTree::Set { span, .. }
+            | SqlTree::Select { span, .. }
+            | SqlTree::Insert { span, .. }
+            | SqlTree::Update { span, .. }
+            | SqlTree::Delete { span, .. }
+            | SqlTree::Merge { span, .. }
+            | SqlTree::MergeWhen { span, .. }
+            | SqlTree::Transaction { span, .. }
+            | SqlTree::From { span, .. }
+            | SqlTree::Where { span, .. }
+            | SqlTree::GroupBy { span, .. }
+            | SqlTree::Having { span, .. }
+            | SqlTree::OrderBy { span, .. }
+            | SqlTree::OrderTarget { span, .. }
+            | SqlTree::PartitionBy { span, .. }
+            | SqlTree::Join { span, .. }
+            | SqlTree::Relation { span, .. }
+            | SqlTree::Column { span, .. }
+            | SqlTree::Star { span, .. }
+            | SqlTree::Reference { span, .. }
+            | SqlTree::Compare { span, .. }
+            | SqlTree::Binary { span, .. }
+            | SqlTree::Unary { span, .. }
+            | SqlTree::Assign { span, .. }
+            | SqlTree::Between { span, .. }
+            | SqlTree::Exists { span, .. }
+            | SqlTree::Case { span, .. }
+            | SqlTree::When { span, .. }
+            | SqlTree::Cast { span, .. }
+            | SqlTree::Call { span, .. }
+            | SqlTree::Window { span, .. }
+            | SqlTree::Over { span, .. }
+            | SqlTree::Subquery { span, .. }
+            | SqlTree::Union { span, .. }
+            | SqlTree::Cte { span, .. }
+            | SqlTree::Tuple { span, .. }
+            | SqlTree::Create { span, .. }
+            | SqlTree::Drop { span, .. }
+            | SqlTree::Alter { span, .. }
+            | SqlTree::ColumnDef { span, .. }
+            | SqlTree::Constraint { span, .. }
+            | SqlTree::AddColumn { span, .. }
+            | SqlTree::AddConstraint { span, .. }
+            | SqlTree::Function { span, .. }
+            | SqlTree::DataType { span, .. }
+            | SqlTree::Identifier { span, .. }
+            | SqlTree::Schema { span, .. }
+            | SqlTree::Alias { span, .. }
+            | SqlTree::Temp { span, .. }
+            | SqlTree::Variable { span, .. }
+            | SqlTree::Literal { span, .. }
+            | SqlTree::Comment { span, .. }
+            | SqlTree::Unknown { span, .. } => *span,
         }
     }
 

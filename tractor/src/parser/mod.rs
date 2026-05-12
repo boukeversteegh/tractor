@@ -60,14 +60,14 @@ pub struct XotParseResult {
     /// the data-language branch.
     pub data_ir: Option<Box<crate::tree::DataTree>>,
 
-    /// Typed `SqlIr` root for SQL-family languages (TSQL today).
+    /// Typed `SqlTree` root for SQL-family languages (TSQL today).
     /// `Some` only when the IR pipeline took the SQL branch. SQL has
     /// its own typed IR per-construct (Select/Insert/Update/...) so
     /// JSON / XML output reads typed slots directly without the
     /// projection heuristics that the cross-language `SyntaxTree` requires
     /// for generic SimpleStatement wrappers.
     #[cfg(feature = "native")]
-    pub sql_ir: Option<Box<crate::tree::sql::SqlIr>>,
+    pub sql_ir: Option<Box<crate::tree::sql::SqlTree>>,
 
     /// The original source text. Needed alongside `ir` / `data_ir`
     /// because both reference source byte ranges for leaf text
@@ -347,7 +347,7 @@ fn parse_with_ir_pipeline(
         IrFamily::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
             tree::sql_to_xot::render_sql_to_xot(&mut xot, doc, &sql_ir, source)
-                .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             Ok(XotParseResult {
                 xot,
                 root: doc,
@@ -451,7 +451,7 @@ fn parse_with_ir_pipeline_to_xee(
         IrFamily::Sql(lower) => {
             let sql_ir = lower(tree.root_node(), source);
             tree::sql_to_xot::render_sql_to_xot(&mut xot, holding, &sql_ir, source)
-                .map_err(|e| ParseError::Parse(format!("SqlIr render failed: {e}")))?;
+                .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
                 .find(|&c| xot.element(c).is_some())
                 .map(|n| crate::xpath::xot_node_to_xml_node(&xot, n));

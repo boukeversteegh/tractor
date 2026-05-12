@@ -115,7 +115,7 @@ pub enum Tree {
     /// Renders via `sql_to_xot` for XML and `sql_to_json` for JSON.
     #[cfg(feature = "native")]
     Sql {
-        ir: Arc<crate::tree::sql::SqlIr>,
+        ir: Arc<crate::tree::sql::SqlTree>,
         source: Arc<String>,
         xml: XmlNode,
     },
