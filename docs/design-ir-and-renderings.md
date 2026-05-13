@@ -80,8 +80,23 @@ Each renderer walks tree nodes by uniform rules. No special-cased behaviour keye
 
 ### 3.3 Source / `tree::render`
 
-- **Anchored mode** (default): slices `tree.range()` from input verbatim — byte-identical roundtrip.
-- **Canonical mode**: per-language formatter logic that consumes tree nodes directly (no XML/JSON in the loop). Used when re-emitting after structural mutation, when source isn't available, or when canonical formatting is desired.
+**Decided 2026-05-13 — single renderer, three input sources, graceful fallback.** The earlier two-mode split (anchored vs canonical) is retired. There is one rendering path; the `Option<&str>` source argument only affects per-gap behaviour, not whole-function dispatch. Implementation is tracked under TODO.md slice S13.
+
+The renderer assembles output text from three sources:
+
+1. **Language keywords and structural punctuation** — driven by the tree's node type and the per-language Syntax config. A `SyntaxTree::Class` emits the language's class keyword followed by modifiers, name, and block open/close characters. Mechanical, no source involvement.
+2. **Literal text on scalar nodes** — every `SyntaxTree::{Name, Atom, Int, Float, String, ...}` variant carries a `text: String` field. `String` additionally carries `quote_style: QuoteStyle` so the original quoting is reproduced. This makes synthetic trees self-sufficient — no source-anchor required to render an identifier or literal.
+3. **Whitespace, gaps, and separators** — three-tier fallback per gap position. If both adjacent nodes are anchored *and* source is supplied *and* a valid byte range exists between them, the renderer slices the gap from source verbatim (preserves user formatting on round-trip). Otherwise the per-language Syntax config provides the canonical default for that gap context (between top-level statements, between class members, etc.).
+
+Byte ranges are explicitly optional: every tree node tracks whether it's anchored in some source. Mutation produces trees that mix anchored and synthetic nodes; the gap-fallback chain handles the boundary case by using the canonical default (simple option for now; sibling-history recovery is a future refinement).
+
+Round-trip guarantees:
+
+- For any parsed source `S`: `render(parse(S), lang, Some(S)) == S` byte-for-byte.
+- For any synthetic tree `T`: `parse(render(T, lang, None), lang)` produces a tree structurally equivalent to `T`.
+- For a mixed tree `T` (partly anchored in `S`, partly synthetic): `render(T, lang, Some(S))` slices anchored regions from `S` and emits canonical defaults for synthetic regions.
+
+This unblocks structural mutation in `tractor set` / `tractor update` (inserting new code that has no source anchor), cross-language codegen (parse one language, render as another with no source anchor for the output), and any synthesis-from-query work.
 
 ### 3.4 Examples — tree ↔ XML ↔ JSON
 
@@ -479,6 +494,7 @@ Log of changes driven by inline `%%` comments and chat feedback. Each entry name
 ### 2026-05-13
 
 - **Partial promotion to specs**: created [`specs/tractor-parse/tree/renderings.md`](../specs/tractor-parse/tree/renderings.md) with the stable structural pieces — §1 layer ownership table, §1.5 authoritative-for table, §4 six node-encoding categories, §5 Bucket A/B/C re-bucketing of existing principles, §9 four per-domain tree types, and three of §2's six goals (concept faithfulness, source reversibility, cardinality independence). Source: chat decision (2026-05-13) that the structural pieces are stable enough to commit even while the projection contracts and forward-leaning goals remain draft. The draft retains everything else; each piece graduates from here to the spec when its code stabilises. Companion cross-link added to `tree/design.md` preamble.
+- **§3.3 rewritten — single renderer, three input sources.** Source: chat decision (2026-05-13) prompted by the observation that the existing per-language `render_source.rs` files were maintained through S10B + S12 but unreached in production because canonical mode was incomplete. The two-mode (anchored vs canonical) framing is retired; there is one renderer with a per-gap fallback chain. Scalar nodes will carry their text (and string nodes their `quote_style`); byte ranges become explicitly optional. Implementation tracked as TODO.md slice S13. Resolves the open question on whether canonical-mode source rendering is dead code (no — it's a real future capability whose structural skeleton was built and whose missing piece is tree-stored scalar text).
 
 ### 2026-05-12
 
