@@ -17,6 +17,7 @@ target/
 *.code-workspace
 .idea
 *.sln.iml
+.obsidian/
 
 # OS
 .DS_Store
