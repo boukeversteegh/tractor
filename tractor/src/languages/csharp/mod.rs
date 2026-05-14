@@ -8,13 +8,11 @@
 //!                    `NODES_TABLE`), shared by shape contracts, the
 //!                    reverse renderer, and the tree's element naming.
 
-#[cfg(feature = "native")]
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
 pub mod kinds;
 pub mod output;
 
-#[cfg(feature = "native")]
 pub use lower::{lower_csharp_root, lower_csharp_node};
 pub use output::{ACCESS_MODIFIERS, OTHER_MODIFIERS, syntax_category};

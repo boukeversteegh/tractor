@@ -22,7 +22,7 @@ fn java_missing_kinds() {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_java_root(cst.root_node(), &source);
+    let tree = lower_java_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(
@@ -123,7 +123,7 @@ fn dump_java_type_pattern_ir_only() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_java::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    let tree = tractor::languages::java::lower_java_root(cst.root_node(), s);
+    let tree = tractor::languages::java::lower_java_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s), s);
     eprintln!("{:#?}", tree);
 }
 

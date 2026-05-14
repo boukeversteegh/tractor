@@ -19,7 +19,7 @@ fn ruby_missing_kinds() {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_ruby::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_ruby_root(cst.root_node(), &source);
+    let tree = lower_ruby_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 

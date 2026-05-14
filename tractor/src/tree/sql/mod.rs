@@ -10,11 +10,11 @@
 //!   - [`to_json`]       — `SqlTree` → `serde_json::Value` rendering.
 //!   - [`render_source`] — `SqlTree` → SQL source text (canonical mode).
 
-#![cfg(feature = "native")]
-
 pub mod types;
 pub mod to_xot;
+#[cfg(feature = "native")]
 pub mod to_json;
+#[cfg(feature = "native")]
 pub mod render_source;
 
 pub use types::{ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree};

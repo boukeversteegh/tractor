@@ -107,16 +107,14 @@ pub type TractorNodeSpecLookupFn = fn(&str) -> Option<&'static TractorNodeSpec>;
 pub type GrammarFn = fn() -> tree_sitter::Language;
 
 /// CST → [`SyntaxTree`](crate::tree::SyntaxTree) lowering function pointer (programming languages).
-#[cfg(feature = "native")]
-pub type LowerToSyntaxTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::SyntaxTree;
+pub type LowerToSyntaxTree = fn(&crate::raw::RawNode, &str) -> crate::tree::SyntaxTree;
 
 /// CST → [`DataTree`](crate::tree::DataTree) lowering function pointer (data languages).
 #[cfg(feature = "native")]
-pub type LowerToDataTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::DataTree;
+pub type LowerToDataTree = fn(&crate::raw::RawNode, &str) -> crate::tree::DataTree;
 
 /// CST → [`SqlTree`](crate::tree::sql::SqlTree) lowering function pointer (SQL family).
-#[cfg(feature = "native")]
-pub type LowerToSqlTree = for<'a> fn(tree_sitter::Node<'a>, &'a str) -> crate::tree::sql::SqlTree;
+pub type LowerToSqlTree = fn(&crate::raw::RawNode, &str) -> crate::tree::sql::SqlTree;
 
 /// Renderer for a `DataTree` tree. Each [`DataParser`] pairs a lower
 /// fn with one of these so the pipeline never needs a per-language
@@ -155,12 +153,12 @@ pub struct DataParser {
 ///
 /// `None` means the language stays on the legacy imperative path
 /// entirely.
-#[cfg(feature = "native")]
 #[derive(Copy, Clone)]
 pub enum TreeKind {
     None,
     Syntax(LowerToSyntaxTree),
     Sql(LowerToSqlTree),
+    #[cfg(feature = "native")]
     Data {
         structure: DataParser,
         content: DataParser,
@@ -232,7 +230,6 @@ pub struct LanguageOps {
     /// Which tree family this language lowers to (and the lower fn). See
     /// [`TreeKind`]. `None` means the language stays on the legacy
     /// imperative path.
-    #[cfg(feature = "native")]
     pub tree_kind: TreeKind,
     pub transform: TransformFn,
     pub syntax_category: SyntaxCategoryFn,
@@ -268,7 +265,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["ts"],
         #[cfg(feature = "native")]
         grammar: ts_typescript,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
@@ -285,7 +281,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["tsx"],
         #[cfg(feature = "native")]
         grammar: ts_tsx,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
@@ -302,7 +297,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["js", "mjs", "cjs", "jsx"],
         #[cfg(feature = "native")]
         grammar: ts_javascript,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::typescript::lower_typescript_root),
         transform: passthrough_transform,
         syntax_category: typescript::syntax_category,
@@ -320,7 +314,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["cs"],
         #[cfg(feature = "native")]
         grammar: ts_csharp,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::csharp::lower_csharp_root),
         // C# flows entirely through `crate::languages::csharp::lower`. The imperative
         // walker is no longer reachable for C#; `passthrough_transform`
@@ -341,7 +334,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["py", "pyw", "pyi"],
         #[cfg(feature = "native")]
         grammar: ts_python,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::python::lower_python_root),
         transform: passthrough_transform,
         syntax_category: python::syntax_category,
@@ -358,7 +350,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["go"],
         #[cfg(feature = "native")]
         grammar: ts_go,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::go::lower_go_root),
         transform: passthrough_transform,
         syntax_category: go::syntax_category,
@@ -375,7 +366,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["rs"],
         #[cfg(feature = "native")]
         grammar: ts_rust,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::rust_lang::lower_rust_root),
         transform: passthrough_transform,
         syntax_category: rust_lang::syntax_category,
@@ -392,7 +382,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["java"],
         #[cfg(feature = "native")]
         grammar: ts_java,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::java::lower_java_root),
         transform: passthrough_transform,
         syntax_category: java::syntax_category,
@@ -409,7 +398,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["rb", "rake", "gemspec"],
         #[cfg(feature = "native")]
         grammar: ts_ruby,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::ruby::lower_ruby_root),
         transform: passthrough_transform,
         syntax_category: ruby::syntax_category,
@@ -426,7 +414,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["php"],
         #[cfg(feature = "native")]
         grammar: ts_php,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Syntax(crate::languages::php::lower_php_root),
         // PHP flows entirely through `crate::tree::php`. The imperative
         // walker is no longer reachable; passthrough satisfies the
@@ -446,7 +433,6 @@ pub const LANGUAGES: &[LanguageOps] = &[
         extensions: &["sql"],
         #[cfg(feature = "native")]
         grammar: ts_tsql,
-        #[cfg(feature = "native")]
         tree_kind: TreeKind::Sql(crate::languages::tsql::lower_sql_root),
         transform: tsql::transform,
         syntax_category: tsql::syntax_category,
@@ -475,6 +461,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         transform: json::data_transform,
         syntax_category: json::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -501,6 +489,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         transform: yaml::data_transform,
         syntax_category: yaml::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
@@ -527,6 +517,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         // TOML flows entirely through `crate::tree::toml_data` (parser
         // dispatches to `parse_with_ir_pipeline`). The tree's data
         // lowering already collapses array-of-tables; no post-pass
@@ -557,6 +549,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         // INI flows entirely through `crate::tree::ini_data`.
         transform: passthrough_transform,
         syntax_category: ini::syntax_category,
@@ -584,6 +578,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         // .env flows entirely through `crate::tree::ini_data` (shares
         // INI's data lowering — same shape). Grammar is bash because
         // the .env shell-style syntax overlaps closely.
@@ -613,6 +609,8 @@ pub const LANGUAGES: &[LanguageOps] = &[
                 render: crate::tree::render_data_to_xot_keyed,
             },
         },
+        #[cfg(not(feature = "native"))]
+        tree_kind: TreeKind::None,
         // Markdown flows entirely through `crate::tree::markdown_data`.
         transform: passthrough_transform,
         syntax_category: markdown::syntax_category,

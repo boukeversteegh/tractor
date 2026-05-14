@@ -9,16 +9,15 @@
 //! `languages/go/{rules,transformations,transform}.rs` modules
 //! were retired alongside this migration.
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
 };
 use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
 
-pub fn lower_go_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_go_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
@@ -94,11 +93,11 @@ fn merge_go_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Syntax
     out
 }
 
-pub fn lower_go_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_go_node(node: &RawNode, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -320,8 +319,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 // The left can be an expression_list with multiple items.
                 let mut left_children: Vec<SyntaxTree> = Vec::new();
                 if l.kind() == "expression_list" {
-                    let mut lc = l.walk();
-                    for e in l.named_children(&mut lc) {
+                    for e in l.named_children() {
                         let inner = lower_node(e, source);
                         left_children.push(SyntaxTree::SimpleStatement {
                             element_name: "expression",
@@ -391,12 +389,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // (multi-return is the same archetype as multi-target call
             // args). Replaces the imperative `wrap_expression_positions`
             // post-walk for the return slot.
-            let mut cursor = node.walk();
-            let children: Vec<SyntaxTree> = node.named_children(&mut cursor)
+            let children: Vec<SyntaxTree> = node.named_children()
                 .flat_map(|c| {
                     if c.kind() == "expression_list" {
-                        let mut ec = c.walk();
-                        c.named_children(&mut ec)
+                        c.named_children()
                             .map(|item| *crate::tree::Expression::wrap(lower_node(item, source)).inner)
                             .collect::<Vec<_>>()
                     } else {
@@ -459,8 +455,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let op_node = node.child_by_field_name("operator");
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            let mut cursor = node.walk();
-            let operand = node.named_children(&mut cursor).next();
+            let operand = node.named_children().next();
             let marker = match op_text.as_str() {
                 "+" => "plus",
                 "-" => "minus",
@@ -564,8 +559,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let args_node = node.child_by_field_name("arguments");
             let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
-                    let mut ac = a.walk();
-                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                    a.named_children().map(|c| lower_node(c, source)).collect()
                 }
                 None => Vec::new(),
             };
@@ -769,8 +763,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // second is the value. Wrap the value in `<value>` to avoid
             // nested `<pair><pair>` when the value is itself a composite
             // literal.
-            let mut cursor = node.walk();
-            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let kids: Vec<&RawNode> = node.named_children().collect();
             let mut children: Vec<SyntaxTree> = Vec::new();
             for (i, c) in kids.iter().enumerate() {
                 if i == 0 {
@@ -824,10 +817,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
-    let mut cursor = node.walk();
+fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let children: Vec<SyntaxTree> = node
-        .named_children(&mut cursor)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -841,14 +833,13 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 }
 
 fn simple_statement_marked(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
-    let mut cursor = node.walk();
     let children: Vec<SyntaxTree> = node
-        .named_children(&mut cursor)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -861,9 +852,8 @@ fn simple_statement_marked(
     }
 }
 
-fn lower_children(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }
@@ -880,7 +870,7 @@ fn is_exported(name: &str) -> bool {
 /// of `<type><name/></type>...<type><struct/></type>`. This matches
 /// the imperative pipeline shape.
 fn go_type_spec(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers_in: &'static [&'static str],
     source: &str,
@@ -907,8 +897,7 @@ fn go_type_spec(
             }
             // Lower the struct/interface contents — for struct_type
             // that's the field_declaration_list child.
-            let mut tcursor = t.walk();
-            for c in t.named_children(&mut tcursor) {
+            for c in t.named_children() {
                 inner_children.push(lower_node(c, source));
             }
             return SyntaxTree::SimpleStatement {
@@ -957,19 +946,17 @@ fn go_wrap_in_type_if_leaf(inner: SyntaxTree, range: ByteRange, span: Span) -> S
 /// Lower a Go inc/dec_statement (`i++` / `i--`) to SyntaxTree::Unary with the
 /// appropriate op marker.
 fn go_inc_dec(
-    node: TsNode<'_>,
+    node: &RawNode,
     op_marker: &'static str,
     op_text_str: &str,
     source: &str,
 ) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut cursor = node.walk();
-    let operand = node.named_children(&mut cursor).next();
+    let operand = node.named_children().next();
     // Locate the unnamed `++`/`--` token.
-    let mut cursor2 = node.walk();
     let mut op_byte_range = ByteRange::empty_at(range.end);
-    for c in node.children(&mut cursor2) {
+    for c in node.children() {
         if !c.is_named() && text_of(c, source) == op_text_str {
             op_byte_range = range_of(c);
             break;
@@ -996,16 +983,15 @@ fn go_inc_dec(
 /// tree-sitter Go uses `name` (multiple), `type`, `value` fields. The
 /// value child is an expression_list — its inner expressions become
 /// `<value><expression>...` slot wrappers.
-fn go_var_const_spec(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
+fn go_var_const_spec(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let type_node = node.child_by_field_name("type");
     // Collect name field children.
-    let mut name_nodes: Vec<TsNode<'_>> = Vec::new();
-    let mut value_nodes: Vec<TsNode<'_>> = Vec::new();
+    let mut name_nodes: Vec<&RawNode> = Vec::new();
+    let mut value_nodes: Vec<&RawNode> = Vec::new();
     {
-        let mut p = node.walk();
-        for (i, ch) in node.children(&mut p).enumerate() {
+        for (i, ch) in node.children().enumerate() {
             match node.field_name_for_child(i as u32) {
                 Some("name") => name_nodes.push(ch),
                 Some("value") => value_nodes.push(ch),
@@ -1034,8 +1020,7 @@ fn go_var_const_spec(node: TsNode<'_>, element_name: &'static str, source: &str)
     for v in &value_nodes {
         let mut emitted_any = false;
         if v.kind() == "expression_list" {
-            let mut vc = v.walk();
-            for e in v.named_children(&mut vc) {
+            for e in v.named_children() {
                 let inner = lower_node(e, source);
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "value",
@@ -1086,16 +1071,14 @@ fn go_var_const_spec(node: TsNode<'_>, element_name: &'static str, source: &str)
 /// Lower a Go field_declaration: `Name1, Name2 Type` or `Name1 Type`.
 /// tree-sitter Go uses field name "name" (multiple) and "type".
 /// Emit `<field>` with name child(ren) and `<type>` wrapper.
-fn go_field_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn go_field_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let type_node = node.child_by_field_name("type");
-    let mut cursor = node.walk();
     // Collect all "name" field children to determine export.
-    let mut name_nodes: Vec<TsNode<'_>> = Vec::new();
+    let mut name_nodes: Vec<&RawNode> = Vec::new();
     {
-        let mut p = node.walk();
-        for (i, ch) in node.children(&mut p).enumerate() {
+        for (i, ch) in node.children().enumerate() {
             if node.field_name_for_child(i as u32) == Some("name") {
                 name_nodes.push(ch);
             }
@@ -1118,7 +1101,7 @@ fn go_field_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
         children.push(go_wrap_in_type_if_leaf(inner, range_of(t), span_of(t)));
     }
     // Process other named children (e.g. tag).
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if let Some(t) = type_node { if c.id() == t.id() { continue; } }
         if name_nodes.iter().any(|n| n.id() == c.id()) { continue; }
         children.push(lower_node(c, source));
@@ -1136,11 +1119,10 @@ fn go_field_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Lower a Go switch (expression_switch / type_switch). Wraps
 /// `value` field in `<value><expression>...` host. Type switch
 /// adds `[type]` marker.
-fn go_switch(node: TsNode<'_>, type_switch: bool, source: &str) -> SyntaxTree {
+fn go_switch(node: &RawNode, type_switch: bool, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let value_node = node.child_by_field_name("value");
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(v) = value_node {
         let inner = lower_node(v, source);
@@ -1160,7 +1142,7 @@ fn go_switch(node: TsNode<'_>, type_switch: bool, source: &str) -> SyntaxTree {
             span: span_of(v),
         });
     }
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if let Some(v) = value_node {
             if c.id() == v.id() {
                 continue;
@@ -1185,18 +1167,16 @@ fn go_switch(node: TsNode<'_>, type_switch: bool, source: &str) -> SyntaxTree {
 /// Lower an expression_case / type_case / communication_case.
 /// Type-case: each type field becomes `<type>` (wrapped if leaf).
 /// Expression-case: each value field wraps in `<value><expression>`.
-fn go_case(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn go_case(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut children: Vec<SyntaxTree> = Vec::new();
     if node.kind() == "type_case" {
         // Collect all `type` field children.
-        let mut cursor = node.walk();
-        for c in node.children(&mut cursor) {
+        for c in node.children() {
             // Check field name.
-            let mut p = node.walk();
             let mut field = None;
-            for (i, ch) in node.children(&mut p).enumerate() {
+            for (i, ch) in node.children().enumerate() {
                 if ch.id() == c.id() {
                     field = node.field_name_for_child(i as u32);
                     break;
@@ -1213,12 +1193,10 @@ fn go_case(node: TsNode<'_>, source: &str) -> SyntaxTree {
     } else {
         // expression_case / communication_case — value field is the
         // case discriminator(s).
-        let mut cursor = node.walk();
-        for c in node.named_children(&mut cursor) {
+        for c in node.named_children() {
             // Determine field name.
-            let mut p = node.walk();
             let mut field = None;
-            for (i, ch) in node.children(&mut p).enumerate() {
+            for (i, ch) in node.children().enumerate() {
                 if ch.id() == c.id() {
                     field = node.field_name_for_child(i as u32);
                     break;
@@ -1260,18 +1238,16 @@ fn go_case(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// condition expression (while-form) wraps in `<condition><expression>`.
 /// for_clause children are inlined with init slot bare, condition
 /// wrapped in `<condition><expression>`, update bare.
-fn go_for_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn go_for_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if let Some(b) = body_node {
             if c.id() == b.id() {
-                let mut bc = c.walk();
                 let body_children: Vec<SyntaxTree> = c
-                    .named_children(&mut bc)
+                    .named_children()
                     .map(|s| lower_node(s, source))
                     .collect();
                 children.push(SyntaxTree::SimpleStatement {
@@ -1356,7 +1332,7 @@ fn go_for_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Lower a Go if_statement to canonical `<if>` shape with
 /// condition/then/else slots. Else-if chains collapse to flat
 /// `<else_if>`/`<else>` siblings.
-fn go_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn go_if_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let init_node = node.child_by_field_name("initializer");
@@ -1386,9 +1362,8 @@ fn go_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
         });
     }
     if let Some(c) = consequence_node {
-        let mut bc = c.walk();
         let body_children: Vec<SyntaxTree> = c
-            .named_children(&mut bc)
+            .named_children()
             .map(|s| lower_node(s, source))
             .collect();
         children.push(SyntaxTree::SimpleStatement {
@@ -1434,9 +1409,8 @@ fn go_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 });
             }
             if let Some(c) = inner_cons {
-                let mut bc = c.walk();
                 let body_children: Vec<SyntaxTree> = c
-                    .named_children(&mut bc)
+                    .named_children()
                     .map(|s| lower_node(s, source))
                     .collect();
                 else_if_children.push(SyntaxTree::SimpleStatement {
@@ -1459,9 +1433,8 @@ fn go_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
             cur_alt = inner_alt;
         } else {
             // Plain else block.
-            let mut bc = a.walk();
             let body_children: Vec<SyntaxTree> = a
-                .named_children(&mut bc)
+                .named_children()
                 .map(|s| lower_node(s, source))
                 .collect();
             children.push(SyntaxTree::SimpleStatement {
@@ -1494,7 +1467,7 @@ fn go_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Lower a Go function/method declaration with `<exported/>`/`<unexported/>`
 /// marker. The body block field renames to `<body>` with inner
 /// statements lowered directly.
-fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
+fn go_decl_with_export(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let name_node = node.child_by_field_name("name");
     let body_node = node.child_by_field_name("body");
     let name_text = name_node.map(|n| text_of(n, source)).unwrap_or_default();
@@ -1503,14 +1476,12 @@ fn go_decl_with_export(node: TsNode<'_>, element_name: &'static str, source: &st
     } else {
         &["unexported"]
     };
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if let Some(b) = body_node {
             if c.id() == b.id() {
-                let mut bc = c.walk();
                 let body_children: Vec<SyntaxTree> = c
-                    .named_children(&mut bc)
+                    .named_children()
                     .map(|s| lower_node(s, source))
                     .collect();
                 children.push(SyntaxTree::SimpleStatement {

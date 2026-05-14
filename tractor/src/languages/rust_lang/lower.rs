@@ -10,9 +10,8 @@
 //! `languages/rust_lang/{rules,transformations,transform}.rs`
 //! modules were retired alongside this migration.
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, range_of, span_of, string_of, text_of,
@@ -20,7 +19,7 @@ use crate::tree::lower_helpers::{
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`SyntaxTree`].
-pub fn lower_rust_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_rust_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
@@ -143,11 +142,11 @@ fn merge_rust_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
 }
 
 /// Public entry for lowering a single Rust CST node — useful for tests.
-pub fn lower_rust_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_rust_node(node: &RawNode, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -164,8 +163,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // The inner identifier text is the lifetime name without the
         // apostrophe.
         "lifetime" => {
-            let mut cursor = node.walk();
-            let identifier = node.named_children(&mut cursor).find(|c| c.kind() == "identifier");
+            let identifier = node.named_children().find(|c| c.kind() == "identifier");
             let children = match identifier {
                 Some(id) => vec![name_of(id, source)],
                 None => Vec::new(),
@@ -232,9 +230,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "use_as_clause" | "use_list" | "scoped_use_list" | "use_wildcard"
         | "use_bounds" => {
             // Wrapper grammar — flatten children into the parent.
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| lower_node(c, source))
                 .collect();
             SyntaxTree::Inline { children, list_name: None, range, span }
@@ -247,9 +244,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "enum_item" => rust_decl(node, "enum", source),
         "enum_variant" => simple_statement(node, "variant", source),
         "enum_variant_list" => {
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| lower_node(c, source))
                 .collect();
             SyntaxTree::Inline { children, list_name: None, range, span }
@@ -258,19 +254,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "trait_item" => {
             // `trait Foo { ... }` — wrap declaration_list body in `<body>`.
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut is_pub = false;
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "visibility_modifier" {
                     if text_of(c, source).starts_with("pub") { is_pub = true; }
                     continue;
                 }
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
-                        let mut bc = c.walk();
                         let body_children: Vec<SyntaxTree> = c
-                            .named_children(&mut bc)
+                            .named_children()
                             .map(|s| lower_node(s, source))
                             .collect();
                         children.push(SyntaxTree::SimpleStatement {
@@ -301,9 +295,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let trait_node = node.child_by_field_name("trait");
             let type_node = node.child_by_field_name("type");
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if let Some(t) = trait_node {
                     if c.id() == t.id() {
                         let inner = lower_node(c, source);
@@ -328,9 +321,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
-                        let mut bc = c.walk();
                         let body_children: Vec<SyntaxTree> = c
-                            .named_children(&mut bc)
+                            .named_children()
                             .map(|s| lower_node(s, source))
                             .collect();
                         children.push(SyntaxTree::SimpleStatement {
@@ -358,17 +350,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // `type Id = u32;` — alias. Detect visibility, wrap target type in `<type>`.
             let name_node = node.child_by_field_name("name");
             let type_node = node.child_by_field_name("type");
-            let mut cursor = node.walk();
             let mut is_pub = false;
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub") {
                     is_pub = true;
                 }
             }
             let mut children: Vec<SyntaxTree> = Vec::new();
             // Iterate in source order: name, type_parameters, type.
-            let mut cursor2 = node.walk();
-            for c in node.named_children(&mut cursor2) {
+            for c in node.named_children() {
                 match c.kind() {
                     "visibility_modifier" => {} // skip
                     _ => {
@@ -404,10 +394,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "mod_item" => {
             // `mod outer { ... }` — wrap declaration_list body in `<body>`.
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut is_pub = false;
             let mut pub_qual: Option<SyntaxTree> = None;
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "visibility_modifier" {
                     if let RustVis::PubQualified(q) = classify_rust_visibility(node, source) {
                         pub_qual = Some(q);
@@ -426,16 +415,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     range, span,
                 });
             }
-            let mut cursor2 = node.walk();
-            for c in node.named_children(&mut cursor2) {
+            for c in node.named_children() {
                 if c.kind() == "visibility_modifier" {
                     continue;
                 }
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
-                        let mut bc = c.walk();
                         let body_children: Vec<SyntaxTree> = c
-                            .named_children(&mut bc)
+                            .named_children()
                             .map(|s| lower_node(s, source))
                             .collect();
                         children.push(SyntaxTree::SimpleStatement {
@@ -497,16 +484,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // marker, name, type wrapped in `<type>` if leaf.
             let name_node = node.child_by_field_name("name");
             let type_node = node.child_by_field_name("type");
-            let mut cursor = node.walk();
             let mut is_pub = false;
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub") {
                     is_pub = true;
                 }
             }
             let mut children: Vec<SyntaxTree> = Vec::new();
-            let mut cursor2 = node.walk();
-            for c in node.named_children(&mut cursor2) {
+            for c in node.named_children() {
                 match c.kind() {
                     "visibility_modifier" => {} // skipped — marker on parent
                     _ => {
@@ -537,9 +522,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             }
         }
         "field_declaration_list" | "ordered_field_declaration_list" => {
-            let mut cursor = node.walk();
             let body_children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| lower_node(c, source))
                 .collect();
             SyntaxTree::SimpleStatement {
@@ -595,8 +579,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let pattern_node = node.child_by_field_name("pattern");
             let type_node = node.child_by_field_name("type");
             let mut children: Vec<SyntaxTree> = Vec::new();
-            let mut cursor = node.walk();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if let Some(t) = type_node {
                     if c.id() == t.id() {
                         let inner = lower_node(c, source);
@@ -636,8 +619,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // Tree-sitter wraps the lifetime in a parameter node; we
             // unwrap to a single `<lifetime>` element instead of
             // producing `<lifetime><lifetime>...</lifetime></lifetime>`.
-            let mut cursor = node.walk();
-            let inner = node.named_children(&mut cursor).find(|c| c.kind() == "lifetime");
+            let inner = node.named_children().find(|c| c.kind() == "lifetime");
             match inner {
                 Some(l) => lower_node(l, source),
                 None => SyntaxTree::SimpleStatement {
@@ -661,9 +643,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // `: Trait1 + Trait2 + 'a` — emit `<extends>` with each
             // bound wrapped in `<type>` if leaf-shaped so XPath sees
             // `extends/type[name='Trait1']`.
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| {
                     let inner = lower_node(c, source);
                     wrap_in_type_if_leaf(inner, range_of(c), span_of(c))
@@ -695,9 +676,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // `&T` / `&mut T` / `&'a T` — emit `<type[borrowed]>` (with
             // `<mut/>` marker if `mut` keyword present) and wrap the
             // inner type in `<type>` if it's a leaf identifier.
-            let mut cursor = node.walk();
             let mut has_mut = false;
-            for c in node.children(&mut cursor) {
+            for c in node.children() {
                 if !c.is_named() && text_of(c, source) == "mut" {
                     has_mut = true;
                 }
@@ -705,9 +685,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     has_mut = true;
                 }
             }
-            let mut cursor2 = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor2)
+                .named_children()
                 .filter(|c| c.kind() != "mutable_specifier")
                 .map(|c| {
                     let inner_ir = lower_node(c, source);
@@ -730,9 +709,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // collapse the type name into a single `<name>full text</name>`
             // (matches imperative `rewrite_generic_type` behavior). Inline
             // type_arguments with each leaf wrapped in `<type>`.
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| {
                     match c.kind() {
                         "type_identifier" | "identifier" | "scoped_type_identifier"
@@ -741,9 +719,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                             name_of(c, source)
                         }
                         "type_arguments" => {
-                            let mut tc = c.walk();
                             let typed: Vec<SyntaxTree> = c
-                                .named_children(&mut tc)
+                                .named_children()
                                 .map(|t| {
                                     let inner = lower_node(t, source);
                                     wrap_in_type_if_leaf(inner, range_of(t), span_of(t))
@@ -791,9 +768,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let pattern_node = node.child_by_field_name("pattern");
             let type_node = node.child_by_field_name("type");
             let value_node = node.child_by_field_name("value");
-            let mut cursor = node.walk();
             let mut has_mut = false;
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "mutable_specifier" { has_mut = true; }
             }
             let mut children: Vec<SyntaxTree> = Vec::new();
@@ -841,8 +817,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // marker rides as `<try/>` on the surrounding expression
             // host instead of producing a nested `<try><inner/></try>`
             // element (avoids double-wrap per the imperative shape).
-            let mut cursor = node.walk();
-            let inner = node.named_children(&mut cursor).next();
+            let inner = node.named_children().next();
             match inner {
                 Some(i) => {
                     let bare = matches!(
@@ -863,8 +838,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     // Detect try_expression: pull the `?` operand up
                     // and put `<try/>` marker on the expression host.
                     if i.kind() == "try_expression" {
-                        let mut tcursor = i.walk();
-                        let operand = i.named_children(&mut tcursor).next();
+                        let operand = i.named_children().next();
                         if let Some(o) = operand {
                             return SyntaxTree::SimpleStatement {
                                 element_name: "expression",
@@ -945,9 +919,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 });
             }
             if let Some(b) = body_node {
-                let mut bc = b.walk();
                 let body_children: Vec<SyntaxTree> = b
-                    .named_children(&mut bc)
+                    .named_children()
                     .map(|s| lower_node(s, source))
                     .collect();
                 children.push(SyntaxTree::SimpleStatement {
@@ -1002,9 +975,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "match_pattern" => {
             // Wraps inner pattern + optional `if cond` guard.
             let cond_node = node.child_by_field_name("condition");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if let Some(cn) = cond_node {
                     if c.id() == cn.id() {
                         children.push(SyntaxTree::SimpleStatement {
@@ -1034,9 +1006,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let pattern_node = node.child_by_field_name("pattern");
             let value_node = node.child_by_field_name("value");
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 let mut handled = false;
                 if let Some(p) = pattern_node {
                     if c.id() == p.id() {
@@ -1090,9 +1061,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "while_expression" => {
             let cond_node = node.child_by_field_name("condition");
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 let mut handled = false;
                 if let Some(cn) = cond_node {
                     if c.id() == cn.id() {
@@ -1137,9 +1107,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         }
         "loop_expression" => {
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
                         children.push(rename_block_as_body(c, source));
@@ -1200,8 +1169,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let args_node = node.child_by_field_name("arguments");
             let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
-                    let mut ac = a.walk();
-                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                    a.named_children().map(|c| lower_node(c, source)).collect()
                 }
                 None => Vec::new(),
             };
@@ -1245,8 +1213,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "generic_function" => simple_statement_marked(node, "call", &["generic"], source),
         "index_expression" => {
             // `expr[index]` — fold into SyntaxTree::Access if expr is a chain.
-            let mut cursor = node.walk();
-            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let kids: Vec<&RawNode> = node.named_children().collect();
             if let (Some(obj), Some(idx)) = (kids.first(), kids.get(1)) {
                 let object_ir = lower_node(*obj, source);
                 let index_ir = lower_node(*idx, source);
@@ -1343,13 +1310,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // operator. Wrap LHS in <from>, RHS in <to>.
             let text = &source[range.start as usize..range.end as usize];
             let inclusive = text.contains("..=");
-            let mut cursor = node.walk();
-            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let kids: Vec<&RawNode> = node.named_children().collect();
             let mut children: Vec<SyntaxTree> = Vec::new();
             // Find the operator position to split lhs/rhs.
             let mut op_byte: Option<u32> = None;
-            let mut cursor2 = node.walk();
-            for c in node.children(&mut cursor2) {
+            for c in node.children() {
                 if !c.is_named() {
                     let t = text_of(c, source);
                     if t == ".." || t == "..=" {
@@ -1423,11 +1388,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // `0..=9` / `0..9` inside a pattern.
             let text = &source[range.start as usize..range.end as usize];
             let inclusive = text.contains("..=");
-            let mut cursor = node.walk();
-            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let kids: Vec<&RawNode> = node.named_children().collect();
             let mut op_byte: Option<u32> = None;
-            let mut cursor2 = node.walk();
-            for c in node.children(&mut cursor2) {
+            for c in node.children() {
                 if !c.is_named() {
                     let t = text_of(c, source);
                     if t == ".." || t == "..=" || t == "..." {
@@ -1530,16 +1493,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Group form `use a::{b, c}` → `<use[group]><use>...</use><use>...</use></use>`.
 /// Wildcard `use a::*` → `<use[wildcard]><path>...</path></use>`.
 /// Alias `use a::b as B` → `<use><path>...</path><name>b</name><aliased><name>B</name></aliased></use>`.
-fn lower_rust_use(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_rust_use(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     // Detect `pub use` re-export.
-    let mut cursor = node.walk();
-    let is_pub = node.named_children(&mut cursor)
+    let is_pub = node.named_children()
         .any(|c| c.kind() == "visibility_modifier" && text_of(c, source).starts_with("pub"));
     // The argument is the first non-modifier named child.
-    let mut cursor = node.walk();
-    let arg = node.named_children(&mut cursor)
+    let arg = node.named_children()
         .find(|c| c.kind() != "visibility_modifier");
     let mut markers: Vec<&'static str> = Vec::new();
     if is_pub { markers.push("reexport"); }
@@ -1573,7 +1534,7 @@ fn lower_rust_use(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// for a `use_list`, etc. Pushes shape-discriminating markers
 /// (`group` / `wildcard` / `alias`) into `markers_out`.
 fn lower_rust_use_inner(
-    arg: TsNode<'_>,
+    arg: &RawNode,
     source: &str,
     markers_out: &mut Vec<&'static str>,
 ) -> Vec<SyntaxTree> {
@@ -1591,8 +1552,7 @@ fn lower_rust_use_inner(
         "use_wildcard" => {
             // `use a::*;` — wildcard form. Children: path + `<wildcard/>` marker.
             markers_out.push("wildcard");
-            let mut cursor = arg.walk();
-            let path_arg = arg.named_children(&mut cursor)
+            let path_arg = arg.named_children()
                 .find(|c| matches!(c.kind(), "scoped_identifier" | "identifier"));
             match path_arg {
                 Some(p) => {
@@ -1618,9 +1578,8 @@ fn lower_rust_use_inner(
         "scoped_use_list" | "use_list" => {
             // `use a::{b, c};` (scoped_use_list) or bare `{b, c}` (use_list).
             markers_out.push("group");
-            let mut cursor = arg.walk();
             // Optional path prefix.
-            let path_node = arg.named_children(&mut cursor)
+            let path_node = arg.named_children()
                 .find(|c| matches!(c.kind(), "scoped_identifier" | "identifier"));
             let path_segments: Vec<SyntaxTree> = path_node.map(|p| {
                 let mut segs = Vec::new();
@@ -1632,14 +1591,12 @@ fn lower_rust_use_inner(
                 segs
             }).unwrap_or_default();
             // The list items live in the use_list child (or directly here).
-            let mut list_cur = arg.walk();
-            let list_node = arg.named_children(&mut list_cur)
+            let list_node = arg.named_children()
                 .find(|c| c.kind() == "use_list")
                 .unwrap_or(arg);
             // Each non-noise named child becomes one inner `<use>`.
-            let mut item_cur = list_node.walk();
             let mut inner_uses: Vec<SyntaxTree> = Vec::new();
-            for item in list_node.named_children(&mut item_cur) {
+            for item in list_node.named_children() {
                 if matches!(item.kind(), "scoped_identifier" | "identifier") && item.id() == path_node.map(|p| p.id()).unwrap_or(0) {
                     continue;
                 }
@@ -1714,9 +1671,8 @@ fn lower_rust_use_inner(
 /// Walk a (possibly nested) Rust `scoped_identifier`, emitting each
 /// terminal segment as its own `SyntaxTree::Name`. Replaces the imperative
 /// `flatten_nested_paths` post-walk.
-fn collect_rust_scoped_segments<'a>(node: TsNode<'a>, source: &str, out: &mut Vec<SyntaxTree>) {
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+fn collect_rust_scoped_segments<'a>(node: &'a RawNode, source: &str, out: &mut Vec<SyntaxTree>) {
+    for c in node.named_children() {
         match c.kind() {
             "scoped_identifier" => collect_rust_scoped_segments(c, source, out),
             _ => out.push(lower_node(c, source)),
@@ -1726,7 +1682,7 @@ fn collect_rust_scoped_segments<'a>(node: TsNode<'a>, source: &str, out: &mut Ve
 
 /// Take a flat list of path segments and split off the trailing leaf
 /// as a sibling: `[std, collections, HashMap]` → `[<path>std,collections</path>, <name>HashMap</name>]`.
-fn split_path_and_leaf(scope: TsNode<'_>, segments: Vec<SyntaxTree>, _source: &str) -> Vec<SyntaxTree> {
+fn split_path_and_leaf(scope: &RawNode, segments: Vec<SyntaxTree>, _source: &str) -> Vec<SyntaxTree> {
     if segments.len() < 2 {
         return segments;
     }
@@ -1754,10 +1710,9 @@ fn clone_ir(tree: &SyntaxTree) -> SyntaxTree {
     tree.clone()
 }
 
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
-    let mut cursor = node.walk();
+fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let children: Vec<SyntaxTree> = node
-        .named_children(&mut cursor)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -1771,14 +1726,13 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 }
 
 fn simple_statement_marked(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
-    let mut cursor = node.walk();
     let children: Vec<SyntaxTree> = node
-        .named_children(&mut cursor)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -1791,9 +1745,8 @@ fn simple_statement_marked(
     }
 }
 
-fn lower_children(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }
@@ -1820,18 +1773,16 @@ fn wrap_in_type_if_leaf(inner: SyntaxTree, range: ByteRange, span: Span) -> Synt
 /// `try { ... }`, `gen { ... }`) — produce `<block[marker]>` whose
 /// children are the inner block's children (NOT a nested `<block>`).
 fn rust_marked_block(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if c.kind() == "block" {
             // Inline the inner block's children.
-            let mut bc = c.walk();
-            for inner in c.named_children(&mut bc) {
+            for inner in c.named_children() {
                 children.push(lower_node(inner, source));
             }
         } else {
@@ -1851,10 +1802,9 @@ fn rust_marked_block(
 /// Rename a `block` node to `<body>`, lowering its inner statements
 /// directly into the body (no nested `<block>` wrapper). Comments
 /// inside the body are classified via `merge_rust_line_comments`.
-fn rename_block_as_body(block: TsNode<'_>, source: &str) -> SyntaxTree {
-    let mut cursor = block.walk();
+fn rename_block_as_body(block: &RawNode, source: &str) -> SyntaxTree {
     let children: Vec<SyntaxTree> = block
-        .named_children(&mut cursor)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -1871,7 +1821,7 @@ fn rename_block_as_body(block: TsNode<'_>, source: &str) -> SyntaxTree {
 /// `<if><condition>...</condition><then>{block}</then><else>...</else></if>`.
 /// `<else>` becomes `<else_if>` when its body is itself an if_expression
 /// (chain collapse, matching the imperative pipeline shape).
-fn rust_if_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn rust_if_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1902,8 +1852,7 @@ fn rust_if_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
     // Collapse else-if chain into flat <else_if>/<else> siblings.
     let mut cur_alt = alternative_node;
     while let Some(a) = cur_alt {
-        let mut cursor = a.walk();
-        let inner = a.named_children(&mut cursor).next();
+        let inner = a.named_children().next();
         match inner {
             Some(i) if i.kind() == "if_expression" => {
                 // Inner if_expression — render as <else_if> with its
@@ -1986,18 +1935,16 @@ enum RustVis {
     PubQualified(SyntaxTree),
 }
 
-fn classify_rust_visibility(node: TsNode<'_>, source: &str) -> RustVis {
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+fn classify_rust_visibility(node: &RawNode, source: &str) -> RustVis {
+    for c in node.named_children() {
         if c.kind() == "visibility_modifier" {
             let txt = text_of(c, source);
             if !txt.starts_with("pub") {
                 continue;
             }
             // Look at unnamed children for `(`, qualifier, `)`.
-            let mut tcursor = c.walk();
-            let mut qualifier: Option<TsNode<'_>> = None;
-            for ch in c.children(&mut tcursor) {
+            let mut qualifier: Option<&RawNode> = None;
+            for ch in c.children() {
                 if !ch.is_named() {
                     continue;
                 }
@@ -2053,13 +2000,12 @@ fn classify_rust_visibility(node: TsNode<'_>, source: &str) -> RustVis {
 /// pointing at the type child (no wrapper element). We detect it via
 /// child_by_field_name and wrap in SyntaxTree::Returns. The body block is
 /// renamed to `<body>` so XPath sees `function/body/...`.
-fn rust_function(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn rust_function(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let return_type_node = node.child_by_field_name("return_type");
     let body_node = node.child_by_field_name("body");
     let vis = classify_rust_visibility(node, source);
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
     // For PubQualified, push `<pub>` element first.
     if let RustVis::PubQualified(q) = &vis {
@@ -2073,7 +2019,7 @@ fn rust_function(node: TsNode<'_>, source: &str) -> SyntaxTree {
             span,
         });
     }
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         match c.kind() {
             "visibility_modifier" => {
                 // Already handled by extra_markers/PubQualified.
@@ -2091,9 +2037,8 @@ fn rust_function(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
                 if let Some(b) = body_node {
                     if c.id() == b.id() {
-                        let mut bc = c.walk();
                         let body_children: Vec<SyntaxTree> = c
-                            .named_children(&mut bc)
+                            .named_children()
                             .map(|s| lower_node(s, source))
                             .collect();
                         children.push(SyntaxTree::SimpleStatement {
@@ -2129,11 +2074,10 @@ fn rust_function(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Rust uses `<pub/>` / `<private/>` markers (not `<public/>`).
 /// Detect visibility and emit appropriate extra_markers. Also detects
 /// `mut` modifier (for `static mut COUNTER` etc.).
-fn rust_decl(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
-    let mut cursor = node.walk();
+fn rust_decl(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let mut is_pub = false;
     let mut has_mut = false;
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if c.kind() == "visibility_modifier" {
             let txt = text_of(c, source);
             if txt.starts_with("pub") {
@@ -2150,9 +2094,8 @@ fn rust_decl(node: TsNode<'_>, element_name: &'static str, source: &str) -> Synt
         (false, true) => &["private", "mut"],
         (false, false) => &["private"],
     };
-    let mut cursor2 = node.walk();
     let children: Vec<SyntaxTree> = node
-        .named_children(&mut cursor2)
+        .named_children()
         .map(|c| lower_node(c, source))
         .collect();
     SyntaxTree::SimpleStatement {

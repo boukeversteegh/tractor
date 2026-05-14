@@ -86,7 +86,7 @@ fn assert_ir_invariants(source: &str, label: &str) {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), source), source);
 
     // Invariant 1: round-trip identity.
     let recovered = to_source(&tree, source);
@@ -159,7 +159,7 @@ fn find_unknown_kinds_in_blueprint_ir() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), &source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
@@ -243,7 +243,7 @@ fn dump_for_raw_xml() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), s);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s), s);
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
@@ -619,7 +619,7 @@ fn dump_ifelse_render() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), s);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s), s);
     let mut xot = Xot::new();
     let n = xot.add_name("_root");
     let dr = xot.new_element(n);
@@ -810,7 +810,7 @@ fn ir_tree_render() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), source), source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
@@ -855,7 +855,7 @@ fn blueprint_tree_parity() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), &source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
@@ -911,7 +911,7 @@ fn blueprint_parity() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), &source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
     let mut xot = Xot::new();
     let dr_name = xot.add_name("_root");
     let dr = xot.new_element(dr_name);
@@ -967,7 +967,7 @@ fn blueprint_coverage_audit() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), &source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 
@@ -1051,7 +1051,7 @@ fn assert_expression_parity(expr: &str, label: &str) {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_csharp_root(cst.root_node(), &source);
+    let tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     let recovered = to_source(&tree, &source);
     assert_eq!(recovered, source, "round-trip identity broken for {label}");
@@ -1123,17 +1123,17 @@ fn conditional_access_isomorphism() {
         let mut p = tree_sitter::Parser::new();
         p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
         let cst = p.parse(source, None).unwrap();
-        fn find<'t>(node: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+        fn find(node: &tractor::raw::RawNode) -> Option<&tractor::raw::RawNode> {
             if matches!(node.kind(), "member_access_expression" | "conditional_access_expression") {
                 return Some(node);
             }
-            let mut c = node.walk();
-            for child in node.named_children(&mut c) {
+            for child in node.named_children() {
                 if let Some(f) = find(child) { return Some(f); }
             }
             None
         }
-        let target = find(cst.root_node()).expect("access expression");
+        let raw = tractor::raw::RawNode::from_tree_sitter(cst.root_node(), source);
+        let target = find(&raw).expect("access expression");
         let access = tractor::languages::csharp::lower::lower_csharp_node(target, source);
         let mut xot = Xot::new();
         let dr_name = xot.add_name("_root");
@@ -1195,15 +1195,15 @@ fn non_null_assertion() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+    fn find(n: &tractor::raw::RawNode) -> Option<&tractor::raw::RawNode> {
         if n.kind() == "postfix_unary_expression" { return Some(n); }
-        let mut c = n.walk();
-        for child in n.named_children(&mut c) {
+        for child in n.named_children() {
             if let Some(f) = find(child) { return Some(f); }
         }
         None
     }
-    let target = find(cst.root_node()).expect("postfix_unary");
+    let raw = tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s);
+    let target = find(&raw).expect("postfix_unary");
     let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
@@ -1236,15 +1236,15 @@ fn is_type_test() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+    fn find(n: &tractor::raw::RawNode) -> Option<&tractor::raw::RawNode> {
         if n.kind() == "is_expression" { return Some(n); }
-        let mut c = n.walk();
-        for child in n.named_children(&mut c) {
+        for child in n.named_children() {
             if let Some(f) = find(child) { return Some(f); }
         }
         None
     }
-    let target = find(cst.root_node()).expect("is_expression");
+    let raw = tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s);
+    let target = find(&raw).expect("is_expression");
     let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();
@@ -1288,7 +1288,7 @@ fn access_marker_swap_via_enum_mutation() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    let mut tree = lower_csharp_root(cst.root_node(), s);
+    let mut tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s), s);
 
     // Locate the class tree.
     fn find_class(tree: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
@@ -1358,7 +1358,7 @@ fn static_marker_via_modifiers_mutation() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    let mut tree = lower_csharp_root(cst.root_node(), s);
+    let mut tree = lower_csharp_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s), s);
 
     fn find_class(tree: &mut tractor::tree::SyntaxTree) -> Option<&mut tractor::tree::SyntaxTree> {
         use tractor::tree::SyntaxTree;
@@ -1428,15 +1428,15 @@ fn cast_expression() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_c_sharp::LANGUAGE.into()).unwrap();
     let cst = p.parse(s, None).unwrap();
-    fn find<'t>(n: tree_sitter::Node<'t>) -> Option<tree_sitter::Node<'t>> {
+    fn find(n: &tractor::raw::RawNode) -> Option<&tractor::raw::RawNode> {
         if n.kind() == "cast_expression" { return Some(n); }
-        let mut c = n.walk();
-        for child in n.named_children(&mut c) {
+        for child in n.named_children() {
             if let Some(f) = find(child) { return Some(f); }
         }
         None
     }
-    let target = find(cst.root_node()).expect("cast");
+    let raw = tractor::raw::RawNode::from_tree_sitter(cst.root_node(), s);
+    let target = find(&raw).expect("cast");
     let tree = tractor::languages::csharp::lower::lower_csharp_node(target, s);
 
     let mut xot = Xot::new();

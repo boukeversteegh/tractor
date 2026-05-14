@@ -24,20 +24,19 @@
 //! Unhandled kinds (`escape_sequence` / `string_content` outside a
 //! `string` parent) fall through to [`DataTree::Unknown`].
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_borrow};
 use crate::tree::types::QuoteStyle;
 
 /// Lower a JSON CST root node to [`DataTree`].
-pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataTree {
+pub fn lower_json_data_root(root: &RawNode, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
+fn lower_node(node: &RawNode, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
@@ -58,8 +57,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             span,
         },
         "pair" => {
-            let mut cursor = node.walk();
-            let mut named = node.named_children(&mut cursor);
+            let mut named = node.named_children();
             let key = named.next();
             let value = named.next();
             match (key, value) {
@@ -135,19 +133,17 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_named_children(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }
 
-fn decode_json_string(node: TsNode<'_>, source: &str) -> String {
+fn decode_json_string(node: &RawNode, source: &str) -> String {
     // tree-sitter-json splits the string body into `string_content`
     // and `escape_sequence` children. Reassemble + decode escapes.
     let mut out = String::new();
-    let mut cursor = node.walk();
-    for child in node.named_children(&mut cursor) {
+    for child in node.named_children() {
         match child.kind() {
             "string_content" => {
                 out.push_str(text_borrow(child, source));
@@ -202,6 +198,6 @@ fn strip_comment_delimiters(raw: &str) -> String {
     }
 }
 
-fn text_of(node: TsNode<'_>, source: &str) -> String {
+fn text_of(node: &RawNode, source: &str) -> String {
     text_borrow(node, source).to_string()
 }

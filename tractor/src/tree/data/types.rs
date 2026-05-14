@@ -574,7 +574,7 @@ mod mutation_tests {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&language).unwrap();
         let tree = parser.parse(src, None).unwrap();
-        lower_json_data_root(tree.root_node(), src)
+        lower_json_data_root(&crate::raw::RawNode::from_tree_sitter(tree.root_node(), src), src)
     }
 
     #[test]

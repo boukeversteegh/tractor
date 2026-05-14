@@ -115,7 +115,7 @@ fn ir_pipeline_view(source: &str) -> (String, XotResult) {
         .set_language(&tree_sitter_python::LANGUAGE.into())
         .expect("set python lang");
     let cst = parser.parse(source, None).expect("ts parse");
-    let tree = lower_python_root(cst.root_node(), source);
+    let tree = lower_python_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), source), source);
 
     // Round-trip invariant — assert at every test call.
     let recovered = to_source(&tree, source);

@@ -45,11 +45,11 @@ The tree path renders to xot, **serialises the xot to a string, and re-parses it
 
 ## Findings — weaknesses (W → slice index)
 
-- **W1.** Three parallel tree shapes, three parallel everything (`SyntaxTree`, `DataTree`, `SqlTree` each with their own `lower_*`, `to_xot`, `to_json`, dispatch arm, projection). → S2 + S5.
+- **W1.** Three parallel tree shapes, three parallel everything (`SyntaxTree`, `DataTree`, `SqlTree` each with their own `lower_*`, `to_xot`, `to_json`, dispatch arm, projection). → S2 + S5. *(Partial relief landed via the `TreeNode` trait — see S15-Z1/Z2 follow-ups: per-variant traversal knowledge now lives once per tree, not per walker. `assign_ids` and `locator` collapsed by ~1450 LOC combined. Renderer / projection / dispatch still parallel.)*
 - **W2.** Module documentation lied about production status (`tree/mod.rs` claimed "experimental sketch on Python"; it's the production path). → S1 (closed).
 - **W3.** Reverse path is on the wrong substrate (`render/*.rs` speaks `XmlNode`, supports 3 languages; `tree/source/*.rs` speaks `SyntaxTree`, supports 9, but is unwired). → S4.
 - **W4.** Cross-cutting transforms still mutate rendered xot. `chain_inversion` was removed (S3A). What remains in per-language `post_transform.rs` is a mix of language-specific rewrites and shared cross-language helpers parameterised by per-language data. → S3.
-- **W5.** WASM and CLI produce different output for migrated languages (WASM still uses `XotBuilder` + `walk_transform`). → S6.
+- **W5.** WASM and CLI produce different output for migrated languages. → S6 (closed: WASM now routes `Syntax`/`Sql` languages through the typed pipeline; parity verified by `tests/wasm_parity.rs`).
 - **W6.** Six places know the language list, none authoritative; alias-mapping (`csharp`/`cs`, `python`/`py`, …) duplicated five ways. → S2.
 - **W7.** `XmlNode` mixes XML markup (Element/Text/Comment/PI) with XPath atomic data (Map/Array/Number/Boolean/Null) in one enum. → S8.
 - **W8.** Cardinality plumbed twice — typed `Vec<SyntaxTree>` slots *and* `list="X"` attributes on rendered xot. → S3D.
@@ -194,7 +194,7 @@ The slice closes when both halves leave nothing standing — no per-language `po
     - [x] [S4B-Z1] **DataTree mutation primitives.** Done — `ScalarKind`, `synthetic_scalar`, `find_at_offset[_mut]`, `set_scalar`, `set_pair_value`, `insert_nested_pair` on `DataTree`; 7 unit tests.
     - [x] [S4B-Z2] **tree-aware span-tracking render for `DataTree`.** Done — `tree/source/data_json.rs` and `tree/source/data_yaml.rs` expose `render_*_with_spans -> (String, DataSpanMap)` keyed by `(line, col)`; 14 unit tests including end-to-end mutate→render→splice roundtrip.
     - [x] [S4B-Z3] **Wire upsert json/yaml paths.** Done — `mutation/xpath_upsert.rs` `update_existing` and `insert_new` branch to `*_via_data_ir` helpers for json/yaml/yml. Insert path uses two-phase `find_insertion_target_at_offset` (deepest-container, not deepest-leaf).
-    - [x] [S4B-Z4] **SyntaxTree upsert (csharp + all 7 other tree-pipeline languages).** Done via S15-Z3 (Slice 3, 2026-05-14) — `mutation::xpath_upsert::update_existing_via_syntax_ir` routes all 8 SyntaxTree-pipeline languages (csharp / java / python / typescript / rust / go / ruby / php) through the typed pipeline. Pipeline: parse → typed tree (IDs assigned via `assign_ids_syntax`) → project to xot (`@id` stamped) → XPath query → `Match.node_id` → `find_by_id_syntax` → `set_scalar_text` → per-leaf `render(&leaf, lang, None)` → splice into source at the match's byte range. Mutation is **update-only**; structural insertion (creating missing path segments) lands with Slice 4 / `replace` verb (S15-Z4).
+    - [x] [S4B-Z4] **SyntaxTree upsert (csharp + all 7 other tree-pipeline languages).** Done via S15-Z3 (Slice 3, 2026-05-14) — `mutation::xpath_upsert::update_existing_via_syntax_ir` routes all 8 SyntaxTree-pipeline languages (csharp / java / python / typescript / rust / go / ruby / php) through the typed pipeline. Pipeline: parse → typed tree (IDs assigned via `assign_ids_syntax`) → project to xot (`@id` stamped) → XPath query → `Match.node_id` → `find_by_id` (generic over `TreeNode`) → `set_scalar_text` → per-leaf `render(&leaf, lang, None)` → splice into source at the match's byte range. Mutation is **update-only**; structural insertion (creating missing path segments) lands with Slice 4 / `replace` verb (S15-Z4).
     - [x] [S4B-Z5] **Retire transitional shims in `render::json`/`render::yaml`.** Done — strict `field=` checks restored; `render::yaml::tests::sequence` rewritten to legacy shape. (Modules deleted entirely at S4D shortly after.)
 
 - [x] [S4C] **`render::parse_xml` and `render::parse_json` do not exist.** Done — removed alongside S4D.
@@ -247,20 +247,65 @@ parsing source ─►  RawNode  ◄─────────┤               
 
 ### Tasks
 
-- [ ] [S6A] **A fixture set under `tests/wasm_parity/` captures concrete WASM↔CLI divergences for migrated languages.**
-  - Small input file per language; expected = CLI output; observed = WASM output. Used by S6C as the parity oracle.
+- [x] [S6A] **A fixture set captures WASM↔CLI parity for every migrated language.**
+  - Landed at `tractor/tests/wasm_parity.rs`. Builds the AST natively via tree-sitter, simulates the WASM JSON serialisation step (RawNode → SerializedNode JSON round-trip), then routes both paths through `parse_ast_to_xml` and compares against `parse_string_to_xot` + `render_document`. 9 fixtures (one per migrated programming language family, including T-SQL) pass; run with `cargo test -p tractor --features wasm --test wasm_parity`.
 
-- [ ] [S6B-RawNode] **Introduce `tractor/src/raw.rs:RawNode`.** Promote `wasm/ast.rs:SerializedNode` into a tractor-core type usable on both targets. Serde Serialize/Deserialize derived. Method API mirrors `tree_sitter::Node`'s narrow surface (the 10 methods enumerated above). Add `RawNode::from_tree_sitter(node, source)` on the native build (one-pass conversion, no string copies — text comes from `&source[range]` at lowering time).
+- [x] [S6B-RawNode] **Introduced `tractor/src/raw.rs:RawNode`.** Owned struct with `kind`, `is_named`, `byte_range`, `start_byte`/`end_byte`, `start_position`/`end_position` (returning `raw::Point`), `utf8_text(source)→&str`, `children()`, `named_children()`, `child_by_field_name`, `field_name`, plus `id()` (pointer identity, replaces the 24 `tree_sitter::Node::id()` call sites) and `field_name_for_child(u32)` (mirrors tree-sitter's API for the few callers that index into children). Native-only `RawNode::from_tree_sitter(node, source)` walks via cursor to capture per-child field names.
 
-- [ ] [S6B-Pilot] **Migrate one pilot language to `lower_*_root(&RawNode, source)`.** TypeScript is the recommended pilot — biggest CST so any awkward case shows up. All existing TS tests + property tests + snapshots pass. Native parser entry points convert `tree_sitter::Node → RawNode` before calling lower. Imperative path untouched.
+- [x] [S6B-Pilot+Rest] **Migrated all 14 lowerings to `&RawNode`.** Mechanical refactor scripted via `scripts/migrate_to_rawnode.py` (regex rewrites for `TsNode<'_>`/`Option<TsNode>`/`Vec<TsNode>` types, cursor declarations, children/named_children calls). Hand-fixes: csharp's 8 `utf8_text(source.as_bytes())` Result-shaped call sites, csharp/java's 4 `.parent()` walk-up sites (refactored to a `thread_local!` parent-map populated at the root of each `lower_*_root` call, scoped to the lowering — see `enclosing_type_kind` in csharp/java's `lower.rs`). Lowerings are no longer gated on `feature = "native"`.
 
-- [ ] [S6B-Rest] **Migrate the remaining 8 SyntaxTree lowerings + 5 DataTree lowerings.** Mechanical replication of the pilot's shape. The 11 `.parent()` sites get refactored as they're hit.
+- [x] [S6B-WASM] **WASM crossing wired through the typed pipeline.** `wasm/mod.rs:parse_ast_to_xml` now routes `TreeKind::Syntax` / `TreeKind::Sql` languages through `serde_json::from_str::<RawNode>` → `lower(&raw, source)` → `assign_ids_*` → `render_to_xot` / `render_sql_to_xot` → `render_document`. Both `parse_to_xml` and `get_schema_tree` use the same path. Data-language modes and `TreeKind::None` languages fall back to the legacy `XotBuilder + walk_transform` path; that fallback is what S6B-Retire still has to address.
 
-- [ ] [S6B-WASM] **WASM crossing.** Replace `XotBuilder::build_raw_from_serialized` + `walk_transform` in `wasm/mod.rs` with `serde_json::from_str::<RawNode>` + `lower_*_root(&raw, source)` + `render_to_xot`. Same typed pipeline as native. Both `parse_to_xml` and `get_schema_tree` flow through.
+- [ ] [S6B-Retire] **Delete the imperative transform machinery.** Blocked on **S6R** (typed passthrough for `TreeKind::None` languages) and on ungating the data-tree path for WASM. Once both land, `walk_transform`, `apply_field_wrappings`, per-language `transform.rs`, and `XotBuilder::build_raw_from_serialized` have no callers and can be deleted.
 
-- [ ] [S6B-Retire] **Delete the imperative transform machinery.** `walk_transform`, `apply_field_wrappings`, per-language `transform.rs`, `XotBuilder::build_raw_from_serialized`, the `parse_string_to_xot_with_options` non-tree fallback branch (now reachable only for `TreeMode::Raw`, where it's a no-op passthrough — that path can stay as a raw xot dump or also flow through `RawNode → xot`).
+- [x] [S6C] **The S6A fixtures pass: WASM↔CLI divergence is zero for every migrated language.** Verified by the 9-test `wasm_parity` suite; all green.
 
-- [ ] [S6C] **The S6A fixtures pass: web ↔ CLI divergence is zero for every migrated language.**
+---
+
+## S6R — Typed passthrough for unmigrated languages (unblocks S6B-Retire)
+
+**Goal.** Every language flows through the typed pipeline. Languages without a hand-written semantic lowering get a generic `lower_raw_passthrough` that wraps each CST node in a single `Raw` variant — close to the bare CST, no semantic decisions. This kills the last consumers of `walk_transform` + `XotBuilder` and unblocks S6B-Retire.
+
+**Why now.** After S6, the typed pipeline covers `TreeKind::Syntax` and `TreeKind::Sql`. Eleven languages (HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia) still route through `walk_transform` because they have no typed lowering. Data languages on WASM also fall back to the imperative path (separate issue — see follow-up below). As long as anything hits `walk_transform`, the legacy machinery can't be deleted.
+
+The user's intent (recorded 2026-05-14): "stick as close to raw as possible, only introduce types when we're explicitly modeling structure." Typing the passthrough makes it testable like the rest of the pipeline; field-wrappings and other semantic shape decisions stay opt-in (a language gets them when someone writes a real `lower_<lang>_root`).
+
+**Depends on.** S6 (RawNode + typed pipeline + registry-driven dispatch) — landed.
+**Unblocks.** S6B-Retire (delete imperative machinery).
+**Independent of.** S7, S8, S9.
+
+**Size.** S. One new variant + one passthrough lowering per tree family + registry updates for 11 rows.
+**Reversibility.** High. Adding a variant is additive; the passthrough can be swapped for `TreeKind::None` if it doesn't work out.
+
+**Invariants when closed:**
+- `SyntaxTree::Raw { kind, children, range, span }` (or equivalent) exists and renders as `<kind>{children…}</kind>`.
+- `lower_raw_passthrough(&RawNode, &str) -> SyntaxTree` exists and is registered for every previously-`TreeKind::None` row in `LANGUAGES`.
+- No `LanguageOps` row carries `TreeKind::None` on the native build.
+- `apply_field_wrappings` is not called for passthrough languages (conscious behaviour change — see below).
+
+### Behaviour change to accept
+
+Passthrough languages currently get `apply_field_wrappings` from the imperative path (children of certain kinds wrapped in `<name>`/`<body>`/etc.). The typed passthrough deliberately omits this — wrappings are a per-language semantic shape decision that belongs in a real `lower_<lang>_root`, not in a generic catch-all. Net effect: XML for HTML/CSS/C/C++/etc. drops the field-wrap layer. These languages are barely used in queries today; the simplification is worth the small shape shift.
+
+### Tasks
+
+- [ ] [S6R-Variant] **A `SyntaxTree::Raw` variant exists with a `to_xot` arm.**
+  - Renders `<kind>{children…}</kind>`. Add to `tree::types`, `tree::to_xot`, `tree::to_json`, `tree::render::*`. Treat `kind` as a `Cow<'static, str>` or `String` (the grammar kind names aren't a closed set across all languages).
+  - Add the matching `TreeNode::children`/`children_mut` arm so `assign_ids` walks it.
+
+- [ ] [S6R-Lower] **`lower_raw_passthrough` exists for `SyntaxTree` and produces the `Raw` variant recursively.**
+  - Walks named children only (or all children — pick to match the prior imperative output as closely as possible).
+  - Lives at `tree::lower_raw_passthrough` so it's reachable from the registry without a per-language file.
+
+- [ ] [S6R-Register] **Every `TreeKind::None` row in `LANGUAGES` now carries `TreeKind::Syntax(lower_raw_passthrough)`.**
+  - HTML, CSS, C, C++, bash, scala, lua, haskell, ocaml, r, julia.
+
+- [ ] [S6R-Tests] **Snapshot or property tests cover the passthrough output for at least three of the new languages.**
+  - Cheap inputs (`<div>x</div>`, `body { color: red; }`, `int main(){}`). Goal is to lock the shape so future refactors can't silently break it.
+
+### Follow-up (not in this slice)
+
+WASM-side data-language parsing still falls back to the imperative path because `tree::data` and the data renderers are `#[cfg(feature = "native")]`-gated. Ungating them is its own slice — call it **S6D**. With S6R + S6D landed, S6B-Retire's invariants hold and the imperative machinery can go.
 
 ---
 
@@ -605,6 +650,8 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 - [ ] [S14-Z4] **Layer B: full DataTree↔SyntaxTree engine unification.** Pending — DataTree still uses its own walkers. The split is the right level of separation today (the per-variant arms genuinely diverge); Layer B becomes worth doing when structural mutation lands on SyntaxTree with a span-map output, at which point a uniform entry-point shape `render(tree, source) -> (String, Option<SpanMap>)` is worth the trait scaffolding.
 
+- [ ] [S14-Z5] **Re-evaluate Layer C in light of `TreeNode`.** S14 / [`docs/design-ir-and-renderings.md` § 3.4](docs/design-ir-and-renderings.md#34-renderer-engine-layering-whats-shared-across-trees-and-where-it-stops) classified "Layer C = single generic walker" as **rejected, not a target** for the renderer. That decision pre-dates the `TreeNode` trait introduced for S15-Z1/Z2 follow-ups, which proved out a generic pre-order walker on two non-trivial cases (`assign_ids`: -573 LOC; `locator`: -874 LOC). The rejection's substance — that per-variant *emission shapes* genuinely diverge (synthetic `<expression>` / `<left>` / `<right>` wrappers for SyntaxTree, format-specific punctuation for DataTree renderers) — still stands for the *renderer*. But the rejection's *generality* (a generic walker is wrong for trees) is now demonstrably false for traversal-shaped passes. Audit: is there a hybrid where the *traversal* is `TreeNode`-generic but the *emission* is per-variant via an associated method (`fn emit(&self, ctx: &mut RenderCtx)`)? That's strictly more structure than Layer A and strictly less than Layer C as originally framed. If yes, it could unify the three `to_xot.rs` files (~4000 LOC) without violating the per-variant-emission constraint. **Status:** open question; no work scheduled. Decision should land before any to_xot refactor.
+
 ---
 
 ## S15 — Editable trees: NodeId-based mutation pipeline
@@ -621,13 +668,19 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ### Tasks
 
-- [x] [S15-Z1] **Slice 1 — `NodeId` on `Span` + `assign_ids` walkers.** Done — `pub type NodeId = u32` with `0` as the unassigned sentinel; `id: NodeId` field added to `Span` (threads through every existing accessor for free, same trick as S13-Z2's `anchored` flag on `ByteRange`). `tree::assign_ids` module exports `assign_ids_syntax` / `assign_ids_data` / `assign_ids_sql`, each a depth-first walk that stamps every node from a fresh counter. Wired into both `parse_with_ir_pipeline` (xot output) and `parse_with_ir_pipeline_to_xee` (xee path); every tree exiting either parser path satisfies "non-zero unique id on every node".
+- [x] [S15-Z1] **Slice 1 — `NodeId` on `Span` + `assign_ids` walkers.** Done — `pub type NodeId = u32` with `0` as the unassigned sentinel; `id: NodeId` field added to `Span` (threads through every existing accessor for free, same trick as S13-Z2's `anchored` flag on `ByteRange`). `tree::assign_ids` module exports `assign_ids_syntax` / `assign_ids_data` / `assign_ids_sql`, each a thin wrapper around one generic depth-first walker `walk<T: TreeNode>` that stamps every node from a fresh counter. Per-variant child knowledge lives on each tree's `TreeNode::children_mut` impl (see follow-up below), not in the walker. Wired into both `parse_with_ir_pipeline` (xot output) and `parse_with_ir_pipeline_to_xee` (xee path); every tree exiting either parser path satisfies "non-zero unique id on every node".
 
-- [x] [S15-Z2] **Slice 2 — xot-side `@id` + `find_by_id` locators.** Done — `set_span_attrs` in `tree/to_xot.rs`, `tree/data/to_xot.rs`, and `tree/sql/to_xot.rs` stamps `@id="N"` on every xot element when the typed node carries a non-zero NodeId; omitted for synthetic / pre-`assign_ids` paths. `tree::locator` module exports `find_by_id_syntax` / `find_by_id_data` / `find_by_id_sql` (full recursive walkers for all variants) and `parse_id_attr` for converting an XML attribute string to a `NodeId`. End-to-end test `xpath_match_id_resolves_to_typed_syntax_node` exercises the full parse → query → `@id` → `find_by_id` → typed-mutation pipeline.
+  **Follow-up (post-original-landing):** introduced `pub trait TreeNode { span, span_mut, range, children, children_mut, is_anchored (default), to_source (default) }` in `tree/types.rs`, implemented on `SyntaxTree`, `DataTree`, `SqlTree`. `assign_ids.rs` collapsed from 731 → 158 lines: three parallel per-variant walkers became one generic `fn walk<T: TreeNode>(tree: &mut T, next: &mut NodeId)`. Adding a new tree variant requires no change in `assign_ids` — only in the tree's `children_mut` arm.
+
+- [x] [S15-Z2] **Slice 2 — xot-side `@id` + `find_by_id` locators.** Done — `set_span_attrs` in `tree/to_xot.rs`, `tree/data/to_xot.rs`, and `tree/sql/to_xot.rs` stamps `@id="N"` on every xot element when the typed node carries a non-zero NodeId; omitted for synthetic / pre-`assign_ids` paths. `tree::locator` exports one generic `find_by_id<T: TreeNode>(tree: &mut T, id: NodeId) -> Option<&mut T>` plus `parse_id_attr` for converting an XML attribute string to a `NodeId`. End-to-end test `xpath_match_id_resolves_to_typed_syntax_node` exercises the full parse → query → `@id` → `find_by_id` → typed-mutation pipeline.
+
+  **Follow-up (post-original-landing):** the original implementation had three parallel `find_by_id_syntax` / `_data` / `_sql` walkers, each with its own per-variant descent (~1000 LOC total in `locator.rs`). After `TreeNode` landed (see Z1 follow-up), all three walkers collapsed to one generic function reading `span()` + `children_mut()`. `locator.rs`: 1025 → 151 lines. The three per-tree shims were removed entirely; callers ([`mutation/xpath_upsert.rs`](tractor/src/mutation/xpath_upsert.rs), [`tests/render_unified.rs`](tractor/tests/render_unified.rs)) now call `find_by_id` directly — Rust's type inference picks the tree type from the `&mut tree` argument.
 
 - [x] [S15-Z2-Sql] **SqlTree Tier 1 — bring SqlTree to Slice 1+2 parity.** Done — recursive `assign_ids_sql` covering all 57 variants (was skeletal "stamps root only"); recursive `find_by_id_sql` covering all 57 variants; `set_span_attrs` added to SqlTree's xot projection (SqlTree xot previously carried no `@line`/`@column` attrs either — added in this slice); inline `<name>` leaves inside `<relation>` / `<reference>` / `<column>` / standalone Identifier/Schema/Alias paths stamped with the corresponding typed node's NodeId via the `name_leaf_with_span` helper. End-to-end test `xpath_match_id_resolves_to_typed_sql_node` validates the SqlTree XPath → `@id` → typed-node round-trip.
 
-- [x] [S15-Z3] **Slice 3 — wire SyntaxTree `set` through `find_by_id_syntax`.** Done — XPath matches against syntax-tree projections now carry the typed node's `NodeId` (xot `@id` extracted in `xpath::engine::extract_location_and_id_from_xot` and surfaced on `Match.node_id`); `mutation::xpath_upsert::update_existing_via_syntax_ir` walks each match, locates the typed node via `find_by_id_syntax`, mutates its `text` field via the new `SyntaxTree::set_scalar_text`, renders that single leaf via `tree::render::render(leaf, lang, None)`, and splices the result into the original source at the match's byte range. `lang_supports_upsert` now includes all 8 SyntaxTree-pipeline languages; CLI surface unchanged. No-match for syntax-tree languages returns a no-op result (Slice 3 is update-only — insertion is Slice 4). Property tests in `tests/render_unified.rs`: `syntax_tree_matches_carry_node_id`, `upsert_renames_python_function_via_typed_pipeline`, `upsert_renames_typescript_string_literal`, `upsert_no_match_on_syntax_tree_is_noop`. Closes S4B-Z4 for the 8 SyntaxTree-pipeline languages. SqlTree-pipeline `set` is **not** wired through here (`lang_uses_syntax_tree("tsql")` is `false`) — SqlTree mutation lands with Tier 2 once a canonical scalar-surround renderer exists.
+  **Follow-up (post-original-landing):** with `TreeNode` (see Z1 / Z2 follow-ups), SqlTree's 57-variant walks no longer exist as separate functions — `assign_ids_sql` and the former `find_by_id_sql` share the generic walker with the other two trees. The 57 variants are now declared *once*, in the `TreeNode::children` / `children_mut` impl on `SqlTree` in [`tree/sql/types.rs`](tractor/src/tree/sql/types.rs). The `name_leaf_with_span` helper for inline `<name>` leaves inside relations / references / columns is unchanged.
+
+- [x] [S15-Z3] **Slice 3 — wire SyntaxTree `set` through `find_by_id`.** Done — XPath matches against syntax-tree projections now carry the typed node's `NodeId` (xot `@id` extracted in `xpath::engine::extract_location_and_id_from_xot` and surfaced on `Match.node_id`); `mutation::xpath_upsert::update_existing_via_syntax_ir` walks each match, locates the typed node via the generic `find_by_id` (originally `find_by_id_syntax` — see Z2 follow-up), mutates its `text` field via the new `SyntaxTree::set_scalar_text`, renders that single leaf via `tree::render::render(leaf, lang, None)`, and splices the result into the original source at the match's byte range. `lang_supports_upsert` now includes all 8 SyntaxTree-pipeline languages; CLI surface unchanged. No-match for syntax-tree languages returns a no-op result (Slice 3 is update-only — insertion is Slice 4). Property tests in `tests/render_unified.rs`: `syntax_tree_matches_carry_node_id`, `upsert_renames_python_function_via_typed_pipeline`, `upsert_renames_typescript_string_literal`, `upsert_no_match_on_syntax_tree_is_noop`. Closes S4B-Z4 for the 8 SyntaxTree-pipeline languages. SqlTree-pipeline `set` is **not** wired through here (`lang_uses_syntax_tree("tsql")` is `false`) — SqlTree mutation lands with Tier 2 once a canonical scalar-surround renderer exists.
 
 - [ ] [S15-Z4] **Slice 4 — `replace <xpath> <xml-literal>` CLI verb.** Pending. API syntax TBD (open questions: how is the XML literal supplied — stdin / `--xml '...'` / file path? batched multiple `(xpath, xml)` pairs in one invocation?). The "universal mutation primitive" decision: subtree replacement is the only structural mutation operation; no per-variant `--set` / `--push` / `--remove` API. Rename / add / delete are all expressed as "replace this subtree with that one." Defer until Slice 3 lands.
 
@@ -723,61 +776,41 @@ The original S13 entry called out `DataTree` as out-of-scope ("revisit unifying 
 
 ---
 
-## S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`) ✅
+## S12 — Drop the IR vocabulary entirely; per-domain tree types (`SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`)
 
-**Status: CLOSED 2026-05-12.** All eleven Z-steps shipped (commits `0e08dffd` through `28dac866`, independently verified 2026-05-13). The code uses `crate::tree`, `SyntaxTree`, `DataTree`, `SqlTree`, `TreeKind`; the spec dir is at `specs/tractor-parse/tree/`; living docs scrubbed of "IR" vocabulary; TODO.md vocabulary scrubbed. The one item that may still be partial inside Z5 is the `DocumentTree` extraction (Markdown might still lower to `DataTree`); confirm at end of audit. Body below kept for historical record of the slice contract.
+**Status: structural rename shipped 2026-05-12 (commits `0e08dffd` … `28dac866`); residual mop-up open per 2026-05-14 audit.** The eleven original Z-steps (type renames `Ir/DataIr/SqlIr → SyntaxTree/DataTree/SqlTree`, module `crate::ir → crate::tree`, `IrFamily → TreeKind`, spec dir `semantic-tree/ → tree/`, living-doc scrub, TODO.md scrub) all landed and are no longer enumerated here — see the git log for those commits. A subsequent audit (below) found that the rename sweep stopped at type names and missed a substantial tail of internal function names, ~150 local-variable bindings, 11 test files, and stale `src/ir/` path references in two design docs.
 
-**Goal.** "IR" disappears from the codebase, comments, and docs. Rust types rename to per-domain trees; `crate::ir → crate::tree`. Markdown extracts from `DataTree` into a new `DocumentTree`. Vocabulary in docs: "tree" / "tree node", not "IR" / "IR variant". Per the decisions recorded in `docs/design-ir-and-renderings.md` §9 (2026-05-11 / 2026-05-12).
+**Decisions still locked (2026-05-12):**
+- Per-domain tree types `SyntaxTree` / `DataTree` / `SqlTree` / `DocumentTree`; `TreeKind` with variants `Syntax` / `Data` / `Sql` / `Document`.
+- Historical doc `docs/design-transform-redesign-exploration.md` stays frozen with a terminology-note banner — IR mentions there are intentional.
+- `docs/design-ir-and-renderings.md` §9 documents the rename decision itself; "IR" mentions in that section are intentional historical record.
 
-**Why now.** Design-doc rewrite (S11 + the tree-and-renderings doc) commits to "tree" as the user-facing vocabulary. Keeping the Rust types named `SyntaxTree` while docs say "tree" creates a permanent translation tax for new readers. "Intermediate representation" leaks an implementation framing into the API.
+**Open question:** [S12-Z5] flagged that `DocumentTree` extraction (Markdown moves out of `DataTree`) may not have actually happened despite being marked done. Verify before declaring the original eleven-step slice fully closed.
 
-**Depends on.** None structural — pure mechanical rename + Markdown extraction. Coordinate with S11 (in-flight): if both are happening, do S12 first so S11's node work uses the new names.
-**Unblocks.** Cleaner spec docs (no need for a "tree means `SyntaxTree` in code" note); fresh-reader onboarding.
-**Independent of.** S1–S10, S11's structural changes (S12 is naming + Markdown extraction; S11 is shape).
+### Audit findings — 2026-05-14
 
-**Size.** L (~50 files touched, plus Markdown extraction; mostly mechanical). Per-Z-step commits.
-**Reversibility.** High — git revert restores the old names. Public API churn for anyone using `tractor::tree::*` externally.
+Search: `\bIr[A-Z]|\bir_|_ir\b` across `tractor/src` and `tractor/tests`. 306 hits across 28 source files + 5 test files. Categorized below.
 
-**Decisions locked (2026-05-12):**
-- Type renames: `Ir → SyntaxTree`, `DataIr → DataTree`, `SqlIr → SqlTree`. New `DocumentTree` extracted from Markdown lowering.
-- Module: `crate::tree → crate::tree`.
-- `IrFamily → TreeKind` (variants `Syntax` / `Data` / `Sql` / `Document`).
-- Spec dir: `specs/tractor-parse/semantic-tree/ → specs/tractor-parse/tree/`.
-- Historical doc `docs/design-transform-redesign-exploration.md`: leave body frozen, add terminology-note banner.
+- [ ] [S12-Z12] **Public-API function rename: `tree::lower_to_data_ir → tree::lower_to_data`.** Defined at [`tree/to_data.rs:54`](tractor/src/tree/to_data.rs#L54), re-exported from [`tree/mod.rs:142`](tractor/src/tree/mod.rs#L142). Callers: [`xpath/match_result.rs:159`](tractor/src/xpath/match_result.rs#L159) and three test sites in `to_data.rs` (lines 1428, 1499, 1527). Single public-API surface still carrying "IR" in its name.
 
-**Invariants when closed:**
-- `crate::tree::SyntaxTree`, `crate::tree::DataTree`, `crate::tree::SqlTree`, `crate::tree::DocumentTree` exist; `SyntaxTree` / `DataTree` / `SqlTree` do not.
-- `crate::tree` module path replaces `crate::tree`.
-- `TreeKind` (with `Syntax` / `Data` / `Sql` / `Document` variants) replaces `TreeKind`.
-- Markdown lowers to `DocumentTree`, not `DataTree`.
-- `specs/tractor-parse/tree/` exists; `specs/tractor-parse/semantic-tree/` does not.
-- All living docs scrubbed of "tree" / "tree" vocabulary. Historical doc carries a terminology-note banner.
-- TODO.md vocabulary scrubbed.
-- All tests pass under the new names.
+- [ ] [S12-Z13] **Internal-function renames** (low public surface, mechanical):
+  - `tree::render::common::write_ir → write_tree` and `write_ir_with_source → write_tree_with_source` ([`tree/render/common.rs`](tractor/src/tree/render/common.rs)). Called by all 8 language `render_source.rs` files.
+  - `mutation::xpath_upsert::update_existing_via_data_ir / update_existing_via_syntax_ir / insert_new_via_data_ir / render_data_ir_with_spans` ([`mutation/xpath_upsert.rs`](tractor/src/mutation/xpath_upsert.rs) lines 293 / 402 / 551 / 497). Drop the `_ir` / `_data_ir` suffix or replace with `_data_tree` / `_syntax_tree`.
+  - `tree::coverage::collect_ir_ranges → collect_tree_ranges` ([`tree/coverage.rs:244`](tractor/src/tree/coverage.rs#L244)).
+  - `languages::rust_lang::lower::clone_ir → clone_tree` ([`languages/rust_lang/lower.rs:1753`](tractor/src/languages/rust_lang/lower.rs#L1753)).
 
-### Tasks
+- [ ] [S12-Z14] **Local-variable cleanup in `lower.rs` files** (~150 occurrences, mechanical rename, no public surface). Patterns: `object_ir`, `name_ir`, `type_ir`, `value_ir`, `path_ir`, `next_ir`, `inner_ir`, `seg_ir`, `pattern_ir`, `index_ir`, `case_ir`, `ir_tree`, `ir_range`, `ir_root`, `ir_xot`, `ir_text`, `ir_xml`, `ir_render`, `ir_view`. Highest concentration: [`languages/csharp/lower.rs`](tractor/src/languages/csharp/lower.rs) (39 hits), [`languages/typescript/lower.rs`](tractor/src/languages/typescript/lower.rs) (43 hits), [`languages/java/lower.rs`](tractor/src/languages/java/lower.rs) (24 hits), [`tree/to_xot.rs`](tractor/src/tree/to_xot.rs) (18 hits, mostly `ir_range`). Also `parser/mod.rs:303,307,308,316,421,423,424,431` (`ir_tree` local). Suggested replacements: drop `_ir` suffix entirely (`object_ir → object`) or rename to `_tree` where ambiguity exists.
 
-- [x] [S12-Z1] **`SyntaxTree` enum renamed to `SyntaxTree`; `SyntaxTree::*` constructors renamed to `SyntaxTree::*`.** Done (commit `0e08dffd`).
+- [ ] [S12-Z15] **Test file renames in `tractor/tests/`.** Eleven files still prefixed `ir_*`: `ir_csharp_json_parity.rs`, `ir_csharp_parity.rs`, `ir_go_missing_kinds.rs`, `ir_java_missing_kinds.rs`, `ir_php_missing_kinds.rs`, `ir_python_blueprint.rs`, `ir_python_missing_kinds.rs`, `ir_python_parity.rs`, `ir_ruby_missing_kinds.rs`, `ir_rust_missing_kinds.rs`, `ir_typescript_missing_kinds.rs`. Five of them carry `ir_*` identifiers inside (function names, locals, doc comments). The `*_parity.rs` files compared the IR pipeline against the legacy walk_transform output — that comparison is moot now (S6 closed it). Consider whether to rename (`tree_<lang>_*`) or delete the parity tests outright.
 
-- [x] [S12-Z2] **`crate::tree` module renamed to `crate::tree`; `pub mod tree;` → `pub mod tree;`.** Done (commit `c43706ab`).
+- [ ] [S12-Z16] **Doc-comment / module-comment scrub** (no behavior change):
+  - [`tree/types.rs:15`](tractor/src/tree/types.rs#L15) references `source[root_ir.range]` in the module docstring → `source[root_tree.range]` (or just rephrase).
+  - [`docs/pipeline-architecture.md`](docs/pipeline-architecture.md) lines 3, 79, 123, 140 still reference `tractor/src/ir/` paths that no longer exist (`tractor/src/tree/` now).
+  - [`docs/design-ir-and-renderings.md`](docs/design-ir-and-renderings.md) line 473 references `docs/pipeline-architecture.md` as needing scrub — recursive dangling pointer.
 
-- [x] [S12-Z3] **`DataTree` renamed to `DataTree` (Markdown still inside for now).** Done (commit `973dfd72`).
+- [ ] [S12-Z17] **Decide: rename `docs/design-ir-and-renderings.md` itself?** The filename still carries the old vocabulary. The body deliberately documents the IR→tree rename (§9 — that section's IR mentions are intentional historical record), so renaming the file forces an update to every link that points to `design-ir-and-renderings.md`. Candidates: `design-trees-and-renderings.md` or leave as-is with a terminology banner in the header. Decision deferred — flag only.
 
-- [x] [S12-Z4] **`SqlTree` renamed to `SqlTree`.** Done (commit `b53cb504`).
-
-- [x] [S12-Z5] **`DocumentTree` created; Markdown lowering extracted from `DataTree` into `DocumentTree`.** Marked done in the rename sweep (commit `4c8a7c15`); however the audit (2026-05-13) flagged that Markdown may still lower to `DataTree`. Verify by inspecting `tractor/src/languages/markdown` and the markdown lowering module. If `DocumentTree` extraction wasn't actually performed, re-open as a separate sub-task.
-
-- [x] [S12-Z6] **`TreeKind → TreeKind`; variants `Syntax` / `Data` / `Sql` / `Document`.** Done (commit `4c8a7c15`).
-
-- [x] [S12-Z7] **Module-level renames flow through.** Done (commit `19e6e213`; `b28b8bbe` addendum scrubbed remaining mentions in code comments).
-
-- [x] [S12-Z8] **`specs/tractor-parse/semantic-tree/` renamed to `specs/tractor-parse/tree/`.** Done (commit `6f0dc33e`).
-
-- [x] [S12-Z9] **Living `docs/*.md` files scrubbed.** Done (commit `c29abc9e`).
-
-- [x] [S12-Z10] **TODO.md scrubbed.** Done (commit `f067cc8a`).
-
-- [x] [S12-Z11] **`specs/tractor-parse/dual-view/`, `specs/codexpath/cli/output-options/json-format/`, `specs/cli-output-design.md` scrubbed.** Done (commit `28dac866`).
+- [ ] [S12-Z18] **`tractor/todo/41-ir-migration-status.md` — archive or delete.** Pre-S12 planning snapshot from 2026-05-07. Content is fully superseded by the shipped renames. Either move under a clearly-archived path or delete.
 
 ---
 

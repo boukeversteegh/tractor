@@ -10,19 +10,18 @@
 //!     value as String from `setting_value`)
 //!   - `comment` → [`DataTree::Comment`]
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
 use crate::tree::types::QuoteStyle;
 
-pub fn lower_ini_data_root(root: TsNode<'_>, source: &str) -> DataTree {
+pub fn lower_ini_data_root(root: &RawNode, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
+fn lower_node(node: &RawNode, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
@@ -35,8 +34,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         "section" => {
             // First child is `section_name`; rest are settings /
             // comments.
-            let mut cursor = node.walk();
-            let mut named = node.named_children(&mut cursor);
+            let mut named = node.named_children();
             let header = named.next();
             let name_ir = match header {
                 Some(h) if h.kind() == "section_name" => DataTree::String {
@@ -53,8 +51,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 },
             };
             let mut children: Vec<DataTree> = Vec::new();
-            let mut c2 = node.walk();
-            for child in node.named_children(&mut c2) {
+            for child in node.named_children() {
                 if child.kind() == "section_name" {
                     continue;
                 }
@@ -70,10 +67,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         "setting" => {
             let mut name = String::new();
             let mut value = String::new();
-            let mut name_node: Option<TsNode> = None;
-            let mut value_node: Option<TsNode> = None;
-            let mut cursor = node.walk();
-            for child in node.named_children(&mut cursor) {
+            let mut name_node: Option<&RawNode> = None;
+            let mut value_node: Option<&RawNode> = None;
+            for child in node.named_children() {
                 match child.kind() {
                     "setting_name" => {
                         name = text_of(child, source).trim().to_string();
@@ -126,18 +122,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_named_children(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }
 
 /// `section_name` wraps the name in `[` `]` brackets with a `text`
 /// child carrying the actual name. Pull the text content.
-fn extract_text_inside(node: TsNode<'_>, source: &str) -> String {
-    let mut cursor = node.walk();
-    for child in node.named_children(&mut cursor) {
+fn extract_text_inside(node: &RawNode, source: &str) -> String {
+    for child in node.named_children() {
         if child.kind() == "text" {
             return text_of(child, source).trim().to_string();
         }

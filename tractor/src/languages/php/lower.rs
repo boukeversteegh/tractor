@@ -5,16 +5,15 @@
 //! `languages/php/{rules,transformations,transform}.rs` modules
 //! were retired in 7c13d427.
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::lower_helpers::{
     float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
 };
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
 
-pub fn lower_php_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_php_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
@@ -92,11 +91,11 @@ fn merge_php_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synta
     out
 }
 
-pub fn lower_php_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_php_node(node: &RawNode, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -121,9 +120,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // child in `<interpolation>`. string_value text and
             // escape_sequence stay flat (their gap-text holds the
             // literal string content).
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .map(|c| {
                     match c.kind() {
                         "variable_name" | "dynamic_variable_name"
@@ -182,8 +180,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // Detect a `namespace_use_group` child; if present, mark
             // this use as a group and its inner namespace_use_clauses
             // emit as `<use>` siblings.
-            let mut cursor = node.walk();
-            let has_group = node.named_children(&mut cursor)
+            let has_group = node.named_children()
                 .any(|c| c.kind() == "namespace_use_group");
             if has_group {
                 php_use_group(node, source)
@@ -236,9 +233,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // Class constants can have visibility modifiers (`public
             // const X = 1;`). Lift them onto the `<const>` element.
             let modifiers = php_modifiers(node, source, false);
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .filter(|c| !is_php_modifier(c.kind()))
                 .map(|c| lower_node(c, source))
                 .collect();
@@ -303,9 +299,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // lift the visibility / readonly modifiers onto the
             // <parameter> element.
             let modifiers = php_modifiers(node, source, false);
-            let mut cursor = node.walk();
             let children: Vec<SyntaxTree> = node
-                .named_children(&mut cursor)
+                .named_children()
                 .filter(|c| !is_php_modifier(c.kind()))
                 .map(|c| lower_node(c, source))
                 .collect();
@@ -347,9 +342,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // Wrap the body's compound_statement in `<body>`. catch_clause
             // / finally_clause children stay positional.
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if Some(c.id()) == body_node.map(|b| b.id()) {
                     children.push(body_of(c, source));
                     continue;
@@ -367,9 +361,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "catch_clause" => {
             // Body block → <body>.
             let body_node = node.child_by_field_name("body");
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if Some(c.id()) == body_node.map(|b| b.id()) {
                     children.push(body_of(c, source));
                     continue;
@@ -386,9 +379,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         }
         "finally_clause" => {
             // Body block → <body>.
-            let mut cursor = node.walk();
             let mut children: Vec<SyntaxTree> = Vec::new();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "compound_statement" {
                     children.push(body_of(c, source));
                     continue;
@@ -458,8 +450,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let args_node = node.child_by_field_name("arguments");
             let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
-                    let mut ac = a.walk();
-                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                    a.named_children().map(|c| lower_node(c, source)).collect()
                 }
                 None => Vec::new(),
             };
@@ -507,8 +498,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let args_node = node.child_by_field_name("arguments");
             let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
-                    let mut ac = a.walk();
-                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                    a.named_children().map(|c| lower_node(c, source)).collect()
                 }
                 None => Vec::new(),
             };
@@ -583,8 +573,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // dereferenced expression and the index as positional
             // named children rather than fields, so walk them in
             // order.
-            let mut cursor = node.walk();
-            let mut named = node.named_children(&mut cursor);
+            let mut named = node.named_children();
             let object_node = named.next();
             let index_node = named.next();
             match object_node {
@@ -707,9 +696,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
-    let mut cursor = node.walk();
-    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
+    let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
@@ -724,11 +712,10 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 /// `<expression>` host (Principle #5 — matches the throw shapes
 /// across Java / C# / TypeScript and the equivalent yield / raise
 /// / return shapes).
-fn lower_php_throw(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_php_throw(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut cursor = node.walk();
-    let inner: Vec<SyntaxTree> = node.named_children(&mut cursor)
+    let inner: Vec<SyntaxTree> = node.named_children()
         .map(|c| lower_node(c, source))
         .collect();
     let children: Vec<SyntaxTree> = if inner.is_empty() {
@@ -757,13 +744,12 @@ fn lower_php_throw(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 fn simple_statement_marked(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
-    let mut cursor = node.walk();
-    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+    let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
@@ -774,9 +760,8 @@ fn simple_statement_marked(
     }
 }
 
-fn lower_children(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
+fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
+    node.named_children().map(|c| lower_node(c, source)).collect()
 }
 
 
@@ -801,10 +786,9 @@ fn wrap_condition(inner: SyntaxTree, range: ByteRange, span: Span) -> SyntaxTree
 /// Wrap the named children of a tree-sitter block-like node into a
 /// `<body>` simple-statement. Used by `php_method_declaration`,
 /// `php_function_definition`, and `php_*_statement`.
-fn body_of(block: TsNode<'_>, source: &str) -> SyntaxTree {
-    let mut bc = block.walk();
+fn body_of(block: &RawNode, source: &str) -> SyntaxTree {
     let body_children: Vec<SyntaxTree> = block
-        .named_children(&mut bc)
+        .named_children()
         .map(|s| lower_node(s, source))
         .collect();
     SyntaxTree::SimpleStatement {
@@ -818,7 +802,7 @@ fn body_of(block: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `binary_expression`: extract op marker into `<op>`.
-fn php_binary_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_binary_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let left = node.child_by_field_name("left").map(|n| lower_node(n, source));
@@ -895,14 +879,13 @@ fn php_assign_op_marker(op: &str) -> &'static str {
 }
 
 /// Lower `unary_op_expression`: `+x`, `-x`, `!x`, `~x`.
-fn php_unary_op_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_unary_op_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let op_node = node.child_by_field_name("operator");
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
     let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-    let mut cursor = node.walk();
-    let operand = node.named_children(&mut cursor).next();
+    let operand = node.named_children().next();
     let marker = match op_text.as_str() {
         "+" => "plus",
         "-" => "minus",
@@ -924,13 +907,11 @@ fn php_unary_op_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `error_suppression_expression`: `@expr`.
-fn php_error_suppression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_error_suppression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut cursor = node.walk();
-    let operand = node.named_children(&mut cursor).next();
-    let mut tcursor = node.walk();
-    let op_node = node.children(&mut tcursor).find(|c| !c.is_named());
+    let operand = node.named_children().next();
+    let op_node = node.children().find(|c| !c.is_named());
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_else(|| "@".to_string());
     let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
     match operand {
@@ -948,11 +929,10 @@ fn php_error_suppression(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower `update_expression`: `++$x` / `$x++` / `--$x` / `$x--`.
 /// Detect prefix vs postfix from token order.
-fn php_update_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_update_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
-    let mut tcursor = node.walk();
-    let all_children: Vec<TsNode<'_>> = node.children(&mut tcursor).collect();
+    let all_children: Vec<&RawNode> = node.children().collect();
     let op_node = all_children.iter().copied().find(|c| !c.is_named());
     let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
     let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
@@ -960,8 +940,7 @@ fn php_update_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
         (Some(first), Some(op)) => first.id() == op.id() && !first.is_named(),
         _ => false,
     };
-    let mut cursor = node.walk();
-    let operand = node.named_children(&mut cursor).next();
+    let operand = node.named_children().next();
     let marker = match op_text.as_str() {
         "++" => "increment",
         "--" => "decrement",
@@ -984,7 +963,7 @@ fn php_update_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Lower assignment / augmented_assignment / reference_assignment.
 /// Extracts `<op>` marker for compound forms; emits `<assign>` with
 /// `<left>`/`<right>` slot wrapping.
-fn php_assignment(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_assignment(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let left_node = node.child_by_field_name("left");
@@ -1009,7 +988,7 @@ fn php_assignment(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower `if_statement` with condition/then slot wrapping and
 /// flattened else-if chain.
-fn php_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_if_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1038,9 +1017,8 @@ fn php_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // tree-sitter PHP emits multiple alternatives via *iterating* fields,
         // so we walk all named children of the if_statement past the body.
         // Simpler: use named_children index. We'll re-collect alternatives.
-        let mut walk_cursor = node.walk();
         let mut seen_body = false;
-        for c in node.named_children(&mut walk_cursor) {
+        for c in node.named_children() {
             if Some(c.id()) == body_node.map(|b| b.id()) { seen_body = true; continue; }
             if !seen_body { continue; }
             // c is an alternative (else_clause / else_if_clause).
@@ -1058,16 +1036,14 @@ fn php_if_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `else_clause` — wrap body in `<else><body>...`.
-fn php_else_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_else_clause(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     // The else_clause body is its single named child (compound_statement).
-    let mut cursor = node.walk();
-    let child = node.named_children(&mut cursor).next();
+    let child = node.named_children().next();
     let inner: Vec<SyntaxTree> = match child {
         Some(c) if matches!(c.kind(), "compound_statement" | "colon_block") => {
-            let mut bc = c.walk();
-            c.named_children(&mut bc).map(|s| lower_node(s, source)).collect()
+            c.named_children().map(|s| lower_node(s, source)).collect()
         }
         Some(c) => vec![lower_node(c, source)],
         None => Vec::new(),
@@ -1088,7 +1064,7 @@ fn php_else_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `else_if_clause` — wrap as `<else_if><condition>...<body>...`.
-fn php_else_if_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_else_if_clause(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1112,7 +1088,7 @@ fn php_else_if_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `while_statement` — `<while><condition>...<body>...`.
-fn php_while_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_while_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1135,7 +1111,7 @@ fn php_while_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 }
 
 /// Lower `do_statement` — `<do><body>...<condition>...`.
-fn php_do_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_do_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1164,12 +1140,11 @@ fn php_do_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Lower a PHP `use Foo\{Bar, Baz};` group-form. Produces
 /// `<use[group]><path>Foo</path><use>Bar</use><use>Baz</use>...</use>`
 /// matching the imperative shape.
-fn php_use_group(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_use_group(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if c.kind() == "namespace_name" {
             // The path before the `\{...}`.
             let inner = lower_node(c, source);
@@ -1185,8 +1160,7 @@ fn php_use_group(node: TsNode<'_>, source: &str) -> SyntaxTree {
         }
         if c.kind() == "namespace_use_group" {
             // Emit each clause inside as a `<use>` sibling.
-            let mut gc = c.walk();
-            for clause in c.named_children(&mut gc) {
+            for clause in c.named_children() {
                 children.push(SyntaxTree::SimpleStatement {
                     element_name: "use",
                     modifiers: Modifiers::default(),
@@ -1210,14 +1184,13 @@ fn php_use_group(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-fn php_for_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_for_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     let condition_node = node.child_by_field_name("condition");
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if Some(c.id()) == body_node.map(|b| b.id()) {
             children.push(body_of(c, source));
             continue;
@@ -1258,14 +1231,13 @@ fn php_for_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// Wrap the iterable in `<right><expression>...</expression></right>`,
 /// the binding in `<left><expression>...</expression></left>`, and
 /// the body in `<body>`.
-fn php_foreach_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_foreach_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     // Collect non-body named children — should be 2 (iterable + binding).
-    let mut cursor = node.walk();
     let kids: Vec<_> = node
-        .named_children(&mut cursor)
+        .named_children()
         .filter(|c| Some(c.id()) != body_node.map(|b| b.id()))
         .collect();
     let mut children: Vec<SyntaxTree> = Vec::new();
@@ -1322,7 +1294,7 @@ fn php_foreach_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower `switch_statement`. Condition wraps in `<condition>`; body
 /// is a `switch_block` of case_statement / default_statement siblings.
-fn php_switch_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_switch_statement(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1334,8 +1306,7 @@ fn php_switch_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
     // Switch body is a switch_block — flatten its case/default children.
     if let Some(b) = body_node {
-        let mut bc = b.walk();
-        for case in b.named_children(&mut bc) {
+        for case in b.named_children() {
             children.push(lower_node(case, source));
         }
     }
@@ -1350,7 +1321,7 @@ fn php_switch_statement(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower `match_expression` — `match ($cond) { ... }`. Wrap condition
 /// in `<condition>`; body's arms render flat as siblings.
-fn php_match_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_match_expression(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -1361,8 +1332,7 @@ fn php_match_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
         children.push(wrap_condition(inner, range_of(c), span_of(c)));
     }
     if let Some(b) = body_node {
-        let mut bc = b.walk();
-        for arm in b.named_children(&mut bc) {
+        for arm in b.named_children() {
             children.push(lower_node(arm, source));
         }
     }
@@ -1379,10 +1349,9 @@ fn php_match_expression(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// abstract / readonly / var). When `default_public` is true and no
 /// explicit visibility modifier is present, default access is Public
 /// (PHP class members default to public).
-fn php_modifiers(node: TsNode<'_>, source: &str, default_public: bool) -> Modifiers {
+fn php_modifiers(node: &RawNode, source: &str, default_public: bool) -> Modifiers {
     let mut m = Modifiers::default();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         match c.kind() {
             "visibility_modifier" => {
                 let text = text_of(c, source);
@@ -1447,14 +1416,13 @@ fn is_php_modifier(kind: &str) -> bool {
 
 /// Lower `method_declaration` — wrap body block in `<body>`, extract
 /// modifiers, default visibility to public.
-fn php_method_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_method_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     let modifiers = php_modifiers(node, source, true);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if is_php_modifier(c.kind()) {
             // Skip — already encoded in `modifiers`. The renderer
             // surfaces them as `<public/>` etc. extra-markers.
@@ -1480,19 +1448,17 @@ fn php_method_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// is emitted as a flat `<name>$count</name>` directly under
 /// `<field>` (matching the imperative shape) instead of the
 /// expression-form `<variable><name>count</name></variable>`.
-fn php_property_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_property_declaration(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let modifiers = php_modifiers(node, source, true);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if is_php_modifier(c.kind()) { continue; }
         // property_element wraps the variable name. Emit the inner
         // variable_name as a flat `<name>$x</name>` leaf.
         if c.kind() == "property_element" {
-            let mut pc = c.walk();
-            for inner in c.named_children(&mut pc) {
+            for inner in c.named_children() {
                 if inner.kind() == "variable_name" {
                     children.push(name_of(inner, source));
                 } else {
@@ -1516,7 +1482,7 @@ fn php_property_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
 /// / `enum_declaration` — extract `final`/`abstract`/`readonly` modifiers
 /// (no default access for class-level types in PHP).
 fn php_class_like(
-    node: TsNode<'_>,
+    node: &RawNode,
     source: &str,
     element_name: &'static str,
 ) -> SyntaxTree {
@@ -1524,8 +1490,7 @@ fn php_class_like(
     let range = range_of(node);
     let modifiers = php_modifiers(node, source, false);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if is_php_modifier(c.kind()) { continue; }
         children.push(lower_node(c, source));
     }
@@ -1541,7 +1506,7 @@ fn php_class_like(
 /// Lower `function_definition` / `anonymous_function` — wrap body
 /// block in `<body>`.
 fn php_function_definition(
-    node: TsNode<'_>,
+    node: &RawNode,
     source: &str,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
@@ -1550,8 +1515,7 @@ fn php_function_definition(
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if Some(c.id()) == body_node.map(|b| b.id()) {
             children.push(body_of(c, source));
             continue;
@@ -1570,13 +1534,12 @@ fn php_function_definition(
 /// Lower `arrow_function` — `fn ($x) => expr`. Re-tag the single
 /// expression as `<body>` for parity with `function_definition`; the
 /// per-language `arrow_function` rule re-tags `<body>` to `<value>`.
-fn php_arrow_function(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn php_arrow_function(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if Some(c.id()) == body_node.map(|b| b.id()) {
             // Single-expression body: wrap in `<body>` SimpleStatement.
             let inner = lower_node(c, source);

@@ -13,13 +13,13 @@
 // Parsing & tree construction
 #[cfg(feature = "native")]
 pub mod parser;
+pub mod raw;
 pub mod transform;
 pub mod languages;
 
 // Experimental: typed-tree transform pipeline.
 // Parallel to `transform`; not yet wired into production paths.
 // See `docs/design-transform-redesign-exploration.md` § 11.
-#[cfg(feature = "native")]
 pub mod tree;
 
 // Querying
@@ -113,3 +113,4 @@ pub use glob_match::CompiledPattern;
 #[cfg(feature = "native")]
 pub use glob_match::{expand_canonical, pattern_literal_prefix, FilePrune, GlobExpandError};
 pub use tree_mode::TreeMode;
+pub use raw::{RawNode, Point as RawPoint};

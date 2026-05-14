@@ -8,14 +8,12 @@
 
 use crate::output::syntax_highlight::SyntaxCategory;
 
-#[cfg(feature = "native")]
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
 pub mod kinds;
 pub mod output;
 
-#[cfg(feature = "native")]
 pub use lower::{lower_ruby_root, lower_ruby_node};
 
 /// Map a transformed element name to a syntax category for highlighting.

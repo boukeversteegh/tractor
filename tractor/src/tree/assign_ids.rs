@@ -16,11 +16,11 @@
 //! lives in the tree's `children_mut` impl, not here — adding a new
 //! variant requires no change to this file.
 
-#![cfg(feature = "native")]
-
-use super::data::DataTree;
 use super::sql::SqlTree;
 use super::types::{NodeId, SyntaxTree, TreeNode};
+
+#[cfg(feature = "native")]
+use super::data::DataTree;
 
 /// Stamp a fresh [`NodeId`] onto every node in a [`SyntaxTree`].
 /// Counter starts at `1`; `0` remains reserved as the "unassigned"
@@ -30,6 +30,7 @@ pub fn assign_ids_syntax(tree: &mut SyntaxTree) {
 }
 
 /// Stamp a fresh [`NodeId`] onto every node in a [`DataTree`].
+#[cfg(feature = "native")]
 pub fn assign_ids_data(tree: &mut DataTree) {
     walk(tree, &mut 0);
 }

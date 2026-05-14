@@ -25,7 +25,7 @@ fn rust_missing_kinds() {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_rust::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_rust_root(cst.root_node(), &source);
+    let tree = lower_rust_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     // Round-trip identity.
     let recovered = to_source(&tree, &source);

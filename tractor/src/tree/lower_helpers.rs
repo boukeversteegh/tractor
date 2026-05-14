@@ -1,7 +1,6 @@
-//! Shared helpers for `lower_<lang>` modules — converting tree-sitter
-//! [`Node`](tree_sitter::Node) source positions / byte ranges into
-//! the tree's [`ByteRange`] / [`Span`] types, plus borrowing source
-//! text by byte range.
+//! Shared helpers for `lower_<lang>` modules — converting [`RawNode`]
+//! source positions / byte ranges into the tree's [`ByteRange`] /
+//! [`Span`] types, plus borrowing source text by byte range.
 //!
 //! Each per-language lower module previously redeclared these same
 //! three functions (`text_of`, `range_of`, `span_of`) verbatim —
@@ -14,39 +13,38 @@
 //! produced node (S13-Z2). They are the parse-time path; synthetic
 //! callers (tests, programmatic synthesis) build variants directly
 //! with `ByteRange::synthetic*`.
+//!
+//! ## RawNode (S6)
+//!
+//! Lowerings receive a `&RawNode` rather than a `tree_sitter::Node`
+//! so the same lowering can run on native (tree-sitter Rust crate) and
+//! WASM (serialised AST from `web-tree-sitter`). See
+//! [`crate::raw`](crate::raw) for the type and its conversion path.
 
-#![cfg(feature = "native")]
-
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use super::types::{ByteRange, QuoteStyle, Span, SyntaxTree};
 
-/// Source bytes covered by `node` as an owned [`String`]. Uses
-/// `node.utf8_text()` rather than byte-slicing so an invalid
-/// byte range (shouldn't happen for tree-sitter output, but
-/// defensively) returns an empty string instead of panicking.
-pub fn text_of(node: TsNode<'_>, source: &str) -> String {
-    node.utf8_text(source.as_bytes())
-        .map(|s| s.to_string())
-        .unwrap_or_default()
+/// Source bytes covered by `node` as an owned [`String`].
+pub fn text_of(node: &RawNode, source: &str) -> String {
+    node.utf8_text(source).to_string()
 }
 
 /// Source bytes covered by `node` as a borrowed `&str`. Useful when
 /// the caller will hash / compare without allocating.
-pub fn text_borrow<'s>(node: TsNode<'_>, source: &'s str) -> &'s str {
-    node.utf8_text(source.as_bytes()).unwrap_or("")
+pub fn text_borrow<'s>(node: &RawNode, source: &'s str) -> &'s str {
+    node.utf8_text(source)
 }
 
 /// `node`'s byte range as the tree's compact [`ByteRange`] (u32 pair).
-pub fn range_of(node: TsNode<'_>) -> ByteRange {
-    let r = node.byte_range();
-    ByteRange::new(r.start as u32, r.end as u32)
+pub fn range_of(node: &RawNode) -> ByteRange {
+    ByteRange::new(node.start_byte() as u32, node.end_byte() as u32)
 }
 
 /// `node`'s start / end source position as the tree's [`Span`]. Lines
 /// and columns are 1-based to match user-visible diagnostics; the
 /// tree-sitter API exposes 0-based, so we adjust.
-pub fn span_of(node: TsNode<'_>) -> Span {
+pub fn span_of(node: &RawNode) -> Span {
     let s = node.start_position();
     let e = node.end_position();
     Span {
@@ -60,15 +58,15 @@ pub fn span_of(node: TsNode<'_>) -> Span {
 
 // -- Scalar-variant constructors (S13-Z3) ---------------------------------
 //
-// Each helper takes a tree-sitter Node + source and produces the
+// Each helper takes a [`RawNode`] + source and produces the
 // corresponding `SyntaxTree::*` scalar variant with `text` populated
 // from the node's source slice and `range.anchored = true`. Callers in
 // lowering modules use these instead of the raw `SyntaxTree::* { ... }`
 // struct literal so the text/anchored fields stay in sync without
 // per-lowering boilerplate.
 
-/// `SyntaxTree::Name` built from a tree-sitter node.
-pub fn name_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::Name` built from a [`RawNode`].
+pub fn name_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::Name {
         text: text_of(node, source),
         range: range_of(node),
@@ -83,7 +81,7 @@ pub fn name_with(text: String, range: ByteRange, span: Span) -> SyntaxTree {
 }
 
 /// `SyntaxTree::Atom` with the given XML element name.
-pub fn atom_of(element_name: &'static str, node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn atom_of(element_name: &'static str, node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::Atom {
         element_name,
         text: text_of(node, source),
@@ -92,8 +90,8 @@ pub fn atom_of(element_name: &'static str, node: TsNode<'_>, source: &str) -> Sy
     }
 }
 
-/// `SyntaxTree::Int` built from a tree-sitter node.
-pub fn int_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::Int` built from a [`RawNode`].
+pub fn int_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::Int {
         text: text_of(node, source),
         range: range_of(node),
@@ -101,8 +99,8 @@ pub fn int_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::Float` built from a tree-sitter node.
-pub fn float_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::Float` built from a [`RawNode`].
+pub fn float_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::Float {
         text: text_of(node, source),
         range: range_of(node),
@@ -110,14 +108,14 @@ pub fn float_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::String` built from a tree-sitter node. The `text` is
-/// stored verbatim from the source (including surrounding quotes); the
+/// `SyntaxTree::String` built from a [`RawNode`]. The `text` is stored
+/// verbatim from the source (including surrounding quotes); the
 /// per-language lowering is responsible for swapping in decoded content
 /// + a `QuoteStyle` for the round-trip property when that matters
 /// (S13-Z5 work). Until then this conservative form preserves the
 /// source slice and lets the renderer emit it byte-for-byte in
 /// anchored mode.
-pub fn string_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn string_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::String {
         text: text_of(node, source),
         quote_style: QuoteStyle::default_double(),
@@ -126,8 +124,8 @@ pub fn string_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::True` built from a tree-sitter node.
-pub fn true_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::True` built from a [`RawNode`].
+pub fn true_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::True {
         text: text_of(node, source),
         range: range_of(node),
@@ -135,8 +133,8 @@ pub fn true_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::False` built from a tree-sitter node.
-pub fn false_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::False` built from a [`RawNode`].
+pub fn false_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::False {
         text: text_of(node, source),
         range: range_of(node),
@@ -144,8 +142,8 @@ pub fn false_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::None` built from a tree-sitter node.
-pub fn none_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::None` built from a [`RawNode`].
+pub fn none_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::None {
         text: text_of(node, source),
         range: range_of(node),
@@ -153,8 +151,8 @@ pub fn none_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
 }
 
-/// `SyntaxTree::Null` built from a tree-sitter node.
-pub fn null_of(node: TsNode<'_>, source: &str) -> SyntaxTree {
+/// `SyntaxTree::Null` built from a [`RawNode`].
+pub fn null_of(node: &RawNode, source: &str) -> SyntaxTree {
     SyntaxTree::Null {
         text: text_of(node, source),
         range: range_of(node),

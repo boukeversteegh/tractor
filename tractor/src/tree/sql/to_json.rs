@@ -608,7 +608,7 @@ mod tests {
 
     fn render(source: &str) -> Value {
         let tree = parse_tsql(source);
-        let tree = lower_sql_root(tree.root_node(), source);
+        let tree = lower_sql_root(&crate::raw::RawNode::from_tree_sitter(tree.root_node(), source), source);
         sql_to_json(&tree, source)
     }
 

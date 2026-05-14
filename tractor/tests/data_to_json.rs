@@ -17,7 +17,7 @@ fn parse_json(src: &str) -> tractor::tree::DataTree {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_json::LANGUAGE.into()).unwrap();
     let cst = p.parse(src, None).unwrap();
-    lower_json_data_root(cst.root_node(), src)
+    lower_json_data_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), src), src)
 }
 
 #[test]

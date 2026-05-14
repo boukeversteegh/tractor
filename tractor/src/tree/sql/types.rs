@@ -42,8 +42,6 @@
 //!    arm of [`crate::tree::render::render_sql`] in `source/sql.rs`,
 //!    fitting the existing per-language source-rendering convention.
 
-#![cfg(feature = "native")]
-
 use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
 
 /// Typed SQL tree.

@@ -298,9 +298,14 @@ fn parse_with_ir_pipeline(
     // Single dispatch on the `TreeKind` variant — the lower fn is
     // carried by the variant, so no language-keyed match arm is
     // needed here.
+    //
+    // Convert the tree-sitter CST root to an owned `RawNode` once.
+    // Lowerings receive `&RawNode` so the same lowering compiles for
+    // WASM (which deserialises `RawNode` from `web-tree-sitter` JSON).
+    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
     match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
-            let mut ir_tree = lower(tree.root_node(), source);
+            let mut ir_tree = lower(&raw_root, source);
             // Slice 1 invariant: every tree exiting the parser has a
             // NodeId stamped on every node's Span. Downstream XPath →
             // typed-node lookup paths depend on this.
@@ -332,7 +337,7 @@ fn parse_with_ir_pipeline(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let mut data_tree = (parser.lower)(tree.root_node(), source);
+            let mut data_tree = (parser.lower)(&raw_root, source);
             tree::assign_ids_data(&mut data_tree);
             (parser.render)(&mut xot, doc, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
@@ -350,7 +355,7 @@ fn parse_with_ir_pipeline(
             })
         }
         TreeKind::Sql(lower) => {
-            let mut sql_tree = lower(tree.root_node(), source);
+            let mut sql_tree = lower(&raw_root, source);
             tree::assign_ids_sql(&mut sql_tree);
             tree::sql::to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
@@ -413,12 +418,16 @@ fn parse_with_ir_pipeline_to_xee(
     let mut xot = xot::Xot::new();
     let holding = xot.new_document();
 
+    // See `parse_with_ir_pipeline` — convert CST to owned `RawNode`
+    // once; lowerings take `&RawNode`.
+    let raw_root = crate::raw::RawNode::from_tree_sitter(tree.root_node(), source);
+
     // Render to xot via the tree family-specific lower + render pair,
     // then capture the result as an `XmlNode` (for legacy XML / text
     // renderers) and a `Tree::*` (for tree-aware renderers).
     let root_tree = match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
-            let mut ir_tree = lower(tree.root_node(), source);
+            let mut ir_tree = lower(&raw_root, source);
             // Slice 1 invariant — see parse_with_ir_pipeline.
             tree::assign_ids_syntax(&mut ir_tree);
             tree::render_to_xot(&mut xot, holding, &ir_tree, source)
@@ -443,7 +452,7 @@ fn parse_with_ir_pipeline_to_xee(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let mut data_tree = (parser.lower)(tree.root_node(), source);
+            let mut data_tree = (parser.lower)(&raw_root, source);
             tree::assign_ids_data(&mut data_tree);
             (parser.render)(&mut xot, holding, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
@@ -458,7 +467,7 @@ fn parse_with_ir_pipeline_to_xee(
             })
         }
         TreeKind::Sql(lower) => {
-            let mut sql_tree = lower(tree.root_node(), source);
+            let mut sql_tree = lower(&raw_root, source);
             tree::assign_ids_sql(&mut sql_tree);
             tree::sql::to_xot::render_sql_to_xot(&mut xot, holding, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;

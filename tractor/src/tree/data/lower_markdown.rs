@@ -20,19 +20,18 @@
 //!   - `indented_code_block` → `Element { name: "codeblock", children: [Element("code", text)] }`
 //!   - `thematic_break` → `Element { name: "hr" }`
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
 use crate::tree::types::{ByteRange, QuoteStyle, Span};
 
-pub fn lower_markdown_data_root(root: TsNode<'_>, source: &str) -> DataTree {
+pub fn lower_markdown_data_root(root: &RawNode, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
+fn lower_node(node: &RawNode, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
@@ -100,8 +99,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         // `language` text; indented has none.
         "fenced_code_block" => {
             let mut children: Vec<DataTree> = Vec::new();
-            let mut cursor = node.walk();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 match c.kind() {
                     "info_string" => {
                         // Take just the language name (strip leading
@@ -225,18 +223,16 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_named_children(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }
 
 /// Heading content excludes the `atx_h{N}_marker` child (which
 /// only carries the `#` markers, not text).
-fn lower_heading_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_heading_content(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .filter(|c| !matches!(
             c.kind(),
             "atx_h1_marker" | "atx_h2_marker" | "atx_h3_marker"
@@ -249,9 +245,8 @@ fn lower_heading_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
 
 /// List item content excludes list-marker children + task-list
 /// markers (those become Element markers on the list, not content).
-fn lower_list_item_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_list_item_content(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .filter(|c| !matches!(
             c.kind(),
             "list_marker_dot" | "list_marker_minus" | "list_marker_plus"
@@ -263,9 +258,8 @@ fn lower_list_item_content(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
         .collect()
 }
 
-fn atx_heading_level(node: TsNode<'_>) -> u8 {
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+fn atx_heading_level(node: &RawNode) -> u8 {
+    for c in node.named_children() {
         match c.kind() {
             "atx_h1_marker" => return 1,
             "atx_h2_marker" => return 2,
@@ -279,9 +273,8 @@ fn atx_heading_level(node: TsNode<'_>) -> u8 {
     1
 }
 
-fn setext_heading_level(node: TsNode<'_>) -> u8 {
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+fn setext_heading_level(node: &RawNode) -> u8 {
+    for c in node.named_children() {
         match c.kind() {
             "setext_h1_underline" => return 1,
             "setext_h2_underline" => return 2,
@@ -304,12 +297,10 @@ fn level_marker(level: u8) -> &'static str {
 }
 
 /// Inspect the first list item's marker to classify the list.
-fn list_marker(node: TsNode<'_>) -> &'static str {
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+fn list_marker(node: &RawNode) -> &'static str {
+    for c in node.named_children() {
         if c.kind() == "list_item" {
-            let mut cc = c.walk();
-            for inner in c.named_children(&mut cc) {
+            for inner in c.named_children() {
                 match inner.kind() {
                     "list_marker_dot" | "list_marker_parenthesis" => return "ordered",
                     "list_marker_minus" | "list_marker_plus" | "list_marker_star" => {

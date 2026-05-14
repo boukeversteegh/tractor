@@ -67,7 +67,7 @@ fn ir_view(source: &str) -> (String, String, usize) {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
     let cst = p.parse(source, None).unwrap();
-    let tree = lower_python_root(cst.root_node(), source);
+    let tree = lower_python_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), source), source);
 
     // Round-trip identity must hold even if structural parity is partial.
     let recovered = to_source(&tree, source);
@@ -245,7 +245,7 @@ fn blueprint_coverage_audit() {
     let mut p = tree_sitter::Parser::new();
     p.set_language(&tree_sitter_python::LANGUAGE.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_python_root(cst.root_node(), &source);
+    let tree = lower_python_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     // Round-trip + XPath invariants on the FULL blueprint.
     assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");

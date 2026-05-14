@@ -17,19 +17,18 @@
 //!   - `array` → [`DataTree::Sequence`]
 //!   - `inline_table` → [`DataTree::Mapping`]
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
 use crate::tree::types::{ByteRange, QuoteStyle, Span};
 
-pub fn lower_toml_data_root(root: TsNode<'_>, source: &str) -> DataTree {
+pub fn lower_toml_data_root(root: &RawNode, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
+fn lower_node(node: &RawNode, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
@@ -42,8 +41,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         "table" | "table_array_element" => {
             // First named child is the bare / dotted / quoted key
             // (the table header); remaining children are pairs.
-            let mut cursor = node.walk();
-            let mut named = node.named_children(&mut cursor);
+            let mut named = node.named_children();
             let header = match named.next() {
                 Some(h) => h,
                 None => return DataTree::Unknown {
@@ -56,8 +54,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // Lower the body pairs once so we can wrap them in
             // nested sections if the header is dotted.
             let mut body: Vec<DataTree> = Vec::new();
-            let mut c2 = node.walk();
-            for child in node.named_children(&mut c2).skip(1) {
+            for child in node.named_children().skip(1) {
                 body.push(lower_node(child, source));
             }
 
@@ -132,8 +129,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             })
         }
         "pair" => {
-            let mut cursor = node.walk();
-            let mut named = node.named_children(&mut cursor);
+            let mut named = node.named_children();
             let key = named.next();
             let value = named.next();
             match (key, value) {
@@ -334,14 +330,13 @@ fn emit_aot_section(
 /// plain bare key this is a single-element vec; for dotted keys it
 /// expands to one entry per dot-separated segment.
 fn collect_header_segments(
-    node: TsNode<'_>,
+    node: &RawNode,
     source: &str,
 ) -> Vec<(String, ByteRange, Span)> {
     match node.kind() {
         "dotted_key" => {
             let mut out = Vec::new();
-            let mut cursor = node.walk();
-            for child in node.named_children(&mut cursor) {
+            for child in node.named_children() {
                 out.extend(collect_header_segments(child, source));
             }
             out
@@ -354,9 +349,8 @@ fn collect_header_segments(
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_named_children(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }

@@ -5,16 +5,15 @@
 //! `languages/ruby/{rules,transformations,transform}.rs` modules
 //! were retired alongside this migration.
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::lower_helpers::{
     false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
 };
 use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
 
-pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_ruby_root(root: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(root);
     let range = range_of(root);
     match root.kind() {
@@ -92,11 +91,11 @@ fn merge_ruby_line_comments(children: Vec<SyntaxTree>, source: &str) -> Vec<Synt
     out
 }
 
-pub fn lower_ruby_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+pub fn lower_ruby_node(node: &RawNode, source: &str) -> SyntaxTree {
     lower_node(node, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     match node.kind() {
@@ -112,15 +111,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // Ruby strings can have `interpolation` children — for those
             // emit `<string>` with interpolation children. Plain strings
             // stay as a leaf.
-            let mut cursor = node.walk();
-            let has_interp = node.named_children(&mut cursor)
+            let has_interp = node.named_children()
                 .any(|c| c.kind() == "interpolation");
             if !has_interp {
                 string_of(node, source)
             } else {
-                let mut cursor2 = node.walk();
                 let children: Vec<SyntaxTree> = node
-                    .named_children(&mut cursor2)
+                    .named_children()
                     .map(|c| lower_node(c, source))
                     .collect();
                 SyntaxTree::SimpleStatement {
@@ -161,8 +158,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "method_parameters" | "block_parameters" | "lambda_parameters" => {
             // Wrap bare identifier children in `<parameter>` so the
             // shape is uniform with `keyword_parameter` / `optional_parameter`.
-            let mut cursor = node.walk();
-            let kids: Vec<SyntaxTree> = node.named_children(&mut cursor)
+            let kids: Vec<SyntaxTree> = node.named_children()
                 .map(|c| {
                     if matches!(c.kind(), "identifier") {
                         SyntaxTree::SimpleStatement {
@@ -278,9 +274,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "unary" => {
             // Ruby unary covers `defined? x`, `!x`, `~x`, `-x`, `+x`.
             // Detect the operator from the first unnamed token.
-            let mut cursor = node.walk();
             let mut op_node = None;
-            for c in node.children(&mut cursor) {
+            for c in node.children() {
                 if !c.is_named() {
                     op_node = Some(c);
                     break;
@@ -288,8 +283,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             }
             let op_text = op_node.map(|n| text_of(n, source)).unwrap_or_default();
             let op_byte_range = op_node.map(range_of).unwrap_or(ByteRange::empty_at(range.start));
-            let mut cursor2 = node.walk();
-            let operand = node.named_children(&mut cursor2).next();
+            let operand = node.named_children().next();
             let marker = match op_text.as_str() {
                 "+" => "plus",
                 "-" => "minus",
@@ -319,8 +313,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let args_node = node.child_by_field_name("arguments");
             let arguments: Vec<SyntaxTree> = match args_node {
                 Some(a) => {
-                    let mut ac = a.walk();
-                    a.named_children(&mut ac).map(|c| lower_node(c, source)).collect()
+                    a.named_children().map(|c| lower_node(c, source)).collect()
                 }
                 None => Vec::new(),
             };
@@ -359,8 +352,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "conditional" => {
             // `cond ? a : b` — emit `<ternary>` with condition/then/else
             // slot wrappers around `<expression>` hosts.
-            let mut cursor = node.walk();
-            let kids: Vec<TsNode<'_>> = node.named_children(&mut cursor).collect();
+            let kids: Vec<&RawNode> = node.named_children().collect();
             let mut children: Vec<SyntaxTree> = Vec::new();
             for (i, c) in kids.iter().enumerate() {
                 let slot = match i {
@@ -472,7 +464,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower a Ruby keyword/optional parameter with `<name>` + `<value>` slots.
 fn ruby_param_with_value(
-    node: TsNode<'_>,
+    node: &RawNode,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
@@ -508,12 +500,11 @@ fn ruby_param_with_value(
 /// `<if> condition body* <else_if/>* <else/>? </if>`. Tree-sitter
 /// nests the alternatives (`if.alternative = elsif.alternative = else`);
 /// this fn walks that chain and emits siblings of the outer `<if>`.
-fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
+fn lower_ruby_if(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         match c.kind() {
             "elsif" => {
                 // Lower the elsif's own non-alternative children as the
@@ -542,12 +533,11 @@ fn lower_ruby_if(node: TsNode<'_>, element_name: &'static str, source: &str) -> 
 
 /// Lower an `elsif` node, EXCLUDING any nested `elsif`/`else`
 /// alternative — the caller appends those as siblings.
-fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn flatten_ruby_elsif_chain(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let mut children: Vec<SyntaxTree> = Vec::new();
-    let mut cursor = node.walk();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if matches!(c.kind(), "elsif" | "else") {
             continue;
         }
@@ -565,7 +555,7 @@ fn flatten_ruby_elsif_chain(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Walk a Ruby `if`-alternative chain (an `elsif` or terminal `else`)
 /// and append the flattened sequence to `out`.
-fn append_ruby_alternative_chain(node: TsNode<'_>, source: &str, out: &mut Vec<SyntaxTree>) {
+fn append_ruby_alternative_chain(node: &RawNode, source: &str, out: &mut Vec<SyntaxTree>) {
     match node.kind() {
         "elsif" => {
             out.push(flatten_ruby_elsif_chain(node, source));
@@ -583,16 +573,15 @@ fn append_ruby_alternative_chain(node: TsNode<'_>, source: &str, out: &mut Vec<S
 /// First named `elsif` / `else` child of an `if` or `elsif` node — the
 /// continuation of the alternative chain in tree-sitter-ruby's nested
 /// CST shape.
-fn ruby_alternative_child<'a>(node: TsNode<'a>) -> Option<TsNode<'a>> {
-    let mut cursor = node.walk();
-    let r = node.named_children(&mut cursor)
+fn ruby_alternative_child<'a>(node: &'a RawNode) -> Option<&'a RawNode> {
+    let r = node.named_children()
         .find(|n| matches!(n.kind(), "elsif" | "else"));
     r
 }
 
 /// Lower a Ruby while/until loop with `<condition><expression>` and
 /// `<body>` slot wrapping.
-fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
+fn ruby_while_until(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let cond_node = node.child_by_field_name("condition");
@@ -617,9 +606,8 @@ fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) 
         });
     }
     if let Some(b) = body_node {
-        let mut bc = b.walk();
         let body_children: Vec<SyntaxTree> = b
-            .named_children(&mut bc)
+            .named_children()
             .map(|s| lower_node(s, source))
             .collect();
         children.push(SyntaxTree::SimpleStatement {
@@ -643,7 +631,7 @@ fn ruby_while_until(node: TsNode<'_>, element_name: &'static str, source: &str) 
 /// Lower a Ruby for-in: `for X in items do ... end`.
 /// pattern → bare name; value (the `in items`) → `<value><expression>items</expression></value>`;
 /// body → `<body>` (do block contents).
-fn ruby_for(node: TsNode<'_>, source: &str) -> SyntaxTree {
+fn ruby_for(node: &RawNode, source: &str) -> SyntaxTree {
     let span = span_of(node);
     let range = range_of(node);
     let pattern_node = node.child_by_field_name("pattern");
@@ -655,8 +643,7 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> SyntaxTree {
     }
     if let Some(v) = value_node {
         // The value is an `in` clause — drill into it for the actual iterable.
-        let mut vc = v.walk();
-        let inner = v.named_children(&mut vc).next().unwrap_or(v);
+        let inner = v.named_children().next().unwrap_or(v);
         let inner_ir = lower_node(inner, source);
         children.push(SyntaxTree::SimpleStatement {
             element_name: "value",
@@ -675,9 +662,8 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> SyntaxTree {
         });
     }
     if let Some(b) = body_node {
-        let mut bc = b.walk();
         let body_children: Vec<SyntaxTree> = b
-            .named_children(&mut bc)
+            .named_children()
             .map(|s| lower_node(s, source))
             .collect();
         children.push(SyntaxTree::SimpleStatement {
@@ -700,7 +686,7 @@ fn ruby_for(node: TsNode<'_>, source: &str) -> SyntaxTree {
 
 /// Lower a Ruby method/singleton_method, wrapping body_statement in `<body>`.
 fn ruby_method(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
@@ -708,14 +694,12 @@ fn ruby_method(
     let span = span_of(node);
     let range = range_of(node);
     let body_node = node.child_by_field_name("body");
-    let mut cursor = node.walk();
     let mut children: Vec<SyntaxTree> = Vec::new();
-    for c in node.named_children(&mut cursor) {
+    for c in node.named_children() {
         if let Some(b) = body_node {
             if c.id() == b.id() {
-                let mut bc = c.walk();
                 let body_children: Vec<SyntaxTree> = c
-                    .named_children(&mut bc)
+                    .named_children()
                     .map(|s| lower_node(s, source))
                     .collect();
                 children.push(SyntaxTree::SimpleStatement {
@@ -740,9 +724,8 @@ fn ruby_method(
     }
 }
 
-fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) -> SyntaxTree {
-    let mut cursor = node.walk();
-    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+fn simple_statement(node: &RawNode, element_name: &'static str, source: &str) -> SyntaxTree {
+    let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
@@ -754,13 +737,12 @@ fn simple_statement(node: TsNode<'_>, element_name: &'static str, source: &str) 
 }
 
 fn simple_statement_marked(
-    node: TsNode<'_>,
+    node: &RawNode,
     element_name: &'static str,
     extra_markers: &'static [&'static str],
     source: &str,
 ) -> SyntaxTree {
-    let mut cursor = node.walk();
-    let children: Vec<SyntaxTree> = node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect();
+    let children: Vec<SyntaxTree> = node.named_children().map(|c| lower_node(c, source)).collect();
     SyntaxTree::SimpleStatement {
         element_name,
         modifiers: Modifiers::default(),
@@ -771,9 +753,8 @@ fn simple_statement_marked(
     }
 }
 
-fn lower_children(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor).map(|c| lower_node(c, source)).collect()
+fn lower_children(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
+    node.named_children().map(|c| lower_node(c, source)).collect()
 }
 
 

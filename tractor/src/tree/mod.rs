@@ -83,7 +83,6 @@ pub mod to_json;
 // `DataTree` tree can be rendered to any of XML / JSON / YAML / TOML.
 // Per-format lowering + the to_xot / to_json renderers live under
 // `tree::data::*` (regrouped in S10C).
-#[cfg(feature = "native")]
 pub mod data;
 // `SyntaxTree` → `DataTree` projection. Replacing the
 // ad-hoc projection in `to_json.rs` per
@@ -95,17 +94,14 @@ pub mod to_data;
 // Per-construct lowering, to_xot, to_json, and render_source live
 // under `tree::sql::*` (regrouped in S10D). T-SQL CST lowering moved
 // to `crate::languages::tsql::lower`.
-#[cfg(feature = "native")]
 pub mod sql;
 // Shared helpers for `lower_<lang>` modules — text/range/span
 // extraction. Centralized to avoid 200+ LOC of duplication
 // across 13 per-language lower files.
-#[cfg(feature = "native")]
 pub mod lower_helpers;
 // Stamps a stable [`NodeId`] on every node's Span after the tree is
 // built — see `docs/design-editable-trees.md`. Run automatically at
 // the parser exit point so callers can rely on IDs being present.
-#[cfg(feature = "native")]
 pub mod assign_ids;
 // find_by_id walkers — bridge an XPath match's `@id` attribute back
 // to the typed-tree node. Companion to `assign_ids`.
@@ -117,8 +113,9 @@ pub mod render;
 pub mod coverage;
 
 pub use types::{Access, AccessSegment, ByteRange, Expression, NodeId, SyntaxTree, Modifiers, ParamKind, Span, TreeNode, to_source};
+pub use assign_ids::{assign_ids_sql, assign_ids_syntax};
 #[cfg(feature = "native")]
-pub use assign_ids::{assign_ids_data, assign_ids_sql, assign_ids_syntax};
+pub use assign_ids::assign_ids_data;
 #[cfg(feature = "native")]
 pub use locator::{find_by_id, parse_id_attr};
 pub use to_xot::render_to_xot;
@@ -139,6 +136,7 @@ pub use data::lower_markdown::lower_markdown_data_root;
 pub use data::to_xot::{render_data_to_xot_json, render_data_to_xot_keyed};
 #[cfg(feature = "native")]
 pub use data::to_json::data_to_json;
+#[cfg(feature = "native")]
 pub use to_data::{lower_to_data_ir, has_unhandled};
 #[cfg(feature = "native")]
 pub use coverage::{audit_coverage, Coverage, CoverageReport, KindStats};

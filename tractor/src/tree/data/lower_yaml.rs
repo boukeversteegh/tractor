@@ -9,20 +9,19 @@
 //! Lowered shape mirrors the JSON pipeline so the same renderer
 //! (`render_data_to_xot_json`) produces matching XML.
 
-#![cfg(feature = "native")]
 
-use tree_sitter::Node as TsNode;
+use crate::raw::RawNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
 use crate::tree::types::{ByteRange, QuoteStyle};
 
 /// Lower a YAML CST root node (`stream`) to [`DataTree`].
-pub fn lower_yaml_data_root(root: TsNode<'_>, source: &str) -> DataTree {
+pub fn lower_yaml_data_root(root: &RawNode, source: &str) -> DataTree {
     lower_node(root, source)
 }
 
-fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
+fn lower_node(node: &RawNode, source: &str) -> DataTree {
     let range = range_of(node);
     let span = span_of(node);
 
@@ -40,8 +39,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         // Block / flow nodes are transparent wrappers around their
         // inner scalar / sequence / mapping. Promote the inner.
         "block_node" | "flow_node" => {
-            let mut cursor = node.walk();
-            let inner = node.named_children(&mut cursor).next();
+            let inner = node.named_children().next();
             match inner {
                 Some(c) => lower_node(c, source),
                 None => DataTree::Unknown {
@@ -98,8 +96,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
 
         // `block_sequence_item` wraps each list element. Promote.
         "block_sequence_item" => {
-            let mut cursor = node.walk();
-            let inner = node.named_children(&mut cursor).next();
+            let inner = node.named_children().next();
             match inner {
                 Some(c) => lower_node(c, source),
                 None => DataTree::Null {
@@ -164,8 +161,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // Children: `yaml_version`. Wrap in `<version>` text
             // leaf so XPath `[version='1.2']` works.
             let mut children: Vec<DataTree> = Vec::new();
-            let mut cursor = node.walk();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 if c.kind() == "yaml_version" {
                     children.push(DataTree::Pair {
                         key: Box::new(DataTree::String {
@@ -192,8 +188,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // its own pair so XPath sees `<handle>` / `<prefix>`
             // text-children of `<directive[tag]>`.
             let mut children: Vec<DataTree> = Vec::new();
-            let mut cursor = node.walk();
-            for c in node.named_children(&mut cursor) {
+            for c in node.named_children() {
                 let key = match c.kind() {
                     "tag_handle" => "handle",
                     "tag_prefix" => "prefix",
@@ -237,9 +232,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
     }
 }
 
-fn lower_named_children(node: TsNode<'_>, source: &str) -> Vec<DataTree> {
-    let mut cursor = node.walk();
-    node.named_children(&mut cursor)
+fn lower_named_children(node: &RawNode, source: &str) -> Vec<DataTree> {
+    node.named_children()
         .map(|c| lower_node(c, source))
         .collect()
 }

@@ -8,13 +8,11 @@
 //!                   `NODES_TABLE`) shared by shape contracts and the
 //!                   tree's element naming.
 
-#[cfg(feature = "native")]
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
 pub mod kinds;
 pub mod output;
 
-#[cfg(feature = "native")]
 pub use lower::lower_python_root;
 pub use output::syntax_category;

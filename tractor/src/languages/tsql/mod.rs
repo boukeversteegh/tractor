@@ -8,7 +8,6 @@
 //!   - [`transformations`] — named functions for Rule::Custom + wrappers.
 //!   - [`transform`]      — orchestrator.
 
-#[cfg(feature = "native")]
 pub mod lower;
 pub mod kinds;
 pub mod output;
@@ -16,6 +15,5 @@ pub mod rules;
 pub mod transform;
 pub mod transformations;
 
-#[cfg(feature = "native")]
 pub use lower::lower_sql_root;
 pub use transform::{transform, syntax_category};

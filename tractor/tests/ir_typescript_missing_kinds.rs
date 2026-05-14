@@ -27,7 +27,7 @@ fn typescript_missing_kinds() {
     p.set_language(&tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
         .unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_typescript_root(cst.root_node(), &source);
+    let tree = lower_typescript_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     let report = audit_coverage(cst.root_node(), &tree, &source, &[]);
     eprintln!(

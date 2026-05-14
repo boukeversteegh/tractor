@@ -17,7 +17,6 @@
 //! TSQL to this pipeline; until then, `tsql.rs` (cross-language
 //! `SyntaxTree`) handles XPath queries.
 
-#![cfg(feature = "native")]
 
 use xot::{Node as XotNode, Xot};
 
@@ -957,7 +956,7 @@ mod tests {
 
     fn render(source: &str) -> String {
         let tree = parse_tsql(source);
-        let tree = lower_sql_root(tree.root_node(), source);
+        let tree = lower_sql_root(&crate::raw::RawNode::from_tree_sitter(tree.root_node(), source), source);
         let mut xot = Xot::new();
         let root_name = xot.add_name("root");
         let root_el = xot.new_element(root_name);

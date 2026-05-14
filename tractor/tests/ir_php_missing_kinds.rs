@@ -19,7 +19,7 @@ fn php_missing_kinds() {
     let mut p = Parser::new();
     p.set_language(&tree_sitter_php::LANGUAGE_PHP.into()).unwrap();
     let cst = p.parse(&source, None).unwrap();
-    let tree = lower_php_root(cst.root_node(), &source);
+    let tree = lower_php_root(&tractor::raw::RawNode::from_tree_sitter(cst.root_node(), &source), &source);
 
     assert_eq!(to_source(&tree, &source), source, "round-trip identity broken");
 

@@ -9,14 +9,12 @@
 use crate::output::syntax_highlight::SyntaxCategory;
 use crate::transform::operators::is_operator_marker;
 
-#[cfg(feature = "native")]
 pub mod lower;
 #[cfg(feature = "native")]
 pub mod render_source;
 pub mod kinds;
 pub mod output;
 
-#[cfg(feature = "native")]
 pub use lower::{lower_rust_root, lower_rust_node};
 
 /// Map a transformed element name to a syntax category for highlighting.
