@@ -446,12 +446,14 @@ fn render_open_tag(
         // Skip metadata attributes unless --meta is on. `list` is the
         // renderer-internal cardinality signal (read by xml_to_json
         // post-iter-139, ignored by everything else): hidden alongside
-        // tree-sitter `field=` and source-location attributes.
+        // tree-sitter `field=` and source-location attributes. `id`
+        // is the editable-trees NodeId (S15-Z2) — internal addressing
+        // only, never user-facing.
         if !options.include_meta {
             if matches!(
                 attr_name,
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field" | "list"
+                | "kind" | "field" | "list" | "id"
             ) {
                 continue;
             }
@@ -791,7 +793,7 @@ fn render_xml_node_open_tag(
             if matches!(
                 attr_name.as_str(),
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field" | "list"
+                | "kind" | "field" | "list" | "id"
             ) {
                 continue;
             }

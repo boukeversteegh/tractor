@@ -30,6 +30,7 @@ use tree_sitter::Node as TsNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_borrow};
+use crate::tree::types::QuoteStyle;
 
 /// Lower a JSON CST root node to [`DataTree`].
 pub fn lower_json_data_root(root: TsNode<'_>, source: &str) -> DataTree {
@@ -77,16 +78,35 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         }
         "string" => {
             let value = decode_json_string(node, source);
-            DataTree::String { value, range, span }
+            DataTree::String {
+                value,
+                quote_style: QuoteStyle::Double,
+                range,
+                span,
+            }
         }
         "number" => DataTree::Number {
             text: text_of(node, source),
             range,
             span,
         },
-        "true" => DataTree::Bool { value: true, range, span },
-        "false" => DataTree::Bool { value: false, range, span },
-        "null" => DataTree::Null { range, span },
+        "true" => DataTree::Bool {
+            value: true,
+            text: "true".to_string(),
+            range,
+            span,
+        },
+        "false" => DataTree::Bool {
+            value: false,
+            text: "false".to_string(),
+            range,
+            span,
+        },
+        "null" => DataTree::Null {
+            text: "null".to_string(),
+            range,
+            span,
+        },
         "comment" => {
             // JSON5 / JSONC line comment (`//`) or block comment
             // (`/* */`). Strip the leading delimiter for the `text`

@@ -300,7 +300,11 @@ fn parse_with_ir_pipeline(
     // needed here.
     match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
-            let ir_tree = lower(tree.root_node(), source);
+            let mut ir_tree = lower(tree.root_node(), source);
+            // Slice 1 invariant: every tree exiting the parser has a
+            // NodeId stamped on every node's Span. Downstream XPath →
+            // typed-node lookup paths depend on this.
+            tree::assign_ids_syntax(&mut ir_tree);
             tree::render_to_xot(&mut xot, doc, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
             Ok(XotParseResult {
@@ -328,7 +332,8 @@ fn parse_with_ir_pipeline(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let data_tree = (parser.lower)(tree.root_node(), source);
+            let mut data_tree = (parser.lower)(tree.root_node(), source);
+            tree::assign_ids_data(&mut data_tree);
             (parser.render)(&mut xot, doc, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             Ok(XotParseResult {
@@ -345,7 +350,8 @@ fn parse_with_ir_pipeline(
             })
         }
         TreeKind::Sql(lower) => {
-            let sql_tree = lower(tree.root_node(), source);
+            let mut sql_tree = lower(tree.root_node(), source);
+            tree::assign_ids_sql(&mut sql_tree);
             tree::sql::to_xot::render_sql_to_xot(&mut xot, doc, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             Ok(XotParseResult {
@@ -412,7 +418,9 @@ fn parse_with_ir_pipeline_to_xee(
     // renderers) and a `Tree::*` (for tree-aware renderers).
     let root_tree = match lang_ops.tree_kind {
         TreeKind::Syntax(lower) => {
-            let ir_tree = lower(tree.root_node(), source);
+            let mut ir_tree = lower(tree.root_node(), source);
+            // Slice 1 invariant — see parse_with_ir_pipeline.
+            tree::assign_ids_syntax(&mut ir_tree);
             tree::render_to_xot(&mut xot, holding, &ir_tree, source)
                 .map_err(|e| ParseError::Parse(format!("tree render failed: {e}")))?;
             let xml_node = xot.children(holding)
@@ -435,7 +443,8 @@ fn parse_with_ir_pipeline_to_xee(
                     "uses_tree returns false for Raw mode on Data languages"
                 ),
             };
-            let data_tree = (parser.lower)(tree.root_node(), source);
+            let mut data_tree = (parser.lower)(tree.root_node(), source);
+            tree::assign_ids_data(&mut data_tree);
             (parser.render)(&mut xot, holding, &data_tree, source)
                 .map_err(|e| ParseError::Parse(format!("DataTree render failed: {e}")))?;
             let xml_node = xot.children(holding)
@@ -449,7 +458,8 @@ fn parse_with_ir_pipeline_to_xee(
             })
         }
         TreeKind::Sql(lower) => {
-            let sql_tree = lower(tree.root_node(), source);
+            let mut sql_tree = lower(tree.root_node(), source);
+            tree::assign_ids_sql(&mut sql_tree);
             tree::sql::to_xot::render_sql_to_xot(&mut xot, holding, &sql_tree, source)
                 .map_err(|e| ParseError::Parse(format!("SqlTree render failed: {e}")))?;
             let xml_node = xot.children(holding)

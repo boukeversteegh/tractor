@@ -1,15 +1,14 @@
 //! Go: tree → source code (canonical, no-anchor).
-#![allow(dead_code)]
 use crate::tree::render::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(tree, &mut out, Indent::TAB, &go_syntax());
+    write_ir(tree, &mut out, Indent::TAB, &syntax());
     out
 }
 
-fn go_syntax() -> Syntax {
+pub fn syntax() -> Syntax {
     Syntax {
         fn_keyword: "func", class_keyword: "type", interface_keyword: "type",
         return_keyword: "return", if_keyword: "if", elif_keyword: "else if",

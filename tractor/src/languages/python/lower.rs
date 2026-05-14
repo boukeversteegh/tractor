@@ -17,7 +17,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    false_of, float_of, int_of, name_of, none_of, range_of, span_of, string_of, text_of, true_of,
+};
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind};
 
 /// Lower a Python tree-sitter root node to [`SyntaxTree`].
@@ -899,7 +901,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let v = node.child_by_field_name("value");
             match (n, v) {
                 (Some(nn), Some(vv)) => SyntaxTree::KeywordArgument {
-                    name: Box::new(SyntaxTree::Name { range: range_of(nn), span: span_of(nn) }),
+                    name: Box::new(name_of(nn, source)),
                     value: Box::new(lower_node(vv, source)),
                     range, span,
                 },
@@ -1161,7 +1163,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                         // covering `*`.
                         imports.push(SyntaxTree::FromImport {
                             has_alias: false,
-                            name: Box::new(SyntaxTree::Name { range: range_of(c), span: span_of(c) }),
+                            name: Box::new(name_of(c, source)),
                             alias: None,
                             range: range_of(c),
                             span: span_of(c),
@@ -1186,7 +1188,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "dotted_name" => lower_dotted_as_path(node, source),
 
         // Atoms — leaf-level value carriers. Text is `source[range]`.
-        "identifier" => SyntaxTree::Name { range, span },
+        "identifier" => name_of(node, source),
 
         // tree-sitter-python wraps type-position expressions in a
         // `type` node (parameter annotations, return types, generic
@@ -1319,8 +1321,8 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 span,
             }
         }
-        "integer"    => SyntaxTree::Int  { range, span },
-        "float"      => SyntaxTree::Float { range, span },
+        "integer"    => int_of(node, source),
+        "float"      => float_of(node, source),
         // tree-sitter-python: `string` always has named children
         // (`string_start`, `string_content`, `string_end`, plus
         // optional `interpolation`/`escape_sequence`). Plain strings
@@ -1348,12 +1350,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     span,
                 }
             } else {
-                SyntaxTree::String { range, span }
+                string_of(node, source)
             }
         }
-        "true"       => SyntaxTree::True { range, span },
-        "false"      => SyntaxTree::False { range, span },
-        "none"       => SyntaxTree::None { range, span },
+        "true"       => true_of(node, source),
+        "false"      => false_of(node, source),
+        "none"       => none_of(node, source),
 
         other => SyntaxTree::Unknown {
             kind: other.to_string(),
@@ -1522,7 +1524,7 @@ fn lower_python_except_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
                         let n = last.named_children(&mut tc).next();
                         n.unwrap_or(last)
                     } else { last };
-                    binding = Some(Box::new(SyntaxTree::Name { range: range_of(inner), span: span_of(inner) }));
+                    binding = Some(Box::new(name_of(inner, source)));
                 }
             }
             _ if type_target.is_none() && body.is_none() => {
@@ -1636,7 +1638,7 @@ fn lower_function(node: TsNode<'_>, source: &str, is_async: bool, decorators: Ve
         });
 
     let name = match name_node {
-        Some(n) => Box::new(SyntaxTree::Name { range: range_of(n), span: span_of(n) }),
+        Some(n) => Box::new(name_of(n, source)),
         None => Box::new(SyntaxTree::Unknown {
             kind: "function(missing name)".to_string(),
             range,
@@ -1691,7 +1693,7 @@ fn lower_class(node: TsNode<'_>, source: &str, decorators: Vec<SyntaxTree>) -> S
         });
 
     let name = match name_node {
-        Some(n) => Box::new(SyntaxTree::Name { range: range_of(n), span: span_of(n) }),
+        Some(n) => Box::new(name_of(n, source)),
         None => Box::new(SyntaxTree::Unknown {
             kind: "class(missing name)".to_string(),
             range,
@@ -1746,7 +1748,7 @@ fn set_python_class_member_visibility(body: &mut SyntaxTree, source: &str) {
             continue;
         }
         let name_text = match name.as_ref() {
-            SyntaxTree::Name { range, .. } => range.slice(source),
+            SyntaxTree::Name { text, .. } => text.as_str(),
             _ => continue,
         };
         let access = if name_text.starts_with("__") && name_text.ends_with("__") && name_text.len() > 4 {
@@ -1777,7 +1779,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                 out.push(SyntaxTree::Parameter {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
-                    name: Box::new(SyntaxTree::Name { range, span }),
+                    name: Box::new(name_of(c, source)),
                     type_ann: None,
                     default: None,
                     range,
@@ -1791,7 +1793,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match n {
-                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        Some(n) => name_of(n, source),
                         None => SyntaxTree::Unknown { kind: "default_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: None,
@@ -1811,7 +1813,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match name_n {
-                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        Some(n) => name_of(n, source),
                         None => SyntaxTree::Unknown { kind: "typed_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: type_n.map(|t| Box::new(lower_type_slot(t, source))),
@@ -1828,7 +1830,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                     kind: ParamKind::Regular, extra_markers: &[],
                     modifiers: Modifiers::default(),
                     name: Box::new(match n {
-                        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        Some(n) => name_of(n, source),
                         None => SyntaxTree::Unknown { kind: "typed_default_parameter(no name)".to_string(), range, span },
                     }),
                     type_ann: t.map(|t| Box::new(lower_type_slot(t, source))),
@@ -1842,7 +1844,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                 let mut cur = c.walk();
                 let inner = c.named_children(&mut cur).next();
                 let name = match inner {
-                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown { kind: "list_splat(no name)".to_string(), range, span },
                 };
                 out.push(SyntaxTree::Parameter {
@@ -1860,7 +1862,7 @@ fn lower_parameters(node: TsNode<'_>, source: &str) -> Vec<SyntaxTree> {
                 let mut cur = c.walk();
                 let inner = c.named_children(&mut cur).next();
                 let name = match inner {
-                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown { kind: "dict_splat(no name)".to_string(), range, span },
                 };
                 out.push(SyntaxTree::Parameter {
@@ -1921,7 +1923,7 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Syntax
                 let inner = c.named_children(&mut cc).next();
                 let name = match inner {
                     Some(n) if n.kind() == "identifier" =>
-                        SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                        name_of(n, source),
                     Some(n) => lower_node(n, source),
                     None => SyntaxTree::Unknown {
                         kind: "type_param(empty type)".to_string(),
@@ -1938,7 +1940,7 @@ fn collect_type_param_items(node: TsNode<'_>, source: &str, out: &mut Vec<Syntax
             }
             "identifier" => {
                 out.push(SyntaxTree::TypeParameter {
-                    name: Box::new(SyntaxTree::Name { range: crange, span: cspan }),
+                    name: Box::new(name_of(c, source)),
                     constraint: None,
                     range: crange,
                     span: cspan,
@@ -2154,11 +2156,11 @@ fn augmented_op_markers(op: &str) -> Vec<&'static str> {
 /// `SyntaxTree::Name` per segment. Single-segment dotted_names (`os`) become a
 /// `Path` with one segment, matching the existing pipeline shape
 /// (always wrap module paths in `<path>`).
-fn lower_dotted_as_path(node: TsNode<'_>, _source: &str) -> SyntaxTree {
+fn lower_dotted_as_path(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let mut cursor = node.walk();
     let segments: Vec<SyntaxTree> = node
         .named_children(&mut cursor)
-        .map(|c| SyntaxTree::Name { range: range_of(c), span: span_of(c) })
+        .map(|c| name_of(c, source))
         .collect();
     SyntaxTree::Path {
         segments,
@@ -2172,11 +2174,11 @@ fn lower_dotted_as_path(node: TsNode<'_>, _source: &str) -> SyntaxTree {
 /// dotted_name in the CST but renders as a bare `<name>` in the
 /// existing pipeline). Falls back to `Unknown` if the dotted_name has
 /// multiple segments (shouldn't happen for `from` imports).
-fn lower_dotted_first_name(node: TsNode<'_>, _source: &str) -> SyntaxTree {
+fn lower_dotted_first_name(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let mut cursor = node.walk();
     let mut iter = node.named_children(&mut cursor);
     if let Some(first) = iter.next() {
-        SyntaxTree::Name { range: range_of(first), span: span_of(first) }
+        name_of(first, source)
     } else {
         SyntaxTree::Unknown {
             kind: "dotted_name(empty)".to_string(),
@@ -2204,7 +2206,7 @@ fn lower_aliased_top(node: TsNode<'_>, source: &str) -> (SyntaxTree, SyntaxTree)
     };
     let aliased = match alias_node {
         Some(a) => SyntaxTree::Aliased {
-            inner: Box::new(SyntaxTree::Name { range: range_of(a), span: span_of(a) }),
+            inner: Box::new(name_of(a, source)),
             range: range_of(a),
             span: span_of(a),
         },
@@ -2225,7 +2227,7 @@ fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (SyntaxTree, SyntaxTree
     let alias_node = node.child_by_field_name("alias");
     let name = match name_node {
         Some(n) if n.kind() == "dotted_name" => lower_dotted_first_name(n, source),
-        Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+        Some(n) => name_of(n, source),
         None => SyntaxTree::Unknown {
             kind: "aliased_import(missing name)".to_string(),
             range: range_of(node),
@@ -2234,7 +2236,7 @@ fn lower_aliased_from(node: TsNode<'_>, source: &str) -> (SyntaxTree, SyntaxTree
     };
     let aliased = match alias_node {
         Some(a) => SyntaxTree::Aliased {
-            inner: Box::new(SyntaxTree::Name { range: range_of(a), span: span_of(a) }),
+            inner: Box::new(name_of(a, source)),
             range: range_of(a),
             span: span_of(a),
         },

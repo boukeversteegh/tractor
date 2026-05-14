@@ -9,7 +9,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of,
+};
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
 
 pub fn lower_php_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
@@ -99,7 +101,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     let range = range_of(node);
     match node.kind() {
         // ----- Atoms ---------------------------------------------------
-        "name" => SyntaxTree::Name { range, span },
+        "name" => name_of(node, source),
         "variable_name" => simple_statement(node, "variable", source),
         "namespace_name" => SyntaxTree::Inline {
             children: lower_children(node, source),
@@ -111,9 +113,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             list_name: None,
             range, span,
         },
-        "integer" => SyntaxTree::Int { range, span },
-        "float" => SyntaxTree::Float { range, span },
-        "string" => SyntaxTree::String { range, span },
+        "integer" => int_of(node, source),
+        "float" => float_of(node, source),
+        "string" => string_of(node, source),
         "encapsed_string" => {
             // PHP `"hello $name"` — wrap each variable / expression
             // child in `<interpolation>`. string_value text and
@@ -161,7 +163,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             children: Vec::new(),
             range, span,
         },
-        "null" => SyntaxTree::Null { range, span },
+        "null" => null_of(node, source),
         "comment" => SyntaxTree::Comment { leading: false, trailing: false, range, span },
 
         // ----- PHP tag -------------------------------------------------
@@ -1492,7 +1494,7 @@ fn php_property_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let mut pc = c.walk();
             for inner in c.named_children(&mut pc) {
                 if inner.kind() == "variable_name" {
-                    children.push(SyntaxTree::Name { range: range_of(inner), span: span_of(inner) });
+                    children.push(name_of(inner, source));
                 } else {
                     children.push(lower_node(inner, source));
                 }

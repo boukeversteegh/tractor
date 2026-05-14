@@ -45,7 +45,7 @@
 #![cfg(feature = "native")]
 
 use super::data::DataTree;
-use super::types::{SyntaxTree, Modifiers};
+use super::types::{QuoteStyle, SyntaxTree, Modifiers};
 
 /// Project an `SyntaxTree` tree into a [`DataTree`] tree.
 ///
@@ -82,13 +82,15 @@ pub fn has_unhandled(tree: &DataTree) -> bool {
 fn project(tree: &SyntaxTree, source: &str) -> DataTree {
     match tree {
         // ----- Scalar leaves --------------------------------------------
-        SyntaxTree::Name { range, span } => DataTree::String {
-            value: range.slice(source).to_string(),
+        SyntaxTree::Name { text, range, span } => DataTree::String {
+            value: text.clone(),
+            quote_style: QuoteStyle::default_double(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::Atom { range, span, .. } => DataTree::String {
-            value: range.slice(source).to_string(),
+        SyntaxTree::Atom { text, range, span, .. } => DataTree::String {
+            value: text.clone(),
+            quote_style: QuoteStyle::default_double(),
             range: *range,
             span: *span,
         },
@@ -326,33 +328,44 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // maps to its natural DataTree scalar variant; the JSON output
         // becomes a bare value (number / string / bool / null) at
         // that position rather than a wrapper object.
-        SyntaxTree::Int { range, span } => DataTree::Number {
-            text: range.slice(source).to_string(),
+        SyntaxTree::Int { text, range, span } => DataTree::Number {
+            text: text.clone(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::Float { range, span } => DataTree::Number {
-            text: range.slice(source).to_string(),
+        SyntaxTree::Float { text, range, span } => DataTree::Number {
+            text: text.clone(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::String { range, span } => DataTree::String {
-            value: range.slice(source).to_string(),
+        SyntaxTree::String { text, range, span, .. } => DataTree::String {
+            value: text.clone(),
+            quote_style: QuoteStyle::default_double(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::True { range, span } => DataTree::Bool {
+        SyntaxTree::True { text, range, span, .. } => DataTree::Bool {
             value: true,
+            text: text.clone(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::False { range, span } => DataTree::Bool {
+        SyntaxTree::False { text, range, span, .. } => DataTree::Bool {
             value: false,
+            text: text.clone(),
             range: *range,
             span: *span,
         },
-        SyntaxTree::None { range, span } => DataTree::Null { range: *range, span: *span },
-        SyntaxTree::Null { range, span } => DataTree::Null { range: *range, span: *span },
+        SyntaxTree::None { text, range, span, .. } => DataTree::Null {
+            text: text.clone(),
+            range: *range,
+            span: *span,
+        },
+        SyntaxTree::Null { text, range, span, .. } => DataTree::Null {
+            text: text.clone(),
+            range: *range,
+            span: *span,
+        },
 
         // ----- Tuple / List / Set — anonymous-ordered collections.
         // JSON renders as an array of projected children.
@@ -922,7 +935,11 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // PositionalSeparator / KeywordSeparator — pure-syntax markers
         // (`/` and `*` in Python parameter lists). No JSON content.
         SyntaxTree::PositionalSeparator { range, span } | SyntaxTree::KeywordSeparator { range, span } => {
-            DataTree::Null { range: *range, span: *span }
+            DataTree::Null {
+                text: String::new(),
+                range: *range,
+                span: *span,
+            }
         }
 
         // Unknown — keep the kind visible so coverage gaps surface.
@@ -962,6 +979,7 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
         // rendering, but isn't part of the data view).
         SyntaxTree::Comment { range, span, .. } => DataTree::String {
             value: range.slice(source).to_string(),
+            quote_style: QuoteStyle::default_double(),
             range: *range,
             span: *span,
         },
@@ -1007,7 +1025,17 @@ fn project(tree: &SyntaxTree, source: &str) -> DataTree {
 }
 
 fn make_flag(name: &str, range: super::types::ByteRange, span: super::types::Span) -> DataTree {
-    make_pair(name, DataTree::Bool { value: true, range, span }, range, span)
+    make_pair(
+        name,
+        DataTree::Bool {
+            value: true,
+            text: "true".to_string(),
+            range,
+            span,
+        },
+        range,
+        span,
+    )
 }
 
 /// Project an [`AccessSegment`] into `(slot_name, mapping)` for use
@@ -1031,6 +1059,7 @@ fn project_access_segment(
                 "name",
                 DataTree::String {
                     value: property_range.slice(source).to_string(),
+                    quote_style: QuoteStyle::default_double(),
                     range: *property_range,
                     span: s,
                 },
@@ -1056,6 +1085,7 @@ fn project_access_segment(
                     "name",
                     DataTree::String {
                         value: nr.slice(source).to_string(),
+                        quote_style: QuoteStyle::default_double(),
                         range: *nr,
                         span: *ns,
                     },
@@ -1086,7 +1116,12 @@ fn make_op_mapping(
         pairs: vec![
             make_pair(
                 "text",
-                DataTree::String { value: op_text.to_string(), range, span },
+                DataTree::String {
+                    value: op_text.to_string(),
+                    quote_style: QuoteStyle::default_double(),
+                    range,
+                    span,
+                },
                 range,
                 span,
             ),
@@ -1135,6 +1170,7 @@ fn collect_member_pairs(children: &[SyntaxTree], source: &str) -> Vec<DataTree> 
                     let s = c.span();
                     out.push(make_pair(flag_name, DataTree::Bool {
                         value: true,
+                        text: "true".to_string(),
                         range: r,
                         span: s,
                     }, r, s));
@@ -1195,8 +1231,12 @@ fn pluralize_pairs(pairs: Vec<DataTree>) -> Vec<DataTree> {
                 let entry = emitted_plural.entry(plural.clone()).or_insert_with(|| {
                     let placeholder = make_pair(
                         &plural,
-                        DataTree::Null { range: super::types::ByteRange::empty_at(0), span: super::types::Span::point(0, 0) },
-                        super::types::ByteRange::empty_at(0),
+                        DataTree::Null {
+                            text: String::new(),
+                            range: super::types::ByteRange::synthetic_empty(),
+                            span: super::types::Span::point(0, 0),
+                        },
+                        super::types::ByteRange::synthetic_empty(),
                         super::types::Span::point(0, 0),
                     );
                     out.push(placeholder);
@@ -1232,6 +1272,7 @@ fn make_pair(
     DataTree::Pair {
         key: Box::new(DataTree::String {
             value: key.to_string(),
+            quote_style: QuoteStyle::default_double(),
             range,
             span,
         }),
@@ -1268,7 +1309,12 @@ fn push_modifier_flags(
     for marker in modifiers.marker_names() {
         out.push(make_pair(
             marker,
-            DataTree::Bool { value: true, range, span },
+            DataTree::Bool {
+                value: true,
+                text: "true".to_string(),
+                range,
+                span,
+            },
             range,
             span,
         ));
@@ -1351,7 +1397,11 @@ mod tests {
     fn sp() -> Span { Span::point(1, 1) }
 
     fn name(text: &str) -> SyntaxTree {
-        SyntaxTree::Name { range: pos(0, text.len() as u32), span: sp() }
+        SyntaxTree::Name {
+            text: text.to_string(),
+            range: pos(0, text.len() as u32),
+            span: sp(),
+        }
     }
 
     #[test]
@@ -1400,7 +1450,12 @@ mod tests {
 
         let nested = DataTree::Mapping {
             pairs: vec![DataTree::Pair {
-                key: Box::new(DataTree::String { value: "x".into(), range: r, span: s }),
+                key: Box::new(DataTree::String {
+                    value: "x".into(),
+                    quote_style: QuoteStyle::default_double(),
+                    range: r,
+                    span: s,
+                }),
                 value: Box::new(DataTree::Unknown { kind: "unhandled:nested".into(), range: r, span: s }),
                 range: r,
                 span: s,

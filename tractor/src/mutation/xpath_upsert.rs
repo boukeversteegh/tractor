@@ -24,13 +24,46 @@ pub use crate::xpath::Match;
 
 #[cfg(feature = "native")]
 use crate::tree::data::{DataTree, ScalarKind};
+#[cfg(feature = "native")]
+use crate::tree::types::TreeNode;
 
-/// Languages whose upsert path is implemented (`json` / `yaml` /
-/// `yml`, all via the typed-tree pipeline). Other languages return
+#[cfg(feature = "native")]
+use crate::tree::find_by_id;
+#[cfg(feature = "native")]
+use crate::languages::TreeKind;
+
+/// Languages whose upsert path is implemented:
+///
+/// - **Data languages** (`json` / `yaml` / `yml`) — full upsert
+///   (update existing + insert new) through the `DataTree` pipeline.
+/// - **Syntax-tree languages** (the eight programming languages on
+///   the `SyntaxTree` pipeline) — **update only** through the typed
+///   pipeline (S15-Z3): XPath match → `@id` → `find_by_id_syntax` →
+///   mutate scalar text → per-leaf re-render → splice. Insertion
+///   for syntax languages remains unimplemented; non-existent paths
+///   surface as "no matches" rather than [`UpsertError`].
+///
+/// Languages outside this set return
 /// [`UpsertError::UnsupportedLanguage`] so the executor's fallback
 /// (text-replacement for string values) can take over.
 fn lang_supports_upsert(lang: &str) -> bool {
-    matches!(lang, "json" | "yaml" | "yml")
+    matches!(lang, "json" | "yaml" | "yml") || lang_uses_syntax_tree(lang)
+}
+
+/// True iff this language's tree pipeline lowers to
+/// [`crate::tree::SyntaxTree`] (the eight programming languages
+/// under S15-Z3). Distinguishes the syntax-tree update path from
+/// the data-tree upsert path.
+#[cfg(feature = "native")]
+fn lang_uses_syntax_tree(lang: &str) -> bool {
+    crate::languages::get_language(lang)
+        .map(|l| matches!(l.tree_kind, TreeKind::Syntax(_)))
+        .unwrap_or(false)
+}
+
+#[cfg(not(feature = "native"))]
+fn lang_uses_syntax_tree(_lang: &str) -> bool {
+    false
 }
 
 /// Result of an upsert operation.
@@ -87,7 +120,16 @@ pub fn update_only(
         return Err(UpsertError::UnsupportedLanguage(lang.to_string()));
     }
 
-    // Parse source into data tree
+    // Tree mode: data languages must parse in `Data` mode to expose
+    // mapping/sequence structure; syntax-tree languages stay on
+    // their default mode so the `SyntaxTree` pipeline + `assign_ids`
+    // run.
+    let tree_mode = if lang_uses_syntax_tree(lang) {
+        None
+    } else {
+        Some(TreeMode::Data)
+    };
+
     let mut result = parse(
         ParseInput::Inline {
             content: source,
@@ -95,7 +137,7 @@ pub fn update_only(
         },
         ParseOptions {
             language: Some(lang),
-            tree_mode: Some(TreeMode::Data),
+            tree_mode,
             ignore_whitespace: false,
             parse_depth: None,
         },
@@ -162,7 +204,15 @@ pub fn upsert_typed(
         return Err(UpsertError::UnsupportedLanguage(lang.to_string()));
     }
 
-    // Step 1: Parse source into data tree
+    // Tree mode: data languages parse in `Data` mode; syntax-tree
+    // languages keep the default so the typed `SyntaxTree` + IDs
+    // are produced.
+    let tree_mode = if lang_uses_syntax_tree(lang) {
+        None
+    } else {
+        Some(TreeMode::Data)
+    };
+
     let mut result = parse(
         ParseInput::Inline {
             content: source,
@@ -170,7 +220,7 @@ pub fn upsert_typed(
         },
         ParseOptions {
             language: Some(lang),
-            tree_mode: Some(TreeMode::Data),
+            tree_mode,
             ignore_whitespace: false,
             parse_depth: None,
         },
@@ -189,18 +239,32 @@ pub fn upsert_typed(
             &existing
         };
         update_existing(source, lang, value, matches, result)
+    } else if lang_uses_syntax_tree(lang) {
+        // Syntax-tree languages are update-only on Slice 3 (S15-Z3):
+        // no insertion of missing structure. Return a no-op result
+        // so the executor reports "no matches" rather than fabricating
+        // synthetic source.
+        Ok(UpsertResult {
+            source: source.to_string(),
+            inserted: false,
+            matches_updated: 0,
+            matches: vec![],
+            description: "no matches found".to_string(),
+        })
     } else {
         // Insert path
         insert_new(source, lang, xpath, value, value_kind, result)
     }
 }
 
-/// Update existing nodes' values using render-with-spans-splice.
+/// Update existing nodes' values. Dispatches by tree pipeline:
 ///
-/// All currently-supported upsert languages (`json` / `yaml` / `yml`)
-/// take the typed-`DataTree` reverse path; the entry-point allowlist
-/// rejects everything else with [`UpsertError::UnsupportedLanguage`]
-/// before reaching here, so this function is a thin dispatcher.
+/// - Data languages (`json` / `yaml` / `yml`) → typed `DataTree`
+///   render-with-spans-splice via [`update_existing_via_data_ir`].
+/// - Syntax-tree languages (the eight programming languages on the
+///   `SyntaxTree` pipeline) → typed `SyntaxTree` `find_by_id` →
+///   mutate → per-leaf re-render via
+///   [`update_existing_via_syntax_ir`] (S15-Z3).
 fn update_existing(
     source: &str,
     lang: &str,
@@ -210,6 +274,9 @@ fn update_existing(
 ) -> Result<UpsertResult, UpsertError> {
     #[cfg(feature = "native")]
     {
+        if lang_uses_syntax_tree(lang) {
+            return update_existing_via_syntax_ir(source, lang, value, matches);
+        }
         update_existing_via_data_ir(source, lang, value, matches)
     }
     #[cfg(not(feature = "native"))]
@@ -294,6 +361,112 @@ fn update_existing_via_data_ir(
         })?;
         new_source.replace_range(*orig_start..*orig_end, &rendered[*new_start..*new_end]);
         applied += 1;
+    }
+
+    Ok(UpsertResult {
+        source: new_source,
+        inserted: false,
+        matches_updated: applied,
+        matches: matches.to_vec(),
+        description: format!(
+            "updated {} existing value{}",
+            applied,
+            if applied == 1 { "" } else { "s" },
+        ),
+    })
+}
+
+/// Tree-direct update for `SyntaxTree`-pipeline languages (S15-Z3).
+///
+/// Algorithm:
+///
+/// 1. Re-parse the source via the typed-tree pipeline. `assign_ids`
+///    has already stamped a fresh `NodeId` on every node.
+/// 2. For each match, look up the typed node by its
+///    `node_id` (carried over from the matched xot element's `@id`
+///    attribute) via [`find_by_id_syntax`].
+/// 3. Mutate the typed node's stored scalar text.
+/// 4. Render that node alone through the typed renderer
+///    (`render(&leaf, lang, None)`) so the new source-form text
+///    respects per-language conventions (quote style, etc.).
+/// 5. Splice the new text into the original source at the match's
+///    byte range.
+///
+/// Per-leaf rendering keeps mutations narrow — only the matched
+/// leaf's source span is replaced; surrounding whitespace,
+/// comments, and structural punctuation come straight from the
+/// original source. Broader-shape mutation (replace whole
+/// subtree) is Slice 4 (S15-Z4); for now this path covers the
+/// "change one identifier / one literal" scalar-update use case.
+#[cfg(feature = "native")]
+fn update_existing_via_syntax_ir(
+    source: &str,
+    lang: &str,
+    value: &str,
+    matches: &[Match],
+) -> Result<UpsertResult, UpsertError> {
+    let parsed = parse_string_to_xot(
+        source,
+        lang,
+        "<update>".to_string(),
+        None,
+    )
+    .map_err(|e| UpsertError::Parse(e.to_string()))?;
+    let mut tree = *parsed.tree.ok_or_else(|| {
+        UpsertError::Parse(format!(
+            "language '{}' did not produce a SyntaxTree on the tree pipeline",
+            lang,
+        ))
+    })?;
+
+    let mut splice_info: Vec<(usize, usize, String)> = Vec::new();
+
+    for matched in matches {
+        let node_id = matched.node_id.ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "match at {}:{} carries no NodeId — typed-tree mutation requires \
+                 a tree-pipeline parse with assign_ids run",
+                matched.line, matched.column,
+            ))
+        })?;
+
+        let target = find_by_id(&mut tree, node_id).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "NodeId {} not found in typed SyntaxTree (match at {}:{})",
+                node_id, matched.line, matched.column,
+            ))
+        })?;
+
+        target.set_scalar_text(value).map_err(|e| {
+            UpsertError::Render(format!(
+                "set_scalar_text on node {}: {}",
+                node_id, e,
+            ))
+        })?;
+
+        let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
+            .ok_or_else(|| UpsertError::NoInsertionPoint("start position out of bounds".into()))?;
+        let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
+            .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
+
+        // Render the mutated leaf in isolation. Passing `None` for
+        // the source anchor takes the canonical walker path for
+        // this single node — emits the new scalar text (with
+        // quotes / escapes for `String` variants) without
+        // disturbing the surrounding source.
+        let new_text = crate::tree::render::render(target, lang, None);
+        splice_info.push((orig_start, orig_end, new_text));
+    }
+
+    // Apply splices in descending position order so earlier
+    // offsets stay valid as we patch later regions first.
+    splice_info.sort_by(|a, b| b.0.cmp(&a.0));
+    splice_info.dedup_by(|a, b| a.0 == b.0 && a.1 == b.1);
+
+    let mut new_source = source.to_string();
+    let applied = splice_info.len();
+    for (orig_start, orig_end, new_text) in &splice_info {
+        new_source.replace_range(*orig_start..*orig_end, new_text);
     }
 
     Ok(UpsertResult {
@@ -543,7 +716,8 @@ fn find_insertion_target_at_offset(tree: &mut DataTree, offset: u32) -> Option<&
     // matches) or return `self`; the mutable descent commits to
     // exactly one borrow path.
     let has_deeper = tree
-        .children_iter()
+        .children()
+        .into_iter()
         .any(|c| has_container_at(c, offset));
 
     if has_deeper {
@@ -596,7 +770,7 @@ fn has_container_at(tree: &DataTree, offset: u32) -> bool {
     if is_container && tree.range().start == offset {
         return true;
     }
-    tree.children_iter().any(|c| has_container_at(c, offset))
+    tree.children().into_iter().any(|c| has_container_at(c, offset))
 }
 
 // ---------------------------------------------------------------------------

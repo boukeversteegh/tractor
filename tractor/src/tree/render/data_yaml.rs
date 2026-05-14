@@ -8,44 +8,11 @@
 
 #![cfg(feature = "native")]
 
-use std::collections::HashMap;
-
 use crate::tree::data::DataTree;
+use super::data_common::{DataRenderOptions, DataSpanMap};
 
-/// `(line, col) → (rendered_start, rendered_end)` byte range map.
-pub type DataSpanMap = HashMap<(u32, u32), (usize, usize)>;
-
-/// Options for YAML output formatting.
-#[derive(Debug, Clone)]
-pub struct YamlRenderOptions {
-    pub indent: String,
-    pub newline: String,
-    pub indent_level: usize,
-}
-
-impl Default for YamlRenderOptions {
-    fn default() -> Self {
-        Self {
-            indent: "  ".to_string(),
-            newline: "\n".to_string(),
-            indent_level: 0,
-        }
-    }
-}
-
-impl YamlRenderOptions {
-    fn indented(&self) -> Self {
-        Self {
-            indent: self.indent.clone(),
-            newline: self.newline.clone(),
-            indent_level: self.indent_level + 1,
-        }
-    }
-
-    fn current_indent(&self) -> String {
-        self.indent.repeat(self.indent_level)
-    }
-}
+/// Legacy alias for the shared [`DataRenderOptions`].
+pub type YamlRenderOptions = DataRenderOptions;
 
 /// Render a [`DataTree`] to YAML source text and a span map.
 pub fn render_yaml_with_spans(
@@ -346,24 +313,39 @@ fn record_value_span(
     }
 }
 
-fn scalar_text(tree: &DataTree) -> String {
-    match tree {
-        DataTree::String { value, .. } => value.clone(),
-        DataTree::Number { text, .. } => text.clone(),
-        DataTree::Bool { value, .. } => {
-            if *value { "true".to_string() } else { "false".to_string() }
-        }
-        DataTree::Null { .. } => "null".to_string(),
-        _ => String::new(),
+// scalar_text() lifted to data_common; re-import for local use.
+use super::data_common::scalar_text;
+
+fn emit_scalar_string(value: &str, buf: &mut String) {
+    // YAML auto-promotes `Plain` to `Double` when the value would be
+    // mis-parsed unquoted (`true`, `null`, leading punctuation, etc.).
+    // The resolved style then flows through the shared
+    // [`write_quoted_scalar`] primitive (Layer A).
+    use crate::tree::render::common::{write_quoted_scalar, identity_escape};
+    use crate::tree::types::QuoteStyle;
+    if needs_yaml_quoting(value) {
+        write_quoted_scalar(value, &QuoteStyle::Double, escape_yaml_double, buf);
+    } else {
+        write_quoted_scalar(value, &QuoteStyle::Plain, identity_escape, buf);
     }
 }
 
-fn emit_scalar_string(value: &str, buf: &mut String) {
-    if needs_yaml_quoting(value) {
-        yaml_quote_string(value, buf);
-    } else {
-        buf.push_str(value);
+fn escape_yaml_double(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => {
+                out.push_str(&format!("\\x{:02x}", c as u32));
+            }
+            c => out.push(c),
+        }
     }
+    out
 }
 
 fn needs_yaml_quoting(s: &str) -> bool {
@@ -394,32 +376,16 @@ fn needs_yaml_quoting(s: &str) -> bool {
     false
 }
 
-fn yaml_quote_string(s: &str, buf: &mut String) {
-    buf.push('"');
-    for c in s.chars() {
-        match c {
-            '"' => buf.push_str("\\\""),
-            '\\' => buf.push_str("\\\\"),
-            '\n' => buf.push_str("\\n"),
-            '\r' => buf.push_str("\\r"),
-            '\t' => buf.push_str("\\t"),
-            c if (c as u32) < 0x20 => {
-                buf.push_str(&format!("\\x{:02x}", c as u32));
-            }
-            c => buf.push(c),
-        }
-    }
-    buf.push('"');
-}
-
 fn yaml_quote_key(key: &str) -> String {
+    use crate::tree::render::common::{write_quoted_scalar, identity_escape};
+    use crate::tree::types::QuoteStyle;
+    let mut out = String::new();
     if needs_yaml_quoting(key) {
-        let mut out = String::new();
-        yaml_quote_string(key, &mut out);
-        out
+        write_quoted_scalar(key, &QuoteStyle::Double, escape_yaml_double, &mut out);
     } else {
-        key.to_string()
+        write_quoted_scalar(key, &QuoteStyle::Plain, identity_escape, &mut out);
     }
+    out
 }
 
 #[cfg(test)]

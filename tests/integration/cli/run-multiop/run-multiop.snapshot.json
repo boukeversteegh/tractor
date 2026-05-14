@@ -27,7 +27,7 @@
                 "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;",
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}",
               "rule_id": "no-class"
             },
             {
@@ -41,7 +41,7 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }",
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}",
               "rule_id": "no-class"
             }
           ]
@@ -64,7 +64,7 @@
                 "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Calculator\npublic int Add(int a, int b) return a + b;public int Subtract(int a, int b) return a - b;public int Multiply(int a, int b) return a * b;"
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}"
             },
             {
               "lines": [
@@ -75,7 +75,7 @@
                 "    public void Reset() { }",
                 "}"
               ],
-              "value": "public class Greeter\npublic string Hello(string name) return \"Hello, \" + name;public string Goodbye(string name) return \"Goodbye, \" + name;public void Reset() { }"
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}"
             }
           ]
         }

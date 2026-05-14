@@ -3,10 +3,13 @@
 //! Each per-language module supplies a [`Syntax`] config plus optional
 //! override hooks; the shared [`write_ir`] engine handles the bulk of
 //! tree variant dispatch.
+//!
+//! A small set of leaf-emit primitives ([`write_quoted_scalar`]) is
+//! also lifted here so SyntaxTree, DataTree, and (future) SqlTree
+//! agree on how a [`QuoteStyle`] decorates a stored text payload.
 
-#![allow(dead_code)]
 
-use crate::tree::types::{AccessSegment, SyntaxTree};
+use crate::tree::types::{AccessSegment, QuoteStyle, SyntaxTree};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Indent {
@@ -72,18 +75,130 @@ impl Default for Syntax {
     }
 }
 
-pub fn render_generic(tree: &SyntaxTree) -> String {
-    let mut out = String::new();
-    write_ir(tree, &mut out, Indent::SPACES_4, &Syntax::default());
-    out
+/// Emit `text` decorated with `style`, applying `escape` to the inner
+/// content for delimited variants. Single source of truth for
+/// quote-style wrapping across SyntaxTree, DataTree, and future
+/// SqlTree renderers.
+///
+/// `escape` is a per-format function (JSON escapes `\n`/`"`, Python
+/// escapes differently, YAML's plain form typically doesn't escape at
+/// all). Use [`identity_escape`] when no escaping is needed.
+///
+/// The recursive `Raw { prefix, inner }` arm prepends the lowercase
+/// prefix (e.g. `r`, `b`) and then re-emits with the inner style — so
+/// a `Raw { prefix: "r", inner: Double }` becomes `r"text"`. `Block`
+/// and `Heredoc` are best-effort; the structural prefix is correct
+/// but the renderer doesn't yet manage indentation for multi-line
+/// payloads.
+pub fn write_quoted_scalar(
+    text: &str,
+    style: &QuoteStyle,
+    escape: impl Fn(&str) -> String,
+    out: &mut String,
+) {
+    match style {
+        QuoteStyle::Plain => out.push_str(text),
+        QuoteStyle::Single => {
+            out.push('\'');
+            out.push_str(&escape(text));
+            out.push('\'');
+        }
+        QuoteStyle::Double => {
+            out.push('"');
+            out.push_str(&escape(text));
+            out.push('"');
+        }
+        QuoteStyle::TripleSingle => {
+            out.push_str("'''");
+            out.push_str(&escape(text));
+            out.push_str("'''");
+        }
+        QuoteStyle::TripleDouble => {
+            out.push_str("\"\"\"");
+            out.push_str(&escape(text));
+            out.push_str("\"\"\"");
+        }
+        QuoteStyle::Backtick => {
+            out.push('`');
+            out.push_str(&escape(text));
+            out.push('`');
+        }
+        QuoteStyle::Brackets => {
+            out.push('[');
+            // T-SQL escapes `]` as `]]` inside bracketed identifiers;
+            // caller's `escape` table handles that if it cares.
+            out.push_str(&escape(text));
+            out.push(']');
+        }
+        QuoteStyle::Raw { prefix, inner } => {
+            out.push_str(prefix);
+            // Raw means "the inner style chosen the framing; don't
+            // double-escape". Identity-escape inside.
+            write_quoted_scalar(text, inner, identity_escape, out);
+        }
+        QuoteStyle::Heredoc { delimiter } => {
+            out.push_str("<<");
+            out.push_str(delimiter);
+            out.push('\n');
+            out.push_str(text);
+            if !text.ends_with('\n') {
+                out.push('\n');
+            }
+            out.push_str(delimiter);
+        }
+        QuoteStyle::Block { folded, chomp } => {
+            out.push(if *folded { '>' } else { '|' });
+            if *chomp == '-' || *chomp == '+' {
+                out.push(*chomp);
+            }
+            out.push('\n');
+            out.push_str(text);
+        }
+    }
 }
 
-/// Shared tree walker used by every per-language emitter. Atom rendering
-/// emits placeholders (`«name»` / `0` / `""`) because the tree atoms
-/// only carry byte ranges; the source-anchor path is the way to
-/// reconstruct atom text. For from-scratch canonical rendering, atom
-/// text would need to ride alongside the tree — out of scope for this
-/// scaffold.
+/// No-op escape — pass text through unchanged. Use with
+/// [`write_quoted_scalar`] for formats that don't escape (e.g. YAML
+/// plain scalars, raw-string variants).
+pub fn identity_escape(s: &str) -> String {
+    s.to_string()
+}
+
+/// Source-aware tree walker (S13-Z6/Z7). Identical to [`write_ir`]
+/// except that when `source` is `Some(s)` and an anchored subtree is
+/// encountered, the renderer prefers slicing `s[node.range()]` over
+/// canonical re-rendering. This lets the same engine serve anchored,
+/// canonical, and mixed-mode rendering.
+///
+/// Per-subtree byte-slice shortcut: today this kicks in when the
+/// current node *and all of its direct children* are anchored. Going
+/// deeper than one level still works correctly via recursion; the
+/// shallow shortcut catches the common "edit a leaf, keep the
+/// surrounding parsed source" pattern.
+///
+/// The gap-context fallback between anchored and synthetic siblings
+/// (S13-Z6, per-language defaults via [`Syntax`]) is a near-term
+/// extension; today the canonical walker handles those gaps.
+pub fn write_ir_with_source(
+    tree: &SyntaxTree,
+    source: Option<&str>,
+    out: &mut String,
+    indent: Indent,
+    sx: &Syntax,
+) {
+    if let Some(s) = source {
+        if tree.is_anchored() && tree.children().iter().all(|c| c.is_anchored()) {
+            out.push_str(tree.range().slice(s));
+            return;
+        }
+    }
+    write_ir(tree, out, indent, sx);
+}
+
+/// Shared tree walker. Renders scalar leaves from their stored `text`
+/// field (S13-Z1) and compound nodes from the per-language [`Syntax`]
+/// config. Whitespace between siblings uses canonical defaults; for
+/// source-anchored gap preservation see [`write_ir_with_source`].
 pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax) {
     match tree {
         SyntaxTree::Module { children, .. } => {
@@ -350,13 +465,33 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
         }
         SyntaxTree::Expression { inner, .. } => write_ir(inner, out, indent, sx),
         SyntaxTree::Comment { .. } => { out.push_str(sx.comment_line); out.push_str(" (comment)"); }
-        SyntaxTree::Null { .. } | SyntaxTree::None { .. } => out.push_str(sx.null_keyword),
-        SyntaxTree::True { .. } => out.push_str(sx.true_keyword),
-        SyntaxTree::False { .. } => out.push_str(sx.false_keyword),
-        SyntaxTree::Name { .. } => out.push_str("«name»"),
-        SyntaxTree::Int { .. } => out.push('0'),
-        SyntaxTree::Float { .. } => out.push_str("0.0"),
-        SyntaxTree::String { .. } => out.push_str("\"\""),
+        // S13-Z1: scalar variants now carry their decoded text. When
+        // the stored text is non-empty (parsed or programmatically set)
+        // we emit it verbatim; otherwise fall back to the per-language
+        // keyword / canonical placeholder so empty synthetic trees
+        // still produce something readable.
+        SyntaxTree::Null { text, .. } | SyntaxTree::None { text, .. } => {
+            if text.is_empty() { out.push_str(sx.null_keyword); } else { out.push_str(text); }
+        }
+        SyntaxTree::True { text, .. } => {
+            if text.is_empty() { out.push_str(sx.true_keyword); } else { out.push_str(text); }
+        }
+        SyntaxTree::False { text, .. } => {
+            if text.is_empty() { out.push_str(sx.false_keyword); } else { out.push_str(text); }
+        }
+        SyntaxTree::Name { text, .. } => {
+            if text.is_empty() { out.push_str("«name»"); } else { out.push_str(text); }
+        }
+        SyntaxTree::Atom { text, .. } => out.push_str(text),
+        SyntaxTree::Int { text, .. } => {
+            if text.is_empty() { out.push('0'); } else { out.push_str(text); }
+        }
+        SyntaxTree::Float { text, .. } => {
+            if text.is_empty() { out.push_str("0.0"); } else { out.push_str(text); }
+        }
+        SyntaxTree::String { text, quote_style, .. } => {
+            write_quoted_scalar(text, quote_style, identity_escape, out);
+        }
         SyntaxTree::SimpleStatement { children, .. } => {
             for (i, c) in children.iter().enumerate() {
                 if i > 0 { out.push(' '); }

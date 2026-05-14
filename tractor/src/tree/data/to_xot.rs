@@ -540,9 +540,15 @@ fn set_span_attrs(xot: &mut Xot, node: XotNode, span: Span) {
     let column = xot.add_name("column");
     let end_line = xot.add_name("end_line");
     let end_column = xot.add_name("end_column");
+    // Slice 2 (editable trees): expose the typed-tree NodeId on xot
+    // so XPath matches can recover the DataTree node via `find_by_id`.
+    let id_name = (span.id != 0).then(|| xot.add_name("id"));
     let mut attrs = xot.attributes_mut(node);
     attrs.insert(line, span.line.to_string());
     attrs.insert(column, span.column.to_string());
     attrs.insert(end_line, span.end_line.to_string());
     attrs.insert(end_column, span.end_column.to_string());
+    if let Some(id_name) = id_name {
+        attrs.insert(id_name, span.id.to_string());
+    }
 }

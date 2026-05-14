@@ -41,7 +41,7 @@
 
 #![cfg(feature = "native")]
 
-use crate::tree::types::{ByteRange, Span};
+use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
 
 /// Format-agnostic data-language tree.
 #[derive(Debug, Clone)]
@@ -93,11 +93,15 @@ pub enum DataTree {
         span: Span,
     },
 
-    /// String scalar. `value` is the *parsed* string (escape
-    /// sequences resolved). Source bytes (with quotes / escapes)
-    /// recoverable via `range.slice(source)`.
+    /// String scalar. `value` is the *parsed* string (escape sequences
+    /// resolved); `quote_style` preserves the surface form so the
+    /// renderer can reproduce JSON `"x"` vs YAML `'x'` vs YAML plain
+    /// `x` vs TOML multiline `"""x"""` byte-identically (S13/DataTree).
+    /// Source bytes (with quotes / escapes) are also recoverable via
+    /// `range.slice(source)` when anchored.
     String {
         value: String,
+        quote_style: QuoteStyle,
         range: ByteRange,
         span: Span,
     },
@@ -111,17 +115,23 @@ pub enum DataTree {
         span: Span,
     },
 
-    /// Boolean scalar. The raw text (`"true"` / `"false"` / YAML's
-    /// `yes`/`no`/...) is recoverable via the range.
+    /// Boolean scalar. `value` is the decoded boolean; `text` preserves
+    /// the surface form so YAML `yes`/`no`/`True`/`true`/`Y` round-
+    /// trip distinctly. The renderer emits the stored `text` when
+    /// anchored and the value's canonical spelling when synthetic.
     Bool {
         value: bool,
+        text: String,
         range: ByteRange,
         span: Span,
     },
 
     /// Null / nil literal. JSON `null`, YAML `null` / `~` / empty,
-    /// TOML omits but YAML+JSON5 have it.
+    /// TOML omits but YAML+JSON5 have it. `text` preserves the surface
+    /// form so YAML `~` vs `null` vs `Null` vs empty round-trip
+    /// distinctly.
     Null {
+        text: String,
         range: ByteRange,
         span: Span,
     },
@@ -223,6 +233,29 @@ impl DataTree {
     pub fn to_source<'a>(&self, source: &'a str) -> &'a str {
         self.range().slice(source)
     }
+
+    /// True iff this node's range refers to a real source position.
+    /// False for synthetic nodes built without source (programmatic
+    /// mutation, tests). Mirrors `SyntaxTree::is_anchored()`.
+    pub fn is_anchored(&self) -> bool {
+        self.range().is_anchored()
+    }
+
+    /// Stored text for scalar-leaf variants. `String` returns the
+    /// *decoded* value (no surrounding quotes), `Number` the verbatim
+    /// numeric text, `Bool`/`Null` their surface text. Returns `None`
+    /// for compound variants. The renderer uses this to emit leaf
+    /// content without consulting the source string.
+    pub fn scalar_text(&self) -> Option<&str> {
+        match self {
+            DataTree::String { value, .. } => Some(value.as_str()),
+            DataTree::Number { text, .. }
+            | DataTree::Bool { text, .. }
+            | DataTree::Null { text, .. }
+            | DataTree::Comment { text, .. } => Some(text.as_str()),
+            _ => None,
+        }
+    }
 }
 
 /// How to interpret a scalar value's text when inserting / replacing
@@ -240,11 +273,11 @@ pub enum ScalarKind {
 
 impl DataTree {
     /// Build a synthetic scalar `DataTree` with no source coverage.
-    /// `range` is zero-width at byte 0; `span` is point (0, 0). Used
-    /// by mutation primitives to introduce values that don't exist in
-    /// the original source.
+    /// `range` is `synthetic_empty()`; `span` is point (0, 0). Used by
+    /// mutation primitives to introduce values that don't exist in the
+    /// original source.
     pub fn synthetic_scalar(text: &str, kind: ScalarKind) -> DataTree {
-        let range = ByteRange::empty_at(0);
+        let range = ByteRange::synthetic_empty();
         let span = Span::point(0, 0);
         Self::scalar_with(text, kind, range, span)
     }
@@ -252,18 +285,33 @@ impl DataTree {
     fn scalar_with(text: &str, kind: ScalarKind, range: ByteRange, span: Span) -> DataTree {
         match kind {
             ScalarKind::Auto => match text {
-                "null" => DataTree::Null { range, span },
-                "true" => DataTree::Bool { value: true, range, span },
-                "false" => DataTree::Bool { value: false, range, span },
+                "null" => DataTree::Null { text: text.to_string(), range, span },
+                "true" => DataTree::Bool { value: true, text: text.to_string(), range, span },
+                "false" => DataTree::Bool { value: false, text: text.to_string(), range, span },
                 _ if !text.is_empty() && text.parse::<f64>().is_ok() => {
                     DataTree::Number { text: text.to_string(), range, span }
                 }
-                _ => DataTree::String { value: text.to_string(), range, span },
+                _ => DataTree::String {
+                    value: text.to_string(),
+                    quote_style: QuoteStyle::default_double(),
+                    range,
+                    span,
+                },
             },
-            ScalarKind::String => DataTree::String { value: text.to_string(), range, span },
+            ScalarKind::String => DataTree::String {
+                value: text.to_string(),
+                quote_style: QuoteStyle::default_double(),
+                range,
+                span,
+            },
             ScalarKind::Number => DataTree::Number { text: text.to_string(), range, span },
-            ScalarKind::Bool => DataTree::Bool { value: text == "true", range, span },
-            ScalarKind::Null => DataTree::Null { range, span },
+            ScalarKind::Bool => DataTree::Bool {
+                value: text == "true",
+                text: text.to_string(),
+                range,
+                span,
+            },
+            ScalarKind::Null => DataTree::Null { text: text.to_string(), range, span },
         }
     }
 
@@ -272,7 +320,7 @@ impl DataTree {
     /// an XPath-derived position back to the typed tree.
     pub fn find_at_offset(&self, byte_offset: u32) -> Option<&DataTree> {
         // Prefer the deepest match: try children first, fall back to self.
-        for child in self.children_iter() {
+        for child in self.children() {
             if let Some(found) = child.find_at_offset(byte_offset) {
                 return Some(found);
             }
@@ -293,7 +341,8 @@ impl DataTree {
         // up-front).
         let self_starts_here = self.range().start == byte_offset;
         let child_match = self
-            .children_iter()
+            .children()
+            .into_iter()
             .any(|c| c.find_at_offset(byte_offset).is_some());
         if !self_starts_here && !child_match {
             return None;
@@ -336,24 +385,80 @@ impl DataTree {
         }
     }
 
-    /// Iterate this node's direct children. Yields nothing for leaf
-    /// scalars (`String`, `Number`, `Bool`, `Null`, `Comment`,
-    /// `Unknown`).
-    pub fn children_iter(&self) -> Box<dyn Iterator<Item = &DataTree> + '_> {
+}
+
+impl TreeNode for DataTree {
+    fn span(&self) -> Span { self.span() }
+    fn range(&self) -> ByteRange { self.range() }
+
+    fn span_mut(&mut self) -> &mut Span {
         match self {
-            DataTree::Document { children, .. }
-            | DataTree::Sequence { items: children, .. }
-            | DataTree::Section { children, .. }
-            | DataTree::Directive { children, .. }
-            | DataTree::Element { children, .. } => Box::new(children.iter()),
-            DataTree::Mapping { pairs, .. } => Box::new(pairs.iter()),
-            DataTree::Pair { key, value, .. } => {
-                Box::new([key.as_ref(), value.as_ref()].into_iter())
-            }
-            _ => Box::new(std::iter::empty()),
+            DataTree::Document { span, .. }
+            | DataTree::Mapping { span, .. }
+            | DataTree::Sequence { span, .. }
+            | DataTree::Pair { span, .. }
+            | DataTree::Section { span, .. }
+            | DataTree::String { span, .. }
+            | DataTree::Number { span, .. }
+            | DataTree::Bool { span, .. }
+            | DataTree::Null { span, .. }
+            | DataTree::Comment { span, .. }
+            | DataTree::Directive { span, .. }
+            | DataTree::Element { span, .. }
+            | DataTree::Unknown { span, .. } => span,
         }
     }
 
+    fn children(&self) -> Vec<&Self> {
+        let mut v: Vec<&DataTree> = Vec::new();
+        match self {
+            DataTree::Document { children, .. }
+            | DataTree::Section { children, .. }
+            | DataTree::Directive { children, .. }
+            | DataTree::Element { children, .. } => v.extend(children.iter()),
+            DataTree::Sequence { items, .. } => v.extend(items.iter()),
+            DataTree::Mapping { pairs, .. } => v.extend(pairs.iter()),
+            DataTree::Pair { key, value, .. } => {
+                v.push(key);
+                v.push(value);
+            }
+            DataTree::String { .. }
+            | DataTree::Number { .. }
+            | DataTree::Bool { .. }
+            | DataTree::Null { .. }
+            | DataTree::Comment { .. }
+            | DataTree::Unknown { .. } => {}
+        }
+        v.sort_by_key(|c| c.range().start);
+        v
+    }
+
+    fn children_mut(&mut self) -> Vec<&mut Self> {
+        let mut v: Vec<&mut DataTree> = Vec::new();
+        match self {
+            DataTree::Document { children, .. }
+            | DataTree::Section { children, .. }
+            | DataTree::Directive { children, .. }
+            | DataTree::Element { children, .. } => v.extend(children.iter_mut()),
+            DataTree::Sequence { items, .. } => v.extend(items.iter_mut()),
+            DataTree::Mapping { pairs, .. } => v.extend(pairs.iter_mut()),
+            DataTree::Pair { key, value, .. } => {
+                v.push(key.as_mut());
+                v.push(value.as_mut());
+            }
+            DataTree::String { .. }
+            | DataTree::Number { .. }
+            | DataTree::Bool { .. }
+            | DataTree::Null { .. }
+            | DataTree::Comment { .. }
+            | DataTree::Unknown { .. } => {}
+        }
+        v.sort_by_key(|c| c.range().start);
+        v
+    }
+}
+
+impl DataTree {
     /// Replace this scalar node in place with a new scalar of the
     /// given kind. Preserves `range` / `span` so callers using the
     /// position for splice operations still work. Returns `Err` if
@@ -438,6 +543,7 @@ fn build_nested_pair(keys: &[&str], value: &str, kind: ScalarKind) -> DataTree {
     let (head, tail) = keys.split_first().expect("keys is non-empty");
     let key_node = DataTree::String {
         value: head.to_string(),
+        quote_style: QuoteStyle::default_double(),
         range,
         span,
     };

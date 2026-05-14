@@ -13,7 +13,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
+};
 use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers, Span};
 
 pub fn lower_go_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
@@ -103,15 +105,15 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // ----- Atoms ---------------------------------------------------
         "identifier" | "type_identifier" | "field_identifier"
         | "package_identifier" | "blank_identifier" | "label_name"
-        | "iota" | "dot" => SyntaxTree::Name { range, span },
+        | "iota" | "dot" => name_of(node, source),
 
-        "int_literal" => SyntaxTree::Int { range, span },
-        "float_literal" | "imaginary_literal" => SyntaxTree::Float { range, span },
-        "interpreted_string_literal" => SyntaxTree::String { range, span },
+        "int_literal" => int_of(node, source),
+        "float_literal" | "imaginary_literal" => float_of(node, source),
+        "interpreted_string_literal" => string_of(node, source),
         "raw_string_literal" => simple_statement_marked(node, "string", &["raw"], source),
         "rune_literal" => simple_statement(node, "char", source),
-        "true" => SyntaxTree::True { range, span },
-        "false" => SyntaxTree::False { range, span },
+        "true" => true_of(node, source),
+        "false" => false_of(node, source),
         "nil" => SyntaxTree::SimpleStatement {
             element_name: "nil",
             modifiers: Modifiers::default(),
@@ -264,7 +266,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let result_node = node.child_by_field_name("result");
             let mut children: Vec<SyntaxTree> = Vec::new();
             if let Some(n) = name_node {
-                children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
+                children.push(name_of(n, source));
             }
             if let Some(p) = parameters_node {
                 children.push(lower_node(p, source));
@@ -901,7 +903,7 @@ fn go_type_spec(
             // element_name be `struct`/`interface` and add the name child.
             let mut inner_children: Vec<SyntaxTree> = Vec::new();
             if let Some(n) = name_node {
-                inner_children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
+                inner_children.push(name_of(n, source));
             }
             // Lower the struct/interface contents — for struct_type
             // that's the field_declaration_list child.
@@ -922,7 +924,7 @@ fn go_type_spec(
 
     let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(n) = name_node {
-        children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
+        children.push(name_of(n, source));
     }
     if let Some(t) = type_node {
         let inner = lower_node(t, source);
@@ -1021,7 +1023,7 @@ fn go_var_const_spec(node: TsNode<'_>, element_name: &'static str, source: &str)
     };
     let mut children: Vec<SyntaxTree> = Vec::new();
     for n in &name_nodes {
-        children.push(SyntaxTree::Name { range: range_of(*n), span: span_of(*n) });
+        children.push(name_of(*n, source));
     }
     if let Some(t) = type_node {
         let inner = lower_node(t, source);
@@ -1109,7 +1111,7 @@ fn go_field_declaration(node: TsNode<'_>, source: &str) -> SyntaxTree {
     };
     let mut children: Vec<SyntaxTree> = Vec::new();
     for n in &name_nodes {
-        children.push(SyntaxTree::Name { range: range_of(*n), span: span_of(*n) });
+        children.push(name_of(*n, source));
     }
     if let Some(t) = type_node {
         let inner = lower_node(t, source);

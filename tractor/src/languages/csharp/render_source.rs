@@ -2,19 +2,25 @@
 //!
 //! C# uses braced blocks with `;` terminators and typed-pre method
 //! signatures (`int Foo()` not `function Foo() -> int`).
+//!
+//! The per-language [`syntax`] config is consumed by the unified
+//! [`crate::tree::render::render`] walker (S13-Z7); the legacy
+//! [`render`] wrapper remains for callers that want the canonical-
+//! only entry point without a source anchor.
 
-#![allow(dead_code)]
 
 use crate::tree::render::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(tree, &mut out, Indent::SPACES_4, &csharp_syntax());
+    write_ir(tree, &mut out, Indent::SPACES_4, &syntax());
     out
 }
 
-fn csharp_syntax() -> Syntax {
+/// Per-language Syntax config — exposed for use by the unified
+/// renderer at [`crate::tree::render::render`].
+pub fn syntax() -> Syntax {
     Syntax {
         fn_keyword: "void", class_keyword: "class", interface_keyword: "interface",
         return_keyword: "return", if_keyword: "if", elif_keyword: "else if",

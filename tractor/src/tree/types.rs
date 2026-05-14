@@ -66,21 +66,48 @@
 //! - **`no-repeated-parent-child-name`** — depends on tree shape; can be
 //!   asserted at render-time.
 
+/// Stable per-node identity within one in-memory tree session.
+///
+/// Used to bridge an XPath match against the XML projection back to
+/// the typed-tree node that produced it (see `docs/design-editable-trees.md`).
+/// Internal-only: never appears in user-facing XML / JSON output, never
+/// becomes XPath syntax. `0` is the unassigned sentinel; real IDs start
+/// at `1` and are handed out by [`assign_ids`](crate::tree::assign_ids).
+pub type NodeId = u32;
+
 /// Source-location span carried on every tree node.
 ///
 /// Mirrors what the imperative builder threads through `xot.with_source_location_from`.
-/// All four fields are 1-based to match tree-sitter / xot conventions.
+/// All four position fields are 1-based to match tree-sitter / xot
+/// conventions. The `id` field is an internal stable identity (see
+/// [`NodeId`]); `0` means "not yet assigned" and gets stamped to a
+/// real value by the [`crate::tree::assign_ids`] post-construction
+/// walk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     pub line: u32,
     pub column: u32,
     pub end_line: u32,
     pub end_column: u32,
+    pub id: NodeId,
 }
 
 impl Span {
     pub const fn point(line: u32, column: u32) -> Self {
-        Self { line, column, end_line: line, end_column: column }
+        Self {
+            line,
+            column,
+            end_line: line,
+            end_column: column,
+            id: 0,
+        }
+    }
+
+    /// Span with the same position as `self` but a fresh `id`. Used by
+    /// the [`crate::tree::assign_ids`] walker to stamp IDs without
+    /// rebuilding the surrounding node.
+    pub const fn with_id(self, id: NodeId) -> Self {
+        Self { id, ..self }
     }
 }
 
@@ -92,21 +119,47 @@ impl Span {
 ///
 /// `Copy` so it threads cheaply; `u32` because no source we transform
 /// approaches 4 GiB.
+///
+/// The `anchored` flag distinguishes ranges that point at a real
+/// substring of the original source (parser output, even zero-width
+/// fill-ins) from ranges on synthetic nodes built without source
+/// (programmatic construction, tests, cross-language codegen). The
+/// renderer's gap-fallback chain (S13-Z6) consults this flag to decide
+/// whether to slice source for the gap or emit a canonical default.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ByteRange {
     pub start: u32,
     pub end: u32,
+    /// True when the range refers to an actual position in some source
+    /// string. False for synthetic nodes constructed without source
+    /// (tests, programmatic synthesis, cross-language codegen).
+    pub anchored: bool,
 }
 
 impl ByteRange {
+    /// Range produced from real parser output. `anchored: true`.
     pub const fn new(start: u32, end: u32) -> Self {
-        Self { start, end }
+        Self { start, end, anchored: true }
     }
 
-    /// Zero-width range at `at`. Used for synthetic tree (markers, slot
-    /// wrappers) that has no source coverage but needs a `range` field.
+    /// Zero-width range at `at`. Used by lowerings for parser-derived
+    /// zero-width tree (missing optional bodies, fall-through positions);
+    /// these are still anchored to a real source offset.
     pub const fn empty_at(at: u32) -> Self {
-        Self { start: at, end: at }
+        Self { start: at, end: at, anchored: true }
+    }
+
+    /// Range on a synthetic node not derived from any source.
+    /// `anchored: false`. The byte offsets are nominally valid but the
+    /// renderer must not slice a source string with them.
+    pub const fn synthetic(start: u32, end: u32) -> Self {
+        Self { start, end, anchored: false }
+    }
+
+    /// Zero-width synthetic range (`0..0`, `anchored: false`). The
+    /// default placeholder for tree nodes built without source.
+    pub const fn synthetic_empty() -> Self {
+        Self { start: 0, end: 0, anchored: false }
     }
 
     pub const fn len(&self) -> u32 {
@@ -117,10 +170,87 @@ impl ByteRange {
         self.start >= self.end
     }
 
+    /// True when this range refers to a real source position.
+    pub const fn is_anchored(&self) -> bool {
+        self.anchored
+    }
+
     /// Slice the source by this range. Caller asserts `source` is the
-    /// same string the range was constructed from.
+    /// same string the range was constructed from, and that the range
+    /// is anchored.
     pub fn slice<'a>(&self, source: &'a str) -> &'a str {
         &source[self.start as usize..self.end as usize]
+    }
+}
+
+/// String-literal quote style preserved across the parse → render
+/// round-trip. Languages use different lexical forms for the same
+/// semantic string; the renderer reproduces the original form when
+/// anchored and uses a per-language default when synthetic.
+///
+/// New variants extend per-language as needed (e.g. Python f-strings,
+/// PHP heredocs/nowdocs). Keep the variant list small and well-named
+/// rather than encoding raw lexical fragments.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum QuoteStyle {
+    /// No surrounding quotes — YAML plain scalars, INI bare values,
+    /// Markdown text, T-SQL bare identifiers (`dbo.Users`).
+    /// The renderer emits the stored text verbatim.
+    Plain,
+    /// `'...'` — single-quoted (Python, JS, Ruby, PHP, SQL, YAML).
+    Single,
+    /// `"..."` — double-quoted (most languages, JSON, TOML, ANSI SQL).
+    Double,
+    /// `'''...'''` — triple-single-quoted (Python, TOML multiline literal).
+    TripleSingle,
+    /// `"""..."""` — triple-double-quoted (Python, TOML multiline basic).
+    TripleDouble,
+    /// `` `...` `` — backtick (TypeScript template literal, Go raw,
+    /// Ruby, MySQL identifier).
+    Backtick,
+    /// `[...]` — T-SQL bracketed identifier (`[Users]`). Allows
+    /// reserved words and special characters in identifier names.
+    Brackets,
+    /// `r"..."`, `b"..."`, `R"..."`, etc. — prefixed raw / byte literal.
+    /// `prefix` is the lowercase letter(s) before the opening quote.
+    Raw { prefix: String, inner: Box<QuoteStyle> },
+    /// `<<EOF ... EOF` — PHP / shell heredoc. `delimiter` is the
+    /// terminator identifier.
+    Heredoc { delimiter: String },
+    /// `|` (literal) / `>` (folded) — YAML block scalar. `folded`
+    /// distinguishes the two; `chomp` is `'-'` (strip), `'+'` (keep),
+    /// or `' '` (clip / default).
+    Block { folded: bool, chomp: char },
+}
+
+impl QuoteStyle {
+    /// XML marker name to emit on the wrapping element so XPath
+    /// queries can filter by quote style (e.g.
+    /// `<identifier[bracketed]>` matches T-SQL `[Users]`). Returns
+    /// `None` when the style has no marker.
+    pub fn marker_name(&self) -> Option<&'static str> {
+        match self {
+            QuoteStyle::Plain => None,
+            QuoteStyle::Single => Some("single-quoted"),
+            QuoteStyle::Double => Some("quoted"),
+            QuoteStyle::TripleSingle => Some("triple-single-quoted"),
+            QuoteStyle::TripleDouble => Some("triple-double-quoted"),
+            QuoteStyle::Backtick => Some("backticked"),
+            QuoteStyle::Brackets => Some("bracketed"),
+            QuoteStyle::Raw { .. } => Some("raw"),
+            QuoteStyle::Heredoc { .. } => Some("heredoc"),
+            QuoteStyle::Block { folded: false, .. } => Some("block-literal"),
+            QuoteStyle::Block { folded: true, .. } => Some("block-folded"),
+        }
+    }
+}
+
+impl QuoteStyle {
+    /// Conservative default for synthetic strings when no per-language
+    /// preference is supplied. Languages may override in their Syntax
+    /// config.
+    pub const fn default_double() -> Self {
+        QuoteStyle::Double
     }
 }
 
@@ -773,25 +903,38 @@ pub enum SyntaxTree {
     // ----- Atoms ---------------------------------------------------------
 
     /// `<name>text</name>` — value-namespace identifier (variable,
-    /// argument, function name when used as a value, etc.). Text is
-    /// `source[range]` at render time.
-    Name { range: ByteRange, span: Span },
+    /// argument, function name when used as a value, etc.). `text`
+    /// carries the identifier verbatim so the renderer can emit it
+    /// even for synthetic nodes with no source anchor (S13-Z1).
+    Name { text: String, range: ByteRange, span: Span },
 
     /// `<int>` / `<float>` / `<string>` / `<true>` / `<false>` /
     /// `<none>`. Renderer maps the variant to the element name and
-    /// emits `source[range]` as the text leaf.
+    /// emits the stored `text` as the leaf.
     ///
-    /// One variant per literal *kind*; we deliberately do **not** model
-    /// literals as one `Literal { kind, range }` because (a) some
+    /// `text` carries the *decoded* lexical form (numeric literal as
+    /// written; for `String`, the semantic content with escape
+    /// sequences already decoded — see [`QuoteStyle`] for the surface
+    /// form). One variant per literal *kind*; we deliberately do **not**
+    /// model literals as one `Literal { kind, range }` because (a) some
     /// literals have substructure (concatenated strings, f-strings)
     /// that will need their own variants and (b) keeping each kind as
     /// its own variant lets Rust pattern-match exhaustively.
-    Int    { range: ByteRange, span: Span },
-    Float  { range: ByteRange, span: Span },
-    String { range: ByteRange, span: Span },
-    True   { range: ByteRange, span: Span },
-    False  { range: ByteRange, span: Span },
-    None   { range: ByteRange, span: Span },
+    Int    { text: String, range: ByteRange, span: Span },
+    Float  { text: String, range: ByteRange, span: Span },
+    /// `<string>` — string literal. `text` is the *decoded* content
+    /// (e.g. for the source `"hello\n"` the text is `hello\n` with a
+    /// real newline byte); the renderer re-encodes using `quote_style`
+    /// and the language's escape table.
+    String {
+        text: String,
+        quote_style: QuoteStyle,
+        range: ByteRange,
+        span: Span,
+    },
+    True   { text: String, range: ByteRange, span: Span },
+    False  { text: String, range: ByteRange, span: Span },
+    None   { text: String, range: ByteRange, span: Span },
 
     /// `<{element_name}>text</{element_name}>` — generic per-language
     /// classified atom. Used when a language emits the same source-
@@ -799,9 +942,11 @@ pub enum SyntaxTree {
     /// CST role: e.g. T-SQL classifies `identifier` text as `<var>`
     /// when it starts with `@`, `<schema>` for the qualifier in
     /// `dbo.Users`, `<alias>` for trailing `AS`-position identifiers,
-    /// and `<name>` otherwise. Text is `source[range]` at render time.
+    /// and `<name>` otherwise. `text` carries the verbatim source so
+    /// the renderer can emit it without a source anchor (S13-Z1).
     Atom {
         element_name: &'static str,
+        text: String,
         range: ByteRange,
         span: Span,
     },
@@ -938,7 +1083,7 @@ pub enum SyntaxTree {
     /// (Python) because the keyword text differs and Principle #5
     /// applies *within* a language. We may unify the *element name*
     /// at render time later if a cross-language audit decides so.
-    Null   { range: ByteRange, span: Span },
+    Null   { text: String, range: ByteRange, span: Span },
 
     // ----- Escape hatches -------------------------------------------------
 
@@ -1485,6 +1630,57 @@ impl SyntaxTree {
             | SyntaxTree::Unknown { range, .. } => *range,
         }
     }
+
+    /// True iff this node's range refers to a real source position
+    /// (parser output or parser-derived fill-in). False for synthetic
+    /// nodes built without source — the renderer's gap-fallback chain
+    /// (S13-Z6) consults this to decide between source slicing and
+    /// canonical defaults.
+    pub fn is_anchored(&self) -> bool {
+        self.range().is_anchored()
+    }
+
+    /// Stored text for scalar-leaf variants (`Name`, `Atom`, `Int`,
+    /// `Float`, `String`, `True`, `False`, `None`, `Null`). Returns
+    /// `None` for compound variants. The renderer uses this to emit
+    /// leaf literals without consulting the source string (S13-Z1).
+    pub fn scalar_text(&self) -> Option<&str> {
+        match self {
+            SyntaxTree::Name { text, .. }
+            | SyntaxTree::Int { text, .. }
+            | SyntaxTree::Float { text, .. }
+            | SyntaxTree::String { text, .. }
+            | SyntaxTree::True { text, .. }
+            | SyntaxTree::False { text, .. }
+            | SyntaxTree::None { text, .. }
+            | SyntaxTree::Atom { text, .. }
+            | SyntaxTree::Null { text, .. } => Some(text.as_str()),
+            _ => None,
+        }
+    }
+
+    /// Replace the stored text on a scalar-leaf variant. Returns
+    /// `Err` for compound variants. Used by the editable-trees
+    /// mutation pipeline (S15-Z3): after [`find_by_id_syntax`]
+    /// locates a node, the mutation rewrites its stored text and the
+    /// renderer emits the new literal.
+    pub fn set_scalar_text(&mut self, new_text: &str) -> Result<(), &'static str> {
+        match self {
+            SyntaxTree::Name { text, .. }
+            | SyntaxTree::Int { text, .. }
+            | SyntaxTree::Float { text, .. }
+            | SyntaxTree::String { text, .. }
+            | SyntaxTree::True { text, .. }
+            | SyntaxTree::False { text, .. }
+            | SyntaxTree::None { text, .. }
+            | SyntaxTree::Atom { text, .. }
+            | SyntaxTree::Null { text, .. } => {
+                *text = new_text.to_string();
+                Ok(())
+            }
+            _ => Err("set_scalar_text only applies to scalar leaf variants"),
+        }
+    }
 }
 
 impl SyntaxTree {
@@ -1729,6 +1925,340 @@ impl SyntaxTree {
         // Sort by source order so consumers (renderer, audit walker)
         // don't have to repeat. Variants whose fields are already in
         // source order pay a near-zero sort cost.
+        v.sort_by_key(|c| c.range().start);
+        v
+    }
+}
+
+/// Unifying contract over the three tree families (`SyntaxTree`,
+/// `DataTree`, `SqlTree`). Lets generic pre-order walkers — ID
+/// stamping, ID lookup, coverage audits — work without per-variant
+/// match arms.
+///
+/// Children come back in source order so callers don't have to
+/// repeat the sort. `Vec<&_ T>` is intentional rather than a borrowed
+/// iterator: it lets the implementation push disjoint mutable borrows
+/// out of multiple struct fields in one match arm.
+pub trait TreeNode: Sized {
+    fn span(&self) -> Span;
+    fn span_mut(&mut self) -> &mut Span;
+    fn range(&self) -> ByteRange;
+    fn children(&self) -> Vec<&Self>;
+    fn children_mut(&mut self) -> Vec<&mut Self>;
+
+    /// True iff this node's range refers to a real source position.
+    /// False for synthetic nodes built without source.
+    fn is_anchored(&self) -> bool { self.range().is_anchored() }
+
+    /// Verbatim source slice covered by this node, equivalent to
+    /// `self.range().slice(source)`.
+    fn to_source<'a>(&self, source: &'a str) -> &'a str {
+        self.range().slice(source)
+    }
+}
+
+impl TreeNode for SyntaxTree {
+    fn span(&self) -> Span { self.span() }
+    fn range(&self) -> ByteRange { self.range() }
+
+    fn span_mut(&mut self) -> &mut Span {
+        match self {
+            SyntaxTree::Module { span, .. }
+            | SyntaxTree::Expression { span, .. }
+            | SyntaxTree::Access { span, .. }
+            | SyntaxTree::Call { span, .. }
+            | SyntaxTree::Binary { span, .. }
+            | SyntaxTree::Unary { span, .. }
+            | SyntaxTree::Tuple { span, .. }
+            | SyntaxTree::List { span, .. }
+            | SyntaxTree::Set { span, .. }
+            | SyntaxTree::Dictionary { span, .. }
+            | SyntaxTree::Pair { span, .. }
+            | SyntaxTree::GenericType { span, .. }
+            | SyntaxTree::Comparison { span, .. }
+            | SyntaxTree::If { span, .. }
+            | SyntaxTree::ElseIf { span, .. }
+            | SyntaxTree::Else { span, .. }
+            | SyntaxTree::For { span, .. }
+            | SyntaxTree::Foreach { span, .. }
+            | SyntaxTree::CFor { span, .. }
+            | SyntaxTree::DoWhile { span, .. }
+            | SyntaxTree::While { span, .. }
+            | SyntaxTree::Break { span, .. }
+            | SyntaxTree::Continue { span, .. }
+            | SyntaxTree::Lambda { span, .. }
+            | SyntaxTree::ObjectCreation { span, .. }
+            | SyntaxTree::Ternary { span, .. }
+            | SyntaxTree::FieldWrap { span, .. }
+            | SyntaxTree::SimpleStatement { span, .. }
+            | SyntaxTree::Try { span, .. }
+            | SyntaxTree::ExceptHandler { span, .. }
+            | SyntaxTree::TypeAlias { span, .. }
+            | SyntaxTree::KeywordArgument { span, .. }
+            | SyntaxTree::ListSplat { span, .. }
+            | SyntaxTree::DictSplat { span, .. }
+            | SyntaxTree::Function { span, .. }
+            | SyntaxTree::Class { span, .. }
+            | SyntaxTree::Body { span, .. }
+            | SyntaxTree::Parameter { span, .. }
+            | SyntaxTree::Skip { span, .. }
+            | SyntaxTree::PositionalSeparator { span, .. }
+            | SyntaxTree::KeywordSeparator { span, .. }
+            | SyntaxTree::Decorator { span, .. }
+            | SyntaxTree::Returns { span, .. }
+            | SyntaxTree::Generic { span, .. }
+            | SyntaxTree::TypeParameter { span, .. }
+            | SyntaxTree::Return { span, .. }
+            | SyntaxTree::Comment { span, .. }
+            | SyntaxTree::Assign { span, .. }
+            | SyntaxTree::Import { span, .. }
+            | SyntaxTree::From { span, .. }
+            | SyntaxTree::FromImport { span, .. }
+            | SyntaxTree::Path { span, .. }
+            | SyntaxTree::Aliased { span, .. }
+            | SyntaxTree::Name { span, .. }
+            | SyntaxTree::Int { span, .. }
+            | SyntaxTree::Float { span, .. }
+            | SyntaxTree::String { span, .. }
+            | SyntaxTree::True { span, .. }
+            | SyntaxTree::False { span, .. }
+            | SyntaxTree::None { span, .. }
+            | SyntaxTree::Atom { span, .. }
+            | SyntaxTree::Enum { span, .. }
+            | SyntaxTree::EnumMember { span, .. }
+            | SyntaxTree::Property { span, .. }
+            | SyntaxTree::Accessor { span, .. }
+            | SyntaxTree::Constructor { span, .. }
+            | SyntaxTree::Using { span, .. }
+            | SyntaxTree::Namespace { span, .. }
+            | SyntaxTree::Variable { span, .. }
+            | SyntaxTree::Is { span, .. }
+            | SyntaxTree::Cast { span, .. }
+            | SyntaxTree::Null { span, .. }
+            | SyntaxTree::Inline { span, .. }
+            | SyntaxTree::Unknown { span, .. } => span,
+        }
+    }
+
+    fn children(&self) -> Vec<&Self> { self.children() }
+
+    fn children_mut(&mut self) -> Vec<&mut Self> {
+        let mut v: Vec<&mut SyntaxTree> = Vec::new();
+        match self {
+            SyntaxTree::Module { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::Expression { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::Access { receiver, segments, .. } => {
+                v.push(receiver.as_mut());
+                for s in segments.iter_mut() {
+                    match s {
+                        AccessSegment::Member { .. } => {}
+                        AccessSegment::Index { indices, .. } => v.extend(indices.iter_mut()),
+                        AccessSegment::Call { arguments, .. } => v.extend(arguments.iter_mut()),
+                    }
+                }
+            }
+            SyntaxTree::Call { callee, arguments, .. } => {
+                v.push(callee.as_mut());
+                v.extend(arguments.iter_mut());
+            }
+            SyntaxTree::Binary { left, right, .. }
+            | SyntaxTree::Comparison { left, right, .. } => {
+                v.push(left.as_mut());
+                v.push(right.as_mut());
+            }
+            SyntaxTree::Unary { operand, .. } => v.push(operand.as_mut()),
+            SyntaxTree::If { condition, body, else_branch, .. }
+            | SyntaxTree::ElseIf { condition, body, else_branch, .. } => {
+                v.push(condition.as_mut());
+                v.push(body.as_mut());
+                if let Some(e) = else_branch { v.push(e.as_mut()); }
+            }
+            SyntaxTree::Else { body, .. } => v.push(body.as_mut()),
+            SyntaxTree::For { targets, iterables, body, else_body, .. } => {
+                v.extend(targets.iter_mut());
+                v.extend(iterables.iter_mut());
+                v.push(body.as_mut());
+                if let Some(e) = else_body { v.push(e.as_mut()); }
+            }
+            SyntaxTree::While { condition, body, else_body, .. } => {
+                v.push(condition.as_mut());
+                v.push(body.as_mut());
+                if let Some(e) = else_body { v.push(e.as_mut()); }
+            }
+            SyntaxTree::Foreach { type_ann, target, iterable, body, .. } => {
+                if let Some(t) = type_ann { v.push(t.as_mut()); }
+                v.push(target.as_mut());
+                v.push(iterable.as_mut());
+                v.push(body.as_mut());
+            }
+            SyntaxTree::CFor { initializer, condition, updates, body, .. } => {
+                if let Some(i) = initializer { v.push(i.as_mut()); }
+                if let Some(c) = condition { v.push(c.as_mut()); }
+                v.extend(updates.iter_mut());
+                v.push(body.as_mut());
+            }
+            SyntaxTree::DoWhile { body, condition, .. } => {
+                v.push(body.as_mut());
+                v.push(condition.as_mut());
+            }
+            SyntaxTree::Lambda { parameters, body, .. } => {
+                v.extend(parameters.iter_mut());
+                v.push(body.as_mut());
+            }
+            SyntaxTree::ObjectCreation { type_target, arguments, initializer, .. } => {
+                if let Some(t) = type_target { v.push(t.as_mut()); }
+                v.extend(arguments.iter_mut());
+                if let Some(i) = initializer { v.push(i.as_mut()); }
+            }
+            SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
+                v.push(condition.as_mut());
+                v.push(if_true.as_mut());
+                v.push(if_false.as_mut());
+            }
+            SyntaxTree::FieldWrap { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::SimpleStatement { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
+                v.push(try_body.as_mut());
+                v.extend(handlers.iter_mut());
+                if let Some(e) = else_body { v.push(e.as_mut()); }
+                if let Some(f) = finally_body { v.push(f.as_mut()); }
+            }
+            SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
+                if let Some(t) = type_target { v.push(t.as_mut()); }
+                if let Some(b) = binding { v.push(b.as_mut()); }
+                if let Some(f) = filter { v.push(f.as_mut()); }
+                v.push(body.as_mut());
+            }
+            SyntaxTree::TypeAlias { name, type_params, value, .. } => {
+                v.push(name.as_mut());
+                if let Some(p) = type_params { v.push(p.as_mut()); }
+                v.push(value.as_mut());
+            }
+            SyntaxTree::KeywordArgument { name, value, .. } => {
+                v.push(name.as_mut());
+                v.push(value.as_mut());
+            }
+            SyntaxTree::ListSplat { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::DictSplat { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::Function { decorators, name, generics, parameters, returns, body, .. } => {
+                v.extend(decorators.iter_mut());
+                v.push(name.as_mut());
+                if let Some(g) = generics { v.push(g.as_mut()); }
+                v.extend(parameters.iter_mut());
+                if let Some(r) = returns { v.push(r.as_mut()); }
+                if let Some(b) = body { v.push(b.as_mut()); }
+            }
+            SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
+                v.extend(decorators.iter_mut());
+                v.push(name.as_mut());
+                if let Some(g) = generics { v.push(g.as_mut()); }
+                v.extend(bases.iter_mut());
+                v.extend(where_clauses.iter_mut());
+                v.push(body.as_mut());
+            }
+            SyntaxTree::Body { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::Parameter { name, type_ann, default, .. } => {
+                v.push(name.as_mut());
+                if let Some(t) = type_ann { v.push(t.as_mut()); }
+                if let Some(d) = default { v.push(d.as_mut()); }
+            }
+            SyntaxTree::Decorator { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::Returns { type_ann, .. } => v.push(type_ann.as_mut()),
+            SyntaxTree::Generic { items, .. } => v.extend(items.iter_mut()),
+            SyntaxTree::TypeParameter { name, constraint, .. } => {
+                v.push(name.as_mut());
+                if let Some(c) = constraint { v.push(c.as_mut()); }
+            }
+            SyntaxTree::Return { value, .. } => {
+                if let Some(val) = value { v.push(val.as_mut()); }
+            }
+            SyntaxTree::Assign { targets, type_annotation, values, .. } => {
+                v.extend(targets.iter_mut());
+                if let Some(t) = type_annotation { v.push(t.as_mut()); }
+                v.extend(values.iter_mut());
+            }
+            SyntaxTree::Import { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::From { path, imports, .. } => {
+                if let Some(p) = path { v.push(p.as_mut()); }
+                v.extend(imports.iter_mut());
+            }
+            SyntaxTree::FromImport { name, alias, .. } => {
+                v.push(name.as_mut());
+                if let Some(a) = alias { v.push(a.as_mut()); }
+            }
+            SyntaxTree::Path { segments, .. } => v.extend(segments.iter_mut()),
+            SyntaxTree::Aliased { inner, .. } => v.push(inner.as_mut()),
+            SyntaxTree::Tuple { children, .. }
+            | SyntaxTree::List { children, .. }
+            | SyntaxTree::Set { children, .. } => v.extend(children.iter_mut()),
+            SyntaxTree::Dictionary { pairs, .. } => v.extend(pairs.iter_mut()),
+            SyntaxTree::Pair { key, value, .. } => {
+                v.push(key.as_mut());
+                v.push(value.as_mut());
+            }
+            SyntaxTree::GenericType { name, params, .. } => {
+                v.push(name.as_mut());
+                v.extend(params.iter_mut());
+            }
+            SyntaxTree::Is { value, type_target, .. } => {
+                v.push(value.as_mut());
+                v.push(type_target.as_mut());
+            }
+            SyntaxTree::Cast { type_ann, value, .. } => {
+                v.push(type_ann.as_mut());
+                v.push(value.as_mut());
+            }
+            SyntaxTree::Enum { decorators, name, underlying_type, members, .. } => {
+                v.extend(decorators.iter_mut());
+                v.push(name.as_mut());
+                if let Some(t) = underlying_type { v.push(t.as_mut()); }
+                v.extend(members.iter_mut());
+            }
+            SyntaxTree::EnumMember { decorators, name, value, .. } => {
+                v.extend(decorators.iter_mut());
+                v.push(name.as_mut());
+                if let Some(val) = value { v.push(val.as_mut()); }
+            }
+            SyntaxTree::Property { decorators, type_ann, name, accessors, value, .. } => {
+                v.extend(decorators.iter_mut());
+                if let Some(t) = type_ann { v.push(t.as_mut()); }
+                v.push(name.as_mut());
+                v.extend(accessors.iter_mut());
+                if let Some(val) = value { v.push(val.as_mut()); }
+            }
+            SyntaxTree::Accessor { body, .. } => {
+                if let Some(b) = body { v.push(b.as_mut()); }
+            }
+            SyntaxTree::Constructor { decorators, name, parameters, body, .. } => {
+                v.extend(decorators.iter_mut());
+                v.push(name.as_mut());
+                v.extend(parameters.iter_mut());
+                v.push(body.as_mut());
+            }
+            SyntaxTree::Using { alias, path, .. } => {
+                v.push(path.as_mut());
+                if let Some(a) = alias { v.push(a.as_mut()); }
+            }
+            SyntaxTree::Namespace { name, children, file_scoped: _, .. } => {
+                v.push(name.as_mut());
+                v.extend(children.iter_mut());
+            }
+            SyntaxTree::Variable { decorators, type_ann, name, value, .. } => {
+                v.extend(decorators.iter_mut());
+                if let Some(t) = type_ann { v.push(t.as_mut()); }
+                v.push(name.as_mut());
+                if let Some(val) = value { v.push(&mut val.inner); }
+            }
+            SyntaxTree::Inline { children, .. } => v.extend(children.iter_mut()),
+            // Leaves and markers — no SyntaxTree children.
+            SyntaxTree::Name { .. } | SyntaxTree::Int { .. } | SyntaxTree::Float { .. } | SyntaxTree::String { .. }
+            | SyntaxTree::True { .. } | SyntaxTree::False { .. } | SyntaxTree::None { .. } | SyntaxTree::Null { .. }
+            | SyntaxTree::Atom { .. }
+            | SyntaxTree::Skip { .. }
+            | SyntaxTree::Comment { .. } | SyntaxTree::PositionalSeparator { .. }
+            | SyntaxTree::KeywordSeparator { .. } | SyntaxTree::Break { .. } | SyntaxTree::Continue { .. }
+            | SyntaxTree::Unknown { .. } => {}
+        }
         v.sort_by_key(|c| c.range().start);
         v
     }

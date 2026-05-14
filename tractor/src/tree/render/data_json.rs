@@ -10,51 +10,18 @@
 
 #![cfg(feature = "native")]
 
-use std::collections::HashMap;
-
 use crate::tree::data::DataTree;
+use super::data_common::{DataRenderOptions, DataSpanMap};
 
-/// `(line, col) → (rendered_start, rendered_end)` byte range map.
-///
-/// Same shape as [`crate::render::SpanMap`] so callers can lookup
-/// using the same `(line, column)` keys they already harvest from the
-/// tree's xot rendering.
-pub type DataSpanMap = HashMap<(u32, u32), (usize, usize)>;
+/// Legacy alias for the shared [`DataRenderOptions`]. Kept so existing
+/// callers (e.g. [`crate::mutation::xpath_upsert`]) compile against
+/// the renamed type without churn.
+pub type JsonRenderOptions = DataRenderOptions;
 
-/// Options for JSON output formatting.
-#[derive(Debug, Clone)]
-pub struct JsonRenderOptions {
-    /// Indentation string (e.g. two spaces, four spaces, tab).
-    pub indent: String,
-    /// Newline string (`"\n"` or `"\r\n"`).
-    pub newline: String,
-    /// Current indentation level (caller normally passes 0).
-    pub indent_level: usize,
-}
-
-impl Default for JsonRenderOptions {
-    fn default() -> Self {
-        Self {
-            indent: "  ".to_string(),
-            newline: "\n".to_string(),
-            indent_level: 0,
-        }
-    }
-}
-
-impl JsonRenderOptions {
-    fn indented(&self) -> Self {
-        Self {
-            indent: self.indent.clone(),
-            newline: self.newline.clone(),
-            indent_level: self.indent_level + 1,
-        }
-    }
-
-    fn current_indent(&self) -> String {
-        self.indent.repeat(self.indent_level)
-    }
-}
+/// Re-export of [`DataSpanMap`] under the old name. Both renderers
+/// produce the same span-map shape.
+#[allow(dead_code)]
+pub type JsonDataSpanMap = DataSpanMap;
 
 /// Render a [`DataTree`] to JSON source text and a span map.
 ///
@@ -231,9 +198,14 @@ fn scalar_text(tree: &DataTree) -> String {
 }
 
 fn emit_string(value: &str, buf: &mut String) {
-    buf.push('"');
-    buf.push_str(&escape_json_string(value));
-    buf.push('"');
+    // Delegates to the shared [`write_quoted_scalar`] primitive
+    // (Layer A) with JSON's escape table. Hard-codes `Double` because
+    // JSON only allows `"..."` strings — `quote_style` on a DataTree
+    // emitted as JSON is honoured only when round-trip-rendering YAML
+    // with the YAML emitter.
+    use crate::tree::render::common::write_quoted_scalar;
+    use crate::tree::types::QuoteStyle;
+    write_quoted_scalar(value, &QuoteStyle::Double, escape_json_string, buf);
 }
 
 fn escape_json_string(s: &str) -> String {

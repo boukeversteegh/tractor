@@ -15,7 +15,7 @@ module/
   │   ├─ path/name = "dataclasses"
   │   ├─ import/name = "dataclass"
   │   └─ import/name = "field"
-  ├─ from[relative and relative]/import/name = "sibling"
+  ├─ from[relative]/import/name = "sibling"
   ├─ from[relative]/
   │   ├─ path/name = "utils"
   │   └─ import[alias]/
@@ -96,7 +96,7 @@ module/
   ├─ class/
   │   ├─ name = "Box"
   │   ├─ type/name = "T"
-  │   └─ body[pass]
+  │   └─ body[pass] = "pass"
   ├─ alias/
   │   ├─ left/type/type[generic]/
   │   │   ├─ name = "Vec"
@@ -235,7 +235,7 @@ module/
   │   │   ├─ name = "repeat"
   │   │   └─ int = "3"
   │   ├─ name = "stacked"
-  │   └─ body[pass]
+  │   └─ body[pass] = "pass"
   ├─ class/
   │   ├─ decorator/name = "dataclass"
   │   ├─ name = "Point"
@@ -264,11 +264,11 @@ module/
   │                   └─ value/expression/name = "list"
   ├─ class/
   │   ├─ name = "Base"
-  │   └─ body[pass]
+  │   └─ body[pass] = "pass"
   ├─ class/
   │   ├─ name = "Meta"
   │   ├─ extends/type/name = "type"
-  │   └─ body[pass]
+  │   └─ body[pass] = "pass"
   ├─ class/
   │   ├─ name = "Derived"
   │   ├─ extends/type/name = "Base"
@@ -361,7 +361,7 @@ module/
   │       │   │   ├─ left/expression/name = "n"
   │       │   │   ├─ op[assign and plus] = "+="
   │       │   │   └─ right/expression/int = "1"
-  │       │   └─ else/body[pass]
+  │       │   └─ else/body[pass] = "pass"
   │       ├─ try/
   │       │   ├─ body/expression/call/name = "risky"
   │       │   ├─ except/
@@ -377,7 +377,7 @@ module/
   │       │   │       └─ name = "e"
   │       │   ├─ except/
   │       │   │   ├─ value/expression/name = "Exception"
-  │       │   │   └─ body[pass]
+  │       │   │   └─ body[pass] = "pass"
   │       │   ├─ else/body/assign/
   │       │   │   ├─ left/expression/name = "total"
   │       │   │   ├─ op[assign and plus] = "+="
@@ -411,9 +411,9 @@ module/
   │           ├─ arm/
   │           │   ├─ pattern[dict]/
   │           │   │   ├─ string = "\"type\""
-  │           │   │   ├─ value/expression/string = "\"ping\""
+  │           │   │   ├─ value/string = "\"ping\""
   │           │   │   ├─ string = "\"id\""
-  │           │   │   └─ value/expression/path/name = "pid"
+  │           │   │   └─ value/path/name = "pid"
   │           │   ├─ guard/compare/
   │           │   │   ├─ name = "pid"
   │           │   │   ├─ op[compare and greater] = ">"

@@ -57,13 +57,18 @@ static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"\s*(line|column|end_line|end_column)="[^"]*""#).unwrap()
 });
 
-/// Extract location directly from xot node attributes (fast path - no serialization)
-fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
+/// Extract location and (optional) editable-trees `@id` directly from
+/// xot node attributes (fast path — no serialization). The `@id`
+/// attribute is stamped by the typed-tree → xot projection
+/// (S15-Z2) and carries through to XPath matches for the mutation
+/// pipeline.
+fn extract_location_and_id_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32, Option<u32>) {
     if let Value::Element(_) = xot.value(node) {
         let mut line = 1u32;
         let mut col = 1u32;
         let mut end_line = 1u32;
         let mut end_col = 1u32;
+        let mut id: Option<u32> = None;
 
         for (name_id, value) in xot.attributes(node).iter() {
             let name = xot.local_name_str(name_id);
@@ -72,6 +77,13 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
                 "column" => { if let Ok(v) = value.parse() { col = v; } }
                 "end_line" => { if let Ok(v) = value.parse() { end_line = v; } }
                 "end_column" => { if let Ok(v) = value.parse() { end_col = v; } }
+                "id" => {
+                    if let Ok(v) = value.parse::<u32>() {
+                        if v != 0 {
+                            id = Some(v);
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -82,9 +94,9 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
             end_col = col;
         }
 
-        (line, col, end_line, end_col)
+        (line, col, end_line, end_col, id)
     } else {
-        (1, 1, 1, 1)
+        (1, 1, 1, 1, None)
     }
 }
 
@@ -287,8 +299,9 @@ fn execute_direct_query(
             match item {
                 xee_xpath::Item::Node(node) => {
                     let xot = documents.xot();
-                    // Extract location directly from xot attributes (fast - no serialization)
-                    let (line, col, end_line, end_col) = extract_location_from_xot(xot, node);
+                    // Extract location and editable-trees @id directly from
+                    // xot attributes (fast - no serialization).
+                    let (line, col, end_line, end_col, node_id) = extract_location_and_id_from_xot(xot, node);
 
                     let ts0 = Instant::now();
                     let value = xot.string_value(node);
@@ -314,7 +327,7 @@ fn execute_direct_query(
                         crate::xpath::Tree::Xml(xml_node)
                     };
 
-                    let m = Match::with_location(
+                    let mut m = Match::with_location(
                         file_path.to_string(),
                         line,
                         col,
@@ -323,6 +336,9 @@ fn execute_direct_query(
                         value,
                         Arc::clone(&source_lines),
                     ).with_tree(tree);
+                    if let Some(id) = node_id {
+                        m = m.with_node_id(id);
+                    }
                     matches.push(m);
                 }
                 xee_xpath::Item::Atomic(atomic) => {

@@ -1175,9 +1175,16 @@ pub mod helpers {
         Ok(())
     }
 
-    /// Copy source location attributes from one node to another
+    /// Copy source location attributes (line / column / end_line /
+    /// end_column / editable-trees `id`) from one node to another.
+    /// Used by marker emission in the imperative transform path so a
+    /// `<public/>` / `<async/>` flag inherits its source token's
+    /// position. `id` is copied alongside line/column for
+    /// consistency — the typed pipeline already does this implicitly
+    /// because markers and their containing typed nodes share a
+    /// `Span`; this helper keeps the imperative path symmetric.
     pub fn copy_source_location(xot: &mut Xot, from: XotNode, to: XotNode) {
-        for attr in &["line", "column", "end_line", "end_column"] {
+        for attr in &["line", "column", "end_line", "end_column", "id"] {
             if let Some(v) = get_attr(xot, from, attr) {
                 set_attr(xot, to, attr, &v);
             }

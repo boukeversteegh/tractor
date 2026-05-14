@@ -15,7 +15,7 @@ use tree_sitter::Node as TsNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
-use crate::tree::types::ByteRange;
+use crate::tree::types::{ByteRange, QuoteStyle};
 
 /// Lower a YAML CST root node (`stream`) to [`DataTree`].
 pub fn lower_yaml_data_root(root: TsNode<'_>, source: &str) -> DataTree {
@@ -73,7 +73,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 },
                 (Some(k), None) => DataTree::Pair {
                     key: Box::new(lower_node(k, source)),
-                    value: Box::new(DataTree::Null { range: ByteRange::empty_at(range.end), span }),
+                    value: Box::new(DataTree::Null {
+                        text: String::new(),
+                        range: ByteRange::empty_at(range.end),
+                        span,
+                    }),
                     range,
                     span,
                 },
@@ -98,7 +102,11 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             let inner = node.named_children(&mut cursor).next();
             match inner {
                 Some(c) => lower_node(c, source),
-                None => DataTree::Null { range, span },
+                None => DataTree::Null {
+                    text: String::new(),
+                    range,
+                    span,
+                },
             }
         }
 
@@ -110,17 +118,24 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             let raw = text_of(node, source);
             let trimmed = raw.trim();
             if let Some(b) = parse_bool(trimmed) {
-                return DataTree::Bool { value: b, range, span };
+                return DataTree::Bool {
+                    value: b,
+                    text: raw,
+                    range,
+                    span,
+                };
             }
             if is_null_literal(trimmed) {
-                return DataTree::Null { range, span };
+                return DataTree::Null { text: raw, range, span };
             }
             if is_numeric_literal(trimmed) {
                 return DataTree::Number { text: trimmed.to_string(), range, span };
             }
-            // Otherwise, string. Strip surrounding quotes if any.
+            // Otherwise, string. Strip surrounding quotes if any and
+            // tag the quote style from the CST kind.
             let value = strip_yaml_quotes(&raw);
-            DataTree::String { value, range, span }
+            let quote_style = yaml_quote_style(node.kind(), &raw);
+            DataTree::String { value, quote_style, range, span }
         }
         "integer_scalar" | "float_scalar" => DataTree::Number {
             text: text_of(node, source),
@@ -130,9 +145,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
         "boolean_scalar" => {
             let raw = text_of(node, source);
             let value = parse_bool(raw.trim()).unwrap_or(false);
-            DataTree::Bool { value, range, span }
+            DataTree::Bool { value, text: raw, range, span }
         }
-        "null_scalar" => DataTree::Null { range, span },
+        "null_scalar" => {
+            let raw = text_of(node, source);
+            DataTree::Null { text: raw, range, span }
+        }
 
         "comment" => {
             let raw = text_of(node, source);
@@ -152,11 +170,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                     children.push(DataTree::Pair {
                         key: Box::new(DataTree::String {
                             value: "version".to_string(),
+                            quote_style: QuoteStyle::Plain,
                             range: range_of(c),
                             span: span_of(c),
                         }),
                         value: Box::new(DataTree::String {
                             value: text_of(c, source).trim().to_string(),
+                            quote_style: QuoteStyle::Plain,
                             range: range_of(c),
                             span: span_of(c),
                         }),
@@ -182,11 +202,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 children.push(DataTree::Pair {
                     key: Box::new(DataTree::String {
                         value: key.to_string(),
+                        quote_style: QuoteStyle::Plain,
                         range: range_of(c),
                         span: span_of(c),
                     }),
                     value: Box::new(DataTree::String {
                         value: text_of(c, source).trim().to_string(),
+                        quote_style: QuoteStyle::Plain,
                         range: range_of(c),
                         span: span_of(c),
                     }),
@@ -244,6 +266,31 @@ fn is_numeric_literal(s: &str) -> bool {
     }
     // Integer or float — let str::parse handle the gnarly cases.
     s.parse::<f64>().is_ok()
+}
+
+/// Map a YAML scalar CST kind + raw text to a [`QuoteStyle`]. Plain
+/// scalars use [`QuoteStyle::Plain`]; single / double quoted use the
+/// matching variant; block scalars (`|` / `>`) become
+/// [`QuoteStyle::Block`] with `folded` set from the leading marker.
+/// Unrecognised kinds fall back to `Plain`.
+fn yaml_quote_style(kind: &str, raw: &str) -> QuoteStyle {
+    match kind {
+        "single_quote_scalar" => QuoteStyle::Single,
+        "double_quote_scalar" => QuoteStyle::Double,
+        "block_scalar" => {
+            // First non-whitespace char distinguishes literal vs folded.
+            let folded = raw.trim_start().starts_with('>');
+            // Chomp indicator follows the `|`/`>` marker.
+            let chomp = raw
+                .chars()
+                .skip_while(|c| !matches!(c, '|' | '>'))
+                .nth(1)
+                .filter(|c| matches!(c, '-' | '+'))
+                .unwrap_or(' ');
+            QuoteStyle::Block { folded, chomp }
+        }
+        _ => QuoteStyle::Plain,
+    }
 }
 
 fn strip_yaml_quotes(raw: &str) -> String {

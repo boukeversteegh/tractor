@@ -66,12 +66,12 @@ unit/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "X"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ value/expression/name = "x"
+  │   │       │   └─ value/name = "x"
   │   │       ├─ property[public]/
   │   │       │   ├─ type/name = "double"
   │   │       │   ├─ name = "Y"
   │   │       │   ├─ get = "get;"
-  │   │       │   └─ value/expression/name = "y"
+  │   │       │   └─ value/name = "y"
   │   │       ├─ operator[public and static]/
   │   │       │   ├─ type/name = "Point"
   │   │       │   ├─ parameter/
@@ -161,8 +161,8 @@ unit/
   │   │                   ├─ name = "Combine"
   │   │                   ├─ name = "X"
   │   │                   └─ name = "Y"
-  │   ├─ record[public]/name = "Money"
-  │   ├─ record[public]/
+  │   ├─ record[public and body]/name = "Money"
+  │   ├─ record[public and body]/
   │   │   ├─ name = "TaxedMoney"
   │   │   └─ extends/type/
   │   │       ├─ name = "Money"
@@ -200,13 +200,13 @@ unit/
   │   │       │   ├─ name = "Name"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set = "set;"
-  │   │       │   └─ value/expression/string = "\"\""
+  │   │       │   └─ value/string = "\"\""
   │   │       ├─ property[public and virtual]/
   │   │       │   ├─ type/name = "Priority"
   │   │       │   ├─ name = "Priority"
   │   │       │   ├─ get = "get;"
   │   │       │   ├─ set[protected] = "protected set;"
-  │   │       │   └─ value/expression/object[access]/
+  │   │       │   └─ value/object[access]/
   │   │       │       ├─ name = "Priority"
   │   │       │       └─ member/name = "Low"
   │   │       ├─ indexer[public]/
@@ -242,7 +242,9 @@ unit/
   │   │           ├─ name = "OnChanged"
   │   │           └─ body/object[access]/
   │   │               ├─ name = "Changed"
-  │   │               └─ member[optional]/name = "Invoke"
+  │   │               └─ member[optional]/
+  │   │                   ├─ name = "Invoke"
+  │   │                   └─ call = "(this)"
   │   ├─ class[public and sealed and partial]/
   │   │   ├─ name = "Widget"
   │   │   ├─ extends/type/name = "EntityBase"
@@ -368,7 +370,9 @@ unit/
   │               │   └─ value/expression/binary/
   │               │       ├─ left/expression/object[access]/
   │               │       │   ├─ name = "widget"
-  │               │       │   └─ member[optional]/name = "Shout"
+  │               │       │   └─ member[optional]/
+  │               │       │       ├─ name = "Shout"
+  │               │       │       └─ call = "()"
   │               │       ├─ op[nullish] = "??"
   │               │       └─ right/expression/string = "\"n/a\""
   │               ├─ variable/
@@ -906,24 +910,24 @@ unit/
       │       │       ├─ name = "o"
       │       │       ├─ arm/
       │       │       │   ├─ pattern[and]/
-      │       │       │   │   ├─ left/expression/pattern[declaration]/
+      │       │       │   │   ├─ left/pattern[declaration]/
       │       │       │   │   │   ├─ type/name = "int"
       │       │       │   │   │   └─ name = "i"
-      │       │       │   │   └─ right/expression/pattern[relational]/int = "0"
+      │       │       │   │   └─ right/pattern[relational]/int = "0"
       │       │       │   └─ string = "\"positive int\""
       │       │       ├─ arm/
       │       │       │   ├─ pattern[and]/
-      │       │       │   │   ├─ left/expression/pattern[declaration]/
+      │       │       │   │   ├─ left/pattern[declaration]/
       │       │       │   │   │   ├─ type/name = "int"
       │       │       │   │   │   └─ name = "i"
-      │       │       │   │   └─ right/expression/pattern[relational]/int = "0"
+      │       │       │   │   └─ right/pattern[relational]/int = "0"
       │       │       │   └─ string = "\"non-positive int\""
       │       │       ├─ arm/
       │       │       │   ├─ pattern[or]/
-      │       │       │   │   ├─ left/expression/pattern[declaration]/
+      │       │       │   │   ├─ left/pattern[declaration]/
       │       │       │   │   │   ├─ type/name = "string"
       │       │       │   │   │   └─ name = "s"
-      │       │       │   │   └─ right/expression/pattern[constant]/null = "null"
+      │       │       │   │   └─ right/pattern[constant]/null = "null"
       │       │       │   └─ string = "\"string or null\""
       │       │       ├─ arm/
       │       │       │   ├─ pattern[negated]/pattern/type/name = "string"
@@ -949,7 +953,7 @@ unit/
       │       │       │   ├─ name = "Value"
       │       │       │   ├─ get = "get;"
       │       │       │   ├─ set = "set;"
-      │       │       │   └─ value/expression/new/name = "T"
+      │       │       │   └─ value/new/name = "T"
       │       │       ├─ indexer[public]/
       │       │       │   ├─ type/name = "T"
       │       │       │   ├─ parameter/
@@ -1130,8 +1134,8 @@ unit/
       │       │       │   ├─ type/name = "var"
       │       │       │   ├─ name = "asArr"
       │       │       │   └─ value/expression/is/
-      │       │       │       ├─ left/expression/name = "o"
-      │       │       │       └─ right/expression/type[array]/type/name = "int"
+      │       │       │       ├─ left/name = "o"
+      │       │       │       └─ right/type[array]/type/name = "int"
       │       │       └─ return/expression/binary/
       │       │           ├─ left/expression/object[access]/
       │       │           │   ├─ name = "joined"
@@ -1240,7 +1244,7 @@ unit/
       │       │   ├─ parameter/
       │       │   │   ├─ type/type/
       │       │   │   │   ├─ parameter/type/name = "int"
-      │       │   │   │   └─ returns/type/name = "void"
+      │       │   │   │   └─ returns/name = "void"
       │       │   │   └─ name = "fn"
       │       │   ├─ parameter/
       │       │   │   ├─ type/name = "int"
@@ -1431,7 +1435,7 @@ unit/
       │       ├─ name = "IFormat"
       │       └─ body/string = "\"explicit\""
       ├─ comment = "// Record declaration with positional parameters + with-expression."
-      ├─ record[public]/name = "Point"
+      ├─ record[public and body]/name = "Point"
       ├─ class[public and static]/
       │   ├─ name = "RecordUse"
       │   └─ body/method[public and static]/
@@ -1462,7 +1466,13 @@ unit/
       ├─ comment = "// Preprocessor regions, conditionals, define/elif, nullable, pragma."
       ├─ int = "0168"
       ├─ name = "DEBUG"
-      ├─ class[internal and static]/name = "Debugging"
+      ├─ class[internal and static]/
+      │   ├─ name = "Debugging"
+      │   └─ body = "{ }"
       ├─ name = "LEGACY"
-      ├─ class[internal and static]/name = "Legacy"
-      └─ class[internal and static]/name = "Modern"
+      ├─ class[internal and static]/
+      │   ├─ name = "Legacy"
+      │   └─ body = "{ }"
+      └─ class[internal and static]/
+          ├─ name = "Modern"
+          └─ body = "{ }"

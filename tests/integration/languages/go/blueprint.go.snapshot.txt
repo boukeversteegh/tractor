@@ -570,10 +570,10 @@ file/
           │   │       │   └─ name = "int"
           │   │       ├─ pair/
           │   │       │   ├─ string = "\"a\""
-          │   │       │   └─ value/expression/int = "1"
+          │   │       │   └─ value/int = "1"
           │   │       └─ pair/
           │   │           ├─ string = "\"b\""
-          │   │           └─ value/expression/int = "2"
+          │   │           └─ value/int = "2"
           │   └─ body/assign/
           │       ├─ left/expression/
           │       │   ├─ name = "_"
@@ -653,21 +653,21 @@ file/
           │       │       ├─ name = "Point"
           │       │       ├─ pair/
           │       │       │   ├─ name = "X"
-          │       │       │   └─ value/expression/int = "1"
+          │       │       │   └─ value/int = "1"
           │       │       └─ pair/
           │       │           ├─ name = "Y"
-          │       │           └─ value/expression/int = "2"
+          │       │           └─ value/int = "2"
           │       └─ literal/
           │           ├─ slice/name = "Point"
           │           ├─ pair/
           │           │   ├─ name = "X"
-          │           │   └─ value/expression/int = "0"
+          │           │   └─ value/int = "0"
           │           ├─ pair/
           │           │   ├─ name = "X"
-          │           │   └─ value/expression/int = "1"
+          │           │   └─ value/int = "1"
           │           └─ pair/
           │               ├─ name = "Y"
-          │               └─ value/expression/int = "1"
+          │               └─ value/int = "1"
           ├─ variable[short]/
           │   ├─ left/expression/name = "m"
           │   └─ right/expression/literal/
@@ -676,9 +676,9 @@ file/
           │       │   └─ name = "Point"
           │       └─ pair/
           │           ├─ string = "\"a\""
-          │           └─ value/expression/pair/
+          │           └─ value/pair/
           │               ├─ name = "X"
-          │               └─ value/expression/int = "1"
+          │               └─ value/int = "1"
           ├─ var[unexported]/
           │   ├─ name = "r"
           │   ├─ type/

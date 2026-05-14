@@ -6,6 +6,7 @@
       public class
       <name>Calculator</name>
       <body>
+        {
         <method>
           <!-- ... (23 children) -->
         </method>
@@ -15,6 +16,7 @@
         <method>
           <!-- ... (23 children) -->
         </method>
+        }
       </body>
     </class>
   </tree>
@@ -24,6 +26,7 @@
       public class
       <name>Greeter</name>
       <body>
+        {
         <method>
           <!-- ... (19 children) -->
         </method>
@@ -33,6 +36,7 @@
         <method>
           <!-- ... (4 children) -->
         </method>
+        }
       </body>
     </class>
   </tree>

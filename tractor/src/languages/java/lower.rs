@@ -14,7 +14,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    false_of, float_of, int_of, name_of, null_of, range_of, span_of, string_of, text_of, true_of,
+};
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
 
 /// Lower a Java tree-sitter root node to [`SyntaxTree`].
@@ -48,23 +50,23 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
     match node.kind() {
         // ----- Atoms -----------------------------------------------------
         "identifier" | "type_identifier" | "scoped_type_identifier" => {
-            SyntaxTree::Name { range, span }
+            name_of(node, source)
         }
         "decimal_integer_literal"
         | "hex_integer_literal"
         | "octal_integer_literal"
-        | "binary_integer_literal" => SyntaxTree::Int { range, span },
+        | "binary_integer_literal" => int_of(node, source),
         "decimal_floating_point_literal" | "hex_floating_point_literal" => {
-            SyntaxTree::Float { range, span }
+            float_of(node, source)
         }
-        "string_literal" | "character_literal" => SyntaxTree::String { range, span },
-        "true" => SyntaxTree::True { range, span },
-        "false" => SyntaxTree::False { range, span },
-        "null_literal" => SyntaxTree::Null { range, span },
+        "string_literal" | "character_literal" => string_of(node, source),
+        "true" => true_of(node, source),
+        "false" => false_of(node, source),
+        "null_literal" => null_of(node, source),
 
         // Predefined types: bare names. (`int`/`long`/`boolean`/...)
         "boolean_type" | "integral_type" | "floating_point_type" => {
-            SyntaxTree::Name { range, span }
+            name_of(node, source)
         }
         // Java `void` carries an extra `<void/>` marker on the type
         // (query shortcut for "no return value"). Lower as a typed
@@ -73,7 +75,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             element_name: "type",
             modifiers: Modifiers::default(),
             extra_markers: &["void"],
-            children: vec![SyntaxTree::Name { range, span }],
+            children: vec![name_of(node, source)],
             range,
             span,
         },
@@ -190,7 +192,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 modifiers,
                 decorators,
                 name: Box::new(match name_node {
-                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown {
                         kind: format!("{}(missing name)", kind),
                         range,
@@ -295,7 +297,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 modifiers,
                 decorators,
                 name: Box::new(match name_node {
-                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown {
                         kind: format!("{}(missing name)", element_name),
                         range,
@@ -351,7 +353,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 extra_markers,
                 modifiers: Modifiers::default(),
                 name: Box::new(match name_node {
-                    Some(n) => SyntaxTree::Name { range: range_of(n), span: span_of(n) },
+                    Some(n) => name_of(n, source),
                     None => SyntaxTree::Unknown {
                         kind: "parameter(missing name)".to_string(),
                         range,
@@ -567,10 +569,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
             }
             if let Some(n) = name_node {
-                children.push(SyntaxTree::Name {
-                    range: range_of(n),
-                    span: span_of(n),
-                });
+                children.push(name_of(n, source));
             }
             if let Some(v) = value_node {
                 let expr = crate::tree::Expression::wrap(lower_node(v, source));
@@ -898,10 +897,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
                 (None, Some(n)) => {
                     // Bare invocation `name(args)`.
-                    let callee = SyntaxTree::Name {
-                        range: range_of(n),
-                        span: span_of(n),
-                    };
+                    let callee = name_of(n, source);
                     SyntaxTree::Call {
                         callee: Box::new(callee),
                         arguments,
@@ -1020,10 +1016,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             }
             let mut children: Vec<SyntaxTree> = Vec::new();
             if let Some(n) = name_node {
-                children.push(SyntaxTree::Name {
-                    range: range_of(n),
-                    span: span_of(n),
-                });
+                children.push(name_of(n, source));
             }
             if let Some(tb) = bound_node {
                 let mut bc = tb.walk();
@@ -1212,10 +1205,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             // `RED`, `BLUE(0xff)` — has identifier name + optional arguments.
             let name_node = node.child_by_field_name("name");
             let name = match name_node {
-                Some(n) => Box::new(SyntaxTree::Name {
-                    range: range_of(n),
-                    span: span_of(n),
-                }),
+                Some(n) => Box::new(name_of(n, source)),
                 None => Box::new(SyntaxTree::Unknown {
                     kind: "enum_constant(no name)".to_string(),
                     range,
@@ -1323,10 +1313,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let modifiers = lower_java_modifiers(node, source, Some(Access::Public));
             let name_node = node.child_by_field_name("name");
             let name = match name_node {
-                Some(n) => Box::new(SyntaxTree::Name {
-                    range: range_of(n),
-                    span: span_of(n),
-                }),
+                Some(n) => Box::new(name_of(n, source)),
                 None => Box::new(SyntaxTree::Unknown {
                     kind: "compact_ctor(no name)".to_string(),
                     range,
@@ -1472,10 +1459,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
             }
             if let Some(n) = name_node {
-                children.push(SyntaxTree::Name {
-                    range: range_of(n),
-                    span: span_of(n),
-                });
+                children.push(name_of(n, source));
             }
             SyntaxTree::SimpleStatement {
                 element_name: "pattern",
@@ -1573,10 +1557,7 @@ fn lower_java_catch_clause(node: TsNode<'_>, source: &str) -> SyntaxTree {
                             type_target = Some(Box::new(lower_node(inner, source)));
                         }
                         "identifier" => {
-                            binding = Some(Box::new(SyntaxTree::Name {
-                                range: range_of(inner),
-                                span: span_of(inner),
-                            }));
+                            binding = Some(Box::new(name_of(inner, source)));
                         }
                         _ => {}
                     }
@@ -1691,10 +1672,7 @@ fn lower_java_multi_declarator(
         let value_node = d.child_by_field_name("value");
         let mut decl_children: Vec<SyntaxTree> = Vec::new();
         if let Some(n) = name_node {
-            decl_children.push(SyntaxTree::Name {
-                range: range_of(n),
-                span: span_of(n),
-            });
+            decl_children.push(name_of(n, source));
         }
         if let Some(v) = value_node {
             // <value><expression>...</expression></value> — value-position
@@ -1761,10 +1739,7 @@ fn lower_variable_declarator(
             span,
         };
     };
-    let name_ir = SyntaxTree::Name {
-        range: range_of(n),
-        span: span_of(n),
-    };
+    let name_ir = name_of(n, source);
     let type_ir = type_node.map(|t| Box::new(lower_node(t, source)));
     // Wrap the value in a `<value>` SimpleStatement so the post-pass'
     // `wrap_expression_positions` finds it (it scans for `<value>`,

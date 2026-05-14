@@ -1,15 +1,14 @@
 //! Java: tree → source code (canonical, no-anchor).
-#![allow(dead_code)]
 use crate::tree::render::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(tree, &mut out, Indent::SPACES_4, &java_syntax());
+    write_ir(tree, &mut out, Indent::SPACES_4, &syntax());
     out
 }
 
-fn java_syntax() -> Syntax {
+pub fn syntax() -> Syntax {
     Syntax {
         fn_keyword: "void", class_keyword: "class", interface_keyword: "interface",
         return_keyword: "return", if_keyword: "if", elif_keyword: "else if",

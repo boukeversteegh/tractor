@@ -14,7 +14,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    float_of, int_of, name_of, range_of, span_of, string_of, text_of,
+};
 use crate::tree::types::{Access, AccessSegment, ByteRange, SyntaxTree, Modifiers, ParamKind, Span};
 
 /// Lower a Rust tree-sitter root node to [`SyntaxTree`].
@@ -152,7 +154,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // ----- Atoms ---------------------------------------------------
         "identifier" | "type_identifier" | "field_identifier"
         | "shorthand_field_identifier" | "primitive_type" | "self"
-        | "super" | "super_" | "metavariable" | "label" => SyntaxTree::Name { range, span },
+        | "super" | "super_" | "metavariable" | "label" => name_of(node, source),
 
         // `_` wildcard pattern (unnamed token, but reachable via the
         // pattern field of let_declaration / match_arm / etc.).
@@ -165,7 +167,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let mut cursor = node.walk();
             let identifier = node.named_children(&mut cursor).find(|c| c.kind() == "identifier");
             let children = match identifier {
-                Some(id) => vec![SyntaxTree::Name { range: range_of(id), span: span_of(id) }],
+                Some(id) => vec![name_of(id, source)],
                 None => Vec::new(),
             };
             SyntaxTree::SimpleStatement {
@@ -183,12 +185,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         }
 
         // Literals.
-        "integer_literal" => SyntaxTree::Int { range, span },
-        "float_literal" => SyntaxTree::Float { range, span },
-        "string_literal" => SyntaxTree::String { range, span },
+        "integer_literal" => int_of(node, source),
+        "float_literal" => float_of(node, source),
+        "string_literal" => string_of(node, source),
         "raw_string_literal" => simple_statement_marked(node, "string", &["raw"], source),
         "char_literal" => simple_statement(node, "char", source),
-        "byte_literal" => SyntaxTree::String { range, span },
+        "byte_literal" => string_of(node, source),
         "boolean_literal" => SyntaxTree::SimpleStatement {
             element_name: "bool",
             modifiers: Modifiers::default(),
@@ -379,7 +381,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                         }
                         if let Some(n) = name_node {
                             if c.id() == n.id() {
-                                children.push(SyntaxTree::Name { range: range_of(c), span: span_of(c) });
+                                children.push(name_of(c, source));
                                 continue;
                             }
                         }
@@ -510,7 +512,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                     _ => {
                         if let Some(n) = name_node {
                             if c.id() == n.id() {
-                                children.push(SyntaxTree::Name { range: range_of(c), span: span_of(c) });
+                                children.push(name_of(c, source));
                                 continue;
                             }
                         }
@@ -555,7 +557,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let value_node = node.child_by_field_name("value");
             let mut children: Vec<SyntaxTree> = Vec::new();
             if let Some(n) = name_node {
-                children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
+                children.push(name_of(n, source));
             }
             if let Some(v) = value_node {
                 let inner = lower_node(v, source);
@@ -736,7 +738,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                         "type_identifier" | "identifier" | "scoped_type_identifier"
                         | "scoped_identifier" => {
                             // Collapse to single <name>FULL_TEXT</name>.
-                            SyntaxTree::Name { range: range_of(c), span: span_of(c) }
+                            name_of(c, source)
                         }
                         "type_arguments" => {
                             let mut tc = c.walk();
@@ -1512,7 +1514,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "foreign_mod_item" => simple_statement_marked(node, "mod", &["foreign", "extern"], source),
 
         // ----- Crate marker --------------------------------------------
-        "crate" => SyntaxTree::Name { range, span },
+        "crate" => name_of(node, source),
 
         // Default: surface as <unknown> so coverage diagnostics show it.
         other => SyntaxTree::Unknown {

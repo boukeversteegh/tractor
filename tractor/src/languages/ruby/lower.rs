@@ -9,7 +9,9 @@
 
 use tree_sitter::Node as TsNode;
 
-use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::lower_helpers::{
+    false_of, float_of, int_of, name_of, range_of, span_of, string_of, text_of, true_of,
+};
 use crate::tree::types::{AccessSegment, ByteRange, SyntaxTree, Modifiers};
 
 pub fn lower_ruby_root(root: TsNode<'_>, source: &str) -> SyntaxTree {
@@ -102,10 +104,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         "identifier" | "constant" | "global_variable" | "instance_variable"
         | "class_variable" | "self" | "method_identifier"
         | "encoding" | "file" | "line" | "setter" | "subshell"
-        | "super" | "uninterpreted" => SyntaxTree::Name { range, span },
+        | "super" | "uninterpreted" => name_of(node, source),
 
-        "integer" => SyntaxTree::Int { range, span },
-        "float" | "complex" | "rational" => SyntaxTree::Float { range, span },
+        "integer" => int_of(node, source),
+        "float" | "complex" | "rational" => float_of(node, source),
         "string" => {
             // Ruby strings can have `interpolation` children — for those
             // emit `<string>` with interpolation children. Plain strings
@@ -114,7 +116,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
             let has_interp = node.named_children(&mut cursor)
                 .any(|c| c.kind() == "interpolation");
             if !has_interp {
-                SyntaxTree::String { range, span }
+                string_of(node, source)
             } else {
                 let mut cursor2 = node.walk();
                 let children: Vec<SyntaxTree> = node
@@ -130,10 +132,10 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                 }
             }
         }
-        "character" => SyntaxTree::String { range, span },
+        "character" => string_of(node, source),
         "regex" => simple_statement(node, "regex", source),
-        "true" => SyntaxTree::True { range, span },
-        "false" => SyntaxTree::False { range, span },
+        "true" => true_of(node, source),
+        "false" => false_of(node, source),
         "nil" => SyntaxTree::SimpleStatement {
             element_name: "nil",
             modifiers: Modifiers::default(),
@@ -167,7 +169,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
                             element_name: "parameter",
                             modifiers: Modifiers::default(),
                             extra_markers: &[],
-                            children: vec![SyntaxTree::Name { range: range_of(c), span: span_of(c) }],
+                            children: vec![name_of(c, source)],
                             range: range_of(c),
                             span: span_of(c),
                         }
@@ -462,7 +464,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> SyntaxTree {
         // `operator` is a tree-sitter node for `def +(other)` style
         // operator method names. Lower as `<name>` so the method's name
         // child stays a name leaf.
-        "operator" => SyntaxTree::Name { range, span },
+        "operator" => name_of(node, source),
 
         other => SyntaxTree::Unknown { kind: other.to_string(), range, span },
     }
@@ -480,7 +482,7 @@ fn ruby_param_with_value(
     let value_node = node.child_by_field_name("value");
     let mut children: Vec<SyntaxTree> = Vec::new();
     if let Some(n) = name_node {
-        children.push(SyntaxTree::Name { range: range_of(n), span: span_of(n) });
+        children.push(name_of(n, source));
     }
     if let Some(v) = value_node {
         let inner = lower_node(v, source);

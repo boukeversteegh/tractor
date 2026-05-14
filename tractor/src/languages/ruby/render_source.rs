@@ -3,17 +3,16 @@
 //! Ruby uses `def`/`class`/`module`, `end`-terminated blocks (no
 //! braces), no `;` between statements, no parens around conditions.
 //! Modeled via empty `block_open` and `end` as `block_close`.
-#![allow(dead_code)]
 use crate::tree::render::common::{write_ir, Indent, Syntax};
 use crate::tree::types::SyntaxTree;
 
 pub fn render(tree: &SyntaxTree) -> String {
     let mut out = String::new();
-    write_ir(tree, &mut out, Indent::SPACES_2, &ruby_syntax());
+    write_ir(tree, &mut out, Indent::SPACES_2, &syntax());
     out
 }
 
-fn ruby_syntax() -> Syntax {
+pub fn syntax() -> Syntax {
     Syntax {
         fn_keyword: "def", class_keyword: "class", interface_keyword: "module",
         return_keyword: "return", if_keyword: "if", elif_keyword: "elsif",

@@ -17,4 +17,8 @@ pub mod to_xot;
 pub mod to_json;
 pub mod render_source;
 
-pub use types::{ComparisonOp, CreateKind, DropKind, JoinKind, QuoteStyle, SortDirection, SqlTree};
+pub use types::{ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree};
+// QuoteStyle is the shared cross-tree enum (since the Tier 1 SqlTree
+// unification). Re-exported here so `tree::sql::QuoteStyle` keeps
+// working for existing callers.
+pub use crate::tree::types::QuoteStyle;

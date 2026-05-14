@@ -71,7 +71,7 @@ program/
   │       │   │   ├─ type/name = "String"
   │       │   │   └─ name = "name"
   │       │   └─ body/
-  │       │       ├─ call[super]
+  │       │       ├─ call[super] = "();"
   │       │       └─ expression/assign/
   │       │           ├─ left/expression/object[access]/
   │       │           │   ├─ this = "this"

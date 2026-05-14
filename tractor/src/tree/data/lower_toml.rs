@@ -23,7 +23,7 @@ use tree_sitter::Node as TsNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
-use crate::tree::types::{ByteRange, Span};
+use crate::tree::types::{ByteRange, QuoteStyle, Span};
 
 pub fn lower_toml_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)
@@ -81,11 +81,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 tagged_body.push(DataTree::Pair {
                     key: Box::new(DataTree::String {
                         value: "__array_of_tables__".to_string(),
+                        quote_style: QuoteStyle::Plain,
                         range,
                         span,
                     }),
                     value: Box::new(DataTree::Bool {
                         value: true,
+                        text: "true".to_string(),
                         range,
                         span,
                     }),
@@ -101,6 +103,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             for (idx, seg) in segments.iter().enumerate().rev() {
                 let seg_ir = DataTree::String {
                     value: seg.0.clone(),
+                    quote_style: QuoteStyle::Plain,
                     range: seg.1,
                     span: seg.2,
                 };
@@ -151,12 +154,12 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // Key text used as an element name in the keyed
             // renderer. Strip surrounding quotes for quoted_key.
             let raw = text_of(node, source);
-            let value = if node.kind() == "quoted_key" {
-                strip_quotes(&raw)
+            let (value, quote_style) = if node.kind() == "quoted_key" {
+                (strip_quotes(&raw), QuoteStyle::Double)
             } else {
-                raw
+                (raw, QuoteStyle::Plain)
             };
-            DataTree::String { value, range, span }
+            DataTree::String { value, quote_style, range, span }
         }
         "dotted_key" => {
             // Dotted key like `foo.bar.baz` — flatten to a single
@@ -164,12 +167,14 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // needed later).
             DataTree::String {
                 value: text_of(node, source),
+                quote_style: QuoteStyle::Plain,
                 range,
                 span,
             }
         }
         "string" => DataTree::String {
             value: strip_quotes(&text_of(node, source)),
+            quote_style: QuoteStyle::Double,
             range,
             span,
         },
@@ -179,8 +184,9 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             span,
         },
         "boolean" => {
-            let value = text_of(node, source).trim() == "true";
-            DataTree::Bool { value, range, span }
+            let raw = text_of(node, source);
+            let value = raw.trim() == "true";
+            DataTree::Bool { value, text: raw, range, span }
         }
         "local_date" | "local_time" | "local_date_time" | "offset_date_time" => {
             // Treat dates / times as strings for now — they're
@@ -189,6 +195,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             // variant.
             DataTree::String {
                 value: text_of(node, source),
+                quote_style: QuoteStyle::Plain,
                 range,
                 span,
             }
@@ -279,7 +286,7 @@ fn collapse_array_of_tables(children: Vec<DataTree>) -> Vec<DataTree> {
 /// with `__array_of_tables__: true`), return its name + ranges.
 fn aot_key(tree: &DataTree) -> Option<(String, ByteRange, Span)> {
     let DataTree::Section { name, children, .. } = tree else { return None };
-    let DataTree::String { value: name_str, range, span } = name.as_ref() else { return None };
+    let DataTree::String { value: name_str, range, span, .. } = name.as_ref() else { return None };
     let first = children.first()?;
     let DataTree::Pair { key, value, .. } = first else { return None };
     let DataTree::String { value: key_str, .. } = key.as_ref() else { return None };
@@ -312,6 +319,7 @@ fn emit_aot_section(
     DataTree::Section {
         name: Box::new(DataTree::String {
             value: name,
+            quote_style: QuoteStyle::Plain,
             range: name_range,
             span: name_span,
         }),

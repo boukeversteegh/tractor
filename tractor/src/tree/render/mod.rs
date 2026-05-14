@@ -1,96 +1,121 @@
-//! tree → source code rendering. Per-language source emitters that walk
-//! the typed [`SyntaxTree`](crate::tree::SyntaxTree) tree and produce source code text.
+//! tree → source code rendering. One [`render`] function for all
+//! tree-supported languages, walking the typed
+//! [`SyntaxTree`](crate::tree::SyntaxTree) tree and assembling source
+//! text from three sources:
 //!
-//! ## Two rendering modes
+//! 1. **Language structure** — keywords and structural punctuation
+//!    driven by the tree's node type and the per-language
+//!    [`common::Syntax`] config.
+//! 2. **Stored scalar text** — every leaf variant carries the literal
+//!    it was lowered from (S13-Z1), so synthetic / programmatically-
+//!    built trees render too.
+//! 3. **Source gaps** — when an `Option<&str>` source anchor is
+//!    supplied and both adjacent nodes carry anchored byte ranges
+//!    (S13-Z2), the gap between them is sliced from source to
+//!    preserve whitespace / comments / formatting exactly. Otherwise
+//!    the renderer falls back to per-language canonical defaults
+//!    (S13-Z6 gap-fallback chain).
 //!
-//! 1. **Anchored** (`render(tree, lang, Some(source))`): Uses the tree's
-//!    byte ranges to slice gap text from the original source, the same
-//!    mechanism as [`crate::tree::to_source`]. Output is byte-for-byte
-//!    identical to the input source.
+//! ## Unified dispatch (S13-Z7)
 //!
-//! 2. **From-scratch** (`render(tree, lang, None)`): Renders source from
-//!    tree alone with canonical formatting rules per language. The
-//!    output should `lower_<lang>_root(parse(.))` back to a
-//!    structurally-equivalent tree.
-//!
-//! ## Status — pending wiring (TODO slice **S4**)
-//!
-//! This module is the tree-side reverse renderer, but it is **not yet
-//! reachable from the CLI**. While it sits unwired, `tractor render`,
-//! `tractor set`, and `tractor update` are stuck on the legacy
-//! `crate::render` (XmlNode + `TreeMode::Data`) path, which only
-//! supports 3 languages (csharp, json, yaml). Wiring this module is
-//! what lifts those commands to every tree-supported language (csharp,
-//! python, java, ts/js/tsx/jsx, rust, go, ruby, php, plus tsql via
-//! [`render_sql`]).
-//!
-//! Concrete work items (see `TODO.md`):
-//! - **S4A** — `cli/render.rs` calls [`render`] with parsed tree.
-//! - **S4B** — `mutation/xpath_upsert.rs` switches its
-//!   re-render/span-tracking to anchored tree rendering.
-//! - **S4C** — retire `crate::render::{parse_xml, parse_json}` once
-//!   no caller reads XmlNode-from-text.
-//! - **S4D** — delete `crate::render::{csharp,json,yaml}` once their
-//!   callers are gone.
-//!
-//! The per-language emitters cover the major tree variants today but
-//! are not yet exhaustive — atoms (`Name`/`Int`/`String`/...) emit
-//! placeholders in canonical mode because their text is only
-//! available via the source-anchor (their byte range). Anchored mode
-//! is already complete (it slices the original source); canonical
-//! mode is the work that remains for from-scratch source generation.
+//! `render(tree, lang, Some(source))` and `render(tree, lang, None)`
+//! both flow through the same engine. When the entire tree is
+//! anchored, the byte-slice fast path
+//! ([`crate::tree::to_source`]) is taken as an internal optimisation
+//! — but it is never the canonical entry point. Synthetic or partly-
+//! synthetic trees flow through the walker, which renders anchored
+//! regions from source and synthetic regions from the Syntax config
+//! / stored scalar text.
 
 #![cfg(feature = "native")]
-#![allow(dead_code)]
 
 pub mod common;
-// Per-language canonical-source emitters moved to
-// `languages/<lang>/render_source.rs` in S10B. The match dispatch in
-// `render()` below calls into them directly.
-// SQL-family canonical-source emitter moved to `tree::sql::render_source`
-// in S10D. The `render_sql` function below calls into it.
+// Per-language canonical-source emitters live under
+// `languages/<lang>/render_source.rs`; each exposes
+// `pub fn syntax() -> common::Syntax` consumed by the unified walker.
+// SQL-family canonical-source emitter is at `tree::sql::render_source`
+// — SqlTree has its own engine in [`render_sql`] below.
 // Data-language tree-direct source emitters (S4B-Z2). Read [`DataTree`]
 // directly and produce JSON / YAML text with optional span tracking
 // — replaces the [`crate::render`] XmlNode roundtrip for tree-pipeline
 // data languages.
+pub mod data_common;
 pub mod data_json;
 pub mod data_yaml;
 
 use super::SyntaxTree;
+use common::{Indent, Syntax};
 
-/// Render an tree tree to source code for the named language.
+/// Render a [`SyntaxTree`] to source code for the named language.
 ///
 /// `source_anchor`: the original source the tree was lowered from. When
-/// supplied, gap-text slicing is used to preserve original whitespace
-/// / comments / formatting (anchored mode). Pass `None` for canonical
-/// from-scratch rendering.
+/// supplied, gap-text slicing preserves original whitespace / comments
+/// / formatting at anchored positions (S13-Z6). Pass `None` for fully
+/// canonical from-scratch rendering — scalar leaves still render their
+/// stored text (S13-Z1) so synthetic trees produce real source.
+///
+/// All three modes (anchored, canonical, mixed) flow through the same
+/// engine (S13-Z7). The `Option<&str>` only affects per-gap behaviour,
+/// not whole-function dispatch.
 pub fn render(tree: &SyntaxTree, lang: &str, source_anchor: Option<&str>) -> String {
+    // T-SQL uses `SqlTree`, not `SyntaxTree` — call `render_sql` instead.
+    // This arm exists so callers passing "tsql" get a clear panic
+    // rather than silently falling through to generic.
+    if lang == "tsql" {
+        panic!("tsql uses SqlTree; call render_sql instead");
+    }
+
+    // Internal fast-path optimisation: when source is supplied AND the
+    // entire tree is anchored AND no transforms have been applied, the
+    // byte-slice path produces identical output without walking. This
+    // is *not* the canonical entry point — it's a private optimisation
+    // (S13-Z7); the walker handles the same case correctly, just more
+    // slowly.
     if let Some(source) = source_anchor {
-        return super::to_source(tree, source).to_string();
+        if tree_fully_anchored(tree) {
+            return super::to_source(tree, source).to_string();
+        }
     }
+
+    let sx = syntax_for(lang);
+    let mut out = String::new();
+    common::write_ir_with_source(tree, source_anchor, &mut out, Indent::SPACES_4, &sx);
+    out
+}
+
+/// Per-language [`Syntax`] config lookup. Falls back to
+/// [`Syntax::default`] for unknown languages so the walker still
+/// produces *something* readable.
+fn syntax_for(lang: &str) -> Syntax {
     match lang {
-        "csharp" => crate::languages::csharp::render_source::render(tree),
-        "java" => crate::languages::java::render_source::render(tree),
-        "python" => crate::languages::python::render_source::render(tree),
-        "typescript" => crate::languages::typescript::render_source::render(tree),
-        "rust" => crate::languages::rust_lang::render_source::render(tree),
-        "go" => crate::languages::go::render_source::render(tree),
-        "ruby" => crate::languages::ruby::render_source::render(tree),
-        "php" => crate::languages::php::render_source::render(tree),
-        // T-SQL uses `SqlTree`, not `SyntaxTree` — call `render_sql` instead.
-        // This arm exists so users passing "tsql" get a clear panic
-        // rather than silently falling through to generic.
-        "tsql" => panic!("tsql uses SqlTree; call render_sql instead"),
-        _ => common::render_generic(tree),
+        "csharp" => crate::languages::csharp::render_source::syntax(),
+        "java" => crate::languages::java::render_source::syntax(),
+        "python" => crate::languages::python::render_source::syntax(),
+        "typescript" => crate::languages::typescript::render_source::syntax(),
+        "rust" => crate::languages::rust_lang::render_source::syntax(),
+        "go" => crate::languages::go::render_source::syntax(),
+        "ruby" => crate::languages::ruby::render_source::syntax(),
+        "php" => crate::languages::php::render_source::syntax(),
+        _ => Syntax::default(),
     }
+}
+
+/// True iff every node in the tree carries an anchored byte range.
+/// Used by the fast-path optimisation in [`render`] (S13-Z7).
+fn tree_fully_anchored(tree: &SyntaxTree) -> bool {
+    if !tree.is_anchored() {
+        return false;
+    }
+    tree.children().into_iter().all(tree_fully_anchored)
 }
 
 /// Render a SQL [`SqlTree`](crate::tree::sql::SqlTree) tree to source text.
 ///
 /// `source_anchor`: the original source the tree was lowered from. When
-/// supplied, gap-text slicing returns the original bytes verbatim
-/// (anchored / lossless mode). Pass `None` for canonical from-scratch
-/// rendering.
+/// supplied AND the whole tree is anchored, the byte-slice fast path
+/// returns the original bytes verbatim. Otherwise the canonical
+/// renderer is used. (SqlTree's source-anchor reach into the walker
+/// — equivalent to S13-Z6 for SqlTree — is future work.)
 pub fn render_sql(tree: &super::sql::SqlTree, source_anchor: Option<&str>) -> String {
     if let Some(source) = source_anchor {
         return tree.to_source(source).to_string();

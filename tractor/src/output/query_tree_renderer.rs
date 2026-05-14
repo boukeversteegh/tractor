@@ -740,7 +740,8 @@ fn is_marker_element(node: &XmlNode, options: &RenderOptions) -> bool {
 fn is_hidden_meta_attr(name: &str) -> bool {
     matches!(
         name,
-        "line" | "column" | "end_line" | "end_column" | "kind" | "field" | "list" | "path"
+        "line" | "column" | "end_line" | "end_column"
+        | "kind" | "field" | "list" | "path" | "id"
     )
 }
 

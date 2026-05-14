@@ -77,6 +77,15 @@ pub struct Match {
     /// results. Format renderers (JSON / YAML / XML / source-text)
     /// dispatch on the variant.
     pub tree: Option<Tree>,
+    /// Editable-trees [`NodeId`](crate::tree::NodeId) recovered from
+    /// the matched xot element's `@id` attribute (S15-Z2). `Some`
+    /// when the match came from the typed-tree pipeline and the
+    /// element carries a stamped id; `None` for legacy XML matches,
+    /// XPath atomic / map / array results, and synthetic xot
+    /// elements that were not stamped. The mutation pipeline reads
+    /// this to look up the typed-tree node via
+    /// [`find_by_id_*`](crate::tree::find_by_id_syntax) (S15-Z3).
+    pub node_id: Option<u32>,
 }
 
 /// The matched subtree representation. The architectural target is
@@ -191,6 +200,7 @@ impl Match {
             value,
             source_lines: Arc::new(Vec::new()),
             tree: None,
+            node_id: None,
         }
     }
 
@@ -213,6 +223,7 @@ impl Match {
             value,
             source_lines,
             tree: None,
+            node_id: None,
         }
     }
 
@@ -220,6 +231,14 @@ impl Match {
     /// `Tree::Xml` for partial matches / XPath atomic results).
     pub fn with_tree(mut self, tree: Tree) -> Self {
         self.tree = Some(tree);
+        self
+    }
+
+    /// Attach the editable-trees [`NodeId`](crate::tree::NodeId)
+    /// recovered from the matched xot element's `@id` attribute
+    /// (S15-Z3 mutation pipeline).
+    pub fn with_node_id(mut self, id: u32) -> Self {
+        self.node_id = Some(id);
         self
     }
 

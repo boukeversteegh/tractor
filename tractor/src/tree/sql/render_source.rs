@@ -29,6 +29,7 @@
 
 #![cfg(feature = "native")]
 
+use crate::tree::render::common::{identity_escape, write_quoted_scalar};
 use crate::tree::sql::{QuoteStyle, SqlTree};
 
 /// Render a [`SqlTree`] tree as canonical SQL source text.
@@ -37,33 +38,57 @@ use crate::tree::sql::{QuoteStyle, SqlTree};
 /// canonical text re-parses to the same tree. Weaker than byte-
 /// identical round-trip but stronger than just-not-crashing.
 pub fn render(tree: &SqlTree) -> String {
+    let mut out = String::new();
+    write(tree, &mut out);
+    out
+}
+
+fn write(tree: &SqlTree, out: &mut String) {
     match tree {
         // ----- Atoms with quoting --------------------------------------
-        SqlTree::Identifier { value, quoting, .. } => quoting.wrap(value),
-        SqlTree::Schema { value, quoting, .. } => quoting.wrap(value),
-        SqlTree::Alias { value, quoting, .. } => quoting.wrap(value),
+        // SqlTree Tier 1: identifier-class scalars route through the
+        // shared `write_quoted_scalar` primitive (Layer A) so the
+        // quoting rule lives in one place across all tree types.
+        SqlTree::Identifier { value, quoting, .. }
+        | SqlTree::Schema { value, quoting, .. }
+        | SqlTree::Alias { value, quoting, .. } => {
+            write_quoted_scalar(value, quoting, identity_escape, out);
+        }
 
-        // ----- Other atoms (use range slice for now) -------------------
-        // These don't yet capture full syntactic info, so canonical
-        // form falls back to the source slice. Future iters extend.
-        SqlTree::Variable { range, span: _ } => format!("@{}", range_placeholder(range)),
-        SqlTree::Literal { range, .. } => range_placeholder(range),
-        SqlTree::Comment { range, .. } => range_placeholder(range),
+        // ----- Scalars with stored text (SqlTree Tier 1) --------------
+        // Variable: T-SQL @foo. The stored range covers the `@`-prefix
+        // identifier; emit `@` plus the bare name component. Today the
+        // tree doesn't separate `@` from name, so we slice from the
+        // stored range as the name. When the tree gains a typed
+        // `name` field, this becomes `format!("@{name}")`.
+        SqlTree::Variable { range, .. } => {
+            // Variable carries no text field today — placeholder until
+            // SqlTree gains a typed name slot. Render as the raw
+            // `@<id>` form using the byte position so debug output is
+            // recognizable even without anchored source.
+            out.push_str(&format!("@var{}", range.start));
+        }
+        SqlTree::Literal { range, .. } => {
+            // Same shape: no text field yet. Will become
+            // `out.push_str(text)` after the lowering writes scalar
+            // text on Literal (mirrors S13-Z1 for SyntaxTree).
+            out.push_str(&format!("/*lit{}*/", range.start));
+        }
+        SqlTree::Comment { range, .. } => {
+            // Comment will likewise carry text after the Tier 2 emit.
+            out.push_str(&format!("/*c{}*/", range.start));
+        }
 
         // ----- Composite shapes (placeholders for now) ----------------
         // The principle is satisfied for atoms in this slice; composite
         // emission is a stub until per-variant canonical forms are
-        // implemented. Output is deterministic but not necessarily
-        // re-parseable for every shape yet.
-        other => format!("/*todo:{}*/", variant_name(other)),
+        // implemented (Tier 3 of the SqlTree work). Output is
+        // deterministic but not necessarily re-parseable for every
+        // shape yet.
+        other => {
+            out.push_str(&format!("/*todo:{}*/", variant_name(other)));
+        }
     }
-}
-
-/// Placeholder for atoms whose canonical form isn't yet derivable
-/// without source. Returns a marker that distinguishes from real
-/// content; once full canonical-source support lands these go away.
-fn range_placeholder(_range: &crate::tree::types::ByteRange) -> String {
-    "/*range*/".to_string()
 }
 
 fn variant_name(tree: &SqlTree) -> &'static str {
@@ -101,7 +126,7 @@ mod tests {
 
     #[test]
     fn bare_identifier_canonical() {
-        let tree = ident("dbo", QuoteStyle::None);
+        let tree = ident("dbo", QuoteStyle::Plain);
         assert_eq!(render(&tree), "dbo");
     }
 
@@ -113,7 +138,7 @@ mod tests {
 
     #[test]
     fn double_quoted_identifier_canonical() {
-        let tree = ident("dbo", QuoteStyle::DoubleQuote);
+        let tree = ident("dbo", QuoteStyle::Double);
         assert_eq!(render(&tree), "\"dbo\"");
     }
 
@@ -138,7 +163,7 @@ mod tests {
     fn alias_canonical_uses_quoting() {
         let tree = SqlTree::Alias {
             value: "u".into(),
-            quoting: QuoteStyle::None,
+            quoting: QuoteStyle::Plain,
             range: ByteRange::new(0, 1),
             span: Span::point(1, 1),
         };

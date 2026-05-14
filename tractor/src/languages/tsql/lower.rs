@@ -28,13 +28,13 @@ fn parse_id_quoting(text: &str) -> (String, QuoteStyle) {
             return (text[1..text.len() - 1].to_string(), QuoteStyle::Brackets);
         }
         if text.starts_with('"') && text.ends_with('"') {
-            return (text[1..text.len() - 1].to_string(), QuoteStyle::DoubleQuote);
+            return (text[1..text.len() - 1].to_string(), QuoteStyle::Double);
         }
         if text.starts_with('`') && text.ends_with('`') {
             return (text[1..text.len() - 1].to_string(), QuoteStyle::Backtick);
         }
     }
-    (text.to_string(), QuoteStyle::None)
+    (text.to_string(), QuoteStyle::Plain)
 }
 
 /// Build `SqlTree::Identifier` from a CST node, parsing quoting style

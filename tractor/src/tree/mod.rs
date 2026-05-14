@@ -102,12 +102,25 @@ pub mod sql;
 // across 13 per-language lower files.
 #[cfg(feature = "native")]
 pub mod lower_helpers;
+// Stamps a stable [`NodeId`] on every node's Span after the tree is
+// built — see `docs/design-editable-trees.md`. Run automatically at
+// the parser exit point so callers can rely on IDs being present.
+#[cfg(feature = "native")]
+pub mod assign_ids;
+// find_by_id walkers — bridge an XPath match's `@id` attribute back
+// to the typed-tree node. Companion to `assign_ids`.
+#[cfg(feature = "native")]
+pub mod locator;
 #[cfg(feature = "native")]
 pub mod render;
 #[cfg(feature = "native")]
 pub mod coverage;
 
-pub use types::{Access, AccessSegment, ByteRange, Expression, SyntaxTree, Modifiers, ParamKind, Span, to_source};
+pub use types::{Access, AccessSegment, ByteRange, Expression, NodeId, SyntaxTree, Modifiers, ParamKind, Span, TreeNode, to_source};
+#[cfg(feature = "native")]
+pub use assign_ids::{assign_ids_data, assign_ids_sql, assign_ids_syntax};
+#[cfg(feature = "native")]
+pub use locator::{find_by_id, parse_id_attr};
 pub use to_xot::render_to_xot;
 pub use to_json::tree_to_json;
 #[cfg(feature = "native")]

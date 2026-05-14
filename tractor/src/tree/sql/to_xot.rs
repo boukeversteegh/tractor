@@ -24,9 +24,29 @@ use xot::{Node as XotNode, Xot};
 use super::types::{
     BinaryOp, ComparisonOp, CreateKind, DropKind, JoinKind, SortDirection, SqlTree, UnaryOp,
 };
+use crate::tree::types::Span;
 
 /// Render a [`SqlTree`] tree as a child of `parent` in `xot`.
+///
+/// Stamps `@line` / `@column` / `@end_line` / `@end_column` / `@id`
+/// on each returned element using the typed node's `span` (SqlTree
+/// Tier 1 — bringing SqlTree's xot in line with SyntaxTree and
+/// DataTree so XPath matches can resolve back to the typed node via
+/// [`crate::tree::find_by_id_sql`]).
 pub fn render_sql_to_xot(
+    xot: &mut Xot,
+    parent: XotNode,
+    tree: &SqlTree,
+    source: &str,
+) -> Result<XotNode, xot::Error> {
+    let node = render_sql_to_xot_inner(xot, parent, tree, source)?;
+    set_span_attrs(xot, node, tree_span(tree));
+    Ok(node)
+}
+
+/// Per-variant emission body. The outer wrapper stamps span attrs
+/// on the returned primary element.
+fn render_sql_to_xot_inner(
     xot: &mut Xot,
     parent: XotNode,
     tree: &SqlTree,
@@ -287,50 +307,44 @@ pub fn render_sql_to_xot(
             let node = element(xot, "relation")?;
             xot.append(parent, node)?;
             // Schema (when present): <schema><bracketed/><name>dbo</name></schema>
+            // Inline `<name>` carries the Schema's NodeId so XPath
+            // matches on it resolve via `find_by_id_sql` to the typed
+            // node (Tier 1 of the editable-trees pipeline).
             if let Some(s) = schema {
-                if let SqlTree::Schema { value, quoting, .. } = s.as_ref() {
+                if let SqlTree::Schema { value, quoting, span: schema_span, .. } = s.as_ref() {
                     let sn = element(xot, "schema")?;
                     xot.append(node, sn)?;
+                    set_span_attrs(xot, sn, *schema_span);
                     if let Some(marker) = quoting.marker_name() {
                         let m = element(xot, marker)?;
                         xot.append(sn, m)?;
                     }
-                    let nn = element(xot, "name")?;
-                    xot.append(sn, nn)?;
-                    let t = xot.new_text(value);
-                    xot.append(nn, t)?;
+                    name_leaf_with_span(xot, sn, value, *schema_span)?;
                 }
             }
             // Name (always): <part><bracketed?/><name>Users</name></part>
-            // — wrapping in <part> so quoting markers can attach
-            // without violating name-is-text-leaf.
-            if let SqlTree::Identifier { value, quoting, .. } = name.as_ref() {
+            if let SqlTree::Identifier { value, quoting, span: id_span, .. } = name.as_ref() {
                 let pn = element(xot, "part")?;
                 xot.append(node, pn)?;
                 if let Some(marker) = quoting.marker_name() {
                     let m = element(xot, marker)?;
                     xot.append(pn, m)?;
                 }
-                let nn = element(xot, "name")?;
-                xot.append(pn, nn)?;
-                let t = xot.new_text(value);
-                xot.append(nn, t)?;
+                name_leaf_with_span(xot, pn, value, *id_span)?;
             } else {
                 render_sql_to_xot(xot, node, name, source)?;
             }
             // Alias: <alias><bracketed?/><name>u</name></alias>
             if let Some(a) = alias {
-                if let SqlTree::Alias { value, quoting, .. } = a.as_ref() {
+                if let SqlTree::Alias { value, quoting, span: alias_span, .. } = a.as_ref() {
                     let an = element(xot, "alias")?;
                     xot.append(node, an)?;
+                    set_span_attrs(xot, an, *alias_span);
                     if let Some(marker) = quoting.marker_name() {
                         let m = element(xot, marker)?;
                         xot.append(an, m)?;
                     }
-                    let nn = element(xot, "name")?;
-                    xot.append(an, nn)?;
-                    let t = xot.new_text(value);
-                    xot.append(nn, t)?;
+                    name_leaf_with_span(xot, an, value, *alias_span)?;
                 }
             }
             Ok(node)
@@ -340,17 +354,15 @@ pub fn render_sql_to_xot(
             xot.append(parent, node)?;
             render_sql_to_xot(xot, node, expression, source)?;
             if let Some(a) = alias {
-                if let SqlTree::Alias { value, quoting, .. } = a.as_ref() {
+                if let SqlTree::Alias { value, quoting, span: alias_span, .. } = a.as_ref() {
                     let an = element(xot, "alias")?;
                     xot.append(node, an)?;
+                    set_span_attrs(xot, an, *alias_span);
                     if let Some(marker) = quoting.marker_name() {
                         let m = element(xot, marker)?;
                         xot.append(an, m)?;
                     }
-                    let nn = element(xot, "name")?;
-                    xot.append(an, nn)?;
-                    let t = xot.new_text(value);
-                    xot.append(nn, t)?;
+                    name_leaf_with_span(xot, an, value, *alias_span)?;
                 }
             }
             Ok(node)
@@ -371,17 +383,14 @@ pub fn render_sql_to_xot(
             // dbo.SomeTable.SomeColumn could be schema.table.column
             // OR alias.table.column), so parts stay anonymous.
             for p in parts {
-                if let SqlTree::Identifier { value, quoting, .. } = p {
+                if let SqlTree::Identifier { value, quoting, span: id_span, .. } = p {
                     let pn = element(xot, "part")?;
                     xot.append(parent, pn)?;
                     if let Some(marker) = quoting.marker_name() {
                         let m = element(xot, marker)?;
                         xot.append(pn, m)?;
                     }
-                    let nn = element(xot, "name")?;
-                    xot.append(pn, nn)?;
-                    let t = xot.new_text(value);
-                    xot.append(nn, t)?;
+                    name_leaf_with_span(xot, pn, value, *id_span)?;
                 } else {
                     render_sql_to_xot(xot, parent, p, source)?;
                 }
@@ -649,49 +658,42 @@ pub fn render_sql_to_xot(
         // is rendered without a wrapping context (Relation / Reference /
         // Column.alias). Wrap with the role-named element to hold any
         // quoting markers; <name> always stays a text-only leaf.
-        SqlTree::Identifier { value, quoting, .. } => {
+        SqlTree::Identifier { value, quoting, span: id_span, .. } => {
             // Bare identifier — emit <name>value</name>; if quoted,
             // wrap in <part><bracketed/>...</part> to give markers a
             // home. Standalone bare identifier with no quoting is a
-            // pure leaf (no part wrapper needed).
+            // pure leaf (no part wrapper needed). The inner <name>
+            // always carries the Identifier's span (so XPath matches
+            // resolve via `find_by_id_sql`).
             if let Some(marker) = quoting.marker_name() {
                 let pn = element(xot, "part")?;
                 xot.append(parent, pn)?;
                 let m = element(xot, marker)?;
                 xot.append(pn, m)?;
-                let nn = element(xot, "name")?;
-                xot.append(pn, nn)?;
-                let t = xot.new_text(value);
-                xot.append(nn, t)?;
+                name_leaf_with_span(xot, pn, value, *id_span)?;
                 Ok(pn)
             } else {
-                leaf(xot, parent, "name", value)
+                name_leaf_with_span(xot, parent, value, *id_span)
             }
         }
-        SqlTree::Schema { value, quoting, .. } => {
+        SqlTree::Schema { value, quoting, span: schema_span, .. } => {
             let sn = element(xot, "schema")?;
             xot.append(parent, sn)?;
             if let Some(marker) = quoting.marker_name() {
                 let m = element(xot, marker)?;
                 xot.append(sn, m)?;
             }
-            let nn = element(xot, "name")?;
-            xot.append(sn, nn)?;
-            let t = xot.new_text(value);
-            xot.append(nn, t)?;
+            name_leaf_with_span(xot, sn, value, *schema_span)?;
             Ok(sn)
         }
-        SqlTree::Alias { value, quoting, .. } => {
+        SqlTree::Alias { value, quoting, span: alias_span, .. } => {
             let an = element(xot, "alias")?;
             xot.append(parent, an)?;
             if let Some(marker) = quoting.marker_name() {
                 let m = element(xot, marker)?;
                 xot.append(an, m)?;
             }
-            let nn = element(xot, "name")?;
-            xot.append(an, nn)?;
-            let t = xot.new_text(value);
-            xot.append(nn, t)?;
+            name_leaf_with_span(xot, an, value, *alias_span)?;
             Ok(an)
         }
         SqlTree::Temp { name, .. } => {
@@ -711,6 +713,89 @@ pub fn render_sql_to_xot(
 
 // ----- helpers ----------------------------------------------------------
 
+/// Stamp `@line` / `@column` / `@end_line` / `@end_column` / `@id`
+/// on a SqlTree-derived xot element. `id` is omitted when zero
+/// (synthetic / pre-`assign_ids` paths).
+fn set_span_attrs(xot: &mut Xot, node: XotNode, span: Span) {
+    let line = xot.add_name("line");
+    let column = xot.add_name("column");
+    let end_line = xot.add_name("end_line");
+    let end_column = xot.add_name("end_column");
+    let id_name = (span.id != 0).then(|| xot.add_name("id"));
+    let mut attrs = xot.attributes_mut(node);
+    attrs.insert(line, span.line.to_string());
+    attrs.insert(column, span.column.to_string());
+    attrs.insert(end_line, span.end_line.to_string());
+    attrs.insert(end_column, span.end_column.to_string());
+    if let Some(id_name) = id_name {
+        attrs.insert(id_name, span.id.to_string());
+    }
+}
+
+/// Return the [`Span`] of any SqlTree variant. Matches the same
+/// exhaustive list as the locator's `sql_span` (kept in sync).
+fn tree_span(tree: &SqlTree) -> Span {
+    match tree {
+        SqlTree::File { span, .. }
+        | SqlTree::Statement { span, .. }
+        | SqlTree::Go { span, .. }
+        | SqlTree::Exec { span, .. }
+        | SqlTree::Set { span, .. }
+        | SqlTree::Select { span, .. }
+        | SqlTree::Insert { span, .. }
+        | SqlTree::Update { span, .. }
+        | SqlTree::Delete { span, .. }
+        | SqlTree::Merge { span, .. }
+        | SqlTree::MergeWhen { span, .. }
+        | SqlTree::Transaction { span, .. }
+        | SqlTree::From { span, .. }
+        | SqlTree::Where { span, .. }
+        | SqlTree::GroupBy { span, .. }
+        | SqlTree::Having { span, .. }
+        | SqlTree::OrderBy { span, .. }
+        | SqlTree::OrderTarget { span, .. }
+        | SqlTree::PartitionBy { span, .. }
+        | SqlTree::Join { span, .. }
+        | SqlTree::Relation { span, .. }
+        | SqlTree::Column { span, .. }
+        | SqlTree::Star { span, .. }
+        | SqlTree::Reference { span, .. }
+        | SqlTree::Compare { span, .. }
+        | SqlTree::Binary { span, .. }
+        | SqlTree::Unary { span, .. }
+        | SqlTree::Assign { span, .. }
+        | SqlTree::Between { span, .. }
+        | SqlTree::Exists { span, .. }
+        | SqlTree::Case { span, .. }
+        | SqlTree::When { span, .. }
+        | SqlTree::Cast { span, .. }
+        | SqlTree::Call { span, .. }
+        | SqlTree::Window { span, .. }
+        | SqlTree::Over { span, .. }
+        | SqlTree::Subquery { span, .. }
+        | SqlTree::Union { span, .. }
+        | SqlTree::Cte { span, .. }
+        | SqlTree::Tuple { span, .. }
+        | SqlTree::Create { span, .. }
+        | SqlTree::Drop { span, .. }
+        | SqlTree::Alter { span, .. }
+        | SqlTree::ColumnDef { span, .. }
+        | SqlTree::Constraint { span, .. }
+        | SqlTree::AddColumn { span, .. }
+        | SqlTree::AddConstraint { span, .. }
+        | SqlTree::Function { span, .. }
+        | SqlTree::DataType { span, .. }
+        | SqlTree::Identifier { span, .. }
+        | SqlTree::Schema { span, .. }
+        | SqlTree::Alias { span, .. }
+        | SqlTree::Temp { span, .. }
+        | SqlTree::Variable { span, .. }
+        | SqlTree::Literal { span, .. }
+        | SqlTree::Comment { span, .. }
+        | SqlTree::Unknown { span, .. } => *span,
+    }
+}
+
 fn element(xot: &mut Xot, name: &str) -> Result<XotNode, xot::Error> {
     let n = xot.add_name(name);
     Ok(xot.new_element(n))
@@ -723,6 +808,22 @@ fn leaf(xot: &mut Xot, parent: XotNode, name: &str, text: &str) -> Result<XotNod
         let t = xot.new_text(text);
         xot.append(n, t)?;
     }
+    Ok(n)
+}
+
+/// Emit a `<name>text</name>` leaf and stamp it with the typed node's
+/// span (so XPath matches that land on the inline `<name>` can recover
+/// the typed Identifier via `find_by_id_sql`). Used by container
+/// variants (Relation / Schema-of-relation / etc.) that inline an
+/// Identifier's text instead of dispatching to its standalone emit.
+fn name_leaf_with_span(
+    xot: &mut Xot,
+    parent: XotNode,
+    text: &str,
+    span: Span,
+) -> Result<XotNode, xot::Error> {
+    let n = leaf(xot, parent, "name", text)?;
+    set_span_attrs(xot, n, span);
     Ok(n)
 }
 
@@ -865,44 +966,58 @@ mod tests {
         xot.to_string(doc).unwrap()
     }
 
+    /// Match either `<el>` (bare) or `<el ` (with attributes — SqlTree
+    /// Tier 1 stamps span/id attrs on every typed element).
+    fn has_opening_tag(xml: &str, name: &str) -> bool {
+        xml.contains(&format!("<{name}>")) || xml.contains(&format!("<{name} "))
+    }
+
+    /// Like [`has_opening_tag`] but for an element with a known text
+    /// content; matches `<name ...>text</name>` allowing attributes.
+    fn has_text_element(xml: &str, name: &str, text: &str) -> bool {
+        // Naive substring: look for `>text</name>` anywhere. Sufficient
+        // for the small fixtures these tests use.
+        xml.contains(&format!(">{text}</{name}>"))
+    }
+
     #[test]
     fn select_star_renders_typed_xml() {
         let xml = render("SELECT * FROM Users");
-        assert!(xml.contains("<file>"));
-        assert!(xml.contains("<select>"));
-        assert!(xml.contains("<star/>"));
-        assert!(xml.contains("<from>"));
-        assert!(xml.contains("<relation>"));
-        assert!(xml.contains("<name>Users</name>"));
+        assert!(has_opening_tag(&xml, "file"));
+        assert!(has_opening_tag(&xml, "select"));
+        assert!(xml.contains("<star/>") || xml.contains("<star "));
+        assert!(has_opening_tag(&xml, "from"));
+        assert!(has_opening_tag(&xml, "relation"));
+        assert!(has_text_element(&xml, "name", "Users"), "xml: {xml}");
     }
 
     #[test]
     fn where_compare_renders_typed_xml() {
         let xml = render("SELECT * FROM U WHERE Active = 1");
-        assert!(xml.contains("<where>"));
-        assert!(xml.contains("<compare>"));
-        assert!(xml.contains("<left>"));
-        assert!(xml.contains("<op>="));
-        assert!(xml.contains("<right>"));
-        assert!(xml.contains("<literal>1</literal>"));
+        assert!(has_opening_tag(&xml, "where"));
+        assert!(has_opening_tag(&xml, "compare"));
+        assert!(has_opening_tag(&xml, "left"));
+        assert!(xml.contains(">=") || xml.contains("<op>="));
+        assert!(has_opening_tag(&xml, "right"));
+        assert!(has_text_element(&xml, "literal", "1"), "xml: {xml}");
     }
 
     #[test]
     fn insert_renders_typed_columns_and_values() {
         let xml = render("INSERT INTO L (a, b) VALUES (1, 'x')");
-        assert!(xml.contains("<insert>"));
-        assert!(xml.contains("<columns>"));
-        assert!(xml.contains("<values>"));
-        assert!(xml.contains("<literal>1</literal>"));
+        assert!(has_opening_tag(&xml, "insert"));
+        assert!(has_opening_tag(&xml, "columns"));
+        assert!(has_opening_tag(&xml, "values"));
+        assert!(has_text_element(&xml, "literal", "1"), "xml: {xml}");
     }
 
     #[test]
     fn create_table_renders_typed_xml() {
         let xml = render("CREATE TABLE T (id INT, name VARCHAR(100))");
-        assert!(xml.contains("<create>"), "xml: {xml}");
-        assert!(xml.contains("<table/>"), "xml: {xml}");
-        assert!(xml.contains("<column>"), "xml: {xml}");
-        assert!(xml.contains("<int>"), "xml: {xml}");
-        assert!(xml.contains("<varchar>"), "xml: {xml}");
+        assert!(has_opening_tag(&xml, "create"), "xml: {xml}");
+        assert!(xml.contains("<table/>") || xml.contains("<table "), "xml: {xml}");
+        assert!(has_opening_tag(&xml, "column"), "xml: {xml}");
+        assert!(has_opening_tag(&xml, "int"), "xml: {xml}");
+        assert!(has_opening_tag(&xml, "varchar"), "xml: {xml}");
     }
 }

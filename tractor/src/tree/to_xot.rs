@@ -124,15 +124,15 @@ pub fn render_to_xot(
         SyntaxTree::Unary { .. } => render_tree_unary(xot, parent, tree, source),
 
         // ----- Atoms — emit source[range] as the leaf text. ---------
-        SyntaxTree::Name { range, span } => leaf(xot, parent, "name", source, *range, *span),
-        SyntaxTree::Atom { element_name, range, span } => leaf(xot, parent, element_name, source, *range, *span),
-        SyntaxTree::Int { range, span } => leaf(xot, parent, "int", source, *range, *span),
-        SyntaxTree::Float { range, span } => leaf(xot, parent, "float", source, *range, *span),
-        SyntaxTree::String { range, span } => leaf(xot, parent, "string", source, *range, *span),
-        SyntaxTree::True { range, span } => leaf(xot, parent, "true", source, *range, *span),
-        SyntaxTree::False { range, span } => leaf(xot, parent, "false", source, *range, *span),
-        SyntaxTree::None { range, span } => leaf(xot, parent, "none", source, *range, *span),
-        SyntaxTree::Null { range, span } => leaf(xot, parent, "null", source, *range, *span),
+        SyntaxTree::Name { range, span, .. } => leaf(xot, parent, "name", source, *range, *span),
+        SyntaxTree::Atom { element_name, range, span, .. } => leaf(xot, parent, element_name, source, *range, *span),
+        SyntaxTree::Int { range, span, .. } => leaf(xot, parent, "int", source, *range, *span),
+        SyntaxTree::Float { range, span, .. } => leaf(xot, parent, "float", source, *range, *span),
+        SyntaxTree::String { range, span, .. } => leaf(xot, parent, "string", source, *range, *span),
+        SyntaxTree::True { range, span, .. } => leaf(xot, parent, "true", source, *range, *span),
+        SyntaxTree::False { range, span, .. } => leaf(xot, parent, "false", source, *range, *span),
+        SyntaxTree::None { range, span, .. } => leaf(xot, parent, "none", source, *range, *span),
+        SyntaxTree::Null { range, span, .. } => leaf(xot, parent, "null", source, *range, *span),
         SyntaxTree::Enum { .. } => render_tree_enum(xot, parent, tree, source),
         SyntaxTree::EnumMember { .. } => render_tree_enum_member(xot, parent, tree, source),
         SyntaxTree::Property { .. } => render_tree_property(xot, parent, tree, source),
@@ -2480,9 +2480,17 @@ fn set_span_attrs(xot: &mut Xot, node: XotNode, span: Span) {
     let column = xot.add_name("column");
     let end_line = xot.add_name("end_line");
     let end_column = xot.add_name("end_column");
+    // Slice 2 (editable trees): expose the typed-tree NodeId on xot so
+    // XPath matches can recover the corresponding SyntaxTree node via
+    // `find_by_id`. Omitted when id is 0 (the unassigned sentinel) to
+    // keep the attribute set clean for synthetic / pre-`assign_ids` paths.
+    let id_name = (span.id != 0).then(|| xot.add_name("id"));
     let mut attrs = xot.attributes_mut(node);
     attrs.insert(line, span.line.to_string());
     attrs.insert(column, span.column.to_string());
     attrs.insert(end_line, span.end_line.to_string());
     attrs.insert(end_column, span.end_column.to_string());
+    if let Some(id_name) = id_name {
+        attrs.insert(id_name, span.id.to_string());
+    }
 }

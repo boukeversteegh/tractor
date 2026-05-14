@@ -16,6 +16,7 @@ use tree_sitter::Node as TsNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
+use crate::tree::types::QuoteStyle;
 
 pub fn lower_ini_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)
@@ -40,11 +41,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             let name_ir = match header {
                 Some(h) if h.kind() == "section_name" => DataTree::String {
                     value: extract_text_inside(h, source),
+                    quote_style: QuoteStyle::Plain,
                     range: range_of(h),
                     span: span_of(h),
                 },
                 _ => DataTree::String {
                     value: String::new(),
+                    quote_style: QuoteStyle::Plain,
                     range,
                     span,
                 },
@@ -90,11 +93,13 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
             DataTree::Pair {
                 key: Box::new(DataTree::String {
                     value: name,
+                    quote_style: QuoteStyle::Plain,
                     range: key_range,
                     span: key_span,
                 }),
                 value: Box::new(DataTree::String {
                     value,
+                    quote_style: QuoteStyle::Plain,
                     range: value_range,
                     span: value_span,
                 }),

@@ -26,7 +26,7 @@ use tree_sitter::Node as TsNode;
 
 use crate::tree::DataTree;
 use crate::tree::lower_helpers::{range_of, span_of, text_of};
-use crate::tree::types::{ByteRange, Span};
+use crate::tree::types::{ByteRange, QuoteStyle, Span};
 
 pub fn lower_markdown_data_root(root: TsNode<'_>, source: &str) -> DataTree {
     lower_node(root, source)
@@ -113,6 +113,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                                 markers: vec![],
                                 children: vec![DataTree::String {
                                     value: lang,
+                                    quote_style: QuoteStyle::Plain,
                                     range: range_of(c),
                                     span: span_of(c),
                                 }],
@@ -127,6 +128,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                             markers: vec![],
                             children: vec![DataTree::String {
                                 value: text_of(c, source),
+                                quote_style: QuoteStyle::Plain,
                                 range: range_of(c),
                                 span: span_of(c),
                             }],
@@ -153,6 +155,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 markers: vec![],
                 children: vec![DataTree::String {
                     value: text_of(node, source),
+                    quote_style: QuoteStyle::Plain,
                     range,
                     span,
                 }],
@@ -182,6 +185,7 @@ fn lower_node(node: TsNode<'_>, source: &str) -> DataTree {
                 markers: vec![],
                 children: vec![DataTree::String {
                     value: text_of(node, source),
+                    quote_style: QuoteStyle::Plain,
                     range,
                     span,
                 }],

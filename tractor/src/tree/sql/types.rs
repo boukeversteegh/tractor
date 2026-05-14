@@ -44,7 +44,7 @@
 
 #![cfg(feature = "native")]
 
-use crate::tree::types::{ByteRange, Span};
+use crate::tree::types::{ByteRange, QuoteStyle, Span, TreeNode};
 
 /// Typed SQL tree.
 #[derive(Debug, Clone)]
@@ -492,50 +492,12 @@ pub enum SortDirection {
     Desc,
 }
 
-/// Quoting style for identifier-class atoms (`Identifier`, `Schema`,
-/// `Alias`). Captures the syntactic distinction explicitly in the tree
-/// so that a fully semantically equivalent source can be reconstructed
-/// from the tree alone — without relying on byte ranges into the
-/// original source string. (See module-level invariant 4.)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum QuoteStyle {
-    /// Bare identifier — `Users`, `dbo`. No quoting.
-    None,
-    /// T-SQL bracket quoting — `[Users]`. Allows reserved words and
-    /// special characters in identifier names.
-    Brackets,
-    /// ANSI / Postgres double quotes — `"Users"`. Same role as
-    /// brackets; T-SQL accepts both via `QUOTED_IDENTIFIER` setting.
-    DoubleQuote,
-    /// MySQL backticks — `` `Users` ``. Same role; included for
-    /// future cross-dialect coverage.
-    Backtick,
-}
-
-impl QuoteStyle {
-    /// Marker element name to emit on the wrapping element when
-    /// rendering this quoting style — empty for `None`.
-    pub const fn marker_name(self) -> Option<&'static str> {
-        match self {
-            QuoteStyle::None => None,
-            QuoteStyle::Brackets => Some("bracketed"),
-            QuoteStyle::DoubleQuote => Some("quoted"),
-            QuoteStyle::Backtick => Some("backticked"),
-        }
-    }
-
-    /// Wrap a parsed identifier value in this quoting style for
-    /// canonical-source reconstruction. `None` returns the value
-    /// unchanged.
-    pub fn wrap(self, value: &str) -> String {
-        match self {
-            QuoteStyle::None => value.to_string(),
-            QuoteStyle::Brackets => format!("[{value}]"),
-            QuoteStyle::DoubleQuote => format!("\"{value}\""),
-            QuoteStyle::Backtick => format!("`{value}`"),
-        }
-    }
-}
+// `QuoteStyle` is the shared [`crate::tree::types::QuoteStyle`]; SqlTree
+// used to carry its own local copy with `{None, Brackets, DoubleQuote,
+// Backtick}`. The shared enum covers all four (mapping `None →
+// Plain`, `DoubleQuote → Double`) plus the variants other tree types
+// need. Migration: SqlTree atoms now reference the shared type via the
+// re-export in `tree::sql::mod`.
 
 /// Comparison operator for `<compare>`. `Op` is the canonical
 /// classification; the source text is recoverable via the operand
@@ -737,5 +699,382 @@ impl SqlTree {
     /// node. Equivalent to `self.range().slice(source)`.
     pub fn to_source<'a>(&self, source: &'a str) -> &'a str {
         self.range().slice(source)
+    }
+}
+
+impl TreeNode for SqlTree {
+    fn span(&self) -> Span { self.span() }
+    fn range(&self) -> ByteRange { self.range() }
+
+    fn span_mut(&mut self) -> &mut Span {
+        match self {
+            SqlTree::File { span, .. }
+            | SqlTree::Statement { span, .. }
+            | SqlTree::Go { span, .. }
+            | SqlTree::Exec { span, .. }
+            | SqlTree::Set { span, .. }
+            | SqlTree::Select { span, .. }
+            | SqlTree::Insert { span, .. }
+            | SqlTree::Update { span, .. }
+            | SqlTree::Delete { span, .. }
+            | SqlTree::Merge { span, .. }
+            | SqlTree::MergeWhen { span, .. }
+            | SqlTree::Transaction { span, .. }
+            | SqlTree::From { span, .. }
+            | SqlTree::Where { span, .. }
+            | SqlTree::GroupBy { span, .. }
+            | SqlTree::Having { span, .. }
+            | SqlTree::OrderBy { span, .. }
+            | SqlTree::OrderTarget { span, .. }
+            | SqlTree::PartitionBy { span, .. }
+            | SqlTree::Join { span, .. }
+            | SqlTree::Relation { span, .. }
+            | SqlTree::Column { span, .. }
+            | SqlTree::Star { span, .. }
+            | SqlTree::Reference { span, .. }
+            | SqlTree::Compare { span, .. }
+            | SqlTree::Binary { span, .. }
+            | SqlTree::Unary { span, .. }
+            | SqlTree::Assign { span, .. }
+            | SqlTree::Between { span, .. }
+            | SqlTree::Exists { span, .. }
+            | SqlTree::Case { span, .. }
+            | SqlTree::When { span, .. }
+            | SqlTree::Cast { span, .. }
+            | SqlTree::Call { span, .. }
+            | SqlTree::Window { span, .. }
+            | SqlTree::Over { span, .. }
+            | SqlTree::Subquery { span, .. }
+            | SqlTree::Union { span, .. }
+            | SqlTree::Cte { span, .. }
+            | SqlTree::Tuple { span, .. }
+            | SqlTree::Create { span, .. }
+            | SqlTree::Drop { span, .. }
+            | SqlTree::Alter { span, .. }
+            | SqlTree::ColumnDef { span, .. }
+            | SqlTree::Constraint { span, .. }
+            | SqlTree::AddColumn { span, .. }
+            | SqlTree::AddConstraint { span, .. }
+            | SqlTree::Function { span, .. }
+            | SqlTree::DataType { span, .. }
+            | SqlTree::Identifier { span, .. }
+            | SqlTree::Schema { span, .. }
+            | SqlTree::Alias { span, .. }
+            | SqlTree::Temp { span, .. }
+            | SqlTree::Variable { span, .. }
+            | SqlTree::Literal { span, .. }
+            | SqlTree::Comment { span, .. }
+            | SqlTree::Unknown { span, .. } => span,
+        }
+    }
+
+    fn children(&self) -> Vec<&Self> {
+        let mut v: Vec<&SqlTree> = Vec::new();
+        match self {
+            SqlTree::File { statements, .. }
+            | SqlTree::Transaction { statements, .. } => v.extend(statements.iter()),
+            SqlTree::Statement { inner, .. } => v.push(inner),
+            SqlTree::Go { .. } => {}
+            SqlTree::Exec { target, .. } => v.push(target),
+            SqlTree::Set { target, value, .. }
+            | SqlTree::Assign { target, value, .. } => {
+                v.push(target);
+                v.push(value);
+            }
+            SqlTree::Select { ctes, columns, into, from, where_, group_by, having, order_by, .. } => {
+                v.extend(ctes.iter());
+                v.extend(columns.iter());
+                if let Some(i) = into { v.push(i); }
+                if let Some(f) = from { v.push(f); }
+                if let Some(w) = where_ { v.push(w); }
+                if let Some(g) = group_by { v.push(g); }
+                if let Some(h) = having { v.push(h); }
+                if let Some(o) = order_by { v.push(o); }
+            }
+            SqlTree::Insert { table, columns, values, .. } => {
+                v.push(table);
+                v.extend(columns.iter());
+                v.extend(values.iter());
+            }
+            SqlTree::Update { table, assignments, where_, .. } => {
+                v.push(table);
+                v.extend(assignments.iter());
+                if let Some(w) = where_ { v.push(w); }
+            }
+            SqlTree::Delete { from, where_, .. } => {
+                if let Some(f) = from { v.push(f); }
+                if let Some(w) = where_ { v.push(w); }
+            }
+            SqlTree::Merge { target, source, on, whens, .. } => {
+                v.push(target);
+                v.push(source);
+                v.push(on);
+                v.extend(whens.iter());
+            }
+            SqlTree::MergeWhen { action, .. } => v.push(action),
+            SqlTree::From { relations, .. } => v.extend(relations.iter()),
+            SqlTree::Where { condition, .. }
+            | SqlTree::Having { condition, .. } => v.push(condition),
+            SqlTree::GroupBy { keys, .. }
+            | SqlTree::PartitionBy { keys, .. } => v.extend(keys.iter()),
+            SqlTree::OrderBy { targets, .. } => v.extend(targets.iter()),
+            SqlTree::OrderTarget { expression, .. } => v.push(expression),
+            SqlTree::Join { relation, on, .. } => {
+                v.push(relation);
+                if let Some(o) = on { v.push(o); }
+            }
+            SqlTree::Relation { schema, name, alias, .. } => {
+                if let Some(s) = schema { v.push(s); }
+                v.push(name);
+                if let Some(a) = alias { v.push(a); }
+            }
+            SqlTree::Column { expression, alias, .. } => {
+                v.push(expression);
+                if let Some(a) = alias { v.push(a); }
+            }
+            SqlTree::Star { qualifier, .. } => {
+                if let Some(q) = qualifier { v.push(q); }
+            }
+            SqlTree::Reference { parts, .. } => v.extend(parts.iter()),
+            SqlTree::Compare { left, right, .. }
+            | SqlTree::Binary { left, right, .. } => {
+                v.push(left);
+                v.push(right);
+            }
+            SqlTree::Unary { operand, .. } => v.push(operand),
+            SqlTree::Between { value, low, high, .. } => {
+                v.push(value);
+                v.push(low);
+                v.push(high);
+            }
+            SqlTree::Exists { subquery, .. } => v.push(subquery),
+            SqlTree::Case { whens, else_, .. } => {
+                v.extend(whens.iter());
+                if let Some(e) = else_ { v.push(e); }
+            }
+            SqlTree::When { condition, value, .. } => {
+                v.push(condition);
+                v.push(value);
+            }
+            SqlTree::Cast { value, type_, .. } => {
+                v.push(value);
+                v.push(type_);
+            }
+            SqlTree::Call { callee, arguments, .. } => {
+                v.push(callee);
+                v.extend(arguments.iter());
+            }
+            SqlTree::Window { call, over, .. } => {
+                v.push(call);
+                v.push(over);
+            }
+            SqlTree::Over { partition_by, order_by, .. } => {
+                if let Some(p) = partition_by { v.push(p); }
+                if let Some(o) = order_by { v.push(o); }
+            }
+            SqlTree::Subquery { select, .. } => v.push(select),
+            SqlTree::Union { selects, .. } => v.extend(selects.iter()),
+            SqlTree::Cte { name, query, .. } => {
+                v.push(name);
+                v.push(query);
+            }
+            SqlTree::Tuple { items, .. } => v.extend(items.iter()),
+            SqlTree::Create { name, body, .. } => {
+                v.push(name);
+                v.extend(body.iter());
+            }
+            SqlTree::Drop { name, .. } => v.push(name),
+            SqlTree::Alter { name, operation, .. } => {
+                v.push(name);
+                v.push(operation);
+            }
+            SqlTree::ColumnDef { name, type_, constraints, .. } => {
+                v.push(name);
+                v.push(type_);
+                v.extend(constraints.iter());
+            }
+            SqlTree::Constraint { name, body, .. } => {
+                if let Some(n) = name { v.push(n); }
+                v.extend(body.iter());
+            }
+            SqlTree::AddColumn { column, .. } => v.push(column),
+            SqlTree::AddConstraint { constraint, .. } => v.push(constraint),
+            SqlTree::Function { schema, name, parameters, return_type, body, .. } => {
+                if let Some(s) = schema { v.push(s); }
+                v.push(name);
+                v.extend(parameters.iter());
+                if let Some(r) = return_type { v.push(r); }
+                v.push(body);
+            }
+            SqlTree::DataType { length, .. } => {
+                if let Some(l) = length { v.push(l); }
+            }
+            SqlTree::Temp { name, .. } => v.push(name),
+            // Leaves — no SqlTree children.
+            SqlTree::Identifier { .. }
+            | SqlTree::Schema { .. }
+            | SqlTree::Alias { .. }
+            | SqlTree::Variable { .. }
+            | SqlTree::Literal { .. }
+            | SqlTree::Comment { .. }
+            | SqlTree::Unknown { .. } => {}
+        }
+        v.sort_by_key(|c| c.range().start);
+        v
+    }
+
+    fn children_mut(&mut self) -> Vec<&mut Self> {
+        let mut v: Vec<&mut SqlTree> = Vec::new();
+        match self {
+            SqlTree::File { statements, .. }
+            | SqlTree::Transaction { statements, .. } => v.extend(statements.iter_mut()),
+            SqlTree::Statement { inner, .. } => v.push(inner.as_mut()),
+            SqlTree::Go { .. } => {}
+            SqlTree::Exec { target, .. } => v.push(target.as_mut()),
+            SqlTree::Set { target, value, .. }
+            | SqlTree::Assign { target, value, .. } => {
+                v.push(target.as_mut());
+                v.push(value.as_mut());
+            }
+            SqlTree::Select { ctes, columns, into, from, where_, group_by, having, order_by, .. } => {
+                v.extend(ctes.iter_mut());
+                v.extend(columns.iter_mut());
+                if let Some(i) = into { v.push(i.as_mut()); }
+                if let Some(f) = from { v.push(f.as_mut()); }
+                if let Some(w) = where_ { v.push(w.as_mut()); }
+                if let Some(g) = group_by { v.push(g.as_mut()); }
+                if let Some(h) = having { v.push(h.as_mut()); }
+                if let Some(o) = order_by { v.push(o.as_mut()); }
+            }
+            SqlTree::Insert { table, columns, values, .. } => {
+                v.push(table.as_mut());
+                v.extend(columns.iter_mut());
+                v.extend(values.iter_mut());
+            }
+            SqlTree::Update { table, assignments, where_, .. } => {
+                v.push(table.as_mut());
+                v.extend(assignments.iter_mut());
+                if let Some(w) = where_ { v.push(w.as_mut()); }
+            }
+            SqlTree::Delete { from, where_, .. } => {
+                if let Some(f) = from { v.push(f.as_mut()); }
+                if let Some(w) = where_ { v.push(w.as_mut()); }
+            }
+            SqlTree::Merge { target, source, on, whens, .. } => {
+                v.push(target.as_mut());
+                v.push(source.as_mut());
+                v.push(on.as_mut());
+                v.extend(whens.iter_mut());
+            }
+            SqlTree::MergeWhen { action, .. } => v.push(action.as_mut()),
+            SqlTree::From { relations, .. } => v.extend(relations.iter_mut()),
+            SqlTree::Where { condition, .. }
+            | SqlTree::Having { condition, .. } => v.push(condition.as_mut()),
+            SqlTree::GroupBy { keys, .. }
+            | SqlTree::PartitionBy { keys, .. } => v.extend(keys.iter_mut()),
+            SqlTree::OrderBy { targets, .. } => v.extend(targets.iter_mut()),
+            SqlTree::OrderTarget { expression, .. } => v.push(expression.as_mut()),
+            SqlTree::Join { relation, on, .. } => {
+                v.push(relation.as_mut());
+                if let Some(o) = on { v.push(o.as_mut()); }
+            }
+            SqlTree::Relation { schema, name, alias, .. } => {
+                if let Some(s) = schema { v.push(s.as_mut()); }
+                v.push(name.as_mut());
+                if let Some(a) = alias { v.push(a.as_mut()); }
+            }
+            SqlTree::Column { expression, alias, .. } => {
+                v.push(expression.as_mut());
+                if let Some(a) = alias { v.push(a.as_mut()); }
+            }
+            SqlTree::Star { qualifier, .. } => {
+                if let Some(q) = qualifier { v.push(q.as_mut()); }
+            }
+            SqlTree::Reference { parts, .. } => v.extend(parts.iter_mut()),
+            SqlTree::Compare { left, right, .. }
+            | SqlTree::Binary { left, right, .. } => {
+                v.push(left.as_mut());
+                v.push(right.as_mut());
+            }
+            SqlTree::Unary { operand, .. } => v.push(operand.as_mut()),
+            SqlTree::Between { value, low, high, .. } => {
+                v.push(value.as_mut());
+                v.push(low.as_mut());
+                v.push(high.as_mut());
+            }
+            SqlTree::Exists { subquery, .. } => v.push(subquery.as_mut()),
+            SqlTree::Case { whens, else_, .. } => {
+                v.extend(whens.iter_mut());
+                if let Some(e) = else_ { v.push(e.as_mut()); }
+            }
+            SqlTree::When { condition, value, .. } => {
+                v.push(condition.as_mut());
+                v.push(value.as_mut());
+            }
+            SqlTree::Cast { value, type_, .. } => {
+                v.push(value.as_mut());
+                v.push(type_.as_mut());
+            }
+            SqlTree::Call { callee, arguments, .. } => {
+                v.push(callee.as_mut());
+                v.extend(arguments.iter_mut());
+            }
+            SqlTree::Window { call, over, .. } => {
+                v.push(call.as_mut());
+                v.push(over.as_mut());
+            }
+            SqlTree::Over { partition_by, order_by, .. } => {
+                if let Some(p) = partition_by { v.push(p.as_mut()); }
+                if let Some(o) = order_by { v.push(o.as_mut()); }
+            }
+            SqlTree::Subquery { select, .. } => v.push(select.as_mut()),
+            SqlTree::Union { selects, .. } => v.extend(selects.iter_mut()),
+            SqlTree::Cte { name, query, .. } => {
+                v.push(name.as_mut());
+                v.push(query.as_mut());
+            }
+            SqlTree::Tuple { items, .. } => v.extend(items.iter_mut()),
+            SqlTree::Create { name, body, .. } => {
+                v.push(name.as_mut());
+                v.extend(body.iter_mut());
+            }
+            SqlTree::Drop { name, .. } => v.push(name.as_mut()),
+            SqlTree::Alter { name, operation, .. } => {
+                v.push(name.as_mut());
+                v.push(operation.as_mut());
+            }
+            SqlTree::ColumnDef { name, type_, constraints, .. } => {
+                v.push(name.as_mut());
+                v.push(type_.as_mut());
+                v.extend(constraints.iter_mut());
+            }
+            SqlTree::Constraint { name, body, .. } => {
+                if let Some(n) = name { v.push(n.as_mut()); }
+                v.extend(body.iter_mut());
+            }
+            SqlTree::AddColumn { column, .. } => v.push(column.as_mut()),
+            SqlTree::AddConstraint { constraint, .. } => v.push(constraint.as_mut()),
+            SqlTree::Function { schema, name, parameters, return_type, body, .. } => {
+                if let Some(s) = schema { v.push(s.as_mut()); }
+                v.push(name.as_mut());
+                v.extend(parameters.iter_mut());
+                if let Some(r) = return_type { v.push(r.as_mut()); }
+                v.push(body.as_mut());
+            }
+            SqlTree::DataType { length, .. } => {
+                if let Some(l) = length { v.push(l.as_mut()); }
+            }
+            SqlTree::Temp { name, .. } => v.push(name.as_mut()),
+            // Leaves — no SqlTree children.
+            SqlTree::Identifier { .. }
+            | SqlTree::Schema { .. }
+            | SqlTree::Alias { .. }
+            | SqlTree::Variable { .. }
+            | SqlTree::Literal { .. }
+            | SqlTree::Comment { .. }
+            | SqlTree::Unknown { .. } => {}
+        }
+        v.sort_by_key(|c| c.range().start);
+        v
     }
 }
