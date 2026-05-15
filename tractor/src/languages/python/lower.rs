@@ -755,7 +755,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let else_body = alt.map(|a| {
                 // alternative is an else_clause; lower its inner body.
                 let inner = a.child_by_field_name("body").unwrap_or(a);
-                Box::new(lower_block(inner, source))
+                Box::new(lower_block(inner, source).wrap_clause("else"))
             });
             SyntaxTree::For {
                 is_async,
@@ -788,7 +788,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     "else_clause" => {
                         // else_clause has a body field.
                         let inner = c.child_by_field_name("body").unwrap_or(c);
-                        else_body = Some(Box::new(lower_block(inner, source)));
+                        else_body = Some(Box::new(lower_block(inner, source).wrap_clause("else")));
                     }
                     "finally_clause" => {
                         // tree-sitter-python's `finally_clause` doesn't
@@ -802,7 +802,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                             .find(|n| n.kind() == "block")
                             .or_else(|| c.child_by_field_name("body"));
                         if let Some(b) = inner {
-                            finally_body = Some(Box::new(lower_block(b, source)));
+                            finally_body = Some(Box::new(lower_block(b, source).wrap_clause("finally")));
                         }
                     }
                     _ => {}
@@ -914,7 +914,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let alt = node.child_by_field_name("alternative");
             let else_body = alt.map(|a| {
                 let inner = a.child_by_field_name("body").unwrap_or(a);
-                Box::new(lower_block(inner, source))
+                Box::new(lower_block(inner, source).wrap_clause("else"))
             });
             match (cond, body) {
                 (Some(c), Some(b)) => SyntaxTree::While { condition: c, body: b, else_body, range, span },

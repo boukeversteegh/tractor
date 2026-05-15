@@ -601,11 +601,13 @@
             ]
           },
           "else": {
-            "node": {
-              "assign": true,
-              "plus": true,
-              "left": "total",
-              "right": 1
+            "body": {
+              "node": {
+                "assign": true,
+                "plus": true,
+                "left": "total",
+                "right": 1
+              }
             }
           }
         },
@@ -630,7 +632,9 @@
             "left": "n",
             "right": 1
           },
-          "else": {}
+          "else": {
+            "body": {}
+          }
         },
         {
           "nodes": [
@@ -664,16 +668,20 @@
             }
           ],
           "else": {
-            "node": {
-              "assign": true,
-              "plus": true,
-              "left": "total",
-              "right": 1
+            "body": {
+              "node": {
+                "assign": true,
+                "plus": true,
+                "left": "total",
+                "right": 1
+              }
             }
           },
           "finally": {
-            "node": {
-              "callee": "cleanup"
+            "body": {
+              "node": {
+                "callee": "cleanup"
+              }
             }
           }
         },

@@ -1884,6 +1884,24 @@ impl SyntaxTree {
         self
     }
 
+    /// Wrap a statement-position subtree in a named clause wrapper:
+    /// `SimpleStatement(slot_name, [self])`. No `<expression>` host
+    /// (statement positions, not value positions). Used for `<else>`,
+    /// `<finally>`, etc. clauses around bodies — produces e.g.
+    /// `<else><body>...</body></else>`.
+    pub fn wrap_clause(self, slot_name: &'static str) -> SyntaxTree {
+        let range = self.range();
+        let span = self.span();
+        SyntaxTree::SimpleStatement {
+            element_name: slot_name,
+            modifiers: Modifiers::default(),
+            extra_markers: Vec::new(),
+            children: vec![self],
+            range,
+            span,
+        }
+    }
+
     /// Wrap this tree in a `<extends><type>...</type></extends>`
     /// host so the renderer doesn't have to. Idempotent —
     /// already-wrapped shapes (`SimpleStatement{element_name:

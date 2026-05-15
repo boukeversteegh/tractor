@@ -637,7 +637,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                     "finally_clause" => {
                         let inner = c.named_children().find(|n| n.kind() == "block");
                         if let Some(b) = inner {
-                            finally_body = Some(Box::new(lower_block_like(b, source)));
+                            finally_body = Some(Box::new(lower_block_like(b, source).wrap_clause("finally")));
                         }
                     }
                     _ => {}

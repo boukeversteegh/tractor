@@ -46,6 +46,15 @@ pub fn render_to_xot(
     tree: &SyntaxTree,
     source: &str,
 ) -> Result<XotNode, xot::Error> {
+    // Walker-eligible variants render through the variant-blind
+    // accessors in `tree::walker`. The per-variant `render_tree_*`
+    // arms below survive only for variants whose tree shape still
+    // depends on renderer-side synthesis (slot / op wrappers being
+    // lifted slice-by-slice).
+    use super::walker::{walker_eligibility, render_generic, WalkerEligibility};
+    if walker_eligibility(tree) == WalkerEligibility::Eligible {
+        return render_generic(xot, parent, tree, source);
+    }
     match tree {
         SyntaxTree::Module { .. } => render_tree_module(xot, parent, tree, source),
         SyntaxTree::Expression { .. } => render_tree_expression(xot, parent, tree, source),
@@ -414,16 +423,15 @@ fn render_tree_for(
         cursor = ir2.end;
     }
     emit_gap(xot, right_slot, source, cursor, right_range.end)?;
-    // Body + else
+    // Body + else (else_body pre-wrapped in `<else>` at lowering via
+    // `wrap_clause("else")`).
     let br = body.range();
     emit_gap(xot, node, source, right_range.end, br.start)?;
     render_to_xot(xot, node, body, source)?;
     if let Some(e) = else_body {
         let er = e.range();
         emit_gap(xot, node, source, br.end, er.start)?;
-        let else_node = element(xot, "else", e.span());
-        xot.append(node, else_node)?;
-        render_to_xot(xot, else_node, e, source)?;
+        render_to_xot(xot, node, e, source)?;
         emit_gap(xot, node, source, er.end, range.end)?;
     } else {
         emit_gap(xot, node, source, br.end, range.end)?;

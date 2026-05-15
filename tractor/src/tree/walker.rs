@@ -57,8 +57,6 @@ pub fn walker_eligibility(tree: &SyntaxTree) -> WalkerEligibility {
         SyntaxTree::Assign { .. }
             | SyntaxTree::Class { .. }
             | SyntaxTree::Access { .. }
-            | SyntaxTree::Foreach { .. }
-            | SyntaxTree::ExceptHandler { .. }
             | SyntaxTree::Lambda { .. }
             | SyntaxTree::Parameter { .. }
             | SyntaxTree::Variable { .. }
@@ -75,14 +73,12 @@ pub fn walker_eligibility(tree: &SyntaxTree) -> WalkerEligibility {
             | SyntaxTree::EnumMember { .. }
             | SyntaxTree::Binary { .. }
             | SyntaxTree::Unary { .. }
-            | SyntaxTree::Ternary { .. }
             | SyntaxTree::Decorator { .. }
             | SyntaxTree::From { .. }
             | SyntaxTree::FromImport { .. }
             | SyntaxTree::Aliased { .. }
             | SyntaxTree::Import { .. }
             | SyntaxTree::Body { .. }
-            | SyntaxTree::Return { .. }
             | SyntaxTree::Returns { .. }
             | SyntaxTree::Comment { .. }
             | SyntaxTree::FieldWrap { .. }
@@ -90,17 +86,13 @@ pub fn walker_eligibility(tree: &SyntaxTree) -> WalkerEligibility {
             | SyntaxTree::KeywordArgument { .. }
             | SyntaxTree::ListSplat { .. }
             | SyntaxTree::DictSplat { .. }
-            | SyntaxTree::Try { .. }
             | SyntaxTree::GenericType { .. }
             | SyntaxTree::Generic { .. }
             | SyntaxTree::TypeParameter { .. }
-            | SyntaxTree::ElseIf { .. }
-            | SyntaxTree::If { .. }
-            | SyntaxTree::Else { .. }
-            | SyntaxTree::While { .. }
             | SyntaxTree::CFor { .. }
             | SyntaxTree::DoWhile { .. }
             | SyntaxTree::For { .. }
+            | SyntaxTree::Foreach { .. }
             | SyntaxTree::Pair { .. }
             | SyntaxTree::Tuple { .. }
             | SyntaxTree::List { .. }
@@ -110,7 +102,6 @@ pub fn walker_eligibility(tree: &SyntaxTree) -> WalkerEligibility {
             | SyntaxTree::Call { .. }
             | SyntaxTree::Function { .. }
             | SyntaxTree::Expression { .. }
-            | SyntaxTree::Module { .. }
             | SyntaxTree::Inline { .. }
             | SyntaxTree::Unknown { .. }
             | SyntaxTree::Raw { .. } => WalkerEligibility::NeedsLegacy,
@@ -137,7 +128,20 @@ pub fn walker_eligibility(tree: &SyntaxTree) -> WalkerEligibility {
         // uniformly (element_name + extra_markers + children).
         SyntaxTree::SimpleStatement { .. }
             | SyntaxTree::Break { .. }
-            | SyntaxTree::Continue { .. } => WalkerEligibility::Eligible,
+            | SyntaxTree::Continue { .. }
+            | SyntaxTree::Module { .. } => WalkerEligibility::Eligible,
+
+        // Structural variants whose tree fully encodes the rendering
+        // shape — slot wrappers and Expression hosts already in the
+        // tree at lowering, no renderer-side synthesis needed.
+        SyntaxTree::Return { .. }
+            | SyntaxTree::If { .. }
+            | SyntaxTree::ElseIf { .. }
+            | SyntaxTree::Else { .. }
+            | SyntaxTree::While { .. }
+            | SyntaxTree::Ternary { .. }
+            | SyntaxTree::ExceptHandler { .. }
+            | SyntaxTree::Try { .. } => WalkerEligibility::Eligible,
     }
 }
 
@@ -162,6 +166,15 @@ pub fn element_name_of(tree: &SyntaxTree) -> Option<&'static str> {
         SyntaxTree::PositionalSeparator { .. } => Some("positional"),
         SyntaxTree::KeywordSeparator { .. } => Some("keyword"),
         SyntaxTree::Skip { .. } => None,
+        // Structural variants — fixed element name per variant.
+        SyntaxTree::Return { .. } => Some("return"),
+        SyntaxTree::If { .. } => Some("if"),
+        SyntaxTree::ElseIf { .. } => Some("else_if"),
+        SyntaxTree::Else { .. } => Some("else"),
+        SyntaxTree::While { .. } => Some("while"),
+        SyntaxTree::Ternary { .. } => Some("ternary"),
+        SyntaxTree::ExceptHandler { kind, .. } => Some(kind),
+        SyntaxTree::Try { .. } => Some("try"),
         // Walker-ineligible variants — the per-variant renderer is
         // still authoritative; the walker doesn't query their name.
         _ => None,
@@ -202,6 +215,64 @@ pub fn children_of(tree: &SyntaxTree) -> Vec<&SyntaxTree> {
     match tree {
         SyntaxTree::SimpleStatement { children, .. } => children.iter().collect(),
         SyntaxTree::Module { children, .. } => children.iter().collect(),
+
+        // ----- Structural single-/multi-slot variants ----------------------
+
+        SyntaxTree::Return { value, .. } => {
+            value.as_deref().map(|v| vec![v]).unwrap_or_default()
+        }
+
+        // If / ElseIf / Else: the else_branch field is a linked list of
+        // ElseIf nodes terminated optionally by an Else. The renderer
+        // emits the chain as FLAT siblings under the originating If
+        // (not nested). To preserve that shape, `If`'s children_of
+        // walks the chain and flattens; `ElseIf`'s children_of omits
+        // its own else_branch (the originating If already flattens it).
+        SyntaxTree::If { condition, body, else_branch, .. } => {
+            let mut kids: Vec<&SyntaxTree> = vec![condition, body];
+            let mut cur = else_branch.as_deref();
+            while let Some(branch) = cur {
+                kids.push(branch);
+                cur = match branch {
+                    SyntaxTree::ElseIf { else_branch: deeper, .. } => deeper.as_deref(),
+                    _ => None,
+                };
+            }
+            kids
+        }
+        SyntaxTree::ElseIf { condition, body, .. } => vec![condition, body],
+        SyntaxTree::Else { body, .. } => vec![body],
+
+        SyntaxTree::While { condition, body, else_body, .. } => {
+            let mut kids: Vec<&SyntaxTree> = vec![condition, body];
+            if let Some(e) = else_body { kids.push(e); }
+            kids
+        }
+
+        SyntaxTree::Ternary { condition, if_true, if_false, .. } => {
+            let mut kids: Vec<&SyntaxTree> = vec![condition, if_true, if_false];
+            kids.sort_by_key(|c| c.range().start);
+            kids
+        }
+
+        SyntaxTree::ExceptHandler { type_target, binding, filter, body, .. } => {
+            let mut kids: Vec<&SyntaxTree> = Vec::new();
+            if let Some(t) = type_target { kids.push(t); }
+            if let Some(b) = binding { kids.push(b); }
+            if let Some(f) = filter { kids.push(f); }
+            kids.push(body);
+            kids.sort_by_key(|c| c.range().start);
+            kids
+        }
+
+        SyntaxTree::Try { try_body, handlers, else_body, finally_body, .. } => {
+            let mut kids: Vec<&SyntaxTree> = vec![try_body];
+            kids.extend(handlers.iter());
+            if let Some(e) = else_body { kids.push(e); }
+            if let Some(f) = finally_body { kids.push(f); }
+            kids
+        }
+
         // Leaves have no children. Walker emits source-slice text via
         // the existing `leaf` helper.
         _ => Vec::new(),
@@ -337,12 +408,27 @@ mod tests {
             }),
             WalkerEligibility::Eligible
         );
-        // NeedsLegacy — variants whose renderer still synthesises
-        // wrappers (Z-steps 2 and 3 will lift these into the tree).
+        // Module also walker-eligible — its tree is just element name
+        // + children.
         assert_eq!(
             walker_eligibility(&SyntaxTree::Module {
                 element_name: "m",
                 children: Vec::new(),
+                range: r,
+                span,
+            }),
+            WalkerEligibility::Eligible
+        );
+        // NeedsLegacy — variants whose renderer still synthesises
+        // wrappers (op / slot lifts not yet done).
+        assert_eq!(
+            walker_eligibility(&SyntaxTree::Binary {
+                element_name: "binary",
+                op_text: "+".into(),
+                op_marker: "plus",
+                op_range: r,
+                left: Box::new(SyntaxTree::Name { text: "a".into(), range: r, span }),
+                right: Box::new(SyntaxTree::Name { text: "b".into(), range: r, span }),
                 range: r,
                 span,
             }),

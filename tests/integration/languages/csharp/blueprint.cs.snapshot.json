@@ -1498,11 +1498,13 @@
                   }
                 ],
                 "finally": {
-                  "node": {
-                    "access": true,
-                    "receiver": "scope",
-                    "call": {
-                      "name": "Flush"
+                  "body": {
+                    "node": {
+                      "access": true,
+                      "receiver": "scope",
+                      "call": {
+                        "name": "Flush"
+                      }
                     }
                   }
                 }
