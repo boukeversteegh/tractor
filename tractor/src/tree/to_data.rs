@@ -1445,7 +1445,7 @@ mod tests {
             modifiers: Modifiers { access: Some(Access::Public), ..Modifiers::default() },
             decorators: vec![],
             name: Box::new(name("Foo")),
-            generics: None,
+            generics: vec![],
             bases: vec![],
             where_clauses: vec![],
             body: Box::new(SyntaxTree::Body {
@@ -1516,7 +1516,7 @@ mod tests {
             modifiers: Modifiers { access: Some(Access::Public), ..Modifiers::default() },
             decorators: vec![],
             name: Box::new(name("Foo")),
-            generics: None,
+            generics: vec![],
             bases: vec![],
             where_clauses: vec![],
             body: Box::new(SyntaxTree::Body {
@@ -1541,7 +1541,7 @@ mod tests {
             modifiers: Modifiers::default(),
             decorators: vec![],
             name: Box::new(name("Foo")),
-            generics: None,
+            generics: vec![],
             bases: vec![],
             where_clauses: vec![],
             body: Box::new(SyntaxTree::Body {

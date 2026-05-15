@@ -146,17 +146,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 })
                 .collect();
             let modifiers = lower_java_modifiers(node, source, /*default_access*/ Some(Access::Package));
-            let generics = type_param_list.map(|tpl| {
-                let items: Vec<SyntaxTree> = tpl
-                    .named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tpl),
-                    span: span_of(tpl),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_param_list {
+                Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             let mut bases: Vec<SyntaxTree> = Vec::new();
             // Superclass (`extends Foo`) — bare type, gets wrapped in
             // `<extends>` by the Class render's default base path.
@@ -244,17 +237,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let type_param_list = node
                 .named_children()
                 .find(|c| c.kind() == "type_parameters");
-            let generics = type_param_list.map(|tpl| {
-                let items: Vec<SyntaxTree> = tpl
-                    .named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tpl),
-                    span: span_of(tpl),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_param_list {
+                Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             // Default access depends on enclosing type:
             //   interface + abstract (no body) → implicit `public`
             //   interface + has body (default method) → `package`
@@ -1320,7 +1306,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 modifiers,
                 decorators: Vec::new(),
                 name,
-                generics: None,
+                generics: Vec::new(),
                 parameters: Vec::new(),
                 returns: None,
                 throws: Vec::new(),

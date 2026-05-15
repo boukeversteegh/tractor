@@ -551,16 +551,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let modifiers = lower_csharp_modifiers(node, source, /*default_access*/ Some(Access::Internal));
             // Generics: lower the whole type_parameter_list as SyntaxTree::Generic
             // (its items are SyntaxTree::TypeParameter via the type_parameter arm).
-            let generics: Option<Box<SyntaxTree>> = type_param_list.map(|tpl| {
-                let items: Vec<SyntaxTree> = tpl.named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tpl),
-                    span: span_of(tpl),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_param_list {
+                Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             // Bases: each named child of base_list becomes one base.
             let bases: Vec<SyntaxTree> = match base_list {
                 Some(bl) => {
@@ -648,7 +642,7 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                         range, span,
                     },
                 }),
-                generics: None,
+                generics: Vec::new(),
                 parameters: lower_csharp_parameter_list(params_node, source),
                 returns: None,
                 throws: Vec::new(),
@@ -677,16 +671,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             // (decorators) as direct named children.
             let type_param_list = node.named_children()
                 .find(|c| c.kind() == "type_parameter_list");
-            let generics: Option<Box<SyntaxTree>> = type_param_list.map(|tpl| {
-                let items: Vec<SyntaxTree> = tpl.named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tpl),
-                    span: span_of(tpl),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_param_list {
+                Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             let decorators: Vec<SyntaxTree> = node.named_children()
                 .filter(|c| c.kind() == "attribute_list")
                 .flat_map(|al| {
@@ -2348,43 +2336,40 @@ fn simple_statement_marked(
 /// transform, but operates on typed tree before xot rendering — so the
 /// generic param renders with its constraints already attached.
 fn fold_csharp_where_clauses_into_generics(
-    generics: Option<Box<SyntaxTree>>,
+    mut generics: Vec<SyntaxTree>,
     where_clauses: Vec<SyntaxTree>,
     source: &str,
-) -> Option<Box<SyntaxTree>> {
-    let Some(mut g_box) = generics else { return None };
-    if where_clauses.is_empty() { return Some(g_box); }
-    if let SyntaxTree::Generic { items, .. } = &mut *g_box {
-        for clause in where_clauses {
-            let SyntaxTree::SimpleStatement { children: clause_children, .. } = clause else { continue };
-            // First Name child is the target generic-param name.
-            let target_name = clause_children.iter().find_map(|c| match c {
-                SyntaxTree::Name { text, .. } => Some(text.clone()),
-                _ => None,
-            });
-            let Some(target_name) = target_name else { continue };
-            // Find the matching generic item by its first Name child.
-            let target_idx = items.iter().position(|i| {
-                csharp_generic_item_name(i, source).as_deref() == Some(target_name.as_str())
-            });
-            let Some(target_idx) = target_idx else { continue };
-            // Anchor every synthesized marker's range at the generic
-            // item's `range.end` so `render_with_gaps` doesn't emit
-            // gap text from the item's last child to a marker placed
-            // anywhere outside the item's own range.
-            let anchor = items[target_idx].range().end;
-            // Translate each constraint into a child of the generic item.
-            for c in clause_children {
-                let SyntaxTree::SimpleStatement { element_name: "constraint", children, range, span, .. } = c else { continue };
-                if let Some(translated) = translate_csharp_constraint(children, range, anchor, span, source) {
-                    if let SyntaxTree::SimpleStatement { children: target_children, .. } = &mut items[target_idx] {
-                        target_children.push(translated);
-                    }
+) -> Vec<SyntaxTree> {
+    if where_clauses.is_empty() || generics.is_empty() { return generics; }
+    for clause in where_clauses {
+        let SyntaxTree::SimpleStatement { children: clause_children, .. } = clause else { continue };
+        // First Name child is the target generic-param name.
+        let target_name = clause_children.iter().find_map(|c| match c {
+            SyntaxTree::Name { text, .. } => Some(text.clone()),
+            _ => None,
+        });
+        let Some(target_name) = target_name else { continue };
+        // Find the matching generic item by its first Name child.
+        let target_idx = generics.iter().position(|i| {
+            csharp_generic_item_name(i, source).as_deref() == Some(target_name.as_str())
+        });
+        let Some(target_idx) = target_idx else { continue };
+        // Anchor every synthesized marker's range at the generic
+        // item's `range.end` so `render_with_gaps` doesn't emit
+        // gap text from the item's last child to a marker placed
+        // anywhere outside the item's own range.
+        let anchor = generics[target_idx].range().end;
+        // Translate each constraint into a child of the generic item.
+        for c in clause_children {
+            let SyntaxTree::SimpleStatement { element_name: "constraint", children, range, span, .. } = c else { continue };
+            if let Some(translated) = translate_csharp_constraint(children, range, anchor, span, source) {
+                if let SyntaxTree::SimpleStatement { children: target_children, .. } = &mut generics[target_idx] {
+                    target_children.push(translated);
                 }
             }
         }
     }
-    Some(g_box)
+    generics
 }
 
 /// Extract the source text of the first `SyntaxTree::Name` child of a

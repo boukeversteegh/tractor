@@ -397,9 +397,7 @@ impl<'a> Renderer<'a> {
                 }
                 self.add_modifier_flags(shape, modifiers);
                 self.add_singleton_or_text(shape, name);
-                if let Some(g) = generics {
-                    self.add_generics(shape, g);
-                }
+                self.add_generics(shape, generics);
                 for p in parameters {
                     shape.list_with("parameter", self.render(p, true));
                 }
@@ -421,9 +419,7 @@ impl<'a> Renderer<'a> {
                 }
                 self.add_modifier_flags(shape, modifiers);
                 self.add_singleton_or_text(shape, name);
-                if let Some(g) = generics {
-                    self.add_generics(shape, g);
-                }
+                self.add_generics(shape, generics);
                 for b in bases {
                     let inner = self.render_as_type(b);
                     let mut wrap = Map::new();
@@ -801,13 +797,9 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn add_generics(&self, shape: &mut Shape, generics: &SyntaxTree) {
-        if let SyntaxTree::Generic { items, .. } = generics {
-            for it in items {
-                shape.list_with(self.element_name(it), self.render(it, true));
-            }
-        } else {
-            shape.singleton("generic", self.render(generics, true));
+    fn add_generics(&self, shape: &mut Shape, generics: &[SyntaxTree]) {
+        for it in generics {
+            shape.list_with(self.element_name(it), self.render(it, true));
         }
     }
 

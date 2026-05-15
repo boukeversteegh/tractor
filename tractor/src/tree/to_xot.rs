@@ -300,13 +300,7 @@ fn render_tree_class(
     let mut order: Vec<CSlot> = Vec::new();
     for d in decorators { order.push(CSlot::Decor(d)); }
     order.push(CSlot::Name(name));
-    if let Some(g) = generics {
-        if let SyntaxTree::Generic { items, .. } = g.as_ref() {
-            for it in items { order.push(CSlot::Generics(it)); }
-        } else {
-            order.push(CSlot::Generics(g));
-        }
-    }
+    for it in generics { order.push(CSlot::Generics(it)); }
     for b in bases { order.push(CSlot::Base(b)); }
     for w in where_clauses { order.push(CSlot::Where(w)); }
     order.push(CSlot::Body(body));
@@ -843,13 +837,7 @@ fn render_tree_function(
     let mut order: Vec<&SyntaxTree> = Vec::new();
     for d in decorators { order.push(d); }
     order.push(name.as_ref());
-    if let Some(g) = generics {
-        if let SyntaxTree::Generic { items, .. } = g.as_ref() {
-            for it in items { order.push(it); }
-        } else {
-            order.push(g.as_ref());
-        }
-    }
+    for it in generics { order.push(it); }
     for p in parameters { order.push(p); }
     if let Some(r) = returns { order.push(r.as_ref()); }
     for t in throws { order.push(t); }

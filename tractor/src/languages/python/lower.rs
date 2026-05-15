@@ -1598,7 +1598,7 @@ fn lower_function(node: &RawNode, source: &str, is_async: bool, decorators: Vec<
         }),
     };
 
-    let generics = type_params_node.map(|tp| Box::new(lower_type_parameters(tp, source)));
+    let generics: Vec<SyntaxTree> = type_params_node.map(|tp| lower_type_parameters(tp, source)).unwrap_or_default();
 
     let parameters = params_node.map(|p| lower_parameters(p, source)).unwrap_or_default();
 
@@ -1653,7 +1653,7 @@ fn lower_class(node: &RawNode, source: &str, decorators: Vec<SyntaxTree>) -> Syn
         }),
     };
 
-    let generics = type_params_node.map(|tp| Box::new(lower_type_parameters(tp, source)));
+    let generics: Vec<SyntaxTree> = type_params_node.map(|tp| lower_type_parameters(tp, source)).unwrap_or_default();
 
     let bases = superclasses_node.map(|s| {
         s.named_children().map(|n| lower_node(n, source)).collect()
@@ -1849,12 +1849,12 @@ fn lower_parameters(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
 /// nested cases by walking ALL named descendants until we find
 /// identifiers, splats, or constrained types — each becomes one
 /// tree::TypeParameter.
-fn lower_type_parameters(node: &RawNode, source: &str) -> SyntaxTree {
-    let span = span_of(node);
-    let range = range_of(node);
+fn lower_type_parameters(node: &RawNode, source: &str) -> Vec<SyntaxTree> {
+    let _span = span_of(node);
+    let _range = range_of(node);
     let mut items: Vec<SyntaxTree> = Vec::new();
     collect_type_param_items(node, source, &mut items);
-    SyntaxTree::Generic { items, range, span }
+    items
 }
 
 fn collect_type_param_items(node: &RawNode, source: &str, out: &mut Vec<SyntaxTree>) {

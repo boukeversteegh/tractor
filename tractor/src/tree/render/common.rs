@@ -227,7 +227,14 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
             out.push_str(kind);
             out.push(' ');
             write_ir(name, out, indent, sx);
-            if let Some(g) = generics { write_ir(g, out, indent, sx); }
+            if !generics.is_empty() {
+                out.push('[');
+                for (i, g) in generics.iter().enumerate() {
+                    if i > 0 { out.push_str(", "); }
+                    write_ir(g, out, indent, sx);
+                }
+                out.push(']');
+            }
             if !bases.is_empty() {
                 out.push_str(" : ");
                 for (i, b) in bases.iter().enumerate() {
@@ -256,7 +263,14 @@ pub fn write_ir(tree: &SyntaxTree, out: &mut String, indent: Indent, sx: &Syntax
                 out.push(' ');
             }
             write_ir(name, out, indent, sx);
-            if let Some(g) = generics { write_ir(g, out, indent, sx); }
+            if !generics.is_empty() {
+                out.push('[');
+                for (i, g) in generics.iter().enumerate() {
+                    if i > 0 { out.push_str(", "); }
+                    write_ir(g, out, indent, sx);
+                }
+                out.push(']');
+            }
             out.push('(');
             for (i, p) in parameters.iter().enumerate() {
                 if i > 0 { out.push_str(", "); }

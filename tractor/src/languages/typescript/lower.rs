@@ -183,17 +183,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
                 }
             }
             let modifiers = lower_ts_modifiers(node, source, None);
-            let generics = type_param_list.map(|tpl| {
-                let items: Vec<SyntaxTree> = tpl
-                    .named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tpl),
-                    span: span_of(tpl),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_param_list {
+                Some(tpl) => tpl.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             SyntaxTree::Class {
                 kind,
                 modifiers,
@@ -272,17 +265,10 @@ fn lower_node(node: &RawNode, source: &str) -> SyntaxTree {
             let type_params_node = node
                 .named_children()
                 .find(|c| c.kind() == "type_parameters");
-            let generics: Option<Box<SyntaxTree>> = type_params_node.map(|tp| {
-                let items: Vec<SyntaxTree> = tp
-                    .named_children()
-                    .map(|c| lower_node(c, source))
-                    .collect();
-                Box::new(SyntaxTree::Generic {
-                    items,
-                    range: range_of(tp),
-                    span: span_of(tp),
-                })
-            });
+            let generics: Vec<SyntaxTree> = match type_params_node {
+                Some(tp) => tp.named_children().map(|c| lower_node(c, source)).collect(),
+                None => Vec::new(),
+            };
             SyntaxTree::Function {
                 element_name,
                 modifiers,

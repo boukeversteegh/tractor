@@ -666,7 +666,10 @@ pub enum SyntaxTree {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
         name: Box<SyntaxTree>,                  // SyntaxTree::Name
-        generics: Option<Box<SyntaxTree>>,      // SyntaxTree::Generic
+        /// Generic type parameters (each is a [`SyntaxTree::TypeParameter`]).
+        /// Empty `Vec` means no generics — the renderer iterates the
+        /// items directly with no `Generic` wrapper node.
+        generics: Vec<SyntaxTree>,
         parameters: Vec<SyntaxTree>,            // each SyntaxTree::Parameter / SyntaxTree::PositionalSeparator / SyntaxTree::KeywordSeparator
         returns: Option<Box<SyntaxTree>>,       // SyntaxTree::Returns
         /// `throws E1, E2` clause on Java method declarations. Each
@@ -696,7 +699,10 @@ pub enum SyntaxTree {
         modifiers: Modifiers,
         decorators: Vec<SyntaxTree>,
         name: Box<SyntaxTree>,
-        generics: Option<Box<SyntaxTree>>,
+        /// Generic type parameters (each is a [`SyntaxTree::TypeParameter`]).
+        /// Empty `Vec` means no generics. The renderer iterates items
+        /// directly with no `Generic` wrapper node.
+        generics: Vec<SyntaxTree>,
         bases: Vec<SyntaxTree>,                 // each is a base expression
         where_clauses: Vec<SyntaxTree>,         // C# `where T : ...` constraints (other languages: empty)
         body: Box<SyntaxTree>,
@@ -1930,7 +1936,7 @@ impl SyntaxTree {
             SyntaxTree::Function { decorators, name, generics, parameters, returns, throws, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
-                if let Some(g) = generics { v.push(g); }
+                v.extend(generics.iter());
                 v.extend(parameters.iter());
                 if let Some(r) = returns { v.push(r); }
                 v.extend(throws.iter());
@@ -1939,7 +1945,7 @@ impl SyntaxTree {
             SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
                 v.extend(decorators.iter());
                 v.push(name);
-                if let Some(g) = generics { v.push(g); }
+                v.extend(generics.iter());
                 v.extend(bases.iter());
                 v.extend(where_clauses.iter());
                 v.push(body);
@@ -2272,7 +2278,7 @@ impl TreeNode for SyntaxTree {
             SyntaxTree::Function { decorators, name, generics, parameters, returns, body, .. } => {
                 v.extend(decorators.iter_mut());
                 v.push(name.as_mut());
-                if let Some(g) = generics { v.push(g.as_mut()); }
+                v.extend(generics.iter_mut());
                 v.extend(parameters.iter_mut());
                 if let Some(r) = returns { v.push(r.as_mut()); }
                 if let Some(b) = body { v.push(b.as_mut()); }
@@ -2280,7 +2286,7 @@ impl TreeNode for SyntaxTree {
             SyntaxTree::Class { decorators, name, generics, bases, where_clauses, body, .. } => {
                 v.extend(decorators.iter_mut());
                 v.push(name.as_mut());
-                if let Some(g) = generics { v.push(g.as_mut()); }
+                v.extend(generics.iter_mut());
                 v.extend(bases.iter_mut());
                 v.extend(where_clauses.iter_mut());
                 v.push(body.as_mut());
